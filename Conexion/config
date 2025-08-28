@@ -1,0 +1,10 @@
+[
+  {
+    "server": "localhost",
+    "user": "n455735_prodrig",
+    "password": "MacBook@Air",
+    "database": "n455735_sistemacaddy",
+    "port": "",
+    "socket": "/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock"
+  }
+]
