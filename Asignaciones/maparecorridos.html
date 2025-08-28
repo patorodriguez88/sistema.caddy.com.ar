@@ -1,0 +1,281 @@
+<!DOCTYPE html >
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+<!--     <title>Using MySQL and PHP with Google Maps</title> -->
+    
+     <style>
+    *{ margin: 0; padding: 0; }
+    html, body, #map{
+        width: 100%;
+        height: 98%;
+    }
+    #formContent{
+        position: relative;
+        top: -650px;
+        margin-left:10%;
+        width: 300px;
+        margin: 10px auto;
+      float:left;
+    }
+    .submit{ padding: 3px 5px; }
+    </style>
+    
+    
+    
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+/*       #map {
+        height: 100%;
+        width: 100%;
+        border: #000000 solid 0px;
+        margin-top: 0px;"
+      }
+      /* Optional: Makes the sample page fill the window. */
+/*       html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      } */ 
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+<?
+echo "<div id='formContent'>";
+echo "<form class='login' style='margin-top:10px;width:85%;' method='POST'>";
+echo "<div><titulo style='font-size:15px'>Seleccione Recorridos</titulo></div>";
+echo "<div><b style='font-style: oblique;font-size:10px'>Cmd + Shift (Multi Select)</b></div>";
+echo "<div><select multiple  style='width:170px;font-size:13;height:10px;margin-top:0px;display:none' size='15' name='Recorridos[]'>";
+// $i=0;
+//    $sqlasigna=mysql_query("SELECT * FROM PreVenta WHERE NCliente='36' AND Cargado='0' GROUP BY idClienteDestino");
+        $sqlasigna=mysql_query("SELECT Clientes.id,Clientes.nombrecliente,Clientes.Direccion,Clientes.Ciudad,Clientes.Recorrido,Clientes.Relacion,Clientes.idProveedor FROM Clientes,PreVenta 
+          WHERE Clientes.idProveedor=PreVenta.idClienteDestino 
+          AND Clientes.Relacion='36' 
+          AND PreVenta.NCliente='36' 
+          AND PreVenta.Cargado=0 
+          GROUP BY PreVenta.idClienteDestino");
+   
+   $totalclientes=mysql_num_rows($sqlasigna); 
+   while($datosqlasigna=mysql_fetch_array($sqlasigna)){
+  $sqlh=mysql_query("SELECT Recorrido,idCliente FROM HojaDeRuta WHERE id=(SELECT MAX(id)as id FROM HojaDeRuta WHERE idCliente='$datosqlasigna[id]')");
+  $datosqlhojaderuta=mysql_fetch_array($sqlh);
+ $datos[] = array('Recorrido' => $datosqlhojaderuta[Recorrido], 'idCliente' => $datosqlhojaderuta[idCliente]);
+  echo "<option style='padding:3%' value='$datosqlhojaderuta[Recorrido]' selected>Recorrido $datosqlhojaderuta[Recorrido]</option>";  
+  $i=0;
+     while($datosqlhojaderuta=mysql_fetch_array($sqlh)){
+//         echo "<option style='padding:3%' value='$datosqlhojaderuta[Recorrido]' selected>Recorrido $datosqlhojaderuta[Recorrido]</option>";  
+     $i++;
+     }
+   }
+echo "</select></div>";
+$grupo = array();
+$directorios = array();
+foreach($datos as $valor => $valor_){
+
+	//CONSEGUIR EL VALOR ACTUAL
+	$directorio_ = ucwords(strtolower($valor_['Recorrido']));
+
+	//VERIFICAR SI EL VALOR SE REPITE
+	if(!in_array($directorio_, $directorios)){
+		//SI NO EXISTE LO AGREGA AL NUEVO ARRAY
+		$directorios[] = $directorio_;
+	}
+
+	//JALO EL VALOR ACTUAL
+	$directorio_u = array_search($directorio_, $directorios);
+
+	//AGREGO EL NUEVO REGISTRO AL CONTENEDOR DEL VALOR CORRESPONDIENTE
+	$grupo[$directorio_u][] = $valor_;
+}
+$directorio_ = array();
+foreach($grupo as $uno){
+	foreach($uno as $dos){
+		$archivo_[] = $dos['idCliente'];
+	}
+	$directorio_[] = array_filter(array(
+						'Recorrido' => $uno[0]['Recorrido'],
+						'idCliente' => array_filter($archivo_)
+					)
+				);
+	unset($archivo_);
+}
+
+echo "<div style='width:150px'>";
+echo "<ul>";
+  foreach($directorio_ as $archivos){
+      echo "<li class='active has-sub'><a Onclick='mostrar()'><span>Recorrido: $archivos[Recorrido]</span></a>";
+          if($archivos['idCliente']){
+          echo "<ul>";
+            foreach($archivos['idCliente'] as $archivos_){
+//             echo "<li id='clientes' ><span>$archivos_</span></li>";
+            }
+          echo "</ul>";
+          }
+      echo "</li>";
+   }
+echo "</ul>";
+echo "</div>";
+echo "<label>Total Clientes:$totalclientes</label>"; 
+// echo "<p>Total Encontrados:$i</p>"; 
+    
+echo "<div><input type='submit' value='Abrir Mapa' name='vermapa'></div>";
+echo "</form>";
+echo "</div>";
+ ?>   
+    <script>
+      var customLabel = {
+        1: {
+          label: '1'
+        },
+        2: {
+          label: '2'
+        },
+        3: {
+          label: '3'
+        },
+        4: {
+          label: '4'
+        },
+        5: {
+          label: '5'
+        },
+        6: {
+          label: '6'
+        },
+        7: {
+          label: '7'
+        },
+        8: {
+          label: '8'
+        },
+        9: {
+          label: '9'
+        },
+        10: {
+          label: '10'
+        },
+        11: {
+          label: '11'
+        },
+        12: {
+          label: '12'
+        },
+        13: {
+          label: '13'
+        }
+
+      };
+
+        function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: new google.maps.LatLng(-31.4448988, -64.177743),
+          zoom: 10
+        });
+        var infoWindow = new google.maps.InfoWindow;
+
+          // Change this depending on the name of your PHP or XML file
+          downloadUrl('datosmaparecorridos.php', function(data) {
+            var xml = data.responseXML;
+            var markers = xml.documentElement.getElementsByTagName('marker');
+            
+            Array.prototype.forEach.call(markers, function(markerElem) {
+              var ncliente = markerElem.getAttribute('ncliente');
+              var name = markerElem.getAttribute('name');
+              var address = markerElem.getAttribute('address');
+              var type = markerElem.getAttribute('type');
+              var ciudad = markerElem.getAttribute('ciudad');
+              var point = new google.maps.LatLng(
+                  parseFloat(markerElem.getAttribute('lat')),
+                  parseFloat(markerElem.getAttribute('lng')));
+ 
+              var infowincontent = document.createElement('div');
+              var strong = document.createElement('strong');
+              strong.textContent = 'id Proveedor: '+ ncliente
+              infowincontent.appendChild(strong);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var nombre = document.createElement('text');
+              nombre.textContent = 'Nombre: '+ name
+              infowincontent.appendChild(nombre);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var adress = document.createElement('text');
+              adress.textContent = 'Direccion: '+ address
+              infowincontent.appendChild(adress);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var localidad = document.createElement('text');
+              localidad.textContent = 'Ciudad: '+ ciudad
+              infowincontent.appendChild(localidad);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var rec = document.createElement('text');
+              rec.textContent = 'Recorrido: '+ type
+              infowincontent.appendChild(rec);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var btn = document.createElement('button');   // Create a <button> element
+              btn.innerHTML = 'CLICK ME'                   // Insert text
+              document.body.appendChild(btn);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var icon = customLabel[type] || {
+              };
+                  if (icon.label==8){
+              var iconBase = '../images/favicon/iconamarillo.png';
+                  }
+                  if (icon.label==3){     
+              var iconBase = '../images/favicon/iconamarillo.png';
+                  }
+                  if (icon.label==12){
+              var iconBase = '../images/favicon/iconcaddy.png';      
+                  }
+                  if (icon.label==0){
+              var iconBase = '../images/favicon/iconverde.png';
+                  }
+        
+              var marker = new google.maps.Marker({
+                map: map,
+                position: point,
+                label: icon.label,
+                animation: google.maps.Animation.DROP,
+                icon:iconBase
+              });
+              marker.addListener('click', function() {
+                infoWindow.setContent(infowincontent);
+                infoWindow.open(map, marker);
+              });
+            });
+          });
+        }
+
+
+
+      function downloadUrl(url, callback) {
+        var request = window.ActiveXObject ?
+            new ActiveXObject('Microsoft.XMLHTTP') :
+            new XMLHttpRequest;
+
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            request.onreadystatechange = doNothing;
+            callback(request, request.status);
+          }
+        };
+
+        request.open('GET', url, true);
+        request.send(null);
+      }
+
+      function doNothing() {}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&callback=initMap">
+
+//     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBLo_Ys3Waub6KJAAvdEfKQuIVt-xO7qu0&callback=initMap">
+    </script>
+  </body>
+</html>  

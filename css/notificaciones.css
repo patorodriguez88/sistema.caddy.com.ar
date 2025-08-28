@@ -1,0 +1,128 @@
+/* @import url(https://fonts.googleapis.com/css?family=Open+Sans:400,400italic,600);
+
+.notification {
+	box-shadow: 0px 0px 5px 0px rgba(0,0,0,.1);
+    border-radius: 5px;
+    display: flex;
+    height: 100px;
+    justify-content: space-between;
+    opacity: 0;
+    padding-right: 15px;
+    position: absolute;
+    right: 30px;
+    top: 150px;
+    visibility: hidden;
+    transition: all .5s ease;
+    width: 270px;
+}
+.notification.visible {
+    opacity: .8;
+    top: 20px;
+    visibility: visible;
+}
+.notification.info {
+    background-color: #2980b9;
+}
+.notification.error {
+    background-color: #e74c3c;
+}
+.notification.warning {
+    background-color: #f39c12;
+}
+.notification > .icon {
+    align-items: center;
+    display: flex;
+    height: 100%;
+    justify-content: center;
+    width: 50px;
+}
+.notification > .icon > i {
+    color: white;
+    cursor: default;
+}
+.notification > .text {
+    align-items: center;
+    color: white;
+    cursor: default;
+    display: flex;
+    font-family: 'Open Sans';
+    font-weight: 400;
+    font-size: 15px;
+    width: calc(95% - 50px);
+    word-wrap: normal;
+}
+.notification > .close {
+    color: rgba(255, 255, 255, .8);
+    cursor: pointer;
+    position: absolute;
+    right: 8px;
+    top: 5px;
+    transition: color .3s ease;
+}
+.notification > .close:hover {
+    color: #fff;
+}
+
+.buttons {
+     display: flex;
+     justify-content: space-between;
+    margin-bottom: 25px;
+     position: relative;
+}
+.buttons > * {
+    margin: 0 5px;
+     padding: .5rem;
+}
+ */
+#notificacion {
+position: absolute;
+z-index: 100;
+top:0;
+float: right;
+right: 10px;
+width:300px;
+height:100px;
+background: rgba(33, 30, 31, 0.7);
+text-align: center;
+line-height: 2.5;
+overflow: hidden;
+-webkit-box-shadow: 0 0 5px black;
+-moz-box-shadow: 0 0 5px black;
+box-shadow: 0 0 5px black;
+-webkit-transform: translateY(-150px);
+-webkit-animation: slideDown 4.5s 1.0s 1 ease;
+-moz-transform: translateY(-150px);
+-moz-animation: slideDown 4.5s 1.0s 1 ease;
+font-family:"Times New Roman",Times,serif;
+color:white;
+font-weight:bold;
+	
+}
+
+#notificacion:hover{
+background: rgba(33, 30, 31, 1);
+}
+
+#close {
+position: absolute;
+right: 10px;
+top: 9px;
+text-indent: -9999px;
+background: url(images/close.png);
+height: 16px;
+width: 16px;
+cursor: pointer;
+}
+
+@-webkit-keyframes slideDown {
+0%, 100% { -webkit-transform: translateY(-150px); }
+10%, 90% { -webkit-transform: translateY(80px); }
+}
+
+@-moz-keyframes slideDown {
+0%, 100% { -moz-transform: translateY(-150px); }
+10%, 90% { -moz-transform: translateY(80px); }
+}
+
+
+
