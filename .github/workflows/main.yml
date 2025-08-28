@@ -11,7 +11,7 @@ jobs:
     - name: 📂 Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
-        server: dintersa.com.ar
+        server: sistema.caddy.com.ar
         username: dinter6
         password: ${{ secrets.FTP_PASSWORD }}
         server-dir: /sistema.caddy.com.ar/SistemaTriangular/
