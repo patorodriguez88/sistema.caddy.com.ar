@@ -1,0 +1,290 @@
+<!DOCTYPE html >
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+    <meta charset="utf-8">	
+
+    <title>Mapa | Todos los Envios</title>
+    
+<style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+        width: 100%;
+        margin-top: 0px;
+        z-index:999;
+        position:absolute; 
+      }
+        #circulo {
+            width: 20px;
+            height: 20px;
+            -moz-border-radius: 100%;
+            -webkit-border-radius: 100%;
+            border-radius: 100%;
+            position:fixed;
+            z-index: 10000;
+            background: #85C1E9;
+            opacity:0.85;
+            filter: alpha(opacity=85);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            margin:0px auto;
+            padding:1%;
+            float:right;
+            left:20px;
+            top:70px;
+      }
+      #circulo h2{
+            font-family: sans-serif;
+            color: white;
+            font-size: 0.9rem;
+            font-weight: bold;
+      }
+      /* Optional: Makes the sample page fill the window. */
+    </style>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script>
+        function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: new google.maps.LatLng(-31.4448988, -64.177743),
+          zoom: 10
+        });
+        var infoWindow = new google.maps.InfoWindow({
+          minWidth: 350
+        });
+  
+          // Change this depending on the name of your PHP or XML file
+          downloadUrl('datosmapaorden.php', function(data) {
+            var xml = data.responseXML;
+            var markers = xml.documentElement.getElementsByTagName('marker');
+            
+            Array.prototype.forEach.call(markers, function(markerElem) {
+              var Recorrido = markerElem.getAttribute('Recorrido');
+
+              var Color = markerElem.getAttribute('Color');
+              var Posicion=markerElem.getAttribute('Posicion');
+              var Avisado=markerElem.getAttribute('Avisado');
+              var Observaciones = markerElem.getAttribute('Observaciones');
+              var Retirado = markerElem.getAttribute('Retirado');
+              var Entregado = markerElem.getAttribute('Entregado');
+              var Estado = markerElem.getAttribute('Estado');
+              var idTransClientes = markerElem.getAttribute('idTransClientes');
+              var CodigoSeguimiento = markerElem.getAttribute('CodigoSeguimiento');
+              var ncliente = markerElem.getAttribute('idProveedor');
+              var name = markerElem.getAttribute('name');
+              var address = markerElem.getAttribute('address');
+              var type = markerElem.getAttribute('type');
+              var hora = markerElem.getAttribute('hora');
+              var point = new google.maps.LatLng(
+                  parseFloat(markerElem.getAttribute('lat')),
+                  parseFloat(markerElem.getAttribute('lng')));
+ 
+              var infowincontent = document.createElement('div');
+            
+              var Ncliente = document.createElement('Ncliente');
+              Ncliente.textContent = 'Id Proveedor :' + ncliente + ' | '
+              Ncliente.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Ncliente.style.fontSize = '10px';
+              infowincontent.appendChild(Ncliente);
+
+//               document.getElementById('referencia').innerHTML = Color;
+              
+              var Codigo = document.createElement('CodSeg');
+              Codigo.textContent = 'Cod.Seg :' + CodigoSeguimiento + ' | ' 
+              Codigo.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Codigo.style.fontSize = '10px';
+              infowincontent.appendChild(Codigo);
+//               infowincontent.appendChild(document.createElement('br'));
+
+              var recorrido = document.createElement('recorrido');
+              recorrido.textContent = 'Recorrido :' + Recorrido
+              recorrido.style.fontFamily = 'Roboto,Arial,sans-serif';
+              recorrido.style.fontSize = '10px';
+              infowincontent.appendChild(recorrido);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Name = document.createElement('Name');
+              Name.textContent = Posicion + ' ' + name 
+              Name.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Name.style.fontSize = '16px';
+              Name.style.lineHeight = '30px';
+
+              infowincontent.appendChild(document.createElement('strong'));
+              infowincontent.appendChild(Name);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Adress = document.createElement('Adress');
+              Adress.textContent =  address
+              Adress.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Adress.style.fontSize = '12px';
+              Adress.style.lineHeight = '8px';
+
+              infowincontent.appendChild(Adress);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Hora = document.createElement('Hora');
+              if(Retirado==0){
+              Hora.textContent =  'Hora Retiro: ' + hora
+              }else{
+              Hora.textContent =  'Hora Entrega: ' + hora
+              }
+              infowincontent.appendChild(Hora);
+              infowincontent.appendChild(document.createElement('br'));
+
+              
+              var estado = document.createElement('estado');
+              estado.textContent = 'Estado: '+ Estado
+              infowincontent.appendChild(estado);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var observaciones = document.createElement('observaciones');
+              observaciones.textContent = 'Observaciones: '+ Observaciones
+              infowincontent.appendChild(observaciones);
+              observaciones.style.marginBottom = '22px';
+
+              var proximo = document.createElement('div');
+              proximo.style.backgroundColor = '#fff';
+              proximo.style.border = '0px solid #fff';
+              proximo.style.borderRadius = '3px';
+              proximo.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+              proximo.style.cursor = 'pointer';
+              proximo.style.marginBottom = '22px';
+              proximo.style.textAlign = 'center';
+              proximo.title = '';
+              infowincontent.appendChild(proximo);
+              infowincontent.appendChild(document.createElement('br'));
+               // Set CSS for the control interior.
+              var proximoText = document.createElement('div');
+              proximoText.style.color = 'rgb(253,254,254)';
+              proximoText.style.fontFamily = 'Roboto,Arial,sans-serif';
+              proximoText.style.fontSize = '16px';
+              proximoText.style.lineHeight = '38px';
+              proximoText.style.padding = '8px';
+              proximoText.innerHTML = 'Cambiar a Recorrido ';
+              proximoText.style.backgroundColor= 'rgb(77,26,80)';
+              proximo.appendChild(proximoText);
+              
+              var proximo1 = document.createElement('input');
+              proximo1.style.placeholder='Escriba aqui el recorrido';
+              proximo1.style.width='95%';
+              proximo1.style.height='50px';
+              proximo1.style.fontSize = '20px';
+              proximo1.style.backgroundColor = '#fff';
+              proximo1.style.border = '0px solid #fff';
+              proximo1.style.borderRadius = '3px';
+              proximo1.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+              proximo1.style.cursor = 'pointer';
+              proximo1.style.marginBottom = '22px';
+              proximo1.style.textAlign = 'center';
+              proximo1.title = '';
+              infowincontent.appendChild(proximo1);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var botonera=document.createElement('div');
+              infowincontent.style.right='0';
+                if(Color==''){
+                Color='ECF0F1';  
+                }
+              
+                function pinSymbol(color) {
+                  return {
+  //              path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z M -2,-30 a 2,2 0 1,1 4,0 2,2 0 1,1 -4,0',
+                  path: 'M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z',
+//                   path: 'M0-48c-9.8 0-17.7 7.8-17.7 17.4 0 15.5 17.7 30.6 17.7 30.6s17.7-15.4 17.7-30.6c0-9.6-7.9-17.4-17.7-17.4z',
+                  fillColor: '#'+color,
+                  fillOpacity: 1,
+                  strokeColor: '#000',
+                  strokeWeight: 1,
+                  scale: 1,
+                  };
+                }
+                var animacion=google.maps.Animation.DROP;
+                var iconBase= pinSymbol(Color);
+              //DECLARO EL ARRAY QUE VA A CONTENER LOS MARCADORES
+              var markers = [];
+              var marker = new google.maps.Marker({
+                map: map,
+                position: point,
+                icon: iconBase,
+                labelOrigin: new google.maps.Point(18, 15),
+
+                label: {
+                color: 'gray',
+                fontWeight: 'bold',
+                text:Recorrido,
+                },
+                animation:animacion,
+              });
+                markers.push(marker);
+
+              proximo.addEventListener('click', function() {
+              var colornew=proximo1.value;
+              var dato={
+              "Reconew": colornew,  
+              "CodigoSeguimiento": CodigoSeguimiento,
+              };
+              $.ajax({
+              data:dato,
+              url: 'Proceso/cambiarecorrido.php',
+              type: 'post',
+              success: function(response)
+              {
+              var jsonData = JSON.parse(response);
+              if (jsonData.resultado == "1")
+              {
+                  for(var i=0; i< markers.length; i++){
+                  markers[i].icon=pinSymbol(jsonData.Colornew);  
+                  markers[i].setMap(null);
+                  markers[i].setMap(map);
+                  markers[i].setAnimation(google.maps.Animation.DROP);
+                  markers[i].label={
+                  color: 'gray',
+                  fontWeight: 'bold',
+                  text:jsonData.NombreRec
+                  };
+                  }
+                infoWindow.close();  
+              }else{
+              alert('Invalid Credentials!');
+              }
+             }
+            });  
+           });
+
+              marker.addListener('click', function() {
+                infoWindow.setContent(infowincontent);
+                infoWindow.open(map, marker);
+              });
+            });
+          });
+        }
+
+      function downloadUrl(url, callback) {
+        var request = window.ActiveXObject ?
+            new ActiveXObject('Microsoft.XMLHTTP') :
+            new XMLHttpRequest;
+
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            request.onreadystatechange = doNothing;
+            callback(request, request.status);
+          }
+        };
+
+        request.open('GET', url, true);
+        request.send(null);
+      }
+
+      function doNothing() {}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&callback=initMap">
+    </script>
+  </body>
+</html>  
