@@ -69,7 +69,7 @@ if ($rec->num_rows != 0) {
 
     // Log ingreso
     $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
-
+    echo $_SESSION['Perfil'];
     // Perfil
     //     switch ($_SESSION['Nivel']) {
     //         case 1:
