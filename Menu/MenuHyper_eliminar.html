@@ -1,0 +1,392 @@
+<ul class="navbar-nav">
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-dashboards"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-home mr-1"></i>Home
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-dashboards">
+      <a href="../Inicio/Cpanel.php" class="dropdown-item">Panel 1</a>
+      <a href="Cpanel2.php" class="dropdown-item">Panel 2</a>
+      <a
+        id="home_cpaneladmin"
+        style="display: none"
+        href="CpanelAdmin.php"
+        class="dropdown-item"
+        >Panel Admin</a
+      >
+      <a href="Vencimientos.php" class="dropdown-item">Vencimientos</a>
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-apps"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-screw mr-1"></i>Servicios
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-apps">
+      <!-- <a href="../Servicios/Servicios?Nuevo=Alta" class="dropdown-item">Alta Servicios</a> -->
+      <a href="/SistemaTriangular/Servicios/Servicios.php" class="dropdown-item"
+        >Servicios</a
+      >
+      <!-- <a href="https://www.caddy.com.ar/SistemaTriangular/Servicios/Seguimiento.php?Producto=Modificar" class="dropdown-item">Seguimiento</a>   -->
+      <a href="/SistemaTriangular/Servicios/guias.php" class="dropdown-item"
+        >Seguimiento</a
+      >
+      <a
+        href="/SistemaTriangular/Servicios/Pendientes.php"
+        class="dropdown-item"
+        >Pendientes</a
+      >
+      <!-- <a href="/SistemaTriangular/Servicios/Redespachos" class="dropdown-item">Redespachos</a>   -->
+      <a href="/SistemaTriangular/Servicios/Campaign.php" class="dropdown-item"
+        >Campañas</a
+      >
+      <a href="/SistemaTriangular/Servicios/Sla.php" class="dropdown-item"
+        >Sla</a
+      >
+      <a href="/SistemaTriangular/Servicios/Dashboard.php" class="dropdown-item"
+        >Dashboard Servicios</a
+      >
+
+      <div class="dropdown"></div>
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-pages"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-user-exclamation mr-1"></i>Clientes
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-pages">
+      <a href="/SistemaTriangular/Clientes/Clientes.php" class="dropdown-item"
+        >Consulta Clientes</a
+      >
+      <a
+        href="/SistemaTriangular/Clientes/Clientes_saldos.php"
+        class="dropdown-item"
+        >Consulta Saldos</a
+      >
+      <!-- <a href="/SistemaTriangular/Importar/index.php" class="dropdown-item disabled" aria-disabled="true" style="color:red">Importar Clientes</a> -->
+      <!-- <a href="/SistemaTriangular/Importar/index2.php" class="dropdown-item">Importar Beta <i class="mdi mdi-beta"></i></a>   -->
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-components"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-folder-lock mr-1"></i>Proveedores
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-components">
+      <a
+        href="/SistemaTriangular/Proveedores/Proveedores.php?id=Agregar"
+        class="dropdown-item"
+        >Alta Proveedores</a
+      >
+      <a
+        href="/SistemaTriangular/Proveedores/Proveedores.php"
+        class="dropdown-item"
+        >Consulta Proveedores</a
+      >
+      <!-- <a href="/SistemaTriangular/Proveedores/Compras.php?Cargar=Si" class="dropdown-item disabled" style="color:red">Facturas Compras</a> -->
+      <a
+        href="/SistemaTriangular/Proveedores/Proveedores_saldos.php"
+        class="dropdown-item"
+        >Consulta Saldos</a
+      >
+      <a
+        href="/SistemaTriangular/Proveedores/OrdenDeCompra.php"
+        class="dropdown-item"
+        >Orden de Compra</a
+      >
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-components"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-usd-circle mr-1"></i>Ventas
+      <div class="arrow-down">
+        <span
+          id="total_menu_integraciones"
+          class="badge badge-warning float-right ml-2"
+        ></span>
+      </div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-components">
+      <a href="/SistemaTriangular/Ventas/Ventas_e" class="dropdown-item"
+        >Venta Simple</a
+      >
+      <a
+        href="/SistemaTriangular/Ventas/VentaMasiva.php?start=clean"
+        class="dropdown-item disabled"
+        style="color: red"
+        >Venta Masiva</a
+      >
+      <a href="/SistemaTriangular/Ventas/Pendientes.php" class="dropdown-item"
+        >Ventas Pendientes</a
+      >
+      <a
+        href="/SistemaTriangular/Ventas/Calculador.php"
+        class="dropdown-item disabled"
+        style="color: red"
+        >Calculador</a
+      >
+      <a
+        href="/SistemaTriangular/Importar/importar.php"
+        class="dropdown-item disabled"
+        style="color: red"
+        >Importar Ventas</a
+      >
+      <a href="/SistemaTriangular/Meli/envios" class="dropdown-item"
+        >Integraciones
+        <span
+          id="total_menu_integraciones_1"
+          class="badge badge-warning float-right ml-2"
+        ></span
+      ></a>
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-components"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-package mr-1"></i>Admin
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-components">
+      <!-- <a href="/SistemaTriangular/Admin/CargarFacturas.php" class="dropdown-item">Subir Archivos</a> -->
+      <a href="/SistemaTriangular/Admin/Bancos.php" class="dropdown-item"
+        >Bancos</a
+      >
+      <a href="/SistemaTriangular/Admin/Cobranzas.php" class="dropdown-item"
+        >Cobranza</a
+      >
+      <a
+        href="/SistemaTriangular/Admin/Cobranza_integrada"
+        class="dropdown-item"
+        >Cobranza Integrada</a
+      >
+      <a href="/SistemaTriangular/Admin/Contabilidad.php" class="dropdown-item"
+        >Contabilidad</a
+      >
+      <a
+        href="/SistemaTriangular/Admin/Sales_control"
+        class="dropdown-item text-primary"
+        >Control Facturación</a
+      >
+      <a href="/SistemaTriangular/Admin/Caja" class="dropdown-item">Caja</a>
+      <a
+        href="/SistemaTriangular/Admin/Cheques.php"
+        class="dropdown-item disabled text-danger"
+        >Cheques</a
+      >
+      <a href="/SistemaTriangular/Admin/LibrosIva.php" class="dropdown-item"
+        >Libros Iva</a
+      >
+      <a href="/SistemaTriangular/Admin/PlanDeCuentas.php" class="dropdown-item"
+        >Plan de Cuentas</a
+      >
+      <a
+        href="/SistemaTriangular/Admin/Resultados.php"
+        class="dropdown-item disabled text-danger"
+        >Resultados</a
+      >
+      <a href="/SistemaTriangular/Admin/Multas.php" class="dropdown-item"
+        >Multas</a
+      >
+
+      <a
+        href="/SistemaTriangular/Estadisticas/ControlFacturacion.php"
+        class="dropdown-item"
+        >Ventas a Facturar</a
+      >
+      <a href="/SistemaTriangular/Admin/Facturacion" class="dropdown-item"
+        >Control Mensual</a
+      >
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-components"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-users-alt mr-1"></i>Rec. Humanos
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-components">
+      <a href="/SistemaTriangular/Empleados/Empleados.php" class="dropdown-item"
+        >Empleados</a
+      >
+      <a href="/SistemaTriangular/Externos/externos" class="dropdown-item"
+        >Externos</a
+      >
+      <a href="/SistemaTriangular/Empleados/Usuarios.php" class="dropdown-item"
+        >Usuarios</a
+      >
+      <a href="/SistemaTriangular/Empleados/Tareas.php" class="dropdown-item"
+        >Tareas</a
+      >
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-components"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-truck mr-1"></i>Logistica
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-components">
+      <!-- <a
+        href="/SistemaTriangular/Logistica/Logistica.php?id=Alta"
+        class="dropdown-item"
+        >Alta Orden Salida</a
+      > -->
+      <!-- <a
+        href="/SistemaTriangular/Logistica/Logistica.php?id=Agregar"
+        class="dropdown-item disabled text-danger"
+        >Cargar Orden Generada</a
+      > -->
+      <!-- <a
+        href="/SistemaTriangular/Logistica/Logistica.php?id=Cerrar"
+        class="dropdown-item disabled text-danger"
+        >Cerrar Orden Generada</a
+      > -->
+      <a href="/SistemaTriangular/Logistica/Ordenes" class="dropdown-item"
+        >Ordenes de Salida</a
+      >
+      <!-- <a
+        href="/SistemaTriangular/Logistica/HojaDeRuta.php"
+        class="dropdown-item disabled text-danger"
+        >Hoja de Ruta</a
+      > -->
+      <a
+        href="/SistemaTriangular/Logistica/HojaDeRuta2.php"
+        class="dropdown-item"
+        >Hoja de Ruta</a
+      >
+      <a
+        href="/SistemaTriangular/Logistica/Localidades.php"
+        class="dropdown-item disabled text-danger"
+        >Localidades</a
+      >
+      <a
+        href="/SistemaTriangular/Logistica/Recorridos.php?id=Ver"
+        class="dropdown-item"
+        >Recorridos</a
+      >
+      <a
+        href="/SistemaTriangular/Logistica/ControlRecorridos"
+        class="dropdown-item disabled text-danger"
+        >Control Recorridos</a
+      >
+      <a href="/SistemaTriangular/Logistica/Vehiculos.php" class="dropdown-item"
+        >Flota</a
+      >
+      <a
+        href="/SistemaTriangular/Logistica/calendario.php"
+        class="dropdown-item disabled text-danger"
+        >Calendario</a
+      >
+      <a
+        href="/SistemaTriangular/Logistica/Zonas.php"
+        class="dropdown-item disabled text-danger"
+        >Zonas</a
+      >
+    </div>
+  </li>
+  <li class="nav-item dropdown">
+    <a
+      class="nav-link dropdown-toggle arrow-none"
+      href="#"
+      id="topnav-components"
+      role="button"
+      data-toggle="dropdown"
+      aria-haspopup="true"
+      aria-expanded="false"
+    >
+      <i class="uil-package mr-1"></i>Datos
+      <div class="arrow-down"></div>
+    </a>
+    <div class="dropdown-menu" aria-labelledby="topnav-components">
+      <a
+        href="/SistemaTriangular/Datos/Ayuda.php"
+        class="dropdown-item disabled text-danger"
+        >Ayuda</a
+      >
+      <a
+        href="/SistemaTriangular/Asignaciones/Asignaciones.php"
+        class="dropdown-item disabled text-danger"
+        >Asignaciones</a
+      >
+      <a
+        href="/SistemaTriangular/Datos/Combustible.php"
+        class="dropdown-item disabled text-danger"
+        >Combustible</a
+      >
+      <a
+        href="/SistemaTriangular/Datos/Kilometros.php"
+        class="dropdown-item disabled text-danger"
+        >Kilometros</a
+      >
+      <a
+        href="/SistemaTriangular/Datos/webhook_server"
+        class="dropdown-item disabled text-danger"
+        >Notificaciones Webhook</a
+      >
+    </div>
+  </li>
+</ul>
+<!-- <script src="https://code.jquery.com/jquery-3.3.1.js"></script> -->
+<!-- <script src="https://www.caddy.com.ar/SistemaTriangular/Menu/js/menu_integraciones.js"></script> -->
