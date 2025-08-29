@@ -1,5 +1,21 @@
 <?php
-session_start();
+// ===== Sesión unificada (no re-abrir si ya está activa) =====
+$isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
+$cookieDomain = $isLocal ? '' : 'sistema.caddy.com.ar';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name('CADDYSESS');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'domain'   => $cookieDomain ?: null,
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    session_start();
+}
+// NUNCA echo/print/var_dump aquí. Nada de espacios antes/después.
 
 class Conexion
 {

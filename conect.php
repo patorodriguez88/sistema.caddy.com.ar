@@ -1,9 +1,22 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 
-if (session_status() === PHP_SESSION_NONE) {
+// if (session_status() === PHP_SESSION_NONE) {
+//     session_start();
+// }
+// === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
+$isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
+$cookieDomain = $isLocal ? '' : 'sistema.caddy.com.ar';
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_name('CADDYSESS');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path'     => '/',
+        'domain'   => $cookieDomain ?: null,
+        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 date_default_timezone_set('America/Argentina/Buenos_Aires');
