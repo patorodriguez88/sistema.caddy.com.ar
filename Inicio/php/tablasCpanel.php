@@ -31,6 +31,10 @@ header('Content-Type: application/json; charset=utf-8');
 // Guardrail de sesión (si Conexioni.php ya corta con 401, esto no se ejecuta,
 // pero si algún día lo cambiás, este check te salva el endpoint)
 // Aceptar sesión válida si existe cualquiera de estas claves
+echo $_SESSION['Usuario'] ?? '';
+echo $_SESSION['idusuario'] ?? '';
+echo $_SESSION['NCliente'] ?? '';
+
 if (empty($_SESSION['Usuario']) && empty($_SESSION['idusuario']) && empty($_SESSION['NCliente'])) {
   header('X-Session-Expired: 1');
   http_response_code(401);
