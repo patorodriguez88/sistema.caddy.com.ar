@@ -24,7 +24,13 @@ function es_ajax(): bool
     return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
         strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
-
+// ¿La sesión está autenticada?
+function tieneSesion(): bool
+{
+    return !empty($_SESSION['Usuario'])
+        || !empty($_SESSION['idusuario'])
+        || !empty($_SESSION['NCliente']);
+}
 // ============================================================
 // Clase de conexión
 // ============================================================
@@ -164,7 +170,8 @@ if (!in_array($archivoActual, $excepciones, true)) {
     }
 
     // Sin login
-    if (empty($_SESSION['Usuario'])) {
+    // Sin login (acepta varias claves de sesión)
+    if (!tieneSesion()) {
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
@@ -173,10 +180,10 @@ if (!in_array($archivoActual, $excepciones, true)) {
             header('Content-Type: application/json; charset=utf-8');
             header('X-Session-Expired: 1');
             http_response_code(401);
-            echo json_encode(['ok' => false, 'error_conexioni' => 'NO_AUTH']);
+            echo json_encode(['ok' => false, 'error' => 'NO_AUTH']);
             exit;
         }
-        // header('Location: /SistemaTriangular/inicio.php');
+        header('Location: /SistemaTriangular/inicio.php');
         exit;
     }
 
