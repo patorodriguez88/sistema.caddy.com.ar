@@ -1,0 +1,75 @@
+  <link href="css/style.css" rel="stylesheet" type="text/css" />
+    <input type="checkbox" id="abrir-cerrar" name="abrir-cerrar" value="">
+<style>
+.circulo{
+      width: 35px;
+      height: 1px;
+      -moz-border-radius: 100%;
+      -webkit-border-radius: 100%;
+      border-radius: 0%;
+      position:fixed;
+/*       margin-top:80px; */
+      z-index: 1000;
+      background: #4D1A50;
+      opacity:0.85;
+      filter: alpha(opacity=85);
+      display:flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      margin:0px auto;
+      padding:1%;
+      float:right;
+      right:30px;
+      top:10px;
+
+}
+.circulo > h2{
+	font-family: sans-serif;
+	color: white;
+	font-size: 0.9rem;
+	font-weight: bold;
+}
+
+</style>
+
+<?php
+$sql=mysql_query("SELECT nombrecliente FROM Clientes WHERE id='$_SESSION[NCliente]'");
+$NombreCliente=mysql_fetch_array($sql);
+$sqlk=mysql_query("SELECT SUM(Kilometros)as Km FROM TransClientes WHERE RazonSocial='$NombreCliente[nombrecliente]'");
+$Kilometros=mysql_fetch_array($sqlk);
+
+?>
+<!-- <div id='circulo' class='circulo' > -->
+<!-- <h2>5</h2> 
+</div>
+ -->
+<label for="abrir-cerrar">&#9776; 
+<span class="abrir">Menu</span>
+<span class="cerrar">Cerrar</span>
+<span style='margin-right:120px;float:right;'><? echo "Usuario: ".$_SESSION[Usuario]." | 
+Cliente: ".$NombreCliente['nombrecliente']."   |   Mis Km.: " ;?><div id='circulo' class='circulo' ><h2><? echo $Kilometros[Km];?>km.</h2></div></span></label>
+ 
+    <div id="sidebar" class="sidebar">
+      <ul class="menu">
+            <li><a href="Calculador.php"><img src='images/icons/cargar_envios.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Cargar Envios</a></li>
+<!--             <hr/> -->
+            <li><a  href="Pendientes.php"><img src='images/icons/envios_pendientes.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Envios Pendientes</a></li> 
+<!--             <hr/> -->
+            <li><a  href="Seguimiento.php"><img src='images/icons/envios_entregados.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Envios Entregados</a></li> 
+<!--             <hr/> -->
+            <li><a  href="MisDatos.php"><img src='images/icons/mis_datos.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Mis Datos</a></li> 
+<!--             <hr/> -->
+            <li><a  href="MisClientes.php"><img src='images/icons/mis_clientes.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Mis Clientes</a></li> 
+<!--             <hr/> -->
+            <li><a href="grafico.php"><img src='images/icons/mis_estadisticas.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Mis Estadisticas</a></li>
+<!--             <hr/> -->
+            <li><a  href="MiCuenta.php"><img src='images/icons/mi_cuenta.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Mi Cuenta</a></li> 
+<!--             <hr/> -->
+            <li><a href="https://www.caddy.com.ar"><img src='images/icons/salir.png' width='60' height='60' border='0' style="vertical-align:middle;margin-right:10px">Salir</a></li>
+<!--             <hr/> -->
+
+      </ul>
+      </div>
+<!-- 	background: #FFFFFF; -->
+<!-- #9776; -->
