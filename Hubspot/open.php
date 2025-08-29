@@ -1,6 +1,6 @@
 <?php
 
-$accessToken = 'pat-na1-af0e5daa-91f3-4bb8-a303-ff3f4bb2a256'; // 🔁 Reemplazá con tu token
+// $accessToken = 'pat-na1-af0e5daa-91f3-4bb8-a303-ff3f4bb2a256'; // 🔁 Reemplazá con tu token
 
 $portalId = '23486798'; // Por si querés armar links después
 $vendedor = '76302506';
