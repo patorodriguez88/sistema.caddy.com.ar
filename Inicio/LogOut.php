@@ -1,0 +1,15 @@
+<?php
+session_start();
+         unset($_SESSION['NumeroRepo']);
+				 unset($_SESSION['seluser']);
+				 unset($_SESSION['NCliente']);
+				 unset($_SESSION['Nivel']);
+				 unset($_SESSION['idusuario']);
+				 unset($_SESSION['Direccion']);
+				 unset($_SESSION['NombreUsuario']);
+				 unset($_SESSION['Ciudad']);
+				 unset($_SESSION['Localidad']);
+				 unset($_SESSION['Distribuidora']);
+			   unset($_SESSION['Recorrido']);	 
+  			 header("location:http://www.sistemacaddy.com.ar/SistemaTriangular/inicio.php");
+?>
