@@ -1,9 +1,4 @@
 <?php
-// --- DEBUG: dejar solo temporalmente ---
-error_log('DBG host=' . ($_SERVER['HTTP_HOST'] ?? ''));
-error_log('DBG session_name=' . session_name() . ' id=' . session_id());
-error_log('DBG cookies=' . print_r($_COOKIE, true));
-error_log('DBG _SESSION=' . print_r($_SESSION, true));
 // === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
 $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
 $cookieDomain = $isLocal ? '' : '.caddy.com.ar';
@@ -19,6 +14,12 @@ if (session_status() === PHP_SESSION_NONE) {
     'samesite' => 'Lax',
   ]);
   session_start();
+
+  // --- DEBUG: dejar solo temporalmente ---
+  error_log('DBG host=' . ($_SERVER['HTTP_HOST'] ?? ''));
+  error_log('DBG session_name=' . session_name() . ' id=' . session_id());
+  error_log('DBG cookies=' . print_r($_COOKIE, true));
+  error_log('DBG _SESSION=' . print_r($_SESSION, true));
 }
 
 // Incluí la conexión (no debe emitir salida)
@@ -29,7 +30,8 @@ header('Content-Type: application/json; charset=utf-8');
 
 // Guardrail de sesión (si Conexioni.php ya corta con 401, esto no se ejecuta,
 // pero si algún día lo cambiás, este check te salva el endpoint)
-if (empty($_SESSION['Usuario'])) {
+// Aceptar sesión válida si existe cualquiera de estas claves
+if (empty($_SESSION['Usuario']) && empty($_SESSION['idusuario']) && empty($_SESSION['NCliente'])) {
   header('X-Session-Expired: 1');
   http_response_code(401);
   echo json_encode(['ok' => false, 'error' => 'NO_AUTH']);
