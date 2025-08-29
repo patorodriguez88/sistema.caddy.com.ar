@@ -1,4 +1,6 @@
 <?php
+error_reporting(-1);
+ini_set('display_errors', '1');
 // === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
 $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
 $cookieDomain = $isLocal ? '' : '.caddy.com.ar';
