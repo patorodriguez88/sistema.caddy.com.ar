@@ -21,12 +21,22 @@ function es_ajax(): bool
     return !empty($_SERVER['HTTP_X_REQUESTED_WITH']) &&
         strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
 }
+// --- DEBUG: activar para ver qué claves de sesión llegan (quitar luego) ---
+if (!defined('CADDY_DEBUG')) {
+    define('CADDY_DEBUG', true);
+}
 function tieneSesion(): bool
 {
     return !empty($_SESSION['Usuario'])
+        || !empty($_SESSION['usuario'])
+        || !empty($_SESSION['user'])
         || !empty($_SESSION['idusuario'])
+        || !empty($_SESSION['idUsuario'])
         || !empty($_SESSION['NCliente'])
-        || !empty($_SESSION['NombreClienteA']);
+        || !empty($_SESSION['NombreClienteA'])
+        || !empty($_SESSION['Nombre'])
+        || !empty($_SESSION['Email'])
+        || !empty($_SESSION['Rol']);
 }
 // NUNCA echo/print/var_dump aquí. Nada de espacios antes/después.
 
@@ -166,6 +176,23 @@ if (!in_array($archivoActual, $excepciones)) {
 
     // Sin sesión válida (acepta varias llaves de sesión)
     if (!tieneSesion()) {
+        // --- DEBUG: mostrar claves de sesión si está habilitado ---
+        if (es_ajax() && defined('CADDY_DEBUG') && CADDY_DEBUG) {
+            header('Content-Type: application/json; charset=utf-8');
+            header('X-Session-Expired: 1');
+            http_response_code(401);
+            echo json_encode([
+                'ok'    => false,
+                'error' => 'NO_AUTH',
+                'dbg'   => [
+                    'session_name' => session_name(),
+                    'session_id'   => session_id(),
+                    'cookie_sent'  => isset($_COOKIE[session_name()]),
+                    'keys'         => array_keys($_SESSION),
+                ]
+            ]);
+            exit;
+        }
         $_SESSION = [];
         if (session_status() === PHP_SESSION_ACTIVE) {
             session_regenerate_id(true);
