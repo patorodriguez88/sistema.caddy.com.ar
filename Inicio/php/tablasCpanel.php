@@ -2,7 +2,7 @@
 // === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
 $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
 $cookieDomain = $isLocal ? '' : '.caddy.com.ar';
-
+session_start();
 if (session_status() === PHP_SESSION_NONE) {
   session_name('CADDYSESS');
   session_set_cookie_params([
