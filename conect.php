@@ -23,28 +23,28 @@ if (isset($_SESSION['seluser'])) {
     $seluser = $_SESSION['seluser'];
 }
 
-// // Valida si 'user' y 'password' están en POST antes de acceder a ellos
-// if (isset($_POST['user']) && isset($_POST['password'])) {
+// Valida si 'user' y 'password' están en POST antes de acceder a ellos
+if (isset($_POST['user']) && isset($_POST['password'])) {
 
-//     require_once "Conexion/Conexioni.php";
-//     $miConexion = new Conexion();
-//     $mysqli = $miConexion->obtenerConexion();
+    require_once "Conexion/Conexioni.php";
+    $miConexion = new Conexion();
+    $mysqli = $miConexion->obtenerConexion();
 
-//     $user = $mysqli->real_escape_string($_POST['user']);
-//     $password = $mysqli->real_escape_string($_POST['password']);
+    $user = $mysqli->real_escape_string($_POST['user']);
+    $password = $mysqli->real_escape_string($_POST['password']);
 
-//     $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND PASSWORD = '$password' AND Activo='1'";
+    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND PASSWORD = '$password' AND Activo='1'";
 
-//     $rec = $mysqli->query($sql);
+    $rec = $mysqli->query($sql);
 
-//     if (!$rec) {
-//         die("Error en la consulta: " . $mysqli->error);
-//     }
-// } else {
-//     // Maneja el caso cuando los datos no están en POST
-//     echo "Error: El usuario o la contraseña no están definidos.";
-//     exit(); // Detén la ejecución si los valores no existen
-// }
+    if (!$rec) {
+        die("Error en la consulta: " . $mysqli->error);
+    }
+} else {
+    // Maneja el caso cuando los datos no están en POST
+    echo "Error: El usuario o la contraseña no están definidos.";
+    exit(); // Detén la ejecución si los valores no existen
+}
 
 // if ($rec->num_rows != 0) {
 //     $fila = $rec->fetch_assoc();
