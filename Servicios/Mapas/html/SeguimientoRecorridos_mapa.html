@@ -1,0 +1,168 @@
+<!DOCTYPE html >
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+    <style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 85%;
+        width: 52%;
+        border: #000000 solid 0px;
+        margin-top: 0px;
+        right:0px;
+        position:absolute;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <script>
+        function initMap() {
+          var map = new google.maps.Map(document.getElementById('map'), {
+          center: new google.maps.LatLng(-31.4448988, -64.177743),
+          zoom: 10
+        });
+ 
+        var infoWindow = new google.maps.InfoWindow;
+        var infoWindowv = new google.maps.InfoWindow;
+  
+          // Change this depending on the name of your PHP or XML file
+          downloadUrl('Mapas/php/SeguimientoRecorridos_mapa.php', function(data) {
+            var xml = data.responseXML;
+            var markers = xml.documentElement.getElementsByTagName('marker');
+            var i=0;
+            Array.prototype.forEach.call(markers, function(markerElem) {
+//               var idhdr = markerElem.getAttribute('idhdr');
+              var name = markerElem.getAttribute('name');
+              var posicion = markerElem.getAttribute('posicion');
+              var address = markerElem.getAttribute('address');
+              var type = markerElem.getAttribute('type');
+              var ncliente = markerElem.getAttribute('ncliente');
+              var clienteorigen = markerElem.getAttribute('clienteorigen');
+              var clientedestino = markerElem.getAttribute('clientedestino');
+              var repe=markerElem.getAttribute('resultado');
+              var retiro=markerElem.getAttribute('retiro');
+
+              var dominio= markerElem.getAttribute('dominio');
+              var color= markerElem.getAttribute('color');
+              var type = markerElem.getAttribute('type');
+              var latv=parseFloat(markerElem.getAttribute('latv'));
+              var lngv=parseFloat(markerElem.getAttribute('lngv'));
+              var lat=parseFloat(markerElem.getAttribute('lat'));
+              var lng=parseFloat(markerElem.getAttribute('lng'));
+              var estado=markerElem.getAttribute('estado');
+              //MUESTRO LAS COORDENADAS DE LA CAMIONETA
+              var infowincontentv = document.createElement('div');
+
+              var Dominio = document.createElement('strong');
+              Dominio.textContent = 'Dominio: '+ dominio
+              infowincontentv.appendChild(Dominio);
+              infowincontentv.appendChild(document.createElement('br'));
+
+              var uluru = new google.maps.LatLng(
+                  latv,
+                  lngv);
+              if(i==0){
+              var markerv = new google.maps.Marker({
+              position: uluru, 
+              map: map,
+              icon: '../images/favicon/truck.png',
+              animation: google.maps.Animation.BOUNCE
+              });
+              markerv.addListener('click', function() {
+              infoWindowv.setContent(infowincontentv);
+              infoWindowv.open(map, markerv);
+              });
+
+              }
+              var infowincontent = document.createElement('div');
+
+              var Posicion = document.createElement('strong');
+              Posicion.textContent = 'Orden: '+ posicion
+              infowincontent.appendChild(Posicion);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var clienteOrigen = document.createElement('strong');
+              clienteOrigen.textContent = 'Origen: '+ clienteorigen
+              infowincontent.appendChild(clienteOrigen);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var clienteDestino = document.createElement('strong');
+              clienteDestino.textContent = 'Destino: '+ clientedestino +'(id:'+ ncliente + ')' 
+              infowincontent.appendChild(clienteDestino);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var Repe = document.createElement('strong');
+              Repe.textContent = 'Total: '+ repe
+              infowincontent.appendChild(Repe);
+              infowincontent.appendChild(document.createElement('br'));
+              
+              var text = document.createElement('text');
+              text.textContent = 'Direccion: '+address
+              infowincontent.appendChild(text);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Estado = document.createElement('Estado');
+              Estado.textContent = 'Estado: '+estado
+              infowincontent.appendChild(Estado);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var point = new google.maps.LatLng(
+                  lat,
+                  lng);
+              var Dominio = document.createElement('Dominio');
+              Dominio.textContent =  dominio 
+              infowincontent.appendChild(Dominio);
+              infowincontent.appendChild(document.createElement('br'));
+                  if(estado=='Entregado al Cliente'){
+                  var iconBase= '../images/favicon/iconverde.png';
+                  }else if(estado=='No se pudo Entregar'){
+                  var iconBase= '../images/favicon/iconcaddy.png';
+                  }else{  
+                  var iconBase= '../images/favicon/iconamarillo.png';
+                  }  
+              var animation=google.maps.Animation.DROP;  
+              var icon = type;
+              var marker = new google.maps.Marker({
+                map: map,
+                position: point,
+                label: icon.label,
+                icon: iconBase,
+                animation: animation,
+              });
+              marker.addListener('click', function() {
+                infoWindow.setContent(infowincontent);
+                infoWindow.open(map, marker);
+              });
+
+              i++;
+            });
+          });
+          
+        }
+      function downloadUrl(url, callback) {
+        var request = window.ActiveXObject ?
+            new ActiveXObject('Microsoft.XMLHTTP') :
+            new XMLHttpRequest;
+
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            request.onreadystatechange = doNothing;
+            callback(request, request.status);
+          }
+        };
+
+        request.open('GET', url, true);
+        request.send(null);
+      }
+      
+      
+      function doNothing() {}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=initMap">
+    </script>
+  </body>
+</html>  
