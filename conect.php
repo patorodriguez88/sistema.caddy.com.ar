@@ -5,7 +5,7 @@
 // }
 // === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
 $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
-$cookieDomain = $isLocal ? '' : 'sistema.caddy.com.ar';
+$cookieDomain = $isLocal ? '' : '.caddy.com.ar'; // unificar dominio de cookie para todos los subdominios
 
 if (session_status() !== PHP_SESSION_ACTIVE) {
     session_name('CADDYSESS');
@@ -38,6 +38,10 @@ if (isset($_SESSION['seluser'])) {
 
 // Valida si 'user' y 'password' están en POST antes de acceder a ellos
 if (isset($_POST['user']) && isset($_POST['password'])) {
+
+    if (!defined('CADDY_BOOTSTRAP_ONLY')) {
+        define('CADDY_BOOTSTRAP_ONLY', true);
+    }
 
     require_once "Conexion/Conexioni.php";
     $miConexion = new Conexion();
