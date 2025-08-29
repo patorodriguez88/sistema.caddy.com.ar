@@ -1,3 +1,37 @@
+// --- Helpers de sesión / manejo de 401 ---
+function redirectIf401(xhr) {
+  if (xhr && xhr.status === 401) {
+    window.location.href = "/SistemaTriangular/inicio.php?expired=1";
+    return true;
+  }
+  return false;
+}
+
+function dtAjaxCommon() {
+  return {
+    type: "post",
+    dataSrc: function (json) {
+      try {
+        if (json && json.ok === false && json.error === "NO_AUTH") {
+          window.location.href = "/SistemaTriangular/inicio.php?expired=1";
+          return [];
+        }
+        return (json && json.data) ? json.data : [];
+      } catch (e) {
+        console.error("DataTables dataSrc parse error", e, json);
+        return [];
+      }
+    },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
+  };
+}
+
+// Log rápido para verificar cookie en este host
+try { console.debug("CADDY cookie presente:", document.cookie.includes("CADDYSESS=")); } catch (e) {}
+
 window.setInterval(function () {
   updateStats();
 }, 2000);
@@ -9,11 +43,10 @@ $(document).ready(function () {
   var datatableTransporte = $("#transporte").DataTable({
     paging: false,
     searching: false,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Transporte: 1 },
-      type: "post",
-    },
+      data: { Transporte: 1 }
+    }),
     columns: [
       {
         data: "Estado",
@@ -93,17 +126,20 @@ $(document).ready(function () {
         document.getElementById("preventa").style.display = "block";
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
 
   var datatablePreventa = $("#tabla_preventa").DataTable({
     paging: false,
     searching: false,
     //   scrollX: false,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { PreVenta: 1 },
-      type: "post",
-    },
+      data: { PreVenta: 1 }
+    }),
     columns: [
       { data: "RazonSocial" },
       { data: "DomicilioOrigen" },
@@ -125,11 +161,10 @@ $(document).ready(function () {
     paging: false,
     searching: false,
     scrollX: false,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Flota: 1 },
-      type: "post",
-    },
+      data: { Flota: 1 }
+    }),
     columns: [
       { data: "Marca" },
       { data: "Dominio" },
@@ -161,11 +196,10 @@ $(document).ready(function () {
   var datatableLogistica = $("#logistica").DataTable({
     paging: false,
     searching: false,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Logistica: 1 },
-      type: "post",
-    },
+      data: { Logistica: 1 }
+    }),
     columns: [
       {
         data: "ColorSistema",
@@ -234,11 +268,10 @@ $(document).ready(function () {
   var datatableLogistica1 = $("#logistica1").DataTable({
     paging: false,
     searching: false,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Logistica1: 1 },
-      type: "post",
-    },
+      data: { Logistica1: 1 }
+    }),
     columns: [
       {
         data: "Color",
@@ -355,6 +388,10 @@ $(document).ready(function () {
       } else {
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
   $.ajax({
     data: { OC: 1 },
@@ -371,6 +408,10 @@ $(document).ready(function () {
       } else {
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
 
   $.ajax({
@@ -406,6 +447,10 @@ $(document).ready(function () {
       } else {
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
 
   $.ajax({
@@ -443,6 +488,10 @@ $(document).ready(function () {
       } else {
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
 
   $.ajax({
@@ -491,6 +540,10 @@ $(document).ready(function () {
       } else {
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
   // echo json_encode(array('success'=> 1,'Licencias'=>$row[idLicencias],'Service'=>$row[idService],'Seguro'=>$row[idSeguro],'Itv'=>$row[idItv]));
 });
@@ -529,6 +582,10 @@ $("#deposito-modal").on("show.bs.modal", function (e) {
           );
         }
       },
+      error: function (xhr) {
+        if (redirectIf401(xhr)) return;
+        console.error("AJAX error", xhr.status, xhr.responseText);
+      }
     });
   });
 });
@@ -543,11 +600,10 @@ $("#pendientesmapa").on("show.bs.modal", function (e) {
     paging: false,
     searching: false,
     destroy: true,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { PendientesEnRecorrido: 1, Recorrido: id, Orden: rec },
-      type: "post",
-    },
+      data: { PendientesEnRecorrido: 1, Recorrido: id, Orden: rec }
+    }),
     columns: [
       { data: "Fecha" },
       { data: "Cliente" },
@@ -579,11 +635,10 @@ $("#bs-example-modal-lg").on("show.bs.modal", function (e) {
     paging: false,
     searching: false,
     destroy: true,
-    ajax: {
+    ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Pendientes: 1, id: id },
-      type: "post",
-    },
+      data: { Pendientes: 1, id: id }
+    }),
     columns: [
       {
         data: "Fecha",
@@ -735,6 +790,10 @@ function notas(i) {
         $("#notas_txt").val(jsonData.notas);
       }
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
 }
 
@@ -758,5 +817,9 @@ $("#notas-modal-ok").click(function () {
       }
       $("#notas-modal").modal("hide");
     },
+    error: function (xhr) {
+      if (redirectIf401(xhr)) return;
+      console.error("AJAX error", xhr.status, xhr.responseText);
+    }
   });
 });
