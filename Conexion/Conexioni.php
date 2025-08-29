@@ -81,7 +81,7 @@ class Conexion
                 echo json_encode(['ok' => false, 'error' => 'DB_CONNECT_ERROR']);
                 exit;
             }
-            header('Location: /SistemaTriangular/inicio.php');
+            // header('Location: /SistemaTriangular/inicio.php');
             exit;
         }
 
@@ -120,7 +120,7 @@ class Conexion
             echo json_encode(['ok' => false, 'error' => 'NO_CONFIG']);
             exit;
         }
-        header('Location: /SistemaTriangular/inicio.php');
+        // header('Location: /SistemaTriangular/inicio.php');
         exit;
     }
 
@@ -159,7 +159,7 @@ if (!in_array($archivoActual, $excepciones, true)) {
             echo json_encode(['ok' => false, 'error' => 'SESSION_EXPIRED']);
             exit;
         }
-        header('Location: /SistemaTriangular/inicio.php');
+        // header('Location: /SistemaTriangular/inicio.php');
         exit;
     }
 
@@ -176,7 +176,7 @@ if (!in_array($archivoActual, $excepciones, true)) {
             echo json_encode(['ok' => false, 'error' => 'NO_AUTH']);
             exit;
         }
-        header('Location: /SistemaTriangular/inicio.php');
+        // header('Location: /SistemaTriangular/inicio.php');
         exit;
     }
 
