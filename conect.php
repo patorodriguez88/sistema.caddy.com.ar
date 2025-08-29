@@ -45,7 +45,7 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
     echo "Error: El usuario o la contraseña no están definidos.";
     exit(); // Detén la ejecución si los valores no existen
 }
-
+echo 'num rows' . $rec->num_rows;
 // if ($rec->num_rows != 0) {
 //     $fila = $rec->fetch_assoc();
 
