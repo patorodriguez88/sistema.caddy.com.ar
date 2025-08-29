@@ -66,7 +66,8 @@ if ($rec->num_rows != 0) {
     $_SESSION['Usuario'] = $fila['Usuario'];
 
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
-
+    session_regenerate_id(true);
+    session_write_close(); // asegura que la sesión se persista antes del Location
     // Log ingreso
     // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 

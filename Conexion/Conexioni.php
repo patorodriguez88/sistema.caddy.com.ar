@@ -169,7 +169,6 @@ if (!in_array($archivoActual, $excepciones, true)) {
         exit;
     }
 
-    // Sin login
     // Sin login (acepta varias claves de sesión)
     if (!tieneSesion()) {
         $_SESSION = [];
@@ -180,7 +179,7 @@ if (!in_array($archivoActual, $excepciones, true)) {
             header('Content-Type: application/json; charset=utf-8');
             header('X-Session-Expired: 1');
             http_response_code(401);
-            echo json_encode(['ok' => false, 'error' => 'NO_AUTH']);
+            echo json_encode(['ok' => false, 'error_conexioni' => 'NO_AUTH']);
             exit;
         }
         header('Location: /SistemaTriangular/inicio.php');
