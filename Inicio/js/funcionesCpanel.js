@@ -1,7 +1,7 @@
 // --- Helpers de sesión / manejo de 401 ---
 function redirectIf401(xhr) {
   if (xhr && xhr.status === 401) {
-    window.location.href = "/SistemaTriangular/inicio.php?expired=1";
+    // window.location.href = "/SistemaTriangular/inicio.php?expired=1";
     return true;
   }
   return false;
@@ -13,10 +13,10 @@ function dtAjaxCommon() {
     dataSrc: function (json) {
       try {
         if (json && json.ok === false && json.error === "NO_AUTH") {
-          window.location.href = "/SistemaTriangular/inicio.php?expired=1";
+          // window.location.href = "/SistemaTriangular/inicio.php?expired=1";
           return [];
         }
-        return (json && json.data) ? json.data : [];
+        return json && json.data ? json.data : [];
       } catch (e) {
         console.error("DataTables dataSrc parse error", e, json);
         return [];
@@ -25,12 +25,17 @@ function dtAjaxCommon() {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   };
 }
 
 // Log rápido para verificar cookie en este host
-try { console.debug("CADDY cookie presente:", document.cookie.includes("CADDYSESS=")); } catch (e) {}
+try {
+  console.debug(
+    "CADDY cookie presente:",
+    document.cookie.includes("CADDYSESS=")
+  );
+} catch (e) {}
 
 window.setInterval(function () {
   updateStats();
@@ -45,7 +50,7 @@ $(document).ready(function () {
     searching: false,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Transporte: 1 }
+      data: { Transporte: 1 },
     }),
     columns: [
       {
@@ -129,7 +134,7 @@ $(document).ready(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
 
   var datatablePreventa = $("#tabla_preventa").DataTable({
@@ -138,7 +143,7 @@ $(document).ready(function () {
     //   scrollX: false,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { PreVenta: 1 }
+      data: { PreVenta: 1 },
     }),
     columns: [
       { data: "RazonSocial" },
@@ -163,7 +168,7 @@ $(document).ready(function () {
     scrollX: false,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Flota: 1 }
+      data: { Flota: 1 },
     }),
     columns: [
       { data: "Marca" },
@@ -198,7 +203,7 @@ $(document).ready(function () {
     searching: false,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Logistica: 1 }
+      data: { Logistica: 1 },
     }),
     columns: [
       {
@@ -270,7 +275,7 @@ $(document).ready(function () {
     searching: false,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Logistica1: 1 }
+      data: { Logistica1: 1 },
     }),
     columns: [
       {
@@ -391,7 +396,7 @@ $(document).ready(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
   $.ajax({
     data: { OC: 1 },
@@ -411,7 +416,7 @@ $(document).ready(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
 
   $.ajax({
@@ -450,7 +455,7 @@ $(document).ready(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
 
   $.ajax({
@@ -491,7 +496,7 @@ $(document).ready(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
 
   $.ajax({
@@ -543,7 +548,7 @@ $(document).ready(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
   // echo json_encode(array('success'=> 1,'Licencias'=>$row[idLicencias],'Service'=>$row[idService],'Seguro'=>$row[idSeguro],'Itv'=>$row[idItv]));
 });
@@ -585,7 +590,7 @@ $("#deposito-modal").on("show.bs.modal", function (e) {
       error: function (xhr) {
         if (redirectIf401(xhr)) return;
         console.error("AJAX error", xhr.status, xhr.responseText);
-      }
+      },
     });
   });
 });
@@ -602,7 +607,7 @@ $("#pendientesmapa").on("show.bs.modal", function (e) {
     destroy: true,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { PendientesEnRecorrido: 1, Recorrido: id, Orden: rec }
+      data: { PendientesEnRecorrido: 1, Recorrido: id, Orden: rec },
     }),
     columns: [
       { data: "Fecha" },
@@ -637,7 +642,7 @@ $("#bs-example-modal-lg").on("show.bs.modal", function (e) {
     destroy: true,
     ajax: Object.assign(dtAjaxCommon(), {
       url: "../Inicio/php/tablasCpanel.php",
-      data: { Pendientes: 1, id: id }
+      data: { Pendientes: 1, id: id },
     }),
     columns: [
       {
@@ -793,7 +798,7 @@ function notas(i) {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
 }
 
@@ -820,6 +825,6 @@ $("#notas-modal-ok").click(function () {
     error: function (xhr) {
       if (redirectIf401(xhr)) return;
       console.error("AJAX error", xhr.status, xhr.responseText);
-    }
+    },
   });
 });
