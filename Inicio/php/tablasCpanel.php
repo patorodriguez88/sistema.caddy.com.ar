@@ -1,6 +1,9 @@
 <?php
-error_reporting(-1);
-ini_set('display_errors', '1');
+// --- DEBUG: dejar solo temporalmente ---
+error_log('DBG host=' . ($_SERVER['HTTP_HOST'] ?? ''));
+error_log('DBG session_name=' . session_name() . ' id=' . session_id());
+error_log('DBG cookies=' . print_r($_COOKIE, true));
+error_log('DBG _SESSION=' . print_r($_SESSION, true));
 // === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
 $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
 $cookieDomain = $isLocal ? '' : '.caddy.com.ar';
