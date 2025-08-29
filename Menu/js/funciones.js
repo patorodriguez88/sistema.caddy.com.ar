@@ -1,12 +1,31 @@
 // $.fn.dataTable.ext.errMode = "none"; // 👈 evitar alertas por defecto
+// ✅ Manejo global de 401 con filtros y una sola alerta
+(function () {
+  let alertando = false;
 
-$(document).ajaxComplete(function (event, xhr, settings) {
-  const sessioExpirada = xhr.status;
-  console.log("sesionExpirada", sessioExpirada);
+  $(document).ajaxError(function (event, xhr, settings) {
+    if (xhr.status !== 401) return;
 
-  if (sessioExpirada == 401) {
-    // window.location.href = "/SistemaTriangular/inicio.php";
-    // exit();
+    // Solo para llamadas del MISMO origen (evita CORS/terceros)
+    const url = new URL(settings.url, location.href);
+    if (url.hostname !== location.hostname) return;
+
+    // Confirmar que realmente es sesión expirada (servidor manda header o JSON)
+    const xExpired = xhr.getResponseHeader("X-Session-Expired") === "1";
+    let payload;
+    try {
+      payload = xhr.responseJSON || JSON.parse(xhr.responseText);
+    } catch (_) {}
+
+    const esNoAuth =
+      payload &&
+      (payload.error === "NO_AUTH" || payload.error === "SESSION_EXPIRED");
+
+    if (!xExpired && !esNoAuth) return; // no es un 401 de sesión
+
+    if (alertando) return; // antirrebote si hay varias requests fallando a la vez
+    alertando = true;
+
     Swal.fire({
       title: "Sesión expirada",
       text: "Tu sesión ha caducado. Por favor, volvé a iniciar sesión.",
@@ -14,10 +33,27 @@ $(document).ajaxComplete(function (event, xhr, settings) {
       confirmButtonText: "Aceptar",
     }).then(() => {
       window.location.href = "/SistemaTriangular/inicio.php";
-      exit();
     });
-  }
-});
+  });
+})();
+// $(document).ajaxComplete(function (event, xhr, settings) {
+//   const sessioExpirada = xhr.status;
+//   console.log("sesionExpirada", sessioExpirada);
+
+//   if (sessioExpirada == 401) {
+//     // window.location.href = "/SistemaTriangular/inicio.php";
+//     // exit();
+//     Swal.fire({
+//       title: "Sesión expirada",
+//       text: "Tu sesión ha caducado. Por favor, volvé a iniciar sesión.",
+//       icon: "warning",
+//       confirmButtonText: "Aceptar",
+//     }).then(() => {
+//       window.location.href = "/SistemaTriangular/inicio.php";
+//       exit();
+//     });
+//   }
+// });
 // funcion para los botones de datatable
 $.extend(true, $.fn.dataTable.Buttons.defaults, {
   dom: {
