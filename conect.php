@@ -45,7 +45,7 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
     echo "Error: El usuario o la contraseña no están definidos.";
     exit(); // Detén la ejecución si los valores no existen
 }
-echo 'num rows' . $rec->num_rows;
+
 if ($rec->num_rows != 0) {
     $fila = $rec->fetch_assoc();
 
@@ -69,29 +69,29 @@ if ($rec->num_rows != 0) {
 
     // Log ingreso
     $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
-    echo $_SESSION['Perfil'];
+
     // Perfil
-    //     switch ($_SESSION['Nivel']) {
-    //         case 1:
-    //             $_SESSION['Perfil'] = "Administrador";
-    //             header("Location: Inicio/Cpanel.php");
-    //             exit;
-    //         case 2:
-    //             $_SESSION['Perfil'] = "Empleado";
-    //             header("location:Inicio/Cpanel.php");
-    //             exit;
-    //         case 3:
-    //             $_SESSION['Perfil'] = "Reparto";
-    //             header("location:smartphone/AdminSmartphone/SistemaTriangular/Cpanel.php");
-    //             exit;
-    //         case 4:
-    //             header("location:Plataforma/Bienvenidos.php");
-    //             exit;
-    //         case 6:
-    //             $_SESSION['Perfil'] = "Usuario Web";
-    //             header("location:Plataforma/Bienvenidos.php");
-    //             exit;
-    //     }
+    switch ($_SESSION['Nivel']) {
+        case 1:
+            $_SESSION['Perfil'] = "Administrador";
+            header("Location: Inicio/Cpanel.php");
+            exit;
+        case 2:
+            $_SESSION['Perfil'] = "Empleado";
+            header("location:Inicio/Cpanel.php");
+            exit;
+        case 3:
+            $_SESSION['Perfil'] = "Reparto";
+            header("location:smartphone/AdminSmartphone/SistemaTriangular/Cpanel.php");
+            exit;
+        case 4:
+            header("location:Plataforma/Bienvenidos.php");
+            exit;
+        case 6:
+            $_SESSION['Perfil'] = "Usuario Web";
+            header("location:Plataforma/Bienvenidos.php");
+            exit;
+    }
 } else {
 
     $web = $_POST['web'] ?? 'no';
@@ -105,8 +105,8 @@ if ($rec->num_rows != 0) {
         $cuentaerror = ($CEr + 1);
     }
     if ($web == 'si') {
-        // header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
+        header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
     } else {
-        // header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
+        header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
     }
 }
