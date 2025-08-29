@@ -46,67 +46,67 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
     exit(); // Detén la ejecución si los valores no existen
 }
 echo 'num rows' . $rec->num_rows;
-// if ($rec->num_rows != 0) {
-//     $fila = $rec->fetch_assoc();
+if ($rec->num_rows != 0) {
+    $fila = $rec->fetch_assoc();
 
-//     $_SESSION['userid'] = $fila['id'];
-//     $_SESSION['ingreso'] = $user;
-//     $_SESSION['tiempo'] = time();
+    $_SESSION['userid'] = $fila['id'];
+    $_SESSION['ingreso'] = $user;
+    $_SESSION['tiempo'] = time();
 
-//     $_SESSION['FechaPassword'] = $fila['FechaPassword'];
-//     $_SESSION['NCliente'] = $fila['NdeCliente'];
-//     $_SESSION['Nivel'] = $fila['NIVEL'];
-//     $_SESSION['idusuario'] = $fila['id'];
-//     $_SESSION['Direccion'] = $fila['Direccion'];
-//     $_SESSION['NombreUsuario'] = $fila['Nombre'];
-//     $_SESSION['ApellidoUsuario'] = $fila['Apellido'];
-//     $_SESSION['Ciudad'] = $fila['Ciudad'];
-//     $_SESSION['Localidad'] = $fila['Localidad'];
-//     $_SESSION['Sucursal'] = $fila['Sucursal'];
-//     $_SESSION['Usuario'] = $fila['Usuario'];
+    $_SESSION['FechaPassword'] = $fila['FechaPassword'];
+    $_SESSION['NCliente'] = $fila['NdeCliente'];
+    $_SESSION['Nivel'] = $fila['NIVEL'];
+    $_SESSION['idusuario'] = $fila['id'];
+    $_SESSION['Direccion'] = $fila['Direccion'];
+    $_SESSION['NombreUsuario'] = $fila['Nombre'];
+    $_SESSION['ApellidoUsuario'] = $fila['Apellido'];
+    $_SESSION['Ciudad'] = $fila['Ciudad'];
+    $_SESSION['Localidad'] = $fila['Localidad'];
+    $_SESSION['Sucursal'] = $fila['Sucursal'];
+    $_SESSION['Usuario'] = $fila['Usuario'];
 
-//     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
+    $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
 
-//     // Log ingreso
-//     $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
+    // Log ingreso
+    $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 
-//     // Perfil
-//     switch ($_SESSION['Nivel']) {
-//         case 1:
-//             $_SESSION['Perfil'] = "Administrador";
-//             header("Location: Inicio/Cpanel.php");
-//             exit;
-//         case 2:
-//             $_SESSION['Perfil'] = "Empleado";
-//             header("location:Inicio/Cpanel.php");
-//             exit;
-//         case 3:
-//             $_SESSION['Perfil'] = "Reparto";
-//             header("location:smartphone/AdminSmartphone/SistemaTriangular/Cpanel.php");
-//             exit;
-//         case 4:
-//             header("location:Plataforma/Bienvenidos.php");
-//             exit;
-//         case 6:
-//             $_SESSION['Perfil'] = "Usuario Web";
-//             header("location:Plataforma/Bienvenidos.php");
-//             exit;
-//     }
-// } else {
+    // Perfil
+    //     switch ($_SESSION['Nivel']) {
+    //         case 1:
+    //             $_SESSION['Perfil'] = "Administrador";
+    //             header("Location: Inicio/Cpanel.php");
+    //             exit;
+    //         case 2:
+    //             $_SESSION['Perfil'] = "Empleado";
+    //             header("location:Inicio/Cpanel.php");
+    //             exit;
+    //         case 3:
+    //             $_SESSION['Perfil'] = "Reparto";
+    //             header("location:smartphone/AdminSmartphone/SistemaTriangular/Cpanel.php");
+    //             exit;
+    //         case 4:
+    //             header("location:Plataforma/Bienvenidos.php");
+    //             exit;
+    //         case 6:
+    //             $_SESSION['Perfil'] = "Usuario Web";
+    //             header("location:Plataforma/Bienvenidos.php");
+    //             exit;
+    //     }
+} else {
 
-//     $web = $_POST['web'] ?? 'no';
+    $web = $_POST['web'] ?? 'no';
 
-//     $cuentaerror = isset($_POST['cuentaerror']) ? $_POST['cuentaerror'] : 0;
-//     $_SESSION['ErrIngreso'] = "Su usuario es incorrecto, intente nuevamente.";
-//     if ($cuentaerror == '') {
-//         $cuentaerror = 0;
-//     } else {
-//         $CEr = $cuentaerror;
-//         $cuentaerror = ($CEr + 1);
-//     }
-//     if ($web == 'si') {
-//         // header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
-//     } else {
-//         // header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
-//     }
-// }
+    $cuentaerror = isset($_POST['cuentaerror']) ? $_POST['cuentaerror'] : 0;
+    $_SESSION['ErrIngreso'] = "Su usuario es incorrecto, intente nuevamente.";
+    if ($cuentaerror == '') {
+        $cuentaerror = 0;
+    } else {
+        $CEr = $cuentaerror;
+        $cuentaerror = ($CEr + 1);
+    }
+    if ($web == 'si') {
+        // header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
+    } else {
+        // header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
+    }
+}
