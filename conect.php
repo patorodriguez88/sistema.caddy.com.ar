@@ -104,8 +104,8 @@ if ($rec->num_rows != 0) {
         $cuentaerror = ($CEr + 1);
     }
     if ($web == 'si') {
-        header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
+        // header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
     } else {
-        header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
+        // header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
     }
 }
