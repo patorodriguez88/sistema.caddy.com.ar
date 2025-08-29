@@ -68,7 +68,7 @@ if ($rec->num_rows != 0) {
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
 
     // Log ingreso
-    $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
+    // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 
     // Perfil
     switch ($_SESSION['Nivel']) {
