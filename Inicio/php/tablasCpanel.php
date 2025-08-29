@@ -23,7 +23,7 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 
 // Incluí la conexión (no debe emitir salida)
-require_once __DIR__ . '/../../Conexion/Conexioni.php';
+// require_once __DIR__ . '/../../Conexion/Conexioni.php';
 
 // Responder JSON siempre
 header('Content-Type: application/json; charset=utf-8');
