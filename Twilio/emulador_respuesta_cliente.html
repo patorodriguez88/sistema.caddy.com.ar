@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Emulador Botones WhatsApp</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 20px;
+      }
+      button {
+        margin: 5px;
+        padding: 10px 20px;
+        font-size: 16px;
+      }
+      #respuesta {
+        margin-top: 20px;
+        white-space: pre-wrap;
+        background: #f5f5f5;
+        padding: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Emulador de respuestas WhatsApp (Twilio)</h2>
+
+    <button onclick="enviarRespuesta('Confirmar', '1')">Confirmar</button>
+    <button onclick="enviarRespuesta('Reprogramar', '2')">Reprogramar</button>
+    <button onclick="enviarRespuesta('Cancelar', '3')">Cancelar</button>
+
+    <button onclick="enviarRespuesta('Opcion 1', '1')">1</button>
+    <button onclick="enviarRespuesta('Opcion 2', '2')">2</button>
+    <button onclick="enviarRespuesta('Opcion 3', '3')">3</button>
+    <button onclick="enviarRespuesta('Opcion 4', '4')">4</button>
+    <button onclick="enviarRespuesta('Opcion 5', '5')">5</button>
+    <button onclick="enviarRespuesta('Opcion 6', '6')">6</button>
+
+    <div id="respuesta"></div>
+
+    <script>
+      function enviarRespuesta(texto, payload) {
+        const data = {
+          SmsMessageSid: "SM123456789",
+          MessageType: "button",
+          SmsSid: "SM123456789",
+          WaId: "5493516151944",
+          SmsStatus: "received",
+          To: "whatsapp:+14155238886",
+          From: "whatsapp:+5493516151944",
+          ApiVersion: "2010-04-01",
+          ProfileName: "Pato Rodriguez",
+          ButtonText: texto,
+          ButtonPayload: payload,
+          Body: texto,
+        };
+
+        fetch("http://localhost:3000/Twilio/webhook.php", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/x-www-form-urlencoded",
+          },
+          body: new URLSearchParams(data),
+        })
+          .then((res) => res.text())
+          .then((html) => {
+            document.getElementById("respuesta").innerText =
+              "Respuesta del webhook:\n\n" + html;
+          })
+          .catch((err) => {
+            document.getElementById("respuesta").innerText =
+              "Error al enviar: " + err;
+          });
+      }
+    </script>
+  </body>
+</html>
