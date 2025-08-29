@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Horizontal Layout | Hyper - Responsive Bootstrap 5 Admin Dashboard</title>
+    <title>Sistema Caddy 2025 | Panel de Control</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />

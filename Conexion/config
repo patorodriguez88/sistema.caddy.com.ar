@@ -1,9 +1,9 @@
 [
   {
     "server": "localhost",
-    "user": "n455735_prodrig",
-    "password": "MacBook@Air",
-    "database": "n455735_sistemacaddy",
+    "user": "dinter6_prodrig",
+    "password": "pato@4986",
+    "database": "dinter6_triangular",
     "port": "",
     "socket": "/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock"
   }

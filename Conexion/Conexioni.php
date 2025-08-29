@@ -46,7 +46,7 @@ class Conexion
         if ($this->conexion->connect_error) {
             echo "❌ Error de conexión: " . $this->conexion->connect_error;
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            header("Location: /inicio.php");
             exit;
         }
 
@@ -62,7 +62,7 @@ class Conexion
 
         if (!file_exists($path)) {
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            header("Location: /inicio.php");
             exit;
         }
 
@@ -71,7 +71,7 @@ class Conexion
 
         if (!$datos || !is_array($datos) || !isset($datos[0])) {
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            header("Location: /inicio.php");
             exit;
         }
 
@@ -119,7 +119,7 @@ if (!in_array($archivoActual, $excepciones)) {
         }
 
         // Carga normal
-        header("Location: /SistemaTriangular/inicio.php");
+        header("Location: /inicio.php");
         exit;
     }
 
