@@ -1,0 +1,88 @@
+<?
+include_once "../../ConexionBD.php";
+?>
+<script type="text/javascript">window.onload = function() { w3Init(); };</script>
+		<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+		<script src="smartphone/js/mobile.js"></script>
+		<script>
+		$(function() {
+			var pull 		= $('#pull');
+				menu 		= $('nav ul');
+				menuHeight	= menu.height();
+
+			$(pull).on('click', function(e) {
+				e.preventDefault();
+				menu.slideToggle();
+			});
+
+			$(window).resize(function(){
+        		var w = $(window).width();
+        		if(w > 320 && menu.is(':hidden')) {
+        			menu.removeAttr('style');
+        		}
+    		});
+		});
+	</script>
+ <script>
+    // You can also use "$(window).load(function() {"
+    $(function () {
+
+      // Slideshow 1
+      $("#slider1").responsiveSlides({
+        maxwidth: 1600,
+        speed: 600
+      });
+});
+  </script>
+
+
+<nav class="clearfix">
+<?php 
+if ($_SESSION['Nivel']=='2'){
+
+$Cliente=$_SESSION['NCliente'];
+$estructura="SELECT count(id) FROM ReposicionesFirme WHERE Cliente='$Cliente' AND Estado='En Kiosco'";
+$consulta=mysql_query($estructura); 
+$rcount=mysql_result($consulta,0);  
+
+if ($rcount>0){
+$Notificacion='Pendientes ' .$rcount;
+}else{
+$Notificacion='';
+}
+?>
+				<ul>
+					<li><a href="../AdminSmartphone/Reposiciones.php">Solicitar Reposiciones</a></li>
+					<li><a href="../AdminSmartphone/MisVentas.php">Reposiciones en Firme
+<?php 
+echo "<b style='font-size:11px;font-family: Verdana, Arial, Helvetica, sans-serif;font-weight:bold;color:white;background:red;'/>$Notificacion</b>";?>
+											
+					</a></li>
+					<li><a href="Reclamos.php">Ingresar Reclamos</a></li>
+					<li><a href="ContactoDepositos.php">Ingresar Deposito Bancario</a></li>
+					<li><a href="../iniciosesion.php">Salir</a></li>
+				
+	</ul>
+<? 
+
+}elseif ($_SESSION['Nivel']=='3'){
+?>
+				<ul>
+				<!--	<li><a href="../AdminSmartphone/carga.php">Cargar Pagos</a></li>-->
+				<!--	<li><a href="">Cargar Deposito Bancario</a></li>-->
+					<li><a href="../AdminSmartphone/Entregas.php">Cargar Entregas</a></li>
+					<li><a href="../iniciosesion.php">Salir</a></li>
+	</ul>
+<?
+};
+?>
+<a href="#" id="pull">Menu</a>
+	</nav>
+	<div class="clear"> </div>
+		<div id="wrapper">
+	<section id="content">
+		<div class="content-scroll">	
+		<div class="clear"> </div>
+		    <div class="clear"> </div>
+		</div>
+		</div>	

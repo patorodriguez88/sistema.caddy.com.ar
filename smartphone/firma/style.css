@@ -1,0 +1,14 @@
+#content{
+    background-color:#ddd;
+border: solid;
+width: 500px;
+height: 300px ;
+}
+#canvas{
+    cursor:crosshair ;
+    background-color:#fff;
+}
+        .style1
+        {
+            width: 100%;
+        }
