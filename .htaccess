@@ -1,7 +1,14 @@
-# Activar mod_rewrite
+# Activa rewrite
 RewriteEngine On
 
-# Quitar extensión .php
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME}\.php -f
-RewriteRule ^([^/]+)/?$ $1.php [L]
+# MUY IMPORTANTE si el .htaccess está dentro de /SistemaTriangular
+RewriteBase /SistemaTriangular/
+
+# Si existe el archivo o directorio, sirve tal cual y no reescribas
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Si NO existe, pero existe el .php correspondiente, agregar la extensión
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+)$ $1.php [L]
