@@ -66,13 +66,13 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
 if ($rec->num_rows != 0) {
     $fila = $rec->fetch_assoc();
 
-    $_SESSION['userid'] = $fila['id'];
+    $_SESSION['userid'] = (int)$fila['id'];
     $_SESSION['ingreso'] = $user;
     $_SESSION['tiempo'] = time();
 
     $_SESSION['FechaPassword'] = $fila['FechaPassword'];
-    $_SESSION['NCliente'] = $fila['NdeCliente'];
-    $_SESSION['Nivel'] = $fila['NIVEL'];
+    $_SESSION['NCliente'] = $fila['NdeCliente'] ?? null;
+    $_SESSION['Nivel'] = (int)$fila['NIVEL'];
     $_SESSION['idusuario'] = $fila['id'];
     $_SESSION['Direccion'] = $fila['Direccion'];
     $_SESSION['NombreUsuario'] = $fila['Nombre'];
