@@ -1,22 +1,9 @@
 <?php
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-// if (session_status() === PHP_SESSION_NONE) {
-//     session_start();
-// }
-// === ARRANQUE DE SESIÓN COHERENTE EN EL SUBDOMINIO ===
-$isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
-$cookieDomain = $isLocal ? '' : '.caddy.com.ar'; // unificar dominio de cookie para todos los subdominios
-
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_name('CADDYSESS');
-    session_set_cookie_params([
-        'lifetime' => 0,
-        'path'     => '/',
-        'domain'   => $cookieDomain ?: null,
-        'secure'   => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
+if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 date_default_timezone_set('America/Argentina/Buenos_Aires');
@@ -35,15 +22,10 @@ unset($_SESSION['tiempo']); // Elimina el índice 'time' de la sesión
 if (isset($_SESSION['seluser'])) {
     $seluser = $_SESSION['seluser'];
 }
-
 // Valida si 'user' y 'password' están en POST antes de acceder a ellos
 if (isset($_POST['user']) && isset($_POST['password'])) {
 
-    if (!defined('CADDY_BOOTSTRAP_ONLY')) {
-        define('CADDY_BOOTSTRAP_ONLY', true);
-    }
 
-    require_once "Conexion/Conexioni.php";
     $miConexion = new Conexion();
     $mysqli = $miConexion->obtenerConexion();
 
@@ -66,13 +48,13 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
 if ($rec->num_rows != 0) {
     $fila = $rec->fetch_assoc();
 
-    $_SESSION['userid'] = (int)$fila['id'];
+    $_SESSION['userid'] = $fila['id'];
     $_SESSION['ingreso'] = $user;
     $_SESSION['tiempo'] = time();
 
     $_SESSION['FechaPassword'] = $fila['FechaPassword'];
-    $_SESSION['NCliente'] = $fila['NdeCliente'] ?? null;
-    $_SESSION['Nivel'] = (int)$fila['NIVEL'];
+    $_SESSION['NCliente'] = $fila['NdeCliente'];
+    $_SESSION['Nivel'] = $fila['NIVEL'];
     $_SESSION['idusuario'] = $fila['id'];
     $_SESSION['Direccion'] = $fila['Direccion'];
     $_SESSION['NombreUsuario'] = $fila['Nombre'];
@@ -82,12 +64,10 @@ if ($rec->num_rows != 0) {
     $_SESSION['Sucursal'] = $fila['Sucursal'];
     $_SESSION['Usuario'] = $fila['Usuario'];
 
-
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
-    session_regenerate_id(true);
-    session_write_close(); // asegura que la sesión se persista antes del Location
+
     // Log ingreso
-    // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
+    $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 
     // Perfil
     switch ($_SESSION['Nivel']) {
