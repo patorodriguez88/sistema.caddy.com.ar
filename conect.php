@@ -82,6 +82,7 @@ if ($rec->num_rows != 0) {
     $_SESSION['Sucursal'] = $fila['Sucursal'];
     $_SESSION['Usuario'] = $fila['Usuario'];
 
+
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
     session_regenerate_id(true);
     session_write_close(); // asegura que la sesión se persista antes del Location
