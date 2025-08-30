@@ -7,9 +7,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Sistema de Gestion Logistica" name="description" />
     <meta content="Coderthemes" name="author" />
-    <!-- App favicon -->
-    <!-- App favicon -->
-    <link rel="shortcut icon" href="assets/images/favicon.ico">
+
+    <!-- Caddy favicon -->
+    <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
 
     <!-- Theme Config Js -->
     <script src="hyper/dist/assets/js/hyper-config.js"></script>

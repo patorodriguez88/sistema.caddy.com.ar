@@ -8,8 +8,8 @@
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />
 
-    <!-- App favicon -->
-    <link rel="shortcut icon" href="../hyper/dist/assets/images/favicon.ico">
+    <!-- Caddy favicon -->
+    <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
 
     <!-- Plugin css -->
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
