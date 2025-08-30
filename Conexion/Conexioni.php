@@ -147,67 +147,71 @@ class Conexion
 // 🧠 INSTANCIAR CONEXIÓN
 $miConexion = new Conexion();
 $mysqli = $miConexion->obtenerConexion();
+// 👇 Añadí esto ANTES de los guards
+$SKIP_GUARDS = defined('CADDY_BOOTSTRAP_ONLY') && CADDY_BOOTSTRAP_ONLY;
 
-// 🕒 Tiempo máximo de sesión (90 min)
-$tiempoMaximo = 5400;
+if (!$SKIP_GUARDS) {
+    // 🕒 Tiempo máximo de sesión (90 min)
+    $tiempoMaximo = 5400;
 
-// Archivos que no requieren sesión activa
-$archivoActual = basename($_SERVER['PHP_SELF']);
-$excepciones = ['conect.php', 'inicio.php', 'pages-recoverpw.html'];
+    // Archivos que no requieren sesión activa
+    $archivoActual = basename($_SERVER['PHP_SELF']);
+    $excepciones = ['conect.php', 'inicio.php', 'pages-recoverpw.html'];
 
-// 🔐 Validación completa de sesión
-if (!in_array($archivoActual, $excepciones)) {
-    // Sesión expirada por inactividad
-    if (isset($_SESSION['tiempo']) && (time() - $_SESSION['tiempo']) > $tiempoMaximo) {
-        $_SESSION = [];
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_regenerate_id(true);
-        }
-        if (es_ajax()) {
-            header('Content-Type: application/json; charset=utf-8');
-            header('X-Session-Expired: 1');
-            http_response_code(401);
-            echo json_encode(['ok' => false, 'error' => 'SESSION_EXPIRED']);
+    // 🔐 Validación completa de sesión
+    if (!in_array($archivoActual, $excepciones)) {
+        // Sesión expirada por inactividad
+        if (isset($_SESSION['tiempo']) && (time() - $_SESSION['tiempo']) > $tiempoMaximo) {
+            $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+            if (es_ajax()) {
+                header('Content-Type: application/json; charset=utf-8');
+                header('X-Session-Expired: 1');
+                http_response_code(401);
+                echo json_encode(['ok' => false, 'error' => 'SESSION_EXPIRED']);
+                exit;
+            }
+            header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
-        header("Location: /SistemaTriangular/inicio.php");
-        exit;
+
+        // Sin sesión válida (acepta varias llaves de sesión)
+        if (!tieneSesion()) {
+            // --- DEBUG: mostrar claves de sesión si está habilitado ---
+            if (es_ajax() && defined('CADDY_DEBUG') && CADDY_DEBUG) {
+                header('Content-Type: application/json; charset=utf-8');
+                header('X-Session-Expired: 1');
+                http_response_code(401);
+                echo json_encode([
+                    'ok'    => false,
+                    'error' => 'NO_AUTH',
+                    'dbg'   => [
+                        'session_name' => session_name(),
+                        'session_id'   => session_id(),
+                        'cookie_sent'  => isset($_COOKIE[session_name()]),
+                        'keys'         => array_keys($_SESSION),
+                    ]
+                ]);
+                exit;
+            }
+            // $_SESSION = [];
+            if (session_status() === PHP_SESSION_ACTIVE) {
+                session_regenerate_id(true);
+            }
+            if (es_ajax()) {
+                header('Content-Type: application/json; charset=utf-8');
+                header('X-Session-Expired: 1');
+                http_response_code(401);
+                echo json_encode(['ok' => false, 'error' => 'NO_AUTH']);
+                exit;
+            }
+            header("Location: /SistemaTriangular/inicio.php");
+            exit;
+        }
+
+        // Si sigue activo, actualizamos el tiempo
+        $_SESSION['tiempo'] = time();
     }
-
-    // Sin sesión válida (acepta varias llaves de sesión)
-    if (!tieneSesion()) {
-        // --- DEBUG: mostrar claves de sesión si está habilitado ---
-        if (es_ajax() && defined('CADDY_DEBUG') && CADDY_DEBUG) {
-            header('Content-Type: application/json; charset=utf-8');
-            header('X-Session-Expired: 1');
-            http_response_code(401);
-            echo json_encode([
-                'ok'    => false,
-                'error' => 'NO_AUTH',
-                'dbg'   => [
-                    'session_name' => session_name(),
-                    'session_id'   => session_id(),
-                    'cookie_sent'  => isset($_COOKIE[session_name()]),
-                    'keys'         => array_keys($_SESSION),
-                ]
-            ]);
-            exit;
-        }
-        $_SESSION = [];
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            session_regenerate_id(true);
-        }
-        if (es_ajax()) {
-            header('Content-Type: application/json; charset=utf-8');
-            header('X-Session-Expired: 1');
-            http_response_code(401);
-            echo json_encode(['ok' => false, 'error' => 'NO_AUTH']);
-            exit;
-        }
-        header("Location: /SistemaTriangular/inicio.php");
-        exit;
-    }
-
-    // Si sigue activo, actualizamos el tiempo
-    $_SESSION['tiempo'] = time();
 }
