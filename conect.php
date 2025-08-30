@@ -124,6 +124,6 @@ if ($rec->num_rows != 0) {
     if ($web == 'si') {
         header("location:https://www.sistema.caddy.com.ar/login.php?id=erringreso");
     } else {
-        header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
+        header("location:inicio.php?Usuario=$user&Error=Si&n=$cuentaerror");
     }
 }
