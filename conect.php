@@ -13,6 +13,7 @@ $dbConf = json_decode(file_get_contents($configFile), true);
 if (!$dbConf || !isset($dbConf[0])) {
     die("Error: archivo de configuración de DB no encontrado");
 }
+
 $dbConf = $dbConf[0];
 $mysqli = new mysqli(
     $dbConf['server'] ?? 'localhost',
@@ -21,9 +22,11 @@ $mysqli = new mysqli(
     $dbConf['database'] ?? '',
     isset($dbConf['port']) ? intval($dbConf['port']) : 3306
 );
+
 if ($mysqli->connect_error) {
     die("Error de conexión: " . $mysqli->connect_error);
 }
+
 $mysqli->set_charset("utf8");
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
@@ -119,7 +122,7 @@ if ($rec->num_rows != 0) {
         $cuentaerror = ($CEr + 1);
     }
     if ($web == 'si') {
-        header("location:https://www.sistemacaddy.com.ar/login.php?id=erringreso");
+        header("location:https://www.sistema.caddy.com.ar/login.php?id=erringreso");
     } else {
         header("location:iniciosesion.php?Usuario=$user&Error=Si&n=$cuentaerror");
     }
