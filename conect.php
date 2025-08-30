@@ -6,6 +6,25 @@ error_reporting(E_ALL);
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
+// Conexión rápida directa (evita Conexioni)
+$isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
+$configFile = $isLocal ? __DIR__ . "/Conexion/config_local" : __DIR__ . "/Conexion/config";
+$dbConf = json_decode(file_get_contents($configFile), true);
+if (!$dbConf || !isset($dbConf[0])) {
+    die("Error: archivo de configuración de DB no encontrado");
+}
+$dbConf = $dbConf[0];
+$mysqli = new mysqli(
+    $dbConf['server'] ?? 'localhost',
+    $dbConf['user'] ?? 'root',
+    $dbConf['password'] ?? '',
+    $dbConf['database'] ?? '',
+    isset($dbConf['port']) ? intval($dbConf['port']) : 3306
+);
+if ($mysqli->connect_error) {
+    die("Error de conexión: " . $mysqli->connect_error);
+}
+$mysqli->set_charset("utf8");
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 $user = ""; // Inicializa la variable con un valor predeterminado
@@ -24,10 +43,6 @@ if (isset($_SESSION['seluser'])) {
 }
 // Valida si 'user' y 'password' están en POST antes de acceder a ellos
 if (isset($_POST['user']) && isset($_POST['password'])) {
-
-
-    $miConexion = new Conexion();
-    $mysqli = $miConexion->obtenerConexion();
 
     $user = $mysqli->real_escape_string($_POST['user']);
     $password = $mysqli->real_escape_string($_POST['password']);
@@ -67,7 +82,7 @@ if ($rec->num_rows != 0) {
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
 
     // Log ingreso
-    $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
+    // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 
     // Perfil
     switch ($_SESSION['Nivel']) {
