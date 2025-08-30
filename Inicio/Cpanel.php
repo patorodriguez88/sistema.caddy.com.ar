@@ -1,17 +1,3 @@
-<?php
-// Cpanel.php (tope del archivo)
-require_once __DIR__ . '/../Conexion/Conexioni.php'; // abre la sesión y aplica los guards
-
-// --- DEBUG temporal para ver qué llega ---
-header('Content-Type: text/plain; charset=utf-8');
-echo "host=" . ($_SERVER['HTTP_HOST'] ?? '') . PHP_EOL;
-echo "session_name=" . session_name() . PHP_EOL;
-echo "session_id=" . session_id() . PHP_EOL;
-echo "cookie_present=" . (isset($_COOKIE[session_name()]) ? '1' : '0') . PHP_EOL;
-echo "keys=";
-print_r(array_keys($_SESSION));
-exit; // ← sacar luego de probar
-?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
 
