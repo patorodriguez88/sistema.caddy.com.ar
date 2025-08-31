@@ -14,5 +14,5 @@ jobs:
         server: sistema.caddy.com.ar
         username: dinter6
         password: ${{ secrets.FTP_PASSWORD }}
-        server-dir: /sistema.caddy.com.ar/SistemaTriangular/
+        server-dir: /sistema.caddy.com.ar/
         timeout: 60000
