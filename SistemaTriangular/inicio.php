@@ -106,6 +106,7 @@
             document.write(new Date().getFullYear())
         </script> © Sistema de Gestión Logistica - Caddy
 
+
     </footer>
     <script src="hyper/dist/assets/js/vendor.min.js"></script>
     <!-- App js -->
