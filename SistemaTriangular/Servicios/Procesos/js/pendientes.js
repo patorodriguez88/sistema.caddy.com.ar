@@ -1,6 +1,6 @@
 var datatable = $("#seguimiento").DataTable({
   dom: "Bfrtip",
-  buttons: ["pageLength", "copy", "excel", "pdf"],
+  buttons: ["copy", "csv", "excel", "pdf", "print"],
   paging: true,
   searching: true,
   lengthMenu: [
@@ -32,11 +32,63 @@ var datatable = $("#seguimiento").DataTable({
       data: "NumeroComprobante",
       render: function (data, type, row) {
         if (row.Wepoint_f != "0000-00-00") {
-          var wepoint = `<span class="badge badge-info badge-pill">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span>`;
+          if (row.Wepoint_status) {
+            if (row.Wepoint_status == "Enviado") {
+              var wh_status = "Paquete Listo";
+            } else if (row.Wepoint_status == "Ingreso") {
+              wh_status = "Paquete Ingresado";
+            }
+            var wepoint =
+              `<span class="badge badge-info badge-pill">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span><br>` +
+              `<span class="badge badge-info badge-pill">Wh: Status: ${wh_status}</span>`;
+          } else {
+            var wepoint = `<span class="badge badge-info badge-pill">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span>`;
+          }
         } else {
           wepoint = "";
         }
-        return `<td><b>${row.NumeroComprobante}</br><a>${row.Usuario}</a></br>${wepoint}`;
+        if (row.FechaPrometida != null) {
+          // Convertir a solo YYYY-MM-DD
+          const hoy = new Date();
+          hoy.setHours(0, 0, 0, 0);
+
+          const fechaPrometida = new Date(row.FechaPrometida);
+          fechaPrometida.setHours(0, 0, 0, 0);
+
+          const diffTime = fechaPrometida - hoy;
+          const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+          let color;
+          if (diffDays === 0) {
+            color = "warning"; // es hoy
+          } else if (diffDays < 0) {
+            color = "danger"; // está vencida
+          } else {
+            color = "success"; // futura
+          }
+          var FechaPrometida = `<span class="badge badge-${color} badge-pill">Prometida: ${row.FechaPrometida.split(
+            "-"
+          )
+            .reverse()
+            .join(".")}</span>`;
+        } else {
+          var FechaPrometida = "";
+        }
+        if (row.Respuesta) {
+          if ((row.Respuesta = "Confirmada")) {
+            var color_respuesta = "success";
+          } else if ((row.Respuesta = "Cancelada")) {
+            color_respuesta = "danger";
+          } else if ((row.Respuesta = "Reprogramada")) {
+            color_respuesta = "warning";
+          }
+
+          var Respuesta = `<span class="badge badge-${color_respuesta} text-white badge-pill">Respuesta Wp.: ${row.Respuesta}</span>`;
+        } else {
+          Respuesta = "";
+        }
+
+        return `<td><b>${row.NumeroComprobante}</br><a>${row.Usuario}</a></br>${wepoint}</br>${Respuesta}</br>${FechaPrometida}</td>`;
       },
     },
     {
@@ -93,7 +145,7 @@ var datatable = $("#seguimiento").DataTable({
             });
 
           return `<td>${row.Observaciones}</br>
-                        <a class="text-danger" style="font-size:9px"><b> Nota interna: ${textoConvertido}</b></a>
+                        <a class="text-danger" style="font-size:9px"><b> Nota interna: ${textoConvertido}</b></a>                        
                 </td>`;
         } else {
           return `<td>${row.Observaciones}</td>`;
@@ -118,33 +170,7 @@ var datatable = $("#seguimiento").DataTable({
           var badget = "Simple";
         }
 
-        return (
-          '<td class="table-action col-xs-3">' +
-          '<a style="cursor:pointer" class="text-primary"  data-toggle="modal" data-target="#modal_seguimiento" data-id="' +
-          row.CodigoSeguimiento +
-          '"' +
-          'data-title="' +
-          data.ClienteDestino +
-          '" data-fieldname="' +
-          data +
-          '"><b>' +
-          row.CodigoSeguimiento +
-          "</b></a></br>" +
-          "<a><b>" +
-          servicio +
-          "</b></a><br/>" +
-          '<span class="badge badge-dark-lighten"> $ ' +
-          row.Debe +
-          "</span></br>" +
-          '<a onclick="filter(' +
-          row.id +
-          ')" class="badge text-white badge-' +
-          color_flex +
-          '">' +
-          badget +
-          "</a>" +
-          "</td>"
-        );
+        return `<td class="table-action col-xs-3"><a style="cursor:pointer" class="text-primary"  data-toggle="modal" data-target="#modal_seguimiento" data-id="${row.CodigoSeguimiento}"data-title="${data.ClienteDestino}" data-fieldname="${data}"><b>${row.CodigoSeguimiento}</b></a></br><a><b>${servicio}</b></a><br/><span class="badge badge-dark-lighten"> \$ ${row.Debe}</span></br><a onclick="filter(${row.id})" class="badge text-white badge-${color_flex}">${badget}</a></td>`;
       },
     },
     //           {data:"Recorrido"},
