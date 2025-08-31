@@ -15,7 +15,6 @@
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
     <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
 
-
     <!-- Datatables css -->
     <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
     <!-- For checkbox Select-->
@@ -24,8 +23,6 @@
     <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
     <!-- Fixe header-->
     <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
-
-
 
     <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
@@ -141,7 +138,7 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <script src="Procesos/js/funciones_saldos.js"></script>
     <script src="../Menu/js/funciones.js"></script>

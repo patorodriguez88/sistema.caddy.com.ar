@@ -24,9 +24,6 @@
     <!-- Fixe header-->
     <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
 
-
-
-
     <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
 
