@@ -1,0 +1,56 @@
+[20-Mar-2023 07:51:04 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:51:04 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:51:04 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:51:11 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:51:11 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:51:11 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:51:27 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:51:27 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:51:27 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:51:59 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:51:59 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:51:59 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:52:19 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:52:19 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:52:19 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:52:21 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:52:21 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:52:21 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:54:04 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:54:04 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:54:04 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
+[20-Mar-2023 07:54:42 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; FPDF has a deprecated constructor in /home/dinter6/caddy.com.ar/SistemaTriangular/fpdf/fpdf.php on line 12
+[20-Mar-2023 07:54:42 UTC] PHP Deprecated:  Methods with the same name as their class will not be constructors in a future version of PHP; DB has a deprecated constructor in /home/dinter6/caddy.com.ar/conexion.php on line 17
+[20-Mar-2023 07:54:42 UTC] PHP Fatal error:  Uncaught Error: Call to undefined function mysql_connect() in /home/dinter6/caddy.com.ar/conexion.php:35
+Stack trace:
+#0 /home/dinter6/caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php(327): DB->conectar()
+#1 {main}
+  thrown in /home/dinter6/caddy.com.ar/conexion.php on line 35
