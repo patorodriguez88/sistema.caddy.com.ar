@@ -1,0 +1,24 @@
+# Evita 406 por negociación de contenido
+Options -MultiViews
+DirectoryIndex index.php
+
+SetEnvIfNoCase Authorization "^(.*)$" HTTP_AUTHORIZATION=$1
+
+RewriteEngine On
+
+# Asegura que el header Authorization llegue a PHP
+RewriteCond %{HTTP:Authorization} .
+RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
+
+# Si viene /index.php? (query vacía), redirigí a /bridge/ (o dejalo pasar)
+RewriteCond %{THE_REQUEST} \s/+.*index\.php\?[\s] [NC]
+RewriteRule ^index\.php$ ./ [R=302,L]
+
+# Como fallback, si pese a todo llega /index.php? con query, serví igual el index
+RewriteCond %{REQUEST_URI} ^.*/index\.php$ [NC]
+RewriteRule ^ - [L]
+
+# (Opcional) apagar ModSecurity solo en este directorio si tu hosting lo permite
+<IfModule mod_security.c>
+  SecRuleEngine Off
+</IfModule>
