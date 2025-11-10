@@ -1,0 +1,215 @@
+<html>
+<meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+<head>
+<script type="text/javascript" src="../BrowserPrint-3.0.216.min.js"></script>
+  <script type="text/javascript" src="../BrowserPrint-Zebra-1.0.216.min.js"></script>
+<script type="text/javascript">
+var selected_device;
+var devices = [];
+function setup()
+{
+	//Get the default device from the application as a first step. Discovery takes longer to complete.
+	BrowserPrint.getDefaultDevice("printer", function(device)
+			{
+		
+				//Add device to list of devices and to html select element
+				selected_device = device;
+				devices.push(device);
+				var html_select = document.getElementById("selected_device");
+				var option = document.createElement("option");
+				option.text = device.name;
+				html_select.add(option);
+				
+				//Discover any other devices available to the application
+				BrowserPrint.getLocalDevices(function(device_list){
+					for(var i = 0; i < device_list.length; i++)
+					{
+						//Add device to list of devices and to html select element
+						var device = device_list[i];
+						if(!selected_device || device.uid != selected_device.uid)
+						{
+							devices.push(device);
+							var option = document.createElement("option");
+							option.text = device.name;
+							option.value = device.uid;
+							html_select.add(option);
+						}
+					}
+					
+				}, function(){alert("Error getting local devices")},"printer");
+				
+			}, function(error){
+				alert(error);
+			})
+}
+function getConfig(){
+	BrowserPrint.getApplicationConfiguration(function(config){
+		alert(JSON.stringify(config))
+	}, function(error){
+		alert(JSON.stringify(new BrowserPrint.ApplicationConfiguration()));
+	})
+}
+function writeToSelectedPrinter(dataToWrite)
+{
+
+    var dataToWrite='^XA'+
+              '^CI28'+
+              '^LH0,90'+
+              '^FX  Is Product  ^FS'+
+              '^FX  Quantity  ^FS'+
+              '^FO30,80^A0N,70,70^FB160,1,0,C^FD1^FS'+
+              '^FO30,150^A0N,25,25^FB150,1,0,C^FH^FDCantidad^FS'+
+              '^FX  Product title  ^FS'+
+              '^FO200,15^A0N,29,29^FB570,2,-1^FH^FDCartucho 21xl Negro Alternativo F4180 D1360 2460 2360 F380^FS'+
+              '^FX  Variations  ^FS'+
+              '^FO200,95^A0N,24,24^FB570,1,-1^FDColor: Negro^FS'+
+              '^FO201,95^A0N,24,24^FB570,1,-1^FH^FDColor:^FS'+
+              '^FO200,120^A0N,24,24^FB570,1,-1^FDLinea: Advantage^FS'+
+              '^FO201,120^A0N,24,24^FB570,1,-1^FH^FDLinea:^FS'+
+              '^FO200,145^A0N,24,24^FB570,1,-1^FDVolumen: 2 mL^FS'+
+              '^FO201,145^A0N,24,24^FB570,1,-1^FH^FDVolumen:^FS'+
+              '^FX SKU ^FS'+
+              '^FO200,190^A0N,30,30^FDSKU: ^FS'+
+              '^FO265,192^A0N,25,25^FB510,1,-1^FH^FDTA-HP21XL^FS'+
+              '^FO20,225^GB760,2,1^FS'+
+              '^FX Order id ^FS'+
+              '^FO40,245^A0N,28,28^FDVenta: ^FS'+
+              '^FO41,245^A0N,28,28^FDVenta: ^FS'+
+              '^FO130,249^A0N,25,25^FD44298^FS'+
+              '^FO192,245^A0N,30,30^FD21382^FS'+
+              '^FO193,245^A0N,30,30^FD21382^FS'+
+              '^FX Tracking number ^FS'+
+              '^FO299,245^A0N,28,28^FDTracking: ^FS'+
+              '^FO300,245^A0N,28,28^FDTracking: ^FS'+
+              '^FO410,246^A0N,26,26^FDMEL00000485849030^FS'+
+              '^FO210,285^A0N,16,18^FDRecortá esta parte de la etiqueta para que tu paquete viaje seguro.^FS'+
+              '^FO10,265^GFA,935,935,11,,::::::::::::::::::::::K07C,K0FF,J01C38,J0181CL03FC,J0180CK01FF,J0180EK03FE,J01806K0FF8,J01C06J03FE,K0F0EJ07F8,K07FEI01FF,K01FEI03FC,L07F800FF,L01FC03FE,M07F07F8,M01F9FE,N067F8,O0FF,N03FC,N0FF18,M01FC7E,M07F87F,L01FE03FC,L03FC00FF,L0F0C007FC,K03C0C001FE,K0780CI07F8,J01E00CI03FE,J03801CJ0FF,J030018J07FC,J070078J01FF,J0300FL0FFC,J0383EL03F,J01FF8,K0FE,,:::::::::::::::::::::::::::^FS'+
+              '^FO50,304^GB750,1,1^FS'+
+              '^LH0,410^FX  HEADER  ^FS'+
+              '^FX Logo_Meli ^FS'+
+              // '^FO20,10^GFA,800,800,10,,:::::::::::O0FF,M07JFE,L07FC003FE,K07EL07E,J01EN078,J07P0E,I01CP038,I07R0E,001CK01FK038,003L0IFK0C,0078J03803CJ0E,0187J06I07I01D8,0300F00F8J0FEFE0C,02003IFK01J06,04I01C6P02,08K0401FM01,1L08060CM083K0100C02M0C2M01001M046K0306I0CL064K0198I02L024Q01L02CR08K03CR04K03FR02K03FFQ01J07!C1FQ0C007E3C03EP0203F03C0078O010F003CI0EF1N0F8003CI070C4M06I03CI02003CL02I03CI02P02I036I03N0106I066I01J08J0C4I067J0EI08J078I0E38I03I0E00406I01C3CI01800100204I01C3CJ0FI080118I03C1EJ03800801FJ0780FK0C008018J0F,078J07C0823J01F,07EJ01C1C36J07E,03FK031C3K0FC,01FCJ01E18J01F8,00FER07F,007F8P01FE,003FFP0FFC,I0FFEN07FF,I03FFCL03FFC,J0IFCJ03IF,J07PFE,K0PF,K01NF8,L01LF8,N0JF,,:::::::::::^FS'+
+//               '^FO20,10^GRF,800,800,10,,:::::::::::^ILE:LOGOCADD.GRF,1000,1000^,,:::::::::::^FS'+
+              '^ILE:LOGOCADD.GRF^FS'+
+              '^FO130,20^A0N,24,24^FDRemitente #1234^FS'+
+              '^FO130,43^A0N,24,24^FB550,2,0,L^FDAv. 27 de Abril 6150^FS'+
+              '^FO130,90^A0N,24,24^FB550,1,0,L^FDVilla Soldati, Capital Federal - 1437^FS'+
+              '^FO130,120^A0N,24,24^FDVenta: 39876^FS'+
+              '^FO265,117^A0N,27,27^FD54312^FS'+
+              '^FO480,150^GB330,40,40^FS'+
+              '^FO410,160^A0N,22,22'+
+              '^FB460,1,0,C^FR^FDENTREGAR A COLECTA^FS'+
+              '^FX  Shipment_Number_Bar_Code  ^FS'+
+              '^FO160,210^BY3,,0^BCN,160,N,N,N^FD>:41234567891^FS'+
+              '^FO0,385^A0N,30,30^FB404,1,0,R^FD4123456^FS'+
+              '^FO405,380^A0N,35,35^FB404,1,0,L^FD7891^FS'+
+              '^FX  END_HEADER  ^FS'+
+              '^FO20,420^GB240,60,3^FS'+
+              '^FO20,433^A0N,40,34^FB240,1,0,C^FDXCF1| 09:00^FS'+
+              '^FO20,480^GB240,57,57^FS'+
+              '^FO20,485^A0N,50,50^FB240,1,0,C^FR^FDSME1^FS'+
+              '^FO280,420^GB240,60,3^FS'+
+              '^FO280,433^A0N,40,34^FB240,1,0,C^FDSME1| 08:00^FS'+
+              '^FO280,480^GB240,57,57^FS'+
+              '^FO280,485^A0N,50,50^FB240,1,0,C^FR^FDMZ4^FS'+
+              '^FX  IN/OUT Route Box  ^FS'+
+              '^FX  FIRST CLUSTER  ^FS'+
+              '^FO20,150^GB420,45,3^FS'+
+              '^FO20,156^A0N,45,45^FB210,1,0,C^FR^FDXCF1^FS'+
+              '^FX  LAST CLUSTER  ^FS'+
+              '^FO229,153^GB210,40,40^FS'+
+              '^FO229,156^A0N,45,45^FB210,1,0,C^FR^FDSME1^FS'+
+              '^FO15,710^A0N,105,105^FB410,1,0,C^FDSME1^FS'+
+              '^FO410,710^A0N,105,105^FB410,1,0,C^FDMZ4^FS'+
+              '^FO180,830^A0N,40,40^FDCP: 5509^FS'+
+              '^FO390,830^A0N,40,40^FDMIE 17/03/2021^FS'+
+              '^FX  END CUSTOM_DATA  ^FS'+
+              '^FO0,950^GB850,0,2^FS'+
+              '^FX  RECEIVER ZONE  ^FS'+
+              '^FO30,970^A0N,26,26^FB600,2,0,L^FDMartina Caroli (MARTICARO)^FS'+
+              '^FO30,1030^A0N,26,26^FB600,2,0,L^FDDomicilio: Roque Saenz Peña 1230^FS'+
+              '^FO30,1090^A0N,30,30^FDCP: 5509^FS'+
+              '^FO30,1089^A0N,30,30^FDCP: 5509^FS'+
+              '^FO30,1121^A0N,26,26^FB600,1,0,L^FDCiudad de destino: Lujan De Cuyo (Mendoza)^FS'+
+              '^FO30,1150^A0N,26,26^FB600,3,0,L^FDReferencia: Manzana 1, Casa 4^FS'+
+              '^FX  QR Code  ^FS'+
+              '^FO650,985^BY2,2,0^BQN,2,5^FDLA,{"id":"41234567891"}^FS'+
+              '^FO650,1130^GB105,40,40^FS'+
+              '^FO650,1135^A0N,35,35^FB105,1,0,C^FR^FDR^FS'+
+              '^FX  END_FOOTER  ^FS'+
+              '^XZ';
+               selected_device.send(dataToWrite, undefined, errorCallback);
+
+
+  
+  
+//   var dato=document.getElementById('write_text').value;  
+// dataToWrite='^XA^FO300,10^A0N36,36^FD'+dato+'^FS^XZ';  
+// 	selected_device.send(dataToWrite, undefined, errorCallback);
+}
+var readCallback = function(readData) {
+readData=document.getElementById('write_text').value;
+  
+	if(readData === undefined || readData === null || readData === "")
+	{
+		alert("No Response from Device");
+	}
+	else
+	{
+		alert(readData);
+	}
+	
+}
+var errorCallback = function(errorMessage){
+	alert("Error: " + errorMessage);	
+}
+function readFromSelectedPrinter()
+{
+
+	selected_device.read(readCallback, errorCallback);
+	
+}
+function getDeviceCallback(deviceList)
+{
+	alert("Devices: \n" + JSON.stringify(deviceList, null, 4))
+}
+
+function sendImage(imageUrl)
+{
+	url = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
+	url = url + "/" + imageUrl;
+	selected_device.convertAndSendFile(url, undefined, errorCallback)
+}
+function sendFile(fileUrl){
+    url = window.location.href.substring(0, window.location.href.lastIndexOf("/"));
+    url = url + "/" + fileUrl;
+    selected_device.sendFile(url, undefined, errorCallback)
+}
+function onDeviceSelected(selected)
+{
+	for(var i = 0; i < devices.length; ++i){
+		if(selected.value == devices[i].uid)
+		{
+			selected_device = devices[i];
+			return;
+		}
+	}
+}
+window.onload = setup;
+</script>
+</head>
+<body>
+<span style="padding-right:50px; font-size:200%">Zebra Browser Print Test Page</span><br/>
+<span style="font-size:75%">This page must be loaded from a web server to function properly.</span><br><br>
+Selected Device: <select id="selected_device" onchange=onDeviceSelected(this);></select> <!--<input type="button" value="Change" onclick="changeDevice();">--> <br/><br/> 
+<input type="button" value="Get Application Configuration" onclick="getConfig()"><br/><br/>
+<input type="button" value="Send Config Label" onclick="writeToSelectedPrinter('~wc')"><br/><br/>
+<input type="button" value="Send ZPL Label" onclick="writeToSelectedPrinter('^XA^FO200,200^A0N36,36^FDTest Label^FS^XZ')"><br/><br/>
+<input type="button" value="Get Status" onclick="writeToSelectedPrinter('~hs'); readFromSelectedPrinter()"><br/><br/>
+<input type="button" value="Get Local Devices" onclick="BrowserPrint.getLocalDevices(getDeviceCallback, errorCallback);"><br/><br/>
+<input type="text" name="write_text" id="write_text"><input type="button" value="Write" onclick="writeToSelectedPrinter()"><br/><br/>
+<input type="button" value="Read" onclick="readFromSelectedPrinter()"><br/><br/>
+<input type="button" value="Send BMP" onclick="sendImage('Zebra_logobox.bmp');"><br/><br/>
+<input type="button" value="Send JPG" onclick="sendImage('caddy.jpg');"><br/><br/>
+<input type="button" value="Send File" onclick="sendFile('wc.zpl');"><br/><br/>
+</body>
+</html>

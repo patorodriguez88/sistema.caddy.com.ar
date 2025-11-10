@@ -1,0 +1,60 @@
+/* Basic Styling */
+a, a:visited {
+	
+	text-decoration: none;
+	-webkit-transition-property: color, left, right;
+	-webkit-transition-duration: 0.5s;
+	-webkit-transition-property: ease-in-out; 
+ } 
+ div {
+	vertical-align: top; 
+ }	
+ #wrapper {
+	width:100%;
+	min-width: 320px;
+	height: 100%;
+	margin: 0 auto; 
+	overflow: hidden;
+	position: relative; }
+	
+
+#content {
+	width: 100%;
+	height: 100%; 
+	position: absolute;
+	display: block;
+	top: 0;
+	left: 0; 
+	-webkit-transition-property: left; 
+	-webkit-transition-duration: 0.4s; 
+	-webkit-transition-property: ease-in-out; 
+	overflow-y: auto;
+	background: #ebebeb; }	
+.open { left: 258px !important; }
+	
+	/* Sidebar Toggle & Tabbed Navigation */
+ header {
+	width: 100%;
+}
+.top-header {
+	padding: 10px 0px 15px 0px;
+}
+  /* Sidebar Toggle */
+ .controls {
+	float: left;
+	margin: 6px 0 0 10px; 
+}		
+ .controls a, .controls img {
+	display: block;
+}
+.controls img {
+    width: 38px;
+    height:38px; 
+}
+.controls a {
+	cursor: pointer; 					
+}
+.controls a:active { 					
+	opacity: 0.65; 
+}
+

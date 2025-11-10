@@ -1,0 +1,19 @@
+[2025-10-22 18:48:17] store_redact: HMAC inválido | {"sig":""}
+[2025-10-22 19:01:22] HEADERS | {"Accept-Encoding":"gzip, deflate, br","Postman-Token":"9537b2a2-b068-4575-aba2-474e0ff9f87f","Cache-Control":"no-cache","Accept":"*\/*","User-Agent":"PostmanRuntime\/7.49.0","Content-Type":"text\/plain","Content-Length":"2","Connection":"close","X-Forwarded-Proto":"https","Host":"www.sistema.caddy.com.ar","X-Real-Ip":"54.86.50.139"}
+[2025-10-22 19:01:22] SERVER | {"HTTP_X_LINKEDSTORE_HMAC_SHA256":"(no)","CONTENT_TYPE":"text\/plain","REMOTE_ADDR":"54.86.50.139","REQUEST_METHOD":"POST"}
+[2025-10-22 19:01:22] store_redact: HMAC inválido | {"sig":""}
+[2025-10-22 19:01:37] HEADERS | {"Accept-Encoding":"gzip, deflate, br","Postman-Token":"ff01b1f0-dc38-4a18-9e77-2c3933639b16","Cache-Control":"no-cache","Accept":"*\/*","User-Agent":"PostmanRuntime\/7.49.0","Content-Type":"text\/plain","Content-Length":"2","Connection":"close","X-Forwarded-Proto":"https","Host":"www.sistema.caddy.com.ar","X-Real-Ip":"54.86.50.139"}
+[2025-10-22 19:01:37] SERVER | {"HTTP_X_LINKEDSTORE_HMAC_SHA256":"(no)","CONTENT_TYPE":"text\/plain","REMOTE_ADDR":"54.86.50.139","REQUEST_METHOD":"POST"}
+[2025-10-22 19:01:37] store_redact: HMAC inválido | {"sig":""}
+[2025-10-22 19:01:43] HEADERS | {"Accept-Encoding":"gzip, deflate, br","Postman-Token":"b17aafaf-885a-4235-86fb-13a0d7f9a866","Cache-Control":"no-cache","Accept":"*\/*","User-Agent":"PostmanRuntime\/7.49.0","Content-Type":"text\/plain","Content-Length":"20","Connection":"close","X-Forwarded-Proto":"https","Host":"www.sistema.caddy.com.ar","X-Real-Ip":"54.86.50.139"}
+[2025-10-22 19:01:43] SERVER | {"HTTP_X_LINKEDSTORE_HMAC_SHA256":"(no)","CONTENT_TYPE":"text\/plain","REMOTE_ADDR":"54.86.50.139","REQUEST_METHOD":"POST"}
+[2025-10-22 19:01:43] store_redact: HMAC inválido | {"sig":""}
+[2025-10-22 19:09:28] HEADERS | {"Accept-Encoding":"gzip, deflate, br","Postman-Token":"fbffc9ff-7998-42af-87ea-438049168f99","Cache-Control":"no-cache","Accept":"*\/*","User-Agent":"PostmanRuntime\/7.49.0","Content-Type":"text\/plain","Content-Length":"20","Connection":"close","X-Forwarded-Proto":"https","Host":"www.sistema.caddy.com.ar","X-Real-Ip":"54.86.50.139"}
+[2025-10-22 19:09:28] SERVER | {"HTTP_X_LINKEDSTORE_HMAC_SHA256":"(no)","CONTENT_TYPE":"text\/plain","REMOTE_ADDR":"54.86.50.139","REQUEST_METHOD":"POST"}
+[2025-10-22 19:09:28] store_redact: HMAC inválido | {"sig":""}
+[2025-10-22 19:20:26] HEADERS | {"Accept-Encoding":"gzip, deflate, br","Postman-Token":"f13f79ab-7d4e-42ab-9b1d-7a81828f400a","Cache-Control":"no-cache","Accept":"*\/*","User-Agent":"PostmanRuntime\/7.49.0","Content-Type":"text\/plain","Content-Length":"151","Connection":"close","X-Forwarded-Proto":"https","Host":"www.sistema.caddy.com.ar","X-Real-Ip":"54.86.50.139"}
+[2025-10-22 19:20:26] SERVER | {"HTTP_X_LINKEDSTORE_HMAC_SHA256":"(no)","CONTENT_TYPE":"text\/plain","REMOTE_ADDR":"54.86.50.139","REQUEST_METHOD":"POST"}
+[2025-10-22 19:20:26] customers_redact: HMAC inválido | {"sig":""}
+[2025-10-22 19:22:48] HEADERS | {"Accept-Encoding":"gzip, deflate, br","Postman-Token":"13adf5c9-a194-40c0-a0e3-5f9817d291b5","Cache-Control":"no-cache","Accept":"*\/*","User-Agent":"PostmanRuntime\/7.49.0","Content-Type":"text\/plain","Content-Length":"175","Connection":"close","X-Forwarded-Proto":"https","Host":"www.sistema.caddy.com.ar","X-Real-Ip":"54.86.50.139"}
+[2025-10-22 19:22:48] SERVER | {"HTTP_X_LINKEDSTORE_HMAC_SHA256":"(no)","CONTENT_TYPE":"text\/plain","REMOTE_ADDR":"54.86.50.139","REQUEST_METHOD":"POST"}
+[2025-10-22 19:22:48] customers_data_request: HMAC inválido | {"sig":""}

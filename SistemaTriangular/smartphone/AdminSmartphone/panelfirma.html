@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title>Full-Window · Signature Pad</title>
+  <style>
+	* {
+		-webkit-user-select: none;
+		-moz-user-select: none;
+		user-select: none;
+	}
+	html, body {
+		min-height: 70%;
+		height: 70%;
+		max-width: 80%;
+		width: 80%;
+		overflow: hidden;
+	}
+	html, body, form {
+		margin: 0px;
+	}
+	html, form {
+		padding: 0px;
+	}
+	html, body, fieldset {
+		background: none;
+	}
+	fieldset {
+		position: absolute;
+		border: 5px solid #aaa;
+		background:none;
+		right: 0px;
+		bottom: 0px;
+	}
+	canvas {
+		outline: 5px solid #aaa;
+		background: #fff;
+	}
+	input[type=submit], input[type=reset] {
+    background:none;
+		font-size: larger;
+	}
+  </style>
+  <link rel="stylesheet" href="../signature-pad/assets/jquery.signaturepad.css">
+  <!--[if lt IE 9]><script src="../assets/flashcanvas.js"></script><![endif]-->
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
+</head>
+<body style='background:black'>
+  
+  <form method="POST" action="">
+  <div id='firma' class='sigPad' style='outline: 2px dashed #aaa;width:80%;height:70%;margin-top:50%;margin-left:50%'>
+    <div class='typed'></div>
+		<canvas id="firmapad" class="pad" ></canvas>
+    <input type='hidden' name='output' id='output' class='output'>
+    <fieldset>
+      <input type="reset" value="clear" />
+      <input type="button" Onclick="firmado();" value="firma"  />
+    </fieldset>
+   </div>
+	</form>
+  <script src="../signature-pad/jquery.signaturepad.js"></script>
+  <script>
+    function firmado(){
+      alert('veo');
+    var output=document.getElementById('output').value;
+      var dato={
+      "output":output,
+      };
+      $.ajax({
+      data: dato,
+      url:'Procesos/firma.php',
+      type:'post',
+        beforeSend: function(){
+//         $("#procesando").show();
+        },
+      success: function(response)
+       {
+          var jsonData = JSON.parse(response);
+          if (jsonData.resultado == "1")
+          {
+          alert('SI FIRMADO');  
+          }
+          else
+          {
+          alert('NO FIRMADO');
+          }
+        }
+ });
+    
+}
+  
+  </script>
+  <script>
+  (function(window) {
+    var $canvas,
+        onResize = function(event) {
+          $canvas.attr({
+            height: window.innerHeight,
+            width: window.innerWidth
+          });
+        };
+
+    $(document).ready(function() {
+      $canvas = $('canvas');
+      window.addEventListener('orientationchange', onResize, false);
+      window.addEventListener('resize', onResize, false);
+      onResize();
+
+      $('form').signaturePad({
+        drawOnly: true,
+        defaultAction: 'drawIt',
+        validateFields: false,
+        lineWidth: 0,
+        output: null,
+        sigNav: null,
+        name: null,
+        typed: null,
+        clear: 'input[type=reset]',
+        typeIt: null,
+        drawIt: null,
+        typeItDesc: null,
+        drawItDesc: null
+      });
+    });
+  }(this));
+  </script>
+<script src="../signature-pad/assets/json2.min.js"></script>
+  <script>
+    $(document).ready(function() {
+      $('.sigPad').signaturePad({drawOnly:true});
+    });
+  
+</script>
+
+  
+</body>

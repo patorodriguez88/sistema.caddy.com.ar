@@ -1,0 +1,593 @@
+<!DOCTYPE html >
+  <head>
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no" />
+    <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
+
+<!--     <title>Using MySQL and PHP with Google Maps</title> -->
+    
+<style>
+      /* Always set the map height explicitly to define the size of the div
+       * element that contains the map. */
+      #map {
+        height: 100%;
+        width: 100%;
+        margin-top: 0px;
+        z-index:999;
+        position:absolute; 
+      }
+      /* Optional: Makes the sample page fill the window. */
+    </style>
+  </head>
+
+  <body>
+    <div id="map"></div>
+    <div id="prueba">hola</div>
+    
+    <script>
+      var customLabel = {
+        restaurant: {
+          label: 'R'
+        },
+        bar: {
+          label: 'B'
+        }
+      };
+
+        function initMap() {
+        var map = new google.maps.Map(document.getElementById('map'), {
+          center: new google.maps.LatLng(-31.4448988, -64.177743),
+          zoom: 10
+        });
+        var infoWindow = new google.maps.InfoWindow({
+          minWidth: 350
+        });
+          
+          // Change this depending on the name of your PHP or XML file
+          downloadUrl('datosmapa.php', function(data) {
+            var xml = data.responseXML;
+            var markers = xml.documentElement.getElementsByTagName('marker');
+            
+            Array.prototype.forEach.call(markers, function(markerElem) {
+              var Posicion=markerElem.getAttribute('Posicion');
+              var Avisado=markerElem.getAttribute('Avisado');
+              var Observaciones = markerElem.getAttribute('Observaciones');
+              var Retirado = markerElem.getAttribute('Retirado');
+              var Entregado = markerElem.getAttribute('Entregado');
+              var Estado = markerElem.getAttribute('Estado');
+              var idTransClientes = markerElem.getAttribute('idTransClientes');
+              var CodigoSeguimiento = markerElem.getAttribute('CodigoSeguimiento');
+              var ncliente = markerElem.getAttribute('idProveedor');
+              var name = markerElem.getAttribute('name');
+              var address = markerElem.getAttribute('address');
+              var type = markerElem.getAttribute('type');
+              var hora = markerElem.getAttribute('hora');
+              var point = new google.maps.LatLng(
+                  parseFloat(markerElem.getAttribute('lat')),
+                  parseFloat(markerElem.getAttribute('lng')));
+ 
+              var infowincontent = document.createElement('div');
+            
+              var Ncliente = document.createElement('Ncliente');
+              Ncliente.textContent = 'Id Proveedor :' + ncliente 
+              Ncliente.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Ncliente.style.fontSize = '10px';
+              infowincontent.appendChild(Ncliente);
+//               infowincontent.appendChild(document.createElement('br'));
+              
+              var Codigo = document.createElement('CodSeg');
+              Codigo.textContent = 'Cod.Seg :' + CodigoSeguimiento 
+              Codigo.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Codigo.style.fontSize = '10px';
+              infowincontent.appendChild(Codigo);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Name = document.createElement('Name');
+              Name.textContent = Posicion + ' ' + name 
+              Name.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Name.style.fontSize = '16px';
+              Name.style.lineHeight = '30px';
+
+              infowincontent.appendChild(document.createElement('strong'));
+              infowincontent.appendChild(Name);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Adress = document.createElement('Adress');
+              Adress.textContent =  address
+              Adress.style.fontFamily = 'Roboto,Arial,sans-serif';
+              Adress.style.fontSize = '12px';
+              Adress.style.lineHeight = '8px';
+
+              infowincontent.appendChild(Adress);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var Hora = document.createElement('Hora');
+              if(Retirado==0){
+              Hora.textContent =  'Hora Retiro: ' + hora
+              }else{
+              Hora.textContent =  'Hora Entrega: ' + hora
+              }
+              infowincontent.appendChild(Hora);
+              infowincontent.appendChild(document.createElement('br'));
+
+              
+              var estado = document.createElement('estado');
+              estado.textContent = 'Estado: '+ Estado
+              infowincontent.appendChild(estado);
+              infowincontent.appendChild(document.createElement('br'));
+
+              var observaciones = document.createElement('observaciones');
+              observaciones.textContent = 'Observaciones: '+ Observaciones
+              infowincontent.appendChild(observaciones);
+              observaciones.style.marginBottom = '22px';
+
+              var ir = document.createElement('IMG');
+              ir.setAttribute("src", "../images/goto.png");
+              ir.setAttribute("width", "50");
+              ir.setAttribute("height", "50");
+              
+
+              infowincontent.appendChild(ir);
+              infowincontent.appendChild(document.createElement('br'));
+               // Set CSS for the control interior.
+//               var irText = document.createElement('div');
+//               irText.style.color = 'rgb(253,254,254)';
+//               irText.style.fontFamily = 'Roboto,Arial,sans-serif';
+//               irText.style.fontSize = '16px';
+//               irText.style.lineHeight = '38px';
+//               irText.innerHTML = 'ir aqui!';
+//               ir.appendChild(irText);
+              
+              var proximo = document.createElement('proximo');
+              if(Entregado==0 && Estado!='No se pudo entregar'){
+              proximo.style.backgroundColor = '#fff';
+              proximo.style.border = '0px solid #fff';
+              proximo.style.borderRadius = '3px';
+              proximo.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+              proximo.style.cursor = 'pointer';
+              proximo.style.marginBottom = '22px';
+              proximo.style.textAlign = 'center';
+              proximo.title = '';
+              
+              infowincontent.appendChild(proximo);
+              infowincontent.appendChild(document.createElement('br'));
+               // Set CSS for the control interior.
+              var proximoText = document.createElement('div');
+              proximoText.style.color = 'rgb(253,254,254)';
+              proximoText.style.fontFamily = 'Roboto,Arial,sans-serif';
+              proximoText.style.fontSize = '16px';
+              proximoText.style.lineHeight = '38px';
+              proximoText.style.padding = '8px';
+              
+  
+              
+//                 proximoText.style.paddingLeft = '5px';
+//               proximoText.style.paddingRight = '5px';
+                if(Avisado==0){
+              proximoText.innerHTML = 'Avisar que voy!';
+                }else{
+              proximoText.innerHTML = 'Descartar Aviso..';
+                }
+              proximoText.style.backgroundColor= 'rgb(77,26,80)';
+              proximo.appendChild(proximoText);
+              }
+//               var x = document.createElement("IMG");
+//               x.setAttribute("src", "../images/wrong.png");
+//               x.setAttribute("width", "30");
+//               x.setAttribute("height", "30");
+//               infowincontent.appendChild(x);
+
+              
+              var controlUI = document.createElement('IMG');
+              if(Entregado==0 && Estado!='No se pudo entregar'){
+              controlUI.setAttribute("src", "../images/ok.png");
+              controlUI.setAttribute("width", "40");
+              controlUI.setAttribute("height", "40");
+  
+//               controlUI.style.backgroundColor = '#fff';
+//               controlUI.style.border = '0px solid #fff';
+//               controlUI.style.borderRadius = '3px';
+//               controlUI.style.boxShadow = '0 2px 6px rgba(0,0,0,.3)';
+//               controlUI.style.cursor = 'pointer';
+//               controlUI.style.marginBottom = '22px';
+//               controlUI.style.textAlign = 'center';
+//               controlUI.title = '';
+//               infowincontent.appendChild(controlUI);
+              infowincontent.appendChild(document.createElement('br'));
+               // Set CSS for the control interior.
+              var controlText = document.createElement('div');
+              controlText.style.color = 'rgb(253,254,254)';
+              controlText.style.fontFamily = 'Roboto,Arial,sans-serif';
+              controlText.style.fontSize = '16px';
+              controlText.style.lineHeight = '38px';
+              controlText.style.padding = '8px';
+  
+//               controlText.style.paddingLeft = '5px';
+//               controlText.style.paddingRight = '5px';
+              if(Retirado==0){
+              controlText.innerHTML = 'Retirar Envio';
+              controlText.style.backgroundColor= 'rgb(46,134,193)';
+              }else{
+              controlText.innerHTML = 'Entregar Envio';
+              controlText.style.backgroundColor= 'rgb(244, 208, 63)';
+              }
+              controlUI.appendChild(controlText);
+              }
+              //BOTON NO ENTREGADO
+//               var x = document.createElement("IMG");
+//               x.setAttribute("src", "../images/wrong.png");
+//               x.setAttribute("width", "30");
+//               x.setAttribute("height", "30");
+//               infowincontent.appendChild(x);
+              
+              var bottonNE = document.createElement("IMG");
+              if(Entregado==0 && Estado!='No se pudo entregar'){
+              bottonNE.setAttribute("src", "../images/wrong.png");
+              bottonNE.setAttribute("width", "40");
+              bottonNE.setAttribute("height", "40");
+              bottonNE.setAttribute("right", "0");
+              bottonNE.setAttribute("position", "absolute");  
+              infowincontent.appendChild(document.createElement('br'));
+               // Set CSS for the control interior.
+              var bottonNEText = document.createElement('div');
+              bottonNEText.style.color = 'rgb(253,254,254)';
+              bottonNEText.style.fontFamily = 'Roboto,Arial,sans-serif';
+              bottonNEText.style.fontSize = '16px';
+              bottonNEText.style.lineHeight = '38px';
+              bottonNEText.style.padding = '8px';
+              bottonNEText.style.backgroundColor= 'rgb(231, 76, 60)';
+                if(Retirado==0){
+                bottonNEText.innerHTML = 'No Puedo Retirar';
+                }else{
+                bottonNEText.innerHTML = 'No Puedo Entregar';
+                }
+                bottonNE.appendChild(bottonNEText);
+              }
+              
+              var botonera=document.createElement('div');
+              infowincontent.appendChild(bottonNE);
+              infowincontent.style.right='0';
+              infowincontent.appendChild(ir);
+              infowincontent.appendChild(controlUI);
+              
+              
+//               '<div id="content">'+
+//       '<div id="siteNotice">'+
+//       '</div>'+
+//       '<h1 id="firstHeading" class="firstHeading">Uluru</h1>'+
+//       '<div id="bodyContent">'+
+//       '<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large ' +
+//       'sandstone rock formation in the southern part of the '+
+//       'Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) '+
+//       'south west of the nearest large town, Alice Springs; 450&#160;km '+
+//       '(280&#160;mi) by road. Kata Tjuta and Uluru are the two major '+
+//       'features of the Uluru - Kata Tjuta National Park. Uluru is '+
+//       'sacred to the Pitjantjatjara and Yankunytjatjara, the '+
+//       'Aboriginal people of the area. It has many springs, waterholes, '+
+//       'rock caves and ancient paintings. Uluru is listed as a World '+
+//       'Heritage Site.</p>'+
+//       '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">'+
+//       'https://en.wikipedia.org/w/index.php?title=Uluru</a> '+
+//       '(last visited June 22, 2009).</p>'+
+//       '</div>'+
+//       '</div>';
+
+              
+              
+              
+              
+              
+              
+              if (Estado=='En Transito'){
+                if(Avisado==1 && Entregado==0){
+                var animacion=google.maps.Animation.BOUNCE;
+                }else{
+                var animacion=google.maps.Animation.DROP;
+                }
+
+                if(Retirado==1){
+                var iconBase = '../../images/favicon/iconamarillo.png';
+                }else{
+                var iconBase = '../../images/favicon/iconoazul.png';  
+                }
+              }else if(Estado=='Entregado al Cliente'){   
+              var iconBase = '../../images/favicon/iconverde.png';
+              }else if(Estado=='No se pudo entregar'){
+              var iconBase = '../../images/favicon/iconcaddy.png';
+              }
+              //DECLARO EL ARRAY QUE VA A CONTENER LOS MARCADORES
+              var markers = [];
+              
+              var marker = new google.maps.Marker({
+                map: map,
+                position: point,
+//                 label: icon,
+                icon: iconBase,
+                animation:animacion,
+              });
+                markers.push(marker);
+
+//               function iniciarSemaforo(index){
+//               setTimeout(function(){         
+//               markers[index].icon="http://maps.google.com/mapfiles/ms/icons/yellow-dot.png";
+//               markers[index].setMap(null);
+//               markers[index].setMap(map);
+//               setTimeout(function(){
+//               markers[index].icon="http://maps.google.com/mapfiles/ms/icons/red-dot.png";
+//               markers[index].setMap(null);
+//               markers[index].setMap(map);                    
+//               },2000);                      
+//               },2000);
+
+//               }
+              
+//               var nuevoaviso=Avisado;
+//               if(avisemos == 1){
+//               nuevoaviso = 0;  
+//               }
+//               if(noavisemos == 1){
+//               nuevoaviso = 1;  
+//               }
+              ir.addEventListener('click', function() {
+//                 location.href = 'http://maps.google.com/?q='+address, '_system', 'location=yes';               
+//                 navigator.geolocation.getCurrentPosition(function (position) {
+//                 var origin = new google.maps.LatLng(
+//                 position.coords.latitude,
+//                 position.coords.longitude
+//                 );
+//                 var destination=address;
+//                 calcRoute(map, origin, destination);
+
+//                 });
+                location.href = 'http://maps.google.com/?q='+address, '_system', 'location=yes';               
+
+//                   function drawRoute(map, origin, destination) {
+//                     var directionsService = new google.maps.DirectionsService();
+//                     var directionsDisplay = new google.maps.DirectionsRenderer();
+//                     var directionsResult = new google.maps.DirectionsRenderer();
+
+// //                     directionsDisplay.setMap(map);
+   
+//                     directionsService.route({
+//                       origin: origin,
+//                       destination: destination,
+//                       travelMode: 'DRIVING'
+//                     }, function(response, status) {
+//                       if(status === 'OK') {
+                        
+//                         directionsDisplay.setDirections(response);
+                        
+//                       } else {
+//                         alert('No se pudo establecer el recorrido. ', status);
+//                       }
+                   
+                    
+                    
+//                     });
+//                   }
+                
+              
+
+// function calcRoute(map,origin,destination) {
+// var directionsService = new google.maps.DirectionsService();
+//   var directionsRenderer = new google.maps.DirectionsRenderer();
+// //   directionsResult.setMap(map);
+// directionsRenderer.setMap(map);
+//   directionsRenderer.setPanel(document.getElementById('infowincontent'));
+//   var start = origin;
+//   var end = destination;
+//   var request = {
+//     origin: start,
+//     destination: end,
+//     travelMode: 'DRIVING'
+//   };
+//   directionsService.route(request, function(result, status) {
+//     if (status == 'OK') {
+//       directionsRenderer.setDirections(result);
+//     }
+//   });
+              
+//               }
+              });
+              
+              
+              
+              
+              proximo.addEventListener('click', function() {
+                
+                var dato={
+                "Proximo" : 1,
+                "Avisado" : 1,  
+                "CodigoSeguimiento" : CodigoSeguimiento
+                };
+              $.ajax({
+              data:dato,
+              url: 'proceso.php',
+              type: 'post',
+              success: function(response)
+              {
+              var jsonData = JSON.parse(response);
+              if (jsonData.success == "1")
+              {
+                if (jsonData.avisado == "0"){
+                  alert('Ok, lo dejamos para despues..'); 
+                  proximoText.innerHTML = 'Avisar que voy! ';
+                  marker.setAnimation(google.maps.Animation.DROP);
+                  infoWindow.close();  
+                }else{
+                  alert('Vamos!'); 
+                  proximoText.innerHTML = 'Descartar Aviso..';
+                  marker.setAnimation(google.maps.Animation.BOUNCE);
+                  infoWindow.close();  
+                }  
+              }
+                else
+              {
+              alert('Invalid Credentials!');
+              }
+              }
+              });  
+             });
+              
+              
+              // Setup the click event listeners: simply set the map to Chicago.
+              bottonNE.addEventListener('click', function() {
+              var mensaje;
+              var d = new Date();
+                
+              if(Retirado==0){
+              var opcion = confirm("No Retiraste el paquete?");
+              }else{
+              var opcion = confirm("No Entregaste el paquete?");  
+              }
+                if (opcion == true) {
+                  if(Retirado==0){
+                    var dato={
+                    "Nombre" : name,
+                    "IdTransClientes" : idTransClientes,
+                    "CodigoSeguimiento" : CodigoSeguimiento,
+                    "Retirado":0  
+                    };
+                  }else{      
+                    var dato={
+                    "Nombre" : name,
+                    "IdTransClientes" : idTransClientes,
+                    "CodigoSeguimiento" : CodigoSeguimiento,
+                    "entregado_t":0  
+                    };
+                  }
+              $.ajax({
+              data:dato,
+              url: 'proces.php',
+              type: 'post',
+              });  
+              for(var i=0; i< markers.length; i++){
+              markers[i].icon="../../images/favicon/iconcaddy.png";
+              controlUI.style.display='none';
+              proximo.style.display='none';
+              bottonNE.style.display='none';  
+              Hora.textContent = 'Hora: '+ d.getHours() +':'+ d.getMinutes();  
+              estado.textContent = 'Estado: No se Pudo Entregar';
+              markers[i].setMap(null);
+              markers[i].setMap(map);
+              markers[i].setAnimation(google.maps.Animation.DROP);
+              }
+              var mensaje="Listo, gracias";                                
+              } else {
+                var mensaje="Cancelado";
+//               for(var i=0; i< markers.length; i++){
+//               markers[i].icon="../../images/favicon/iconcaddy.png";
+//               markers[i].setMap(null);
+//               markers[i].setMap(map);
+//               }
+//               if(Retirado==0){
+//               var mensaje="Paquete no Retirado";          
+//               }else{
+//               var mensaje="Paquete no Entreagdo";            
+//               }
+              }
+              alert(mensaje);
+              });
+                
+                
+                
+              controlUI.addEventListener('click', function() {
+              var mensaje;
+              var d = new Date();
+                
+              if(Retirado==0){
+              var opcion = confirm("Retiraste el paquete?");
+              }else{
+              var opcion = confirm("Entregaste el paquete?");  
+              }
+                if (opcion == true) {
+                  if(Retirado==0){
+                  var dato={
+                  "Nombre" : name,
+                  "IdTransClientes" : idTransClientes,
+                  "CodigoSeguimiento" : CodigoSeguimiento,
+                  "Retirado":1  
+                  };
+                  }else{      
+                  var dato={
+                  "Nombre" : name,
+                  "IdTransClientes" : idTransClientes,
+                  "CodigoSeguimiento" : CodigoSeguimiento,
+                  "entregado_t":1  
+                  };
+                  }
+              $.ajax({
+              data:dato,
+              url: 'proces.php',
+              type: 'post',
+              });  
+              for(var i=0; i< markers.length; i++){
+              markers[i].icon="../../images/favicon/iconverde.png";
+              controlUI.style.display='none';
+              Hora.textContent = 'Hora: '+ d.getHours() +':'+ d.getMinutes();  
+              estado.textContent = 'Estado: Entregado';
+              markers[i].setMap(null);
+              markers[i].setMap(map);
+              markers[i].setAnimation(google.maps.Animation.DROP);
+              }
+              
+              
+              var mensaje="Listo, gracias";
+              
+              } else {
+                var mensaje="Cancelado";
+
+                //               for(var i=0; i< markers.length; i++){
+//               markers[i].icon="../../images/favicon/iconcaddy.png";
+//               markers[i].setMap(null);
+//               markers[i].setMap(map);
+//               }
+//               if(Retirado==0){
+//               var mensaje="Paquete no Retirado";          
+//               }else{
+//               var mensaje="Paquete no Entreagdo";            
+//               }
+              }
+              alert(mensaje);
+              });
+
+//               controlUI.addEventListener('click', function() {
+//                     for(var i=0; i< markers.length; i++){
+//                     iniciarSemaforo(i);
+//                   }
+//                 });
+
+              marker.addListener('click', function() {
+                infoWindow.setContent(infowincontent);
+                infoWindow.open(map, marker);
+              });
+            });
+          });
+        }
+
+
+
+      function downloadUrl(url, callback) {
+        var request = window.ActiveXObject ?
+            new ActiveXObject('Microsoft.XMLHTTP') :
+            new XMLHttpRequest;
+
+        request.onreadystatechange = function() {
+          if (request.readyState == 4) {
+            request.onreadystatechange = doNothing;
+            callback(request, request.status);
+          }
+        };
+
+        request.open('GET', url, true);
+        request.send(null);
+      }
+
+      function doNothing() {}
+    </script>
+    <script async defer
+    src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&callback=initMap">
+
+//     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBLo_Ys3Waub6KJAAvdEfKQuIVt-xO7qu0&callback=initMap">
+    </script>
+  </body>
+</html>  
