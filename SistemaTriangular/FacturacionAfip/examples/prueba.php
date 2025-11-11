@@ -2,7 +2,7 @@
 require_once '../src/Afip.php';
 
 $afip = new Afip([
-    'CUIT' => 20715344943, // tu CUIT
+    'CUIT' => 30715344943, // tu CUIT
     'production' => false   // o true en producción
 ]);
 
