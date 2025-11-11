@@ -422,20 +422,20 @@
                         <div class="col-xl-3 col-lg-6">
                             <div class="card widget-flat">
                                 <div class="card-body">
-                                    <div class="float-right">
+                                    <div class="float-end">
                                         <i class="mdi mdi-truck-check widget-icon bg-danger rounded-circle text-white"></i>
                                     </div>
                                     <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Envios Simples</h5>
                                     <h3 class="mt-3" id="entregas_dia"></h3>
-                                    <span id="entregas_dia_flex" class="badge badge-warning text-white"></span>
-                                    <span id="entregas_dia_simple" class="badge badge-success text-white  mb-1"></span>
+                                    <span id="entregas_dia_flex" class="badge bg-warning text-white"></span>
+                                    <span id="entregas_dia_simple" class="badge bg-success text-white mb-1"></span>
                                     <span class="text-nowrap" id="entregas_mes"></span><br>
-                                    <span id="envios_flex" class="badge badge-warning text-white"></span>
-                                    <span id="envios_simple" class="badge badge-success text-white"></span>
+                                    <span id="envios_flex" class="badge bg-warning text-white"></span>
+                                    <span id="envios_simple" class="badge bg-success text-white"></span>
 
-                                    <!--                                                         <span class="text-nowrap" id="enviospendientes"</span> -->
+                                    <!--                                                         <span class="text-nowrap" id="enviospendientes"></span> -->
                                     <p class="mb-0 text-muted">
-                                        <span id="entregas_porc_color" class="badge badge-info mr-1">
+                                        <span id="entregas_porc_color" class="badge bg-info mr-1">
                                             <i id="entregas_porc"></i> </span>
                                         <span class="text-nowrap" id="entregas_mesant"></span>
                                     </p>
@@ -444,17 +444,16 @@
                         </div> <!-- end col-->
 
                         <div class="col-xl-3 col-lg-6">
-                            <div class="card widget-flat">
+                            <div class="card bg-light border">
                                 <div class="card-body">
-                                    <div class="float-right">
+                                    <div class="float-end">
                                         <i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Envios Recorridos</h5>
-                                    <h3 class="mt-3 mb-3" id="entregasr_dia"></h3>
-                                    <span class="text-nowrap" id="entregasr_mes"></span>
-                                    <p class="mb-0 text-muted">
-                                        <span id="entregasr_porc_color" class="badge badge-info mr-1">
-                                            <i id="entregasr_porc"></i> </span>
+                                    <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Envios Recorridos</h5>
+                                    <h3 class="card-subtitle mt-3 mb-3" id="entregasr_dia"></h3>
+                                    <p class="card-text text-muted">
+                                        <span id="entregasr_porc_color" class="badge bg-info text-white mr-1">
+                                            <i id="entregasr_porc" class="fas fa-arrow-up"></i> </span>
                                         <span class="text-nowrap" id="entregasr_mesant"></span>
                                     </p>
                                 </div>
@@ -462,15 +461,17 @@
                         </div> <!-- end col-->
 
                         <div class="col-xl-3 col-lg-6">
-                            <div class="card widget-flat">
+                            <div class="card">
                                 <div class="card-body">
-                                    <div class="float-right">
+                                    <div class="float-end">
                                         <i class="mdi mdi-account-multiple widget-icon bg-danger rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Clientes Activos</h5>
+                                    <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Clientes Activos</h5>
+                                    <p class="card-text text-muted">
                                     <h3 class="mt-3 mb-3" id="clientes_dia"></h3>
                                     <span class="text-nowrap" id="clientes_mes"></span>
-                                    <p class="mb-0 text-muted">
+                                    </p>
+                                    <p class="card-text text-muted">
                                         <span id="clientes_porc_color" class="badge badge-info mr-1">
                                             <i id="clientes_porc"></i> </span>
                                         <span class="text-nowrap" id="clientes_mesant"></span>
@@ -480,16 +481,15 @@
                         </div> <!-- end col-->
 
                         <div class="col-xl-3 col-lg-6">
-                            <div class="card widget-flat">
+                            <div class="card widget-flat border-0 shadow-none">
                                 <div class="card-body">
-                                    <div class="float-right">
+                                    <div class="float-end">
                                         <i class="mdi mdi-truck-fast widget-icon bg-danger rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Kilometros Recorridos</h5>
-                                    <h3 class="mt-3 mb-3" id="kilometros_dia"></h3>
-                                    <span class="text-nowrap" id="kilometros_mes"></span>
-                                    <p class="mb-0 text-muted">
-                                        <span id="kilometros_porc_color" class="badge badge-info mr-1">
+                                    <h5 class="card-title text-muted mt-0" title="Revenue">Kilometros Recorridos</h5>
+                                    <h3 class="card-subtitle mt-3 mb-3" id="kilometros_dia"></h3>
+                                    <p class="card-text text-muted">
+                                        <span id="kilometros_porc_color" class="badge bg-info text-white mr-1">
                                             <i id="kilometros_porc"></i> </span>
                                         <span class="text-nowrap" id="kilometros_mesant"></span>
                                     </p>
@@ -498,10 +498,6 @@
                         </div> <!-- end col-->
 
                     </div> <!-- end row -->
-                    <!--                                     </div> -->
-                    <!--                                 </div> <!-- end card-box-->
-                    <!--                             </div> <!-- end col -->
-                    <!--                         </div> -->
                     <!-- end row-->
                     <div class="row">
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
