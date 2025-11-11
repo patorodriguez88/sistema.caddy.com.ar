@@ -1565,50 +1565,50 @@
 
                                                 <div class="row">
                                                     <div class="col-xl-3 col-lg-6">
-                                                        <div class="card widget-flat">
+                                                        <div class="card widget-flat bg-white text-dark">
                                                             <div class="card-body">
-                                                                <div class="float-right">
-                                                                    <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
+                                                                <div class="float-end">
+                                                                    <i class="mdi mdi-currency-usd widget-icon bg-warning rounded-circle text-dark"></i>
                                                                 </div>
-                                                                <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Promedio Mensual</h5>
-                                                                <h3 class="mt-3 mb-3" id="ventas_mes"></h3>
-                                                                <p class="mb-0 text-muted">
-                                                                    <span class="badge badge-info mr-1">
+                                                                <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Promedio Mensual</h5>
+                                                                <h3 class="card-subtitle mt-3 mb-3" id="ventas_mes"></h3>
+                                                                <p class="card-text text-muted">
+                                                                    <span class="badge bg-info text-white mr-1">
                                                                         <i class="mdi mdi-arrow-down-bold" id="ventas_mes_ant"></i> %</span>
-                                                                    <span class="text-nowrap">Compara año anterior</span>
+                                                                    <span class="text-nowrap">Compara ao ano anterior</span>
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <!-- end col-->
                                                     <div class="col-xl-3 col-lg-6">
-                                                        <div class="card widget-flat">
+                                                        <div class="card widget-flat bg-white text-dark">
                                                             <div class="card-body">
-                                                                <div class="float-right">
-                                                                    <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
+                                                                <div class="float-end">
+                                                                    <i class="mdi mdi-currency-usd widget-icon bg-warning rounded-circle text-dark"></i>
                                                                 </div>
-                                                                <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Ventas Este Año</h5>
-                                                                <h3 class="mt-3 mb-3" id="ventas_ano"></h3>
-                                                                <p class="mb-0 text-muted">
-                                                                    <span class="badge badge-info mr-1">
+                                                                <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Ventas Este Año</h5>
+                                                                <h3 class="card-subtitle mt-3 mb-3" id="ventas_ano"></h3>
+                                                                <p class="card-text text-muted">
+                                                                    <span class="badge bg-info text-white mr-1">
                                                                         <i class="mdi mdi-arrow-down-bold" id="ventas_ano_ant"></i> %</span>
-                                                                    <span class="text-nowrap">Comprara año anterior</span>
+                                                                    <span class="text-nowrap">Compara ao ano anterior</span>
                                                                 </p>
                                                             </div>
                                                         </div>
                                                     </div>
                                                     <!-- end col-->
                                                     <div class="col-xl-3 col-lg-6">
-                                                        <div class="card widget-flat">
+                                                        <div class="card widget-flat bg-white text-dark">
                                                             <div class="card-body">
-                                                                <div class="float-right">
-                                                                    <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
+                                                                <div class="float-end">
+                                                                    <i class="mdi mdi-currency-usd widget-icon bg-warning rounded-circle text-dark"></i>
                                                                 </div>
-                                                                <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Ultima Factura del <a class="text-muted font-weight-normal mt-0" id="fecha"></a></h5>
-                                                                <h3 class="mt-3 mb-3" id="debe"></h3>
+                                                                <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Ultima Factura del <a class="text-muted font-weight-normal mt-0" id="fecha"></a></h5>
+                                                                <h3 class="card-subtitle mt-3 mb-3" id="debe"></h3>
 
-                                                                <p class="mb-0 text-muted">
-                                                                    <span class="badge badge-info mr-1">
+                                                                <p class="card-text text-muted">
+                                                                    <span class="badge bg-info text-white mr-1">
                                                                         <i class="mdi mdi-arrow-down-bold" id="tipo"></i> % </span>
                                                                     <span class="text-nowrap" id="numero"></span>
                                                                 </p>
@@ -1619,14 +1619,14 @@
                                                     <div class="col-xl-3 col-lg-6">
                                                         <div id="card_saldo" class="card widget-flat bg-danger text-white">
                                                             <div class="card-body">
-                                                                <div class="float-right">
+                                                                <div class="float-end">
                                                                     <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
                                                                 </div>
-                                                                <h5 class="text-white font-weight-normal mt-0" title="Revenue">Saldo Actual</h5>
-                                                                <h3 class="mt-3 mb-1" id="saldo"></h3>
-                                                                <p class="mb-0 text-white">
+                                                                <h5 class="card-title text-white font-weight-normal mt-0" title="Revenue">Saldo Actual</h5>
+                                                                <h3 class="card-subtitle mt-3 mb-1" id="saldo"></h3>
+                                                                <p class="card-text text-white">
                                                                     <!--                                                             <span class="badge badge-info mr-1">
-                                                              <i id="fecha_ult_pago"></i> </span> -->
+                                                                    <i id="fecha_ult_pago"></i> </span> -->
                                                                     <a id="fecha_ult_pago"></a>
                                                                     <span class="text-nowrap text-white" id="importe_ult_pago">Último Pago</span>
                                                                 </p>

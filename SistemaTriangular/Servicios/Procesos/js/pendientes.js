@@ -82,10 +82,10 @@ var datatable = $("#seguimiento").DataTable({
               wh_status = "Paquete Ingresado";
             }
             var wepoint =
-              `<span class="badge badge-info badge-pill">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span><br>` +
-              `<span class="badge badge-info badge-pill">Wh: Status: ${wh_status}</span>`;
+              `<span class="badge bg-info text-white">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span><br>` +
+              `<span class="badge bg-info text-white">Wh: Status: ${wh_status}</span>`;
           } else {
-            var wepoint = `<span class="badge badge-info badge-pill">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span>`;
+            var wepoint = `<span class="badge bg-info text-white rounded-pill">Wh: ${row.Wepoint_f} ${row.Wepoint_h}</span>`;
           }
         } else {
           wepoint = "";
@@ -213,7 +213,7 @@ var datatable = $("#seguimiento").DataTable({
           var badget = "Simple";
         }
 
-        return `<td class="table-action col-xs-3"><a style="cursor:pointer" class="text-primary"  data-toggle="modal" data-target="#modal_seguimiento" data-id="${row.CodigoSeguimiento}"data-title="${data.ClienteDestino}" data-fieldname="${data}"><b>${row.CodigoSeguimiento}</b></a></br><a><b>${servicio}</b></a><br/><span class="badge badge-dark-lighten"> \$ ${row.Debe}</span></br><a onclick="filter(${row.id})" class="badge text-white badge-${color_flex}">${badget}</a></td>`;
+        return `<td class="table-action col-xs-3"><a style="cursor:pointer" class="text-primary" data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="${row.CodigoSeguimiento}" data-title="${data.ClienteDestino}" data-fieldname="${data}"><b>${row.CodigoSeguimiento}</b></a></br><a><b>${servicio}</b></a></br><span class="badge bg-dark text-white"> \$ ${row.Debe}</span></br><a onclick="filter(${row.id})" class="badge bg-${color_flex} text-white" style="cursor:pointer">${badget}</a></td>`;
       },
     },
     //           {data:"Recorrido"},
