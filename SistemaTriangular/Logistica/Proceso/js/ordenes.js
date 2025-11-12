@@ -353,7 +353,7 @@ function guardarOrden() {
       $("#select_recorridos option:selected").text();
   }
 
-  let datos = {
+  const datos = {
     alta_orden: 1,
     numero: $("#orden_number").val(),
     fecha: $("#orden_date").val(),
@@ -363,47 +363,73 @@ function guardarOrden() {
     chofer: $("#select_empleados").val(),
     acomp: $("#orden_acomp").val(),
     recorrido: $("#select_recorridos").val(),
+    recorrido_nombre: recorrido_nombre, // 👈 si el backend lo guarda, mándalo
     fijo: $("#fijo_switch").is(":checked") ? 1 : 0,
   };
-  // Validar campos obligatorios
-  if (
-    !datos.numero ||
-    !datos.fecha ||
-    !datos.hora ||
-    !datos.controla ||
-    !datos.vehiculo ||
-    !datos.chofer ||
-    !datos.recorrido
-  ) {
-    Swal.fire({
-      icon: "warning",
-      title: "Faltan datos obligatorios",
-      text: "Completá todos los campos requeridos antes de continuar.",
-    });
-    return; // Evita continuar si falta algo
+
+  // Validación rápida
+  for (const k of [
+    "numero",
+    "fecha",
+    "hora",
+    "controla",
+    "vehiculo",
+    "chofer",
+    "recorrido",
+  ]) {
+    if (!datos[k]) {
+      Swal.fire({
+        icon: "warning",
+        title: "Faltan datos obligatorios",
+        text: "Completá todos los campos requeridos antes de continuar.",
+      });
+      return;
+    }
   }
+
   $.ajax({
-    url: "Proceso/php/ordenes.php",
+    url: "Procesos/php/ordenes.php", // 👈 corregido: 'Procesos' (no 'Proceso')
     type: "POST",
     data: datos,
     dataType: "json",
+    timeout: 15000,
     success: function (respuesta) {
-      if (respuesta.success) {
+      // Por si el servidor devolvió string (hostings raros)
+      if (typeof respuesta === "string") {
+        try {
+          respuesta = JSON.parse(respuesta);
+        } catch (e) {}
+      }
+      if (respuesta && respuesta.success) {
         Swal.fire("OK", "Orden de Salida generada correctamente", "success");
         $("#orden_alta").modal("hide");
-        $("#modal-rec-form")[0].reset();
-        $("#ordenes").DataTable().ajax.reload();
+        $("#modal-rec-form")[0]?.reset?.();
+        if ($.fn.DataTable.isDataTable("#ordenes")) {
+          $("#ordenes").DataTable().ajax.reload(null, false);
+        }
       } else {
         Swal.fire(
           "Error",
-          respuesta.mensaje || "No se pudo guardar la orden",
+          (respuesta && (respuesta.mensaje || respuesta.error)) ||
+            "No se pudo guardar la orden",
           "error"
         );
       }
     },
     error: function (xhr, status, error) {
-      console.error("Error AJAX:", error);
-      Swal.fire("Error", "Error en la comunicación con el servidor", "error");
+      console.error("AJAX ERROR =>", {
+        status,
+        error,
+        code: xhr.status,
+        response: xhr.responseText,
+      });
+      Swal.fire(
+        "Error",
+        `Fallo la comunicación (${xhr.status} - ${status}).\n${(
+          xhr.responseText || ""
+        ).slice(0, 300)}`,
+        "error"
+      );
     },
   });
 }
