@@ -520,6 +520,8 @@ if (isset($_POST['alta_orden'])) {
   $CombustibleSalida = '';
   $Total_transclientes = 0;
   $Fijo = isset($_POST['fijo']) ? intval($_POST['fijo']) : 0;
+  $Rendicion  = 0;                      // 👈 clave: setear valor
+
 
   //BUSCO EN LA TABLA RECORRIDOS PARA VER SI EXISTE EL RECORRIDO
   $sql = "SELECT id FROM Recorridos WHERE Numero='$Recorrido'";
@@ -617,7 +619,8 @@ if (isset($_POST['alta_orden'])) {
       CombustibleSalida,
       idUsuarioChofer,
       Cliente,
-      TotalRecorrido
+      TotalRecorrido,
+      Rendicion
     ) VALUES (
       '{$Numero}',
       '{$Fecha}',
@@ -635,7 +638,8 @@ if (isset($_POST['alta_orden'])) {
       '{$CombustibleSalida}',
       '{$IdUsuarioChofer}',
       '{$Cliente}',
-      '{$TotalRecorrido}')";
+      '{$TotalRecorrido}',
+      '{$Rendicion}')";
 
       if ($mysqli->query($sqlInsert)) {
         echo json_encode(['success' => true, 'numero' => $Numero]);
