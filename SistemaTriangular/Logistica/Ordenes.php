@@ -10,12 +10,9 @@
 
     <!-- Caddy favicon -->
     <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
-
     <!-- Plugin css -->
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
     <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
-
-
     <!-- Datatables css -->
     <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
     <!-- For checkbox Select-->
@@ -24,18 +21,12 @@
     <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
     <!-- Fixe header-->
     <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
-
-
-
     <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
-
     <!-- Vendor css -->
     <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
-
     <!-- App css -->
     <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-
     <!-- Icons css -->
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
@@ -468,11 +459,6 @@
     <!-- Footer Start -->
     <div id="menuhyper_footer"></div>
     <!-- end Footer -->
-
-    <!-- </div> -->
-
-    <!-- </div> -->
-
 
     <!-- Vendor js -->
     <script src="../hyper/dist/assets/js/vendor.min.js"></script>
