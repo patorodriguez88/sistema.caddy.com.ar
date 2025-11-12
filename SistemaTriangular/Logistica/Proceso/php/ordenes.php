@@ -521,8 +521,8 @@ if (isset($_POST['alta_orden'])) {
   $Total_transclientes = 0;
   $Fijo = isset($_POST['fijo']) ? intval($_POST['fijo']) : 0;
   $Rendicion  = 0;                      // 👈 clave: setear valor
-  $Costo_rendicioni = 0;
-  $Observacines_rendicion = '';
+  $CostoRendicioni = 0;
+  $ObservacinesRendicion = '';
 
   //BUSCO EN LA TABLA RECORRIDOS PARA VER SI EXISTE EL RECORRIDO
   $sql = "SELECT id FROM Recorridos WHERE Numero='$Recorrido'";
