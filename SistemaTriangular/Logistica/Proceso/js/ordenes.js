@@ -388,7 +388,7 @@ function guardarOrden() {
   }
 
   $.ajax({
-    url: "Procesos/php/ordenes.php", // 👈 corregido: 'Procesos' (no 'Proceso')
+    url: "Proceso/php/ordenes.php", // 👈 corregido: 'Procesos' (no 'Proceso')
     type: "POST",
     data: datos,
     dataType: "json",
