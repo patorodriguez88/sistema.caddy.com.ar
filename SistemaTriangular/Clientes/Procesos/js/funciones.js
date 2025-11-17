@@ -102,7 +102,7 @@ function eliminar_pago(i) {
       Eliminar_pago_permisos: 1,
     },
     type: "POST",
-    url: "https://www.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/eliminapago.php",
+    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/eliminapago.php",
     success: function (response) {
       var jsonData = JSON.parse(response);
 
@@ -120,7 +120,7 @@ function eliminar_pago(i) {
               idCtasctes: i,
             },
             type: "POST",
-            url: "https://www.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/eliminapago.php",
+            url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/eliminapago.php",
             success: function (response) {
               var jsonData = JSON.parse(response);
 
@@ -165,7 +165,7 @@ function notifications(a) {
       id: a,
     },
     type: "POST",
-    url: "https://www.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/invoice.php",
+    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/invoice.php",
     success: function (response) {
       var jsonData = JSON.parse(response);
       var Fecha = jsonData.data[0].Fecha.split("-").reverse().join(".");
@@ -2165,13 +2165,12 @@ $("#guardar_botton").click(function () {
     success: function (response) {
       var jsonData = JSON.parse(response);
       if (jsonData.success == "1") {
-        $.NotificationApp.send(
-          "Listo!",
-          "Datos Guardados",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        Swal.fire({
+          title: "Listo!",
+          text: "Datos Guardados",
+          icon: "success",
+          timer: 1500,
+        });
         document.getElementById("nueva_condicion_facturacion").style.display =
           "none";
         document.getElementById("condicion_facturacion").style.display =
@@ -3396,7 +3395,7 @@ $("#facturar_boton").click(function () {
 $("#facturar_detalle_boton").click(function () {
   $.ajax({
     data: { Empresa: 1 },
-    url: "https://www.caddy.com.ar/SistemaTriangular/Funciones/php/datosempresa.php",
+    url: "../../Funciones/php/datosempresa.php",
     type: "post",
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
@@ -3514,7 +3513,7 @@ $("#facturar_detalle_boton").click(function () {
         $("#total_up_detalle").val(total.toFixed(2));
       },
       ajax: {
-        url: "https://www.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/tablas.php",
+        url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/tablas.php",
         data: {
           FacturacionProformaDetalle: 1,
           id: id,
@@ -3665,7 +3664,7 @@ $("#facturar_recorridos_boton").click(function () {
         $("#total_up_r").val(total.toFixed(2));
       },
       ajax: {
-        url: "https://www.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/tablas.php",
+        url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/tablas.php",
         data: {
           FacturacionProformaRecorridos: 1,
           id: id,
@@ -4293,7 +4292,7 @@ function ComprobarNombre(n) {
       ComprobarNombre: 1,
       Nombre: n,
     },
-    url: "https://www.caddy.com.ar/SistemaTriangular/Ventas/Procesos/php/funciones.php",
+    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Procesos/php/funciones.php",
     type: "post",
     success: function (response) {
       var jsonData = JSON.parse(response);
@@ -4344,7 +4343,7 @@ $("#AgregarCliente").click(function () {
 
   $.ajax({
     data: dato,
-    url: "https://www.caddy.com.ar/SistemaTriangular/Ventas/Procesos/php/crearcliente.php",
+    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Procesos/php/crearcliente.php",
     type: "post",
     beforeSend: function () {
       // $("#buscando").html("Buscando...");

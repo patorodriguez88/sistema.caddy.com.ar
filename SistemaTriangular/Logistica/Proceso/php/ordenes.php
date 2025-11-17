@@ -1,7 +1,8 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
-
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 //ESTO SE EJECUTAL AL ABRIR EL MODAL PARA CARGAR LA ORDEN
 
 if (isset($_POST['MonetizarRecorrido'])) {
@@ -521,8 +522,8 @@ if (isset($_POST['alta_orden'])) {
   $Total_transclientes = 0;
   $Fijo = isset($_POST['fijo']) ? intval($_POST['fijo']) : 0;
   $Rendicion  = 0;                      // 👈 clave: setear valor
-  $CostoRendicioni = 0;
-  $ObservacinesRendicion = '';
+  $CostoRendicion = 0;
+  $ObservacionesRendicion = "";
 
   //BUSCO EN LA TABLA RECORRIDOS PARA VER SI EXISTE EL RECORRIDO
   $sql = "SELECT id FROM Recorridos WHERE Numero='$Recorrido'";
@@ -623,7 +624,7 @@ if (isset($_POST['alta_orden'])) {
       TotalRecorrido,
       Rendicion,
       Costo_rendicion,
-      Observacioes_rendicion
+      Observaciones_rendicion
     ) VALUES (
       '{$Numero}',
       '{$Fecha}',

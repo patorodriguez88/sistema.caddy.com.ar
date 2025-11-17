@@ -315,7 +315,7 @@
                             </div>
                           </div><!-- /.modal-content -->
                     </div><!-- /.modal-dialog -->
-                    <!--                       </div><!-- /.modal -->
+
                     <!-- Full width modal -->
                     <div id="bs-example-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
                       <div class="modal-dialog modal-lg">
@@ -369,12 +369,6 @@
                                   <label>Relacion</label>
                                   <select name="relacion_nc" id="relacion_nc" class="form-control select2" data-bs-toggle="select2" required>
                                     <option value="">Seleccione un Cliente para la Relacion</option>
-                                    <?php
-                                    // $sqlclientes = $mysqli->query("SELECT id,nombrecliente FROM Clientes");
-                                    // while ($row = $sqlclientes->fetch_array(MYSQLI_ASSOC)) {
-                                    //   echo "<option value='$row[id]'>$row[nombrecliente]</option>";
-                                    // }
-                                    ?>
                                   </select>
                                 </div>
                               </div>
@@ -393,7 +387,14 @@
                       <div class="card-body">
                         <!-- <form action="Procesos/php/ConfirmarVenta.php" class="needs-validation"  data-bs-toggle="validator" data-disable="false" method="POST"> -->
                         <form id="VentaSimple" action="" class="needs-validation" data-bs-toggle="validator" data-disable="false" method="POST">
-                          <h2 class="header-title">Venta Simple <a id="nventa" class="badge badge-primary"></a> <a id="seguimiento" class="badge badge-success"></a> <a id="distancia" class="badge badge-danger"></a> <a id="duration" class="badge badge-danger"></a><a id="redespacho" class="badge badge-warning text-white"></a></h2>
+                          <h2 class="header-title d-flex align-items-center">
+                            Venta Simple
+                            <span class="badge rounded-pill bg-primary ms-2" id="nventa"></span>
+                            <span class="badge rounded-pill bg-success ms-2" id="seguimiento"></span>
+                            <span class="badge rounded-pill bg-danger ms-2" id="distancia"></span>
+                            <span class="badge rounded-pill bg-danger ms-2" id="duration"></span>
+                            <span class="badge rounded-pill bg-warning text-white ms-2" id="redespacho"></span>
+                          </h2>
                           <!--                                         <p class="text-muted font-14">Select2 gives you a customizable select box with support for searching, tagging, remote data sets, infinite scrolling, and many other highly used options.</p> -->
                           <div class="tab-content" data-select2-id="7">
                             <div class="tab-pane show active" id="select2-preview" data-select2-id="select2-preview">
@@ -403,12 +404,6 @@
                                   <label id="pagatercero_label">Cliente Acreedor: <i id="pagatercero_icon" class="mdi mdi-15px mdi-account-cash text-success" style="display:none"></i></label>
                                   <select id="clientefacturacion_t" class="form-control select2" data-bs-toggle="select2" Onchange="oculto_origen(this.value)">
                                     <option value="">Seleccione un Cliente Acreedor</option>
-                                    <?php
-                                    // $sqlclientes = $mysqli->query("SELECT id,nombrecliente FROM Clientes");
-                                    // while ($row = $sqlclientes->fetch_array(MYSQLI_ASSOC)) {
-                                    //   echo "<option value='$row[id]'>$row[nombrecliente]</option>";
-                                    // }
-                                    ?>
                                   </select>
                                 </div>
 
@@ -663,13 +658,13 @@
           <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
           <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
           <!-- Apex Charts js -->
-          <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+          <!-- <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script> -->
           <!-- Vector Map js -->
           <?php include '../Menu/php/script_maps-vector.php'; ?>
           <!-- DataTables -->
           <?php include '../Menu/php/script_datatables.php'; ?>
           <!-- Dashboard App js -->
-          <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+          <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
           <!-- Funciones -->
 
           <script src="../Menu/js/funciones.js"></script>

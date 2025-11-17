@@ -1,5 +1,12 @@
 <?php
 // --- Utilidades internas ---
+// _osm_fetch();   
+// _norm();
+// osm_normalizar_direccion();
+// osm_bbox_ciudad();
+// osm_bbox_ciudad();
+// osm_bbox_ciudad();
+
 function _osm_fetch(string $url): ?array
 {
     $ctx = stream_context_create([

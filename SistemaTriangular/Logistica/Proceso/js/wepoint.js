@@ -31,6 +31,7 @@ $(document).on("click", ".svc-exclude", function () {
   const final = total - descartados;
 
   const $link = $(`#colectas_tabla .ver-servicios[data-orden="${orden}"]`);
+
   if ($link.length) {
     // actualizar texto
     $link.text(final.toLocaleString("es-AR"));
@@ -168,37 +169,37 @@ $(function () {
       dataSrc: "data", // 👈 esperamos { data: [...] }
     },
     columns: [
-      {
-        data: "Fecha",
-        render: function (data, type, row) {
-          // preferencia tuya: dd/mm/YYYY y ocultar valor original
-          if (type === "display" || type === "filter") {
-            var f = (data || "").split("-").reverse().join("/");
-            return (
-              '<span style="display: none;">' + (data || "") + "</span>" + f
-            );
-          }
-          return data;
-        },
-      },
-      {
-        data: null,
-        render: function (data, type, row) {
-          var color = Number(row.Retirado) === 0 ? "success" : "muted";
-          return (
-            "<b>" +
-            (row.RazonSocial || "") +
-            " (" +
-            (row.CodigoProveedor || "") +
-            ")</b><br/>" +
-            '<i class="mdi mdi-18px mdi-map-marker text-' +
-            color +
-            '"></i><span class="text-muted">' +
-            (row.DomicilioOrigen || "") +
-            "</span>"
-          );
-        },
-      },
+      // {
+      //   data: "Fecha",
+      //   render: function (data, type, row) {
+      //     // preferencia tuya: dd/mm/YYYY y ocultar valor original
+      //     if (type === "display" || type === "filter") {
+      //       var f = (data || "").split("-").reverse().join("/");
+      //       return (
+      //         '<span style="display: none;">' + (data || "") + "</span>" + f
+      //       );
+      //     }
+      //     return data;
+      //   },
+      // },
+      // {
+      //   data: null,
+      //   render: function (data, type, row) {
+      //     var color = Number(row.Retirado) === 0 ? "success" : "muted";
+      //     return (
+      //       "<b>" +
+      //       (row.RazonSocial || "") +
+      //       " (" +
+      //       (row.CodigoProveedor || "") +
+      //       ")</b><br/>" +
+      //       '<i class="mdi mdi-18px mdi-map-marker text-' +
+      //       color +
+      //       '"></i><span class="text-muted">' +
+      //       (row.DomicilioOrigen || "") +
+      //       "</span>"
+      //     );
+      //   },
+      // },
       {
         data: "Recorrido",
         render: function (data, type, row) {
@@ -221,6 +222,7 @@ $(function () {
           return html;
         },
       },
+      { data: "Transportista" },
       { data: "NumerodeOrden" },
       {
         data: "Cantidad",
@@ -621,6 +623,234 @@ $(document).on("click", "#btn_egreso", function () {
 });
 
 // Detalle de códigos por NÚMERO DE ORDEN (EGRESO) - por pieza
+// $(document).on("click", ".ver-codigos-orden", function (e) {
+//   e.preventDefault();
+//   const orden = $(this).data("orden");
+//   if (!orden) return;
+
+//   $("#egreso_header_badge").text("ORD " + orden);
+//   $("#tablaCodigosEgreso tbody").empty();
+//   $("#res_total").text("0");
+//   $("#res_enviados").text("Enviados: 0");
+//   $("#res_pendientes").text("Pendientes: 0");
+
+//   // abrir modal primero (feedback inmediato)
+//   $("#modalCodigosEgreso").modal("show");
+
+//   const token = $("#token_wepoint").val(); // o window.WEPOINT_TOKEN
+
+//   $.ajax({
+//     url: "../Logistica/Proceso/php/wepoint.php",
+//     method: "POST",
+//     dataType: "json",
+//     data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden, token: token },
+//     beforeSend: function () {
+//       Swal.fire({
+//         title: "Consultando estado en WePoint…",
+//         html: "Estamos actualizando los estados de los bultos.<br>Esto puede demorar unos segundos.",
+//         allowOutsideClick: false,
+//         allowEscapeKey: false,
+//         didOpen: () => {
+//           Swal.showLoading();
+
+//           // Si tarda más de 5 segundos, avisamos que está demorando
+//           slowWarningTimer = setTimeout(() => {
+//             Swal.update({
+//               html: "Seguimos consultando WePoint…<br><b>La API está demorando un poco</b>, pero no cierres esta ventana.",
+//             });
+//           }, 5000);
+//         },
+//       });
+//     },
+//   })
+//     .done(function (resp) {
+//       // limpiar el timer del aviso lento
+//       if (slowWarningTimer) clearTimeout(slowWarningTimer);
+//       Swal.close();
+
+//       if (!resp.ok) {
+//         Swal.fire(
+//           "Atención",
+//           resp.message || "No se pudo obtener el detalle.",
+//           "warning"
+//         );
+//         return;
+//       }
+//       if (!resp || resp.ok !== true) {
+//         const msg = (resp && resp.message) || "No se pudo obtener el detalle.";
+//         $("#tablaCodigosEgreso tbody").html(
+//           '<tr><td colspan="5" class="text-danger">' + msg + "</td></tr>"
+//         );
+//         return;
+//       }
+
+//       const items = (resp.data && resp.data.items) || [];
+//       // Agrupar por madre: 93G3FXYSI (madre) => piezas [ { codigo_enviado, id_wepoint, estado } ... ]
+//       const grupos = {};
+//       items.forEach((it) => {
+//         const codigo = String(it.codigo_enviado || "");
+//         // madre = antes del primer "_"; si no tiene "_", la madre es el código mismo
+//         const madre = codigo.includes("_") ? codigo.split("_")[0] : codigo;
+//         if (!grupos[madre]) grupos[madre] = [];
+//         grupos[madre].push({
+//           codigo_enviado: codigo,
+//           id_wepoint: +it.id_wepoint || 0,
+//           estado: it.estado || (it.id_wepoint ? "ENVIADO" : "PENDIENTE"),
+//           time: it.Time || it.time || "",
+//         });
+//       });
+
+//       // Pintar resumen (counters)
+//       const total = resp.total || items.length;
+//       const listos = resp.listos || items.filter((x) => x.id_wepoint).length;
+//       const pend = resp.pendientes || total - listos;
+//       $("#res_total").text(total);
+//       $("#res_enviados").text("Enviados: " + listos);
+//       $("#res_pendientes").text("Pendientes: " + pend);
+
+//       // Render del cuerpo: filas por madre + subtabla de piezas
+//       const $tb = $("#tablaCodigosEgreso tbody");
+//       $tb.empty();
+
+//       // === Top toolbar (arriba, al nivel del resumen) ===
+//       // Si ya existe de una apertura anterior, la removemos para no duplicar
+//       $("#egresoTopTools").remove();
+//       const topToolsHtml = `
+//         <div id="egresoTopTools" class="d-flex flex-wrap gap-3 align-items-center justify-content-between mb-2">
+//           <div class="form-check m-0">
+//             <input type="checkbox" class="form-check-input me-2" id="sel_all_listos">
+//             <label for="sel_all_listos" class="form-check-label mb-0">
+//               Seleccionar todos los <b>listos</b> (con <code>id_wepoint</code>)
+//             </label>
+//           </div>
+//         </div>`;
+//       // Insertar arriba del listado (antes de la tabla)
+//       const $tabla = $("#tablaCodigosEgreso");
+//       $tabla.before(topToolsHtml);
+
+//       // === Botón de crear egreso en el footer (junto al Cancelar/Cerrar) ===
+//       const $footer = $("#modalCodigosEgreso .modal-footer");
+//       if ($footer.length) {
+//         // evitar duplicados
+//         $footer.find("#btn_crear_egreso").remove();
+//         $footer.prepend(`
+//           <button type="button" class="btn btn-success enviar-egreso" id="btn_crear_egreso">
+//             Crear egreso (<span id="sel_count">0</span>)
+//           </button>
+//         `);
+//       }
+
+//       Object.keys(grupos).forEach((madre, idx) => {
+//         const piezas = grupos[madre];
+//         const cant = piezas.length;
+//         const enviados = piezas.filter((p) => p.id_wepoint > 0).length;
+//         const pendientes = cant - enviados;
+
+//         // Fila madre (summary) - clickable para expandir/colapsar
+//         $tb.append(`
+//           <tr class="mother-row" data-target="#grp_${idx}" style="background:#f6f7f9;">
+//             <td>${idx + 1}</td>
+//             <td class="mother-cell">
+//               <span class="fw-semibold mother-toggle" style="cursor:pointer">${madre}</span>
+//               <span class="badge bg-secondary ms-2">${cant}</span>
+//             </td>
+//             <td class="text-end">
+//               <div class="form-check d-inline-flex align-items-center m-0">
+//                 <input type="checkbox" class="form-check-input me-2 sel-grupo"
+//                        data-target="#grp_${idx}_tb" ${
+//           enviados > 0 ? "" : "disabled"
+//         }>
+//                 <label class="form-check-label mb-0">Marcar grupo</label>
+//               </div>
+//             </td>
+//             <td>
+//               <span class="badge bg-success me-1">OK ${enviados}</span>
+//               <span class="badge bg-warning text-dark">PEND ${pendientes}</span>
+//             </td>
+//             <td class="text-muted">—</td>
+//           </tr>
+//           <tr class="collapse" id="grp_${idx}">
+//             <td colspan="5" style="padding:0">
+//               <div class="table-responsive">
+//                 <table class="table table-sm mb-0 align-middle">
+//                   <thead>
+//                     <tr>
+//                       <th style="width:6%"></th>
+//                       <th style="width:34%">Pieza</th>
+//                       <th style="width:18%">id_wepoint</th>
+//                       <th style="width:18%">Estado</th>
+//                       <th style="width:24%">Observaciones</th>
+//                     </tr>
+//                   </thead>
+//                   <tbody id="grp_${idx}_tb"></tbody>
+//                 </table>
+//               </div>
+//             </td>
+//           </tr>
+//         `);
+
+//         // Subfilas piezas con checkbox (solo habilitados si id_wepoint > 0)
+//         const $sub = $tb.find(`#grp_${idx}_tb`);
+//         piezas.forEach((pz, i) => {
+//           const checked = pz.id_wepoint > 0 ? "checked" : "";
+//           const disabled = pz.id_wepoint > 0 ? "" : "disabled";
+//           const isOk = pz.id_wepoint > 0;
+//           const timeStr = isOk ? fmtTime(pz.time) : "";
+//           const badge = isOk
+//             ? '<div><span class="badge bg-success">ENVIADO</span>' +
+//               (timeStr
+//                 ? `<div class="small text-muted mt-1">${timeStr}</div>`
+//                 : "") +
+//               "</div>"
+//             : '<span class="badge bg-warning text-dark">PENDIENTE</span>';
+//           $sub.append(`
+//             <tr>
+//               <td class="text-center">
+//                 <input type="checkbox" class="form-check-input sel-pieza"
+//                        data-madre="${madre}"
+//                        data-codigo="${pz.codigo_enviado}"
+//                        data-idw="${pz.id_wepoint}"
+//                        ${checked} ${disabled}>
+//               </td>
+//               <td><code>${pz.codigo_enviado}</code></td>
+//               <td>${pz.id_wepoint || "-"}</td>
+//               <td>${badge}</td>
+//               <td></td>
+//             </tr>
+//           `);
+//         });
+//       });
+
+//       // Guardamos en el modal la orden para usar al confirmar egreso
+//       $("#modalCodigosEgreso").data("orden", orden);
+//       // actualizar contador inicial (piezas listas vienen marcadas)
+//       refreshSelCount();
+
+//       // Click en la fila madre o en el texto para desplegar hijos
+//       $(document)
+//         .off("click.motherToggle")
+//         .on(
+//           "click.motherToggle",
+//           ".mother-row, .mother-row .mother-toggle",
+//           function (e) {
+//             // evitar que checkboxes u otros enlaces disparen doble
+//             if ($(e.target).is("input, label, .sel-grupo")) return;
+//             const target = $(this).closest(".mother-row").data("target");
+//             if (target) {
+//               $(target).collapse("toggle");
+//             }
+//           }
+//         );
+//     })
+//     .fail(function (xhr) {
+//       $("#tablaCodigosEgreso tbody").html(
+//         '<tr><td colspan="5" class="text-danger">Error de conexión (' +
+//           xhr.status +
+//           ").</td></tr>"
+//       );
+//     });
+// });
+
 $(document).on("click", ".ver-codigos-orden", function (e) {
   e.preventDefault();
   const orden = $(this).data("orden");
@@ -635,15 +865,40 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
   // abrir modal primero (feedback inmediato)
   $("#modalCodigosEgreso").modal("show");
 
+  const token = $("#token_wepoint").val(); // o window.WEPOINT_TOKEN
+  let slowWarningTimer = null; // 👈 faltaba esto
+
   $.ajax({
     url: "../Logistica/Proceso/php/wepoint.php",
     method: "POST",
     dataType: "json",
-    data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden },
+    data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden, token: token },
+    beforeSend: function () {
+      Swal.fire({
+        title: "Consultando estado en WePoint…",
+        html: "Estamos actualizando los estados de los bultos.<br>Esto puede demorar unos segundos.",
+        allowOutsideClick: false,
+        allowEscapeKey: false,
+        didOpen: () => {
+          Swal.showLoading();
+
+          // Si tarda más de 5 segundos, avisamos que está demorando
+          slowWarningTimer = setTimeout(() => {
+            Swal.update({
+              html: "Seguimos consultando WePoint…<br><b>La API está demorando un poco</b>, pero no cierres esta ventana.",
+            });
+          }, 5000);
+        },
+      });
+    },
   })
     .done(function (resp) {
+      if (slowWarningTimer) clearTimeout(slowWarningTimer);
+      Swal.close();
+
       if (!resp || resp.ok !== true) {
         const msg = (resp && resp.message) || "No se pudo obtener el detalle.";
+        Swal.fire("Atención", msg, "warning");
         $("#tablaCodigosEgreso tbody").html(
           '<tr><td colspan="5" class="text-danger">' + msg + "</td></tr>"
         );
@@ -651,11 +906,11 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
       }
 
       const items = (resp.data && resp.data.items) || [];
-      // Agrupar por madre: 93G3FXYSI (madre) => piezas [ { codigo_enviado, id_wepoint, estado } ... ]
+
+      // Agrupar por madre
       const grupos = {};
       items.forEach((it) => {
         const codigo = String(it.codigo_enviado || "");
-        // madre = antes del primer "_"; si no tiene "_", la madre es el código mismo
         const madre = codigo.includes("_") ? codigo.split("_")[0] : codigo;
         if (!grupos[madre]) grupos[madre] = [];
         grupos[madre].push({
@@ -666,7 +921,7 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
         });
       });
 
-      // Pintar resumen (counters)
+      // Resumen
       const total = resp.total || items.length;
       const listos = resp.listos || items.filter((x) => x.id_wepoint).length;
       const pend = resp.pendientes || total - listos;
@@ -674,12 +929,10 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
       $("#res_enviados").text("Enviados: " + listos);
       $("#res_pendientes").text("Pendientes: " + pend);
 
-      // Render del cuerpo: filas por madre + subtabla de piezas
       const $tb = $("#tablaCodigosEgreso tbody");
       $tb.empty();
 
-      // === Top toolbar (arriba, al nivel del resumen) ===
-      // Si ya existe de una apertura anterior, la removemos para no duplicar
+      // Top toolbar
       $("#egresoTopTools").remove();
       const topToolsHtml = `
         <div id="egresoTopTools" class="d-flex flex-wrap gap-3 align-items-center justify-content-between mb-2">
@@ -690,14 +943,12 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
             </label>
           </div>
         </div>`;
-      // Insertar arriba del listado (antes de la tabla)
       const $tabla = $("#tablaCodigosEgreso");
       $tabla.before(topToolsHtml);
 
-      // === Botón de crear egreso en el footer (junto al Cancelar/Cerrar) ===
+      // Botón footer
       const $footer = $("#modalCodigosEgreso .modal-footer");
       if ($footer.length) {
-        // evitar duplicados
         $footer.find("#btn_crear_egreso").remove();
         $footer.prepend(`
           <button type="button" class="btn btn-success enviar-egreso" id="btn_crear_egreso">
@@ -712,7 +963,6 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
         const enviados = piezas.filter((p) => p.id_wepoint > 0).length;
         const pendientes = cant - enviados;
 
-        // Fila madre (summary) - clickable para expandir/colapsar
         $tb.append(`
           <tr class="mother-row" data-target="#grp_${idx}" style="background:#f6f7f9;">
             <td>${idx + 1}</td>
@@ -755,12 +1005,11 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
           </tr>
         `);
 
-        // Subfilas piezas con checkbox (solo habilitados si id_wepoint > 0)
         const $sub = $tb.find(`#grp_${idx}_tb`);
-        piezas.forEach((pz, i) => {
-          const checked = pz.id_wepoint > 0 ? "checked" : "";
-          const disabled = pz.id_wepoint > 0 ? "" : "disabled";
+        piezas.forEach((pz) => {
           const isOk = pz.id_wepoint > 0;
+          const checked = isOk ? "checked" : "";
+          const disabled = isOk ? "" : "disabled";
           const timeStr = isOk ? fmtTime(pz.time) : "";
           const badge = isOk
             ? '<div><span class="badge bg-success">ENVIADO</span>' +
@@ -769,6 +1018,7 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
                 : "") +
               "</div>"
             : '<span class="badge bg-warning text-dark">PENDIENTE</span>';
+
           $sub.append(`
             <tr>
               <td class="text-center">
@@ -787,19 +1037,15 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
         });
       });
 
-      // Guardamos en el modal la orden para usar al confirmar egreso
       $("#modalCodigosEgreso").data("orden", orden);
-      // actualizar contador inicial (piezas listas vienen marcadas)
       refreshSelCount();
 
-      // Click en la fila madre o en el texto para desplegar hijos
       $(document)
         .off("click.motherToggle")
         .on(
           "click.motherToggle",
           ".mother-row, .mother-row .mother-toggle",
           function (e) {
-            // evitar que checkboxes u otros enlaces disparen doble
             if ($(e.target).is("input, label, .sel-grupo")) return;
             const target = $(this).closest(".mother-row").data("target");
             if (target) {
@@ -809,11 +1055,15 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
         );
     })
     .fail(function (xhr) {
+      if (slowWarningTimer) clearTimeout(slowWarningTimer);
+      Swal.close();
+
       $("#tablaCodigosEgreso tbody").html(
         '<tr><td colspan="5" class="text-danger">Error de conexión (' +
           xhr.status +
           ").</td></tr>"
       );
+      Swal.fire("Error", "Ocurrió un error consultando WePoint.", "error");
     });
 });
 

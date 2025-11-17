@@ -7,15 +7,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />
-
     <!-- Caddy favicon -->
     <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
-
     <!-- Plugin css -->
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
     <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
-
-
     <!-- Datatables css -->
     <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
     <!-- For checkbox Select-->
@@ -24,18 +20,12 @@
     <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
     <!-- Fixe header-->
     <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
-
-
-
     <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
-
     <!-- Vendor css -->
     <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
-
     <!-- App css -->
     <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-
     <!-- Icons css -->
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
@@ -185,14 +175,16 @@
                         <div class="col-lg-12 mt-3">
                             <div class="card">
                                 <div class="card-body">
-                                    <h4 id="myCenterModalLabel2" class="header-title mb-3">Ordenes de Ingreso al Warehouse </h4>
+                                    <h4 id="myCenterModalLabel2" class="header-title">Ordenes de Ingreso al Warehouse </h4>
+                                    <small class="text-muted mb-3">Estas son las ordenes de ingreso pendientes de enviar al warehouse. Solo los envios que tienen como destino Wepoint (18587)</small>
                                     <div class="table-responsive">
                                         <table class="table dt-responsive nowrap w-100" style="font-size:10px" id="colectas_tabla">
                                             <thead class="thead-light">
                                                 <tr>
-                                                    <th>Fecha</th>
-                                                    <th>Razon Social</th>
+                                                    <!-- <th>Fecha</th> -->
+                                                    <!-- <th>Razon Social</th> -->
                                                     <th>Recorrido</th>
+                                                    <th>Chofer</th>
                                                     <th>Numero de Orden</th>
                                                     <th>Cantidad</th>
                                                     <th>Accion</th>
@@ -201,7 +193,8 @@
                                             </thead>
                                             <tbody>
                                                 <tr>
-                                                    <td></td>
+                                                    <!-- <td></td> -->
+                                                    <!-- <td></td> -->
                                                     <td></td>
                                                     <td></td>
                                                     <td></td>

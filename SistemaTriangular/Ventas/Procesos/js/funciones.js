@@ -1,4 +1,5 @@
 function ver_tabla_servicios() {
+  console.log("tabla servicios");
   if (document.getElementById("id_origen").value == null) {
     var cliente = document.getElementById("id_origen2").value;
   } else {
@@ -255,7 +256,8 @@ function distancia() {
   $.ajax({
     data: { origen: idOrigen, destino: idDestino },
     type: "POST",
-    url: "../Google/distancematrix.php",
+    // url: "../Google/distancematrix.php",
+    url: "../OpenStreetMap/distance_osm.php",
     success: function (response) {
       var jsonData = JSON.parse(response);
       var dis = jsonData.distancia / 1000;
@@ -879,18 +881,17 @@ $("#AgregarCliente").click(function () {
 
 $("#confirmarenvio").click(function () {
   // $.ajax({
-  //     data: {'SolicitaEnvio':'confirmarenvio'},
-  //     url:'Procesos/php/ConfirmarVenta.php',
-  //     type:'post',
-  //     beforeSend: function(){
-  //   // $("#buscando").html("Buscando...");
-  //   // alert('enviando...');
-  //     },
-  //     success: function (respuesta){
-  //             var jsonData = JSON.parse(respuesta);
-  //             if (jsonData.success == "1")
-  //             {
-  //             }
-  //         }
-  //     });
+  //   data: { SolicitaEnvio: "confirmarenvio" },
+  //   url: "Procesos/php/ConfirmarVenta.php",
+  //   type: "post",
+  //   beforeSend: function () {
+  //     // $("#buscando").html("Buscando...");
+  //     // alert('enviando...');
+  //   },
+  //   success: function (respuesta) {
+  //     var jsonData = JSON.parse(respuesta);
+  //     if (jsonData.success == "1") {
+  //     }
+  //   },
+  // });
 });

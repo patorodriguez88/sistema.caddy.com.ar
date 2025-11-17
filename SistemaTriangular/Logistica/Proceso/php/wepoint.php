@@ -4,6 +4,7 @@ date_default_timezone_set('America/Argentina/Cordoba');
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
+const ID_WEPOINT = 18587; //ID DE WEPOINT
 // ✅ conexión disponible para TODOS los handlers
 if (!isset($mysqli)) {
     include_once '../../../Conexion/Conexioni.php';
@@ -181,9 +182,144 @@ if (isset($_POST['PrecheckEgreso']) && (int)$_POST['PrecheckEgreso'] === 1) {
     exit;
 }
 
+
+
+
+// === Handler: Detalle pieza a pieza para egreso (por Número de Orden) ===
+// if (isset($_POST['DetalleEgresoPorOrden']) && (int)$_POST['DetalleEgresoPorOrden'] === 1) {
+
+//     header('Content-Type: application/json; charset=utf-8');
+
+//     $orden = isset($_POST['NumerodeOrden']) ? (int)$_POST['NumerodeOrden'] : 0;
+//     if ($orden <= 0) {
+//         http_response_code(400);
+//         echo json_encode(['ok' => false, 'message' => 'Falta NumerodeOrden']);
+//         exit;
+//     }
+//     if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
+//         http_response_code(500);
+//         echo json_encode(['ok' => false, 'message' => 'No hay conexión a base de datos ($mysqli)']);
+//         exit;
+//     }
+
+//     // 1) Bases + cantidades
+//     $bases = [];
+//     $sqlB = "SELECT tc.CodigoSeguimiento AS base,
+//                     CASE WHEN COALESCE(tc.Cantidad,1) > 0 THEN COALESCE(tc.Cantidad,1) ELSE 1 END AS cant
+//              FROM HojaDeRuta hr
+//              JOIN TransClientes tc ON tc.id = hr.idTransClientes
+//              WHERE hr.NumerodeOrden = ? AND hr.Eliminado = 0";
+//     if ($st = $mysqli->prepare($sqlB)) {
+//         $st->bind_param('i', $orden);
+//         $st->execute();
+//         $res = $st->get_result();
+//         while ($r = $res->fetch_assoc()) {
+//             $b = (string)$r['base'];
+//             $c = (int)$r['cant'];
+//             if ($b === '') continue;
+//             if (!isset($bases[$b])) $bases[$b] = 0;
+//             $bases[$b] += max(1, $c);
+//         }
+//         $st->close();
+//     }
+
+//     if (empty($bases)) {
+//         echo json_encode(['ok' => true, 'total' => 0, 'listos' => 0, 'pendientes' => 0, 'data' => ['items' => []]]);
+//         exit;
+//     }
+
+//     // 2) Traer enviados (tipo IN) para esos bases
+//     $placeholders = implode(',', array_fill(0, count($bases), '?'));
+//     $types = str_repeat('s', count($bases));
+//     $params = array_keys($bases);
+
+//     $sqlW = "SELECT CodigoSeguimiento, CodigoSeguimiento_enviado, id_wepoint,Time
+//              FROM wepoint_api
+//              WHERE tipo='IN' AND CodigoSeguimiento IN ($placeholders)";
+//     $enviadosSet = []; // codigo_enviado => ['id_wepoint'=>int,'time'=>string|null]
+//     if ($st = $mysqli->prepare($sqlW)) {
+//         $st->bind_param($types, ...$params);
+//         $st->execute();
+//         $res = $st->get_result();
+//         while ($r = $res->fetch_assoc()) {
+//             $enviado = (string)$r['CodigoSeguimiento_enviado'];
+//             $idw     = (int)($r['id_wepoint'] ?? 0);
+//             $time    = isset($r['Time']) ? (string)$r['Time'] : null;
+//             if ($enviado !== '' && $idw > 0) {
+//                 $enviadosSet[$enviado] = [
+//                     'id_wepoint' => $idw,
+//                     'time'       => $time,
+//                 ];
+//             }
+//         }
+//         $st->close();
+//     }
+
+//     // 3) Generar piezas esperadas y clasificar
+//     $items = [];
+//     $total = 0;
+//     $ok = 0;
+//     foreach ($bases as $base => $cant) {
+//         if ($cant <= 1) {
+//             $codigoPieza = $base;
+//             $envInfo = $enviadosSet[$codigoPieza] ?? null;
+//             $idw  = $envInfo && isset($envInfo['id_wepoint']) ? (int)$envInfo['id_wepoint'] : 0;
+//             $time = $envInfo && isset($envInfo['time']) ? (string)$envInfo['time'] : null;
+//             $items[] = [
+//                 'base' => $base,
+//                 'pieza' => 1,
+//                 'codigo_enviado' => $codigoPieza,
+//                 'time' => $time,
+//                 'id_wepoint' => $idw,
+//                 'estado' => $idw ? 'ENVIADO' : 'PENDIENTE'
+//             ];
+//             $total += 1;
+//             if ($idw) $ok += 1;
+//         } else {
+//             for ($i = 1; $i <= $cant; $i++) {
+//                 $codigoPieza = $base . '_' . $i;
+//                 $envInfo = $enviadosSet[$codigoPieza] ?? null;
+//                 $idw  = $envInfo && isset($envInfo['id_wepoint']) ? (int)$envInfo['id_wepoint'] : 0;
+//                 $time = $envInfo && isset($envInfo['time']) ? (string)$envInfo['time'] : null;
+//                 $items[] = [
+//                     'base' => $base,
+//                     'pieza' => $i,
+//                     'codigo_enviado' => $codigoPieza,
+//                     'time' => $time,
+//                     'id_wepoint' => $idw,
+//                     'estado' => $idw ? 'ENVIADO' : 'PENDIENTE'
+//                 ];
+//                 $total += 1;
+//                 if ($idw) $ok += 1;
+//             }
+//         }
+//     }
+
+//     echo json_encode([
+//         'ok' => true,
+//         'total' => $total,
+//         'listos' => $ok,
+//         'pendientes' => $total - $ok,
+//         'data' => ['items' => $items]
+//     ], JSON_UNESCAPED_UNICODE);
+//     exit;
+// }
+
+
+
+
+
 // === Handler: Detalle pieza a pieza para egreso (por Número de Orden) ===
 if (isset($_POST['DetalleEgresoPorOrden']) && (int)$_POST['DetalleEgresoPorOrden'] === 1) {
     header('Content-Type: application/json; charset=utf-8');
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+
+    // Token para consultar estado en WePoint
+    $token = isset($_POST['token']) ? trim($_POST['token']) : '';
+    if ($token !== '' && stripos($token, 'Bearer ') !== 0) {
+        $token = 'Bearer ' . $token;
+    }
 
     $orden = isset($_POST['NumerodeOrden']) ? (int)$_POST['NumerodeOrden'] : 0;
     if ($orden <= 0) {
@@ -260,29 +396,86 @@ if (isset($_POST['DetalleEgresoPorOrden']) && (int)$_POST['DetalleEgresoPorOrden
             $envInfo = $enviadosSet[$codigoPieza] ?? null;
             $idw  = $envInfo && isset($envInfo['id_wepoint']) ? (int)$envInfo['id_wepoint'] : 0;
             $time = $envInfo && isset($envInfo['time']) ? (string)$envInfo['time'] : null;
+
+            // Estado local por defecto
+            $estadoLocal = $idw ? 'ENVIADO' : 'PENDIENTE';
+            $estadoWepoint = null;
+
+            if ($idw > 0 && $token !== '') {
+                list($okApi, $estadoApi, $errApi, $rawApi) = wepoint_get_bulto_estado($token, $idw);
+                if ($okApi && $estadoApi) {
+                    $estadoWepoint = $estadoApi;
+
+                    // Mapear a tu lógica interna
+                    if (strcasecmp($estadoApi, 'Pendiente') === 0) {
+                        $estadoLocal = 'IN OK';
+                    } else {
+                        $estadoLocal = $estadoApi; // Recibido, etc.
+                    }
+
+                    // 🔁 ACTUALIZAR TABLA wepoint_api CON EL NUEVO ESTADO
+                    if ($upd = $mysqli->prepare("UPDATE wepoint_api 
+                                             SET Estado = ?, Time = ? 
+                                             WHERE id_wepoint = ? ")) {
+                        $now = date('Y-m-d H:i:s');
+                        $upd->bind_param('ssi', $estadoLocal, $now, $idw);
+                        $upd->execute(); // si falla, no cortamos el flujo
+                        $upd->close();
+                    }
+                }
+            }
+
             $items[] = [
                 'base' => $base,
                 'pieza' => 1,
                 'codigo_enviado' => $codigoPieza,
                 'time' => $time,
                 'id_wepoint' => $idw,
-                'estado' => $idw ? 'ENVIADO' : 'PENDIENTE'
+                'estado' => $estadoLocal,
+                'estado_wepoint' => $estadoWepoint,
             ];
             $total += 1;
             if ($idw) $ok += 1;
         } else {
+
             for ($i = 1; $i <= $cant; $i++) {
                 $codigoPieza = $base . '_' . $i;
                 $envInfo = $enviadosSet[$codigoPieza] ?? null;
                 $idw  = $envInfo && isset($envInfo['id_wepoint']) ? (int)$envInfo['id_wepoint'] : 0;
                 $time = $envInfo && isset($envInfo['time']) ? (string)$envInfo['time'] : null;
+
+                $estadoLocal = $idw ? 'ENVIADO' : 'PENDIENTE';
+                $estadoWepoint = null;
+
+                if ($idw > 0 && $token !== '') {
+                    list($okApi, $estadoApi, $errApi, $rawApi) = wepoint_get_bulto_estado($token, $idw);
+                    if ($okApi && $estadoApi) {
+                        $estadoWepoint = $estadoApi;
+                        if (strcasecmp($estadoApi, 'Pendiente') === 0) {
+                            $estadoLocal = 'IN OK';
+                        } else {
+                            $estadoLocal = $estadoApi;
+                        }
+
+                        if ($upd = $mysqli->prepare("UPDATE wepoint_api 
+                                             SET Estado = ?, Time = ? 
+                                             WHERE id_wepoint = ? AND tipo = 'IN'")) {
+                            $now = date('Y-m-d H:i:s');
+                            $upd->bind_param('ssi', $estadoLocal, $now, $idw);
+                            $upd->execute();
+                            $upd->close();
+                        }
+                    }
+                }
+
                 $items[] = [
                     'base' => $base,
                     'pieza' => $i,
                     'codigo_enviado' => $codigoPieza,
                     'time' => $time,
                     'id_wepoint' => $idw,
-                    'estado' => $idw ? 'ENVIADO' : 'PENDIENTE'
+                    'estado' => $estadoLocal,
+                    'estado_wepoint' => $estadoWepoint,
                 ];
                 $total += 1;
                 if ($idw) $ok += 1;
@@ -299,6 +492,57 @@ if (isset($_POST['DetalleEgresoPorOrden']) && (int)$_POST['DetalleEgresoPorOrden
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
+
+// Helper: consulta estado de un bulto en WePoint por id_wepoint
+function wepoint_get_bulto_estado(string $token, int $idWe): array
+{
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => 'https://sandbox-lv.wepoint.ar/api/v2/bultos/' . $idWe,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Authorization: ' . $token,
+        ],
+    ]);
+
+    $resp = curl_exec($ch);
+    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+
+    if ($err) {
+        return [false, null, 'cURL error: ' . $err, $resp];
+    }
+
+    $json = json_decode($resp, true);
+    if (!is_array($json) || $http < 200 || $http >= 300 || empty($json['success'])) {
+        return [false, null, 'HTTP ' . $http, $resp];
+    }
+
+    $estado = $json['data']['estado'] ?? null;
+
+    return [true, $estado, null, $resp];
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 /** ===========================================================
  * CREAR EGRESO EN WEPOINT: envía id_bulto (id_wepoint) para generar Orden de Egreso
@@ -566,13 +810,26 @@ function wepoint_create_proveedor(string $token, array $provData)
     // Normalización mínima y defaults
     $nombre    = trim((string)($provData['nombre'] ?? $provData['nombrecliente'] ?? 'Proveedor sin nombre'));
     $telefono  = trim((string)($provData['telefono'] ?? $provData['Telefono'] ?? ''));
-    $email     = trim((string)($provData['email'] ?? $provData['Mail'] ?? ''));
     $direccion = trim((string)($provData['direccion'] ?? $provData['Direccion'] ?? ''));
 
+    $rawEmail = $provData['email'] ?? $provData['Mail'] ?? '';
+    // 2) Separar por coma, punto y coma o espacios usando regex
+    $emails = preg_split('/[,\s;]+/', $rawEmail, -1, PREG_SPLIT_NO_EMPTY);
+    // 3) Limpiar y quedarnos con el primer email válido
+    $emailLimpio = '';
+    if (is_array($emails)) {
+        foreach ($emails as $e) {
+            $e = trim($e);
+            if (filter_var($e, FILTER_VALIDATE_EMAIL)) {
+                $emailLimpio = $e;
+                break;
+            }
+        }
+    }
     $body = [
         'nombre'    => $nombre,
         'telefono'  => $telefono,
-        'email'     => $email === '' ? null : $email,
+        'email'     => $emailLimpio,
         'direccion' => $direccion,
     ];
 
@@ -698,19 +955,12 @@ function wepoint_create_cliente(string $token, array $cli)
 if (isset($_POST['Colectas']) && (int)$_POST['Colectas'] === 1) {
     header('Content-Type: application/json; charset=utf-8');
 
-    $idWepoint = 18587; //ID DE WEPOINT
+    $idWepoint = ID_WEPOINT;
 
     // Agrego TODAS las columnas que usás en el front
     $sql = "SELECT 
-                Fecha,
-                RazonSocial,
                 Recorrido,
-                Cantidad,
-                Retirado,
-                Redespacho,
-                CodigoProveedor,
-                DomicilioOrigen,
-                CodigoSeguimiento,
+                SUM(Cantidad) as Cantidad,                                
                 NumerodeOrden,
                 Transportista
             FROM TransClientes
@@ -718,7 +968,9 @@ if (isset($_POST['Colectas']) && (int)$_POST['Colectas'] === 1) {
               AND Entregado = 0
               AND Eliminado = 0
               AND Devuelto = 0
-              AND Haber= 0 ";
+              AND Haber= 0 
+              AND (wepoint_id = 0 OR wepoint_id IS NULL)
+              GROUP BY NumerodeOrden";
 
     $rows = [];
     if ($st = $mysqli->prepare($sql)) {
@@ -822,19 +1074,56 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     TC.CodigoSeguimiento AS CodigoSeguimiento,
     TC.Flex AS TC_Flex,
     TC.Cantidad AS Cantidad
-    FROM HojaDeRuta AS HR
-    JOIN Clientes   AS CL ON HR.idCliente = CL.id
-    LEFT JOIN TransClientes AS TC ON HR.idTransClientes = TC.id
-    WHERE HR.Eliminado = 0
-    AND HR.Estado   = 'Abierto'
-    AND HR.NumerodeOrden = ?";
+    FROM TransClientes AS TC
+    JOIN HojaDeRuta AS HR ON HR.idTransClientes = TC.id
+    JOIN Clientes   AS CL ON HR.idCliente = CL.id    
+    WHERE 
+    TC.idClienteDestino= ?
+    AND TC.Eliminado = 0
+    AND TC.Entregado = 0
+    AND TC.Devuelto = 0
+    AND TC.Haber = 0
+    AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
+    AND TC.NumerodeOrden = ? ;";
+
+    // $sql = "SELECT 
+    // HR.id, HR.Fecha, HR.Hora, HR.Recorrido, HR.Localizacion, HR.Ciudad, HR.Provincia, HR.Pais,
+    // HR.Cliente, HR.Titulo, HR.Observaciones, HR.Usuario, HR.Asignado, HR.Estado, HR.NumerodeOrden,
+    // HR.Posicion, HR.Seguimiento, HR.idCliente, HR.Celular, HR.TramoMapa, HR.Eliminado, HR.Avisado,
+    // HR.ImporteCobranza, HR.NumeroRepo, HR.KmO, HR.Tiempo, HR.idTransClientes, HR.TimeStamp, HR.Devuelto,
+    // HR.Servicio, HR.Posicion_retiro, HR.Hora_retiro,
+    // CL.wepoint_id,
+    // CL.nombrecliente AS CL_Nombre,
+    // CL.Telefono      AS CL_Telefono,
+    // CL.Mail          AS CL_Email,
+    // CL.Direccion     AS CL_Direccion,
+    // CL.Provincia     AS CL_Provincia,
+    // CL.Ciudad        AS CL_Ciudad,
+    // CL.CodigoPostal  AS CL_CodigoPostal,
+    // CL.Barrio        AS CL_Barrio,
+    // TC.Ancho  AS TC_Ancho,
+    // TC.Largo  AS TC_Largo,
+    // TC.Alto   AS TC_Alto,
+    // TC.Peso   AS TC_Peso, 
+    // TC.CodigoSeguimiento AS CodigoSeguimiento,
+    // TC.Flex AS TC_Flex,
+    // TC.Cantidad AS Cantidad
+    // FROM HojaDeRuta AS HR
+    // JOIN Clientes   AS CL ON HR.idCliente = CL.id
+    // LEFT JOIN TransClientes AS TC ON HR.idTransClientes = TC.id
+    // WHERE HR.Eliminado = 0
+    // AND HR.Estado   = 'Abierto'
+    // AND HR.NumerodeOrden = ?";
 
     if (!$stmt = $mysqli->prepare($sql)) {
         http_response_code(500);
         echo json_encode(['ok' => false, 'message' => 'Error preparando consulta', 'error' => $mysqli->error]);
         exit;
     }
-    $stmt->bind_param('i', $numeroOrden);
+    $idWepoint = ID_WEPOINT;
+
+    $stmt->bind_param('ii', $idWepoint, $numeroOrden);
+
     if (!$stmt->execute()) {
         http_response_code(500);
         echo json_encode(['ok' => false, 'message' => 'Error ejecutando consulta', 'error' => $stmt->error]);
@@ -1215,6 +1504,27 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
                         ], JSON_UNESCAPED_UNICODE);
                         $ins->close();
                         exit;
+                    } else {
+                        //AGREGO EL ID CARGADO EN $ins
+                        $lastId = $ins->insert_id;
+                        $sql = "UPDATE TransClientes SET Wepoint_id = ? WHERE CodigoSeguimiento= ? AND Eliminado = 0 AND (Wepoint_id = 0 OR Wepoint_id IS NULL)";
+                        $stmt = $mysqli->prepare($sql);
+                        $stmt->bind_param('is', $lastId, $codigoBase);
+                        if (!$stmt->execute()) {
+                            http_response_code(500);
+                            echo json_encode([
+                                'ok' => false,
+                                'message' => 'Falló UPDATE en TransClientes',
+                                'mysqli_error' => $mysqli->error,
+                                'stmt_error' => $stmt->error,
+                                'values' => [
+                                    'wepoint_id' => $idWe,
+                                    'CodigoSeguimiento' => $codigoBase,
+                                ]
+                            ], JSON_UNESCAPED_UNICODE);
+                            $stmt->close();
+                            exit;
+                        }
                     }
                 }
                 $ins->close();
@@ -1276,17 +1586,22 @@ if (isset($_POST['ServiciosPorOrden']) && (int)$_POST['ServiciosPorOrden'] === 1
     }
 
     $sql = "SELECT CodigoSeguimiento,RazonSocial AS Origen, ClienteDestino AS Destino,Cantidad
-            FROM TransClientes
-            WHERE NumerodeOrden = ?
+            FROM TransClientes            
+            WHERE idClienteDestino = ?
+              AND NumerodeOrden = ?
               AND Entregado = 0
               AND Devuelto = 0
               AND Eliminado = 0
               AND Haber = 0
-              AND wepoint_id =0";
+              AND (wepoint_id = 0 OR wepoint_id IS NULL)";
 
     $rows = [];
+    $idWepoint = ID_WEPOINT;
+
     if ($st = $mysqli->prepare($sql)) {
-        $st->bind_param('i', $numeroOrden);
+
+        $st->bind_param('ii', $idWepoint, $numeroOrden);
+
         if ($st->execute()) {
             $res = $st->get_result();
             while ($r = $res->fetch_assoc()) {

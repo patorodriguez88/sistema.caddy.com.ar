@@ -8,6 +8,25 @@ mysqli_set_charset($mysqli, "utf8");
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 $FechaActual = date('Y-m-d');
 
+function toFloatOrZero($value): float
+{
+    if (!isset($value)) return 0.0;
+
+    // Siempre string
+    $value = trim((string)$value);
+
+    // Vacío -> 0
+    if ($value === '') return 0.0;
+
+    // Cambiar coma por punto por las dudas
+    $value = str_replace(',', '.', $value);
+
+    // Si no es numérico -> 0
+    if (!is_numeric($value)) return 0.0;
+
+    return (float)$value;
+}
+
 // Validación inicial
 if (!isset($_POST['SolicitaEnvio']) || empty($_POST['codigo_seguimiento'])) {
     echo json_encode(['error' => 'Falta Código de Seguimiento']);
@@ -55,13 +74,15 @@ $Total = fetch_single_row($mysqli, "SELECT SUM(Total) AS Saldo FROM Ventas WHERE
 // Configuración del estado y transportista
 $Retirado = $_POST['retiro_t'] ?? 0;
 $Estado = $Retirado ? 'En Origen' : 'A Retirar';
-$ValorDeclarado = $_POST['valordeclarado_input'] ?? 5000;
+$ValorDeclarado = $_POST['valordeclarado_input'] ?? 10000;
+$ValorDeclarado          = toFloatOrZero($ValorDeclarado ?? 0);
 $TransportistaData = fetch_single_row($mysqli, "SELECT * FROM Logistica WHERE Recorrido='{$_POST['recorrido_t']}' AND Estado IN('Cargada','Alta') AND Eliminado='0'");
 $Transportista = $TransportistaData['NombreChofer'] ?? 'No Asignado';
 $NumeroDeOrden = $TransportistaData['NumerodeOrden'] ?? null;
 $FechaTrans = $TransportistaData['Fecha'] ?? null;
 $importevalorcobro = $_POST['cobroacuenta_input'] ?? 0;
 $importevalorcobro_label = $importevalorcobro ? 1 : 0;
+$importevalorcobro_label = toFloatOrZero($importevalorcobro_label ?? 0);
 
 // Insertar transacción en `TransClientes`
 $TransClientesQuery = "INSERT INTO TransClientes(Fecha, RazonSocial, Cuit, TipoDeComprobante, NumeroComprobante, CompraMercaderia, Debe, Haber,
@@ -69,8 +90,8 @@ $TransClientesQuery = "INSERT INTO TransClientes(Fecha, RazonSocial, Cuit, TipoD
     CodigoSeguimiento, NumeroVenta, Cantidad, DomicilioOrigen, SituacionFiscalOrigen, LocalidadOrigen, IngBrutosOrigen, TelefonoOrigen,
     FormaDePago, EntregaEn, Usuario, CodigoProveedor, Observaciones, Transportista, Recorrido, ProvinciaDestino, ProvinciaOrigen, Retirado,
     idClienteDestino, CobrarEnvio, CobrarCaddy, ValorDeclarado, PisoDeptoDestino, FechaEntrega, idClienteFacturacion, Kilometros, google_km,
-    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 $stmt = $mysqli->prepare($TransClientesQuery);
 
@@ -99,11 +120,12 @@ $observaciones = isset($_POST['observaciones']) ? $_POST['observaciones'] : '';
 $recorrido = $_POST['recorrido_t'];
 $provinciaDestino = $rowB['Provincia'];
 $provinciaOrigen = $row['Provincia'];
-$cobrarEnvio = isset($_POST['cobranzadelenvio_t']) ? $_POST['cobranzadelenvio_t'] : 0; // Asignamos un valor predeterminado en caso de que la clave no exista
+$cobrarEnvio  = toFloatOrZero($_POST['cobranzadelenvio_t'] ?? null);
 $pisoDeptoDestino = $rowB['PisoDepto'];
-$km = $_POST['km_nc'];
-$google_km = $_POST['google_km'];
-$google_time = $_POST['google_time'];
+$km           = toFloatOrZero($_POST['km_nc'] ?? null);
+$google_km    = toFloatOrZero($_POST['google_km'] ?? null);
+$google_time  = toFloatOrZero($_POST['google_time'] ?? null);
+
 $redespacho = $_POST['redespacho_nc'];
 $Wepoint_c = isset($_POST['codigocliente']) ? $_POST['codigocliente'] : 0;
 $Flex = 0;
@@ -113,6 +135,7 @@ $Alto = 0;
 $Ancho = 0;
 $Largo = 0;
 $Peso = 0;
+
 if (!$stmt) {
     // Error en la preparación de la consulta
     die("Error en la preparación de la consulta: " . $mysqli->error);
@@ -120,7 +143,7 @@ if (!$stmt) {
 
 // Enlace de parámetros
 if (!$stmt->bind_param(
-    "sssssdddsssssssssdssssssssssssssddsddssssiisisddi",
+    "sssssdddsssssssssdsssssssssdssssddsddssssiisisddii",
     $FechaActual,
     $razonSocial,
     $cuit,
@@ -169,7 +192,8 @@ if (!$stmt->bind_param(
     $Wepoint_c,
     $Flex,
     $idPago,
-    $Avisado
+    $Avisado,
+    $NumeroDeOrden
 )) {
     // Error en el enlace de parámetros
     die("Error en bind_param: " . $stmt->error);
