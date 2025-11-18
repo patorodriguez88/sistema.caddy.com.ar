@@ -1,24 +1,46 @@
 # Activar mod_rewrite
 RewriteEngine On
 
-# Tu docroot ES SistemaTriangular
-# Ej: http://localhost/Clientes o https://tudominio.com/Clientes
-RewriteBase /
+# En LOCAL la app cuelga de /SistemaTriangular
+# porque entrás como: http://localhost:3000/SistemaTriangular/...
+RewriteBase /SistemaTriangular/
 
-# 1) Regla ESPECIAL: /Clientes -> /Clientes/Clientes.php
-# (va ANTES de comprobar si existe el directorio, si no, no entra nunca)
+########################################
+# 1) Atajo especial:
+#    /SistemaTriangular/Clientes  -> /SistemaTriangular/Clientes/Clientes.php
+########################################
 RewriteRule ^Clientes/?$ Clientes/Clientes.php [L,QSA]
 
-# 2) AHORA sí: si archivo o carpeta existen, no toco nada
-RewriteCond %{REQUEST_FILENAME} -f [OR]
-RewriteCond %{REQUEST_FILENAME} -d
+########################################
+# 2) No tocar si la URL ya tiene extensión
+#    (css, js, imágenes, .php explícitos, etc.)
+########################################
+RewriteCond %{REQUEST_URI} \.[A-Za-z0-9]+$
 RewriteRule ^ - [L]
 
-# 3) (Opcional) Genérico para archivos PHP en la raíz
-#    /login -> /login.php
-RewriteRule ^([^/]+)/?$ $1.php [L,QSA]
+########################################
+# 3) URLs SIN extensión -> probar .php
+#    /SistemaTriangular/login               -> /SistemaTriangular/login.php
+#    /SistemaTriangular/Logistica/Ordenes   -> /SistemaTriangular/Logistica/Ordenes.php
+#    /SistemaTriangular/Algo/OtraCosa/Ver   -> /SistemaTriangular/Algo/OtraCosa/Ver.php
+########################################
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^(.+?)/?$ $1.php [L,QSA]
 
-# 4) (Opcional) Redirección elegante de /archivo.php -> /archivo
-#    Solo para archivos PHP de la raíz (no toca Clientes/)
-RewriteCond %{THE_REQUEST} \s/+([^?\s]+)\.php[\s?]
-RewriteRule ^ %1 [R=302,L]
+########################################
+# 4) Si no hay .php, probar .html
+########################################
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.html -f
+RewriteRule ^(.+?)/?$ $1.html [L,QSA]
+
+########################################
+# 5) Si tampoco, probar .htm
+########################################
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}.htm -f
+RewriteRule ^(.+?)/?$ $1.htm [L,QSA]
