@@ -1,6 +1,11 @@
 <!-- prueba develop solo -->
 <!DOCTYPE html>
 <html lang="es">
+<?php
+echo "<pre>";
+var_dump(ENTORNO);
+echo "</pre>";
+?>
 
 <head>
     <meta charset="utf-8" />
