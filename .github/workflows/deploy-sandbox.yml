@@ -16,7 +16,7 @@ jobs:
       with:
         server: dintersa.com.ar
         username: user@sandbox.sistema.caddy.com.ar
-        password: ${{ secrets.FTP_PASSWORD }}
+        password: ${{ secrets.SANDBOX_FTP_PASSWORD}}
         protocol: ftps
         port: 21
         exclude: |
