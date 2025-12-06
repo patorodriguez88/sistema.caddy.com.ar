@@ -141,6 +141,7 @@ $(document).ready(function () {
           $("#user_sucursal").html(jsonData.Sucursal);
           $("#user_iniciales").html(jsonData.Avatar);
           $("#user_nivel").html("Nivel " + jsonData.Nivel);
+          $("user_estado").html(jsonData.Estado);
 
           if (jsonData.Nivel == 1) {
             $("#home_cpaneladmin").css("display", "block");

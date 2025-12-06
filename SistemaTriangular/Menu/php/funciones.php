@@ -10,7 +10,7 @@ if (isset($_POST['Empleados'])) {
     } else {
 
         // include_once "../../Conexion/Conexioni.php";
-
+        $Entorno = var_dump(ENTORNO);
         $NombreUsuario = $_SESSION['NombreUsuario'];
         $ApellidoUsuario = isset($_SESSION['ApellidoUsuario']) ? $_SESSION['ApellidoUsuario'] : '';
         $NombreCompleto = $NombreUsuario . ' ' . $ApellidoUsuario;
@@ -26,7 +26,8 @@ if (isset($_POST['Empleados'])) {
             'Avatar' => $Avatar,
             'Nivel' => $Nivel,
             'Server' => $Server,
-            'Time' => $time
+            'Time' => $time,
+            'Entorno' => $Entorno
         ));
     }
 }
