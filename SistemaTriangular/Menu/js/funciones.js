@@ -141,7 +141,31 @@ $(document).ready(function () {
           $("#user_sucursal").html(jsonData.Sucursal);
           $("#user_iniciales").html(jsonData.Avatar);
           $("#user_nivel").html("Nivel " + jsonData.Nivel);
-          $("user_estado").html(jsonData.Estado);
+          // Entorno (sandbox / produccion)
+          var entorno = (jsonData.Entorno || "").toString().toLowerCase();
+          var $badge = $("#user_entorno_badge");
+
+          if (entorno === "sandbox") {
+            $badge
+              .text("SANDBOX")
+              .removeClass()
+              .addClass("badge rounded-pill bg-warning text-dark");
+          } else if (entorno === "produccion") {
+            $badge
+              .text("CONECTADO")
+              .removeClass()
+              .addClass("badge rounded-pill bg-success text-white");
+          } else if (entorno === "local") {
+            $badge
+              .text("LOCALHOST")
+              .removeClass()
+              .addClass("badge rounded-pill bg-black text-white mt-1");
+          } else {
+            $badge
+              .text("ENTORNO DESCONOCIDO")
+              .removeClass()
+              .addClass("badge rounded-pill bg-secondary text-white");
+          }
 
           if (jsonData.Nivel == 1) {
             $("#home_cpaneladmin").css("display", "block");

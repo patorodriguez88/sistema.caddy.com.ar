@@ -9,8 +9,7 @@ if (isset($_POST['Empleados'])) {
         // exit();
     } else {
 
-        // include_once "../../Conexion/Conexioni.php";
-        $Entorno = var_dump(ENTORNO);
+        $Entorno = defined('ENTORNO') ? ENTORNO : 'desconocido';
         $NombreUsuario = $_SESSION['NombreUsuario'];
         $ApellidoUsuario = isset($_SESSION['ApellidoUsuario']) ? $_SESSION['ApellidoUsuario'] : '';
         $NombreCompleto = $NombreUsuario . ' ' . $ApellidoUsuario;
