@@ -1,15 +1,10 @@
 <!-- prueba develop solo -->
 <!DOCTYPE html>
 <html lang="es">
-<?php
-echo "<pre>";
-var_dump(ENTORNO);
-echo "</pre>";
-?>
 
 <head>
     <meta charset="utf-8" />
-    <title>Log In | Sistema Caddy New</title>
+    <title>Log In | [<? echo var_dump(ENTORNO); ?>] Sistema Caddy New</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="Sistema de Gestion Logistica" name="description" />
     <meta content="Coderthemes" name="author" />
