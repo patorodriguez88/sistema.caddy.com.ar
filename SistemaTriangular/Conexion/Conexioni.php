@@ -1,8 +1,8 @@
 <?php
 session_start();
+
 class Conexion
 {
-
     private $server;
     private $user;
     private $password;
@@ -56,7 +56,25 @@ class Conexion
 
     private function cargarDatosConexion(): array
     {
-        $archivo = ($_SERVER['SERVER_NAME'] === 'localhost') ? "config_local" : "config";
+        // 🔄 NUEVO: detectamos host para decidir entorno
+        $serverName = $_SERVER['SERVER_NAME'] ?? '';
+        $httpHost   = $_SERVER['HTTP_HOST']   ?? '';
+        $host       = strtolower($httpHost ?: $serverName);
+
+        if ($serverName === 'localhost') {
+            // 🖥️ Entorno local
+            $archivo = "config_local";
+            define('ENTORNO', 'local');
+        } elseif (strpos($host, 'sandbox.sistema.caddy.com.ar') !== false) {
+            // 🧪 Entorno sandbox
+            $archivo = "config_sandbox";   // 👈 ESTE ARCHIVO NUEVO
+            define('ENTORNO', 'sandbox');
+        } else {
+            // 🔵 Producción
+            $archivo = "config";
+            define('ENTORNO', 'produccion');
+        }
+
         $path = dirname(__FILE__) . "/" . $archivo;
 
         if (!file_exists($path)) {
@@ -65,7 +83,7 @@ class Conexion
             exit;
         }
 
-        $json = file_get_contents($path);
+        $json  = file_get_contents($path);
         $datos = json_decode($json, true);
 
         if (!$datos || !is_array($datos) || !isset($datos[0])) {
