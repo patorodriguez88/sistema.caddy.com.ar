@@ -8,7 +8,7 @@ include_once "../../../Empleados/Procesos/php/asana_api.php";
 $Usuario = $_SESSION['Usuario'];
 
 date_default_timezone_set('America/Argentina/Cordoba');
-
+//HELPERS
 // Función para convertir el tamaño a unidades legibles
 function formatSizeUnits($bytes)
 {
@@ -24,6 +24,42 @@ function formatSizeUnits($bytes)
 
     return $bytes;
 }
+
+//MODIFICA ESTADO ACTIVO INACTIVO
+
+if (isset($_POST['Update_estado'])) {
+
+    $dominio = $_POST['Dominio'] ?? '';
+    $estado  = $_POST['Estado'] ?? '';
+
+    // Normalizamos el estado a Si / No para almacenarlo
+    $activo = ($estado === "Activo") ? "Si" : "No";
+
+    if ($dominio === '') {
+        echo json_encode(['success' => 0, 'message' => 'Dominio vacío']);
+        exit;
+    }
+
+    // PREPARAR UPDATE
+    $stmt = $mysqli->prepare("UPDATE Vehiculos SET Activo = ?,VehiculoOperativo=? WHERE Dominio = ? LIMIT 1");
+
+    if (!$stmt) {
+        echo json_encode(['success' => 0, 'message' => 'Error al preparar consulta', 'error'   => $mysqli->error]);
+        exit;
+    }
+
+    $stmt->bind_param("sis", $activo, $estado, $dominio);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => 1, 'message' => 'Estado actualizado correctamente', 'nuevo_estado' => $activo]);
+    } else {
+        echo json_encode(['success' => 0, 'message' => 'Error al ejecutar update', 'error' => $stmt->error]);
+    }
+
+    $stmt->close();
+    exit;
+}
+
 
 // BUSCAR TODA LA FLOTA
 
