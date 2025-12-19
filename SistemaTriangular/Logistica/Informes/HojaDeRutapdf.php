@@ -1,8 +1,11 @@
 <?php
+
+declare(strict_types=1);
+
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-// declare(strict_types=1);
+
 
 require_once __DIR__ . '/../../fpdf/fpdf.php';
 require_once __DIR__ . '/../../Conexion/conexioni.php';
@@ -96,28 +99,28 @@ function mysqli_fetch_one(mysqli $mysqli, string $sql, string $types = '', array
 	return $rows[0] ?? null;
 }
 
-// function mysqli_fetch_all(mysqli $mysqli, string $sql, string $types = '', array $params = []): array
-// {
-// 	$stmt = $mysqli->prepare($sql);
-// 	if (!$stmt) {
-// 		throw new RuntimeException('MySQL prepare failed: ' . $mysqli->error);
-// 	}
+function db_fetch_all(mysqli $mysqli, string $sql, string $types = '', array $params = []): array
+{
+	$stmt = $mysqli->prepare($sql);
+	if (!$stmt) {
+		throw new RuntimeException('MySQL prepare failed: ' . $mysqli->error);
+	}
 
-// 	if ($types !== '' && !empty($params)) {
-// 		$stmt->bind_param($types, ...$params);
-// 	}
+	if ($types !== '' && !empty($params)) {
+		$stmt->bind_param($types, ...$params);
+	}
 
-// 	if (!$stmt->execute()) {
-// 		$err = $stmt->error;
-// 		$stmt->close();
-// 		throw new RuntimeException('MySQL execute failed: ' . $err);
-// 	}
+	if (!$stmt->execute()) {
+		$err = $stmt->error;
+		$stmt->close();
+		throw new RuntimeException('MySQL execute failed: ' . $err);
+	}
 
-// 	$rows = mysqli_stmt_fetch_all_assoc($stmt);
-// 	$stmt->close();
+	$rows = mysqli_stmt_fetch_all_assoc($stmt);
+	$stmt->close();
 
-// 	return $rows;
-// }
+	return $rows;
+}
 
 class PDF extends FPDF
 {
@@ -368,7 +371,7 @@ if ($logisticaDet) {
 }
 
 // HojaDeRuta
-$items = mysqli_fetch_all(
+$items = db_fetch_all(
 	$mysqli,
 	"SELECT HojaDeRuta.Cliente,
             HojaDeRuta.Seguimiento,
