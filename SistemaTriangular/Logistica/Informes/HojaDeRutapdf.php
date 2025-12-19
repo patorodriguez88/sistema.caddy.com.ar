@@ -2,7 +2,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
-declare(strict_types=1);
+// declare(strict_types=1);
 
 require_once __DIR__ . '/../../fpdf/fpdf.php';
 require_once __DIR__ . '/../../Conexion/conexioni.php';
@@ -14,6 +14,65 @@ if (session_status() === PHP_SESSION_NONE) {
 // --------------------------------------------------
 // Helpers MySQLi (PHP 8)
 // --------------------------------------------------
+function mysqli_stmt_fetch_all_assoc(mysqli_stmt $stmt): array
+{
+	// Preferred path (requires mysqlnd). Some builds have get_result() but it errors without mysqlnd.
+	if (method_exists($stmt, 'get_result')) {
+		$res = @$stmt->get_result(); // suppress "requires mysqlnd" warning
+		if ($res instanceof mysqli_result) {
+			$all = $res->fetch_all(MYSQLI_ASSOC);
+			$res->free();
+			return $all;
+		}
+	}
+
+	// Fallback path (works without mysqlnd)
+	$stmt->store_result();
+	$meta = $stmt->result_metadata();
+	if (!$meta) {
+		return [];
+	}
+
+	$fields = $meta->fetch_fields();
+	$row = [];
+	$bind = [];
+
+	foreach ($fields as $field) {
+		$row[$field->name] = null;
+		$bind[] = &$row[$field->name];
+	}
+
+	// If for some reason we have no fields, avoid calling bind_result() with 0 args
+	if (empty($bind)) {
+		if ($meta instanceof mysqli_result) {
+			$meta->free();
+		}
+		// clear buffered result if possible
+		if (method_exists($stmt, 'free_result')) {
+			$stmt->free_result();
+		}
+		return [];
+	}
+
+	$stmt->bind_result(...$bind);
+
+	$rows = [];
+	while ($stmt->fetch()) {
+		// Copy by value (because $row is by reference)
+		$rows[] = array_map(static fn($v) => $v, $row);
+	}
+
+	// Cleanup to avoid "commands out of sync" / lingering buffered results
+	if ($meta instanceof mysqli_result) {
+		$meta->free();
+	}
+	if (method_exists($stmt, 'free_result')) {
+		$stmt->free_result();
+	}
+
+	return $rows;
+}
+
 function mysqli_fetch_one(mysqli $mysqli, string $sql, string $types = '', array $params = []): ?array
 {
 	$stmt = $mysqli->prepare($sql);
@@ -31,41 +90,34 @@ function mysqli_fetch_one(mysqli $mysqli, string $sql, string $types = '', array
 		throw new RuntimeException('MySQL execute failed: ' . $err);
 	}
 
-	$res = $stmt->get_result();
-	$row = $res ? $res->fetch_assoc() : null;
-
+	$rows = mysqli_stmt_fetch_all_assoc($stmt);
 	$stmt->close();
-	return $row ?: null;
+
+	return $rows[0] ?? null;
 }
 
-function mysqli_fetch_all(mysqli $mysqli, string $sql, string $types = '', array $params = []): array
-{
-	$stmt = $mysqli->prepare($sql);
-	if (!$stmt) {
-		throw new RuntimeException('MySQL prepare failed: ' . $mysqli->error);
-	}
+// function mysqli_fetch_all(mysqli $mysqli, string $sql, string $types = '', array $params = []): array
+// {
+// 	$stmt = $mysqli->prepare($sql);
+// 	if (!$stmt) {
+// 		throw new RuntimeException('MySQL prepare failed: ' . $mysqli->error);
+// 	}
 
-	if ($types !== '' && !empty($params)) {
-		$stmt->bind_param($types, ...$params);
-	}
+// 	if ($types !== '' && !empty($params)) {
+// 		$stmt->bind_param($types, ...$params);
+// 	}
 
-	if (!$stmt->execute()) {
-		$err = $stmt->error;
-		$stmt->close();
-		throw new RuntimeException('MySQL execute failed: ' . $err);
-	}
+// 	if (!$stmt->execute()) {
+// 		$err = $stmt->error;
+// 		$stmt->close();
+// 		throw new RuntimeException('MySQL execute failed: ' . $err);
+// 	}
 
-	$res = $stmt->get_result();
-	$rows = [];
-	if ($res) {
-		while ($r = $res->fetch_assoc()) {
-			$rows[] = $r;
-		}
-	}
+// 	$rows = mysqli_stmt_fetch_all_assoc($stmt);
+// 	$stmt->close();
 
-	$stmt->close();
-	return $rows;
-}
+// 	return $rows;
+// }
 
 class PDF extends FPDF
 {
@@ -182,11 +234,11 @@ class PDF extends FPDF
 		// Logistica
 		$logistica = mysqli_fetch_one(
 			$mysqli,
-			"SELECT Recorrido, NumerodeOrden, NombreChofer \
-               FROM Logistica \
-              WHERE Recorrido = ? \
-                AND Estado = 'Cargada' \
-                AND Eliminado = 0 \
+			"SELECT Recorrido, NumerodeOrden, NombreChofer 
+               FROM Logistica 
+              WHERE Recorrido = ? 
+                AND Estado = 'Cargada' 
+                AND Eliminado = 0 
               LIMIT 1",
 			's',
 			[$NumeroReco]
@@ -195,18 +247,21 @@ class PDF extends FPDF
 		// Recorridos
 		$rec = mysqli_fetch_one(
 			$mysqli,
-			"SELECT Nombre \
-               FROM Recorridos \
-              WHERE Numero = ? \
+			"SELECT Nombre 
+               FROM Recorridos 
+              WHERE Numero = ? 
               LIMIT 1",
 			's',
 			[$NumeroReco]
 		);
 
-		$codigoRecorrido = $logistica['Recorrido'] ?? $NumeroReco;
-		$nOrden = $logistica['NumerodeOrden'] ?? '';
-		$nombreChofer = $logistica['NombreChofer'] ?? '';
-		$nombreRecorrido = $rec['Nombre'] ?? '';
+		$logisticaArr = is_array($logistica) ? $logistica : [];
+		$recArr       = is_array($rec) ? $rec : [];
+
+		$codigoRecorrido  = $logisticaArr['Recorrido'] ?? $NumeroReco;
+		$nOrden           = $logisticaArr['NumerodeOrden'] ?? '';
+		$nombreChofer     = $logisticaArr['NombreChofer'] ?? '';
+		$nombreRecorrido  = $recArr['Nombre'] ?? '';
 
 		// Dejo estos en sesión como hacía el script original
 		$_SESSION['NOrden'] = $nOrden;
@@ -296,11 +351,11 @@ $logisticaDet = null;
 if ($NOrden !== '') {
 	$logisticaDet = mysqli_fetch_one(
 		$mysqli,
-		"SELECT Controla, NombreChofer, Fecha, NumerodeOrden, CodigoSeguimiento \
-           FROM Logistica \
-          WHERE Recorrido = ? \
-            AND NumerodeOrden = ? \
-            AND Eliminado = 0 \
+		"SELECT Controla, NombreChofer, Fecha, NumerodeOrden, CodigoSeguimiento 
+           FROM Logistica 
+          WHERE Recorrido = ? 
+            AND NumerodeOrden = ? 
+            AND Eliminado = 0 
           LIMIT 1",
 		'ss',
 		[$NumeroReco, $NOrden]
