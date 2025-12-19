@@ -4,6 +4,48 @@ declare(strict_types=1);
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+ini_set('log_errors', '1');
+ini_set('error_log', __DIR__ . '/HojaDeRutaPdf_error.log');
+
+$DEBUG = (isset($_GET['debug']) && $_GET['debug'] === '1');
+
+set_exception_handler(static function (Throwable $e) use ($DEBUG): void {
+	// Always log
+	error_log('UNCAUGHT EXCEPTION: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+	if ($DEBUG) {
+		if (!headers_sent()) {
+			header('Content-Type: text/plain; charset=utf-8');
+		}
+		echo "UNCAUGHT EXCEPTION\n";
+		echo $e->getMessage() . "\n\n";
+		echo $e->getTraceAsString();
+	}
+	exit;
+});
+
+register_shutdown_function(static function () use ($DEBUG): void {
+	$err = error_get_last();
+	if (!$err) {
+		return;
+	}
+	// Log fatal/parse errors, etc.
+	error_log('SHUTDOWN ERROR: ' . print_r($err, true));
+	if ($DEBUG) {
+		if (!headers_sent()) {
+			header('Content-Type: text/plain; charset=utf-8');
+		}
+		echo "FATAL/SHUTDOWN ERROR\n";
+		echo ($err['message'] ?? '') . "\n";
+		echo 'File: ' . ($err['file'] ?? '') . "\n";
+		echo 'Line: ' . ($err['line'] ?? '') . "\n";
+	}
+});
+
+// In debug mode, avoid returning PDF bytes so we can see output
+if ($DEBUG && !headers_sent()) {
+	header('Content-Type: text/plain; charset=utf-8');
+}
 
 
 
@@ -337,6 +379,9 @@ class PDF extends FPDF
 $NumeroReco = (string)($_GET['HR'] ?? '');
 if ($NumeroReco === '') {
 	http_response_code(400);
+	if (!headers_sent()) {
+		header('Content-Type: text/plain; charset=utf-8');
+	}
 	echo 'Falta parametro HR';
 	exit;
 }
@@ -457,6 +502,12 @@ foreach ($items as $fila) {
 	]);
 
 	$i++;
+}
+
+if ($DEBUG) {
+	echo "DEBUG: OK (no PDF output)\n";
+	echo 'Items: ' . count($items) . "\n";
+	exit;
 }
 
 $pdf->Output();
