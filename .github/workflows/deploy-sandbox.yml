@@ -17,11 +17,14 @@ jobs:
         server: dintersa.com.ar
         username: user@sandbox.sistema.caddy.com.ar
         password: ${{ secrets.SANDBOX_FTP_PASSWORD}}
-        protocol: ftps
+        protocol: ftp
         port: 21
+        log-level: verbose
         exclude: |
             **/.git*
             **/.github/**
             **/node_modules/**
             **/tests/**
             **/.env
+            **/*.log
+            **/*.zip
