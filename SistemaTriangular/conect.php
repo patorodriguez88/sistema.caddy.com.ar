@@ -1,8 +1,4 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -20,7 +16,8 @@ $mysqli = new mysqli(
     $dbConf['user'] ?? 'root',
     $dbConf['password'] ?? '',
     $dbConf['database'] ?? '',
-    isset($dbConf['port']) ? intval($dbConf['port']) : 3306
+    null,
+    '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock'
 );
 
 if ($mysqli->connect_error) {
