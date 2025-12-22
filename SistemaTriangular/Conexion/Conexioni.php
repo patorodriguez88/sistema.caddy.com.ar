@@ -1,6 +1,16 @@
 <?php
 session_start();
 
+$BASE_PATH = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+if ($BASE_PATH === '' || $BASE_PATH === '.') $BASE_PATH = '';
+
+define('BASE_PATH', $BASE_PATH);
+
+function redirect_login()
+{
+    header('Location: ' . BASE_PATH . '/inicio.php');
+    exit;
+}
 class Conexion
 {
     private $server;
@@ -45,7 +55,8 @@ class Conexion
         if ($this->conexion->connect_error) {
             echo "❌ Error de conexión: " . $this->conexion->connect_error;
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            // header("Location: /SistemaTriangular/inicio.php");
+            redirect_login();
             exit;
         }
 
@@ -79,7 +90,9 @@ class Conexion
 
         if (!file_exists($path)) {
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+
+            redirect_login();
+            // header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
 
@@ -88,7 +101,8 @@ class Conexion
 
         if (!$datos || !is_array($datos) || !isset($datos[0])) {
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            redirect_login();
+            // header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
 
@@ -139,7 +153,9 @@ if (!defined('ALLOW_NO_SESSION') || ALLOW_NO_SESSION !== true) {
             }
 
             // Carga normal
-            header("Location: /SistemaTriangular/inicio.php");
+            // redirect_login($BASE);
+            redirect_login();
+            // header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
 
