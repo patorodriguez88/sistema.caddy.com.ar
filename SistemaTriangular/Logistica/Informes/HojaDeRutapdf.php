@@ -63,9 +63,11 @@ if ($DEBUG && !headers_sent()) {
 //     die('No existe: ' . $fpdf);
 // }
 // require_once $fpdf;
+require_once __DIR__ . '/../../../fpdf/fpdf.php';
+// require_once __DIR__ . '../fpdf/fpdf.php';
+// require_once __DIR__ . '../Conexion/conexioni.php';
+require_once __DIR__ . '/../../../Conexion/conexioni.php';
 
-require_once __DIR__ . '../fpdf/fpdf.php';
-require_once __DIR__ . '../Conexion/conexioni.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
