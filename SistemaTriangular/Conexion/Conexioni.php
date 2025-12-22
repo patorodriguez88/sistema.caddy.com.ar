@@ -153,7 +153,7 @@ if (!defined('ALLOW_NO_SESSION') || ALLOW_NO_SESSION !== true) {
             }
 
             // Carga normal
-            // redirect_login($BASE);
+            // redirect_login($);
             redirect_login();
             // header("Location: /SistemaTriangular/inicio.php");
             exit;

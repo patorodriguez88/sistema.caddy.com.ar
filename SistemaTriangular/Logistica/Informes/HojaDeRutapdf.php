@@ -6,7 +6,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 ini_set('log_errors', '1');
-ini_set('error_log', __DIR__ . '/HojaDeRutaPdf_error.log');
+// ini_set('error_log', __DIR__ . '/HojaDeRutaPdf_error.log');
 
 $DEBUG = (isset($_GET['debug']) && $_GET['debug'] === '1');
 
@@ -47,10 +47,12 @@ if ($DEBUG && !headers_sent()) {
     header('Content-Type: text/plain; charset=utf-8');
 }
 
+$ROOT = realpath(__DIR__ . '/../../..'); // vuelve a SistemaTriangular
+require_once $ROOT . '/Conexion/conexioni.php';
+require_once $ROOT . '/fpdf/fpdf.php';
 
-
-require_once __DIR__ . '/../../fpdf/fpdf.php';
-require_once __DIR__ . '/../../Conexion/conexioni.php';
+// require_once __DIR__ . '/../../fpdf/fpdf.php';
+// require_once __DIR__ . '/../../Conexion/conexioni.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
