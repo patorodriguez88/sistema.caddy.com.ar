@@ -47,9 +47,22 @@ if ($DEBUG && !headers_sent()) {
     header('Content-Type: text/plain; charset=utf-8');
 }
 
-$ROOT = realpath(__DIR__ . '/../../..'); // vuelve a SistemaTriangular
-require_once $ROOT . '/Conexion/conexioni.php';
-require_once $ROOT . '/fpdf/fpdf.php';
+$ROOT = realpath(__DIR__ . '/../../..'); // => .../SistemaTriangular
+if ($ROOT === false) {
+    die('No pude resolver ROOT desde: ' . __DIR__);
+}
+
+$cnx = $ROOT . '/Conexion/conexioni.php';
+if (!is_file($cnx)) {
+    die('No existe: ' . $cnx);
+}
+require_once $cnx;
+
+$fpdf = $ROOT . '/fpdf/fpdf.php';
+if (!is_file($fpdf)) {
+    die('No existe: ' . $fpdf);
+}
+require_once $fpdf;
 
 // require_once __DIR__ . '/../../fpdf/fpdf.php';
 // require_once __DIR__ . '/../../Conexion/conexioni.php';
