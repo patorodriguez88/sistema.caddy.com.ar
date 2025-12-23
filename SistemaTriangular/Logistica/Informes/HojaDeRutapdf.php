@@ -198,15 +198,29 @@ class PDF extends FPDF
 
     public function Row(array $data): void
     {
+        // ✅ Seguridad: si por cualquier motivo aún no hay página, la creamos
+        if ($this->PageNo() === 0) {
+            $this->AddPage($this->CurOrientation);
+        }
+
+        $colCount = count($data);
+        if ($colCount === 0) return;
+
+        // Asegurar widths
+        if (count($this->widths) < $colCount) {
+            $this->SetWidths([5, 20, 33, 35, 35, 35, 40, 45]);
+        }
+
+        // ...tu código igual
         $nb = 0;
-        for ($i = 0; $i < count($data); $i++) {
+        for ($i = 0; $i < $colCount; $i++) {
             $nb = max($nb, $this->NbLines($this->widths[$i], (string)$data[$i]));
         }
         $h = 5 * $nb;
 
         $this->CheckPageBreak($h);
 
-        for ($i = 0; $i < count($data); $i++) {
+        for ($i = 0; $i < $colCount; $i++) {
             $w = $this->widths[$i];
             $a = $this->aligns[$i] ?? 'L';
 
@@ -215,7 +229,6 @@ class PDF extends FPDF
 
             $this->Rect($x, $y, $w, $h);
             $this->MultiCell($w, 5, (string)$data[$i], 0, $a, true);
-
             $this->SetXY($x + $w, $y);
         }
 
@@ -340,7 +353,7 @@ class PDF extends FPDF
         $this->Text(20, 29, 'www.caddy.com.ar');
 
         // FECHA / DATOS
-        $this->Ln(20);
+        // $this->Ln(20);
         $this->SetFont('Arial', '', 10);
         $this->Text(170, 14, 'Cordoba ' . $Fecha);
         $this->Text(170, 19, 'Nombre Chofer: ' . $nombreChofer);
@@ -349,13 +362,17 @@ class PDF extends FPDF
         $this->Text(170, 34, 'N Hoja de Ruta: ' . $nOrden . ' | ' . $nombreRecorrido);
 
         // TÍTULO
-        $this->SetMargins(20, 20, 20);
+        // $this->SetMargins(20, 20, 20);
         $this->Line(20, 38, 266, 38);
         $this->Line(20, 44, 266, 45);
 
         $this->SetFont('Arial', 'B', 15);
         $this->Text(65, 43, 'HOJA DE RUTA N ' . $nOrden . ' | ' . $nombreRecorrido);
-        $this->Ln(20);
+        // $this->Ln(20);
+        // Posición fija para que el encabezado de la tabla no "se corra" entre páginas
+        $this->SetY(50);
+        $this->SetX(20);
+
 
         $this->SetWidths([5, 20, 33, 35, 35, 35, 40, 45]);
         $this->SetFont('Arial', 'B', 6);
@@ -405,7 +422,7 @@ if ($NumeroReco === '') {
 
 $pdf = new PDF('L', 'mm', 'Letter');
 $pdf->AliasNbPages();
-$pdf->AddPage();
+// $pdf->AddPage();
 $pdf->SetMargins(20, 20, 20);
 
 // El Header ya setea NOrden / NR
