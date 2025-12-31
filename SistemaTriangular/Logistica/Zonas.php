@@ -221,9 +221,6 @@
     <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
     <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
 
-    <!-- Apex Charts js -->
-    <!-- <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script> -->
-
     <!-- Vector Map js -->
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
@@ -233,9 +230,12 @@
     <script src="../Menu/js/funciones.js"></script>
     <script src="Mapas/js/zonas.js"></script>
 
-    <script async defer
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&callback=initMap">
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&callback=initMap&loading=async"
+        async>
     </script>
+
+
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 

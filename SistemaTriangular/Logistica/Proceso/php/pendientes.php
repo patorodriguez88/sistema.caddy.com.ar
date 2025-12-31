@@ -62,7 +62,7 @@ if (isset($_POST['ActualizarDireccion'])) {
     $switch = 1;
   } else {
 
-    $datosmapa = geolocalizar($_POST[Direccion]);
+    $datosmapa = geolocalizar($_POST['Direccion']);
     $latitud = $datosmapa[0];
     $longitud = $datosmapa[1];
     $switch = 0;
@@ -87,7 +87,7 @@ if (isset($_POST['BuscarDatos'])) {
     CodigoSeguimiento,Entregado,CobrarEnvio,CobrarCaddy FROM TransClientes WHERE id='$_POST[id]'";
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
-  $CodigoSeguimiento = $row[CodigoSeguimiento];
+  $CodigoSeguimiento = $row['CodigoSeguimiento'];
   $sqlhdr = "SELECT Estado FROM HojaDeRuta WHERE Seguimiento='$CodigoSeguimiento'";
   $Resultadohdr = $mysqli->query($sqlhdr);
   $rowhdr = $Resultadohdr->fetch_array(MYSQLI_ASSOC);
@@ -108,7 +108,7 @@ if (isset($_POST['BuscarDatos'])) {
     $idCliente = $row['IngBrutosOrigen'];
     $Servicio = 'Retiro';
   }
-  echo json_encode(array('EstadoSeguimiento' => $rowseguimiento[Estado], 'CobrarCaddy' => $row[CobrarCaddy], 'CobrarEnvio' => $row[CobrarEnvio], 'Entregado' => $row[Entregado], 'Retirado' => $row[Retirado], 'EstadoHdr' => $rowhdr[Estado], 'RazonSocial' => $RazonSocial, 'Domicilio' => $Domicilio, 'idCliente' => $idCliente, 'CodigoSeguimiento' => $CodigoSeguimiento, 'Servicio' => $Servicio));
+  echo json_encode(array('EstadoSeguimiento' => $rowseguimiento['Estado'], 'CobrarCaddy' => $row['CobrarCaddy'], 'CobrarEnvio' => $row['CobrarEnvio'], 'Entregado' => $row['Entregado'], 'Retirado' => $row['Retirado'], 'EstadoHdr' => $rowhdr['Estado'], 'RazonSocial' => $RazonSocial, 'Domicilio' => $Domicilio, 'idCliente' => $idCliente, 'CodigoSeguimiento' => $CodigoSeguimiento, 'Servicio' => $Servicio));
 }
 
 
@@ -205,9 +205,9 @@ if (isset($_POST['Actualiza'])) {
   $sql = $mysqli->query("UPDATE `TransClientes` SET Retirado='1',Entregado='$Entregado' WHERE id='$_POST[id]'");
 
   $sqlseguimiento = $mysqli->query("INSERT INTO `Seguimiento`(`Fecha`, `Hora`, `Usuario`, `Sucursal`, `CodigoSeguimiento`, `Observaciones`, `Entregado`, `Estado`,
-                              `idCliente`, `Retirado`,`idTransClientes`,`Destino`)VALUES('{$Fecha}','{$Hora}','{$_SESSION[Usuario]}',
-                              '{$_SESSION[Sucursal]}','{$sqldato[CodigoSeguimiento]}','{$Observaciones}','{$Entregado}','Entregado al Cliente',
-                              '{$sqldato[idClienteDestino]}','1','{$sqldato[id]}','{$sqldato[ClienteDestino]}')");
+                              `idCliente`, `Retirado`,`idTransClientes`,`Destino`)VALUES('{$Fecha}','{$Hora}','{$_SESSION['Usuario']}',
+                              '{$_SESSION['Sucursal']}','{$sqldato['CodigoSeguimiento']}','{$Observaciones}','{$Entregado}','Entregado al Cliente',
+                              '{$sqldato['idClienteDestino']}','1','{$sqldato['id']}','{$sqldato['ClienteDestino']}')");
 
   $sql = $mysqli->query("UPDATE `HojaDeRuta` SET Estado='Cerrado' WHERE Seguimiento='$sqldato[CodigoSeguimiento]'");
 
@@ -238,31 +238,66 @@ if (isset($_POST['EliminarRegistro'])) {
 
 //SELECT RECORRIDOS
 if (isset($_POST['BuscarRecorridos'])) {
+
   $BuscarVenta = $mysqli->query("SELECT Numero,Nombre FROM Recorridos WHERE Activo=1");
-  if ($_POST['cs'] <> '') {
-    $BuscarRecorrido = $mysqli->query("SELECT Recorrido FROM TransClientes WHERE CodigoSeguimiento='$_POST[cs]'");
-    $Recorrido = $BuscarRecorrido->fetch_array(MYSQLI_ASSOC);
-    $Rec_label = 'Recorrido ' . $Recorrido['Recorrido'];
-    $Rec = $Recorrido['Recorrido'];
-  } else {
-    $Rec = $Recorrido['Recorrido'];
-    $Rec_label = "Seleccionar Recorrido";
+
+  // ✅ evita Undefined array key
+  $cs = $_POST['cs'] ?? '';
+
+  // defaults
+  $Rec = '';
+  $Rec_label = "Seleccionar Recorrido";
+
+  if ($cs !== '') {
+
+    // ✅ ojo: tu query original tenía riesgo de SQL injection por "cs"
+    $stmt = $mysqli->prepare("SELECT Recorrido FROM TransClientes WHERE CodigoSeguimiento = ? LIMIT 1");
+    $stmt->bind_param("s", $cs);
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $RecorridoRow = $res->fetch_assoc();
+
+    if ($RecorridoRow && isset($RecorridoRow['Recorrido'])) {
+      $Rec = $RecorridoRow['Recorrido'];
+      $Rec_label = 'Recorrido ' . $Rec;
+    } else {
+      // si no existe el seguimiento, no rompemos
+      $Rec = '';
+      $Rec_label = "Seleccionar Recorrido";
+    }
+
+    $stmt->close();
   }
-  echo '<option value=' . $Rec . '>' . $Rec_label . '</option>';
+
+  // primer option
+  echo '<option value="' . htmlspecialchars((string)$Rec) . '">' . htmlspecialchars($Rec_label) . '</option>';
+
   while (($fila = $BuscarVenta->fetch_array(MYSQLI_ASSOC)) != NULL) {
-    $Activos = $mysqli->query("SELECT Estado,NombreChofer FROM Logistica WHERE Recorrido='$fila[Numero]' AND Estado='Cargada' AND Eliminado='0'");
-    $Row_Activo = $Activos->fetch_array(MYSQLI_ASSOC);
-    if ($Activos->num_rows <> 0) {
+
+    $stmt2 = $mysqli->prepare("SELECT Estado,NombreChofer FROM Logistica WHERE Recorrido=? AND Estado='Cargada' AND Eliminado='0' LIMIT 1");
+    $stmt2->bind_param("s", $fila['Numero']);
+    $stmt2->execute();
+    $ActivosRes = $stmt2->get_result();
+    $Row_Activo = $ActivosRes->fetch_assoc();
+
+    if ($Row_Activo) {
       $Activo = '-> En Ruta ' . $Row_Activo['NombreChofer'];
     } else {
       $Activo = "";
     }
-    echo '<option value="' . $fila["Numero"] . '">' . $fila["Numero"] . ' | ' . $fila["Nombre"] . ' ' . $Activo . '</option>';
-  }
-  // Liberar resultados
-  mysql_free_result($BuscarVenta);
-}
 
+    $stmt2->close();
+
+    echo '<option value="' . htmlspecialchars((string)$fila["Numero"]) . '">'
+      . htmlspecialchars($fila["Numero"] . ' | ' . $fila["Nombre"] . ' ' . $Activo)
+      . '</option>';
+  }
+
+  // ✅ mysqli: liberar bien
+  if ($BuscarVenta instanceof mysqli_result) {
+    $BuscarVenta->free();
+  }
+}
 //HASTA ACA SELET RECORRIDOS
 //SELECT RECORRIDOS
 // if(isset($_POST['ActualizaRecorrido'])){
