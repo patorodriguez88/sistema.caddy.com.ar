@@ -18,7 +18,7 @@ $port = null;
 if ($isLocal) {
     $socket = '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock';
 }
-
+$dbConf = $dbConf[0];
 $mysqli = new mysqli(
     $dbConf['server'] ?? 'localhost',
     $dbConf['user'] ?? 'root',
@@ -27,7 +27,7 @@ $mysqli = new mysqli(
     $port,
     $socket
 );
-// $dbConf = $dbConf[0];
+
 // $mysqli = new mysqli(
 //     $dbConf['server'] ?? 'localhost',
 //     $dbConf['user'] ?? 'root',
