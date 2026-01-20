@@ -146,9 +146,15 @@
                                     <!-- Multiple Select -->
                                     <div class="col-lg-12 mt-3">
                                         <div class="selector-recorrido1 form-group">
-                                            <select id="select_rec_mapa" class="select2 form-control select2-multiple" data-toggle="select2" multiple="multiple" data-placeholder="Seleccionar Recorridos ...">
-                                                <label>Seleccionar Recorrido</label>
-                                                <select id="recorrido_m" name="recorrido_m" class="form-control" data-toggle="select2" required></select>
+                                            <label for="select_rec_mapa">Seleccionar Recorridos</label>
+
+                                            <select
+                                                id="select_rec_mapa"
+                                                name="recorridos[]"
+                                                class="select2 form-control select2-multiple"
+                                                data-toggle="select2"
+                                                multiple="multiple"
+                                                data-placeholder="Seleccionar Recorridos ...">
                                             </select>
                                         </div>
                                     </div>
