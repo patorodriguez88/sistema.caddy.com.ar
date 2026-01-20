@@ -3,13 +3,38 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 // Conexión rápida directa (evita Conexioni)
-$isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
-$configFile = $isLocal ? __DIR__ . "/Conexion/config_local" : __DIR__ . "/Conexion/config";
+// $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
+// $configFile = $isLocal ? __DIR__ . "/Conexion/config_local" : __DIR__ . "/Conexion/config";
+
+// $dbConf = json_decode(file_get_contents($configFile), true);
+// if (!$dbConf || !isset($dbConf[0])) {
+//     die("Error: archivo de configuración de DB no encontrado");
+// }
+$host = strtolower($_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? ''));
+$host = preg_replace('/:\d+$/', '', $host);
+$host = preg_replace('/^www\./', '', $host);
+
+$isLocal   = in_array($host, ['localhost', '127.0.0.1']);
+$isSandbox = str_starts_with($host, 'sandbox.');
+$isProd    = ($host === 'sistema.caddy.com.ar');
+
+if ($isLocal) {
+    $configFile = __DIR__ . "/Conexion/config_local";
+} elseif ($isSandbox) {
+    $configFile = __DIR__ . "/Conexion/config_sandbox";
+} else {
+    $configFile = __DIR__ . "/Conexion/config";
+}
+
+if (!is_file($configFile)) {
+    die("Error: archivo de configuración no encontrado: " . basename($configFile));
+}
 
 $dbConf = json_decode(file_get_contents($configFile), true);
 if (!$dbConf || !isset($dbConf[0])) {
-    die("Error: archivo de configuración de DB no encontrado");
+    die("Error: configuración inválida en " . basename($configFile));
 }
+$dbConf = $dbConf[0];
 
 // Configuración de la base de datos
 $socket = null;
@@ -18,7 +43,7 @@ $port = null;
 if ($isLocal) {
     $socket = '/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock';
 }
-$dbConf = $dbConf[0];
+// $dbConf = $dbConf[0];
 $mysqli = new mysqli(
     $dbConf['server'] ?? 'localhost',
     $dbConf['user'] ?? 'root',
