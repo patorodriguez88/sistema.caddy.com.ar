@@ -312,7 +312,8 @@
 
                         <div class="card-body">
                             <div class="table-responsive">
-                                <table id="ordenes" class="table table-striped table-hover align-middle w-100">
+                                <!-- <table id="ordenes" class="table table-striped table-hover align-middle w-100"> -->
+                                <table id="ordenes" class="table w-100" style="font-size: 10px;">
                                     <thead class="table-light">
                                         <tr>
                                             <th class="text-nowrap">Número</th>
@@ -333,98 +334,113 @@
                     </div>
 
                     <!-- CERRAR ORDEN -->
+                    <!-- Modal Cerrar Orden -->
+                    <!-- Modal Cerrar Orden (Bootstrap 5) -->
+                    <div class="modal fade" id="modal_cerrar_orden" tabindex="-1" aria-labelledby="modal_cerrar_orden_label" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                            <div class="modal-content">
 
-                    <div class="card" id="form_cerrar_orden_div" style="display:none">
-                        <div class="card-body">
-                            <h4 class="header-title text-danger">Cerrar Orden</h4>
-                            <form id="form_cerrar_orden">
-                                <div class="row mt-3">
-                                    <div class="col-md-4 mb-2">
-                                        <label>Fecha de Alta:</label>
-                                        <input type="text" class="form-control" id="fecha_alta" readonly>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Numero de Orden:</label>
-                                        <input type="text" class="form-control" id="numero_orden" readonly>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Controla:</label>
-                                        <input type="text" class="form-control" id="controla" readonly>
-                                    </div>
-
-                                    <div class="col-md-4 mb-2">
-                                        <label>Vehiculo:</label>
-                                        <input type="text" class="form-control" id="vehiculo" readonly>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Chofer:</label>
-                                        <input type="text" class="form-control" id="chofer" readonly>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Acompañante:</label>
-                                        <input type="text" class="form-control" id="acompanante">
-                                    </div>
-
-                                    <div class="col-md-4 mb-2">
-                                        <label>Recorrido:</label>
-                                        <input type="text" class="form-control" id="recorrido" readonly>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Kilómetros según Recorrido:</label>
-                                        <input type="text" class="form-control" id="km_segun_recorrido" readonly>
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Kilómetros Salida:</label>
-                                        <input type="number" class="form-control" id="km_salida">
-                                    </div>
-
-                                    <div class="col-md-4 mb-2">
-                                        <label>Combustible Salida:</label>
-                                        <input type="text" class="form-control" id="comb_salida">
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Fecha Retorno:</label>
-                                        <input type="date" class="form-control" id="fecha_retorno">
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Hora Retorno:</label>
-                                        <input type="time" class="form-control" id="hora_retorno">
-                                    </div>
-
-                                    <div class="col-md-4 mb-2">
-                                        <label>Kilómetros Regreso:</label>
-                                        <input type="number" class="form-control" id="km_regreso">
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Cargo Combustible (litros):</label>
-                                        <input type="text" class="form-control" id="cargo_combustible">
-                                    </div>
-                                    <div class="col-md-4 mb-2">
-                                        <label>Tanque de Combustible:</label>
-                                        <select class="form-control" id="tanque_combustible">
-                                            <option value="Vacio">Vacío</option>
-                                            <option value="1/4">1/4</option>
-                                            <option value="1/2">1/2</option>
-                                            <option value="3/4">3/4</option>
-                                            <option value="Lleno">Lleno</option>
-                                        </select>
-                                    </div>
-
-                                    <div class="col-12 mb-2">
-                                        <label>Observaciones:</label>
-                                        <textarea class="form-control" id="observaciones" rows="4" placeholder="Observaciones sobre el vehículo o la orden..."></textarea>
-                                    </div>
+                                <div class="modal-header">
+                                    <h5 class="modal-title text-danger" id="modal_cerrar_orden_label">Cerrar Orden</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                 </div>
-                                <div class="modal-footer mt-3">
-                                    <button type="submit" class="btn btn-success" id="cerrar_orden_ok"><i class="mdi mdi-check me-1"></i> Aceptar</button>
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal"><i class="mdi mdi-close-circle-outline me-1"></i> Cancelar
-                                    </button>
-                                </div>
-                            </form>
+
+                                <form id="form_cerrar_orden">
+                                    <div class="modal-body">
+
+                                        <div class="row mt-2">
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Fecha de Alta:</label>
+                                                <input type="text" class="form-control" id="fecha_alta" readonly>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Numero de Orden:</label>
+                                                <input type="text" class="form-control" id="numero_orden" readonly>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Controla:</label>
+                                                <input type="text" class="form-control" id="controla" readonly>
+                                            </div>
+
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Vehiculo:</label>
+                                                <input type="text" class="form-control" id="vehiculo" readonly>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Chofer:</label>
+                                                <input type="text" class="form-control" id="chofer" readonly>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Acompañante:</label>
+                                                <input type="text" class="form-control" id="acompanante">
+                                            </div>
+
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Recorrido:</label>
+                                                <input type="text" class="form-control" id="recorrido" readonly>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Kilómetros según Recorrido:</label>
+                                                <input type="text" class="form-control" id="km_segun_recorrido" readonly>
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Kilómetros Salida:</label>
+                                                <input type="number" class="form-control" id="km_salida">
+                                            </div>
+
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Combustible Salida:</label>
+                                                <input type="text" class="form-control" id="comb_salida">
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Fecha Retorno:</label>
+                                                <input type="date" class="form-control" id="fecha_retorno">
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Hora Retorno:</label>
+                                                <input type="time" class="form-control" id="hora_retorno">
+                                            </div>
+
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Kilómetros Regreso:</label>
+                                                <input type="number" class="form-control" id="km_regreso">
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Cargo Combustible (litros):</label>
+                                                <input type="text" class="form-control" id="cargo_combustible">
+                                            </div>
+                                            <div class="col-md-4 mb-2">
+                                                <label class="form-label">Tanque de Combustible:</label>
+                                                <select class="form-select" id="tanque_combustible">
+                                                    <option value="Vacio">Vacío</option>
+                                                    <option value="1/4">1/4</option>
+                                                    <option value="1/2">1/2</option>
+                                                    <option value="3/4">3/4</option>
+                                                    <option value="Lleno">Lleno</option>
+                                                </select>
+                                            </div>
+
+                                            <div class="col-12 mb-2">
+                                                <label class="form-label">Observaciones:</label>
+                                                <textarea class="form-control" id="observaciones" rows="4" placeholder="Observaciones sobre el vehículo o la orden..."></textarea>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="modal-footer">
+                                        <button type="submit" class="btn btn-success" id="cerrar_orden_ok">
+                                            <i class="mdi mdi-check me-1"></i> Guardar
+                                        </button>
+                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                                            <i class="mdi mdi-close-circle-outline me-1"></i> Cancelar
+                                        </button>
+                                    </div>
+                                </form>
+
+                            </div>
                         </div>
                     </div>
-
-
 
                     <div id="warning-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="warning-header-modalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
