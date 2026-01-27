@@ -358,7 +358,7 @@
                 <!--END SEGUIMIENTO MODAL-->
                 <!-- Start Content-->
                 <!-- <div class="container-fluid"> -->
-                <div class="row">
+                <!-- <div class="row">
                     <div class="col-12">
                         <div class="card shadow-sm">
                             <div class="card-body">
@@ -384,7 +384,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <!-- Se completa dinámicamente -->
+                                            
                                         </tbody>
                                     </table>
                                 </div>
@@ -392,9 +392,54 @@
                             </div>
                         </div>
                     </div>
-                </div>
+                </div> -->
                 <!-- </div> -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
 
+                            <!-- Header compacto -->
+                            <div class="card-header d-flex align-items-center justify-content-between py-2">
+                                <h5 id="seguimiento_header" class="mb-0 fw-semibold">
+                                    Guías pendientes de entrega
+                                </h5>
+
+                                <!-- (Opcional) acciones de header -->
+                                <!-- <div class="d-flex gap-2"> -->
+                                <!-- Ej: filtros, export, refresh -->
+                                <!-- <button class="btn btn-outline-secondary btn-sm"><i class="mdi mdi-refresh"></i></button> -->
+                                <!-- </div> -->
+                            </div>
+
+                            <div class="card-body pt-3">
+                                <!-- <div class="table-responsive"> -->
+                                <table
+                                    class="table table-sm table-hover align-middle mb-0 mt-2"
+                                    id="seguimiento"
+                                    style="font-size: 12px;">
+                                    <thead class="table-light pt-3">
+                                        <tr>
+                                            <th class="text-nowrap">Fecha</th>
+                                            <th class="text-nowrap">Comprobante</th>
+                                            <th>Origen</th>
+                                            <th>Destino</th>
+                                            <th>Observaciones</th>
+                                            <th class="text-nowrap">Servicio</th>
+                                            <th class="text-nowrap">Recorrido</th>
+                                            <th class="text-end text-nowrap">Acción</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        <!-- Se completa dinámicamente -->
+                                    </tbody>
+                                </table>
+                                <!-- </div> -->
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
                 <div id="warning-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="warning-header-modalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
@@ -417,13 +462,8 @@
                     </div><!-- /.modal-dialog -->
                 </div><!-- /.modal -->
 
-
-
             </div>
             <!-- container -->
-
-            <!-- </div> -->
-            <!-- content -->
 
             <!-- Footer Start -->
             <div id="menuhyper_footer"></div>
