@@ -25,10 +25,17 @@ var datatable = $("#recorridos").DataTable({
   },
   columnDefs: [
     { className: "align-middle", targets: "_all" },
-    { orderable: false, targets: [9] },
+    {
+      targets: 0, // Numero
+      width: "10px",
+      className: "text-center align-middle",
+    },
+    { orderable: false, targets: [7] },
   ],
   order: [[0, "asc"]],
-  language: { url: "//cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json" },
+  language: {
+    url: "https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json",
+  },
   columns: [
     {
       data: "Numero",
@@ -55,19 +62,19 @@ var datatable = $("#recorridos").DataTable({
       defaultContent: 0,
       render: (d, t, r) => {
         const c = r.Activo == 0 ? "muted" : "success";
-        return `<i class="mdi mdi-18px mdi-map-marker-distance text-${c}"></i> <b>${
-          d ?? 0
-        }</b>`;
-      },
-    },
-    {
-      data: "Peajes",
-      defaultContent: 0,
-      render: (d, t, r) => {
-        const c = r.Activo == 0 ? "muted" : "success";
-        return `<i class="mdi mdi-18px mdi-cash-marker text-${c}"></i> <b>${
-          d ?? 0
-        }</b>`;
+
+        return `
+      <div class="d-flex flex-column lh-sm">
+        <div>
+          <i class="mdi mdi-18px mdi-map-marker-distance text-${c} me-1"></i>
+          <b>${d ?? 0}</b> km
+        </div>
+        <div class="text-muted small">
+          <i class="mdi mdi-18px mdi-cash-marker me-1"></i>
+          ${r.Peajes ?? 0} peajes
+        </div>
+      </div>
+    `;
       },
     },
     {
@@ -80,8 +87,8 @@ var datatable = $("#recorridos").DataTable({
             <b>${r.nombrecliente ?? ""}</b><br>
             <a class="text-primary" data-bs-toggle="modal" data-bs-target="#modal_seguimiento"
                data-id="${r.nombrecliente ?? ""}" data-title="${
-          r.CodigoProductos ?? ""
-        }" data-fieldname="${r.CodigoProductos ?? ""}">
+                 r.CodigoProductos ?? ""
+               }" data-fieldname="${r.CodigoProductos ?? ""}">
                <b>${r.CodigoProductos ?? ""}</b>
             </a><br>
             <span class="badge ${badge}"> $ ${r.PrecioVenta ?? 0}</span>
@@ -116,19 +123,19 @@ var datatable = $("#recorridos").DataTable({
       render: (d, t, r) => {
         if (r.Activo == 0) return `<i class="mdi mdi-truck text-muted"></i>`;
         const hex = String(d || "").replace(/^#/, "");
-        return `<i class="mdi mdi-truck" style="color:#${hex}"></i>`;
+        return `<i class="mdi mdi-18px mdi-truck" style="color:#${hex}"></i>`;
       },
     },
-    {
-      data: "Activo",
-      defaultContent: 0,
-      render: (d) => {
-        const on = Number(d) === 1;
-        return `<h5><span class="badge ${on ? "bg-success" : "bg-danger"}"><b>${
-          on ? "Activo" : "Inactivo"
-        }</b></span></h5>`;
-      },
-    },
+    // {
+    //   data: "Activo",
+    //   defaultContent: 0,
+    //   render: (d) => {
+    //     const on = Number(d) === 1;
+    //     return `<h5><span class="badge ${on ? "bg-success" : "bg-danger"}"><b>${
+    //       on ? "Activo" : "Inactivo"
+    //     }</b></span></h5>`;
+    //   },
+    // },
     {
       data: "id",
       orderable: false,
@@ -268,20 +275,20 @@ function showmodal(i) {
       $("#recorrido_toll").val(jsonData.data[0].Peajes);
 
       $("#standard-modal-rec-header").removeClass(
-        "modal-header modal-colored-header bg-success"
+        "modal-header modal-colored-header bg-success",
       );
       $("#standard-modal-rec-header").addClass(
-        "modal-header modal-colored-header bg-warning"
+        "modal-header modal-colored-header bg-warning",
       );
       $("#myCenterModalLabel_rec").html(
-        "MODIFICAR RECORRIDO NUMERO " + jsonData.data[0].Numero
+        "MODIFICAR RECORRIDO NUMERO " + jsonData.data[0].Numero,
       );
 
       var values = jsonData.data[0].DiaSalida.split(",");
 
       for (var i = 0; i < values.length; i++) {
         $("#dates").append(
-          `<option value="${values[i]}"selected>${values[i]}</option>`
+          `<option value="${values[i]}"selected>${values[i]}</option>`,
         );
       }
 
@@ -403,10 +410,10 @@ $("#agregar_rec_btn").click(function () {
   $("#recorrido_ok").css("display", "block");
   $(".form-control").val("");
   $("#standard-modal-rec-header").removeClass(
-    "modal-header modal-colored-header bg-warning"
+    "modal-header modal-colored-header bg-warning",
   );
   $("#standard-modal-rec-header").addClass(
-    "modal-header modal-colored-header bg-success"
+    "modal-header modal-colored-header bg-success",
   );
   $("#myCenterModalLabel_rec").html("AGREGAR NUEVO RECORRIDO");
 
@@ -467,7 +474,7 @@ function loadClientesSelect() {
       $sel.append(
         `<option value="${c.id}">${c.id} - ${c.nombrecliente} (Dir.: ${
           c.Direccion || "-"
-        })</option>`
+        })</option>`,
       );
     });
     $sel.trigger("change");
@@ -480,7 +487,7 @@ function loadServiciosSelect() {
     $sel.empty().append('<option value="">Seleccionar un Servicio</option>');
     (res?.data || []).forEach((s) => {
       $sel.append(
-        `<option value="${s.Codigo}">${s.Codigo} - ${s.Titulo} $ ${s.PrecioVenta}</option>`
+        `<option value="${s.Codigo}">${s.Codigo} - ${s.Titulo} $ ${s.PrecioVenta}</option>`,
       );
     });
     $sel.trigger("change");
@@ -615,7 +622,7 @@ $("#recorrido_ok").on("click", function () {
     return notify(
       "Faltan datos",
       "Número y Nombre son obligatorios",
-      "warning"
+      "warning",
     );
   ajaxPost({ CrearRecorrido: 1, ...payload }, (res) => {
     if (res?.ok) {
@@ -707,7 +714,7 @@ function cargarServiciosUnicos(idRec) {
     (res?.data || []).forEach((s) => {
       const servicio = s.Retirado == 0 ? "Retiro" : "Entrega";
       $sel.append(
-        `<option value="${s.id}">Origen: ${s.Origen} Destino: <b>${s.Destino}</b> $ ${s.Debe} ${s.EntregaEn} ${servicio}</option>`
+        `<option value="${s.id}">Origen: ${s.Origen} Destino: <b>${s.Destino}</b> $ ${s.Debe} ${s.EntregaEn} ${servicio}</option>`,
       );
     });
     $sel.trigger("change");
