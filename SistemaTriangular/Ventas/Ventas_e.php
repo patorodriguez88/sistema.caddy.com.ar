@@ -585,7 +585,7 @@
                             <div class="col-lg-12 mt-3">
                               <div class="tab-content">
                                 <div class="tab-pane show active" id="basic-datatable-preview">
-                                  <table class="table dt-responsive nowrap w-100" id="basic">
+                                  <table class="table dt-responsive nowrap w-100 font-4" id="basic">
                                     <thead>
                                       <tr>
                                         <th>Codigo</th>
@@ -605,32 +605,52 @@
                             </div>
                           </div>
                           <div class="row">
-                            <div class="col-lg-8 mt-3">
-                              <div class="border p-3 mt-4 mt-lg-0 rounded bg-success text-white">
-                                <h4 class="header-title mb-3">Resumen de la Orden</h4>
-                                <div class="table-responsive">
-                                  <table class="table table-sm table-centered mb-0 text-white" id="basic-total">
-                                    <thead>
-                                      <tr>
-                                        <th>Cantidad</th>
-                                        <th>Importe Neto</th>
-                                        <th>Iva</th>
-                                        <th>Total</th>
-                                      </tr>
-                                    </thead>
-                                    <tbody>
-                                    </tbody>
-                                  </table>
+                            <div class="col-lg-12 mt-3">
+
+                              <!-- Card Resumen -->
+                              <div class="card border-success shadow-sm">
+                                <div class="card-header bg-success text-white py-2 d-flex align-items-center">
+                                  <i class="mdi mdi-clipboard-list-outline me-2"></i>
+                                  <h4 class="mb-0 fw-semibold">Resumen de la Orden</h4>
+                                </div>
+
+                                <div class="card-body p-0">
+                                  <div class="table-responsive">
+                                    <table class="table table-sm table-centered mb-0" id="basic-total">
+                                      <thead class="table-light">
+                                        <tr class="text-end">
+                                          <th class="text-start">Cantidad</th>
+                                          <th>Importe Neto</th>
+                                          <th>IVA</th>
+                                          <th class="fw-bold">Total</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody class="text-end">
+                                        <!-- dinámico -->
+                                      </tbody>
+                                    </table>
+                                  </div>
                                 </div>
                               </div>
-                            </div>
-                            <div class="col-lg-4 mt-3">
-                              <input type='hidden' name='km_nc' id='km_nc'>
-                              <input type='hidden' name='google_km' id='google_km'>
-                              <input type='hidden' name='google_time' id='google_time'>
-                              <input type='hidden' name='redespacho_nc' id='redespacho_nc'>
 
-                              <button value="confirmarenvio" name="SolicitaEnvio" id="SolicitaEnvio" type="submit" class="btn btn-danger">Confirmar Envio</button>
+                              <!-- Acciones -->
+                              <div class="mt-4 d-flex justify-content-end align-items-center gap-3">
+                                <input type="hidden" name="km_nc" id="km_nc">
+                                <input type="hidden" name="google_km" id="google_km">
+                                <input type="hidden" name="google_time" id="google_time">
+                                <input type="hidden" name="redespacho_nc" id="redespacho_nc">
+
+                                <button
+                                  value="confirmarenvio"
+                                  name="SolicitaEnvio"
+                                  id="SolicitaEnvio"
+                                  type="submit"
+                                  class="btn btn-danger px-4">
+                                  <i class="mdi mdi-check-circle-outline me-1"></i>
+                                  Confirmar Envío
+                                </button>
+                              </div>
+
                             </div>
                           </div>
                         </form>
