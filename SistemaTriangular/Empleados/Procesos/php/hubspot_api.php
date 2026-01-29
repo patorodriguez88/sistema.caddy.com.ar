@@ -1,4 +1,9 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', '0'); // no imprimir warnings
+ini_set('log_errors', '1');     // log al error_log
+
+header('Content-Type: application/json; charset=utf-8');
 include_once('../../../Conexion/Conexioni.php');
 $accessToken = 'pat-na1-af0e5daa-91f3-4bb8-a303-ff3f4bb2a256'; // 🔁 Reemplazá con tu token
 if (isset($_POST['Task'])) {

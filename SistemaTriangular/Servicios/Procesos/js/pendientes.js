@@ -42,7 +42,7 @@
 })();
 
 var datatable = $("#seguimiento").DataTable({
-  dom: "Bfrtip",
+  dom: "Blfrtip",
   buttons: ["copy", "csv", "excel", "pdf", "print"],
   paging: true,
   searching: true,
@@ -50,7 +50,9 @@ var datatable = $("#seguimiento").DataTable({
     [10, 25, 50, -1],
     [10, 25, 50, "All"],
   ],
-
+  language: {
+    lengthMenu: "_MENU_ Registros por página",
+  },
   ajax: {
     url: "Procesos/php/pendientes.php",
     data: { Pendientes: 1 },
@@ -110,7 +112,7 @@ var datatable = $("#seguimiento").DataTable({
             color = "success"; // futura
           }
           var FechaPrometida = `<span class="badge badge-${color} badge-pill">Prometida: ${row.FechaPrometida.split(
-            "-"
+            "-",
           )
             .reverse()
             .join(".")}</span>`;
@@ -248,6 +250,9 @@ var datatable = $("#seguimiento").DataTable({
     },
   ],
 });
+// separación visual
+$(datatable.buttons().container()).addClass("mb-2");
+$("#seguimiento_wrapper .dataTables_length").addClass("mt-1");
 
 function filter(id) {
   // alert(id);
@@ -308,7 +313,7 @@ $("#modificarrecorrido_ok").on("click", async function () {
       "No encontramos el Código de Seguimiento (cs). Intenta abrir de nuevo el modal.",
       "bottom-right",
       "#FFFFFF",
-      "warning"
+      "warning",
     );
     return;
   }
@@ -318,7 +323,7 @@ $("#modificarrecorrido_ok").on("click", async function () {
       "Debes elegir un recorrido antes de guardar.",
       "bottom-right",
       "#FFFFFF",
-      "warning"
+      "warning",
     );
     return;
   }
@@ -383,7 +388,7 @@ $("#modificarrecorrido_ok").on("click", async function () {
           "Se ha actualizado el Recorrido.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       } catch {}
 
@@ -777,7 +782,7 @@ $("#modificardireccion_ok").click(function () {
           "Se ha actualizado la tabla Clientes correctamente.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
         var datatable = $("#seguimiento").DataTable();
         datatable.ajax.reload();
@@ -791,7 +796,7 @@ $("#modificardireccion_ok").click(function () {
       "No se realizaron cambios.",
       "bottom-right",
       "#FFFFFF",
-      "warning"
+      "warning",
     );
   }
 });
@@ -807,7 +812,7 @@ function eliminar(e) {
         "Estas por eliminar el Registro " +
           e +
           " Origen " +
-          jsonData.RazonSocial
+          jsonData.RazonSocial,
       );
       $("#id_eliminar").val(e);
       $("#codigoseguimiento_eliminar").val(jsonData.CodigoSeguimiento);
@@ -833,7 +838,7 @@ $("#warning-modal-ok").click(function () {
             "Se ha borrado el registro en Hoja de Ruta correctamente.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
           var datatable = $("#seguimiento").DataTable();
           datatable.ajax.reload();
@@ -843,7 +848,7 @@ $("#warning-modal-ok").click(function () {
             "No se han realizado cambios en Hoja de Ruta.",
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
         if (jsonData.transclientes == 1) {
@@ -852,7 +857,7 @@ $("#warning-modal-ok").click(function () {
             "Se ha borrado el registro en Trans Clientes correctamente.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
           var datatable = $("#seguimiento").DataTable();
           datatable.ajax.reload();
@@ -862,7 +867,7 @@ $("#warning-modal-ok").click(function () {
             "No se han realizado cambios en Trans Clientes.",
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
       } else {
@@ -871,7 +876,7 @@ $("#warning-modal-ok").click(function () {
           "No se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
     },

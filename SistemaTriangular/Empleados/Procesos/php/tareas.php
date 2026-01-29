@@ -1,13 +1,10 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 include_once('../../../Conexion/Conexioni.php');
 include_once('asana_api.php');
 
 date_default_timezone_set('America/Argentina/Cordoba');
-$Usuario = $_SESSION['Usuario'];
-$Nivel = $_SESSION['Nivel'];
+$Usuario = $_SESSION['Usuario'] ?? '';
+$Nivel = (int)($_SESSION['Nivel'] ?? 0);
 
 if (isset($_POST['ObtenerTarea'])) {
     $id = intval($_POST['id']);
@@ -271,36 +268,58 @@ if (isset($_POST['Tareas_detalle'])) {
 
 //TAREAS LISTA
 if (isset($_POST['Tareas_lista'])) {
+    // Actualizar_Task(); // si esto hace echoes o warnings, OJO: te rompe JSON
 
-    Actualizar_Task();
+    $estadoFiltrado = (isset($_POST['Estado']) && $_POST['Estado'] !== '');
+    $estado = $_POST['Estado'] ?? '';
 
-    if ($Nivel == 1) {
+    $rows = [];
 
-        if (isset($_POST['Estado']) && $_POST['Estado'] !== '') {
-
-            $sql = $mysqli->query("SELECT * FROM Tareas WHERE Estado='" . $_POST['Estado'] . "'");
+    if ($Nivel === 1) {
+        if ($estadoFiltrado) {
+            $stmt = $mysqli->prepare("SELECT * FROM Tareas WHERE Estado = ?");
+            $stmt->bind_param("s", $estado);
         } else {
-
-            $sql = $mysqli->query("SELECT * FROM Tareas");
+            $stmt = $mysqli->prepare("SELECT * FROM Tareas");
         }
-    } elseif ($Nivel == 2) {
-
-        if ($_POST['Estado']) {
-
-            $sql = $mysqli->query("SELECT Tareas.* FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='" . $_POST['Estado'] . "'");
+    } else { // Nivel 2
+        if ($estadoFiltrado) {
+            $stmt = $mysqli->prepare("
+                SELECT t.*
+                FROM Tareas t
+                INNER JOIN usuarios u
+                  ON (
+                       (t.gid_asana <> '0' AND u.gid_asana = t.Responsable_gid)
+                    OR (t.gid_hubspot <> '0' AND u.gid_hubspot = t.Responsable_gid)
+                  )
+                WHERE u.Usuario = ?
+                  AND t.Estado = ?
+            ");
+            $stmt->bind_param("ss", $Usuario, $estado);
         } else {
-            $sql = $mysqli->query("SELECT Tareas.* FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "'");
+            $stmt = $mysqli->prepare("
+                SELECT t.*
+                FROM Tareas t
+                INNER JOIN usuarios u
+                  ON (
+                       (t.gid_asana <> '0' AND u.gid_asana = t.Responsable_gid)
+                    OR (t.gid_hubspot <> '0' AND u.gid_hubspot = t.Responsable_gid)
+                  )
+                WHERE u.Usuario = ?
+            ");
+            $stmt->bind_param("s", $Usuario);
         }
     }
 
-    $rows = array();
+    $stmt->execute();
+    $res = $stmt->get_result();
 
-    while ($row = $sql->fetch_array(MYSQLI_ASSOC)) {
-
+    while ($row = $res->fetch_assoc()) {
         $rows[] = $row;
     }
 
-    echo json_encode(array('data' => $rows));
+    echo json_encode(['data' => $rows], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 if (isset($_POST['Tareas_comentarios_total'])) {
@@ -878,9 +897,9 @@ if (isset($_POST['Totales'])) {
         $sql_pendientes = $mysqli->query("SELECT COUNT(id) as total_pendientes, SUM(Puntos)as total_pendientes_puntos FROM Tareas WHERE Estado = 'false'");
     } else {
         // Realizar la consulta SQL para contar el total de registros en cada estado
-        $sql_totales = $mysqli->query("SELECT COUNT(id) as Total, SUM(Puntos)as Total_Puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "'");
-        $sql_finalizado = $mysqli->query("SELECT COUNT(id) as total_finalizado, SUM(Puntos)as total_finalizado_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='true'");
-        $sql_pendientes = $mysqli->query("SELECT COUNT(id) as total_pendientes, SUM(Puntos)as total_pendientes_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='false'");
+        $sql_totales = $mysqli->query("SELECT COUNT(Tareas.id) as Total, SUM(Puntos)as Total_Puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "'");
+        $sql_finalizado = $mysqli->query("SELECT COUNT(Tareas.id) as total_finalizado, SUM(Puntos)as total_finalizado_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='true'");
+        $sql_pendientes = $mysqli->query("SELECT COUNT(Tareas.id) as total_pendientes, SUM(Puntos)as total_pendientes_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='false'");
     }
     // Obtener los totales de cada estado
     $row_totales = $sql_totales->fetch_assoc();
@@ -1020,25 +1039,35 @@ if (isset($_POST['Tareas_radios'])) {
 }
 
 if (isset($_POST['Tareas_lista_puntos'])) {
+
     $FechaInicio = $_POST['FechaInicio'];
-    $FechaFinal = $_POST['FechaFinal'];
-    // Consulta para obtener datos de la base de datos
-    // $sql = "SELECT FechaEntrega,Responsable,SUM(Puntos)as Puntos FROM `Tareas` WHERE FechaEntrega >='$FechaInicio' AND FechaEntrega<='$FechaFinal' GROUP BY Responsable;";
-    $sql = "SELECT FechaEntrega,Responsable,Puntos FROM `Tareas` WHERE FechaEntrega >='$FechaInicio' AND FechaEntrega<='$FechaFinal' GROUP BY Responsable;";
-    $result = $mysqli->query($sql);
+    $FechaFinal  = $_POST['FechaFinal'];
 
-    // Crear array para almacenar los datos
-    $data = array();
+    $sql = "
+        SELECT 
+            FechaEntrega,
+            Responsable,
+            Puntos
+        FROM Tareas
+        WHERE FechaEntrega >= ?
+          AND FechaEntrega <= ?
+        ORDER BY FechaEntrega
+    ";
 
-    // Verificar si hay resultados y almacenarlos en el array
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
-        }
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("ss", $FechaInicio, $FechaFinal);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+    $data = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
     }
 
-    // Convertir el array a formato JSON y devolverlo
-    echo json_encode(array('data' => $data));
+    header('Content-Type: application/json');
+    echo json_encode(['data' => $data]);
+    exit;
 }
 
 if (isset($_POST['DashboardPuntos'])) {

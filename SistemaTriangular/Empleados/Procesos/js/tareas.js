@@ -50,7 +50,7 @@ function parseDateSafe(raw) {
 function fecha_formato(
   raw,
   locale = "es-AR",
-  opts = { day: "2-digit", month: "short", year: "numeric" }
+  opts = { day: "2-digit", month: "short", year: "numeric" },
 ) {
   const d = parseDateSafe(raw);
   if (!d) return ""; // evita el RangeError
@@ -65,7 +65,7 @@ function htmlToPlainText(html) {
 function modificarTarea(id) {
   $.ajax({
     type: "POST",
-    url: "../Empleados/Procesos/php/tareas.php",
+    url: "Procesos/php/tareas.php",
     data: { ObtenerTarea: 1, id: id },
     success: function (data) {
       var tarea = JSON.parse(data);
@@ -73,8 +73,17 @@ function modificarTarea(id) {
       $("#tarea_nombre").val(tarea.NombreTarea);
       $("#tarea_puntos").val(tarea.Puntos);
       $("#tarea_completada").prop("checked", tarea.Completada == 1);
-      $("#modalEditarTarea").modal("show");
+      const m = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById("modalEditarTarea"),
+      );
+      m.show();
     },
+    /*************  ✨ Windsurf Command ⭐  *************/
+    /**
+     * Maneja el error al cargar la tarea.
+     * Muestra un mensaje de error con un título "Error" y un mensaje "No se pudo cargar la tarea."
+     */
+    /*******  17d390a2-fc24-4924-aa97-cd5882c2feff  *******/
     error: function () {
       Swal.fire("Error", "No se pudo cargar la tarea.", "error");
     },
@@ -87,7 +96,7 @@ function guardarCambiosTarea() {
 
   $.ajax({
     type: "POST",
-    url: "../Empleados/Procesos/php/tareas.php",
+    url: "Procesos/php/tareas.php",
     data: {
       ActualizarTarea: 1,
       id: id,
@@ -104,7 +113,7 @@ function guardarCambiosTarea() {
         Swal.fire(
           "Error",
           response.message || "No se pudo actualizar la tarea.",
-          "error"
+          "error",
         );
       }
     },
@@ -124,103 +133,45 @@ function renderizar_tareas_lista(status) {
 
   $("#tareas_lista").css("display", "block");
 
-  var table_contact = $("#table_tareas_lista").DataTable();
+  if ($.fn.DataTable.isDataTable("#table_tareas_lista")) {
+    $("#table_tareas_lista").DataTable().clear().destroy();
+  }
 
-  table_contact.destroy();
-
-  // $("#table_tareas_lista").DataTable({
-  //   paging: false,
-  //   searching: false,
-  //   ajax: {
-  //     url: "../Empleados/Procesos/php/tareas.php",
-  //     data: {
-  //       Tareas_lista: 1,
-  //       Estado: status,
-  //     },
-  //     type: "post",
-  //   },
-  //   columns: [
-  //     {
-  //       data: "FechaCarga",
-
-  //       render: function (data, type, row) {
-  //         var Fecha = row.FechaCarga.split("-").reverse().join(".");
-  //         return (
-  //           '<td><span style="display: none;">' +
-  //           row.FechaCarga +
-  //           "</span>" +
-  //           Fecha +
-  //           "</td>"
-  //         );
-  //       },
-  //     },
-  //     { data: "NombreTarea" },
-  //     { data: "Puntos" },
-  //     {
-  //       data: "FechaEntrega",
-  //       render: function (data, type, row) {
-  //         var Fecha = row.FechaEntrega.split("-").reverse().join(".");
-  //         return (
-  //           '<td><span style="display: none;">' +
-  //           row.FechaEntrega +
-  //           "</span>" +
-  //           Fecha +
-  //           "</td>"
-  //         );
-  //       },
-  //     },
-  //     {
-  //       data: "Completada",
-  //       render: function (data) {
-  //         if (data == true) {
-  //           return '<span class="badge badge-success text-white">Finalizada</span>';
-  //         } else {
-  //           return '<span class="badge badge-warning text-white">Pendinete</span>';
-  //         }
-  //       },
-  //     },
-  //     {
-  //       data: function (row) {
-  //         let gid = row.gid_asana || row.gid_hubspot;
-  //         let baseUrl = row.gid_asana
-  //           ? "https://app.asana.com/app/asana/-/get_asset?asset_id=" +
-  //             row.gid_asana
-  //           : "https://app.hubspot.com/tasks/23486798/view/all";
-
-  //         return (
-  //           '<a target="_blank" href="' +
-  //           baseUrl +
-  //           gid +
-  //           '"><i class="mdi mdi-link-variant"></i></a>'
-  //         );
-  //       },
-  //     },
-  //   ],
-  // });
   nivel(function (nivelUsuario) {
+    console.log("nivel usuario", nivelUsuario);
     // Definimos las columnas base
     var columnasBase = [
       {
         data: "FechaCarga",
         render: function (data, type, row) {
           var Fecha = row.FechaCarga.split("-").reverse().join(".");
+          var sistema = row.gid_asana ? "Asana" : "Hubspot";
+          var sistema_color = row.gid_asana ? "dark" : "danger";
           return (
-            '<span style="display: none;">' + row.FechaCarga + "</span>" + Fecha
+            '<span style="display: none;">' +
+            row.FechaCarga +
+            "</span>" +
+            Fecha +
+            "<br>" +
+            '<span class="badge bg-' +
+            sistema_color +
+            ' text-white">' +
+            sistema +
+            "</span>"
           );
         },
       },
-      { data: "NombreTarea" },
+      {
+        data: "NombreTarea",
+        render: function (data, type, row) {
+          return `${row.NombreTarea}<br><b class="text-primary">${row.Responsable}</b>`;
+        },
+      },
       {
         data: "Puntos",
 
         render: function (data, type, row) {
-          return (
-            "<td>" +
-            row.Puntos +
-            '</td><i class="mdi mdi-pencil mdi-18px text-warning ms-2" style="cursor:pointer;" onclick="modificarTarea(' +
-            row.id +
-            ')"></i>'
-          );
+          return `${row.Puntos} <i class="mdi mdi-pencil mdi-18px text-warning ms-2" style="cursor:pointer;" onclick="modificarTarea(${row.id})"></i>`;
         },
       },
       {
@@ -260,37 +211,36 @@ function renderizar_tareas_lista(status) {
           );
         },
       },
+      {
+        data: null,
+        orderable: false,
+        render: function (data, type, row) {
+          if (nivelUsuario != 1) return "";
+          return `<i class="mdi mdi-file-document-outline mdi-18px text-warning ms-2" style="cursor:pointer;" onclick="eliminarTarea(${row.id})"></i>`;
+        },
+      },
     ];
+    // Si es nivel 1, agregamos la columna para editar
+    // if (nivelUsuario == 1) {
+    //   const esAdmin = Number(nivelUsuario) === 1;
 
-    // Si es nivel 2, agregamos la columna para editar
-    if (nivelUsuario == 1) {
-      $(".col-editar").show();
-      columnasBase.push(
-        {
-          data: null,
-          render: function (data, type, row) {
-            return `<i class="mdi mdi-file-document-outline mdi-18px text-warning ml-2" style="cursor:pointer;" onclick="eliminarTarea(${row.id})"></i>`;
-          },
-          orderable: false,
-        }
-        // {
-        //   data: null,
-        //   render: function (data, type, row) {
-        //     return `<i class="mdi mdi-delete mdi-18px text-danger ms-2" style="cursor:pointer;" onclick="eliminarTarea(${row.id})"></i>`;
-        //   },
-        //   orderable: false,
-        // }
-      );
-    } else {
-      $(".col-editar").hide();
-    }
+    //   $(".col-editar").show();
+    //   columnasBase.push({
+    //     data: null,
+    //     orderable: false,
+    //     render: function (data, type, row) {
+    //       if (!esAdmin) return "";
+    //       return `<i class="mdi mdi-file-document-outline mdi-18px text-warning ms-2" style="cursor:pointer;" onclick="eliminarTarea(${row.id})"></i>`;
+    //     },
+    //   });
+    // }
 
     // Ahora sí, creamos la tabla
     $("#table_tareas_lista").DataTable({
       paging: false,
       searching: false,
       ajax: {
-        url: "../Empleados/Procesos/php/tareas.php",
+        url: "Procesos/php/tareas.php",
         data: {
           Tareas_lista: 1,
           Estado: status,
@@ -373,7 +323,7 @@ function renderizarDashboardPuntos(resumen, evolucionMensual) {
 }
 function cargarDashboardPuntos(FechaInicio, FechaFinal) {
   $.post(
-    "../Empleados/Procesos/php/tareas.php",
+    "Procesos/php/tareas.php",
     {
       DashboardPuntos: 1,
       FechaInicio: FechaInicio,
@@ -382,7 +332,7 @@ function cargarDashboardPuntos(FechaInicio, FechaFinal) {
     function (resp) {
       renderizarDashboardPuntos(resp.resumen, resp.evolucion);
     },
-    "json"
+    "json",
   );
 }
 
@@ -419,7 +369,7 @@ function renderizar_tareas_puntos(fechas) {
     paging: false,
     searching: false,
     ajax: {
-      url: "../Empleados/Procesos/php/tareas.php",
+      url: "Procesos/php/tareas.php",
       type: "post",
       data: {
         Tareas_lista_puntos: 1,
@@ -431,13 +381,13 @@ function renderizar_tareas_puntos(fechas) {
       {
         data: "FechaEntrega",
         render: function (data, type, row) {
+          if (!row.FechaEntrega) return "";
           var Fecha = row.FechaEntrega.split("-").reverse().join(".");
           return (
-            '<td><span style="display: none;">' +
+            '<span style="display:none;">' +
             row.FechaEntrega +
             "</span>" +
-            Fecha +
-            "</td>"
+            Fecha
           );
         },
       },
@@ -540,7 +490,8 @@ function cargar_hubspot(gid) {
     data: { Task: 1, gid: gid },
     url: "Procesos/php/hubspot_api.php", // o un nuevo archivo si preferís separarlo
     type: "POST",
-    success: function (data) {
+    dataType: "json",
+    success: function (jsonData) {
       var jsonData = JSON.parse(data);
       if (jsonData && jsonData.data) {
         console.log("HubSpot datos", jsonData);
@@ -590,7 +541,7 @@ function cargar_hubspot(gid) {
           .prop("readonly", true);
         let nombre_usuario_tarea = NombreUsuario(
           "hubspot",
-          jsonData.data.assignee_id
+          jsonData.data.assignee_id,
         );
 
         $("#crear_tarea_usuario_asana")
@@ -647,6 +598,7 @@ function zeroFill(number, width) {
 }
 
 function nivel(callback) {
+  console.log("nivel aca");
   $.ajax({
     data: { Nivel: 1 },
     url: "Procesos/php/tareas.php",
@@ -661,80 +613,6 @@ function nivel(callback) {
   });
 }
 
-//ELIMINAR ARCHIVO
-// function eliminar_archivo(file){
-
-//     $("#standard-modal-details-ok").hide();
-//     $("#standard-modal-ok").show();
-//     $('#standard-modal').modal('show');
-//     $('#standard-modal-title').html('Estas por eliminar el archivo '+file+' del servidor, esta acción no se puede deshacer, deseas continuar?.');
-//     $('#standard-modal-archivo').val(file);
-
-// }
-
-//CONFIRMAR ELIMINAR ARCHIVO
-// $("#standard-modal-ok").click(function(){
-
-//     var file=$('#standard-modal-archivo').val();
-//     var carpeta=$('#id_tarea').html();
-//     var ruta=carpeta+'/'+file;
-//     var id = $('#id_tarea').html();
-
-//     $.ajax({
-//         data:{'Eliminar_archivo':1,'Ruta':ruta},
-//         url: 'Procesos/php/tareas.php',
-//         type: 'POST',
-//         success: function(data) {
-//         var jsonData = JSON.parse(data);
-
-//             if(jsonData.success==1){
-//                 $('#standard-modal').modal('hide');
-//                 renderizar_archivos(id);
-//                 $.NotificationApp.send("Exito !", "Archivo eliminado correctamente.", "bottom-right", "#FFFFFF", "danger");
-//             }else{
-
-//             }
-//         },
-//         error: function() {
-//             alert('Error al cargar el contenido.');
-//         }
-//     });
-// });
-
-// document.querySelector('.attach-button').addEventListener('click', function() {
-// document.querySelector('.input-file').click();
-// });
-
-// var inputFile = document.querySelector('.input-file');
-
-// Agregar un controlador de eventos para el evento change
-// inputFile.addEventListener('change', function() {
-//     var id = $('#id_tarea').html();
-//     var archivoInput = document.querySelector('.input-file');
-//     var archivo = archivoInput.files[0]; // Aquí se corrige la referencia al input file
-//     var formData = new FormData();
-//     formData.append('archivo', archivo);
-//     formData.append('nombre_carpeta', id);
-
-//     var xhr = new XMLHttpRequest();
-//     xhr.open('POST', 'Procesos/php/upload.php', true);
-
-//     xhr.onload = function () {
-//         if (xhr.status === 200) {
-
-// $.NotificationApp.send("Exito !", "Archivo subido correctamente.", "bottom-right", "#FFFFFF", "success");
-// renderizar_archivos(id);
-// Puedes realizar acciones adicionales aquí, como cerrar la ventana modal
-// } else {
-
-// $.NotificationApp.send("Error !", "Ha ocurrido un error al subir el archivo.", "bottom-right", "#FFFFFF", "danger");
-
-// }
-// };
-
-// xhr.send(formData);
-// });
-
 function renderizar_tareas(status) {
   $.ajax({
     data: { Tareas: 1, Estado: status },
@@ -744,13 +622,11 @@ function renderizar_tareas(status) {
       $("#tareas").html(data);
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 }
@@ -764,13 +640,11 @@ function renderizar_tareas_(status) {
       $("#tareas").html(data);
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 }
@@ -809,13 +683,11 @@ function renderizar_totales() {
       $("#total_pendientes_puntos").html(pendientes_puntos + " Puntos");
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 }
@@ -829,13 +701,11 @@ function renderizar_comentarios(gid_asana) {
       $("#comments").html(data);
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 
@@ -843,18 +713,17 @@ function renderizar_comentarios(gid_asana) {
     data: { Tareas_comentarios_total: 1, id: gid_asana },
     url: "Procesos/php/tareas.php",
     type: "POST",
-    success: function (data) {
-      var jsonData = JSON.parse(data);
+    dataType: "json",
+    success: function (jsonData) {
+      var jsonData = JSON.parse(jsonData);
       $("#comments_title").html("Comentarios (" + jsonData.Total + ")");
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 }
@@ -868,13 +737,11 @@ function renderizar_archivos(id) {
       $("#archivos").html(data);
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 }
@@ -887,7 +754,7 @@ $("#tareas_lista_puntajes_fechas").on(
 
     // Acá recargás la tabla
     renderizar_tareas_puntos(rango);
-  }
+  },
 );
 
 $("#marcar_finalizada").click(function () {
@@ -910,13 +777,11 @@ $("#marcar_finalizada").click(function () {
       }
     },
     error: function () {
-      $.NotificationApp.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
     },
   });
 });
@@ -955,6 +820,7 @@ $("#filtro_finalizado").click(function () {
 
 $(document).ready(function () {
   // VERIFICAR NIVEL
+
   // $("#button_crear_tarea").hide(); //POR AHORA NO PERMITO CREAR TAREAS PORQUE ESTO SERA UNICAMENTE DESDE ASANA
   // Llamar a la función nivel y usar el callback
   nivel(function (nivel) {
@@ -970,8 +836,13 @@ $(document).ready(function () {
       $("#api_puntos").show();
     }
   });
+  const standardModalEl = document.getElementById("standard-modal");
+  const standardModal = bootstrap.Modal.getOrCreateInstance(standardModalEl);
 
+  const detalleModalEl = document.getElementById("detalleTareaModal");
+  const detalleModal = bootstrap.Modal.getOrCreateInstance(detalleModalEl);
   //   renderizar_tareas();
+
   renderizar_tareas_lista();
   renderizar_totales();
   obtenerUsuarios();
@@ -1080,7 +951,7 @@ function ver_detalle(id) {
           (d0.UsuarioCarga || "") +
           "</b> asignada a <b>" +
           (d0.Responsable || "") +
-          "</b>"
+          "</b>",
       );
 
       // Render auxiliares
@@ -1090,13 +961,11 @@ function ver_detalle(id) {
       }
     })
     .fail(function (xhr) {
-      $.NotificationApp?.send(
-        "Error !",
-        "Ha ocurrido un error al cargar el contenido.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "Ha ocurrido un error al cargar el contenido.",
+      });
       console.error("ver_detalle AJAX error:", xhr.status, xhr.responseText);
     });
 }
@@ -1121,135 +990,108 @@ $(".dripicons-view-apps").click(function () {
   renderizar_tareas();
 });
 
-// $("#api_asana").click(function () {
-//   $("#details").css("display", "none");
-//   $("#tareas").css("display", "none");
-//   $("#tareas_lista").css("display", "none");
-//   $("#crear_tarea").css("display", "none");
-//   $("#asana").css("display", "block");
-
-//   var datatable = $("#table_asana").DataTable();
-//   datatable.destroy();
-
-//   var datatable = $("#table_asana").DataTable({
-//     paging: false,
-//     searching: true,
-//     ajax: {
-//       url: "Procesos/php/asana_api.php",
-//       data: {
-//         Asana: 1,
-//       },
-//       type: "post",
-//     },
-//     columns: [
-//       { data: "name" },
-
-//       { data: "assignee_name" },
-//       {
-//         data: "completed",
-//         render: function (data) {
-//           return data ? "Sí" : "No"; // Convertir booleano a texto
-//         },
-//       },
-//       {
-//         data: "created_by_resource_type",
-//         render: function (data) {
-//           return data === "user" ? "Usuario" : "Otro"; // Convertir a texto legible
-//         },
-//       },
-//       { data: "due_on" },
-//       {
-//         data: null,
-//         render: function (data, type, row) {
-//           return (
-//             '<a style="cursor:pointer" onclick="cargar_asana(' +
-//             data["gid"] +
-//             ')" class="action-icon"> <i class="mdi mdi-source-branch-plus text-success"></i></a>'
-//           );
-//         },
-//       },
-//     ],
-//     debug: true,
-//   });
-// });
-
 $("#api_asana").click(function () {
-  $(
-    "#details, #tareas, #tareas_lista, #crear_tarea",
-    "#tareas_lista_puntajes"
-  ).hide();
+  console.log("Cargando tareas de Asana y HubSpot...");
 
+  $(
+    "#details, #tareas, #tareas_lista, #crear_tarea, #tareas_lista_puntajes",
+  ).hide();
   $("#asana").show();
 
-  var datatable = $("#table_asana").DataTable();
-  datatable.destroy();
+  if ($.fn.DataTable.isDataTable("#table_asana")) {
+    $("#table_asana").DataTable().clear().destroy();
+  }
 
   Promise.all([
-    $.post("Procesos/php/asana_api.php", { Asana: 1 }),
-    $.post("Procesos/php/hubspot_api.php", { Hubspot: 1 }),
-  ]).then(function ([asanaRes, hubspotRes]) {
-    const asanaData = asanaRes.data.map((t) => ({
-      ...t,
-      source: "Asana",
-    }));
-    const hubspotData = hubspotRes.data.map((t) => ({
-      ...t,
-      source: "HubSpot",
-    }));
+    $.ajax({
+      url: "Procesos/php/asana_api.php",
+      type: "post",
+      dataType: "json",
+      data: { Asana: 1 },
+    }),
+    $.ajax({
+      url: "Procesos/php/hubspot_api.php",
+      type: "post",
+      dataType: "json",
+      data: { Hubspot: 1 },
+    }),
+  ])
+    .then(function ([asanaRes, hubspotRes]) {
+      console.log("Asana RAW:", asanaRes);
 
-    const combined = asanaData.concat(hubspotData);
+      const asanaData = (asanaRes.data || []).map((t) => ({
+        ...t,
+        source: "Asana",
+      }));
+      const hubspotData = (hubspotRes.data || []).map((t) => ({
+        ...t,
+        source: "HubSpot",
+      }));
 
-    $("#table_asana").DataTable({
-      paging: false,
-      searching: true,
-      order: [[4, "asc"]], // orden por fecha ascendente
-      data: combined,
-      columns: [
-        { data: "name", title: "Nombre" },
-        { data: "assignee_name", title: "Responsable" },
-        {
-          data: "completed",
-          title: "Completada",
-          render: (data) => (data ? "Sí" : "No"),
-        },
-        { data: "created_by_resource_type", title: "Tipo" },
-        {
-          data: "due_on",
-          title: "Fecha Vencimiento",
-          render: function (data) {
-            if (!data) return "";
-            const fecha = new Date(data);
-            const dia = String(fecha.getDate()).padStart(2, "0");
-            const mes = String(fecha.getMonth() + 1).padStart(2, "0");
-            const año = fecha.getFullYear();
-            return `<span style="display:none">${data}</span>${dia}/${mes}/${año}`;
+      const combined = asanaData.concat(hubspotData);
+
+      $("#table_asana").DataTable({
+        paging: false,
+        searching: true,
+        order: [[4, "asc"]],
+        data: combined,
+        columns: [
+          { data: "name", title: "Nombre", defaultContent: "" },
+          { data: "assignee_name", title: "Responsable", defaultContent: "" },
+          {
+            data: "completed",
+            title: "Completada",
+            render: (data) => (data ? "Sí" : "No"),
           },
-        },
-        {
-          data: "source",
-          title: "Origen",
-          render: (data) =>
-            data === "Asana"
-              ? '<span class="badge bg-info text-white">Asana</span>'
-              : '<span class="badge bg-warning text-dark">HubSpot</span>',
-        },
-        {
-          data: null,
-          title: "Acciones",
-          render: (data) => {
-            const onclick =
-              data.source === "Asana"
-                ? `cargar_asana('${data.gid}')`
-                : `cargar_hubspot('${data.gid}')`;
-            return (
-              `<a style="cursor:pointer" onclick="${onclick}" class="action-icon">` +
-              `<i class="mdi mdi-source-branch-plus text-success"></i></a>`
-            );
+          {
+            data: "created_by_resource_type",
+            title: "Tipo",
+            defaultContent: "",
           },
-        },
-      ],
+          {
+            data: "due_on",
+            title: "Fecha Vencimiento",
+            render: function (data) {
+              if (!data) return "";
+              // para YYYY-MM-DD esto es suficiente (sin Date() para evitar TZ issues)
+              const parts = data.split("-");
+              if (parts.length !== 3) return data;
+              return `<span style="display:none">${data}</span>${parts[2]}/${parts[1]}/${parts[0]}`;
+            },
+          },
+          {
+            data: "source",
+            title: "Origen",
+            render: (data) =>
+              data === "Asana"
+                ? '<span class="badge bg-info text-white">Asana</span>'
+                : '<span class="badge bg-warning text-dark">HubSpot</span>',
+          },
+          {
+            data: null,
+            title: "Acciones",
+            render: (row) => {
+              const gid = row.gid || "";
+              const onclick =
+                row.source === "Asana"
+                  ? `cargar_asana('${gid}')`
+                  : `cargar_hubspot('${gid}')`;
+              return `<a style="cursor:pointer" onclick="${onclick}" class="action-icon">
+                        <i class="mdi mdi-source-branch-plus text-success"></i>
+                      </a>`;
+            },
+          },
+        ],
+      });
+    })
+    .catch(function (err) {
+      console.error("Error en Promise.all:", err);
+      Swal.fire({
+        icon: "error",
+        title: "Error",
+        text: "No se pudo cargar Asana/HubSpot. Mirá consola (Network).",
+      });
     });
-  });
 });
 
 $("#crear_tarea_cnl").click(function () {
@@ -1317,9 +1159,9 @@ $("#crear_tarea_ok").on("click", function (e) {
         Swal.close(); // cierra el "loading"
 
         if (resp && resp.success == 1) {
-          const modalEl = document.getElementById("crearTareaModal");
-          const modal = bootstrap.Modal.getInstance(modalEl);
-          modal?.hide();
+          bootstrap.Modal.getOrCreateInstance(
+            document.getElementById("crearTareaModal"),
+          ).hide();
 
           $("#tareas").show();
           $("#crear_tarea").hide();
@@ -1358,16 +1200,18 @@ $("#crear_tarea_ok").on("click", function (e) {
     });
   });
 });
-
+const standardModalEl = document.getElementById("standard-modal");
+const standardModal = bootstrap.Modal.getOrCreateInstance(standardModalEl);
 $("#details_delete").click(function () {
   var id = $("#id_tarea").html();
   var id_tarea = id.replace(/^#0*/, "");
 
-  $("#standard-modal").modal("show");
+  standardModal.show();
+
   $("#standard-modal-title").html(
     "Estas por eliminar la tarea " +
       id_tarea +
-      " del sistema, esto no la eliminara de asana pero si le sacará la etiqueta de Cargado en el Sistema de Caddy, deseas continuar?."
+      " del sistema, esto no la eliminara de asana pero si le sacará la etiqueta de Cargado en el Sistema de Caddy, deseas continuar?.",
   );
   $("#standard-modal-ok").hide();
   $("#standard-modal-details-ok").show();
@@ -1386,7 +1230,10 @@ $("#standard-modal-details-ok").click(function () {
       var jsonData = JSON.parse(data);
 
       if (jsonData.success == 1) {
-        $("#standard-modal").modal("hide");
+        standardModal.hide();
+        bootstrap.Modal.getOrCreateInstance(
+          document.getElementById("detalleTareaModal"),
+        ).hide();
 
         $("#details").css("display", "none");
 
@@ -1394,13 +1241,7 @@ $("#standard-modal-details-ok").click(function () {
 
         renderizar_totales();
 
-        $.NotificationApp.send(
-          "Exito !",
-          "Tarea eliminada correctamente.",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        Swal.fire("¡Exito!", "Tarea eliminada correctamente.!", "success");
       } else {
       }
     },
@@ -1449,7 +1290,10 @@ $("#crear_tarea_usuario_asana").click(function () {
       type: "POST",
       dataType: "json",
       success: function (data) {
-        $("#bs-example-modal-sm").modal("show");
+        const m = bootstrap.Modal.getOrCreateInstance(
+          document.getElementById("bs-example-modal-sm"),
+        );
+        m.show();
         // Insertar los radio buttons en el contenedor
         var radioButtonsContainer = $("#radioButtonsContainer");
         radioButtonsContainer.empty();
@@ -1488,8 +1332,9 @@ $("#bs-example-modal-sm-ok").click(function () {
     $("#crear_tarea_usuario_asana").val(selectedGidAsana);
     $("#crear_tarea_usuario_badge").html(selectedGidName);
 
-    $("#bs-example-modal-sm").modal("hide");
-
+    bootstrap.Modal.getOrCreateInstance(
+      document.getElementById("bs-example-modal-sm"),
+    ).hide();
     // Mostrar el valor de gid_asana
     // alert("El valor de gid_asana es: " + selectedGidAsana);
   } else {
@@ -1502,67 +1347,12 @@ function eliminarTarea(id) {
 
   ver_detalle(id)
     .done(function () {
-      const modalEl = document.getElementById("detalleTareaModal"); // <-- ID del modal
-      const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-      modal.show();
+      const modalDetalle = document.getElementById("detalleTareaModal"); // <-- ID del modal
+      const modalDetalle_ = bootstrap.Modal.getOrCreateInstance(modalDetalle);
+      modalDetalle_.show();
     })
     .fail(function (xhr) {
       console.error("Error cargando detalle:", xhr.responseText);
       Swal.fire("Error", "No se pudo cargar el detalle de la tarea.", "error");
     });
-}
-
-function eliminarTareaE(id) {
-  // $("#tareas, #asana, #crear_tarea").hide();
-  // $("#details").show();
-  // ver_detalle(id);
-  // if (!id) return;
-  // Swal.fire({
-  //   title: "¿Eliminar tarea?",
-  //   text: "Esta acción no se puede deshacer.",
-  //   icon: "warning",
-  //   showCancelButton: true,
-  //   confirmButtonColor: "#d33",
-  //   cancelButtonColor: "#6c757d",
-  //   confirmButtonText: "Sí, eliminar",
-  //   cancelButtonText: "Cancelar",
-  // }).then((result) => {
-  //   if (!result.isConfirmed) return;
-  //   // opcional: loading state
-  //   Swal.showLoading();
-  //   $.ajax({
-  //     url: "Procesos/php/tareas.php",
-  //     type: "POST",
-  //     dataType: "json", // fuerza JSON para evitar parse de HTML
-  //     headers: { "X-Requested-With": "XMLHttpRequest" },
-  //     data: { eliminar_tarea: 1, id: id },
-  //     success: function (resp) {
-  //       Swal.close();
-  //       if (resp && resp.success == 1) {
-  //         Swal.fire(
-  //           "Eliminada",
-  //           "La tarea fue eliminada correctamente.",
-  //           "success"
-  //         );
-  //         // Refrescá tu grilla/lista:
-  //         if (typeof renderizar_tareas_lista === "function") {
-  //           renderizar_tareas_lista();
-  //         }
-  //       } else {
-  //         const msg =
-  //           resp && resp.error ? resp.error : "No se pudo eliminar la tarea.";
-  //         Swal.fire("Ups…", msg, "error");
-  //       }
-  //     },
-  //     error: function (xhr) {
-  //       // Intenta mostrar el mensaje del servidor si viene HTML
-  //       let msg = "Error inesperado al eliminar.";
-  //       if (xhr && xhr.responseText) {
-  //         // corta los primeros caracteres si es HTML para no ensuciar el modal
-  //         msg += "\n" + xhr.responseText.substring(0, 300);
-  //       }
-  //       Swal.fire("Error", msg, "error");
-  //     },
-  //   });
-  // });
 }
