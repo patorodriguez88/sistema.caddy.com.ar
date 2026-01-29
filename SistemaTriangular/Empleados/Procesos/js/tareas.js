@@ -144,9 +144,16 @@ function renderizar_tareas_lista(status) {
       {
         data: "FechaCarga",
         render: function (data, type, row) {
+          const esAsana =
+            row.gid_asana !== null &&
+            row.gid_asana !== undefined &&
+            row.gid_asana !== "0" &&
+            row.gid_asana !== "";
+
+          const sistema = esAsana ? "Asana" : "Hubspot";
+          const sistema_color = esAsana ? "dark" : "danger";
           var Fecha = row.FechaCarga.split("-").reverse().join(".");
-          var sistema = row.gid_asana ? "Asana" : "Hubspot";
-          var sistema_color = row.gid_asana ? "dark" : "danger";
+
           return (
             '<span style="display: none;">' +
             row.FechaCarga +
@@ -492,7 +499,7 @@ function cargar_hubspot(gid) {
     type: "POST",
     dataType: "json",
     success: function (jsonData) {
-      var jsonData = JSON.parse(data);
+      // var jsonData = JSON.parse(data);
       if (jsonData && jsonData.data) {
         console.log("HubSpot datos", jsonData);
 
@@ -500,7 +507,11 @@ function cargar_hubspot(gid) {
         $("#details").hide();
         $("#asana").hide();
 
-        $("#crear_tarea").show();
+        // $("#crear_tarea").show();
+
+        const modalEl = document.getElementById("crearTareaModal"); // 👈 asegurate que el ID exista en el HTML
+        const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.show();
 
         // Título y descripción
         $("#crear_tarea_titulo").val(jsonData.data.name).prop("readonly", true);
@@ -558,8 +569,9 @@ function NombreUsuario(sistena, gid) {
     data: { NombreUsuario: 1, gid: gid, Sistema: sistena },
     url: "Procesos/php/tareas.php",
     type: "POST",
-    success: function (data) {
-      var jsonData = JSON.parse(data);
+    dataType: "json",
+    success: function (jsonData) {
+      // var jsonData = JSON.(data);
       // $('#crear_tarea_usuario_badge').html(jsonData.Usuario).prop('readonly', true);
       $("#crear_tarea_usuario_asana").val(jsonData.NombreUsuario);
     },

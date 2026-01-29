@@ -29,7 +29,17 @@ if (isset($_POST['Empleados'])) {
 if (isset($_POST['VerEmpleado'])) {
 
     // $SQL=$mysqli->query("SELECT * FROM `Empleados` WHERE id='".$_POST['id']."'");
-    $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD FROM `Empleados` INNER JOIN usuarios ON Empleados.Usuario=usuarios.id WHERE Empleados.id='" . $_POST['id'] . "'");
+    // $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD FROM `Empleados` INNER JOIN usuarios ON Empleados.Usuario=usuarios.id WHERE Empleados.id='" . $_POST['id'] . "'");
+    $SQL = $mysqli->query("SELECT 
+    Empleados.*,
+    usuarios.Usuario,
+    usuarios.PASSWORD,
+    usuarios.gid_asana,
+    usuarios.gid_hubspot
+      FROM Empleados
+    INNER JOIN usuarios ON Empleados.Usuario = usuarios.id
+    WHERE Empleados.id = '" . $_POST['id'] . "' LIMIT 1");
+
     $ROWS = array();
 
     while ($DATOS_CLIENTES = $SQL->fetch_array(MYSQLI_ASSOC)) {
@@ -40,32 +50,148 @@ if (isset($_POST['VerEmpleado'])) {
     echo json_encode(array('data' => $ROWS));
 }
 
+
+
 //MODIFICAR EMPLEADO
+
 if (isset($_POST['ModificarEmpleado'])) {
 
-    $VencimientoLic = explode("/", $_POST['licencia'], 3);
-    $FechaVencimientoLicencia = $VencimientoLic[2] . '-' . $VencimientoLic[0] . '-' . $VencimientoLic[1];
+    header('Content-Type: application/json; charset=utf-8');
 
-    $Nacimiento = explode("/", $_POST['nac'], 3);
-    $FechaNacimiento = $Nacimiento[2] . '-' . $Nacimiento[0] . '-' . $Nacimiento[1];
+    try {
+        $idExterno = (int)($_POST['id_externo'] ?? 0);
+        if ($idExterno <= 0) {
+            echo json_encode(['success' => 0, 'error' => 'id_externo inválido']);
+            exit;
+        }
+        $dateOrNull = function ($value) {
+            $v = trim((string)$value);
+            $v = trim($v, " \t\n\r\0\x0B'\""); // saca comillas si vinieran
+            if ($v === '') return null;
+            // valida formato
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $v)) return null;
+            return $v;
+        };
 
-    $Ingreso = explode("/", $_POST['ing'], 3);
-    $FechaIngreso = $Ingreso[2] . '-' . $Ingreso[0] . '-' . $Ingreso[1];
+        $FechaNacimiento = $dateOrNull($_POST['nac'] ?? '');
+        $FechaIngreso = $dateOrNull($_POST['ing'] ?? '');
+        $FechaLicencia = $dateOrNull($_POST['licencia'] ?? '');  // ojo: vos mandás "lic" desde JS
 
-    $SQL = "UPDATE `Empleados` SET `NombreCompleto`='" . $_POST['nombre'] . "',`Domicilio`='" . $_POST['domicilio'] . "',`Localidad`='" . $_POST['city'] . "',
-    `Provincia`='" . $_POST['state'] . "',`CodigoPostal`='" . $_POST['codigopostal'] . "',`Telefono`='" . $_POST['telefono'] . "',`FechaNacimiento`='" . $FechaNacimiento . "',
-    `FechaIngreso`='" . $FechaIngreso . "',`Dni`='" . $_POST['dni'] . "',`VencimientoLicencia`='" . $FechaVencimientoLicencia . "',
-    `Observaciones`='" . $_POST['obs'] . "',`GrupoSanguineo`='" . $_POST['gruposanguineo'] . "',`TelefonoEmergencia`='" . $_POST['phone_emergency'] . "'
-     WHERE id='" . $_POST['id_externo'] . "' LIMIT 1";
+        // ⛔ Validaciones obligatorias
+        if (!$FechaNacimiento) {
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'FechaNacimiento',
+                'message' => 'Debes completar la Fecha de Nacimiento.'
+            ]);
+            exit;
+        }
 
-    if ($mysqli->query($SQL)) {
+        if (!$FechaIngreso) {
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'FechaIngreso',
+                'message' => 'Debes completar la Fecha de Ingreso.'
+            ]);
+            exit;
+        }
 
-        echo json_encode(array('success' => 1, 'Fecha' => $FechaVencimientoLicencia));
-    } else {
+        if (!$FechaLicencia) {
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'VencimientoLicencia',
+                'message' => 'Debes completar el vencimiento de la licencia.'
+            ]);
+            exit;
+        }
+        // 1) UPDATE EMPLEADOS
+        $sqlEmp = "UPDATE Empleados SET
+            NombreCompleto = ?,
+            Domicilio = ?,
+            Localidad = ?,
+            Provincia = ?,
+            CodigoPostal = ?,
+            Telefono = ?,
+            FechaNacimiento = ?,
+            FechaIngreso = ?,
+            Dni = ?,
+            VencimientoLicencia = ?,
+            Observaciones = ?,
+            GrupoSanguineo = ?,
+            TelefonoEmergencia = ?
+        WHERE id = ?
+        LIMIT 1";
 
-        echo json_encode(array('success' => 0));
+        $stmt = $mysqli->prepare($sqlEmp);
+        if (!$stmt) throw new RuntimeException("Prepare Empleados failed: " . $mysqli->error);
+
+        $stmt->bind_param(
+            "sssssssssssssi",
+            $_POST['nombre'],
+            $_POST['domicilio'],
+            $_POST['city'],
+            $_POST['state'],
+            $_POST['codigopostal'],
+            $_POST['telefono'],
+            $FechaNacimiento,
+            $FechaIngreso,
+            $_POST['dni'],
+            $FechaLicencia,
+            $_POST['obs'],
+            $_POST['gruposanguineo'],
+            $_POST['phone_emergency'],
+            $idExterno
+        );
+
+        if (!$stmt->execute()) {
+            throw new RuntimeException("Execute Empleados failed: " . $stmt->error);
+        }
+        $stmt->close();
+
+        // 2) Buscar el usuario asociado (Empleados.Usuario)
+        $sqlUsrId = "SELECT Usuario FROM Empleados WHERE id = ? LIMIT 1";
+        $stmt2 = $mysqli->prepare($sqlUsrId);
+        if (!$stmt2) throw new RuntimeException("Prepare Usuario failed: " . $mysqli->error);
+
+        $stmt2->bind_param("i", $idExterno);
+        $stmt2->execute();
+        $res = $stmt2->get_result();
+        $row = $res->fetch_assoc();
+        $stmt2->close();
+
+        $idUsuario = (int)($row['Usuario'] ?? 0);
+
+        // 3) UPDATE usuarios.gid_asana / gid_hubspot
+        // Normalizo: si viene '' => NULL
+        $asanaGid   = $_POST['asana_gid']   ?? 0;
+        $hubspotGid = $_POST['hubspot_gid'] ?? 0;
+
+        // normalizar a enteros seguros
+        $asanaGid   = is_numeric($asanaGid)   ? (int)$asanaGid   : 0;
+        $hubspotGid = is_numeric($hubspotGid) ? (int)$hubspotGid : 0;
+
+        // Actualizo
+        if ($idUsuario > 0) {
+            $sqlUsr = "UPDATE usuarios SET gid_asana = ?, gid_hubspot = ? WHERE id = ? LIMIT 1";
+            $stmt3 = $mysqli->prepare($sqlUsr);
+            if (!$stmt3) throw new RuntimeException("Prepare usuarios failed: " . $mysqli->error);
+
+            $stmt3->bind_param("ssi", $asanaGid, $hubspotGid, $idUsuario);
+
+            if (!$stmt3->execute()) {
+                throw new RuntimeException("Execute usuarios failed: " . $stmt3->error);
+            }
+            $stmt3->close();
+        }
+
+        echo json_encode(['success' => 1]);
+    } catch (Throwable $e) {
+        echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
     }
+
+    exit;
 }
+
 
 // AGREGAR EMPLEADO
 if (isset($_POST['Agregar_empleado'])) {

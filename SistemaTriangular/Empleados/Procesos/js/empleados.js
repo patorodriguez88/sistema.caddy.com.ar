@@ -1,30 +1,106 @@
 var filtro = "";
-function cargarUsuariosAsana() {
-  $.ajax({
+// function cargarUsuariosAsana() {
+//   $.ajax({
+//     url: "../Asana/usuarios.php",
+//     method: "GET",
+//     dataType: "json",
+//     success: function (response) {
+//       if (!response.data) {
+//         console.error("Respuesta inválida de Asana");
+//         return;
+//       }
+
+//       const $select = $("#empleado_id_asana");
+//       $select.empty();
+//       $select.append('<option value="">Seleccionar empleado</option>');
+
+//       response.data.forEach(function (usuario) {
+//         $select.append(`
+//                     <option value="${usuario.gid}">
+//                         ${usuario.name}
+//                     </option>
+//                 `);
+//       });
+//     },
+//     error: function (xhr, status, error) {
+//       console.error("Error al cargar usuarios Asana:", error);
+//     },
+//   });
+// }
+function cargarUsuariosAsana(selectedGid) {
+  return $.ajax({
     url: "../Asana/usuarios.php",
     method: "GET",
     dataType: "json",
-    success: function (response) {
-      if (!response.data) {
-        console.error("Respuesta inválida de Asana");
-        return;
-      }
+  }).then(function (response) {
+    const $select = $("#empleado_id_asana");
+    $select.empty().append('<option value="">Seleccionar empleado</option>');
 
-      const $select = $("#empleado_id_asana");
-      $select.empty();
-      $select.append('<option value="">Seleccionar empleado</option>');
+    (response.data || []).forEach(function (u) {
+      $select.append(`<option value="${u.gid}">${u.name}</option>`);
+    });
 
-      response.data.forEach(function (usuario) {
-        $select.append(`
-                    <option value="${usuario.gid}">
-                        ${usuario.name}
-                    </option>
-                `);
-      });
-    },
-    error: function (xhr, status, error) {
-      console.error("Error al cargar usuarios Asana:", error);
-    },
+    // ✅ Seleccionar si viene gid
+    if (
+      selectedGid != null &&
+      String(selectedGid).trim() !== "" &&
+      String(selectedGid) !== "0"
+    ) {
+      $select.val(String(selectedGid));
+    }
+  });
+}
+// function cargarUsuariosHubspot() {
+//   $.ajax({
+//     url: "Procesos/php/hubspot_api.php", // <-- poné tu ruta real
+//     method: "POST",
+//     dataType: "json",
+//     data: { Users: 1 },
+//     success: function (resp) {
+//       if (!resp || !resp.data) {
+//         console.error("Respuesta inválida HubSpot:", resp);
+//         return;
+//       }
+
+//       const $select = $("#empleado_id_hubspot"); // si es <select>
+//       $select.empty();
+//       $select.append('<option value="">Seleccionar usuario</option>');
+
+//       resp.data.forEach(function (u) {
+//         $select.append(`<option value="${u.id}">${u.name}</option>`);
+//       });
+//     },
+//     error: function (xhr) {
+//       console.error(
+//         "Error al cargar usuarios HubSpot:",
+//         xhr.status,
+//         xhr.responseText,
+//       );
+//       Swal.fire("Error", "No se pudieron cargar usuarios de HubSpot.", "error");
+//     },
+//   });
+// }
+function cargarUsuariosHubspot(selectedId) {
+  return $.ajax({
+    url: "Procesos/php/hubspot_api.php",
+    method: "POST",
+    dataType: "json",
+    data: { Users: 1 },
+  }).then(function (resp) {
+    const $select = $("#empleado_id_hubspot"); // debe ser <select>
+    $select.empty().append('<option value="">Seleccionar usuario</option>');
+
+    (resp.data || []).forEach(function (u) {
+      $select.append(`<option value="${u.id}">${u.name}</option>`);
+    });
+
+    if (
+      selectedId != null &&
+      String(selectedId).trim() !== "" &&
+      String(selectedId) !== "0"
+    ) {
+      $select.val(String(selectedId));
+    }
   });
 }
 // Función para actualizar la tabla con el filtro actualizado
@@ -169,6 +245,7 @@ $("#button_agregar_empleado").on("click", function () {
   const modal = new bootstrap.Modal(modalEl);
   modal.show();
   cargarUsuariosAsana();
+  cargarUsuariosHubspot(); // <-- acá
 });
 
 function modificar(a) {
@@ -190,6 +267,8 @@ function modificar(a) {
         $("#alerta").css("display", "none");
       }
       $("#button_continuar").css("display", "none");
+      $("#crear_empleado").hide();
+
       $("#button_guardar").css("display", "inline");
       $("#button_volver").css("display", "none");
       $("#ext_usuario_app").val(jsonData.data[0].Usuario);
@@ -202,23 +281,31 @@ function modificar(a) {
       $("#ext_city").val(jsonData.data[0].Localidad);
       $("#ext_state").val(jsonData.data[0].Provincia);
 
-      var FechaNa = jsonData.data[0].FechaNacimiento.split("-");
-      var FechaNac = FechaNa[1] + "/" + FechaNa[2] + "/" + FechaNa[0];
+      // var FechaNa = jsonData.data[0].FechaNacimiento.split("-");
+      // var FechaNac = FechaNa[1] + "/" + FechaNa[2] + "/" + FechaNa[0];
 
-      var FechaIng = jsonData.data[0].FechaIngreso.split("-");
-      var FechaIngreso = FechaIng[1] + "/" + FechaIng[2] + "/" + FechaIng[0];
+      // var FechaIng = jsonData.data[0].FechaIngreso.split("-");
+      // var FechaIngreso = FechaIng[1] + "/" + FechaIng[2] + "/" + FechaIng[0];
 
-      var FechaLic = jsonData.data[0].VencimientoLicencia.split("-");
-      var FechaLicencia = FechaLic[1] + "/" + FechaLic[2] + "/" + FechaLic[0];
+      // var FechaLic = jsonData.data[0].VencimientoLicencia.split("-");
+      // var FechaLicencia = FechaLic[1] + "/" + FechaLic[2] + "/" + FechaLic[0];
 
-      $("#ext_nac").val(FechaNac);
-      $("#ext_ing").val(FechaIngreso);
-      $("#ext_licencia").val(FechaLicencia);
+      // $("#ext_nac").val(FechaNac);
+      $("#ext_nac").val(jsonData.data[0].FechaNacimiento);
+      $("#ext_ing").val(jsonData.data[0].FechaIngreso);
+      $("#ext_licencia").val(jsonData.data[0].VencimientoLicencia);
       $("#ext_gruposanguineo").val(jsonData.data[0].GrupoSanguineo);
       $("#ext_phone_emergency").val(jsonData.data[0].TelefonoEmergencia);
       $("#ext_obs").val(jsonData.data[0].Observaciones);
       $("#ext_cp").val(jsonData.data[0].CodigoPostal);
       $("#ext_telefono").val(jsonData.data[0].Telefono);
+
+      const gidAsana = jsonData.data?.[0]?.gid_asana ?? 0;
+      const idHub = jsonData.data?.[0]?.gid_hubspot ?? 0;
+
+      // Cargan el combo y dejan seleccionado lo que ya tiene
+      cargarUsuariosAsana(gidAsana);
+      cargarUsuariosHubspot(idHub);
     },
   });
 }
@@ -239,43 +326,65 @@ $("#button_guardar").click(function () {
   var codigopostal = $("#ext_cp").val();
   var telefono = $("#ext_telefono").val();
   var asana_gid = $("#empleado_id_asana").val();
+  var hubspot_gid = $("#empleado_id_hubspot").val();
 
   $.ajax({
+    url: "Procesos/php/empleados.php",
+    type: "post",
+    dataType: "json",
     data: {
       ModificarEmpleado: 1,
       id_externo: id,
-      nombre: nombre,
-      dni: dni,
-      domicilio: domicilio,
-      city: city,
-      state: state,
-      nac: nac,
-      ing: ing,
-      licencia: licencia,
-      gruposanguineo: gruposanguineo,
-      phone_emergency: phone_emergency,
-      codigopostal: codigopostal,
-      obs: obs,
-      telefono: telefono,
-      asana_gid: asana_gid,
+      nombre,
+      dni,
+      domicilio,
+      city,
+      state,
+      nac,
+      ing,
+      licencia,
+      gruposanguineo,
+      phone_emergency,
+      codigopostal,
+      obs,
+      telefono,
+      asana_gid,
+      hubspot_gid,
     },
-    url: "Procesos/php/empleados.php",
-    type: "post",
-    beforeSend: function () {},
-    success: function (respuesta) {
-      var jsonData = JSON.parse(respuesta);
-      if (jsonData.success == 1) {
-        $("#add-new-modal").modal("hide");
-        $.NotificationApp.send(
-          "Exito !",
-          "Registro Actualizado",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
-        var datatable = $("#empleados").DataTable();
-        datatable.ajax.reload();
+    success: function (jsonData) {
+      if (jsonData && jsonData.success == 1) {
+        const modalEl = document.getElementById("add-new-modal");
+        const modal =
+          bootstrap.Modal.getInstance(modalEl) ||
+          bootstrap.Modal.getOrCreateInstance(modalEl);
+        modal.hide();
+        Swal.fire({
+          icon: "success",
+          title: "¡Éxito!",
+          text: xhr.responseText
+            ? xhr.responseText.substring(0, 300)
+            : "Registro actualizado correctamente.",
+        });
+
+        $("#empleados").DataTable().ajax.reload(null, false);
+        return;
       }
+
+      // ✅ Si el backend devuelve {success:0, field, message}
+      Swal.fire({
+        icon: "warning",
+        title: "Faltan datos",
+        text: jsonData?.message || jsonData?.error || "No se pudo actualizar.",
+      });
+    },
+    error: function (xhr) {
+      Swal.fire({
+        icon: "error",
+        title: "Error de servidor",
+        text: xhr.responseText
+          ? xhr.responseText.substring(0, 300)
+          : "Error inesperado.",
+      });
     },
   });
 });

@@ -5,7 +5,9 @@ ini_set('log_errors', '1');     // log al error_log
 
 header('Content-Type: application/json; charset=utf-8');
 include_once('../../../Conexion/Conexioni.php');
-$accessToken = 'pat-na1-af0e5daa-91f3-4bb8-a303-ff3f4bb2a256'; // 🔁 Reemplazá con tu token
+$accessToken = 'pat-na1-03228e7e-b4b0-4821-a0c5-4823ef293c67'; // 🔁 Reemplazá con tu token
+
+
 if (isset($_POST['Task'])) {
 
     Get_a_Task($_POST['gid'], $accessToken);
@@ -155,4 +157,74 @@ if (isset($_POST['Hubspot'])) {
     // 5. Devolver resultado final
     header('Content-Type: application/json');
     echo json_encode(['data' => $filteredData]);
+}
+
+if (isset($_POST['Users'])) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $curl = curl_init();
+
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://api.hubapi.com/settings/v3/users',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 30,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => array(
+            "authorization: Bearer " . $accessToken,
+        ),
+    ));
+
+    $response = curl_exec($curl);
+
+    if ($response === false) {
+        $err = curl_error($curl);
+        curl_close($curl);
+        echo json_encode(array("success" => 0, "error" => "cURL error: " . $err));
+        exit;
+    }
+
+    $http = curl_getinfo($curl, CURLINFO_HTTP_CODE);
+    curl_close($curl);
+
+    $hubspotData = json_decode($response, true);
+
+    if ($http < 200 || $http >= 300) {
+        // HubSpot suele devolver JSON con mensaje; lo pasamos tal cual
+        echo json_encode(array(
+            "success" => 0,
+            "http" => $http,
+            "error" => "HubSpot HTTP error",
+            "raw" => $hubspotData
+        ));
+        exit;
+    }
+
+    if (!is_array($hubspotData) || !isset($hubspotData['results'])) {
+        echo json_encode(array("success" => 0, "error" => "No se encontró 'results' en la respuesta", "raw" => $hubspotData));
+        exit;
+    }
+
+    $data = array();
+
+    foreach ($hubspotData['results'] as $u) {
+        $id = isset($u['id']) ? $u['id'] : null;
+        $first = isset($u['firstName']) ? $u['firstName'] : '';
+        $last  = isset($u['lastName']) ? $u['lastName'] : '';
+        $email = isset($u['email']) ? $u['email'] : '';
+
+        $name = trim($first . ' ' . $last);
+
+        $data[] = array(
+            "id" => $id,
+            "name" => $name !== '' ? $name : $email,
+            "email" => $email
+        );
+    }
+
+    echo json_encode(array("success" => 1, "data" => $data));
+    exit;
 }

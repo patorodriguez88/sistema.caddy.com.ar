@@ -318,10 +318,11 @@
                                     </div>
                                     <div class="row g-3">
                                         <div class="col-md-3">
+
                                             <div class="mb-3">
                                                 <label for="empleado_id_asana" class="form-label">Usuario Asana</label>
                                                 <select id="empleado_id_asana" class="form-select">
-                                                    <option value="">Seleccionar empleado</option>
+                                                    <option value="">Seleccionar empleado Asana</option>
                                                 </select>
                                             </div>
 
@@ -329,9 +330,12 @@
                                         <div class="col-md-3">
                                             <div class="mb-3">
                                                 <label for="empleado_id_hubspot" class="form-label">Usuario Hubspot</label>
-                                                <input type="number" class="form-control" id="empleado_id_hubspot" placeholder="Usuario Hubspot" readonly>
+                                                <select class="form-select" id="empleado_id_hubspot">
+                                                    <option value="">Seleccionar usuario Hubspot</option>
+                                                </select>
                                             </div>
                                         </div>
+
                                         <div class="col-md-3">
                                             <div class="mb-3">
                                                 <label for="ext_usuario_app" class="form-label">Usuario App Caddy</label>

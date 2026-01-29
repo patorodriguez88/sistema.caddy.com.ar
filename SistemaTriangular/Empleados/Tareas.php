@@ -353,10 +353,6 @@
                         </div>
                     </div>
 
-
-
-
-
                     <div class="card" id="asana" style="display:none">
                         <div class="card-body">
                             <div class="dropdown float-end">
@@ -419,7 +415,7 @@
                                     <a href="javascript:void(0);" class="dropdown-item">Settings</a>
                                 </div>
                             </div>
-                            <h4 class="header-title mb-3">Tareas Asana</h4>
+                            <h4 class="header-title mb-3">Tareas generadas en Asana y en Hubspot ingresadas al Sistema de Caddy</h4>
 
                             <p><b></b> Se muestran todas las tareas ingresadas al sistema de Caddy.</p>
 
