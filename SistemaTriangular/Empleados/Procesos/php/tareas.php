@@ -1,6 +1,7 @@
 <?php
 include_once('../../../Conexion/Conexioni.php');
 include_once('asana_api.php');
+include_once('../../../Hubspot/task/descripcion.php');
 
 date_default_timezone_set('America/Argentina/Cordoba');
 $Usuario = $_SESSION['Usuario'] ?? '';
@@ -135,53 +136,96 @@ function file_exists_on_server($git_asana)
 
     return $num_elements;
 }
-
-function list_files_in_folder($git_asana)
+function list_files_in_folder(string $gid_asana): void
 {
-    $array_json = Get_attachments($git_asana);
+    $array_json = Get_attachments($gid_asana);
 
-    // Decodificar la cadena JSON
+    if ($array_json === null || $array_json === false || trim((string)$array_json) === '') {
+        echo '<div class="text-danger small">No se recibió respuesta de Asana (Get_attachments devolvió vacío/null).</div>';
+        return;
+    }
+
     $array_data = json_decode($array_json, true);
 
-    if (isset($array_data['data'])) {
-        foreach ($array_data['data'] as $element) {
-            // echo "gid: " . $element['gid'] . "<br>";
-            // echo "name: " . $element['name'] . "<br>";
-            // echo "resource_type: " . $element['resource_type'] . "<br>";
-            // echo "resource_subtype: " . $element['resource_subtype'] . "<br>";
-            // echo "connected_to_app: " . ($element['connected_to_app'] ? 'true' : 'false') . "<br><br>";
-
-            $file = $element['name'];
-            $extension = pathinfo($file, PATHINFO_EXTENSION);
-            $element_gid = $element['gid'];
-
-            echo '<div class="card mb-0 shadow-none border">';
-            echo '<div class="p-2">';
-            echo '<div class="row align-items-center">';
-
-            echo '<div class="col-auto">';
-            echo    '<div class="avatar-sm">';
-            echo    '<span class="avatar-title rounded">' . $extension . '</span>';
-            echo    '</div>';
-            echo '</div>';
-            echo '<div class="col ps-0">';
-            echo    '<a href="javascript:void(0);" class="text-muted fw-bold">' . $file . '</a>';
-            echo    '<p class="mb-0">7.05 MB</p>';
-            echo '</div>';
-            echo '<div class="col-auto">';
-            // echo    '<a onclick="eliminar_archivo(\''.$file.'\')" class="btn btn-link btn-lg text-muted">';
-            // echo    '<i class="dripicons-trash"></i>';
-            // echo    '</a>';
-            echo    '<a href="https://app.asana.com/app/asana/-/get_asset?asset_id=' . $element_gid . '" class="btn btn-link btn-lg text-muted">';
-            echo    '<i class="dripicons-download"></i>';
-            echo    '</a>';
-            echo '</div>';
-
-            echo '</div>';
-            echo '</div>';
-            echo '</div>';
-        }
+    if (!is_array($array_data)) {
+        echo '<div class="text-danger small">Respuesta inválida de Asana (no es JSON). Primeros 300 chars:</div>';
+        echo '<pre class="small text-muted">' . htmlspecialchars(substr((string)$array_json, 0, 300)) . '</pre>';
+        return;
     }
+    if (!is_array($array_data) || empty($array_data['data']) || !is_array($array_data['data'])) {
+        echo '<div class="text-muted small">Sin archivos adjuntos.</div>';
+        return;
+    }
+
+    foreach ($array_data['data'] as $element) {
+        if (!is_array($element)) continue;
+
+        $fileName   = (string)($element['name'] ?? 'archivo');
+        $elementGid = (string)($element['gid'] ?? '');
+
+        // Link de descarga (preferible: download_url o permanent_url si la API lo trae)
+        $downloadUrl = (string)($element['download_url'] ?? '');
+        if ($downloadUrl === '' && $elementGid !== '') {
+            $downloadUrl = "https://app.asana.com/app/asana/-/get_asset?asset_id=" . rawurlencode($elementGid);
+        }
+
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $extension = $extension !== '' ? strtoupper($extension) : 'FILE';
+
+        // Tamaño real si viene (depende de qué fields pedís en el endpoint)
+        $sizeBytes = $element['size'] ?? $element['file_size'] ?? null;
+        $sizeHuman = is_numeric($sizeBytes) ? formatBytes((int)$sizeBytes) : '';
+
+        // Escape (seguridad)
+        $fileNameEsc  = htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
+        $extEsc       = htmlspecialchars($extension, ENT_QUOTES, 'UTF-8');
+        $downloadEsc  = htmlspecialchars($downloadUrl, ENT_QUOTES, 'UTF-8');
+
+        echo '<div class="card mb-0 shadow-none border">';
+        echo '  <div class="p-2">';
+        echo '    <div class="row align-items-center">';
+
+        echo '      <div class="col-auto">';
+        echo '        <div class="avatar-sm">';
+        echo '          <span class="avatar-title rounded">' . $extEsc . '</span>';
+        echo '        </div>';
+        echo '      </div>';
+
+        echo '      <div class="col ps-0">';
+        echo '        <a href="javascript:void(0);" class="text-muted fw-bold">' . $fileNameEsc . '</a>';
+        echo '        <p class="mb-0">' . ($sizeHuman !== '' ? $sizeHuman : '&nbsp;') . '</p>';
+        echo '      </div>';
+
+        echo '      <div class="col-auto">';
+        if ($downloadUrl !== '') {
+            echo '        <a target="_blank" rel="noopener" href="' . $downloadEsc . '" class="btn btn-link btn-lg text-muted">';
+            echo '          <i class="dripicons-download"></i>';
+            echo '        </a>';
+        } else {
+            echo '        <span class="text-muted small">Sin link</span>';
+        }
+        echo '      </div>';
+
+        echo '    </div>';
+        echo '  </div>';
+        echo '</div>';
+    }
+}
+
+/**
+ * Helper: bytes -> human readable
+ */
+function formatBytes(int $bytes): string
+{
+    if ($bytes < 1024) return $bytes . ' B';
+    $units = ['KB', 'MB', 'GB', 'TB'];
+    $i = 0;
+    $value = $bytes / 1024;
+    while ($value >= 1024 && $i < count($units) - 1) {
+        $value /= 1024;
+        $i++;
+    }
+    return number_format($value, 2) . ' ' . $units[$i];
 }
 
 
@@ -382,14 +426,27 @@ if (!isset($_POST['Tareas_comentarios']) || $_POST['Tareas_comentarios'] == 2) {
     }
 }
 
-//MOSTRAR ARCHIVOS
+// MOSTRAR ARCHIVOS
 if (isset($_POST['Tareas_archivos'])) {
 
-    $gid_asana = $_POST['gid_asana'];
+    $sistema = strtolower(trim((string)($_POST['sistema'] ?? 'asana'))); // compat
+    $id      = trim((string)($_POST['id'] ?? ($_POST['gid_asana'] ?? '')));
 
-    list_files_in_folder($gid_asana);
+    // ESTE ENDPOINT ES HTML (porque lo metés en $("#archivos").html(data))
+    if ($id === '' || $id === '0') {
+        echo '<div class="text-muted small">Sin archivos adjuntos.</div>';
+        exit;
+    }
+
+    if ($sistema === 'asana') {
+        list_files_in_folder($id); // <-- usar $id, NO $gid_asana
+        exit;
+    }
+
+    // HubSpot (por ahora)
+    echo '<div class="text-muted small">Sin archivos adjuntos.</div>';
+    exit;
 }
-
 //NO ACTIVO
 // if($_POST['Tareas_archivos']==1){
 
@@ -431,16 +488,30 @@ if (isset($_POST['Subir_comentario'])) {
     $Comentario = $_POST['Comentario'];
     $Fecha = date('Y-m-d');
     $Hora = date('H:i');
-    $gid_asana = $_POST['gid'];
+    $gid = $_POST['gid'];
+    $sistema = $_POST['sistema'];
 
-    //primero creo el comentario en asana
-    if (Create_story($gid_asana, $id, $Comentario)) {
+    //Crear comentario en Asana
+    if ($sistema == 'Asana') {
+        $gid_asana = $gid;
 
-        echo json_encode(array('success' => 1));
-    } else {
+        if (Create_story($gid_asana, $id, $Comentario)) {
 
-        echo json_encode(array('success' => 0));
+            echo json_encode(array('success' => 1));
+        } else {
+
+            echo json_encode(array('success' => 0, 'error' => 'Error al insertar el comentario en Asana.'));
+        }
+    } elseif ($sistema == 'hubspot') {
+
+        // Crear comentario en Hubspot
+        if (descripcion($gid, $Comentario)) {
+            echo json_encode(array('success' => 1));
+        } else {
+            echo json_encode(array('success' => 0, 'error' => 'Error al insertar el comentario en Hubspot.'));
+        }
     }
+
 
 
     // $sql = $mysqli->prepare("INSERT INTO `Tareas_comentarios`(`idTarea`, `Usuario`, `Comentario`,`Fecha`,`Hora`,`gid_asana`) VALUES (?,?,?,?,?,?)");

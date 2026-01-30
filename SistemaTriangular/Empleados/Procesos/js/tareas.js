@@ -222,7 +222,7 @@ function renderizar_tareas_lista(status) {
         data: null,
         orderable: false,
         render: function (data, type, row) {
-          if (nivelUsuario != 1) return "";
+          // if (nivelUsuario != 1) return "";
           return `<i class="mdi mdi-file-document-outline mdi-18px text-warning ms-2" style="cursor:pointer;" onclick="eliminarTarea(${row.id})"></i>`;
         },
       },
@@ -704,11 +704,24 @@ function renderizar_totales() {
   });
 }
 
-function renderizar_comentarios(gid_asana) {
+function renderizar_comentarios(ref) {
+  // ref = { sistema: "asana"|"hubspot", id: "..." }
+
+  if (!ref || !ref.sistema || !ref.id || String(ref.id) === "0") {
+    $("#comments").html('<div class="text-muted small">Sin comentarios.</div>');
+    $("#comments_title").html("Comentarios (0)");
+    return;
+  }
+
+  // 1) HTML comentarios
   $.ajax({
-    data: { Tareas_comentarios: 1, gid_asana: gid_asana },
     url: "Procesos/php/tareas.php",
     type: "POST",
+    data: {
+      Tareas_comentarios: 1,
+      sistema: ref.sistema,
+      id: ref.id,
+    },
     success: function (data) {
       $("#comments").html(data);
     },
@@ -721,30 +734,60 @@ function renderizar_comentarios(gid_asana) {
     },
   });
 
+  // 2) Total comentarios (JSON)
   $.ajax({
-    data: { Tareas_comentarios_total: 1, id: gid_asana },
     url: "Procesos/php/tareas.php",
     type: "POST",
     dataType: "json",
+    data: {
+      Tareas_comentarios_total: 1,
+      sistema: ref.sistema,
+      id: ref.id,
+    },
     success: function (jsonData) {
-      var jsonData = JSON.parse(jsonData);
-      $("#comments_title").html("Comentarios (" + jsonData.Total + ")");
+      const total = jsonData && jsonData.Total != null ? jsonData.Total : 0;
+      $("#comments_title").html("Comentarios (" + total + ")");
     },
     error: function () {
-      Swal.fire({
-        icon: "error",
-        title: "Error",
-        text: "Ha ocurrido un error al cargar el contenido.",
-      });
+      // Si falla total, no rompas todo; dejá título simple
+      $("#comments_title").html("Comentarios");
     },
   });
 }
 
-function renderizar_archivos(id) {
+// function renderizar_archivos(id) {
+//   $.ajax({
+//     data: { Tareas_archivos: 1, gid_asana: id },
+//     url: "Procesos/php/tareas.php",
+//     type: "POST",
+//     success: function (data) {
+//       $("#archivos").html(data);
+//     },
+//     error: function () {
+//       Swal.fire({
+//         icon: "error",
+//         title: "Error",
+//         text: "Ha ocurrido un error al cargar el contenido.",
+//       });
+//     },
+//   });
+// }
+function renderizar_archivos(ref) {
+  if (!ref || !ref.sistema || !ref.id || String(ref.id) === "0") {
+    $("#archivos").html(
+      '<div class="text-muted small">Sin archivos adjuntos.</div>',
+    );
+    return;
+  }
+
   $.ajax({
-    data: { Tareas_archivos: 1, gid_asana: id },
     url: "Procesos/php/tareas.php",
     type: "POST",
+    data: {
+      Tareas_archivos: 1,
+      sistema: ref.sistema,
+      id: ref.id,
+    },
     success: function (data) {
       $("#archivos").html(data);
     },
@@ -757,7 +800,6 @@ function renderizar_archivos(id) {
     },
   });
 }
-
 $("#tareas_lista_puntajes_fechas").on(
   "apply.daterangepicker",
   function (ev, picker) {
@@ -865,14 +907,17 @@ $("#subir_comentario").click(function () {
   var id_tarea = id.replace(/^#0*/, "");
   var comentario = $("#comentario-textarea").val();
   var gid_asana = $("#gid_asana_details").html();
+  var sistema = $("#sistema").text().toLowerCase();
+  var gid = $("#gid_sistema").text();
 
   if (comentario) {
     $.ajax({
       data: {
         Subir_comentario: 1,
+        sistema: sistema,
         id: id_tarea,
         Comentario: comentario,
-        gid: gid_asana,
+        gid: gid,
       },
       url: "Procesos/php/tareas.php",
       type: "POST",
@@ -967,9 +1012,34 @@ function ver_detalle(id) {
       );
 
       // Render auxiliares
-      if (d0.gid_asana) {
-        renderizar_comentarios(d0.gid_asana);
-        renderizar_archivos(d0.gid_asana);
+      const asanaGid = parseInt(d0.gid_asana, 10) || 0;
+      const hubId = String(d0.gid_hubspot || d0.gid_hubspot || "").trim(); // ajustá el campo real
+      $("#sistema").text("Asana");
+      console.log("asana", asanaGid, "hubId", hubId);
+      if (asanaGid > 0) {
+        $("#sistema").text("Asana");
+        $("#sistema").addClass("badge bg-dark text-white");
+
+        $("#gid_sistema").text(asanaGid);
+        $("#gid_sistema").addClass("badge bg-dark text-white");
+
+        renderizar_comentarios({ sistema: "asana", id: String(asanaGid) });
+        renderizar_archivos({ sistema: "asana", id: String(asanaGid) });
+      } else if (hubId !== "") {
+        $("#sistema").text("Hubspot");
+        $("#sistema").addClass("badge bg-danger text-white");
+        $("#gid_sistema").text(hubId);
+        $("#gid_sistema").addClass("badge bg-danger text-white");
+        renderizar_comentarios({ sistema: "hubspot", id: hubId });
+        renderizar_archivos({ sistema: "hubspot", id: hubId });
+      } else {
+        // sin IDs
+        $("#comentarios").html(
+          '<div class="text-muted small">Sin comentarios.</div>',
+        );
+        $("#archivos").html(
+          '<div class="text-muted small">Sin archivos.</div>',
+        );
       }
     })
     .fail(function (xhr) {

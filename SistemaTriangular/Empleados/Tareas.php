@@ -542,9 +542,22 @@
                     <div class="modal fade" id="detalleTareaModal" tabindex="-1" aria-labelledby="detalleTareaLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
                             <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title" id="detalleTareaLabel">Tareas Detalle</h4>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                <div class="modal-header d-flex align-items-center">
+                                    <h4 class="modal-title me-auto" id="detalleTareaLabel">
+                                        Tareas Detalle
+                                    </h4>
+
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span id="sistema" class="badge bg-primary">Asana</span>
+                                        <span id="gid_sistema" class="badge bg-success">123456</span>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="btn-close ms-3"
+                                        data-bs-dismiss="modal"
+                                        aria-label="Cerrar">
+                                    </button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">

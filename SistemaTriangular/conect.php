@@ -89,7 +89,7 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
     $user = $mysqli->real_escape_string($_POST['user']);
     $password = $mysqli->real_escape_string($_POST['password']);
 
-    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND PASSWORD = '$password' AND Activo='1'";
+    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND PASSWORD = '$password' AND Activo='1' AND NIVEL IN(1,2)";
 
     $rec = $mysqli->query($sql);
 
