@@ -182,38 +182,57 @@
                         </div>
 
                         <div id="form_guias" class="row justify-content-center align-items-center">
-                            <div class="col-md-6 float-center">
+                            <div class="col-12 col-md-8">
                                 <div class="card">
                                     <div class="card-body">
 
-                                        <h4 class="header-title">Guia de Carga</h4>
-                                        <p class="text-muted font-14">
-                                            Ingrese el Codigo de Seguimiento de Caddy, el Codigo de Seguimiento del Proveedor o el Nombre del Cliente.
+                                        <h4 class="header-title mb-2">Guía de Carga</h4>
+                                        <p class="text-muted font-14 mb-4">
+                                            Ingrese el Código de Seguimiento de Caddy, el Código del Proveedor o el Nombre del Cliente.
                                         </p>
 
-                                        <div class="row row-cols-lg-auto g-3 align-items-center mb-3 ">
-
-                                            <div class="col-6">
-                                                <label for="inputcodigo">Código de Seguimiento Caddy</label>
-                                                <input type="text" class="form-control" id="inputcodigo" placeholder="Ingrese el Código de Seguimiento..." autocomplete="off">
-
-
+                                        <!-- Códigos -->
+                                        <div class="row g-3 mb-3">
+                                            <div class="col-12 col-md-6">
+                                                <label for="inputcodigo" class="form-label">Código de Seguimiento Caddy</label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    id="inputcodigo"
+                                                    placeholder="Ingrese el código de seguimiento"
+                                                    autocomplete="off">
                                             </div>
-                                            <div class="col-6">
-                                                <label for="inputcodigoproveedor">Código de Seguimiento Proveedor</label>
-                                                <input type="text" class="form-control" id="inputcodigoproveedor" placeholder="Ingrese el Código de Seguimiento..." autocomplete="off">
-                                            </div>
 
+                                            <div class="col-12 col-md-6">
+                                                <label for="inputcodigoproveedor" class="form-label">Código de Seguimiento Proveedor</label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    id="inputcodigoproveedor"
+                                                    placeholder="Ingrese el código del proveedor"
+                                                    autocomplete="off">
+                                            </div>
                                         </div>
-                                        <div class="row row-cols-lg-auto g-3 align-items-center">
+
+                                        <!-- Nombre -->
+                                        <div class="row g-3 mb-4">
                                             <div class="col-12">
-                                                <label for="inputcodigo">Nombre Cliente</label>
-                                                <input type="text" class="form-control" id="inputname" placeholder="Ingrese el Nombre..." autocomplete="off">
+                                                <label for="inputname" class="form-label">Nombre del Cliente</label>
+                                                <input
+                                                    type="text"
+                                                    class="form-control"
+                                                    id="inputname"
+                                                    placeholder="Ingrese el nombre del cliente"
+                                                    autocomplete="off">
                                             </div>
                                         </div>
-                                        <div class="row mt-2 float-right">
-                                            <div class="col-6">
-                                                <button id="remito" class="btn btn-primary">Buscar</button>
+
+                                        <!-- Botón -->
+                                        <div class="row">
+                                            <div class="col-12 text-end">
+                                                <button id="remito" class="btn btn-primary px-4">
+                                                    <i class="mdi mdi-magnify me-1"></i> Buscar
+                                                </button>
                                             </div>
                                         </div>
 

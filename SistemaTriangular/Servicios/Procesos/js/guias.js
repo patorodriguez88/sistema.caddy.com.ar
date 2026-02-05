@@ -72,7 +72,7 @@ function control_password(value) {
         $("#button_date_blocked").removeClass("btn-danger"),
         $("#button_date").removeClass("mdi-close"),
         $("#button_date").css("display", "inline"),
-        2000
+        2000,
       );
     },
     success: function (response) {
@@ -116,7 +116,7 @@ $("#button_date_blocked").click(function () {
             "Fecha modificada con éxito !",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
         } else {
           $.NotificationApp.send(
@@ -124,7 +124,7 @@ $("#button_date_blocked").click(function () {
             "No fue posible actualizar la fecha",
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
 
@@ -139,7 +139,7 @@ function verguia() {
   window.open(
     "https://wwwsistemacaddy.com.ar/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" +
       id,
-    "_blank"
+    "_blank",
   );
 }
 function verrotulo() {
@@ -147,7 +147,7 @@ function verrotulo() {
   window.open(
     "https://www.sistemacaddy.com.ar/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=" +
       id,
-    "_blank"
+    "_blank",
   );
 }
 
@@ -171,7 +171,7 @@ function verFotosYSubir(codigo) {
     },
     error: function () {
       $("#fotos").html(
-        '<div class="text-danger">Error al cargar las fotos.</div>'
+        '<div class="text-danger">Error al cargar las fotos.</div>',
       );
     },
   });
@@ -197,7 +197,7 @@ function verFotosYSubir(codigo) {
     },
     error: function () {
       $("#fotos").html(
-        '<div class="text-danger">Error al cargar las fotos.</div>'
+        '<div class="text-danger">Error al cargar las fotos.</div>',
       );
     },
   });
@@ -211,7 +211,7 @@ if (typeof Dropzone !== "undefined") {
         let codigo = $("#codigo_foto_actual").val();
         // Mensaje de éxito
         $("#fotos").before(
-          '<div id="mensaje-exito" class="alert alert-success py-2">Foto subida correctamente ✅</div>'
+          '<div id="mensaje-exito" class="alert alert-success py-2">Foto subida correctamente ✅</div>',
         );
 
         if (codigo) {
@@ -260,7 +260,7 @@ function eliminarFoto(codigo, nombreArchivo, idHtml) {
               Swal.fire(
                 "Error",
                 res.error || "No se pudo eliminar la foto.",
-                "error"
+                "error",
               );
             }
           } catch (e) {
@@ -275,8 +275,50 @@ function eliminarFoto(codigo, nombreArchivo, idHtml) {
     }
   });
 }
+function cleanValue(v) {
+  return (v || "").toString().trim();
+}
+
+function showError(msg) {
+  Swal.fire({
+    icon: "error",
+    title: "Atención",
+    text: msg,
+    confirmButtonText: "OK",
+  });
+}
+function showLoading(title, body) {
+  // Ojo: en tu HTML no existe #info-alert-modal-title, existe h4 fijo.
+  // Así que actualizamos el body y dejamos el h4 como "Actualizando Información".
+  $("#info-alert-body").text(body || "No cierres esta ventana.");
+  $("#info-alert-modal").modal("show");
+}
+
+function hideLoading() {
+  $("#info-alert-modal").modal("hide");
+}
+
+function safeJsonParse(response) {
+  try {
+    if (typeof response === "object") return response;
+    return JSON.parse(response);
+  } catch (e) {
+    return null;
+  }
+}
+
 $("#remito").click(function () {
   let name = $("#inputname").val();
+  let id = cleanValue($("#inputcodigo").val());
+  let idProveedor = cleanValue($("#inputcodigoproveedor").val());
+
+  // ✅ Si los tres están vacíos, no avanzo
+  if (!name && !id && !idProveedor) {
+    showError(
+      "Ingresá un Código de Seguimiento, Código de Proveedor o el Nombre del Cliente.",
+    );
+    return;
+  }
 
   if (name != "") {
     $("#row_search").css("display", "block");
@@ -346,27 +388,41 @@ $("#remito").click(function () {
         data: { Buscar_CodigoProveedor: 1, CodigoProveedor: idProveedor },
         type: "POST",
         url: "../Funciones/php/tablas.php",
+        dataType: "text",
+        timeout: 20000, // ✅ evita que quede colgado eterno
         beforeSend: function () {
-          // setting a timeout
-          $("#info-alert-modal").modal("show");
-          $("#info-alert-modal-title").html("Buscando");
+          showLoading("Buscando", "Buscando datos del proveedor...");
         },
         success: function (response) {
-          var jsonData = JSON.parse(response);
+          const jsonData = safeJsonParse(response);
 
-          if (jsonData.success == 1) {
-            $("#info-alert-modal").modal("hide");
+          if (!jsonData) {
+            showError(
+              "Respuesta inválida del servidor. Revisá logs / PHP errors.",
+            );
+            return;
+          }
+
+          if (jsonData.success == 1 && jsonData.CodigoSeguimiento) {
             seguimiento(jsonData.CodigoSeguimiento);
           } else {
-            $("#info-alert-modal").modal("hide");
-            $.NotificationApp.send(
-              "Error !",
-              "No existen datos para el codigo del Proveedor " + idProveedor,
-              "bottom-right",
-              "#FFFFFF",
-              "danger"
+            showError(
+              "No existen datos para el código del proveedor: " + idProveedor,
             );
           }
+        },
+        error: function (xhr, status) {
+          const detail =
+            xhr && xhr.responseText ? xhr.responseText.substring(0, 300) : "";
+          showError(
+            "No se pudo consultar. (" +
+              status +
+              ") " +
+              (detail ? "Detalle: " + detail : ""),
+          );
+        },
+        complete: function () {
+          hideLoading(); // ✅ se cierra SIEMPRE
         },
       });
     }
@@ -403,7 +459,7 @@ function seguimiento(cs) {
               colorestado +
               ' text-white"> ' +
               jsonData.Visitas +
-              " </span></h5>"
+              " </span></h5>",
           );
           $("#notas").html("Nota Interna: " + jsonData.Notas);
           document.getElementById("modal_seguimiento").style.display = "block";
@@ -419,14 +475,14 @@ function seguimiento(cs) {
             "No existen datos para el codigo " + id,
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
           $.NotificationApp.send(
             "Error",
             "No existen datos para el codigo " + id,
             "bottom-right",
             "danger",
-            "Error"
+            "Error",
           );
         }
       },
@@ -442,20 +498,20 @@ function seguimiento(cs) {
         if (jsonData.data[0].Entregado == 1) {
           $("#modal_seguimiento_header").prop(
             "class",
-            "modal-header modal-colored-header bg-success"
+            "modal-header modal-colored-header bg-success",
           );
           $("#modal_seguimiento_content").prop(
             "class",
-            "modal-content bg-success"
+            "modal-content bg-success",
           );
         } else {
           $("#modal_seguimiento_header").prop(
             "class",
-            "modal-header modal-colored-header bg-primary"
+            "modal-header modal-colored-header bg-primary",
           );
           $("#modal_seguimiento_content").prop(
             "class",
-            "modal-content bg-primary"
+            "modal-content bg-primary",
           );
         }
 
@@ -476,7 +532,7 @@ function seguimiento(cs) {
             "<br>" +
             '<li><p class="mb-0"><span class="font-weight-bold mr-2">Telefono:</span>' +
             jsonData.data[0].TelefonoOrigen +
-            "</p></li>"
+            "</p></li>",
         );
         //DESTINO
         $("#cliente_destino_seguimiento").html(jsonData.data[0].ClienteDestino);
@@ -485,11 +541,11 @@ function seguimiento(cs) {
             "<br>" +
             '<li><p class="mb-0"><span class="font-weight-bold mr-2">Telefono:</span>' +
             jsonData.data[0].TelefonoDestino +
-            "</p></li>"
+            "</p></li>",
         );
         //GUIA
         $("#header_title_guia_seguimiento").html(
-          "Información de la Guia " + jsonData.data[0].NumeroComprobante
+          "Información de la Guia " + jsonData.data[0].NumeroComprobante,
         );
         if (jsonData.data[0].CobrarEnvio == 0) {
           var cobrarenvio = "No";
@@ -523,7 +579,7 @@ function seguimiento(cs) {
 
         if (jsonData.data[0].Facturado == 1) {
           $("#title_aforo").html(
-            jsonData.data[0].ComprobanteF + " " + jsonData.data[0].NumeroF
+            jsonData.data[0].ComprobanteF + " " + jsonData.data[0].NumeroF,
           );
         }
 
@@ -676,7 +732,7 @@ function seguimiento(cs) {
             "</div>" +
             '<p class="mb-1"><b>Observaciones : </b>' +
             jsonData.data[0].Observaciones +
-            "</p>"
+            "</p>",
         );
 
         $("#alert_date").click(function () {
@@ -704,7 +760,7 @@ function seguimiento(cs) {
               var jsonData = JSON.parse(response);
               if (jsonData.success == 1) {
                 $("#estado_transclientes").html(
-                  "Estado Trans Clientes : " + EstadoSeguimiento
+                  "Estado Trans Clientes : " + EstadoSeguimiento,
                 );
                 $("#alert").css("display", "none");
               }
@@ -741,7 +797,7 @@ function seguimiento(cs) {
                       Pagador +
                       ") => Nuevo Pagador (" +
                       NoPagador +
-                      ")"
+                      ")",
                   );
                 } else {
                   Pagador = jsonData.data[0].ClienteDestino;
@@ -751,7 +807,7 @@ function seguimiento(cs) {
                       Pagador +
                       ") => Nuevo Pagador (" +
                       NoPagador +
-                      ")"
+                      ")",
                   );
                 }
               }
@@ -786,7 +842,7 @@ function seguimiento(cs) {
               // setting a timeout
               $("#info-alert-modal").modal("show");
               $("#info-alert-modal-title").html(
-                "Actualizando Forma de Pago..."
+                "Actualizando Forma de Pago...",
               );
             },
             success: function (response) {
@@ -804,7 +860,7 @@ function seguimiento(cs) {
                 $.NotificationApp.send(
                   "Exito",
                   "Modificamos Forma De Pago",
-                  "success"
+                  "success",
                 );
               }
             },
@@ -846,7 +902,7 @@ function seguimiento(cs) {
                 $.NotificationApp.send(
                   "Exito",
                   "Modificamos Cobrar Caddy",
-                  "success"
+                  "success",
                 );
               }
             },
@@ -861,7 +917,7 @@ function seguimiento(cs) {
           } else {
             if (state == "Devuelto al Cliente") {
               alert(
-                "Este paquete ya fue devuelto al cliente, realemnte lo incluiras en una hoja de ruta?"
+                "Este paquete ya fue devuelto al cliente, realemnte lo incluiras en una hoja de ruta?",
               );
             }
             var estadohdr_valor = "Abierto";
@@ -891,7 +947,7 @@ function seguimiento(cs) {
                   $.NotificationApp.send(
                     "Éxito",
                     "Modificamos el estado en Hoja de Ruta",
-                    "success"
+                    "success",
                   );
                   // actualizar DOM si es necesario
                 }
@@ -940,7 +996,7 @@ function seguimiento(cs) {
                 $.NotificationApp.send(
                   "Exito",
                   "Modificamos Cobrar Envio",
-                  "success"
+                  "success",
                 );
               }
             },
@@ -1069,7 +1125,7 @@ let id_seguimiento_a_eliminar = null;
 function ver_seguimiento(id) {
   id_seguimiento_a_eliminar = id;
   let modal = new bootstrap.Modal(
-    document.getElementById("modal_confirmar_eliminacion")
+    document.getElementById("modal_confirmar_eliminacion"),
   );
   modal.show();
 }
@@ -1092,7 +1148,7 @@ $("#btn_confirmar_eliminacion").click(function () {
           "Seguimiento Eliminado",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
         var datatable_seguimiento = $("#seguimiento_tabla").DataTable();
         datatable_seguimiento.ajax.reload();
@@ -1102,7 +1158,7 @@ $("#btn_confirmar_eliminacion").click(function () {
           "No se pudo eliminar el seguimiento",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
     },
@@ -1193,7 +1249,7 @@ $("#enter_registration_save").click(function () {
               "codigo",
               jsonData.codigo,
               "new",
-              jsonData.new
+              jsonData.new,
             );
           },
         });

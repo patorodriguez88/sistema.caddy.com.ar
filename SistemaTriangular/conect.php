@@ -3,13 +3,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 // Conexión rápida directa (evita Conexioni)
-// $isLocal = in_array($_SERVER['SERVER_NAME'] ?? '', ['localhost', '127.0.0.1']);
-// $configFile = $isLocal ? __DIR__ . "/Conexion/config_local" : __DIR__ . "/Conexion/config";
-
-// $dbConf = json_decode(file_get_contents($configFile), true);
-// if (!$dbConf || !isset($dbConf[0])) {
-//     die("Error: archivo de configuración de DB no encontrado");
-// }
 $host = strtolower($_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? ''));
 $host = preg_replace('/:\d+$/', '', $host);
 $host = preg_replace('/^www\./', '', $host);
@@ -127,6 +120,7 @@ if ($rec->num_rows != 0) {
     // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 
     // Perfil
+
     switch ($_SESSION['Nivel']) {
         case 1:
             $_SESSION['Perfil'] = "Administrador";
@@ -138,7 +132,7 @@ if ($rec->num_rows != 0) {
             exit;
         case 3:
             $_SESSION['Perfil'] = "Reparto";
-            header("location:smartphone/AdminSmartphone/SistemaTriangular/Cpanel.php");
+
             exit;
         case 4:
             header("location:Plataforma/Bienvenidos.php");
