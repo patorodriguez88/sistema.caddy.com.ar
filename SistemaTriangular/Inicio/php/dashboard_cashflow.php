@@ -7,7 +7,7 @@ $año = 2024;
 $query1 = "
     SELECT SUM(Debe) - SUM(Haber) AS saldo_inicial
     FROM TransClientes
-    WHERE YEAR(Fecha) < $año
+    WHERE Eliminado=0 AND YEAR(Fecha) < $año
 ";
 $result1 = $mysqli->query($query1);
 $row1 = $result1->fetch_assoc();
@@ -17,7 +17,7 @@ $saldoInicial = floatval($row1['saldo_inicial'] ?? 0);
 $querySimples = "
     SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
     FROM TransClientes
-    WHERE YEAR(Fecha) = $año AND Flex = 0
+    WHERE  Eliminado=0 AND YEAR(Fecha) = $año AND Flex = 0
     GROUP BY periodo
 ";
 $ventasSimples = [];
@@ -30,7 +30,7 @@ while ($row = $result->fetch_assoc()) {
 $queryFlex = "
     SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
     FROM TransClientes
-    WHERE YEAR(Fecha) = $año AND Flex = 1
+    WHERE  Eliminado=0 AND YEAR(Fecha) = $año AND Flex = 1
     GROUP BY periodo
 ";
 $ventasFlex = [];
