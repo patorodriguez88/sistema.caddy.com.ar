@@ -125,25 +125,59 @@
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
 
-                    <div id="standard-modal" class="modal fade" style="z-index:2000;" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
-                            <div class="modal-content modal-dialog-centered">
-                                <div class="modal-header">
-                                    <h4 class="modal-title" id="standard-modalLabel">Eliminiar Archivo</h4>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <div id="standard-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true" style="z-index:2000;">
+                        <div class="modal-dialog modal-dialog-centered" role="document">
+                            <div class="modal-content">
+                                <div class="modal-content modal-filled bg-danger">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="standard-modalLabel">Eliminar archivo</h5>
+                                        <button
+                                            type="button"
+                                            class="btn-close"
+                                            data-bs-dismiss="modal"
+                                            aria-label="Close"></button>
+                                    </div>
+
+                                    <!-- BODY -->
+                                    <div class="modal-body">
+                                        <input type="hidden" id="standard-modal-archivo">
+
+                                        <p class="mb-0">
+                                            ¿Confirmás la eliminación de:
+                                        </p>
+
+                                        <strong id="standard-modal-title" class="text-white"></strong>
+                                    </div>
+
+                                    <!-- FOOTER -->
+                                    <div class="modal-footer">
+                                        <button
+                                            type="button"
+                                            class="btn btn-primary"
+                                            data-bs-dismiss="modal">
+                                            <i class="mdi mdi-close"></i> Cancelar
+                                        </button>
+
+                                        <button
+                                            id="standard-modal-ok"
+                                            type="button"
+                                            class="btn btn-success">
+                                            <i class="mdi mdi-delete"></i> Sí, borrar archivo
+                                        </button>
+
+                                        <button
+                                            id="standard-modal-details-ok"
+                                            type="button"
+                                            class="btn btn-success"
+                                            style="display:none;">
+                                            <i class="mdi mdi-delete"></i> Sí, borrar tarea
+                                        </button>
+                                    </div>
+
                                 </div>
-                                <div class="modal-body">
-                                    <input type="hidden" id="standard-modal-archivo">
-                                    <a id="standard-modal-title"></a>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
-                                    <button id="standard-modal-ok" type="button" class="btn btn-success">Si, borrarlo</button>
-                                    <button id="standard-modal-details-ok" type="button" class="btn btn-success">Si, borrar Tarea</button>
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
+                            </div>
+                        </div>
+                    </div>
 
                     <!-- start page title -->
                     <div class="row">
@@ -156,7 +190,7 @@
                                         <li class="breadcrumb-item active">Tareas Caddy</li>
                                     </ol>
                                 </div>
-                                <h4 class="page-title">Tareas Caddy</h4>
+                                <h3 id="header_tareas" class="page-title">Tareas Caddy</h3>
                             </div>
                         </div>
                     </div>
@@ -265,7 +299,7 @@
                     <div class="card" id="tareas_lista_puntajes" style="display:none">
                         <div class="card-body">
                             <div class="dropdown float-end">
-                                <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="mdi mdi-dots-vertical"></i>
                                 </a>
                             </div>
@@ -276,7 +310,7 @@
 
                             <div class="form-group">
                                 <label>Rango de Fechas</label>
-                                <input type="text" class="form-control date" id="tareas_lista_puntajes_fechas" data-toggle="date-picker" data-cancel-class="btn-warning">
+                                <input type="text" class="form-control date" id="tareas_lista_puntajes_fechas" data-bs-toggle="date-picker" data-cancel-class="btn-warning">
                             </div>
 
                             <!-- DASHBOARD -->
@@ -319,19 +353,15 @@
                         </div>
                     </div>
 
-
-
-
-
                     <div class="card" id="asana" style="display:none">
                         <div class="card-body">
                             <div class="dropdown float-end">
-                                <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="mdi mdi-dots-vertical"></i>
                                 </a>
 
                             </div>
-                            <h4 class="header-title mb-3">Tareas para incorporar puntos</h4>
+                            <h4 class="header-title mb-3 text-primary">Tareas para incorporar puntos</h4>
 
                             <p><b>Asana</b> Se muestran todas las tareas pendientes de Finalizar y que se encuentren con la fecha de finalizacion dentro del mes en curso.</p>
 
@@ -371,7 +401,7 @@
                     <div class="card" id="tareas_lista" style="display:none">
                         <div class="card-body">
                             <div class="dropdown float-end">
-                                <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="mdi mdi-dots-vertical"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-end">
@@ -385,7 +415,7 @@
                                     <a href="javascript:void(0);" class="dropdown-item">Settings</a>
                                 </div>
                             </div>
-                            <h4 class="header-title mb-3">Tareas Asana</h4>
+                            <h4 class="header-title mb-3">Tareas generadas en Asana y en Hubspot ingresadas al Sistema de Caddy</h4>
 
                             <p><b></b> Se muestran todas las tareas ingresadas al sistema de Caddy.</p>
 
@@ -400,8 +430,8 @@
                                             <th>Fecha de Entrega</th>
                                             <th>Estado</th>
                                             <th>Link</th>
-                                            <th class="col-editar">Editar</th> <!-- SOLO si nivel == 2 -->
-                                            <!-- <th class="col-editar">Borrar</th> SOLO si nivel == 2 -->
+                                            <th class="col-editar">Editar</th> <!-- SOLO si nivel == 1 -->
+                                            <!-- <th class="col-editar">Borrar</th> SOLO si nivel == 1 -->
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -512,9 +542,22 @@
                     <div class="modal fade" id="detalleTareaModal" tabindex="-1" aria-labelledby="detalleTareaLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered modal-xl">
                             <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title" id="detalleTareaLabel">Tareas Detalle</h4>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                <div class="modal-header d-flex align-items-center">
+                                    <h4 class="modal-title me-auto" id="detalleTareaLabel">
+                                        Tareas Detalle
+                                    </h4>
+
+                                    <div class="d-flex align-items-center gap-2">
+                                        <span id="sistema" class="badge bg-primary">Asana</span>
+                                        <span id="gid_sistema" class="badge bg-success">123456</span>
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        class="btn-close ms-3"
+                                        data-bs-dismiss="modal"
+                                        aria-label="Cerrar">
+                                    </button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -641,14 +684,14 @@
     <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
 
     <!-- Apex Charts js -->
-    <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+    <!-- <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script> -->
 
     <!-- Vector Map js -->
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
 
     <!-- Funciones -->
     <script src="../Funciones/js/seguimiento.js"></script>

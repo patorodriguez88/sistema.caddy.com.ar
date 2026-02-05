@@ -291,7 +291,8 @@
                                         <div class="col-md-4">
                                             <div class="form-group">
                                                 <label for="task-priority2" class="form-label">Fecha de Nacimiento</label>
-                                                <input type="date" class="form-control" id="ext_nac" required>
+                                                <input type="date" class="form-control" id="ext_nac" name="nac" required>
+                                                <div class="invalid-feedback">Ingresá la fecha de nacimiento.</div>
                                             </div>
                                         </div>
                                         <div class="col-md-4">
@@ -316,15 +317,34 @@
                                         <strong>Repartidor Inactivo - </strong> Verifique la fecha de caducidad de la Licencia de Conducir
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
+
                                             <div class="mb-3">
-                                                <label for="ext_usuario_app" class="form-label">Usuario App</label>
+                                                <label for="empleado_id_asana" class="form-label">Usuario Asana</label>
+                                                <select id="empleado_id_asana" class="form-select">
+                                                    <option value="">Seleccionar empleado Asana</option>
+                                                </select>
+                                            </div>
+
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="mb-3">
+                                                <label for="empleado_id_hubspot" class="form-label">Usuario Hubspot</label>
+                                                <select class="form-select" id="empleado_id_hubspot">
+                                                    <option value="">Seleccionar usuario Hubspot</option>
+                                                </select>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <div class="mb-3">
+                                                <label for="ext_usuario_app" class="form-label">Usuario App Caddy</label>
                                                 <input type="text" class="form-control" id="ext_usuario_app" placeholder="Usuario App" readonly>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-3">
                                             <div class="mb-3">
-                                                <label for="ext_pass_app" class="form-label">Password App</label>
+                                                <label for="ext_pass_app" class="form-label">Password App Caddy</label>
                                                 <input type="text" class="form-control" id="ext_pass_app" placeholder="Pass App" readonly>
                                             </div>
                                         </div>
@@ -332,6 +352,7 @@
                                     <div class="d-flex justify-content-end">
                                         <button id="add-new-modal_cancel" type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancelar</button>
                                         <button id="button_guardar" type="button" class="btn btn-success">Guardar</button>
+                                        <button id="crear_empleado" type="button" class="btn btn-success">Guardar</button>
                                     </div>
                                 </form>
                             </div>
@@ -350,7 +371,7 @@
                                     <h4 class="header-title mt-2">Listado de Empleados </h4>
 
                                     <div class="text-right">
-                                        <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Empleados</a></h4>
+                                        <a id="button_agregar_empleado" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Empleados</a></h4>
                                     </div>
 
                                     <div class="row mb-2">
@@ -358,23 +379,25 @@
                                         </div><!-- end col-->
                                     </div>
 
-                                    <table class="table table-striped table-centered mb-0" id="empleados" style="font-size:12px">
-                                        <thead>
-                                            <tr>
-                                                <th>id</th>
-                                                <th>Nombre|Vehiculo</th>
-                                                <th>Documento</th>
-                                                <th>Telefono</th>
-                                                <th>Alta</th>
-                                                <th>Venc.Licencia</th>
-                                                <th>Observaciones</th>
-                                                <th>Estado</th>
-                                                <th>Accion</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-centered dt-responsive nowrap w-100 mb-0" id="empleados" style="font-size:12px">
+                                            <thead>
+                                                <tr>
+                                                    <th>id</th>
+                                                    <th>Nombre|Vehiculo</th>
+                                                    <th>Documento</th>
+                                                    <th>Telefono</th>
+                                                    <th>Alta</th>
+                                                    <th>Venc.Licencia</th>
+                                                    <th>Observaciones</th>
+                                                    <th>Estado</th>
+                                                    <th>Accion</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -411,14 +434,14 @@
     <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
 
     <!-- Apex Charts js -->
-    <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+    <!-- <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script> -->
 
     <!-- Vector Map js -->
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>

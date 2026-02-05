@@ -305,54 +305,52 @@
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
                                     <div class="modal-header">
-                                        <h4 class="modal-title">Agregar Registro para Mantenimiento</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <h5 class="modal-title">Agregar Registro para Mantenimiento</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <p id="mantenimiento-up-modal_vehicle" class="ml-2 text-muted font-15">Vehiculo </p>
                                     <div class="modal-body">
                                         <!-- File Upload -->
                                         <form action="" method="post">
-                                            <div class="form-row">
-                                                <div class="form-group col-md-6">
+                                            <div class="row">
+                                                <div class="col-md-6">
                                                     <div class="tab-content">
                                                         <div class="tab-pane show active" id="switches-preview">
-                                                            <label for="mantenimiento_norden">Numero de Orden</label>
+                                                            <label for="mantenimiento_norden" class="form-label">Numero de Orden</label>
                                                             <!-- Multiple Select -->
-                                                            <select id="selectOrdenes" class="select2 form-control select2-multiple" data-toggle="select2" data-placeholder="Choose ...">
+                                                            <select id="selectOrdenes" class="form-select form-control select2-multiple" data-toggle="select2" aria-label="Choose ..." multiple>
                                                             </select>
                                                             <!-- without label-->
-                                                            <span id="mantenimiento_fecha" class="badge badge-dark">Fecha</span>
+                                                            <span id="mantenimiento_fecha" class="badge bg-dark">Fecha</span>
                                                             <!-- Bool Switch-->
-                                                            <span id="mantenimiento_recorrido" class="badge badge-dark">Recorrido</span>
+                                                            <span id="mantenimiento_recorrido" class="badge bg-dark">Recorrido</span>
                                                             <!-- Primary Switch-->
-                                                            <span id="mantenimiento_chofer" class="badge badge-dark">Chofer</span>
+                                                            <span id="mantenimiento_chofer" class="badge bg-dark">Chofer</span>
                                                         </div> <!-- end preview-->
                                                     </div>
                                                 </div>
-                                                <div class="form-group col-md-6">
-
-                                                    <label for="mantenimiento-date">Fecha</label>
+                                                <div class="col-md-6">
+                                                    <label for="mantenimiento-date" class="form-label">Fecha</label>
                                                     <input class="form-control" id="mantenimiento-date" type="date" name="date">
-
                                                 </div>
                                             </div>
-                                            <div class="form-row">
-                                                <div class="form-group col-md-6">
-                                                    <label for="mantenimiento_titulo">Titulo Tarea de Mantenimiento</label>
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <label for="mantenimiento_titulo" class="form-label">Titulo Tarea de Mantenimiento</label>
                                                     <input type="text" id="mantenimiento_titulo" class="form-control">
                                                 </div>
-                                                <div class="form-group col-md-3">
-                                                    <label for="mantenimiento_estado">Estado</label>
+                                                <div class="col-md-3">
+                                                    <label for="mantenimiento_estado" class="form-label">Estado</label>
                                                     <input type="text" id="mantenimiento_estado" class="form-control">
                                                 </div>
-                                                <div class="form-group col-md-3">
-                                                    <label for="mantenimiento_prioridad">Prioridad</label>
+                                                <div class="col-md-3">
+                                                    <label for="mantenimiento_prioridad" class="form-label">Prioridad</label>
                                                     <input type="number" id="mantenimiento_prioridad" class="form-control">
                                                 </div>
                                             </div>
 
                                             <div class="form-group">
-                                                <label for="mantenimiento_notas">Notas</label>
+                                                <label for="mantenimiento_notas" class="form-label">Notas</label>
                                                 <textarea class="form-control" id="mantenimiento_notas" rows="5"></textarea>
                                             </div>
 
@@ -638,7 +636,7 @@
                             <div class="row" id="vehicle" style="display:none">
                                 <div class="col-12">
                                     <div class="card">
-                                        <a id="vehicle_close"><i class="mdi mdi-36 mdi-close ml-1 float-right mr-2 mt-2"></i></a>
+                                        <button type="button" class="btn-close float-end ms-2 me-2 mt-2" id="vehicle_close" aria-label="Close"></button>
 
                                         <div class="card-body">
 
@@ -673,6 +671,12 @@
                                                         <!-- Product stock -->
                                                         <div class="mt-3">
                                                             <h4 id="vehicle_status"></h4>
+                                                            <div class="form-check form-switch">
+                                                                <input class="form-check-input" type="checkbox" role="switch" id="vehicle_status_switch">
+                                                                <label class="form-check-label" for="vehicle_status_switch">
+                                                                    Activo
+                                                                </label>
+                                                            </div>
                                                         </div>
 
                                                         <input type="hidden" id="vehicle_domain">
@@ -726,7 +730,7 @@
                                                     <div class="col-xl-3 col-lg-6">
                                                         <div class="card m-1 shadow-none border">
                                                             <div class="card-header p-2">
-                                                                <a onclick="up_services()"><i style="cursor:pointer" class="mdi mdi-36 mdi-plus-circle text-success float-right"></i></a>
+                                                                <a onclick="up_services()"><i style="cursor:pointer" class="mdi mdi-36 mdi-plus-circle text-success float-end"></i></a>
                                                                 <div class="d-flex align-items-center">
                                                                     <div class="me-auto">
                                                                         <div class="avatar avatar-sm">
@@ -768,7 +772,7 @@
                                                     <div class="col-xl-3 col-lg-6">
                                                         <div class="card m-1 shadow-none border" id="access_qualification">
                                                             <div class="p-2">
-                                                                <a style="cursor:pointer" onclick="up_access_services()"><i class="mdi mdi-36 mdi-upload float-right"></i></a>
+                                                                <a style="cursor:pointer" onclick="up_access_services()"><i class="mdi mdi-36 mdi-upload float-end"></i></a>
                                                                 <div class="row align-items-center">
                                                                     <div class="col-auto">
                                                                         <div class="avatar-sm">
@@ -789,7 +793,7 @@
                                                     <div class="col-xl-3 col-lg-6">
                                                         <div class="card m-1 shadow-none border" id="access_sure">
                                                             <div class="p-2">
-                                                                <a><i style="cursor:pointer" onclick="up_access_services_sure()" class="mdi mdi-plus-circle text-success float-right"></i></a>
+                                                                <a><i style="cursor:pointer" onclick="up_access_services_sure()" class="mdi mdi-plus-circle text-success float-end"></i></a>
                                                                 <div class="row align-items-center">
                                                                     <div class="col-auto">
                                                                         <div class="avatar-sm">
@@ -811,7 +815,7 @@
                                                     <div class="col-xl-3 col-lg-6">
                                                         <div class="card m-1 shadow-none border" id="access_tax">
                                                             <div class="p-2">
-                                                                <a><i style="cursor:pointer" onclick="up_access_tax()" class="mdi mdi-plus-circle text-success float-right"></i></a>
+                                                                <a><i style="cursor:pointer" onclick="up_access_tax()" class="mdi mdi-plus-circle text-success float-end"></i></a>
                                                                 <div class="row align-items-center">
                                                                     <div class="col-auto">
                                                                         <div class="avatar-sm">
@@ -832,7 +836,7 @@
                                                     <div class="col-xl-3 col-lg-6">
                                                         <div class="card m-1 shadow-none border" id="access_breafing">
                                                             <div class="p-2">
-                                                                <a><i onclick="up_mantenimiento()" style="cursor:pointer" class="mdi mdi-36 mdi-plus-circle text-success float-right"></i></a>
+                                                                <a><i onclick="up_mantenimiento()" style="cursor:pointer" class="mdi mdi-36 mdi-plus-circle text-success float-end"></i></a>
                                                                 <div class="row align-items-center">
                                                                     <div class="col-auto">
                                                                         <div class="avatar-sm">
@@ -1047,7 +1051,7 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <!-- <script src="js/funcionesCpanel.js"></script> -->
     <script src="../Funciones/js/seguimiento.js"></script>

@@ -46,7 +46,7 @@ if (isset($_POST['MuestroFotos']) && $_POST['MuestroFotos'] == 1) {
 
 if (isset($_POST['MuestroQuicks'])) {
     $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
-    $ruta = "../../../../AppRecorridos/Proceso/php/images/" . $CodigoSeguimiento . "/"; // Indicar la ruta
+    $ruta = "../../../../sandbox.reparto.caddy.com.ar/SistemaReparto/Proceso/php/images/" . $CodigoSeguimiento . "/"; // Indicar la ruta
     $filehandle = opendir($ruta); // Abrir archivos de la carpeta
     $w = 1;
     $file = readdir($filehandle);

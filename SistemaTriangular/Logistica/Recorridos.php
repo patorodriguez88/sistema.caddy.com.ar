@@ -240,26 +240,29 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
+
+
                                     <h4 id="seguimiento_header" class="header-title mt-2">RECORRIDOS CADDY LOGISTICA </h4>
-                                    <button id="agregar_rec_btn" type="button" class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#standard-modal-rec"><i class="mdi mdi-map-marker-plus-outline mr-1"></i> <span>Agregar Recorrido</span> </button>
-                                    <table class="table table-striped table-centered mb-0" id="recorridos" style="font-size:12px">
-                                        <thead>
-                                            <tr>
-                                                <th>Numero</th>
-                                                <th>Nombre</th>
-                                                <th>Kilometros</th>
-                                                <th>Peajes</th>
-                                                <th>Servicio</th>
-                                                <th>Envios Fijos</th>
-                                                <th>Dias Salida</th>
-                                                <th>Color</th>
-                                                <th>Estado</th>
-                                                <th>Accion</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
+                                    <button id="agregar_rec_btn" type="button" class="btn btn-success mb-2" data-bs-toggle="modal" data-bs-target="#standard-modal-rec"><i class="mdi mdi-map-marker-plus-outline me-1"></i> <span>Agregar Recorrido</span> </button>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-centered mb-0 w-100" id="recorridos" style="font-size:12px;">
+                                            <thead>
+                                                <tr>
+                                                    <th class="text-nowrap">Numero</th>
+                                                    <th>Nombre</th>
+                                                    <th>Kilometros|Peajes</th>
+                                                    <th>Servicio</th>
+                                                    <th class="text-nowrap">Envios Fijos</th>
+                                                    <th class="text-nowrap">Dias Salida</th>
+                                                    <th>Color</th>
+                                                    <!-- <th>Estado</th> -->
+                                                    <th class="text-nowrap">Accion</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>

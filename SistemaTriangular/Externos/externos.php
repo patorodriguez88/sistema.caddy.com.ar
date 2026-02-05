@@ -466,23 +466,25 @@
                                         </div><!-- end col-->
                                     </div>
 
-                                    <table class="table table-striped table-centered mb-0" id="externos" style="font-size:12px">
-                                        <thead>
-                                            <tr>
-                                                <th>id</th>
-                                                <th>Nombre|Vehiculo</th>
-                                                <th>Documento</th>
-                                                <th>Telefono</th>
-                                                <th>Alta</th>
-                                                <th>Venc.Licencia</th>
-                                                <th>Observaciones</th>
-                                                <th>Estado</th>
-                                                <th>Accion</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-centered dt-responsive nowrap w-100 mb-0"
+                                            id="externos" style="font-size:12px">
+                                            <thead>
+                                                <tr>
+                                                    <th>id</th>
+                                                    <th>Nombre|Vehiculo</th>
+                                                    <th>Documento</th>
+                                                    <th>Telefono</th>
+                                                    <th>Alta</th>
+                                                    <th>Venc.Licencia</th>
+                                                    <th>Observaciones</th>
+                                                    <th>Estado</th>
+                                                    <th>Accion</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>

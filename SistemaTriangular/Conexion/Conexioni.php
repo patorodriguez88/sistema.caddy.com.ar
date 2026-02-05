@@ -1,8 +1,18 @@
 <?php
 session_start();
+
+$BASE_PATH = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
+if ($BASE_PATH === '' || $BASE_PATH === '.') $BASE_PATH = '';
+
+define('BASE_PATH', $BASE_PATH);
+
+function redirect_login()
+{
+    header('Location: ' . BASE_PATH . '/inicio.php');
+    exit;
+}
 class Conexion
 {
-
     private $server;
     private $user;
     private $password;
@@ -45,7 +55,8 @@ class Conexion
         if ($this->conexion->connect_error) {
             echo "❌ Error de conexión: " . $this->conexion->connect_error;
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            // header("Location: /SistemaTriangular/inicio.php");
+            redirect_login();
             exit;
         }
 
@@ -56,21 +67,42 @@ class Conexion
 
     private function cargarDatosConexion(): array
     {
-        $archivo = ($_SERVER['SERVER_NAME'] === 'localhost') ? "config_local" : "config";
+        // 🔄 NUEVO: detectamos host para decidir entorno
+        $serverName = $_SERVER['SERVER_NAME'] ?? '';
+        $httpHost   = $_SERVER['HTTP_HOST']   ?? '';
+        $host       = strtolower($httpHost ?: $serverName);
+
+        if ($serverName === 'localhost') {
+            // 🖥️ Entorno local
+            $archivo = "config_local";
+            define('ENTORNO', 'local');
+        } elseif (strpos($host, 'sandbox.sistema.caddy.com.ar') !== false) {
+            // 🧪 Entorno sandbox
+            $archivo = "config_sandbox";   // 👈 ESTE ARCHIVO NUEVO
+            define('ENTORNO', 'sandbox');
+        } else {
+            // 🔵 Producción
+            $archivo = "config";
+            define('ENTORNO', 'produccion');
+        }
+
         $path = dirname(__FILE__) . "/" . $archivo;
 
         if (!file_exists($path)) {
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+
+            redirect_login();
+            // header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
 
-        $json = file_get_contents($path);
+        $json  = file_get_contents($path);
         $datos = json_decode($json, true);
 
         if (!$datos || !is_array($datos) || !isset($datos[0])) {
             session_destroy();
-            header("Location: /SistemaTriangular/inicio.php");
+            redirect_login();
+            // header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
 
@@ -121,7 +153,9 @@ if (!defined('ALLOW_NO_SESSION') || ALLOW_NO_SESSION !== true) {
             }
 
             // Carga normal
-            header("Location: /SistemaTriangular/inicio.php");
+            // redirect_login($);
+            redirect_login();
+            // header("Location: /SistemaTriangular/inicio.php");
             exit;
         }
 

@@ -125,55 +125,78 @@ function Get_tasks_from_a_projects()
     } else {
 
         $filteredData = array();
-        foreach ($data['data'] as $index => $item) {
-            // Verificar si el elemento cumple con la condición de completado y fecha dentro del mes actual
-            // if ($item['completed'] === false) {
 
-            //Obtener IVAN SOSA TOMAS HUTCHINS NICOLAS AGUERO
-            // $assignee_gids = array('950062988923927', '1204836624535155', '1206694976609225');
-            $assignee_gids = array('734348738194841');
-            if (in_array($item['assignee']['gid'], $assignee_gids)) {
-                // Obtener el mes actual
-                $currentMonth = date('m');
-                // Obtener el mes de la fecha de vencimiento del elemento
-                $dueMonth = date('m', strtotime($item['due_on']));
+        foreach (($data['data'] ?? []) as $item) {
 
-                // Verificar si el mes de vencimiento es igual al mes actual
-                if ($dueMonth === $currentMonth) {
-                    //Si no contiene la etiqueta "Cargado en Sistema Caddy"
-                    // if($item['tags'][0]['gid']<>"1206857892421559"){
+            // 1) Assignee puede ser null
+            $assigneeGid  = $item['assignee']['gid']  ?? null;
+            $assigneeName = $item['assignee']['name'] ?? null;
 
-                    $existeTag = false;
+            // 2) Due_on puede ser null
+            $dueOn = $item['due_on'] ?? null;
 
-                    foreach ($item['tags'] as $tag) {
-                        if ($tag['gid'] === '1206857892421559') {
-                            $existeTag = true;
-                            break; // Si se encuentra el tag, no es necesario seguir iterando
-                        }
-                    }
+            // 3) Tags puede no existir o ser null
+            $tags = (isset($item['tags']) && is_array($item['tags'])) ? $item['tags'] : array();
 
-                    if (!$existeTag) {
+            // Si no tiene asignado o no está en tu lista, seguir
+            $assignee_gids = array('1212926275397398', '1210382139238856', '1210382139238853');
+            if (!$assigneeGid || !in_array($assigneeGid, $assignee_gids, true)) {
+                continue;
+            }
 
-                        // Agregar el elemento al array de datos filtrados
-                        $filteredData[] = array(
-                            'description' => $item['notes'],
-                            'name' => $item['name'],
-                            'gid' => $item['gid'],
-                            'assignee_name' => $item['assignee']['name'],
-                            'completed' => $item['completed'],
-                            'created_by_resource_type' => $item['created_by']['resource_type'],
-                            'due_on' => $item['due_on'],
-                            'created_by_gid' => $item['created_by']['gid']
-                        );
-                    }
+            // Si no tiene due_on, no podés filtrar por mes: saltealo (o decidí incluirlo)
+            if (!$dueOn) {
+                continue;
+            }
+
+            // Validar fecha
+            $ts = strtotime($dueOn);
+            if ($ts === false) {
+                continue;
+            }
+
+            $currentMonth = date('m');
+            $dueMonth     = date('m', $ts);
+
+            if ($dueMonth !== $currentMonth) {
+                continue;
+            }
+
+            // Verificar tag "Cargado en Sistema Caddy"
+            $tagCargado = '1206857892421559';
+            $existeTag = false;
+
+            foreach ($tags as $tag) {
+                $tagGid = $tag['gid'] ?? null;
+                if ($tagGid === $tagCargado) {
+                    $existeTag = true;
+                    break;
                 }
             }
-            // }
-        }
 
+            if ($existeTag) {
+                continue;
+            }
+
+            // created_by también puede faltar parcialmente
+            $createdByType = $item['created_by']['resource_type'] ?? null;
+            $createdByGid  = $item['created_by']['gid'] ?? null;
+
+            $filteredData[] = array(
+                'description' => $item['notes'] ?? '',
+                'name' => $item['name'] ?? '',
+                'gid' => $item['gid'] ?? '',
+                'assignee_name' => $assigneeName ?? '',
+                'completed' => $item['completed'] ?? false,
+                'created_by_resource_type' => $createdByType ?? '',
+                'due_on' => $dueOn,
+                'created_by_gid' => $createdByGid ?? ''
+            );
+        }
         // Enviar los datos filtrados como respuesta JSON
         header('Content-Type: application/json');
         echo json_encode(array('data' => $filteredData));
+        exit;
     }
 }
 
@@ -516,55 +539,89 @@ function Actualizar_Task()
     } else {
 
         $filteredData = array();
-        foreach ($data['data'] as $index => $item) {
-            // Verificar si el elemento cumple con la condición de completado y fecha dentro del mes actual
-            // if ($item['completed'] === false) {
-            // Obtener el mes actual
+
+        foreach (($data['data'] ?? []) as $index => $item) {
+
             $currentMonth = date('m');
-            // Obtener el mes de la fecha de vencimiento del elemento
-            $dueMonth = date('m', $item['due_on'] ? strtotime($item['due_on']) : 0);
 
-            // Verificar si el mes de vencimiento es igual al mes actual
-            if ($dueMonth === $currentMonth) {
-                //Si no contiene la etiqueta "Cargado en Sistema Caddy"
-                // if($item['tags'][0]['gid']<>"1206857892421559"){
+            // due_on puede no existir o ser null
+            $dueOn = $item['due_on'] ?? null;
+            if (!$dueOn) {
+                continue; // sin fecha -> no entra al filtro del mes
+            }
 
-                $existeTag = false;
+            $ts = strtotime($dueOn);
+            if ($ts === false) {
+                continue; // fecha inválida
+            }
 
-                foreach ($item['tags'] as $tag) {
-                    if ($tag['gid'] === '1206857892421559') {
-                        $existeTag = true;
-                        break; // Si se encuentra el tag, no es necesario seguir iterando
-                    }
+            $dueMonth = date('m', $ts);
+
+            if ($dueMonth !== $currentMonth) {
+                continue;
+            }
+
+            // tags puede no existir o no ser array
+            $tags = (isset($item['tags']) && is_array($item['tags'])) ? $item['tags'] : array();
+
+            $existeTag = false;
+            foreach ($tags as $tag) {
+                if (($tag['gid'] ?? '') === '1206857892421559') {
+                    $existeTag = true;
+                    break;
                 }
+            }
 
-                if ($existeTag) {
-                    $sql = $mysqli->query("SELECT Modificar_Fecha_entrega,FechaEntrega FROM Tareas WHERE gid_asana='" . $item['gid'] . "'");
-                    $row = $sql->fetch_assoc();
+            if (!$existeTag) {
+                continue;
+            }
 
-                    //AUTORIZO A MODIFICAR FECHA
-                    if ($row['Modificar_Fecha_entrega'] == 1) {
+            // assignee puede ser null
+            $responsable = $item['assignee']['name'] ?? '';
 
-                        if ($row['FechaEntrega'] <> $item['due_on']) {
-                            $Modifica_Fecha_obs = "Se modifico la Fecha de Entrega para " . $item['due_on'];
-                        } else {
-                            $Modifica_Fecha_obs = "";
-                        }
+            $gid = $item['gid'] ?? '';
+            if ($gid === '') continue;
 
-                        $sql = $mysqli->query("UPDATE `Tareas` SET `NombreTarea`='" . $item['name'] . "',`Descripcion`='" . $item['notes'] . "',
-                        `Responsable`='" . $item['assignee']['name'] . "',`FechaEntrega`='" . $item['due_on'] . "',`Estado`='" . ($item['completed'] ? 'true' : 'false') . "',`Modificar_Fecha_obs`= '" . $Modifica_Fecha_obs . "' WHERE `gid_asana`='" . $item['gid'] . "'");
-                    } else {
+            $sql = $mysqli->query("SELECT Modificar_Fecha_entrega,FechaEntrega FROM Tareas WHERE gid_asana='" . $mysqli->real_escape_string($gid) . "' LIMIT 1");
+            $row = $sql ? $sql->fetch_assoc() : null;
 
-                        if ($row['FechaEntrega'] <> $item['due_on']) {
-                            $Modifica_Fecha_obs = "Se solicito modificar la Fecha de Entrega para " . $item['due_on'];
-                        } else {
-                            $Modifica_Fecha_obs = "";
-                        }
+            // Si no existe en DB, evitá warning
+            if (!$row) {
+                continue;
+            }
 
-                        $sql = $mysqli->query("UPDATE `Tareas` SET `NombreTarea`='" . $item['name'] . "',`Descripcion`='" . $item['notes'] . "',
-                    `Responsable`='" . $item['assignee']['name'] . "',`Estado`='" . ($item['completed'] ? 'true' : 'false') . "',`Modificar_Fecha_obs`= '" . $Modifica_Fecha_obs . "' WHERE `gid_asana`='" . $item['gid'] . "'");
-                    }
-                }
+            // AUTORIZO A MODIFICAR FECHA
+            if ((int)$row['Modificar_Fecha_entrega'] === 1) {
+
+                $Modifica_Fecha_obs = ($row['FechaEntrega'] !== $dueOn)
+                    ? "Se modifico la Fecha de Entrega para " . $dueOn
+                    : "";
+
+                $mysqli->query(
+                    "UPDATE `Tareas` SET 
+            `NombreTarea`='" . $mysqli->real_escape_string($item['name'] ?? '') . "',
+            `Descripcion`='" . $mysqli->real_escape_string($item['notes'] ?? '') . "',
+            `Responsable`='" . $mysqli->real_escape_string($responsable) . "',
+            `FechaEntrega`='" . $mysqli->real_escape_string($dueOn) . "',
+            `Estado`='" . ($item['completed'] ? 'true' : 'false') . "',
+            `Modificar_Fecha_obs`='" . $mysqli->real_escape_string($Modifica_Fecha_obs) . "'
+            WHERE `gid_asana`='" . $mysqli->real_escape_string($gid) . "'"
+                );
+            } else {
+
+                $Modifica_Fecha_obs = ($row['FechaEntrega'] !== $dueOn)
+                    ? "Se solicito modificar la Fecha de Entrega para " . $dueOn
+                    : "";
+
+                $mysqli->query(
+                    "UPDATE `Tareas` SET 
+            `NombreTarea`='" . $mysqli->real_escape_string($item['name'] ?? '') . "',
+            `Descripcion`='" . $mysqli->real_escape_string($item['notes'] ?? '') . "',
+            `Responsable`='" . $mysqli->real_escape_string($responsable) . "',
+            `Estado`='" . ($item['completed'] ? 'true' : 'false') . "',
+            `Modificar_Fecha_obs`='" . $mysqli->real_escape_string($Modifica_Fecha_obs) . "'
+            WHERE `gid_asana`='" . $mysqli->real_escape_string($gid) . "'"
+                );
             }
         }
     }
@@ -709,4 +766,54 @@ function Create_task($projects, $name, $notes, $due_on, $assignee, $workspace)
     }
 }
 
+function cargarUsuariosAsana()
+{
+    global $mysqli;
+
+    $sql = $mysqli->query("SELECT * FROM Api WHERE id='2'");
+    $row = $sql->fetch_array(MYSQLI_ASSOC);
+
+    $curl = curl_init();
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://app.asana.com/api/1.0/users',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'GET',
+        CURLOPT_HTTPHEADER => array(
+            'accept: application/json',
+            'authorization: Bearer  ' . $row['token'],
+        )
+    ));
+
+
+    $response = curl_exec($curl);
+    $data = json_decode($response, true);
+
+    curl_close($curl);
+
+    if (isset($data['errors']) && count($data['errors']) > 0) {
+        foreach ($data['errors'] as $error) {
+            // Verificar si el mensaje de error indica un token expirado
+            if (strpos($error['message'], 'The bearer token has expired') !== false) {
+                // Manejar el caso de token expirado aquí
+                //  return 0;
+                refresh_token();
+                cargarUsuariosAsana();
+            }
+        }
+    } else {
+
+        // Construir la respuesta
+        $response_array = array();
+        $response_array['num_elements'] = count($data['data']);
+        $response_array['data'] = $data['data'];
+
+        // Devolver la respuesta JSON
+        return json_encode($response_array);
+    }
+}
 ?>

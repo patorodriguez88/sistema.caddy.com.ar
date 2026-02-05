@@ -91,7 +91,7 @@ async function abrirModalCargar(no, el) {
         if (v.Marca || v.Modelo) {
           setText(
             "#datos_vehiculo",
-            `${v.Marca ?? ""} ${v.Modelo ?? ""}`.trim()
+            `${v.Marca ?? ""} ${v.Modelo ?? ""}`.trim(),
           );
         }
       }
@@ -131,7 +131,7 @@ async function abrirModalCargar(no, el) {
     if (veh.Marca || veh.Modelo)
       setText(
         "#datos_vehiculo",
-        `${veh.Marca ?? ""} ${veh.Modelo ?? ""}`.trim()
+        `${veh.Marca ?? ""} ${veh.Modelo ?? ""}`.trim(),
       );
   }
 
@@ -164,7 +164,7 @@ async function abrirModalCargar(no, el) {
   // —— Helpers internos —— //
   function addLoader($container) {
     const $wrap = $(
-      '<div class="loading-overlay" style="position:relative;"></div>'
+      '<div class="loading-overlay" style="position:relative;"></div>',
     );
     const $spinner = $(`
       <div class="position-absolute top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center"
@@ -254,9 +254,10 @@ $("#formCargarOrden").on("submit", function (e) {
 
 //CERRAR ORDEN
 function cerrarOrden(orden) {
-  $("#form_cerrar_orden_div").css("display", "block");
+  // $("#form_cerrar_orden_div").css("display", "block");
+  $("#modal_cerrar_orden").modal("show");
   $("#fechas_ordenes").css("display", "none");
-  $("#div_ordenes").css("display", "none");
+  // $("#div_ordenes").css("display", "none");
   $("#numero_orden").val(orden);
   $.ajax({
     type: "POST",
@@ -279,7 +280,7 @@ function cerrarOrden(orden) {
           response.msg,
           "bottom-right",
           "#fff",
-          "warning"
+          "warning",
         );
       }
     },
@@ -289,7 +290,7 @@ function cerrarOrden(orden) {
         "No se pudo consultar la orden",
         "bottom-right",
         "#fff",
-        "danger"
+        "danger",
       );
     },
   });
@@ -412,7 +413,7 @@ function guardarOrden() {
           "Error",
           (respuesta && (respuesta.mensaje || respuesta.error)) ||
             "No se pudo guardar la orden",
-          "error"
+          "error",
         );
       }
     },
@@ -428,7 +429,7 @@ function guardarOrden() {
         `Fallo la comunicación (${xhr.status} - ${status}).\n${(
           xhr.responseText || ""
         ).slice(0, 300)}`,
-        "error"
+        "error",
       );
     },
   });
@@ -489,7 +490,7 @@ $("#agregar_orden").click(function () {
       //numero de orden
       $("#orden_number").val(respuesta.proximo_id_logistica);
       $("#select_recorridos_text").text(
-        "Próximo Recorrido: " + respuesta.proximo_recorrido
+        "Próximo Recorrido: " + respuesta.proximo_recorrido,
       );
 
       //recorrido
@@ -504,7 +505,7 @@ $("#agregar_orden").click(function () {
           hoy.toLocaleTimeString("es-AR", {
             hour: "2-digit",
             minute: "2-digit",
-          })
+          }),
         );
 
         let $select = $("#select_recorridos");
@@ -514,7 +515,7 @@ $("#agregar_orden").click(function () {
 
         respuesta.recorridos.forEach(function (recorrido) {
           $select.append(
-            `<option value="${recorrido.Numero}">Recorrido ${recorrido.Numero} - ${recorrido.Nombre}</option>`
+            `<option value="${recorrido.Numero}">Recorrido ${recorrido.Numero} - ${recorrido.Nombre}</option>`,
           );
         });
         // nombre_recorrido_new();
@@ -524,7 +525,7 @@ $("#agregar_orden").click(function () {
             $("<option>", {
               value: respuesta.proximo_recorrido,
               text: "Recorrido " + respuesta.proximo_recorrido,
-            })
+            }),
           )
           .val(respuesta.proximo_recorrido)
           .trigger("change");
@@ -580,7 +581,7 @@ $("#agregar_orden").click(function () {
 
         let caddyGroup = $('<optgroup label="Vehiculo de Caddy"></optgroup>');
         let externosGroup = $(
-          '<optgroup label="Vehiculo de Externos"></optgroup>'
+          '<optgroup label="Vehiculo de Externos"></optgroup>',
         );
 
         respuesta.vehiculos.forEach(function (vehiculo) {
@@ -631,7 +632,7 @@ function init_datatable(fechas) {
   var new_date_2 = new_date_1[1] + "/" + new_date_1[0] + "/" + new_date_1[2];
 
   $("#header_ordenes").html(
-    "Ordenes de Salida Fechas Desde " + new_date2 + " Hasta " + new_date_2
+    "Ordenes de Salida Fechas Desde " + new_date2 + " Hasta " + new_date_2,
   );
   $("#div_ordenes").css("display", "block");
   var datatable = $("#ordenes").DataTable({
@@ -654,23 +655,20 @@ function init_datatable(fechas) {
       {
         data: "NumerodeOrden",
         render: function (data, type, row) {
-          return `<h6 class="muted">${row.NumerodeOrden}</h6>`;
+          return `<td>${row.NumerodeOrden}</td>`;
         },
       },
       {
         data: "Fecha",
         render: function (data, type, row) {
           let fecha = row.Fecha.split("-").reverse().join("/");
-          return (
-            `<td>${fecha}</td>` +
-            `<h6 class="muted">S:${row.Hora}</br>R:${row.HoraRetorno}</h6>`
-          );
+          return `<td>${fecha}</br>S:${row.Hora}</br>R:${row.HoraRetorno}</td>`;
         },
       },
       {
         data: "NombreChofer",
         render: function (data, type, row) {
-          return `<td>${row.NombreChofer}</td><h6 class="muted">${row.NombreChofer2}</h6>`;
+          return `<td>${row.NombreChofer}</td><td>${row.NombreChofer2}</td>`;
         },
       },
       {
@@ -683,7 +681,7 @@ function init_datatable(fechas) {
         data: "Recorrido",
 
         render: function (type, data, row) {
-          return `<td><small>${row.Recorrido}</small></br><h6>${row.Nombre}</h6></td>`;
+          return `<td><small>${row.Recorrido}</small></br><td>${row.Nombre}</td>`;
         },
       },
       {
@@ -691,7 +689,7 @@ function init_datatable(fechas) {
         render: function (data, type, row) {
           return (
             `<td>${row.KilometrosRecorridos} Km.</td>` +
-            `<h6 class="muted">${row.Kilometros} - ${row.KilometrosRegreso}</h6>`
+            `<td class="muted">${row.Kilometros} - ${row.KilometrosRegreso}</td>`
           );
         },
       },
@@ -711,15 +709,7 @@ function init_datatable(fechas) {
             color = "danger";
           }
 
-          return (
-            '<td><h5><span class="badge badge-' +
-            color +
-            '"> <b>' +
-            facturado +
-            "</b></span></h5></tr>$ " +
-            formatoMoneda +
-            "</td>"
-          );
+          return `<td><h6><span class="badge bg-${color}"> <b>${facturado}</b></span></h6></td>\$ ${formatoMoneda}</td>`;
         },
       },
       {
@@ -732,8 +722,7 @@ function init_datatable(fechas) {
           } else if (row.Estado == "Cargada") {
             var estado = "success";
           }
-          return `<td><h5><span class="badge bg-${estado}"> <b>${row.Estado}</b></span></h5></td>`;
-          // return row.Estado;
+          return `<td><h6><span class="badge bg-${estado}"> <b>${row.Estado}</b></span></h6></td>`;
         },
       },
       {
@@ -750,7 +739,7 @@ function init_datatable(fechas) {
               <a href="#" class="btn-cargar-orden" data-no="${row.NumerodeOrden}" title="Cargar Orden">
                 <i class='mdi mdi-18px mdi-upload ms-2 text-success'></i>
               </a><a href="#" onclick="cerrarOrden('${row.NumerodeOrden}');" title="Cerrar Orden">
-                <i class='mdi mdi-18px mdi-lock-check ms-2 text-warning text-white'></i>
+                <i class='mdi mdi-18px mdi-lock-check ms-2 text-danger'></i>
               </a>
             </td>`;
             // return `<td><a target="_blank" href="http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}"><i class='mdi mdi-18px mdi-file-chart-outline'></i></a></td>`;

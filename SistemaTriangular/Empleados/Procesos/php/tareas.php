@@ -1,13 +1,11 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
 include_once('../../../Conexion/Conexioni.php');
 include_once('asana_api.php');
+include_once('../../../Hubspot/task/descripcion.php');
 
 date_default_timezone_set('America/Argentina/Cordoba');
-$Usuario = $_SESSION['Usuario'];
-$Nivel = $_SESSION['Nivel'];
+$Usuario = $_SESSION['Usuario'] ?? '';
+$Nivel = (int)($_SESSION['Nivel'] ?? 0);
 
 if (isset($_POST['ObtenerTarea'])) {
     $id = intval($_POST['id']);
@@ -138,53 +136,96 @@ function file_exists_on_server($git_asana)
 
     return $num_elements;
 }
-
-function list_files_in_folder($git_asana)
+function list_files_in_folder(string $gid_asana): void
 {
-    $array_json = Get_attachments($git_asana);
+    $array_json = Get_attachments($gid_asana);
 
-    // Decodificar la cadena JSON
+    if ($array_json === null || $array_json === false || trim((string)$array_json) === '') {
+        echo '<div class="text-danger small">No se recibió respuesta de Asana (Get_attachments devolvió vacío/null).</div>';
+        return;
+    }
+
     $array_data = json_decode($array_json, true);
 
-    if (isset($array_data['data'])) {
-        foreach ($array_data['data'] as $element) {
-            // echo "gid: " . $element['gid'] . "<br>";
-            // echo "name: " . $element['name'] . "<br>";
-            // echo "resource_type: " . $element['resource_type'] . "<br>";
-            // echo "resource_subtype: " . $element['resource_subtype'] . "<br>";
-            // echo "connected_to_app: " . ($element['connected_to_app'] ? 'true' : 'false') . "<br><br>";
-
-            $file = $element['name'];
-            $extension = pathinfo($file, PATHINFO_EXTENSION);
-            $element_gid = $element['gid'];
-
-            echo '<div class="card mb-0 shadow-none border">';
-            echo '<div class="p-2">';
-            echo '<div class="row align-items-center">';
-
-            echo '<div class="col-auto">';
-            echo    '<div class="avatar-sm">';
-            echo    '<span class="avatar-title rounded">' . $extension . '</span>';
-            echo    '</div>';
-            echo '</div>';
-            echo '<div class="col ps-0">';
-            echo    '<a href="javascript:void(0);" class="text-muted fw-bold">' . $file . '</a>';
-            echo    '<p class="mb-0">7.05 MB</p>';
-            echo '</div>';
-            echo '<div class="col-auto">';
-            // echo    '<a onclick="eliminar_archivo(\''.$file.'\')" class="btn btn-link btn-lg text-muted">';
-            // echo    '<i class="dripicons-trash"></i>';
-            // echo    '</a>';
-            echo    '<a href="https://app.asana.com/app/asana/-/get_asset?asset_id=' . $element_gid . '" class="btn btn-link btn-lg text-muted">';
-            echo    '<i class="dripicons-download"></i>';
-            echo    '</a>';
-            echo '</div>';
-
-            echo '</div>';
-            echo '</div>';
-            echo '</div>';
-        }
+    if (!is_array($array_data)) {
+        echo '<div class="text-danger small">Respuesta inválida de Asana (no es JSON). Primeros 300 chars:</div>';
+        echo '<pre class="small text-muted">' . htmlspecialchars(substr((string)$array_json, 0, 300)) . '</pre>';
+        return;
     }
+    if (!is_array($array_data) || empty($array_data['data']) || !is_array($array_data['data'])) {
+        echo '<div class="text-muted small">Sin archivos adjuntos.</div>';
+        return;
+    }
+
+    foreach ($array_data['data'] as $element) {
+        if (!is_array($element)) continue;
+
+        $fileName   = (string)($element['name'] ?? 'archivo');
+        $elementGid = (string)($element['gid'] ?? '');
+
+        // Link de descarga (preferible: download_url o permanent_url si la API lo trae)
+        $downloadUrl = (string)($element['download_url'] ?? '');
+        if ($downloadUrl === '' && $elementGid !== '') {
+            $downloadUrl = "https://app.asana.com/app/asana/-/get_asset?asset_id=" . rawurlencode($elementGid);
+        }
+
+        $extension = pathinfo($fileName, PATHINFO_EXTENSION);
+        $extension = $extension !== '' ? strtoupper($extension) : 'FILE';
+
+        // Tamaño real si viene (depende de qué fields pedís en el endpoint)
+        $sizeBytes = $element['size'] ?? $element['file_size'] ?? null;
+        $sizeHuman = is_numeric($sizeBytes) ? formatBytes((int)$sizeBytes) : '';
+
+        // Escape (seguridad)
+        $fileNameEsc  = htmlspecialchars($fileName, ENT_QUOTES, 'UTF-8');
+        $extEsc       = htmlspecialchars($extension, ENT_QUOTES, 'UTF-8');
+        $downloadEsc  = htmlspecialchars($downloadUrl, ENT_QUOTES, 'UTF-8');
+
+        echo '<div class="card mb-0 shadow-none border">';
+        echo '  <div class="p-2">';
+        echo '    <div class="row align-items-center">';
+
+        echo '      <div class="col-auto">';
+        echo '        <div class="avatar-sm">';
+        echo '          <span class="avatar-title rounded">' . $extEsc . '</span>';
+        echo '        </div>';
+        echo '      </div>';
+
+        echo '      <div class="col ps-0">';
+        echo '        <a href="javascript:void(0);" class="text-muted fw-bold">' . $fileNameEsc . '</a>';
+        echo '        <p class="mb-0">' . ($sizeHuman !== '' ? $sizeHuman : '&nbsp;') . '</p>';
+        echo '      </div>';
+
+        echo '      <div class="col-auto">';
+        if ($downloadUrl !== '') {
+            echo '        <a target="_blank" rel="noopener" href="' . $downloadEsc . '" class="btn btn-link btn-lg text-muted">';
+            echo '          <i class="dripicons-download"></i>';
+            echo '        </a>';
+        } else {
+            echo '        <span class="text-muted small">Sin link</span>';
+        }
+        echo '      </div>';
+
+        echo '    </div>';
+        echo '  </div>';
+        echo '</div>';
+    }
+}
+
+/**
+ * Helper: bytes -> human readable
+ */
+function formatBytes(int $bytes): string
+{
+    if ($bytes < 1024) return $bytes . ' B';
+    $units = ['KB', 'MB', 'GB', 'TB'];
+    $i = 0;
+    $value = $bytes / 1024;
+    while ($value >= 1024 && $i < count($units) - 1) {
+        $value /= 1024;
+        $i++;
+    }
+    return number_format($value, 2) . ' ' . $units[$i];
 }
 
 
@@ -271,36 +312,58 @@ if (isset($_POST['Tareas_detalle'])) {
 
 //TAREAS LISTA
 if (isset($_POST['Tareas_lista'])) {
+    // Actualizar_Task(); // si esto hace echoes o warnings, OJO: te rompe JSON
 
-    Actualizar_Task();
+    $estadoFiltrado = (isset($_POST['Estado']) && $_POST['Estado'] !== '');
+    $estado = $_POST['Estado'] ?? '';
 
-    if ($Nivel == 1) {
+    $rows = [];
 
-        if (isset($_POST['Estado']) && $_POST['Estado'] !== '') {
-
-            $sql = $mysqli->query("SELECT * FROM Tareas WHERE Estado='" . $_POST['Estado'] . "'");
+    if ($Nivel === 1) {
+        if ($estadoFiltrado) {
+            $stmt = $mysqli->prepare("SELECT * FROM Tareas WHERE Estado = ?");
+            $stmt->bind_param("s", $estado);
         } else {
-
-            $sql = $mysqli->query("SELECT * FROM Tareas");
+            $stmt = $mysqli->prepare("SELECT * FROM Tareas");
         }
-    } elseif ($Nivel == 2) {
-
-        if ($_POST['Estado']) {
-
-            $sql = $mysqli->query("SELECT Tareas.* FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='" . $_POST['Estado'] . "'");
+    } else { // Nivel 2
+        if ($estadoFiltrado) {
+            $stmt = $mysqli->prepare("
+                SELECT t.*
+                FROM Tareas t
+                INNER JOIN usuarios u
+                  ON (
+                       (t.gid_asana <> '0' AND u.gid_asana = t.Responsable_gid)
+                    OR (t.gid_hubspot <> '0' AND u.gid_hubspot = t.Responsable_gid)
+                  )
+                WHERE u.Usuario = ?
+                  AND t.Estado = ?
+            ");
+            $stmt->bind_param("ss", $Usuario, $estado);
         } else {
-            $sql = $mysqli->query("SELECT Tareas.* FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "'");
+            $stmt = $mysqli->prepare("
+                SELECT t.*
+                FROM Tareas t
+                INNER JOIN usuarios u
+                  ON (
+                       (t.gid_asana <> '0' AND u.gid_asana = t.Responsable_gid)
+                    OR (t.gid_hubspot <> '0' AND u.gid_hubspot = t.Responsable_gid)
+                  )
+                WHERE u.Usuario = ?
+            ");
+            $stmt->bind_param("s", $Usuario);
         }
     }
 
-    $rows = array();
+    $stmt->execute();
+    $res = $stmt->get_result();
 
-    while ($row = $sql->fetch_array(MYSQLI_ASSOC)) {
-
+    while ($row = $res->fetch_assoc()) {
         $rows[] = $row;
     }
 
-    echo json_encode(array('data' => $rows));
+    echo json_encode(['data' => $rows], JSON_UNESCAPED_UNICODE);
+    exit;
 }
 
 if (isset($_POST['Tareas_comentarios_total'])) {
@@ -363,14 +426,27 @@ if (!isset($_POST['Tareas_comentarios']) || $_POST['Tareas_comentarios'] == 2) {
     }
 }
 
-//MOSTRAR ARCHIVOS
+// MOSTRAR ARCHIVOS
 if (isset($_POST['Tareas_archivos'])) {
 
-    $gid_asana = $_POST['gid_asana'];
+    $sistema = strtolower(trim((string)($_POST['sistema'] ?? 'asana'))); // compat
+    $id      = trim((string)($_POST['id'] ?? ($_POST['gid_asana'] ?? '')));
 
-    list_files_in_folder($gid_asana);
+    // ESTE ENDPOINT ES HTML (porque lo metés en $("#archivos").html(data))
+    if ($id === '' || $id === '0') {
+        echo '<div class="text-muted small">Sin archivos adjuntos.</div>';
+        exit;
+    }
+
+    if ($sistema === 'asana') {
+        list_files_in_folder($id); // <-- usar $id, NO $gid_asana
+        exit;
+    }
+
+    // HubSpot (por ahora)
+    echo '<div class="text-muted small">Sin archivos adjuntos.</div>';
+    exit;
 }
-
 //NO ACTIVO
 // if($_POST['Tareas_archivos']==1){
 
@@ -412,16 +488,30 @@ if (isset($_POST['Subir_comentario'])) {
     $Comentario = $_POST['Comentario'];
     $Fecha = date('Y-m-d');
     $Hora = date('H:i');
-    $gid_asana = $_POST['gid'];
+    $gid = $_POST['gid'];
+    $sistema = $_POST['sistema'];
 
-    //primero creo el comentario en asana
-    if (Create_story($gid_asana, $id, $Comentario)) {
+    //Crear comentario en Asana
+    if ($sistema == 'Asana') {
+        $gid_asana = $gid;
 
-        echo json_encode(array('success' => 1));
-    } else {
+        if (Create_story($gid_asana, $id, $Comentario)) {
 
-        echo json_encode(array('success' => 0));
+            echo json_encode(array('success' => 1));
+        } else {
+
+            echo json_encode(array('success' => 0, 'error' => 'Error al insertar el comentario en Asana.'));
+        }
+    } elseif ($sistema == 'hubspot') {
+
+        // Crear comentario en Hubspot
+        if (descripcion($gid, $Comentario)) {
+            echo json_encode(array('success' => 1));
+        } else {
+            echo json_encode(array('success' => 0, 'error' => 'Error al insertar el comentario en Hubspot.'));
+        }
     }
+
 
 
     // $sql = $mysqli->prepare("INSERT INTO `Tareas_comentarios`(`idTarea`, `Usuario`, `Comentario`,`Fecha`,`Hora`,`gid_asana`) VALUES (?,?,?,?,?,?)");
@@ -878,9 +968,9 @@ if (isset($_POST['Totales'])) {
         $sql_pendientes = $mysqli->query("SELECT COUNT(id) as total_pendientes, SUM(Puntos)as total_pendientes_puntos FROM Tareas WHERE Estado = 'false'");
     } else {
         // Realizar la consulta SQL para contar el total de registros en cada estado
-        $sql_totales = $mysqli->query("SELECT COUNT(id) as Total, SUM(Puntos)as Total_Puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "'");
-        $sql_finalizado = $mysqli->query("SELECT COUNT(id) as total_finalizado, SUM(Puntos)as total_finalizado_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='true'");
-        $sql_pendientes = $mysqli->query("SELECT COUNT(id) as total_pendientes, SUM(Puntos)as total_pendientes_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='false'");
+        $sql_totales = $mysqli->query("SELECT COUNT(Tareas.id) as Total, SUM(Puntos)as Total_Puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "'");
+        $sql_finalizado = $mysqli->query("SELECT COUNT(Tareas.id) as total_finalizado, SUM(Puntos)as total_finalizado_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='true'");
+        $sql_pendientes = $mysqli->query("SELECT COUNT(Tareas.id) as total_pendientes, SUM(Puntos)as total_pendientes_puntos FROM Tareas INNER JOIN usuarios ON usuarios.gid_asana = Tareas.Responsable_gid WHERE usuarios.Usuario='" . $Usuario . "' AND Tareas.Estado='false'");
     }
     // Obtener los totales de cada estado
     $row_totales = $sql_totales->fetch_assoc();
@@ -1020,25 +1110,35 @@ if (isset($_POST['Tareas_radios'])) {
 }
 
 if (isset($_POST['Tareas_lista_puntos'])) {
+
     $FechaInicio = $_POST['FechaInicio'];
-    $FechaFinal = $_POST['FechaFinal'];
-    // Consulta para obtener datos de la base de datos
-    // $sql = "SELECT FechaEntrega,Responsable,SUM(Puntos)as Puntos FROM `Tareas` WHERE FechaEntrega >='$FechaInicio' AND FechaEntrega<='$FechaFinal' GROUP BY Responsable;";
-    $sql = "SELECT FechaEntrega,Responsable,Puntos FROM `Tareas` WHERE FechaEntrega >='$FechaInicio' AND FechaEntrega<='$FechaFinal' GROUP BY Responsable;";
-    $result = $mysqli->query($sql);
+    $FechaFinal  = $_POST['FechaFinal'];
 
-    // Crear array para almacenar los datos
-    $data = array();
+    $sql = "
+        SELECT 
+            FechaEntrega,
+            Responsable,
+            Puntos
+        FROM Tareas
+        WHERE FechaEntrega >= ?
+          AND FechaEntrega <= ?
+        ORDER BY FechaEntrega
+    ";
 
-    // Verificar si hay resultados y almacenarlos en el array
-    if ($result->num_rows > 0) {
-        while ($row = $result->fetch_assoc()) {
-            $data[] = $row;
-        }
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param("ss", $FechaInicio, $FechaFinal);
+    $stmt->execute();
+
+    $result = $stmt->get_result();
+    $data = [];
+
+    while ($row = $result->fetch_assoc()) {
+        $data[] = $row;
     }
 
-    // Convertir el array a formato JSON y devolverlo
-    echo json_encode(array('data' => $data));
+    header('Content-Type: application/json');
+    echo json_encode(['data' => $data]);
+    exit;
 }
 
 if (isset($_POST['DashboardPuntos'])) {

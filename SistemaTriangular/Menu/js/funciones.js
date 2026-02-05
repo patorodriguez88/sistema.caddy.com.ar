@@ -141,6 +141,31 @@ $(document).ready(function () {
           $("#user_sucursal").html(jsonData.Sucursal);
           $("#user_iniciales").html(jsonData.Avatar);
           $("#user_nivel").html("Nivel " + jsonData.Nivel);
+          // Entorno (sandbox / produccion)
+          var entorno = (jsonData.Entorno || "").toString().toLowerCase();
+          var $badge = $("#user_entorno_badge");
+
+          if (entorno === "sandbox") {
+            $badge
+              .text("SANDBOX")
+              .removeClass()
+              .addClass("badge rounded-pill bg-warning text-dark");
+          } else if (entorno === "produccion") {
+            $badge
+              .text("CONECTADO")
+              .removeClass()
+              .addClass("badge rounded-pill bg-success text-white");
+          } else if (entorno === "local") {
+            $badge
+              .text("LOCALHOST")
+              .removeClass()
+              .addClass("badge rounded-pill bg-black text-white mt-1");
+          } else {
+            $badge
+              .text("ENTORNO DESCONOCIDO")
+              .removeClass()
+              .addClass("badge rounded-pill bg-secondary text-white");
+          }
 
           if (jsonData.Nivel == 1) {
             $("#home_cpaneladmin").css("display", "block");
@@ -219,3 +244,59 @@ $(document).ready(function () {
     },
   });
 });
+
+// ===============================
+// Google Maps Loader (1 sola vez)
+// ===============================
+//Reemplazar initMap() por
+// ensureGoogleMapsLoaded("initMap_order").then(() => {
+//  initMap();
+//}).catch((e) => {
+//  console.error(e);
+//});
+
+window.__gmapsLoaded = false;
+window.__gmapsLoadingPromise = null;
+
+window.ensureGoogleMapsLoaded = function (callbackName) {
+  if (window.__gmapsLoaded) return Promise.resolve();
+
+  if (window.__gmapsLoadingPromise) return window.__gmapsLoadingPromise;
+
+  // nombre de callback global que Google llamará cuando termine
+  const cb = callbackName || "onGoogleMapsReady";
+
+  window[cb] = function () {
+    window.__gmapsLoaded = true;
+  };
+
+  window.__gmapsLoadingPromise = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src =
+      "https://maps.googleapis.com/maps/api/js" +
+      "?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk" +
+      "&region=AR&language=es-419" +
+      "&libraries=places" +
+      "&callback=" +
+      cb +
+      "&v=weekly";
+
+    s.async = true;
+    s.defer = true;
+
+    s.onload = function () {
+      // Ojo: Google llama callback; pero por si tarda 1 tick:
+      const check = () =>
+        window.__gmapsLoaded ? resolve() : setTimeout(check, 20);
+      check();
+    };
+
+    s.onerror = function () {
+      reject(new Error("No se pudo cargar Google Maps JS"));
+    };
+
+    document.head.appendChild(s);
+  });
+
+  return window.__gmapsLoadingPromise;
+};

@@ -277,56 +277,56 @@
 
 
                 <!-- SEGUIIENTO MODAL -->
-                <div class="modal fade" id="modal_seguimiento" tabindex="-1" role="dialog" aria-hidden="true" style="display:none">
-                    <div class="modal-dialog modal-lg">
-                        <div id="modal_seguimiento_content" class="modal-content bg-primary">
-                            <div id="modal_seguimiento_header" class="modal-header">
-                                <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                            </div>
-                            <div class="modal-body">
-                                <div class="row">
-                                    <div class="col-lg-6">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h4 class="header-title mb-3">Informacion de Origen</h4>
-                                                <h5 id="cliente_origen_seguimiento"></h5>
-                                                <ul id="cliente_origen_direcccion_seguimiento" class="list-unstyled mb-0">
+                <div class="modal fade" id="modal_seguimiento" tabindex="-1" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                        <div id="modal_seguimiento_content" class="modal-content bg-primary text-white">
 
-                                                </ul>
-                                            </div>
-                                        </div>
-                                    </div> <!-- end col -->
+                            <div id="modal_seguimiento_header" class="modal-header py-2">
+                                <h5 class="modal-title" id="myCenterModalLabel">Seguimiento</h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+
+                            <div class="modal-body text-body"> <!-- text-body para que adentro sea negro si querés -->
+                                <div class="row g-3">
+
                                     <div class="col-lg-6">
                                         <div class="card">
                                             <div class="card-body">
-                                                <h4 class="header-title mb-3">Informacion de Destino</h4>
-                                                <h5 id="cliente_destino_seguimiento"></h5>
-                                                <ul id="cliente_destino_direcccion_seguimiento" class="list-unstyled mb-0">
-                                                </ul>
+                                                <h6 class="header-title mb-2">Información de Origen</h6>
+                                                <h5 id="cliente_origen_seguimiento" class="mb-2"></h5>
+                                                <ul id="cliente_origen_direcccion_seguimiento" class="list-unstyled mb-0"></ul>
                                             </div>
                                         </div>
-                                    </div> <!-- end col -->
+                                    </div>
+
+                                    <div class="col-lg-6">
+                                        <div class="card">
+                                            <div class="card-body">
+                                                <h6 class="header-title mb-2">Información de Destino</h6>
+                                                <h5 id="cliente_destino_seguimiento" class="mb-2"></h5>
+                                                <ul id="cliente_destino_direcccion_seguimiento" class="list-unstyled mb-0"></ul>
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="col-lg-12">
                                         <div class="card">
                                             <div class="card-body">
-                                                <h4 id="header_title_guia_seguimiento" class="header-title mb-3">Informacion de la Guia</h4>
-                                                <h5 id="guia_seguimiento"></h5>
-                                                <table id="info_guia_seguimiento" class="table table-sm table-centered table-borderless mb-0">
-                                                </table>
+                                                <h6 id="header_title_guia_seguimiento" class="header-title mb-2">Información de la Guía</h6>
+                                                <h5 id="guia_seguimiento" class="mb-2"></h5>
+                                                <table id="info_guia_seguimiento" class="table table-sm table-borderless mb-0"></table>
                                             </div>
                                         </div>
-                                    </div> <!-- end col -->
-                                </div>
-                                <div class="row">
+                                    </div>
+
                                     <div class="col-lg-12">
                                         <div class="card">
                                             <div class="card-body">
-                                                <h4 id="myCenterModalLabel2" class="header-title mb-3"></h4>
+                                                <h6 id="myCenterModalLabel2" class="header-title mb-2"></h6>
 
                                                 <div class="table-responsive">
                                                     <table class="table table-sm table-centered mb-0" style="font-size:10px" id="seguimiento_tabla">
-                                                        <thead class="thead-light">
+                                                        <thead class="table-light">
                                                             <tr>
                                                                 <th>Fecha</th>
                                                                 <th>Hora</th>
@@ -341,60 +341,77 @@
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td></td>
+                                                                <td></td>
                                                             </tr>
                                                         </tbody>
                                                     </table>
                                                 </div>
-                                                <!-- end table-responsive -->
+
                                             </div>
                                         </div>
-                                    </div> <!-- end col -->
-                                </div>
-                                <!-- end row -->
-                            </div>
-                        </div><!-- /.modal-content -->
-                    </div><!-- /.modal-dialog -->
-                </div><!-- /.modal -->
-                <!--END SEGUIMIENTO MODAL-->
-                <!-- Start Content-->
-                <!-- <div class="container-fluid"> -->
-                <div class="row">
-                    <div class="col-12">
-                        <div class="card shadow-sm">
-                            <div class="card-body">
-                                <h4 id="seguimiento_header" class="mb-4 fw-semibold text-uppercase">
-                                    Guías pendientes de entrega
-                                </h4>
+                                    </div>
 
-                                <div class="table-responsive">
-                                    <table
-                                        class="table table-sm table-hover table-striped align-middle mb-0"
-                                        id="seguimiento"
-                                        style="font-size: 12px">
-                                        <thead class="table-dark">
-                                            <tr>
-                                                <th>Fecha</th>
-                                                <th>Comprobante</th>
-                                                <th>Origen</th>
-                                                <th>Destino</th>
-                                                <th>Observaciones</th>
-                                                <th>Servicio</th>
-                                                <th>Recorrido</th>
-                                                <th>Acción</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <!-- Se completa dinámicamente -->
-                                        </tbody>
-                                    </table>
                                 </div>
-
                             </div>
+
+                            <div class="modal-footer py-2">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                                    Cerrar
+                                </button>
+                            </div>
+
                         </div>
                     </div>
                 </div>
-                <!-- </div> -->
+                <!--END SEGUIMIENTO MODAL-->
 
+                <!-- </div> -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="card shadow-sm">
+
+                            <!-- Header compacto -->
+                            <div class="card-header d-flex align-items-center justify-content-between py-2">
+                                <h5 id="seguimiento_header" class="mb-0 fw-semibold">
+                                    Guías pendientes de entrega
+                                </h5>
+
+                                <!-- (Opcional) acciones de header -->
+                                <!-- <div class="d-flex gap-2"> -->
+                                <!-- Ej: filtros, export, refresh -->
+                                <!-- <button class="btn btn-outline-secondary btn-sm"><i class="mdi mdi-refresh"></i></button> -->
+                                <!-- </div> -->
+                            </div>
+
+                            <div class="card-body pt-3">
+                                <!-- <div class="table-responsive"> -->
+                                <table
+                                    class="table table-sm table-hover align-middle mb-0 mt-2"
+                                    id="seguimiento"
+                                    style="font-size: 12px;">
+                                    <thead class="table-light pt-3">
+                                        <tr>
+                                            <th class="text-nowrap">Fecha</th>
+                                            <th class="text-nowrap">Comprobante</th>
+                                            <th>Origen</th>
+                                            <th>Destino</th>
+                                            <th>Observaciones</th>
+                                            <th class="text-nowrap">Servicio</th>
+                                            <th class="text-nowrap">Recorrido</th>
+                                            <th class="text-end text-nowrap">Acción</th>
+                                        </tr>
+                                    </thead>
+
+                                    <tbody>
+                                        <!-- Se completa dinámicamente -->
+                                    </tbody>
+                                </table>
+                                <!-- </div> -->
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
                 <div id="warning-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="warning-header-modalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
@@ -417,13 +434,8 @@
                     </div><!-- /.modal-dialog -->
                 </div><!-- /.modal -->
 
-
-
             </div>
             <!-- container -->
-
-            <!-- </div> -->
-            <!-- content -->
 
             <!-- Footer Start -->
             <div id="menuhyper_footer"></div>

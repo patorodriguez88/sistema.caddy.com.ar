@@ -1130,6 +1130,46 @@ function open_vehicle(v) {
         style: "decimal", // Puedes usar 'currency' para monedas u otras opciones
       };
 
+      // Asumo que el campo viene en jsonData.data[0].Activo con "Si"/"No"
+      var esActivo = jsonData.data[0].Activo === "Si";
+
+      var $switch = $("#vehicle_status_switch");
+
+      // Siempre dejo el switch en el estado correcto
+      $switch.prop("checked", esActivo);
+
+      // Limpio cualquier handler anterior para que no se dupliquen
+      $switch.off("change");
+
+      // Vuelvo a enganchar el evento una sola vez
+      $switch.on("change", function () {
+        var estado = $(this).prop("checked") ? "Activo" : "Inactivo";
+
+        $.ajax({
+          data: { Update_estado: 1, Dominio: v, Estado: estado },
+          type: "POST",
+          url: "Proceso/php/vehiculos.php",
+          success: function (response) {
+            try {
+              var jsonData = JSON.parse(response);
+              if (jsonData.success == 1) {
+                console.log("Estado actualizado correctamente");
+              } else {
+                console.log("Error al actualizar el estado");
+              }
+            } catch (e) {
+              console.error(
+                "Respuesta inválida al actualizar estado",
+                response
+              );
+            }
+          },
+          error: function (xhr, status, error) {
+            console.error("Error AJAX al actualizar estado", status, error);
+          },
+        });
+      });
+
       $("#vehicle_status").html(
         "<span class='badge badge-" +
           color +

@@ -1,8 +1,7 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
+
 //ESTO SE EJECUTAL AL ABRIR EL MODAL PARA CARGAR LA ORDEN
 
 if (isset($_POST['MonetizarRecorrido'])) {

@@ -61,7 +61,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     echo '<div class="dropdown-menu dropdown-menu-end">';
 
 
-    echo '<a target="t_blank" href="https://www.sistema.caddy.com.ar/SistemaTriangular/Logistica/Informes/HojaDeRutapdf.php?HR=' . $fila['Recorrido'] . '" role="button" class="dropdown-item"> Imprimir</a>';
+    echo '<a target="t_blank" href="Informes/HojaDeRutapdf.php?HR=' . $fila['Recorrido'] . '" role="button" class="dropdown-item"> Imprimir</a>';
     echo '<a target="t_blank" onclick="abrir_todos(' . $fila['Recorrido'] . ')" role="button" class="dropdown-item"> Abrir Todos</a>';
     //         echo  '<a id="asignacion_recorrido" role="button" class="dropdown-item">Asignar</a>';
     echo  '</div>';

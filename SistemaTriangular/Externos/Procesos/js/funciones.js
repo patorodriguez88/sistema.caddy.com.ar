@@ -42,7 +42,7 @@ $(document).on("click", "#imprimir", function () {
   // ).innerHTML;
   const nroOrden = $("#report_id").text().trim();
   const contenido = document.querySelector(
-    "#full-width-modal .modal-body"
+    "#full-width-modal .modal-body",
   ).innerHTML;
   const titulo = `Liquidación Orden #${nroOrden}`;
 
@@ -85,6 +85,9 @@ $(document).on("click", "#imprimir", function () {
 });
 //MUESTRO LA TABLA
 var datatable = $("#externos").DataTable({
+  scrollX: true,
+  autoWidth: false,
+  responsive: false,
   dom: "Bfrtip",
   buttons: ["pageLength", "copy", "excel", "pdf"],
   paging: true,
@@ -297,7 +300,7 @@ $("#button_guardar").click(function () {
           "Registro Actualizado",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
         var datatable = $("#externos").DataTable();
         datatable.ajax.reload();
@@ -389,7 +392,7 @@ $("#crear_externo").click(function () {
           notificacion,
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       } else {
         $.NotificationApp.send(
@@ -397,7 +400,7 @@ $("#crear_externo").click(function () {
           "Externo No Cargado al Sistema",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
 
@@ -430,7 +433,7 @@ $("#crear_externo").click(function () {
 
         form.classList.add("was-validated");
       },
-      false
+      false,
     );
   });
 })();
@@ -533,7 +536,7 @@ $("#desempeno_button").click(function () {
   function toggleBloqueFactura(registros) {
     // Hay algo facturable si existe al menos una fila con Rendicion == 0 y Costo_rendicion != 0
     const hayFacturable = registros.some(
-      (r) => parseInt(r.Rendicion) === 0 && _num(r.Costo_rendicion) > 0
+      (r) => parseInt(r.Rendicion) === 0 && _num(r.Costo_rendicion) > 0,
     );
 
     if (hayFacturable) {
@@ -602,7 +605,7 @@ function actualizarTotales() {
   $("#subtotal_precio").text(`$ ${formatoARS.format(subtotal)}`);
   // $("#iva_precio").text(`$ ${formatoARS.format(iva)}`);
   $("#total_final").text(
-    `Total Rendición: $ ${formatoARS.format(totalConIVA + totalCobranza)}`
+    `Total Rendición: $ ${formatoARS.format(totalConIVA + totalCobranza)}`,
   );
 }
 //FUNCION CUADRO RESUMEN
@@ -641,7 +644,7 @@ function construirResumenPorFecha() {
       columnasTarifa
         .map((t) => `<th>${nombresTarifas[t] || "Tarifa " + t}</th>`)
         .join("") +
-      "</tr>"
+      "</tr>",
   );
   // Cuerpo de tabla
   const $tbody = $("#tabla_resumen_fecha tbody");
@@ -710,7 +713,7 @@ function report(a, b, c, d, f) {
       .val()
       .replace(/(?:^|\s)\S/g, function (a) {
         return a.toUpperCase();
-      })
+      }),
   );
   $("#report_id").html(a);
   $("#report_fecha").html(c);
@@ -816,7 +819,7 @@ function report(a, b, c, d, f) {
           }
 
           return `${badge}<br><small>${parseFloat(row.Kilometros).toFixed(
-            2
+            2,
           )} km</small><br>${row.infoABM}`;
         },
       },
@@ -838,7 +841,7 @@ function report(a, b, c, d, f) {
     ${
       cobrar > 0
         ? `<div class="text-primary"><small>+ Cobranza: $${cobrar.toFixed(
-            2
+            2,
           )}</small></div>`
         : ""
     }
@@ -954,7 +957,7 @@ $("#reporte_tabla tbody").on(
     `);
     } else if ($(this).hasClass("guardar-tarifa")) {
       const nuevoPrecio = parseFloat(
-        $(this).closest("tr").find(".input-precio").val()
+        $(this).closest("tr").find(".input-precio").val(),
       );
       const nuevaObs = $(this)
         .closest("tr")
@@ -983,7 +986,7 @@ $("#reporte_tabla tbody").on(
         let cobrarHTML = "";
         if (parseFloat(row.CobrarEnvio || 0) > 0) {
           cobrarHTML = `<div class="text-primary"><small>+ Cobranza: $${parseFloat(
-            row.CobrarEnvio
+            row.CobrarEnvio,
           ).toFixed(2)}</small></div>`;
         }
 
@@ -1002,7 +1005,7 @@ $("#reporte_tabla tbody").on(
         actualizarTotales();
       }
     }
-  }
+  },
 );
 
 $("#generar_liquidacion").click(function () {
@@ -1032,7 +1035,7 @@ $("#generar_liquidacion").click(function () {
   var totalImporte = datosFinales.reduce(
     (acum, row) =>
       acum + (parseFloat(row.Precio || 0) + parseFloat(row.CobrarEnvio || 0)),
-    0
+    0,
   );
 
   const formatoARS = new Intl.NumberFormat("es-AR", {
@@ -1091,7 +1094,7 @@ function cargarTiposComprobante() {
       tipos.forEach((t) => {
         $select.append(`<option value="${t.Codigo}">${t.Descripcion}</option>`);
       });
-    }
+    },
   );
 }
 

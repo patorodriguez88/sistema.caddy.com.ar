@@ -29,7 +29,14 @@ function geocodeResult(results, status) {
 }
 
 function initialize() {
-  initMap();
+  // initMap();
+  ensureGoogleMapsLoaded("initMap_order")
+    .then(() => {
+      initMap();
+    })
+    .catch((e) => {
+      console.error(e);
+    });
   //    BuscarDireccion();
 }
 
@@ -199,7 +206,14 @@ $("#ok_servicio_modal").click(function () {
       var jsonData = JSON.parse(response);
       if (jsonData.success == 1) {
         renderizar_datos();
-        initMap();
+        // initMap();
+        ensureGoogleMapsLoaded("initMap_order")
+          .then(() => {
+            initMap();
+          })
+          .catch((e) => {
+            console.error(e);
+          });
         var datatable = $("#seguimiento").DataTable();
         datatable.ajax.reload(null, false);
 
@@ -271,7 +285,14 @@ $("#modificardir_ok").click(function () {
       $("#standard-modal-dir").modal("hide");
       var color = $("#header-title2").html();
 
-      initMap(color);
+      // initMap(color);
+      ensureGoogleMapsLoaded("initMap_order")
+        .then(() => {
+          initMap(color);
+        })
+        .catch((e) => {
+          console.error(e);
+        });
     },
   });
 });
@@ -483,7 +504,14 @@ $("#modificarrecorrido_ok").click(function () {
 
   var datatable = $("#seguimiento").DataTable();
   datatable.ajax.reload();
-  initMap();
+  // initMap();
+  ensureGoogleMapsLoaded("initMap_order")
+    .then(() => {
+      initMap();
+    })
+    .catch((e) => {
+      console.error(e);
+    });
   $("#standard-modal-rec").modal("hide");
 
   // Llamada a la API para actualizar el recorrido
@@ -506,7 +534,14 @@ $("#modificarrecorrido_ok").click(function () {
         // console.log("Seguimiento insertado:", data.seg_inserted);
         var datatable = $("#seguimiento").DataTable();
         datatable.ajax.reload();
-        initMap();
+        // initMap();
+        ensureGoogleMapsLoaded("initMap_order")
+          .then(() => {
+            initMap();
+          })
+          .catch((e) => {
+            console.error(e);
+          });
         $("#standard-modal-rec").modal("hide");
 
         // podés mostrar un Swal o refrescar tabla

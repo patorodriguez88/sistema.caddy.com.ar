@@ -10,6 +10,7 @@ if (isset($_POST['Recorridos'])) {
   LEFT JOIN Clientes ON Recorridos.Cliente=Clientes.id
   LEFT JOIN Productos ON Productos.Codigo=Recorridos.CodigoProductos
   LEFT JOIN EntregasFijas ON EntregasFijas.Recorrido=Recorridos.Numero 
+  WHERE Recorridos.Activo=1
   GROUP BY Recorridos.Numero";
 
   $Resultado = $mysqli->query($sql);

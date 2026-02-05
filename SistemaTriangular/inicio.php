@@ -1,5 +1,7 @@
+<!-- prueba develop solo -->
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="utf-8" />
     <title>Log In | Sistema Caddy New</title>
@@ -26,7 +28,9 @@
     <!-- <div id="menuhyper_header"></div> -->
 </head>
 
-<body class="authentication-bg" data-layout-config='{"darkMode":false}'>
+<!-- <body class="authentication-bg" data-layout-config='{"darkMode":false}'> -->
+
+<body class="authentication-bg" style="background-color:#4D1A50;" data-layout-config='{"darkMode":false}'>
     <div class="account-pages mt-2 mb-5">
         <div class="container">
             <div class="row justify-content-center">
@@ -70,7 +74,7 @@
                                 </div>
                                 <div class="form-group text-end">
                                     <!-- <div class="custom-control custom-checkbox"> -->
-                                    <a href="pages-recoverpw.html" class="text-muted float-right"><small>Forgot your password?</small></a>
+                                    <!-- <a href="pages-recoverpw.html" class="text-muted float-right"><small>Forgot your password?</small></a> -->
                                     <!-- <input type="checkbox" class="custom-control-input" id="checkbox-signin" checked> -->
                                     <!-- <label class="custom-control-label" for="checkbox-signin">Remember me</label> -->
                                     <!-- </div> -->
@@ -108,6 +112,9 @@
 
     </footer>
     <script src="hyper/dist/assets/js/vendor.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="/SistemaTriangular/Menu/error_swal.js"></script>
+    <script src="Funciones/js/alertas.js"></script>
     <!-- App js -->
     <script src="hyper/dist/assets/js/app.js"></script>
 </body>

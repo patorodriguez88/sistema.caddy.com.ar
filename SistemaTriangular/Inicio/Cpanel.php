@@ -56,13 +56,9 @@
                             </div>
                         </div>
                     </div>
-
-
-
-
                     <!-- MODAL VER RECORRIDO GESTYA -->
                     <!-- Full width modal -->
-                    <!-- <button  type="button" class="btn btn-primary" data-toggle="modal" data-target="#full-width-modal">Full width Modal</button> -->
+                    <!-- <button  type="button" class="btn btn-primary" data-bs-toggle="modal" data-target="#full-width-modal">Full width Modal</button> -->
 
                     <div id="full-width-modal_order" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-full-width">
@@ -71,7 +67,7 @@
                                     <h4 class="modal-title" id="fullWidthModalLabel">RECORRIDO BY GESTYA
                                     </h4>
 
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <!-- //DESDE America -->
@@ -109,7 +105,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myLargeModalLabel">Large modal</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -118,8 +114,8 @@
                                                 <div style="display:none" id="idRecorridoPendientes"></div>
                                                 <div class="card-body">
                                                     <div class="button-list">
-                                                        <button type="button" class="btn btn-secondary float-right" data-toggle="modal" data-target="#remitos-modal"><i class='mdi mdi-18px mdi-printer'></i> Imprimir Remitos</button>
-                                                        <button type="button" class="btn btn-primary float-right" data-toggle="modal" data-target="#rotulos-modal"><i class='mdi mdi-18px mdi-printer'></i> Imprimir Rótulos</button>
+                                                        <button type="button" class="btn btn-secondary float-end" data-bs-toggle="modal" data-target="#remitos-modal"><i class='mdi mdi-18px mdi-printer'></i> Imprimir Remitos</button>
+                                                        <button type="button" class="btn btn-primary float-end" data-bs-toggle="modal" data-target="#rotulos-modal"><i class='mdi mdi-18px mdi-printer'></i> Imprimir Rótulos</button>
                                                     </div>
                                                     <h4 class="header-title mt-2">LOGISTICA | HOJAS DE RUTA | ENVIOS PENDIENTES X RECORRIDO </h4>
                                                     <div class="table-responsive">
@@ -163,13 +159,13 @@
                             <div class="modal-content modal-filled bg-warning">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="fill-warning-modalLabel">ENVIAR SERVICIOS A DEPOSITO</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="deposito-modal-body" class="modal-body">
 
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                     <button id="deposito-modal-ok" type="button" class="btn btn-outline-light">Aceptar</button>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -182,7 +178,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-info">
                                     <h4 class="modal-title" id="myCenterModalLabel">Center modal</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="form-group">
@@ -191,12 +187,12 @@
                                         <p class="text-muted font-13">
                                             Esta nota es únicamente para uso interno del sector operaciones.
                                         </p>
-                                        <textarea id="notas_txt" data-toggle="maxlength" class="form-control" maxlength="225" rows="3"
+                                        <textarea id="notas_txt" data-bs-toggle="maxlength" class="form-control" maxlength="225" rows="3"
                                             placeholder="Máximo 225 caracteres."></textarea>
                                     </div>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
                                     <button id="notas-modal-ok" type="button" class="btn btn-success">Aceptar</button>
                                 </div>
 
@@ -211,14 +207,14 @@
                                 <div class="modal-header">
 
                                     <h4 class="modal-title" id="fill-primary-modalLabel">Imprimir Rótulos Recorrido </h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="body-rotulos" class="modal-body">
 
                                 </div>
                                 <div class="modal-footer">
                                     <select id="selected_device" onchange=onDeviceSelected(this);></select>
-                                    <button type="button" class="btn btn-light" data-dismiss="modal"> Cancelar </button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"> Cancelar </button>
                                     <button id="imp_rot_rec_700x200" type="button" class="btn btn-outline-light"> Imprimir 70cm. x 20 cm.</button>
                                     <button id="imp_rot_rec" type="button" class="btn btn-outline-light"> Imprimir </button>
                                     <button id="imp_rot" type="button" class="btn btn-success"> Imprimir </button>
@@ -232,13 +228,13 @@
                             <div class="modal-content modal-filled bg-secondary">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="fill-primary-modalLabel">Imprimir Remitos Recorrido </h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="body-remitos" class="modal-body">
                                 </div>
                                 <div class="modal-footer">
                                     <!--                                       <select id="selected_device" onchange=onDeviceSelected(this);></select>  -->
-                                    <button type="button" class="btn btn-light" data-dismiss="modal"> Cancelar </button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal"> Cancelar </button>
                                     <button id="imp_rem_rec" type="button" class="btn btn-outline-light"> Imprimir </button>
                                     <button id="imp_rem" type="button" class="btn btn-success"> Imprimir </button>
                                 </div>
@@ -252,7 +248,7 @@
                             <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                 <div id="modal_seguimiento_header" class="modal-header">
                                     <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -334,7 +330,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="tabla_pendientesmapa_title">Large modal</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -375,25 +371,25 @@
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
-                    <div class="row">
+                    <!-- <div class="row">
                         <div class="col-xl-12 col-lg-12">
 
-                            <div id="alerta_services" class="alert alert-warning" data-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
-                                <i class="dripicons-checkmark mr-2" id="alerta_services_label"></i>
+                            <div id="alerta_services" class="alert alert-warning" data-bs-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
+                                <i class="dripicons-checkmark ms-2" id="alerta_services_label"></i>
                             </div>
 
-                            <div id="alerta_licencias" class="alert alert-danger" data-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
-                                <i class="dripicons-checkmark mr-2" id="alerta_licencias_label"></i>
+                            <div id="alerta_licencias" class="alert alert-danger" data-bs-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
+                                <i class="dripicons-checkmark ms-2" id="alerta_licencias_label"></i>
                             </div>
-                            <div id="alerta_seguros" class="alert alert-danger" data-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
-                                <i class="dripicons-checkmark mr-2" id="alerta_seguros_label"></i>
+                            <div id="alerta_seguros" class="alert alert-danger" data-bs-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
+                                <i class="dripicons-checkmark ms-2" id="alerta_seguros_label"></i>
                             </div>
-                            <div id="alerta_itv" class="alert alert-warning" data-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
-                                <i class="dripicons-checkmark mr-2" id="alerta_itv_label"></i>
+                            <div id="alerta_itv" class="alert alert-warning" data-bs-dismiss="alert" role="alert" aria-hidden="true" style="display:none">
+                                <i class="dripicons-checkmark ms-2" id="alerta_itv_label"></i>
                             </div>
 
                         </div>
-                    </div>
+                    </div> -->
                     <!-- end page title -->
                     <div class="row" id="preventa" style='display:none'>
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
@@ -418,92 +414,114 @@
                             </div> <!-- end card-->
                         </div> <!-- end col-->
                     </div>
-                    <div class="row">
-                        <div class="col-xl-3 col-lg-6">
-                            <div class="card widget-flat">
+
+                    <div class="row g-3 mb-3">
+
+                        <!-- Envios Simples -->
+                        <div class="col-xl-3 col-lg-6 ">
+                            <div class="card widget-flat h-100">
                                 <div class="card-body">
                                     <div class="float-end">
-                                        <i class="mdi mdi-truck-check widget-icon bg-danger rounded-circle text-white"></i>
+                                        <i class="mdi mdi-truck-delivery widget-icon bg-success rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Envios Simples</h5>
-                                    <h3 class="mt-3" id="entregas_dia"></h3>
-                                    <span id="entregas_dia_flex" class="badge bg-warning text-white"></span>
-                                    <span id="entregas_dia_simple" class="badge bg-success text-white mb-1"></span>
-                                    <span class="text-nowrap" id="entregas_mes"></span><br>
-                                    <span id="envios_flex" class="badge bg-warning text-white"></span>
-                                    <span id="envios_simple" class="badge bg-success text-white"></span>
 
-                                    <!--                                                         <span class="text-nowrap" id="enviospendientes"></span> -->
+                                    <h6 class="text-muted fw-normal mt-0">Envíos Simples</h6>
+
+                                    <h3 class="mt-3 mb-1" id="entregas_dia"></h3>
+
+                                    <span id="entregas_dia_flex" class="badge bg-success text-white me-1"></span>
+                                    <span id="entregas_dia_simple" class="badge bg-warning text-white"></span>
+
+                                    <div class="mt-2">
+                                        <span class="text-muted" id="entregas_mes"></span><br>
+                                        <span id="envios_flex" class="badge bg-success text-white me-1"></span>
+                                        <span id="envios_simple" class="badge bg-warning text-white"></span>
+                                    </div>
+
+                                    <p class="mb-0 text-muted mt-2">
+                                        <span id="entregas_porc_color" class="badge bg-info me-1">
+                                            <i id="entregas_porc"></i>
+                                        </span>
+                                        <span id="entregas_mesant"></span>
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Envios Recorridos -->
+                        <div class="col-xl-3 col-lg-6">
+                            <div class="card border h-100">
+                                <div class="card-body">
+                                    <div class="float-end">
+                                        <i class="mdi mdi-truck-delivery widget-icon bg-success rounded-circle text-white"></i>
+                                    </div>
+
+                                    <h6 class="text-muted fw-normal mt-0">Envíos Recorridos</h6>
+
+                                    <h3 class="mt-3 mb-2" id="entregasr_dia"></h3>
+
                                     <p class="mb-0 text-muted">
-                                        <span id="entregas_porc_color" class="badge bg-info mr-1">
-                                            <i id="entregas_porc"></i> </span>
-                                        <span class="text-nowrap" id="entregas_mesant"></span>
+                                        <span id="entregasr_porc_color" class="badge bg-info text-white me-1">
+                                            <i id="entregasr_porc"></i>
+                                        </span>
+                                        <span id="entregasr_mesant"></span>
                                     </p>
                                 </div>
                             </div>
-                        </div> <!-- end col-->
+                        </div>
 
+                        <!-- Clientes Activos -->
                         <div class="col-xl-3 col-lg-6">
-                            <div class="card bg-light border">
-                                <div class="card-body">
-                                    <div class="float-end">
-                                        <i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i>
-                                    </div>
-                                    <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Envios Recorridos</h5>
-                                    <h3 class="card-subtitle mt-3 mb-3" id="entregasr_dia"></h3>
-                                    <p class="card-text text-muted">
-                                        <span id="entregasr_porc_color" class="badge bg-info text-white mr-1">
-                                            <i id="entregasr_porc" class="fas fa-arrow-up"></i> </span>
-                                        <span class="text-nowrap" id="entregasr_mesant"></span>
-                                    </p>
-                                </div>
-                            </div>
-                        </div> <!-- end col-->
-
-                        <div class="col-xl-3 col-lg-6">
-                            <div class="card">
+                            <div class="card h-100">
                                 <div class="card-body">
                                     <div class="float-end">
                                         <i class="mdi mdi-account-multiple widget-icon bg-danger rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Clientes Activos</h5>
-                                    <p class="card-text text-muted">
-                                    <h3 class="mt-3 mb-3" id="clientes_dia"></h3>
-                                    <span class="text-nowrap" id="clientes_mes"></span>
-                                    </p>
-                                    <p class="card-text text-muted">
-                                        <span id="clientes_porc_color" class="badge badge-info mr-1">
-                                            <i id="clientes_porc"></i> </span>
-                                        <span class="text-nowrap" id="clientes_mesant"></span>
+
+                                    <h6 class="text-muted fw-normal mt-0">Clientes Activos</h6>
+
+                                    <h3 class="mt-3 mb-2" id="clientes_dia"></h3>
+                                    <span class="text-muted" id="clientes_mes"></span>
+
+                                    <p class="mb-0 text-muted mt-2">
+                                        <span id="clientes_porc_color" class="badge bg-info me-1">
+                                            <i id="clientes_porc"></i>
+                                        </span>
+                                        <span id="clientes_mesant"></span>
                                     </p>
                                 </div>
                             </div>
-                        </div> <!-- end col-->
+                        </div>
 
+                        <!-- Kilometros -->
                         <div class="col-xl-3 col-lg-6">
-                            <div class="card widget-flat border-0 shadow-none">
+                            <div class="card border-0 shadow-none h-100">
                                 <div class="card-body">
                                     <div class="float-end">
                                         <i class="mdi mdi-truck-fast widget-icon bg-danger rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="card-title text-muted mt-0" title="Revenue">Kilometros Recorridos</h5>
-                                    <h3 class="card-subtitle mt-3 mb-3" id="kilometros_dia"></h3>
-                                    <p class="card-text text-muted">
-                                        <span id="kilometros_porc_color" class="badge bg-info text-white mr-1">
-                                            <i id="kilometros_porc"></i> </span>
-                                        <span class="text-nowrap" id="kilometros_mesant"></span>
+
+                                    <h6 class="text-muted fw-normal mt-0">Kilómetros Recorridos</h6>
+
+                                    <h3 class="mt-3 mb-2" id="kilometros_dia"></h3>
+
+                                    <p class="mb-0 text-muted">
+                                        <span id="kilometros_porc_color" class="badge bg-info text-white me-1">
+                                            <i id="kilometros_porc"></i>
+                                        </span>
+                                        <span id="kilometros_mesant"></span>
                                     </p>
                                 </div>
                             </div>
-                        </div> <!-- end col-->
+                        </div>
+                    </div>
 
-                    </div> <!-- end row -->
                     <!-- end row-->
                     <div class="row">
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <a target="_blank" href="https://www.caddy.com.ar/SistemaTriangular/Logistica/SalidasdeHoy.php" class="btn btn-outline-warning btn-rounded float-right mb-3">
+                                    <a target="_blank" href="https://www.caddy.com.ar/SistemaTriangular/Logistica/SalidasdeHoy.php" class="btn btn-outline-warning btn-rounded float-end mb-3">
                                         <i class='mdi mdi-18px mdi-map-search-outline'></i>Abrir Mapa</a>
                                     </a>
                                     <h4 class="header-title mt-2"> Transporte </h4>
@@ -536,8 +554,8 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <a href="" class="btn btn-sm btn-link float-right mb-3">Export
-                                        <!--                                         <i class="mdi mdi-download ml-1"></i> -->
+                                    <a href="" class="btn btn-sm btn-link float-end mb-3">Export
+                                        <!--                                         <i class="mdi mdi-download ms-1"></i> -->
                                     </a>
                                     <h4 class="header-title mt-2">LOGISTICA | HOJAS DE RUTA ACTIVAS</h4>
                                     <p class="text-muted font-14 mb-3">
@@ -567,8 +585,8 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <!--                                     <a href="" class="btn btn-sm btn-link float-right mb-3">Export
-                                        <i class="mdi mdi-download ml-1"></i>
+                                    <!--                                     <a href="" class="btn btn-sm btn-link float-end mb-3">Export
+                                        <i class="mdi mdi-download ms-1"></i>
                                     </a> -->
                                     <h4 class="header-title mt-2">LOGISTICA | ENVIOS PENDIENTES</h4>
                                     <p class="text-muted font-14 mb-3">
@@ -598,8 +616,8 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <!--                                         <a href="" class="btn btn-sm btn-link float-right mb-3">Export
-                                            <i class="mdi mdi-download ml-1"></i>
+                                    <!--                                         <a href="" class="btn btn-sm btn-link float-end mb-3">Export
+                                            <i class="mdi mdi-download ms-1"></i>
                                         </a> -->
                                     <h4 class="header-title mt-2">Flota</h4>
 
@@ -697,7 +715,7 @@
                                 <label class="form-check-label p-0 avatar-md w-100" for="customizer-layout02">
                                     <span class="d-flex h-100 flex-column">
                                         <span class="bg-light d-flex p-1 align-items-center border-bottom border-secondary border-opacity-25">
-                                            <span class="d-block p-1 bg-dark-lighten rounded me-1"></span>
+                                            <span class="d-block p-1 bg-dark-lighten rounded ms1"></span>
                                             <span class="d-block border border-3 border-secondary border-opacity-25 rounded ms-auto"></span>
                                             <span class="d-block border border-3 border-secondary border-opacity-25 rounded ms-1"></span>
                                             <span class="d-block border border-3 border-secondary border-opacity-25 rounded ms-1"></span>
@@ -741,7 +759,7 @@
                                         <div id="topnav-color" class="bg-white rounded-2 h-100">
                                             <span class="d-flex h-100 flex-column">
                                                 <span class="bg-light d-flex p-1 align-items-center border-bottom border-secondary border-opacity-25">
-                                                    <span class="d-block p-1 bg-dark-lighten rounded me-1"></span>
+                                                    <span class="d-block p-1 bg-dark-lighten rounded ms1"></span>
                                                     <span class="d-block border border-3 border-secondary border-opacity-25 rounded ms-auto"></span>
                                                     <span class="d-block border border-3 border-secondary border-opacity-25 rounded ms-1"></span>
                                                     <span class="d-block border border-3 border-secondary border-opacity-25 rounded ms-1"></span>
