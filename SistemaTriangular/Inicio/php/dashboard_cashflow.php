@@ -2,7 +2,7 @@
 include_once "../../Conexion/Conexioni.php";
 
 $año = isset($_POST['anio']) ? intval($_POST['anio']) : date('Y');
-$año = 2024;
+// $año = 2025;
 // 1. SALDO INICIAL
 $query1 = "
     SELECT SUM(Debe) - SUM(Haber) AS saldo_inicial
