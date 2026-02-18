@@ -190,7 +190,7 @@ if (isset($in['ActualizaRecorrido'])) {
                 $Devuelto,
                 $NO,
                 $Destino,
-                $Estado,
+                $Estado_id,
                 $state_id,
                 $status
             );
@@ -219,7 +219,7 @@ if (isset($in['ActualizaRecorrido'])) {
         $mysqli->rollback();
         echo json_encode([
             'success' => 0,
-            'message' => $e->getMessage()
+            'message' => $e->getMessage(),
         ]);
         exit;
     }
