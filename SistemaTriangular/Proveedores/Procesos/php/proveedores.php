@@ -6,6 +6,10 @@ error_reporting(E_ALL);
 // Incluye la conexión a la base de datos
 include_once "../../../Conexion/Conexioni.php";
 
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 // Verifica si se ha solicitado cargar los proveedores

@@ -1,6 +1,9 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
 
 if (isset($_POST['Cuentas'])) {
 
