@@ -10,6 +10,36 @@ if (!isset($mysqli)) {
     include_once '../../../Conexion/Conexioni.php';
 }
 
+//LOGIN
+if (isset($_POST['login_wepoint'])) {
+    $curl = curl_init();
+
+    curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://sandbox-lv.wepoint.ar/api/auth/login',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => '{
+        "email": "prodriguez@caddy.com.ar",
+        "password": "pato4986"
+        }',
+        CURLOPT_HTTPHEADER => array(
+            'Accept: application/json',
+            'Content-Type: application/json'
+        ),
+    ));
+
+    $response = curl_exec($curl);
+
+    curl_close($curl);
+    echo $response;
+}
+
+
 /** ===========================================================
  * PRECHECK EGRESO: cuenta cuántos códigos de la orden tienen id_wepoint (id_bulto) y devuelve el detalle
  * POST: PrecheckEgreso=1, NumerodeOrden
@@ -181,132 +211,6 @@ if (isset($_POST['PrecheckEgreso']) && (int)$_POST['PrecheckEgreso'] === 1) {
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
-
-
-
-
-// === Handler: Detalle pieza a pieza para egreso (por Número de Orden) ===
-// if (isset($_POST['DetalleEgresoPorOrden']) && (int)$_POST['DetalleEgresoPorOrden'] === 1) {
-
-//     header('Content-Type: application/json; charset=utf-8');
-
-//     $orden = isset($_POST['NumerodeOrden']) ? (int)$_POST['NumerodeOrden'] : 0;
-//     if ($orden <= 0) {
-//         http_response_code(400);
-//         echo json_encode(['ok' => false, 'message' => 'Falta NumerodeOrden']);
-//         exit;
-//     }
-//     if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
-//         http_response_code(500);
-//         echo json_encode(['ok' => false, 'message' => 'No hay conexión a base de datos ($mysqli)']);
-//         exit;
-//     }
-
-//     // 1) Bases + cantidades
-//     $bases = [];
-//     $sqlB = "SELECT tc.CodigoSeguimiento AS base,
-//                     CASE WHEN COALESCE(tc.Cantidad,1) > 0 THEN COALESCE(tc.Cantidad,1) ELSE 1 END AS cant
-//              FROM HojaDeRuta hr
-//              JOIN TransClientes tc ON tc.id = hr.idTransClientes
-//              WHERE hr.NumerodeOrden = ? AND hr.Eliminado = 0";
-//     if ($st = $mysqli->prepare($sqlB)) {
-//         $st->bind_param('i', $orden);
-//         $st->execute();
-//         $res = $st->get_result();
-//         while ($r = $res->fetch_assoc()) {
-//             $b = (string)$r['base'];
-//             $c = (int)$r['cant'];
-//             if ($b === '') continue;
-//             if (!isset($bases[$b])) $bases[$b] = 0;
-//             $bases[$b] += max(1, $c);
-//         }
-//         $st->close();
-//     }
-
-//     if (empty($bases)) {
-//         echo json_encode(['ok' => true, 'total' => 0, 'listos' => 0, 'pendientes' => 0, 'data' => ['items' => []]]);
-//         exit;
-//     }
-
-//     // 2) Traer enviados (tipo IN) para esos bases
-//     $placeholders = implode(',', array_fill(0, count($bases), '?'));
-//     $types = str_repeat('s', count($bases));
-//     $params = array_keys($bases);
-
-//     $sqlW = "SELECT CodigoSeguimiento, CodigoSeguimiento_enviado, id_wepoint,Time
-//              FROM wepoint_api
-//              WHERE tipo='IN' AND CodigoSeguimiento IN ($placeholders)";
-//     $enviadosSet = []; // codigo_enviado => ['id_wepoint'=>int,'time'=>string|null]
-//     if ($st = $mysqli->prepare($sqlW)) {
-//         $st->bind_param($types, ...$params);
-//         $st->execute();
-//         $res = $st->get_result();
-//         while ($r = $res->fetch_assoc()) {
-//             $enviado = (string)$r['CodigoSeguimiento_enviado'];
-//             $idw     = (int)($r['id_wepoint'] ?? 0);
-//             $time    = isset($r['Time']) ? (string)$r['Time'] : null;
-//             if ($enviado !== '' && $idw > 0) {
-//                 $enviadosSet[$enviado] = [
-//                     'id_wepoint' => $idw,
-//                     'time'       => $time,
-//                 ];
-//             }
-//         }
-//         $st->close();
-//     }
-
-//     // 3) Generar piezas esperadas y clasificar
-//     $items = [];
-//     $total = 0;
-//     $ok = 0;
-//     foreach ($bases as $base => $cant) {
-//         if ($cant <= 1) {
-//             $codigoPieza = $base;
-//             $envInfo = $enviadosSet[$codigoPieza] ?? null;
-//             $idw  = $envInfo && isset($envInfo['id_wepoint']) ? (int)$envInfo['id_wepoint'] : 0;
-//             $time = $envInfo && isset($envInfo['time']) ? (string)$envInfo['time'] : null;
-//             $items[] = [
-//                 'base' => $base,
-//                 'pieza' => 1,
-//                 'codigo_enviado' => $codigoPieza,
-//                 'time' => $time,
-//                 'id_wepoint' => $idw,
-//                 'estado' => $idw ? 'ENVIADO' : 'PENDIENTE'
-//             ];
-//             $total += 1;
-//             if ($idw) $ok += 1;
-//         } else {
-//             for ($i = 1; $i <= $cant; $i++) {
-//                 $codigoPieza = $base . '_' . $i;
-//                 $envInfo = $enviadosSet[$codigoPieza] ?? null;
-//                 $idw  = $envInfo && isset($envInfo['id_wepoint']) ? (int)$envInfo['id_wepoint'] : 0;
-//                 $time = $envInfo && isset($envInfo['time']) ? (string)$envInfo['time'] : null;
-//                 $items[] = [
-//                     'base' => $base,
-//                     'pieza' => $i,
-//                     'codigo_enviado' => $codigoPieza,
-//                     'time' => $time,
-//                     'id_wepoint' => $idw,
-//                     'estado' => $idw ? 'ENVIADO' : 'PENDIENTE'
-//                 ];
-//                 $total += 1;
-//                 if ($idw) $ok += 1;
-//             }
-//         }
-//     }
-
-//     echo json_encode([
-//         'ok' => true,
-//         'total' => $total,
-//         'listos' => $ok,
-//         'pendientes' => $total - $ok,
-//         'data' => ['items' => $items]
-//     ], JSON_UNESCAPED_UNICODE);
-//     exit;
-// }
-
-
-
 
 
 // === Handler: Detalle pieza a pieza para egreso (por Número de Orden) ===
