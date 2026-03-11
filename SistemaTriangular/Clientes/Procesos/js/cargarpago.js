@@ -1,3 +1,62 @@
+function resetFormularioPago() {
+  // Fecha
+  $("#fecha_pago").val(hoyISO());
+
+  // Importes
+  $("#importe_efectivo").val(0);
+  $("#importe_transferencia").val(0);
+  $("#importe_cheque").val(0);
+  $("#importe_transferencia_mp").val(0);
+  $("#fee_transferencia_mp").val(0);
+
+  // Números / descripciones
+  $("#numero_transferencia").val("");
+  $("#numero_transferencia_mp").val("");
+  $("#numero_cheque").val("");
+  $("#banco_cheque").val("");
+  $("#descripcion_transferencia_mp").val("");
+
+  // Fechas asociadas
+  $("#fecha_transferencia").val("");
+  $("#fecha_transferencia_mp").val("");
+  $("#fecha_cheque").val("");
+
+  // UI
+  $("#mercadopago_api").hide();
+  $("#status_mp").html("");
+  $("#confirmarpago_botton").prop("disabled", true);
+}
+function noComa(e) {
+  const key = e.key;
+
+  if (key === ",") {
+    e.preventDefault();
+  }
+}
+function formatearARS(valor) {
+  valor = valor.replace(/\D/g, "");
+
+  if (valor === "") return "";
+
+  let numero = parseInt(valor, 10) / 100;
+
+  return numero.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+  });
+}
+$(".input-moneda").on("input", function () {
+  let valor = $(this).val();
+
+  let limpio = valor.replace(/\D/g, "");
+
+  $(this).val(formatearARS(limpio));
+});
+
+$("#standard-modal").on("show.bs.modal", function () {
+  resetFormularioPago();
+});
 $("#search_mp").click(function () {
   let op = $("#noperacion_mp").val();
 
@@ -28,7 +87,7 @@ $("#search_mp").click(function () {
             $("#numero_transferencia_mp").val(jsonData.data.collector_id);
 
             $("#importe_transferencia_mp").val(
-              jsonData.data.transaction_amount
+              jsonData.data.transaction_amount,
             );
 
             var fecha = jsonData.data.date_approved;
@@ -43,13 +102,7 @@ $("#search_mp").click(function () {
 
             $("#confirmarpago_botton").prop("disabled", false);
           } else {
-            $.NotificationApp.send(
-              "Error !",
-              jsonData.data.message,
-              "bottom-right",
-              "#FFFFFF",
-              "danger"
-            );
+            alerta("error", "Error!", jsonData.data.message);
           }
         }
       },
@@ -86,31 +139,20 @@ $("#confirmarpago_botton").click(function () {
       },
       url: "Procesos/php/cargarpago_mp.php",
       type: "post",
-      beforeSend: function () {
-        $("#standard-modal").modal("hide");
-        $("#info-alert-modal").modal("show");
-        $("#info-alert-modal").modal({ backdrop: "static", keyboard: false });
-      },
-      success: function (response) {
-        var jsonData = JSON.parse(response);
+      dataType: "json",
 
+      beforeSend: function () {},
+
+      success: function (jsonData) {
         if (jsonData.success == 1) {
-          $.NotificationApp.send(
-            "Exito !",
-            "Pago cargado con exito",
-            "bottom-right",
-            "#FFFFFF",
-            "success"
-          );
+          toast("success", "Éxito", "Pago cargado con éxito");
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            "Pago no cargado",
-            "bottom-right",
-            "#FFFFFF",
-            "danger"
-          );
+          alerta("error", "Error", "Pago no cargado");
         }
+      },
+
+      error: function (xhr) {
+        alerta("error", "Error del servidor", xhr.responseText);
       },
     });
   } else {
@@ -153,56 +195,31 @@ $("#confirmarpago_botton").click(function () {
           },
           url: "Procesos/php/cargarpago.php",
           type: "post",
-          beforeSend: function () {
-            $("#standard-modal").modal("hide");
-            $("#info-alert-modal").modal("show");
-            $("#info-alert-modal").modal({
-              backdrop: "static",
-              keyboard: false,
-            });
-          },
-          success: function (response) {
-            var jsonData = JSON.parse(response);
+          dataType: "json",
+
+          beforeSend: function () {},
+
+          success: function (jsonData) {
             if (jsonData.success == "1") {
-              $.NotificationApp.send(
-                "Exito !",
-                "Se han realizado cambios.",
-                "bottom-right",
-                "#FFFFFF",
-                "success"
-              );
-              //DESTRUIMOS LA TABLA BASIC
-              var table_basic = $("#basic").DataTable();
-              table_basic.ajax.reload();
+              $("#standard-modal").modal("hide"); //cerrar standard-modal
+              toast("success", "Éxito", "Pago cargado con éxito");
+              $("#basic").DataTable().ajax.reload();
             } else {
-              $.NotificationApp.send(
-                "Ocurrio un Error !",
-                "No se realizaron cambios.",
-                "bottom-right",
-                "#FFFFFF",
-                "danger"
-              );
+              toast("error", "Error", "Pago no cargado");
             }
-            $("#info-alert-modal").modal("hide");
           },
+
+          error: function (xhr) {
+            toast("error", "Error del servidor", xhr.responseText);
+          },
+
+          complete: function () {},
         });
       } else {
-        $.NotificationApp.send(
-          "Ocurrio un Error !",
-          "El importe no puede ser 0 ni nulo.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger"
-        );
+        toast("error", "Error!", "El importe no puede ser 0 ni nulo.");
       }
     } else {
-      $.NotificationApp.send(
-        "Ocurrio un Error !",
-        "La Forma de Pago no puede ser nula.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      toast("error", "Error!", "La Forma de Pago no puede ser nula.");
     }
   }
 });
@@ -360,10 +377,10 @@ $("#asociar_pago_comprobante_button").click(function () {
     ],
   });
 });
-const checkedPagos = [];
-const checkedPagosid = [];
-const checkedFacturas = [];
-const checkedFacturasid = [];
+let checkedPagos = [];
+let checkedPagosid = [];
+let checkedFacturas = [];
+let checkedFacturasid = [];
 
 function sumar_facturas() {
   var oTable = $("#tabla_asociar-pagos_facturas").dataTable();
@@ -431,8 +448,8 @@ function sumar_facturas() {
       valor_comprobantes.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
     $("#footer_saldo").html(val_comprobantes);
     $("#footer_total_saldo").val(valor_comprobantes);
-    checkedFacturas = null;
-    checkedFacturasid = null;
+    checkedFacturas.length = 0;
+    checkedFacturasid.length = 0;
   }
 }
 
@@ -503,8 +520,8 @@ function sumar_pagos() {
       valor_comprobantes.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
     $("#footer_saldo").html(val_comprobantes);
     $("#footer_total_saldo").val(valor_comprobantes);
-    checkedPagos = null;
-    checkedPagosid = null;
+    checkedPagos.length = 0;
+    checkedPagosid.length = 0;
   }
 }
 

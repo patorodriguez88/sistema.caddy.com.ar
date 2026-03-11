@@ -60,7 +60,7 @@ function cargarRelacionEnSelect(selectId) {
       select.appendChild(optgroup);
     },
     error: function (err) {
-      console.error("Error al cargar rubros:", err);
+      console.error("Error al cargar Relaciones:", err);
     },
   });
 }

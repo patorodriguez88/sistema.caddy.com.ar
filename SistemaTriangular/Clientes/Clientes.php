@@ -7,33 +7,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />
-
-    <!-- Caddy favicon -->
     <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
-
-    <!-- Plugin css -->
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
     <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
-
-    <!-- Datatables css -->
     <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- For checkbox Select-->
     <link href="../hyper/dist/assets/vendor/datatables/select.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- For Buttons -->
     <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- Fixe header-->
     <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
-
-    <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
-
-    <!-- Vendor css -->
     <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
-
-    <!-- App css -->
     <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-
-    <!-- Icons css -->
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
@@ -67,6 +50,82 @@
                         </div>
                     </div>
                     <!-- end page title -->
+                    <!-- MODAL RECIBO DE PAGO -->
+                    <div class="modal fade" id="modal_ver_recibo" tabindex="-1" aria-labelledby="modalVerReciboLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered">
+                            <div class="modal-content">
+
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="modalVerReciboLabel">Vista previa del recibo</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+
+                                <div class="modal-body p-0">
+                                    <iframe
+                                        id="iframe_recibo"
+                                        src=""
+                                        style="width:100%; height:80vh; border:0;"></iframe>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-danger" id="btn_enviar_recibo_modal">
+                                        <i class="mdi mdi-send me-1"></i>Enviar
+                                    </button>
+
+                                    <button type="button" class="btn btn-primary" id="btn_imprimir_recibo_modal">
+                                        <i class="mdi mdi-printer me-1"></i>Imprimir
+                                    </button>
+
+                                    <a id="btn_abrir_recibo_nueva_pestana" href="#" target="_blank" class="btn btn-outline-primary">
+                                        <i class="mdi mdi-open-in-new me-1"></i>Abrir en nueva pestaña
+                                    </a>
+
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                                        Cerrar
+                                    </button>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                    <!-- MODAL FACTURA -->
+                    <div class="modal fade" id="modal_factura_preview" tabindex="-1" aria-labelledby="modalFacturaPreviewLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="modalFacturaPreviewLabel">
+                                        <i class="mdi mdi-file-document-outline me-2"></i>Vista previa de factura
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+
+                                <div class="modal-body p-0" style="height: 80vh;">
+                                    <iframe
+                                        id="iframe_factura_preview"
+                                        src=""
+                                        style="width:100%; height:100%; border:0;"></iframe>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                                        <i class="mdi mdi-close-thick me-1"></i>Cerrar
+                                    </button>
+
+                                    <button type="button" class="btn btn-outline-primary" id="btn_imprimir_factura_modal">
+                                        <i class="mdi mdi-printer me-1"></i>Imprimir
+                                    </button>
+
+                                    <button type="button" class="btn btn-success" id="btn_enviar_factura_modal">
+                                        <i class="mdi mdi-send me-1"></i>Enviar por mail
+                                    </button>
+
+                                    <a href="#" target="_blank" class="btn btn-primary" id="btn_abrir_factura_modal">
+                                        <i class="mdi mdi-open-in-new me-1"></i>Abrir
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="asociar-pagos-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true" style="z-index:1003">
                         <div class="modal-dialog modal-lg">
@@ -169,7 +228,7 @@
                                         <input type="hidden" val="" id="textarea-comentario_id"></input>
 
                                     </div>
-                                    <button id="textarea-comentario_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send mr-1"></i> Aceptar</button>
+                                    <button id="textarea-comentario_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
                                     <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -206,7 +265,7 @@
                                             <label for="contact_telefono">Telefono</label>
                                             <input type="number" id="contact_telefono" class="form-control" placeholder="subject">
                                         </div>
-                                        <button id="contact_modal_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send mr-1"></i> Aceptar</button>
+                                        <button id="contact_modal_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
                                         <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
                                     </form>
                                 </div>
@@ -230,22 +289,6 @@
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
-                    <div id="info-alert-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-                        <div class="modal-dialog modal-sm modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-body p-4">
-                                    <div class="text-center">
-                                        <i class="dripicons-information h1 text-info"></i>
-                                        <h4 class="mt-2">Estamos procesando el Pago... </h4>
-                                        <p id="info-alert-body" class="mt-3"> No cierres esta ventana. </p>
-                                        <div class="spinner-grow text-primary" role="status"></div>
-                                        <!--                                   <button type="button" class="btn btn-info my-2" data-dismiss="modal">Continue</button> -->
-                                    </div>
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
-
 
 
                     <!-- ELIMINAR CLIENTE -->
@@ -830,7 +873,7 @@
                                                 <span class="font-13 text-muted">Ej.: 10%</span>
                                             </div>
                                             <div class="text-right">
-                                                <button id="confirmardescuento_botton" type="button" class="btn btn-warning"><i class="mdi mdi-check-bold mr-1"></i> <span>Aplicar Descuento</span> </button>
+                                                <button id="confirmardescuento_botton" type="button" class="btn btn-warning"><i class="mdi mdi-check-bold me-1"></i> <span>Aplicar Descuento</span> </button>
                                             </div>
                                         </div>
                                     </div>
@@ -1131,7 +1174,7 @@
                                         <div class="col-lg-4 mt-2">
                                             <div class="form-group">
                                                 <label for="neto_up_r">Importe Neto</label>
-                                                <input type="text" id="neto_up_r" class="form-control" data-toggle="input-mask" data-mask-format="000.000.000.000.000,00" data-reverse="true">
+                                                <input type="text" id="neto_up_r" class="form-control input-moneda" data-toggle="input-mask" data-mask-format="000.000.000.000.000,00" data-reverse="true">
                                             </div>
                                         </div>
                                         <div class="col-lg-4 mt-2">
@@ -1160,217 +1203,261 @@
                         <!-- /.modal-dialog -->
                     </div>
 
-
-
                     <!--MODAL CARGAR PAGO-->
-                    <div id="standard-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" data-backdrop="static" data-keyboard="false" href="#">
+                    <div
+                        id="standard-modal"
+                        class="modal fade"
+                        tabindex="-1"
+                        aria-labelledby="standard-modalLabel"
+                        aria-hidden="true"
+                        data-bs-backdrop="static"
+                        data-bs-keyboard="false">
                         <div class="modal-dialog modal-dialog-centered modal-lg">
                             <div class="modal-content">
-                                <div id="standard-modal-color-header" class="modal-header modal-colored-header bg-success">
+                                <div id="standard-modal-color-header" class="modal-header modal-colored-header bg-success text-white">
                                     <h4 class="modal-title" id="standard-modalLabel">Cargar Pago</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                 </div>
+
                                 <div class="modal-body">
                                     <form id="form_pago">
                                         <div class="row">
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Fecha</label>
+                                                <div class="mb-3">
+                                                    <label for="fecha_pago" class="form-label">Fecha</label>
                                                     <input id="fecha_pago" type="date" class="form-control">
                                                     <span class="font-13 text-muted">e.g "DD/MM/YYYY"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-4 mt-3">
-                                                <div class="selector-formadepago form-group">
-                                                    <label for="formadepago">Forma de Pago</label>
+                                                <div class="selector-formadepago mb-3">
+                                                    <label for="formadepago" class="form-label">Forma de Pago</label>
                                                     <select id="formadepago" name="formadepago" class="form-control" data-toggle="select2" required></select>
                                                 </div>
                                             </div>
-                                            <!--EFECTIVO    -->
+
+                                            <!-- EFECTIVO -->
                                             <div class="col-lg-4 mt-3" id="efectivo" style="display:none">
-                                                <div class="form-group">
-                                                    <label>Importe</label>
-                                                    <input id="importe_efectivo" type="text" onkeydown="noComa( event )" class="form-control" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
+                                                <div class="mb-3">
+                                                    <label for="importe_efectivo" class="form-label">Importe</label>
+                                                    <input id="importe_efectivo" type="text" onkeydown="noComa(event)" class="form-control input-moneda" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
                                                     <span class="font-13 text-muted">Importe</span>
                                                 </div>
                                             </div>
+
                                             <!-- MERCADO PAGO -->
                                             <div class="col-lg-4 mt-3" id="mercadopago" style="display:none">
-                                                <div class="form-group">
-                                                    <label for="mp">Operacion Mercado Pago</label>
+                                                <div class="mb-3">
+                                                    <label for="noperacion_mp" class="form-label">Operacion Mercado Pago</label>
                                                     <div class="input-group">
-                                                        <input id="noperacion_mp" name="noperacion_mp" type="number" class="form-control" placeholder="Numero de Operacion" aria-describedby="button-addon2" aria-label="mp">
-                                                        <div class="input-group-append">
-                                                            <button id="search_mp" type="button" class="btn btn-outline-info" aria-label="mp"><i class="dripicons-search"></i></button>
-                                                        </div>
+                                                        <input id="noperacion_mp" name="noperacion_mp" type="number" class="form-control" placeholder="Numero de Operacion" aria-label="mp">
+                                                        <button id="search_mp" type="button" class="btn btn-outline-info" aria-label="Buscar operación MP">
+                                                            <i class="dripicons-search"></i>
+                                                        </button>
                                                     </div>
                                                     <span class="font-13 text-muted">Numero de operación de Mercado Pago</span>
                                                 </div>
                                             </div>
-
                                         </div>
+
                                         <!-- DATOS OBTENIDOS DE LA API DE MP -->
                                         <div class="row" id="mercadopago_api" style="display:none">
                                             <div class="col-lg-12">
-                                                <div class="form-group">
-                                                    <label>Descripcion</label>
+                                                <div class="mb-3">
+                                                    <label for="descripcion_transferencia_mp" class="form-label">Descripcion</label>
                                                     <input id="descripcion_transferencia_mp" type="text" class="form-control">
                                                     <span class="font-13 text-muted">Ej.: "Descripcion"</span>
                                                 </div>
                                             </div>
 
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Numero de Operacion</label>
+                                                <div class="mb-3">
+                                                    <label for="numero_transferencia_mp" class="form-label">Numero de Operacion</label>
                                                     <input id="numero_transferencia_mp" type="text" class="form-control" data-toggle="input-mask" data-mask-format="0000-0000" readonly>
                                                     <span class="font-13 text-muted">Ej.: "123456789"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Fecha Transferencia</label>
+                                                <div class="mb-3">
+                                                    <label for="fecha_transferencia_mp" class="form-label">Fecha Transferencia</label>
                                                     <input id="fecha_transferencia_mp" type="text" class="form-control" data-toggle="input-mask" data-mask-format="00/00/0000" readonly>
                                                     <span class="font-13 text-muted">e.g "DD/MM/YYYY"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Fee</label>
+                                                <div class="mb-3">
+                                                    <label for="fee_transferencia_mp" class="form-label">Fee</label>
                                                     <input id="fee_transferencia_mp" type="text" class="form-control" data-toggle="input-mask" data-mask-format="###0,000.00" data-reverse="true" readonly>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Importe</label>
+                                                <div class="mb-3">
+                                                    <label for="importe_transferencia_mp" class="form-label">Importe</label>
                                                     <input id="importe_transferencia_mp" type="text" class="form-control" data-toggle="input-mask" data-mask-format="###0,000.00" data-reverse="true" readonly>
-                                                    <span id="status_mp" class="badge badge-success"></span>
+                                                    <span id="status_mp" class="badge bg-success"></span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!--TRANSFERENCIA-->
+                                        <!-- TRANSFERENCIA -->
                                         <div class="row" id="transferencia" style="display:none">
                                             <div class="col-lg-4 mt-3">
-                                                <div class="form-group">
-                                                    <label>Numero de Operacion</label>
+                                                <div class="mb-3">
+                                                    <label for="numero_transferencia" class="form-label">Numero de Operacion</label>
                                                     <input id="numero_transferencia" type="text" class="form-control" data-toggle="input-mask" data-mask-format="0000-0000">
                                                     <span class="font-13 text-muted">Ej.: "123456789"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-4 mt-3">
-                                                <div class="form-group">
-                                                    <label>Fecha Transferencia</label>
+                                                <div class="mb-3">
+                                                    <label for="fecha_transferencia" class="form-label">Fecha Transferencia</label>
                                                     <input id="fecha_transferencia" type="date" class="form-control" data-toggle="input-mask" data-mask-format="00/00/0000">
                                                     <span class="font-13 text-muted">e.g "DD/MM/YYYY"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-4 mt-3">
-                                                <div class="form-group">
-                                                    <label>Importe</label>
-                                                    <input id="importe_transferencia" type="text" onkeydown="noComa( event )" class="form-control" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
+                                                <div class="mb-3">
+                                                    <label for="importe_transferencia" class="form-label">Importe</label>
+                                                    <input id="importe_transferencia" type="text" onkeydown="noComa(event)" class="form-control" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
                                                     <span class="font-13 text-muted">e.g "#.##0,00"</span>
                                                 </div>
                                             </div>
                                         </div>
 
-                                        <!--CHEQUES-->
+                                        <!-- CHEQUES -->
                                         <div class="row" id="cheques" style="display:none">
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Banco</label>
+                                                <div class="mb-3">
+                                                    <label for="banco_cheque" class="form-label">Banco</label>
                                                     <input id="banco_cheque" type="text" class="form-control">
-                                                    <span class="font-13 text-muted">Ej.:Banco Macro</span>
+                                                    <span class="font-13 text-muted">Ej.: Banco Macro</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Numero de Cheque</label>
+                                                <div class="mb-3">
+                                                    <label for="numero_cheque" class="form-label">Numero de Cheque</label>
                                                     <input id="numero_cheque" type="text" class="form-control" data-toggle="input-mask" data-mask-format="000000000">
                                                     <span class="font-13 text-muted">e.g "(xx) xxxxx-xxxx"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Fecha de Pago</label>
+                                                <div class="mb-3">
+                                                    <label for="fecha_cheque" class="form-label">Fecha de Pago</label>
                                                     <input id="fecha_cheque" type="text" class="form-control" data-toggle="input-mask" data-mask-format="00/00/0000">
                                                     <span class="font-13 text-muted">e.g "DD/MM/YYYY"</span>
                                                 </div>
                                             </div>
+
                                             <div class="col-lg-3 mt-3">
-                                                <div class="form-group">
-                                                    <label>Importe a Cobrar</label>
-                                                    <input id="importe_cheque" type="text" onkeydown="noComa( event )" class="form-control" data-toggle="input-mask" data-mask-format="#.##0,00" data-reverse="true">
+                                                <div class="mb-3">
+                                                    <label for="importe_cheque" class="form-label">Importe a Cobrar</label>
+                                                    <input id="importe_cheque" type="text" onkeydown="noComa(event)" class="form-control" data-toggle="input-mask" data-mask-format="#.##0,00" data-reverse="true">
                                                     <span class="font-13 text-muted">e.g "xxx.xxx.xxxx-xx"</span>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
-                                            <button id="confirmarpago_botton" type="button" class="btn btn-success"><i class="mdi mdi-check-bold mr-1"></i> <span>Confirmar Pago</span> </button>
+
+                                        <div class="text-end">
+                                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                                                <i class="mdi mdi-close-thick me-1"></i> Cancelar
+                                            </button>
+                                            <button id="confirmarpago_botton" type="button" class="btn btn-success">
+                                                <i class="mdi mdi-check-bold me-1"></i>
+                                                <span>Confirmar Pago</span>
+                                            </button>
                                         </div>
+                                    </form>
                                 </div>
                             </div>
                         </div>
-                        </form>
-                    </div>
-                    <!-- end col-->
+                    </div> <!-- end col-->
                     <!--END MODAL CARGAR PAGO-->
 
 
 
 
                     <!-- MODAL MOVIMIENTOS INTERNOS  -->
-                    <div class="modal fade" id="modal_movimientos_internos" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
+                    <div class="modal fade" id="modal_movimientos_internos" tabindex="-1" aria-labelledby="modalMovInternosLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
-                                <div class="modal-header modal-colored-header bg-primary">
-                                    <h4 class="modal-title" id="myLargeModalLabel">Movimiento Interno</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="modalMovInternosLabel">Movimiento Interno</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
+
                                 <div class="modal-body">
-                                    <h4 class="header-title">Movimientos Internos</h4>
-                                    <p class="text-muted font-14">Estos movimientos son utilizados para compensar cuentas cuando asi se requieran. Solo modifica la tabla Cuentas Corrientes (Ctas. Ctes.).</p>
+
+                                    <h5 class="mb-2">Movimientos Internos</h5>
+                                    <p class="text-muted">
+                                        Estos movimientos son utilizados para compensar cuentas cuando así se requieran.
+                                        Solo modifica la tabla Cuentas Corrientes (Ctas. Ctes.).
+                                    </p>
+
                                     <form id="form_mi">
+
                                         <div class="row">
+
                                             <div class="col-lg-4 mt-3">
-                                                <div class="form-group">
-                                                    <label>Fecha</label>
-                                                    <input id="fecha_movimientos_internos" type="date" class="form-control">
-                                                    <span class="font-13 text-muted">e.g "DD/MM/YYYY"</span>
-                                                </div>
+                                                <label class="form-label">Fecha</label>
+                                                <input id="fecha_movimientos_internos" type="date" class="form-control">
+                                                <small class="text-muted">DD/MM/YYYY</small>
                                             </div>
+
                                             <div class="col-lg-4 mt-3">
-                                                <div class="form-group">
-                                                    <label for="formadepago">Comprobante</label>
-                                                    <input type="text" id="comprobante_movimientos_internos" name="comprobante_movimientos_internos" class="form-control"></input>
-                                                </div>
+                                                <label class="form-label">Comprobante</label>
+                                                <input type="text" id="comprobante_movimientos_internos" name="comprobante_movimientos_internos" class="form-control">
                                             </div>
-                                            <!--EFECTIVO    -->
+
                                             <div class="col-lg-4 mt-3">
-                                                <div class="form-group">
-                                                    <label>Importe</label>
-                                                    <input id="importe_movimientos_internos" type="text" onkeydown="noComa( event )" class="form-control" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
-                                                    <span class="font-13 text-muted">Importe</span>
-                                                </div>
+                                                <label class="form-label">Importe</label>
+                                                <input
+                                                    id="importe_movimientos_internos"
+                                                    type="text"
+                                                    onkeydown="noComa(event)"
+                                                    class="form-control"
+                                                    data-toggle="input-mask"
+                                                    data-mask-format="###0.00"
+                                                    data-reverse="true">
+                                                <small class="text-muted">Importe</small>
                                             </div>
+
                                         </div>
+
                                         <div class="row">
                                             <div class="col-lg-12 mt-3">
-                                                <div class="form-group">
-                                                    <label for="obs_movimientos_internos">Observaciones</label>
-                                                    <input type="text" id="obs_movimientos_internos" name="obs_movimientos_internos" class="form-control"></input>
-                                                </div>
+                                                <label class="form-label">Observaciones</label>
+                                                <input type="text" id="obs_movimientos_internos" name="obs_movimientos_internos" class="form-control">
                                             </div>
                                         </div>
-                                        <div class="text-right">
-                                            <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
-                                            <button id="confirmar_movimientos_internos_botton" type="button" class="btn btn-success"><i class="mdi mdi-check-bold mr-1"></i> <span>Confirmar</span> </button>
+
+                                        <div class="text-end mt-4">
+
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                                                Cancelar
+                                            </button>
+
+                                            <button id="confirmar_movimientos_internos_botton" type="button" class="btn btn-success">
+                                                <i class="mdi mdi-check-bold me-1"></i> Confirmar
+                                            </button>
+
                                         </div>
+
                                     </form>
+
                                 </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
+
+                            </div>
+                        </div>
+                    </div>
 
 
 
@@ -1495,16 +1582,26 @@
                                     <div class="col-sm-6" id="editor">
                                         <div class="text-sm-right">
 
-                                            <button id="refrescar" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi mdi-heart-outline mr-1"></i></button>
-                                            <button id="descuento_botton" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi-account-cash-outline mr-1"></i> <span>Aplicar Descuento</span> </button>
-                                            <button id="cargarpago_botton" type="button" class="btn btn-success" style="display:none" data-toggle="modal" data-target="#standard-modal"><i class="mdi mdi-account-cash-outline mr-1"></i> <span>Cargar Pago</span> </button>
+                                            <button id="refrescar" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi mdi-heart-outline me-1"></i></button>
+                                            <button id="descuento_botton" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi-account-cash-outline me-1"></i> <span>Aplicar Descuento</span> </button>
+                                            <!-- <button id="cargarpago_botton" type="button" class="btn btn-success" style="display:none" data-bs-toggle="modal" data-bd-target="#standard-modal"><i class="mdi mdi-account-cash-outline me-1"></i> <span>Cargar Pago</span> </button> -->
+                                            <button
+                                                id="cargarpago_botton"
+                                                type="button"
+                                                class="btn btn-success"
+                                                style="display:none"
+                                                data-bs-toggle="modal"
+                                                data-bs-target="#standard-modal">
+                                                <i class="mdi mdi-account-cash-outline me-1"></i>
+                                                <span>Cargar Pago</span>
+                                            </button>
                                             <!-- 4986 -->
                                             <button id="asociar_pago_comprobante_button" type="button" class="btn btn-primary" style="display:none" data-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span></span> </button>
                                             <button id="generar_comprobante_afip_button" type="button" class="btn btn-warning" style="display:none" data-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Generar NC ND Afip</span> </button>
                                             <button id="debitocredito_botton" type="button" class="btn btn-primary" style="display:none" data-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Movimiento Interno</span> </button>
                                             <a id="crearcliente" class="btn btn-success" data-parent="Origen" data-toggle="modal" data-target="#nuevocliente-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i> Agregar Cliente</a>
-                                            <button id="guardar_botton" type="button" class="btn btn-success" style="display:none"><i class="mdi mdi-cloud mr-1"></i> <span>Guardar</span> </button>
-                                            <a id="eliminar_botton" class="btn btn-danger" style="display:none"><i class="mdi mdi-account-remove mr-1"></i> <span>Eliminar Cliente</span> </a>
+                                            <button id="guardar_botton" type="button" class="btn btn-success" style="display:none"><i class="mdi mdi-cloud me-1"></i> <span>Guardar</span> </button>
+                                            <a id="eliminar_botton" class="btn btn-danger" style="display:none"><i class="mdi mdi-account-remove me-1"></i> <span>Eliminar Cliente</span> </a>
                                         </div>
                                     </div>
                                 </div>
@@ -1573,7 +1670,7 @@
                                                                 <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Promedio Mensual</h5>
                                                                 <h3 class="card-subtitle mt-3 mb-3" id="ventas_mes"></h3>
                                                                 <p class="card-text text-muted">
-                                                                    <span class="badge bg-info text-white mr-1">
+                                                                    <span class="badge bg-info text-white me-1">
                                                                         <i class="mdi mdi-arrow-down-bold" id="ventas_mes_ant"></i> %</span>
                                                                     <span class="text-nowrap">Compara ao ano anterior</span>
                                                                 </p>
@@ -1590,7 +1687,7 @@
                                                                 <h5 class="card-title text-muted font-weight-normal mt-0" title="Revenue">Ventas Este Año</h5>
                                                                 <h3 class="card-subtitle mt-3 mb-3" id="ventas_ano"></h3>
                                                                 <p class="card-text text-muted">
-                                                                    <span class="badge bg-info text-white mr-1">
+                                                                    <span class="badge bg-info text-white me-1">
                                                                         <i class="mdi mdi-arrow-down-bold" id="ventas_ano_ant"></i> %</span>
                                                                     <span class="text-nowrap">Compara ao ano anterior</span>
                                                                 </p>
@@ -1608,7 +1705,7 @@
                                                                 <h3 class="card-subtitle mt-3 mb-3" id="debe"></h3>
 
                                                                 <p class="card-text text-muted">
-                                                                    <span class="badge bg-info text-white mr-1">
+                                                                    <span class="badge bg-info text-white me-1">
                                                                         <i class="mdi mdi-arrow-down-bold" id="tipo"></i> % </span>
                                                                     <span class="text-nowrap" id="numero"></span>
                                                                 </p>
@@ -1625,7 +1722,7 @@
                                                                 <h5 class="card-title text-white font-weight-normal mt-0" title="Revenue">Saldo Actual</h5>
                                                                 <h3 class="card-subtitle mt-3 mb-1" id="saldo"></h3>
                                                                 <p class="card-text text-white">
-                                                                    <!--                                                             <span class="badge badge-info mr-1">
+                                                                    <!--                                                             <span class="badge badge-info me-1">
                                                                     <i id="fecha_ult_pago"></i> </span> -->
                                                                     <a id="fecha_ult_pago"></a>
                                                                     <span class="text-nowrap text-white" id="importe_ult_pago">Último Pago</span>
@@ -2016,7 +2113,7 @@
                                                 <div class="row justify-content-end">
                                                     <div class="col-12 mt-3">
                                                         <div class="form-group">
-                                                            <button id="save_webhook" type="button" class="btn btn-success" disabled><i class="mdi mdi-cloud mr-1"></i> <span>Guardar</span> </button>
+                                                            <button id="save_webhook" type="button" class="btn btn-success" disabled><i class="mdi mdi-cloud me-1"></i> <span>Guardar</span> </button>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -2167,7 +2264,7 @@
                                                 <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="mdi mdi-dots-vertical"></i>
                                                 </a>
-                                                <div class="dropdown-menu dropdown-menu-right" style="">
+                                                <div class="dropdown-menu dropdown-menu-right">
                                                     <a id="btn_un_ctas" href="javascript:void(0);" class="dropdown-item"> Mostrar Cuentas Relacionadas </a>
                                                 </div>
                                             </div>
@@ -2290,7 +2387,7 @@
                                                                 <input class="form-control ml-2" type="date" id="max" name="max">
                                                             </div>
                                                             <div class="custom-control custom-checkbox custom-control-inline">
-                                                                <a id="filtro" type="button" class="btn btn-info float-right mt-3"><i class="mdi mdi-filter mr-1"></i><span> Filtro </span></a>
+                                                                <a id="filtro" type="button" class="btn btn-info float-right mt-3"><i class="mdi mdi-filter me-1"></i><span> Filtro </span></a>
                                                             </div>
                                                         </div>
 
@@ -2332,8 +2429,8 @@
                                                                     </tr>
                                                                 </tbody>
                                                             </table>
-                                                            <button id="facturar_detalle_boton" type="button" class="btn btn-warning float-right mt-3 ml-3"><i class="mdi mdi-book-search-outline mr-1"></i> <span> Generar Detalle </span> </button>
-                                                            <button id="facturar_boton" type="button" class="btn btn-info float-right mt-3"><i class="mdi mdi-printer mr-1"></i> <span> Generar Comprobante </span> </button>
+                                                            <button id="facturar_detalle_boton" type="button" class="btn btn-warning float-right mt-3 ml-3"><i class="mdi mdi-book-search-outline me-1"></i> <span> Generar Detalle </span> </button>
+                                                            <button id="facturar_boton" type="button" class="btn btn-info float-right mt-3"><i class="mdi mdi-printer me-1"></i> <span> Generar Comprobante </span> </button>
 
                                                         </div>
                                                     </div>
@@ -2423,9 +2520,9 @@
                                                         </div>
                                                         <div class="d-print-none mt-4">
                                                             <div class="btn-group float-right">
-                                                                <a id="Modificar_recorrido_boton" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-target="#modificar_recorridos_modal"><i class="mdi mdi-account-cash-outline mr-1"></i>Modificar Valores</a>
-                                                                <a id="ingresar_recorridos" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-cart-plus mr-1 ml-1"></i>Ingresar Recorridos</a>
-                                                                <a id="facturar_recorridos_boton" type="button" class="btn btn-info ml-1"><i class="mdi mdi-printer mr-1 ml-1"></i> <span> Generar Comprobante </span></a>
+                                                                <a id="Modificar_recorrido_boton" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-target="#modificar_recorridos_modal"><i class="mdi mdi-account-cash-outline me-1"></i>Modificar Valores</a>
+                                                                <a id="ingresar_recorridos" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-cart-plus me-1 ml-1"></i>Ingresar Recorridos</a>
+                                                                <a id="facturar_recorridos_boton" type="button" class="btn btn-info ml-1"><i class="mdi mdi-printer me-1 ml-1"></i> <span> Generar Comprobante </span></a>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2654,10 +2751,10 @@
                                                             <div class="text-right">
                                                                 <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
                                                                 <!-- <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a> -->
-                                                                <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>
-                                                                <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>
+                                                                <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
+                                                                <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
                                                                 <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                                                <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick mr-1"></i>Cancelar</a>
+                                                                <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
                                                         </div>
                                                         <!-- end buttons -->
@@ -2855,9 +2952,9 @@
                                                             <div class="text-right">
                                                                 <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
                                                                 <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                                                <!-- <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>   -->
-                                                                <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>   -->
-                                                                <a id="cancelarfactura_detalle_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick mr-1"></i>Cancelar</a>
+                                                                <!-- <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
+                                                                <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
+                                                                <a id="cancelarfactura_detalle_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
                                                         </div>
                                                         <!-- end buttons -->
@@ -2972,7 +3069,7 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
 
     <script src="Procesos/js/funciones.js"></script>
@@ -2981,29 +3078,23 @@
 
     <script src="../Menu/js/funciones.js"></script>
     <script src="../Funciones/js/datosempresa.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     <script src="Procesos/js/cargarpago.js"></script>
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="Procesos/js/descuento.js"></script>
     <script src="Procesos/js/abmventas.js"></script>
     <script src="Procesos/js/recorridos.js"></script>
     <script src="Procesos/js/clientes.js"></script>
+
     <!-- end demo js-->
     <script src="Procesos/js/select2_clientes.js"></script>
 
-    <!-- end demo js-->
-    <!-- <script src="Procesos/js/demo.apex-line.js"></script> -->
     <!-- webhook -->
-    <script src="Procesos/js/webhook.js"></script>
-
-
+    <!-- <script src="Procesos/js/webhook.js"></script> -->
     <!-- Direcciones -->
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&libraries=places&callback=BuscarDireccion">
     </script>
-
-
-
-
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 

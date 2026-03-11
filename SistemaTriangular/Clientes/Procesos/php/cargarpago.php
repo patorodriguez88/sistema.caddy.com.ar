@@ -1,5 +1,33 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
 include_once "../../../Conexion/Conexioni.php";
+
+// HELPERS
+function limpiarMoneda($valor)
+{
+    if ($valor === null) {
+        return 0;
+    }
+
+    $valor = (string)$valor;
+
+    // Eliminar símbolo $, espacios comunes, NBSP y cualquier texto raro
+    $valor = str_replace('$', '', $valor);
+    $valor = str_replace("\xC2\xA0", '', $valor); // NBSP UTF-8
+    $valor = str_replace(' ', '', $valor);
+
+    // Dejar solo dígitos, coma, punto y signo menos
+    $valor = preg_replace('/[^0-9,\.-]/', '', $valor);
+
+    // Quitar separador de miles y normalizar decimal a punto
+    $valor = str_replace('.', '', $valor);
+    $valor = str_replace(',', '.', $valor);
+
+    return (float)$valor;
+}
+
 
 if (isset($_POST['CargarPago'])) {
     //---------------INGRESA LOS MOVIMIENTOS EN TRANSACCIONES--------------------
@@ -10,22 +38,22 @@ if (isset($_POST['CargarPago'])) {
         $Fecha = $_POST['formadepagofecha'];
     }
     //DATOS CLIENTE
-    $id = $_POST[id];
+    $id = $_POST['id'];
     $sqlCliente = $mysqli->query("SELECT nombrecliente,Cuit FROM Clientes WHERE id='$id'");
     $datoCliente = $sqlCliente->fetch_array(MYSQLI_ASSOC);
-    $RazonSocial = $datoCliente[nombrecliente];
-    $Cuit = $datoCliente[Cuit];
+    $RazonSocial = $datoCliente['nombrecliente'];
+    $Cuit = $datoCliente['Cuit'];
 
     //NUMERO DE COMPROBANTE
     $sqlnrecibo = $mysqli->query("SELECT Max(NumeroComprobante)as nrecibo FROM TransClientes WHERE TipoDeComprobante='Recibo de Pago' AND Eliminado='0'");
     if ($datonrecibo = $sqlnrecibo->fetch_array(MYSQLI_ASSOC)) {
-        $NumeroComprobante = trim($datonrecibo[nrecibo]) + 1;
+        $NumeroComprobante = trim($datonrecibo['nrecibo']) + 1;
     }
 
     //NUMERO DE ASIENTO CONTABLE
     $BuscaNumAsiento = $mysqli->query("SELECT MAX(NumeroAsiento) as NumeroAsiento FROM Tesoreria WHERE Eliminado='0'");
     $row = $BuscaNumAsiento->fetch_array(MYSQLI_ASSOC);
-    $NAsiento = trim($row[NumeroAsiento]) + 1;
+    $NAsiento = trim($row['NumeroAsiento']) + 1;
 
     //BUSCO LA CUENTA CONTABLE
     $FormaDePago = $_POST['formadepago'];
@@ -37,38 +65,65 @@ if (isset($_POST['CargarPago'])) {
     //BUSCO LA FORMA DE PAGO
     $sqlformadepago = $mysqli->query("SELECT FormaDePago,CuentaContable FROM FormaDePago WHERE AdmiteCobranzas=1 AND CuentaContable='$FormaDePago'");
     $datoformadepago = $sqlformadepago->fetch_array(MYSQLI_ASSOC);
-    $FormaDePagoTabla = $datoformadepago[FormaDePago];
+    $FormaDePagoTabla = $datoformadepago['FormaDePago'] ?? '';
 
+    //DATOS TESORERIA
     $Usuario = $_SESSION['Usuario'];
     $Sucursal = $_SESSION['Sucursal'];
-    $Total = $_POST['importe'];
-    $FechaTrans0 = explode('/', $_POST['fechatrans'], 3);
-    $FechaTrans = $FechaTrans0[2] . '-' . $FechaTrans0[1] . '-' . $FechaTrans0[0];
-    $NumeroTrans = $_POST['numerotrans'];
-    $FechaCheque0 = explode('/', $_POST['fechacheque'], 3);
-    $FechaCheque = $FechaCheque0[2] . '-' . $FechaCheque0[1] . '-' . $FechaCheque0[0];
-    $NumeroCheque = $_POST['numerocheque'];
+
+
+    $NumeroTrans = $_POST['numerotrans'] ?? 0;
+    $NumeroCheque = $_POST['numerocheque'] ?? null;
+    $Banco = $_POST['banco'] ?? null;
+
+    $FechaTrans = null;
+    $FechaCheque = null;
+
+    if (!empty($_POST['fechatrans'])) {
+
+        $f = explode('/', $_POST['fechatrans']);
+
+        if (count($f) === 3) {
+            $FechaTrans = $f[2] . '-' . $f[1] . '-' . $f[0];
+        }
+    }
+
+    if (!empty($_POST['fechacheque'])) {
+
+        $f = explode('/', $_POST['fechacheque']);
+
+        if (count($f) === 3) {
+            $FechaCheque = $f[2] . '-' . $f[1] . '-' . $f[0];
+        }
+    }
+    $FechaChequeSQL = $FechaCheque ? "'$FechaCheque'" : "NULL";
+    $FechaTransSQL  = isset($FechaTrans) ? "'$FechaTrans'" : "NULL";
+
     $TipoDeComprobante = 'Recibo de Pago';
+    $Importe = limpiarMoneda($_POST['importe']);
+    $Total = $Importe;
 
-    $Importe = $_POST['importe'];
-
-    $sqltransclientes = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,Usuario)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}','{$id}','{$Usuario}')";
+    $sqltransclientes = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,Usuario,Flex,idClienteOrigen)VALUES
+('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}',{$Importe},'{$FormaDePago}','{$id}','{$Usuario}','0','{$id}')";
 
     if ($mysqli->query($sqltransclientes)) {
 
         $idTransClientes = $mysqli->insert_id;
-
         $insertTransClientes = 1;
     } else {
-        $insertTransClientes = 0;
-    };
+
+        echo json_encode([
+            "error" => $mysqli->error,
+            "sql" => $sqltransclientes
+        ]);
+        exit;
+    }
 
     $Comentario_ctasctes = 'Forma de Pago: ' . $Cuenta1;
 
     //------------INGRESA EL PAGO A CTAS CTES----------------------
     $sqlCtasctes = "INSERT INTO Ctasctes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroVenta,Haber,Usuario,idCliente,Facturado,idTransClientes,Comentario)
-VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$Usuario}','{$id}','1','{$idTransClientes}','{$Comentario_ctasctes}')";
+VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}',{$Importe},'{$Usuario}','{$id}','1','{$idTransClientes}','{$Comentario_ctasctes}')";
     if ($mysqli->query($sqlCtasctes)) {
 
         $idCtasctes = $mysqli->insert_id;
@@ -85,21 +140,26 @@ VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroCom
     $Observaciones = $TipoDeComprobante . " Numero: " . $NumeroComprobante;
     $InfoABM = 'Creado por ' . $_SESSION['Usuario'] . ' el ' . date('d-m-Y H:i');
 
-    $Banco = $_POST['banco'];
-
+    $Banco = $_POST['banco'] ?? null;
+    $Caja = 0;
+    if ($Cuenta0 === '111100') {
+        $sql_caja = $mysqli->query("SELECT MAX(id)as Caja FROM Caja");
+        $row_caja = $sql_caja->fetch_array(MYSQLI_ASSOC);
+        $Caja = $row_caja['Caja'];
+    }
     //DEBE
     $sqlTesoreriaDebe = "INSERT INTO `Tesoreria`(
 	 Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Usuario,Sucursal,NumeroAsiento,FechaTrans,
-     NumeroTrans,FormaDePago,idCtasctes,InfoABM) VALUES 
-	 ('{$Fecha}','{$Cuenta1}','{$Cuenta0}','{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque}','{$NumeroCheque}','{$Usuario}','{$Sucursal}',
-     '{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}')";
+     NumeroTrans,FormaDePago,idCtasctes,InfoABM,Caja) VALUES 
+	 ('{$Fecha}','{$Cuenta1}','{$Cuenta0}',{$Importe},'{$Observaciones}','{$Banco}',{$FechaChequeSQL},'{$NumeroCheque}','{$Usuario}','{$Sucursal}',
+     '{$NAsiento}',{$FechaTransSQL},'{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}' ,'{$Caja}')";
 
     //HABER
     $sqlTesoreriaHaber = "INSERT INTO `Tesoreria`(
 	 Fecha,NombreCuenta,Cuenta,
-	 Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Usuario,Sucursal,NumeroAsiento,FechaTrans,NumeroTrans,FormaDePago,idCtasctes,InfoABM) VALUES 
-	 ('{$Fecha}','{$Cuenta2}','{$Cuenta3}','{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque}','{$NumeroCheque}','{$Usuario}','{$Sucursal}',
-     '{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}')";
+	 Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Usuario,Sucursal,NumeroAsiento,FechaTrans,NumeroTrans,FormaDePago,idCtasctes,InfoABM,Caja) VALUES 
+	 ('{$Fecha}','{$Cuenta2}','{$Cuenta3}',{$Importe},'{$Observaciones}','{$Banco}',{$FechaChequeSQL},'{$NumeroCheque}','{$Usuario}','{$Sucursal}',
+     '{$NAsiento}',{$FechaTransSQL},'{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}' ,'{$Caja}')";
 
     if ($mysqli->query($sqlTesoreriaDebe)) {
         $insertTesoreriaDebe = 1;
@@ -121,36 +181,65 @@ VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroCom
 
     if ($NumeroCheque <> '') {
         $sql = $mysqli->query("INSERT INTO Cheques(`Banco`, `NumeroCheque`, `Asiento`, `Proveedor`, `Importe`, `FechaCobro`, `Usuario`, `Terceros`) 
-    VALUES ('{$Banco}','{$NumeroCheque}','{$NAsiento}','{$CuentaEncontrada}','{$Importe}','{$FechaCheque}','{$Usuario}','1')");
+    VALUES ('{$Banco}','{$NumeroCheque}','{$NAsiento}','{$CuentaEncontrada}',{$Importe},'{$FechaCheque}','{$Usuario}','1')");
     }
 
     //SI LA CUENTA ES BANCO CARGO IMPUESTOS AL DEBITO Y CREDITO
 
-    if (($Cuenta0 == '000111200') or ($Cuenta0 == '000111210')) {
+    if (($Cuenta0 == '000111200') || ($Cuenta0 == '000111210')) {
 
-        //IIBB
-        $Cuenta2 = 'IMPUESTO AL CREDITO';
-        $Cuenta3 = '000423400';
-        $Observaciones = 'Imp. Cre. Ley 25413 Base (' . $Importe . ')';
-        $Importe = $Importe * 0.6 / 100;
-        // $Cuenta2='BANCO GALICIA CTA CTE';
-        // $Cuenta3='000111200';
+        $CuentaImpNombre = 'IMPUESTO AL CREDITO';
+        $CuentaImpCodigo = '000423400';
+        $ObservacionesImp = 'Imp. Cre. Ley 25413 Base (' . $Total . ')';
+        $ImporteImp = $Total * 0.6 / 100;
 
-        //DEBE
-        $sqlTesoreriaDebe = $mysqli->query("INSERT INTO `Tesoreria`(
-        Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,Usuario,Sucursal,NumeroAsiento,FechaTrans,
-        NumeroTrans,FormaDePago,idCtasctes,InfoABM) VALUES 
-        ('{$Fecha}','{$Cuenta2}','{$Cuenta3}','{$Importe}','{$Observaciones}','{$Banco}','{$Usuario}','{$Sucursal}',
-        '{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}')");
+        $BancoSQL = ($Banco !== null && $Banco !== '') ? "'" . $mysqli->real_escape_string($Banco) . "'" : "NULL";
+        $FechaTransImpSQL = ($FechaTrans !== null && $FechaTrans !== '') ? "'" . $FechaTrans . "'" : "NULL";
+        $NumeroTransSQL = ($NumeroTrans !== null && $NumeroTrans !== '') ? "'" . $mysqli->real_escape_string($NumeroTrans) . "'" : "NULL";
+        $FormaDePagoTablaSQL = ($FormaDePagoTabla !== null && $FormaDePagoTabla !== '') ? "'" . $mysqli->real_escape_string($FormaDePagoTabla) . "'" : "NULL";
 
-        //HABER
-        $sqlTesoreriaHaber = $mysqli->query("INSERT INTO `Tesoreria`(
-        Fecha,
-        NombreCuenta,
-        Cuenta,
-        Haber,Observaciones,Banco,Usuario,Sucursal,NumeroAsiento,FechaTrans,NumeroTrans,FormaDePago,idCtasctes,InfoABM) VALUES 
-        ('{$Fecha}','{$Cuenta1}','{$Cuenta0}','{$Importe}','{$Observaciones}','{$Banco}','{$Usuario}','{$Sucursal}',
-        '{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}')");
+        $CuentaImpNombre = $mysqli->real_escape_string($CuentaImpNombre);
+        $CuentaImpCodigo = $mysqli->real_escape_string($CuentaImpCodigo);
+        $Cuenta1SQL = $mysqli->real_escape_string($Cuenta1);
+        $Cuenta0SQL = $mysqli->real_escape_string($Cuenta0);
+        $ObservacionesImp = $mysqli->real_escape_string($ObservacionesImp);
+        $UsuarioSQL = $mysqli->real_escape_string($Usuario);
+        $SucursalSQL = $mysqli->real_escape_string($Sucursal);
+        $InfoABMSQL = $mysqli->real_escape_string($InfoABM);
+
+        $sqlImpDebe = "INSERT INTO `Tesoreria` (
+        Fecha, NombreCuenta, Cuenta, Debe, Observaciones, Banco, Usuario, Sucursal, NumeroAsiento, FechaTrans,
+        NumeroTrans, FormaDePago, idCtasctes, InfoABM
+    ) VALUES (
+        '{$Fecha}', '{$CuentaImpNombre}', '{$CuentaImpCodigo}', {$ImporteImp}, '{$ObservacionesImp}', {$BancoSQL}, '{$UsuarioSQL}', '{$SucursalSQL}', 
+        '{$NAsiento}', {$FechaTransImpSQL}, {$NumeroTransSQL}, {$FormaDePagoTablaSQL}, '{$idCtasctes}', '{$InfoABMSQL}'
+    )";
+
+        $sqlImpHaber = "INSERT INTO `Tesoreria` (
+        Fecha, NombreCuenta, Cuenta, Haber, Observaciones, Banco, Usuario, Sucursal, NumeroAsiento, FechaTrans,
+        NumeroTrans, FormaDePago, idCtasctes, InfoABM
+    ) VALUES (
+        '{$Fecha}', '{$Cuenta1SQL}', '{$Cuenta0SQL}', {$ImporteImp}, '{$ObservacionesImp}', {$BancoSQL}, '{$UsuarioSQL}', '{$SucursalSQL}',
+        '{$NAsiento}', {$FechaTransImpSQL}, {$NumeroTransSQL}, {$FormaDePagoTablaSQL}, '{$idCtasctes}', '{$InfoABMSQL}'
+    )";
+
+        if (!$mysqli->query($sqlImpDebe)) {
+            echo json_encode([
+                "success" => 0,
+                "error" => $mysqli->error,
+                "sql" => $sqlImpDebe
+            ]);
+            exit;
+        }
+
+        if (!$mysqli->query($sqlImpHaber)) {
+            echo json_encode([
+                "success" => 0,
+                "error" => $mysqli->error,
+                "sql" => $sqlImpHaber
+            ]);
+            exit;
+        }
     }
 
 
