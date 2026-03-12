@@ -5,16 +5,6 @@ $(document).on("change", ".dt-checkbox-factura", function () {
 $(document).on("change", ".dt-checkbox-pago", function () {
   sumar_pagos();
 });
-function formatoMonedaAplicacion(valor) {
-  valor = Number(valor || 0);
-  return (
-    "$ " +
-    valor
-      .toFixed(2)
-      .replace(/\d(?=(\d{3})+\.)/g, "$&,")
-      .replace(".", ",")
-  );
-}
 
 function resetFormularioPago() {
   $("#fecha_pago").val(hoyISO());
