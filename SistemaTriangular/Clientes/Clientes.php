@@ -126,92 +126,166 @@
                             </div>
                         </div>
                     </div>
-
-                    <div id="asociar-pagos-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true" style="z-index:1003">
-                        <div class="modal-dialog modal-lg">
+                    <div class="modal fade" id="asociar-pagos-modal" tabindex="-1" aria-labelledby="asociarPagosLabel" aria-hidden="true" style="z-index:1003;">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
                             <div class="modal-content">
-                                <div class="modal-header modal-colored-header bg-info">
-                                    <h4 class="modal-title" id="asociar-pagos-title">Asociar Pagos a Facturas</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <div class="modal-header bg-info text-white">
+                                    <h5 class="modal-title" id="asociarPagosLabel">Asociar Pagos a Facturas</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                 </div>
+
                                 <div class="modal-body">
-                                    <div class="col-lg-12 mt-0">
-                                        <div class="col-12 mt-0 mt-sm-0">
-                                            <h4 class="header-title">Comprobantes Disponibles</h4>
-                                            <table id="tabla_asociar-pagos_facturas" class="table dt-responsive nowrap" style="font-size:10px;max-height:200px">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Comprobante</th>
-                                                        <th>Descripcion</th>
-                                                        <th>Importe</th>
-                                                        <th>Ver</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-12 mt-3 mt-sm-0">
-                                                <div class="float-right mt-3 mt-sm-0">
-                                                    <input id="total_anticipos_control" type="number">
-                                                    <!-- <p><b>Total Comprobantes:  </b> <span class="float-right ml-3" id="footer_total_anticipos"> </span>  </p> -->
+                                    <div class="row">
+                                        <div class="col-12">
+                                            <h4 class="header-title mb-3">Comprobantes Disponibles</h4>
+
+                                            <div class="table-responsive">
+                                                <table id="tabla_asociar-pagos_facturas" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Fecha</th>
+                                                            <th>Comprobante</th>
+                                                            <th>Descripción</th>
+                                                            <th>Importe</th>
+                                                            <th>Ver</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="row mt-3">
+                                                <div class="col-12 text-end">
+                                                    <input id="total_anticipos_control" type="number" class="form-control d-inline-block w-auto">
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
 
-
-
-                                    <!--TOTAL COMPROBANTES-->
-                                    <div class="col-lg-12 mt-3">
-                                        <div id="tabla_pago_facturas" class="col-12 mt-3 mt-sm-0">
+                                    <div class="row mt-4">
+                                        <div class="col-12">
                                             <input type="hidden" value="" id="id_facturas">
-                                            <h4 class="header-title">Pagos Disponibles</h4>
-                                            <table id="tabla_asociar-pagos_pagos" class="table dt-responsive nowrap" style="font-size:10px">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Comprobante</th>
-                                                        <th>Descripcion</th>
-                                                        <th>Importe</th>
-                                                        <th>Pagos</th>
-                                                        <!-- <th>Saldo</th>                                                                 -->
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <div class="row">
-                                            <div class="col-12 mt-3 mt-sm-0">
-                                                <div class="float-right mt-3 mt-sm-0">
-                                                    <p><b>Total Comprobantes: </b> <span class="float-right ml-3" id="footer_total_anticipos"> </span> </p>
-                                                    <p><b>Total Pagos: </b> <span class="float-right ml-3" id="footer_total"> </span> </p>
+
+                                            <h4 class="header-title mb-3">Pagos Disponibles</h4>
+
+                                            <div class="table-responsive">
+                                                <table id="tabla_asociar-pagos_pagos" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Fecha</th>
+                                                            <th>Comprobante</th>
+                                                            <th>Descripción</th>
+                                                            <th>Importe</th>
+                                                            <th>Pagos</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>
+
+                                            <div class="row mt-3">
+                                                <div class="col-12 text-end">
+                                                    <p class="mb-1">
+                                                        <b>Total Comprobantes:</b>
+                                                        <span class="ms-2" id="footer_total_anticipos"></span>
+                                                    </p>
+                                                    <p class="mb-1">
+                                                        <b>Total Pagos:</b>
+                                                        <span class="ms-2" id="footer_total"></span>
+                                                    </p>
+
                                                     <input type="hidden" id="footer_total_input">
                                                     <input type="hidden" id="footer_total_saldo">
-                                                    <p><b>Saldo: </b> <span class="float-right ml-3" id="footer_saldo"> </span> </p>
+
+                                                    <p class="mb-0">
+                                                        <b>Saldo:</b>
+                                                        <span class="ms-2" id="footer_saldo"></span>
+                                                    </p>
                                                 </div>
                                             </div>
                                         </div>
-                                        <!-- <div class="row">
-                                                <div class="col-lg-12 text-right mt-3">
-                                                    <div class="form-group">                                                
-                                                    <button type="button" class="btn btn-warning" id="cargar_pago_btn_continuar">Continuar</button>
-                                                </div>
-                                            </div> -->
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                                        <i class="mdi mdi-close mdi-18px me-1"></i>Cancelar
+                                    </button>
+                                    <button id="asociar-pagos-modal-ok" type="button" class="btn btn-success">
+                                        <i class="mdi mdi-content-save mdi-18px me-1"></i>Guardar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- //MODAL DE APLICACIONES DE PAGOS EN CLIENTES -->
+                    <div class="modal fade" id="modal_aplicaciones" tabindex="-1" aria-labelledby="modalAplicacionesLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header bg-info text-white">
+                                    <h5 class="modal-title" id="modalAplicacionesLabel">
+                                        <i class="mdi mdi-link-variant me-2"></i>Aplicaciones del comprobante
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="row mb-3">
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-2 bg-light">
+                                                <small class="text-muted d-block">Comprobante</small>
+                                                <strong id="aplicacion_comprobante">-</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-2 bg-light">
+                                                <small class="text-muted d-block">Importe original</small>
+                                                <strong id="aplicacion_importe_original">$ 0,00</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-2 bg-light">
+                                                <small class="text-muted d-block">Aplicado</small>
+                                                <strong id="aplicacion_importe_aplicado">$ 0,00</strong>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <div class="border rounded p-2 bg-light">
+                                                <small class="text-muted d-block">Saldo</small>
+                                                <strong id="aplicacion_saldo">$ 0,00</strong>
+                                            </div>
+                                        </div>
                                     </div>
 
+                                    <div class="table-responsive">
+                                        <table id="tabla_aplicaciones" class="table table-sm table-bordered align-middle w-100">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>Fecha</th>
+                                                    <th>Tipo</th>
+                                                    <th>Número</th>
+                                                    <th>Importe aplicado</th>
+                                                    <th>Usuario</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
 
+                                    <div id="aplicaciones_empty" class="alert alert-light border mt-3 mb-0 d-none">
+                                        No hay aplicaciones registradas para este comprobante.
+                                    </div>
                                 </div>
+
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
-                                    <button id="asociar-pagos-modal-ok" type="button" class="btn btn-primary">Guardar Cambios</button>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                                        <i class="mdi mdi-close me-1"></i>Cerrar
+                                    </button>
                                 </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Center modal -->
                     <div class="modal fade" id="center_modal" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">

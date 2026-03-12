@@ -253,16 +253,69 @@ if (isset($_POST['FacturacionProformaRecorridos'])) {
 
 if (isset($_POST['CtaCte'])) {
 
-  $sql = "SELECT * FROM Ctasctes WHERE Eliminado='0' AND idCliente='$_POST[id]' AND Facturado='1' AND idFacturado='0' ORDER BY Fecha DESC";
+  $idCliente = intval($_POST['id']);
+
+  $sql = "
+    SELECT 
+        C.*,
+
+        COALESCE((
+            SELECT SUM(I.Importe)
+            FROM Ctasctes_Imputaciones I
+            WHERE I.idMovimientoOrigen = C.id
+            AND I.Eliminado = 0
+        ),0) AS AplicadoDebe,
+
+        COALESCE((
+            SELECT SUM(I.Importe)
+            FROM Ctasctes_Imputaciones I
+            WHERE I.idMovimientoDestino = C.id
+            AND I.Eliminado = 0
+        ),0) AS AplicadoHaber
+
+    FROM Ctasctes C
+
+    WHERE C.Eliminado='0'
+    AND C.idCliente='$idCliente'
+    AND C.Facturado='1'
+    AND C.idFacturado='0'
+
+    ORDER BY C.Fecha DESC
+    ";
+
   $Resultado = $mysqli->query($sql);
   $rows = array();
 
-  while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
+  while ($row = $Resultado->fetch_assoc()) {
+
+    $debe = floatval($row['Debe']);
+    $haber = floatval($row['Haber']);
+
+    if ($debe > 0) {
+
+      $aplicado = floatval($row['AplicadoDebe']);
+      $saldo = $debe - $aplicado;
+    } else {
+
+      $aplicado = floatval($row['AplicadoHaber']);
+      $saldo = $haber - $aplicado;
+    }
+
+    $row['Aplicado'] = round($aplicado, 2);
+    $row['SaldoMovimiento'] = round($saldo, 2);
+
+    if ($saldo <= 0.01) {
+      $row['EstadoAplicacion'] = "CANCELADO";
+    } elseif ($aplicado > 0) {
+      $row['EstadoAplicacion'] = "PARCIAL";
+    } else {
+      $row['EstadoAplicacion'] = "PENDIENTE";
+    }
 
     $rows[] = $row;
   }
 
-  echo json_encode(array('data' => $rows));
+  echo json_encode(array("data" => $rows));
 }
 
 

@@ -5,6 +5,119 @@ function hoyISO() {
 function currencyFormat(num) {
   return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 }
+function formatoMonedaAplicacion(valor) {
+  valor = Number(valor || 0);
+  return (
+    "$ " +
+    valor
+      .toFixed(2)
+      .replace(/\d(?=(\d{3})+\.)/g, "$&,")
+      .replace(".", ",")
+  );
+}
+
+function ver_aplicaciones(id) {
+  if (!id) {
+    toast("error", "Error", "No se encontró el comprobante.");
+    return;
+  }
+
+  $("#aplicacion_comprobante").html("-");
+  $("#aplicacion_importe_original").html("$ 0,00");
+  $("#aplicacion_importe_aplicado").html("$ 0,00");
+  $("#aplicacion_saldo").html("$ 0,00");
+  $("#aplicaciones_empty").addClass("d-none");
+
+  if ($.fn.DataTable.isDataTable("#tabla_aplicaciones")) {
+    $("#tabla_aplicaciones").DataTable().destroy();
+  }
+
+  $("#tabla_aplicaciones tbody").empty();
+
+  $.ajax({
+    url: "Procesos/php/cargarpago.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      VerAplicaciones: 1,
+      idCtasctes: id,
+    },
+    success: function (jsonData) {
+      if (jsonData.success != 1) {
+        alerta(
+          "error",
+          "Error",
+          jsonData.msg || "No se pudieron obtener las aplicaciones.",
+        );
+        return;
+      }
+
+      $("#aplicacion_comprobante").html(jsonData.comprobante || "-");
+      $("#aplicacion_importe_original").html(
+        formatoMonedaAplicacion(jsonData.importe_original),
+      );
+      $("#aplicacion_importe_aplicado").html(
+        formatoMonedaAplicacion(jsonData.importe_aplicado),
+      );
+      $("#aplicacion_saldo").html(formatoMonedaAplicacion(jsonData.saldo));
+
+      if (!jsonData.data || jsonData.data.length === 0) {
+        $("#aplicaciones_empty").removeClass("d-none");
+      }
+
+      $("#tabla_aplicaciones").DataTable({
+        destroy: true,
+        paging: false,
+        searching: false,
+        info: false,
+        ordering: false,
+        data: jsonData.data || [],
+        columns: [
+          {
+            data: "Fecha",
+            render: function (data) {
+              if (!data) return "";
+              return data.split("-").reverse().join("/");
+            },
+          },
+          {
+            data: "TipoRelacionado",
+            defaultContent: "",
+          },
+          {
+            data: "NumeroRelacionado",
+            defaultContent: "",
+          },
+          {
+            data: "Importe",
+            render: function (data) {
+              return formatoMonedaAplicacion(data);
+            },
+          },
+          {
+            data: "Usuario",
+            defaultContent: "",
+          },
+        ],
+        language: {
+          emptyTable: "No hay aplicaciones registradas",
+        },
+      });
+
+      const modal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById("modal_aplicaciones"),
+      );
+      modal.show();
+    },
+    error: function (xhr) {
+      alerta(
+        "error",
+        "Error del servidor",
+        xhr.responseText || "No se pudo consultar el detalle.",
+      );
+    },
+  });
+}
 
 $("#asana_gid").change(function () {
   var id = document.getElementById("codigo").value;
@@ -1745,7 +1858,7 @@ $("#buscarcliente").change(function () {
         }
         var id = document.getElementById("codigo").value;
 
-        var datatable = $("#basic").DataTable({
+        $("#basic").DataTable({
           dom: "Bfrtip",
           buttons: ["copy", "csv", "excel", "pdf", "print"],
           paging: true,
@@ -1821,21 +1934,21 @@ $("#buscarcliente").change(function () {
             {
               data: "TipoDeComprobante",
               render: function (data, type, row) {
+                var comprobante = "";
+
                 if (
                   row.TipoDeComprobante === "Recibo de Pago" ||
                   row.TipoDeComprobante === "MOVIMIENTO INTERNO"
                 ) {
-                  var comprobante =
-                    row.TipoDeComprobante + " " + row.NumeroVenta;
+                  comprobante = row.TipoDeComprobante + " " + row.NumeroVenta;
                 } else {
-                  var comprobante =
-                    row.TipoDeComprobante + " " + row.NumeroFactura;
+                  comprobante = row.TipoDeComprobante + " " + row.NumeroFactura;
                 }
 
                 if (row.TipoDeComprobante == "MOVIMIENTO INTERNO") {
-                  return `${row.TipoDeComprobante} ${row.NumeroVenta}<br><small class="mr-2 text-muted"> ${row.Comentario} </small>`;
+                  return `${comprobante}<br><small class="mr-2 text-muted">${row.Comentario || ""}</small>`;
                 } else {
-                  return `${comprobante}<br><small class="mr-2 text-muted"><a id="${row.id}" onclick="obs_modify(this.id)"><i class='mdi mdi-14px mdi-pencil-outline text-muted'>  ${row.Comentario} </i></a></small>`;
+                  return `${comprobante}<br><small class="mr-2 text-muted"><a id="${row.id}" onclick="obs_modify(this.id)"><i class='mdi mdi-14px mdi-pencil-outline text-muted'> ${row.Comentario || ""} </i></a></small>`;
                 }
               },
             },
@@ -1847,38 +1960,73 @@ $("#buscarcliente").change(function () {
               data: "Haber",
               render: $.fn.dataTable.render.number(".", ",", 2, "$ "),
             },
+
+            {
+              data: "EstadoAplicacion",
+              render: function (data, type, row) {
+                let badgeClass = "bg-light text-dark";
+                let texto = "S/D";
+
+                if (data === "PENDIENTE") {
+                  badgeClass = "bg-danger";
+                  texto = "Pendiente";
+                } else if (data === "PARCIAL") {
+                  badgeClass = "bg-warning text-dark";
+                  texto = "Parcial";
+                } else if (data === "CANCELADA") {
+                  badgeClass = "bg-success";
+                  texto = "Cancelada";
+                } else if (data === "DISPONIBLE") {
+                  badgeClass = "bg-info";
+                  texto = "Disponible";
+                } else if (data === "APLICADO") {
+                  badgeClass = "bg-secondary";
+                  texto = "Aplicado";
+                }
+
+                return `
+                <span 
+                  class="badge ${badgeClass}" 
+                  style="cursor:pointer"
+                  onclick="ver_aplicaciones(${row.id})"
+                  title="Ver aplicaciones"
+                >
+                  ${texto}
+                </span>
+              `;
+              },
+            },
             {
               data: "id",
               render: function (data, type, row) {
                 if (row.TipoDeComprobante != "MOVIMIENTO INTERNO") {
-                  //RECIBO DE PAGO
                   if (row.Haber > 0) {
                     if (row.idNotifications == 0) {
                       return (
-                        `<td><a onclick='ver_recibo_modal(${row.id})' title='Recibo' ><i class='mdi mdi-18px mdi-alpha-r-circle text-success'></i></a>` +
+                        `<a onclick='ver_recibo_modal(${row.id})' title='Recibo'><i class='mdi mdi-18px mdi-alpha-r-circle text-success'></i></a>` +
                         `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>`
                       );
                     } else {
-                      return `<td><a onclick='ver_recibo_modal(${row.id})' title='Recibo' ><i class='mdi mdi-18px mdi-alpha-r-circle text-success mr-2'></i></a><a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger mr-2'></i></a><a onclick=''><i class='mdi mdi-18px mdi-email-check text-success'></i></a></td>`;
+                      return (
+                        `<a onclick='ver_recibo_modal(${row.id})' title='Recibo'><i class='mdi mdi-18px mdi-alpha-r-circle text-success mr-2'></i></a>` +
+                        `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger mr-2'></i></a>`
+                      );
                     }
-                    //FACTURA
                   } else {
                     if (row.idNotifications == 0) {
                       return (
-                        `<td><a onclick='abrirModalFactura(${row.id})' title='Comprobante' ><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-                        `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'>` +
-                        `<i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a></td>`
+                        `<a onclick='abrirModalFactura(${row.id})' title='Comprobante'><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
+                        `<a target='_blank' href='invoice_details.php?id=${row.id}' title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>`
                       );
                     } else {
                       return (
-                        `<td><a onclick='abrirModalFactura(${row.id})' title='Comprobante' ><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-                        `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'>` +
-                        `<i class='mdi mdi-18px mdi-alpha-d-circle text-warning mr-2'></i></a><a onclick='notifications(${row.idNotifications})'><i class='mdi mdi-18px mdi-email-check text-success'></i></a></td></td>`
+                        `<a onclick='abrirModalFactura(${row.id})' title='Comprobante'><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
+                        `<a target='_blank' href='invoice_details.php?id=${row.id}' title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning mr-2'></i></a>`
                       );
                     }
                   }
                 } else {
-                  return `<td><a onclick='eliminar_mvi(${row.id})' class='action-icon'> <i class='mdi mdi-18px mdi-trash-can text-danger'></i></td>`;
+                  return `<a onclick='eliminar_mvi(${row.id})' class='action-icon'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>`;
                 }
               },
             },
@@ -1886,7 +2034,7 @@ $("#buscarcliente").change(function () {
         });
 
         //TABLA RELACIONES
-        var datatable_relaciones = $("#relaciones_tabla").DataTable({
+        $("#relaciones_tabla").DataTable({
           dom: "Bfrtip",
           buttons: ["copy", "excel", "pdf"],
           paging: true,
