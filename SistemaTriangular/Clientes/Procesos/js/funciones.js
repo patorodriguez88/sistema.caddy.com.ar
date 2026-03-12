@@ -615,6 +615,7 @@ let reciboActualId = null;
 
 function ver_recibo_modal(id) {
   reciboActualId = id;
+  console.log("ID del recibo a mostrar:", id);
 
   const url = "Informes/recibo.php?id=" + id + "&modal=1";
 
@@ -730,10 +731,15 @@ $("#btn_enviar_recibo_modal").on("click", function () {
   });
 });
 
+$("#modal_factura_preview").on("hidden.bs.modal", function () {
+  $("#iframe_factura_preview").attr("src", "");
+  $("#btn_abrir_factura_modal").attr("href", "#");
+  facturaActualId = null;
+});
 //ENVIAR FACTURA POR MAIL
-let facturaActualId =
-  new URLSearchParams(window.location.search).get("id") || null;
-
+// let facturaActualId =
+// new URLSearchParams(window.location.search).get("id") || null;
+let facturaActualId = null;
 function abrirModalFactura(id) {
   if (!id) {
     toast("error", "Error", "No hay factura seleccionada.");

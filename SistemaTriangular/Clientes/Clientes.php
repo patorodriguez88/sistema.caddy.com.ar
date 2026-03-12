@@ -111,7 +111,7 @@
                                         <i class="mdi mdi-close-thick me-1"></i>Cerrar
                                     </button>
 
-                                    <button type="button" class="btn btn-outline-primary" id="btn_imprimir_factura_modal">
+                                    <button type="button" class="btn btn-primary" id="btn_imprimir_factura_modal">
                                         <i class="mdi mdi-printer me-1"></i>Imprimir
                                     </button>
 
