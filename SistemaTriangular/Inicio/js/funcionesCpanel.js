@@ -33,7 +33,7 @@ function dtAjaxCommon() {
 try {
   console.debug(
     "CADDY cookie presente:",
-    document.cookie.includes("CADDYSESS=")
+    document.cookie.includes("CADDYSESS="),
   );
 } catch (e) {}
 
@@ -45,7 +45,7 @@ function updateStats() {}
 
 $(document).ready(function () {
   $("#mes").html("Panel de Control");
-  var datatableTransporte = $("#transporte").DataTable({
+  $("#transporte").DataTable({
     paging: false,
     searching: false,
     ajax: Object.assign(dtAjaxCommon(), {
@@ -60,6 +60,8 @@ $(document).ready(function () {
             var color = "success";
           } else if (row.Estado == "Alta") {
             var color = "danger";
+          } else if (row.Estado == "Pendiente") {
+            var color = "warning";
           }
           return (
             "<td>" +
@@ -71,8 +73,20 @@ $(document).ready(function () {
         },
       },
       { data: "NumerodeOrden" },
-      { data: "Fecha" },
-      { data: "Hora" },
+      {
+        data: "Fecha",
+        render: function (data, type, row) {
+          return (
+            "<td>" +
+            row.Fecha +
+            "</br>" +
+            "<small class='text-muted'>" +
+            row.Hora +
+            "</small>" +
+            "</td>"
+          );
+        },
+      },
       { data: "Patente" },
       {
         data: "NombreChofer",
@@ -102,7 +116,23 @@ $(document).ready(function () {
           );
         },
       },
-      { data: "Estado" },
+      {
+        data: "Estado",
+        render: function (data, type, row) {
+          var bgClass = "";
+          if (row.Estado == "Cargada") {
+            bgClass = "bg-success";
+          } else if (row.Estado == "Alta") {
+            bgClass = "bg-danger";
+          } else if (row.Estado == "Pendiente") {
+            bgClass = "bg-warning";
+          }
+          return (
+            "<span class='badge " + bgClass + "'>" + row.Estado + "</span>"
+          );
+        },
+      },
+
       {
         data: null,
         render: function (data, type, row) {
@@ -270,7 +300,7 @@ $(document).ready(function () {
     ],
   });
 
-  var datatableLogistica1 = $("#logistica1").DataTable({
+  $("#logistica1").DataTable({
     paging: false,
     searching: false,
     ajax: Object.assign(dtAjaxCommon(), {
@@ -295,25 +325,17 @@ $(document).ready(function () {
       {
         data: "Recorrido",
         render: function (data, type, row) {
-          return (
-            "<td>" +
-            "<a id='pend' data-id='" +
-            row.Recorrido +
-            "' data-fieldname='" +
-            data +
-            "' data-toggle='modal'  data-target='#bs-example-modal-lg'>" +
-            "<i class='mdi mdi-24px mdi-file-search-outline'></i></a>" +
-            "</td>"
-          );
+          return `
+                  <a href="javascript:void(0);"
+                  class="btn-ver-pendientes"
+                  data-id="${row.Recorrido}"
+                  data-fieldname="${data}"
+                  data-bs-toggle="modal"
+                  data-bs-target="#bs-example-modal-lg">
+                  <i class="mdi mdi-24px mdi-file-search-outline"></i>
+                  </a>`;
         },
       },
-      // {data:"id",
-      // render: function (data, type, row) {
-      //     return "<td>"+
-      //            "<a><i class='mdi mdi-24px mdi-arrow-top-right-thin-circle-outline text-success'></i></a>"+
-      //            "</td>"
-      //            }
-      // },
       {
         data: "Recorrido",
         render: function (data, type, row) {
@@ -350,7 +372,7 @@ $(document).ready(function () {
 
         $("#entregas_porc").html("% " + jsonData.Porcentaje);
         $("#entregas_mesant").html(
-          "Desde el mes pasado (" + jsonData.TotalMesant + " )"
+          "Desde el mes pasado (" + jsonData.TotalMesant + " )",
         );
         if (jsonData.Tendencia == 0) {
           document.getElementById("entregas_porc").className =
@@ -374,7 +396,7 @@ $(document).ready(function () {
         $("#entregasr_mes").html(jsonData.TotalMesr + " envíos este mes");
         $("#entregasr_porc").html("% " + jsonData.Porcentajer);
         $("#entregasr_mesant").html(
-          "Desde el mes pasado (" + jsonData.TotalMesantr + " )"
+          "Desde el mes pasado (" + jsonData.TotalMesantr + " )",
         );
         if (jsonData.Tendenciar == 0) {
           document.getElementById("entregasr_porc").className =
@@ -433,7 +455,7 @@ $(document).ready(function () {
         $("#clientes_mes").html((jsonData.TotalMes ?? 0) + " activos este mes");
         $("#clientes_porc").html("% " + (jsonData.Porcentaje ?? 0));
         $("#clientes_mesant").html(
-          "Desde el mes pasado (" + (jsonData.TotalMesant ?? 0) + " )"
+          "Desde el mes pasado (" + (jsonData.TotalMesant ?? 0) + " )",
         );
         if (jsonData.Tendencia == 0) {
           document.getElementById("clientes_porc").className =
@@ -472,7 +494,7 @@ $(document).ready(function () {
         $("#kilometros_mes").html(jsonData.TotalMes + " kilómetros este mes");
         $("#kilometros_porc").html("% " + jsonData.Porcentaje);
         $("#kilometros_mesant").html(
-          "Desde el mes pasado (" + jsonData.TotalMesant + " Km.)"
+          "Desde el mes pasado (" + jsonData.TotalMesant + " Km.)",
         );
         if (jsonData.Tendencia == 0) {
           const iconoKilometros = document.getElementById("kilometros");
@@ -514,7 +536,7 @@ $(document).ready(function () {
           $("#alerta_licencias_label").html(
             "<strong>Atención !</strong> Hay " +
               jsonData.Licencias +
-              " Licencias de Conducir de Empleados Vencidas"
+              " Licencias de Conducir de Empleados Vencidas",
           );
         }
 
@@ -523,7 +545,7 @@ $(document).ready(function () {
           $("#alerta_seguros_label").html(
             "<strong>Alerta !</strong> Hay " +
               jsonData.Seguro +
-              " Seguros de Vehículos <strong>Vencidos</strong> Verificar!"
+              " Seguros de Vehículos <strong>Vencidos</strong> Verificar!",
           );
         }
         if (jsonData.Service != "0") {
@@ -531,7 +553,7 @@ $(document).ready(function () {
           $("#alerta_services_label").html(
             "<strong>Atención !</strong> Hay " +
               jsonData.Service +
-              " Services Pendientes"
+              " Services Pendientes",
           );
         }
         if (jsonData.Itv != "0") {
@@ -539,7 +561,7 @@ $(document).ready(function () {
           $("#alerta_itv_label").html(
             "<strong>Atención !</strong> Hay " +
               jsonData.Itv +
-              " Inspecciones Técnicas (Itv) Pendientes"
+              " Inspecciones Técnicas (Itv) Pendientes",
           );
         }
       } else {
@@ -561,7 +583,7 @@ $("#deposito-modal").on("show.bs.modal", function (e) {
   $("#deposito-modal-body").text(
     "Estas por vaciar el Recorrido  " +
       id +
-      ". Se enviaran todos los servicios al recorrido Deposito (Recorrido 80)"
+      ". Se enviaran todos los servicios al recorrido Deposito (Recorrido 80)",
   );
   $("#deposito-modal-ok").click(function () {
     //   alert(id);
@@ -583,7 +605,7 @@ $("#deposito-modal").on("show.bs.modal", function (e) {
             "Se movieron los servicios a Deposito.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
         }
       },
@@ -741,7 +763,7 @@ $("#remitos-modal").on("show.bs.modal", function (e) {
   } else {
     var rec = $("#idRecorridoPendientes").html();
     $("#body-remitos").html(
-      "Se imprimiran todos los Remitos del recorrido " + rec
+      "Se imprimiran todos los Remitos del recorrido " + rec,
     );
     $("#imp_rem").hide();
     $("#imp_rem_rec").show();
@@ -753,7 +775,7 @@ $("#imp_rem_rec").click(function writeToSelectedPrinter(id) {
   window.open(
     "http://www.caddy.com.ar/../Ventas/Informes/autoimpresion.php?Recorrido=" +
       rec,
-    "_blank"
+    "_blank",
   );
   // $.ajax({
   //     data:{'RemitosRec':1,'rec':rec},
