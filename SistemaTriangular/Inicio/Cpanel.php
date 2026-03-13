@@ -100,12 +100,12 @@
 
 
                     <!-- Large modal -->
-                    <div id="bs-example-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-full-width">
+                    <div id="bs-example-modal-lg" class="modal fade" tabindex="-1" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg" style="max-width: 80%;">
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myLargeModalLabel">Large modal</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -113,13 +113,22 @@
                                             <div class="card">
                                                 <div style="display:none" id="idRecorridoPendientes"></div>
                                                 <div class="card-body">
-                                                    <div class="button-list">
-                                                        <button type="button" class="btn btn-secondary float-end" data-bs-toggle="modal" data-target="#remitos-modal"><i class='mdi mdi-18px mdi-printer'></i> Imprimir Remitos</button>
-                                                        <button type="button" class="btn btn-primary float-end" data-bs-toggle="modal" data-target="#rotulos-modal"><i class='mdi mdi-18px mdi-printer'></i> Imprimir Rótulos</button>
+                                                    <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                                                        <h4 class="header-title mt-0 mb-0">LOGISTICA | HOJAS DE RUTA | ENVIOS PENDIENTES X RECORRIDO</h4>
+
+                                                        <div class="d-flex flex-wrap gap-2">
+                                                            <button type="button" class="btn btn-secondary" data-bs-toggle="modal" data-bs-target="#remitos-modal">
+                                                                <i class="mdi mdi-18px mdi-printer me-1"></i> Imprimir Remitos
+                                                            </button>
+
+                                                            <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#rotulos-modal">
+                                                                <i class="mdi mdi-18px mdi-printer me-1"></i> Imprimir Rótulos
+                                                            </button>
+                                                        </div>
                                                     </div>
-                                                    <h4 class="header-title mt-2">LOGISTICA | HOJAS DE RUTA | ENVIOS PENDIENTES X RECORRIDO </h4>
+
                                                     <div class="table-responsive">
-                                                        <table class="table table-centered table-hover mb-0" id="pendientes">
+                                                        <table class="table table-sm table-centered table-hover mb-0" id="pendientes">
                                                             <thead>
                                                                 <tr>
                                                                     <th>Fecha</th>
@@ -521,34 +530,39 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <a target="_blank" href="https://www.caddy.com.ar/SistemaTriangular/Logistica/SalidasdeHoy.php" class="btn btn-outline-warning btn-rounded float-end mb-3">
-                                        <i class='mdi mdi-18px mdi-map-search-outline'></i>Abrir Mapa</a>
-                                    </a>
-                                    <h4 class="header-title mt-2"> Transporte </h4>
+
+                                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                                        <h4 class="header-title mt-0 mb-0">Transporte</h4>
+
+                                        <a target="_blank"
+                                            href="https://www.caddy.com.ar/SistemaTriangular/Logistica/SalidasdeHoy.php"
+                                            class="btn btn-outline-warning btn-rounded">
+                                            <i class="mdi mdi-18px mdi-map-search-outline me-1"></i>
+                                            Abrir Mapa
+                                        </a>
+                                    </div>
 
                                     <div class="table-responsive">
-                                        <table class="table table-centered table-nowrap table-hover mb-0" id="transporte">
-                                            <tbody>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Color</th>
-                                                        <th>Orden</th>
-                                                        <th>Fecha</th>
-                                                        <th>Hora</th>
-                                                        <th>Dominio</th>
-                                                        <th>Chofer</th>
-                                                        <!-- <th>Acomp.</th>  -->
-                                                        <th>Recorrido</th>
-                                                        <th>Estado</th>
-                                                        <th>Accion</th>
-                                                    </tr>
-                                                </thead>
-                                            </tbody>
+                                        <table class="table table-sm table-centered table-nowrap table-hover mb-0 table-transporte" id="transporte">
+                                            <thead>
+                                                <tr>
+                                                    <th>Color</th>
+                                                    <th>Orden</th>
+                                                    <th>Fecha</th>
+                                                    <th>Dominio</th>
+                                                    <th>Chofer</th>
+                                                    <th>Recorrido</th>
+                                                    <th>Estado</th>
+                                                    <th>Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
                                         </table>
-                                    </div> <!-- end table-responsive-->
-                                </div> <!-- end card-body-->
-                            </div> <!-- end card-->
-                        </div> <!-- end col-->
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="row">
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
