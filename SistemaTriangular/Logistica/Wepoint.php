@@ -168,7 +168,7 @@
                     </div>
 
                     <input type="hidden" id="numero_orden">
-                    <input type="hidden" id="token_wepoint" value="366|E0TPfNC9JVmyxaNn4yTNodg0yOdv40ldmklLUzGLa375afb7">
+                    <input type="hidden" id="token_wepoint" value="1151|P71sPbHBcXnLtfse2bPEOukFfWeF04GCT2VgZDEe32332f90">
 
                     <!-- TABLA DE INGRESO AL WAREHOUSE -->
                     <div class="row" style="display:none;" id="seccion_colectas">

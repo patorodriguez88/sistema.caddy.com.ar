@@ -305,7 +305,8 @@ $(document).ready(function () {
   // Hoy - Hoy
   var fechas = fecha + " - " + fecha;
 
-  init_datatable(fechas);
+  // init_datatable(fechas);
+  init_datatable();
 });
 
 $("#buscar_orden").click(function () {
@@ -389,7 +390,7 @@ function guardarOrden() {
   }
 
   $.ajax({
-    url: "Proceso/php/ordenes.php", // 👈 corregido: 'Procesos' (no 'Proceso')
+    url: "Proceso/php/ordenes.php",
     type: "POST",
     data: datos,
     dataType: "json",
@@ -622,20 +623,32 @@ $("#singledaterange").change(function () {
   init_datatable(fechas);
 });
 
-function init_datatable(fechas) {
+function init_datatable(fechas = "") {
   $("#div_ordenes").css("display", "block");
-  var new_date = fechas.split("-");
-  var new_date1 = new_date[0].split("/");
-  var new_date2 = new_date1[1] + "/" + new_date1[0] + "/" + new_date1[2];
 
-  var new_date_1 = new_date[1].split("/");
-  var new_date_2 = new_date_1[1] + "/" + new_date_1[0] + "/" + new_date_1[2];
+  if (fechas && fechas.trim() !== "") {
+    var new_date = fechas.split(" - ");
+    var new_date1 = new_date[0].split("/");
+    var new_date2 = new_date1[1] + "/" + new_date1[0] + "/" + new_date1[2];
 
-  $("#header_ordenes").html(
-    "Ordenes de Salida Fechas Desde " + new_date2 + " Hasta " + new_date_2,
-  );
+    var new_date_1 = new_date[1].split("/");
+    var new_date_2 = new_date_1[1] + "/" + new_date_1[0] + "/" + new_date_1[2];
+
+    $("#header_ordenes").html(
+      "Ordenes de Salida Fechas Desde " + new_date2 + " Hasta " + new_date_2,
+    );
+  } else {
+    fechas = "";
+    $("#header_ordenes").html("Órdenes de Salida Pendientes o Cargadas");
+  }
+
   $("#div_ordenes").css("display", "block");
-  var datatable = $("#ordenes").DataTable({
+
+  if ($.fn.DataTable.isDataTable("#ordenes")) {
+    $("#ordenes").DataTable().destroy();
+  }
+
+  $("#ordenes").DataTable({
     dom: "Bfrtip",
     buttons: ["pageLength", "copy", "excel", "pdf"],
     paging: true,
@@ -655,94 +668,90 @@ function init_datatable(fechas) {
       {
         data: "NumerodeOrden",
         render: function (data, type, row) {
-          return `<td>${row.NumerodeOrden}</td>`;
+          return `${row.NumerodeOrden}`;
         },
       },
       {
         data: "Fecha",
         render: function (data, type, row) {
-          let fecha = row.Fecha.split("-").reverse().join("/");
-          return `<td>${fecha}</br>S:${row.Hora}</br>R:${row.HoraRetorno}</td>`;
+          let fecha = row.Fecha ? row.Fecha.split("-").reverse().join("/") : "";
+          return `${fecha}<br>S:${row.Hora || ""}<br>R:${row.HoraRetorno || ""}`;
         },
       },
       {
         data: "NombreChofer",
         render: function (data, type, row) {
-          return `<td>${row.NombreChofer}</td><td>${row.NombreChofer2}</td>`;
+          return `${row.NombreChofer || ""}<br>${row.NombreChofer2 || ""}`;
         },
       },
       {
         data: "Patente",
         render: function (data, type, row) {
-          return `<td>${row.Marca} ${row.Modelo} ${row.Dominio}</td>`;
+          return `${row.Marca || ""} ${row.Modelo || ""} ${row.Dominio || ""}`;
         },
       },
       {
         data: "Recorrido",
-
-        render: function (type, data, row) {
-          return `<td><small>${row.Recorrido}</small></br><td>${row.Nombre}</td>`;
+        render: function (data, type, row) {
+          return `<small>${row.Recorrido || ""}</small><br>${row.Nombre || ""}`;
         },
       },
       {
         data: "Kilometros",
         render: function (data, type, row) {
-          return (
-            `<td>${row.KilometrosRecorridos} Km.</td>` +
-            `<td class="muted">${row.Kilometros} - ${row.KilometrosRegreso}</td>`
-          );
+          return `${row.KilometrosRecorridos || 0} Km.<br><span class="text-muted">${row.Kilometros || 0} - ${row.KilometrosRegreso || 0}</span>`;
         },
       },
       {
         data: null,
         render: function (data, type, row) {
-          var formatoMoneda = row.TotalRecorrido.toLocaleString("es-AR", {
+          var totalRecorrido = parseFloat(row.TotalRecorrido || 0);
+          var formatoMoneda = totalRecorrido.toLocaleString("es-AR", {
             style: "currency",
-            currency: "US",
+            currency: "ARS",
           });
 
-          if (row.Facturado == 1) {
-            var facturado = `Facturado`;
-            var color = "success";
-          } else {
-            facturado = "No Facturado";
-            color = "danger";
+          var facturado = row.Facturado == 1 ? "Facturado" : "No Facturado";
+          var color = row.Facturado == 1 ? "success" : "danger";
+
+          return `<h6><span class="badge bg-${color}"><b>${facturado}</b></span></h6>${formatoMoneda}`;
+        },
+      },
+      {
+        data: null,
+        render: function (data, type, row) {
+          var estado = "secondary";
+
+          if (row.Estado == "Cerrada") {
+            estado = "danger";
+          } else if (row.Estado == "Alta" || row.Estado == "Pendiente") {
+            estado = "warning";
+          } else if (row.Estado == "Cargada") {
+            estado = "success";
           }
 
-          return `<td><h6><span class="badge bg-${color}"> <b>${facturado}</b></span></h6></td>\$ ${formatoMoneda}</td>`;
+          return `<h6><span class="badge bg-${estado}"><b>${row.Estado || ""}</b></span></h6>`;
         },
       },
       {
         data: null,
         render: function (data, type, row) {
           if (row.Estado == "Cerrada") {
-            var estado = "danger";
-          } else if (row.Estado == "Alta" || row.Estado == "Pendiente") {
-            var estado = "warning";
-          } else if (row.Estado == "Cargada") {
-            var estado = "success";
-          }
-          return `<td><h6><span class="badge bg-${estado}"> <b>${row.Estado}</b></span></h6></td>`;
-        },
-      },
-      {
-        data: null,
-        render: function (data, type, row) {
-          if (row.Estado == "Cerrada") {
-            return `<td><a target="_blank" href="https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ResumenVehiculospdf.php?NO=${row.NumerodeOrden}"><i class='mdi mdi-18px mdi-file-chart-outline'></i></a></td>`;
+            return `<a target="_blank" href="https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ResumenVehiculospdf.php?NO=${row.NumerodeOrden}">
+                      <i class="mdi mdi-18px mdi-file-chart-outline"></i>
+                    </a>`;
           } else {
             return `
-            <td>
               <a target="_blank" href="http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
-                <i class='mdi mdi-18px mdi-file-chart-outline ms-2'></i>
+                <i class="mdi mdi-18px mdi-file-chart-outline ms-2"></i>
               </a>
               <a href="#" class="btn-cargar-orden" data-no="${row.NumerodeOrden}" title="Cargar Orden">
-                <i class='mdi mdi-18px mdi-upload ms-2 text-success'></i>
-              </a><a href="#" onclick="cerrarOrden('${row.NumerodeOrden}');" title="Cerrar Orden">
-                <i class='mdi mdi-18px mdi-lock-check ms-2 text-danger'></i>
+                <i class="mdi mdi-18px mdi-upload ms-2 text-success"></i>
               </a>
-            </td>`;
-            // return `<td><a target="_blank" href="http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}"><i class='mdi mdi-18px mdi-file-chart-outline'></i></a></td>`;
+              <a href="#" onclick="cerrarOrden('${row.NumerodeOrden}'); return false;" title="Cerrar Orden">
+                <i class="mdi mdi-18px mdi-lock-check ms-2 text-danger"></i>
+              </a>
+            `;
           }
         },
       },

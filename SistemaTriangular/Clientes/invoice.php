@@ -1,531 +1,846 @@
 <?php
-session_start();
-
-        include_once "../Conexion/Conexioni.php";
-        $mostrarBoton = true; // Establece esta variable según tu lógica para decidir si mostrar o no el botón
-
+include_once "../Conexion/Conexioni.php";
+$mostrarBoton = true; // Establece esta variable según tu lógica para decidir si mostrar o no el botón
 ?>
 
 <!DOCTYPE html>
-    <html lang="es">
-    <head>
-        <meta charset="utf-8" />
-        <title id="title_page_invoice">Sistema Caddy | Factura</title>
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
-        <meta content="Coderthemes" name="author" />
+<html lang="es">
 
-          <!-- App favicon -->
-        <link rel="shortcut icon" href="../images/favicon/favicon.ico">
+<head>
+  <meta charset="utf-8" />
+  <title>Sistema Caddy | </title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
+  <meta content="Coderthemes" name="author" />
+  <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
+  <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
+  <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
+  <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
+  <link href="../hyper/dist/assets/vendor/datatables/select.bootstrap5.min.css" rel="stylesheet" type="text/css">
+  <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
+  <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
+  <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
 
-        <!-- third party css -->
-        <link href="../hyper/dist/saas/assets/css/vendor/dataTables.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/vendor/responsive.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/vendor/buttons.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/vendor/select.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <!-- third party css end -->
+  <!-- App css -->
+  <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
 
-        <!-- App css -->
-        <link href="../hyper/dist/saas/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/app.min.css" rel="stylesheet" type="text/css" id="light-style" />
-        <link href="../hyper/dist/saas/assets/css/app-dark.min.css" rel="stylesheet" type="text/css" id="dark-style" />
+  <!-- Icons css -->
+  <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
+  <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
+  <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
 
+</head>
+<style>
+  .invoice-card {
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 0.125rem 0.25rem rgba(15, 23, 42, 0.08);
+  }
 
-    </head>
+  .invoice-header {
+    border-bottom: 1px solid #e9ecef;
+    padding-bottom: 1rem;
+    margin-bottom: 1.25rem;
+  }
 
-    <body class="loading" data-layout="topnav" data-layout-config='{"layoutBoxed":false,"darkMode":false,"showRightSidebarOnStart": true}'>
-        <!-- Begin page -->
-        <div class="wrapper">
+  .invoice-brand img {
+    max-height: 68px;
+    width: auto;
+  }
 
-            <!-- ============================================================== -->
-            <!-- Start Page Content here -->
-            <!-- ============================================================== -->
+  .invoice-letter {
+    width: 64px;
+    height: 64px;
+    border: 2px solid #212529;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    font-weight: 700;
+    margin: 0 auto;
+  }
 
-            <div class="content-page">
-                <div class="content">
-                    <!-- Topbar Start -->
-                   
-            <!-- //MODIFICAR CODIGO CLIENTE -->
-                <div class="modal fade" id="standard-modal-codcliente" tabindex="-1" role="dialog" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header modal-colored-header bg-primary">
-                                <h4 class="modal-title" id="myCenterModalLabel_codcliente"></h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                            </div>
-                            <div class="col-lg-12 mt-3">
+  .invoice-title-box {
+    text-align: end;
+  }
 
-                            <label>Codigo de Cliente</label>
-                            <input id="codigocliente_t" type="text" class="form-control" data-toggle="input-mask">
-                            <span class="font-13 text-muted">Ej.: 123456</span>
+  .invoice-title-box h2,
+  .invoice-title-box h4 {
+    margin-bottom: 0;
+  }
 
-                            </div>
-                            <div class="modal-footer mt-3">
-                                <input type="hidden" id="cs_codigocliente">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
-                                <button id="modificarcodigocliente_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
-                            </div>
-                    </div>
-                </div>
-                </div>              
-                    <!-- Start Content-->
-                    <div class="container-fluid">
-                      <div class="row">
-                            <div class="col-12">
-                                <div class="page-title-box">
-                                    <div class="page-title-right">
-                                        <ol class="breadcrumb m-0">
-                                        </ol>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>     
-                        
-                      <!-- Large modal -->
+  .invoice-section {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 1rem;
+    height: 100%;
+  }
 
-                <!-- Compose Modal -->
-                <div id="compose-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="compose-header-modalLabel" aria-hidden="true">
-                    <div class="modal-dialog">
-                        <div class="modal-content">
-                            <div class="modal-header modal-colored-header bg-primary">
-                                <h4 class="modal-title" id="compose-header-modalLabel">Enviar Factura</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
-                            </div>
+  .invoice-section h5,
+  .invoice-section h6 {
+    margin-bottom: .75rem;
+    font-weight: 700;
+  }
 
+  .invoice-label {
+    color: #6c757d;
+    font-weight: 600;
+    min-width: 120px;
+    display: inline-block;
+  }
 
-                            <div class="modal-body p-3">
-                                <form id="miFormulario" class="p-1" action="../Mail/invoice.php" method="post">
-                                    <div class="form-group mb-2">
-                                        <label for="txtSelect">To</label>
-                                        <select name="txtSelect" id="txtSelect" class="select2 form-control select2-multiple" data-toggle="select2" multiple="multiple" data-placeholder="Choose ...">
-                                            <optgroup label="Contactos" id="email_contactos">
-                                            </optgroup>
-                                        </select>
-                                    
-                                    </div>
-                                    <div class="form-group mb-2">
-                                        <label for="txtAsunto">Subject</label>
-                                        <input type="text" name="txtAsunto" id="txtAsunto" class="form-control" placeholder="subject">
-                                    </div>
+  .invoice-client-box {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #fff;
+    height: 100%;
+  }
 
-                                    <input type="hidden" name="txtId" id="txtId" value="">
-                                    <input type="hidden" name="txtToken" id="txtToken">
-                                    <input type="hidden" name="txtEmail" id="txtEmail">
-                                    <input type="hidden" name="txtName" id="txtName">
-                                    <input type="hidden" name="txtComprobante" id="txtComprobante" value="1">
-                                    <input type="hidden" name="txtTotal" id="txtTotal">
-                                    <input type="hidden" name="txtPeriodo" id="txtPeriodo">
-                                    <input type="hidden" name="txtVencimiento" id="txtVencimiento">
-                                    <input type="hidden" name="txtNumfactura" id="txtNumfactura">
-                                    
-                                    <button id="button_sendmail" type="button" class="btn btn-primary" data-dismiss="modal" ><i class="mdi mdi-send mr-1"></i> Send Message</button>
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
-                                </form>
-                            </div>
-                        </div><!-- /.modal-content -->
-                    </div><!-- /.modal-dialog -->
-                </div><!-- /.modal -->
+  .invoice-totals {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+  }
 
+  .invoice-total-final {
+    font-size: 1.35rem;
+    font-weight: 700;
+    color: #0d6efd;
+    border-top: 1px dashed #ced4da;
+    padding-top: .75rem;
+    margin-top: .75rem;
+  }
 
+  .invoice-notes {
+    background: #fff8e1;
+    border: 1px solid #ffe69c;
+    border-radius: 12px;
+    padding: 1rem;
+  }
 
-                    <!--DESDE ACA FACTURA -->
-                        <div class="row" id="factura_proforma">
-                          <div class="col-12">
-                            <div class="card">
-                              <div class="card-body">
+  .invoice-afip-box {
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1rem;
+    background: #fff;
+    height: 100%;
+  }
 
-                                <!-- Invoice Logo-->
-                                <div class="clearfix">
+  .invoice-actions .btn {
+    min-width: 130px;
+  }
 
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="mb-3">
-                                            <div class="float-left mb-3">
-                                            <img src="../images/LogoCaddy.png" alt="" height="70">
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="mb-3">
-                                            <div class="float-none">
-                                            <h2 class="ml-5" id="letra" > </h2>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-4">
-                                        <div class="mb-3">
-                                        <div class="float-left">
-                                    <h2 class="mr-5" id="factura_titulo"></h2>
-                                  </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                </div>
-                                <!-- Invoice Detail-->
-                                <div class="row">
-                                  <div class="col-sm-6">
-                                    <h4 id="Emp_RazonSocial"></h4>
-                                    <address>
-                                     <strong> Direccion:</strong> <a id="Emp_Direccion"></a><br>
-                                     <strong> Cuit:</strong> <a id="Emp_Cuit"></a><br>
-                                     <strong> IIBB:</strong> <a id="Emp_IngresosBrutos"></a><br>
-                                     <strong> Telefono:</strong> <abbr title="Phone"></abbr><a id="Emp_Telefono"></a>
-                                  </address> </div>
-                                  <!-- end col-->
-                                  <div class="col-sm-4 offset-sm-2">
-                                    <div class="float-sm-end">
-                                      <h4 id="factura_titulo2"></h4>
-                                      <address>
-                                      <strong>N:</strong> <a></a>-
-                                      <a id="NumeroComprobante">00000000000</a><br>
-                                      <strong>Fecha: <a id="FechaComprobante"></a></strong><br>
-                                      <strong>Id de Cliente: </strong><a id="factura_codigo"></a><br>
-                                      <strong>Estado del Comprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span>
-                                  </address>
-                                    </div>
-                                  </div>
-                                  <!-- end col-->
-                                </div>
-                                <div class="row">
-                                  <div class="col-md-4">
-                                    <div class="mb-4">
-                                      <h5>Condicion Emisor:</h5>
-                                      <a>Responsable Insripto</a>
-                                    </div>
-                                  </div>
-                                  <div class="col-md-4">
-                                    <div class="mb-4">
-                                      <h5>Periodo Facturado</h5>
-                                      <strong>Desde: </strong><a id="desde_f"></a>
-                                      <strong>Hasta: </strong><a id="hasta_f"></a>
-                                    </div>
-                                  </div>
-                                  <div class="col-md-4">
-                                    <div class="mb-4">
-                                      <h5>Fecha de Vencimiento para el pago</h5>
-                                      <p id="venc_pago">
-                                        <!-- <script>var f = new Date();document.write(f.getDate()+ "/" + (f.getMonth() +1) + "/" + f.getFullYear());</script> -->
-                                         <small class="text-muted"> Cuenta Corriente </small></p>
-                                    </div>
-                                  </div>
-                                </div>
-                                <!-- end row -->
+  @media print {
+    @page {
+      size: A4;
+      margin: 10mm;
+    }
 
-                                <div class="row mt-2">
-                                  <div class="col-sm-4">
-                                    <h4><a id="factura_razonsocial">Razon Social</a></h4>
-                                    <address>
-                                     <strong> Dirección:</strong> <a id="factura_direccion"></a><br>
-                                     <strong> Condición:</strong> <a id="factura_condicion"></a><br>
-                                  </address>
-                                  </div>
-                                  <div class="col-sm-4 mt-3">
-                                    <h4></h4>
-                                    <address>
-                                   <strong> Cuit:</strong> <a id="factura_cuit"></a><br>
-                                   <strong> IIBB:</strong> <a id="factura_ingresosbrutos"></a><br>
-                                </address>
-                                  </div>
-                                  <!-- end col-->
-                                  <div class="col-sm-4 mt-3">
-                                    <h4></h4>
-                                    <address>
-                                   <strong> Teléfono:</strong> <abbr title="Phone">+54-</abbr><a id="factura_celular"></a>
-                                   <strong> Mail:</strong><a id="factura_email"></a>
-                                </address>
-                                  </div>
-                                  <!-- end col-->
-                                </div>
-                                <!-- end row -->
-                                <div class="row"  id="row_tabla_facturacion" style="display:none">
-                                  <div class="col-lg-12">
-                                    <div class="table-responsive">
-                                      <table class="table table-sm table-centered table dt-responsive mb-0 w-100" id="tabla_facturacion_proforma" style="font-size:11px">
-                                        <thead>
-                                            <tr>
-                                              <th>Fecha</th>
-                                              <th>Seguimiento</th>
-                                              <th>Comprobante</th>
-                                              <th>Cliente Destino</th>
-                                              <th id="codigo_cliente">Codigo Cliente</th>
-                                              <th>Importe</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                          <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                          </tr>
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div class="row" id="row_tabla_recorridos" style="display:none">
-                                  <div class="col-lg-12">
-                                    <div class="table-responsive">
-                                      <table class="table dt-responsive nowrap w-100" id="tabla_facturacion_proforma_recorridos" style="font-size:11px">
-                                          <thead>
-                                            <tr>
-                                              <th>Fecha</th>
-                                              <th>Tipo</th>
-                                              <th>Comprobante</th>
-                                              <th>Observaciones</th>
-                                              <th>Importe</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                          <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                          </tr>
-                                        </tfoot>
-                                      </table>
-                                    </div>
-                                  </div>
-                                </div>
-                                <!-- end row -->
+    html,
+    body {
+      background: #fff !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      -webkit-print-color-adjust: exact !important;
+      print-color-adjust: exact !important;
+    }
 
-                                <div class="row">
-                                  <div class="col-sm-6">
-                                    <div class="text-sm-left">
-                                      <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid mr-2" /> -->
-                                    </div>
-                                  </div>
-                                  <!-- end col-->
-                                  <div class="col-sm-6">
-                                    <div class="float-right mt-3 mt-sm-0">
-                                      <input type="hidden" id="factura_neto_f">
-                                      <input type="hidden" id="factura_iva_f">
-                                      <input type="hidden" id="factura_total_f">
-                                      <p><b>Total Neto:  </b> <span id="factura_neto" class="float-right"></span></p>
-                                      <p><b>Descuento (%): </b> <span id="factura_descuento" class="float-right"></span></p>
-                                      <p><b>Total IVA (21 %):  </b> <span id="factura_iva" class="float-right"></span></p>
-                                      <p>
-                                        <h4><b>Total Comprobante:  </b><span id="factura_total"></h4></p>
+    body {
+      font-size: 11px !important;
+      line-height: 1.3 !important;
+    }
 
-                                      <div class="clearfix"></div>
-                                  </div> <!-- end col -->
-                                </div>
-                            </div>
-                                    <!-- end row-->
-                                    <div class="row">
-                                        <div class="col-sm-12">
-                                            <div class="clearfix pt-3">
-                                                <h6 class="text-muted">Observaciones:</h6>
-                                                <small id="nota_factura" style="display:none">
-                                                    Producido el vencimiento la mora será automática, aplicándose una tasa de interés 
-                                                    del 8,30 % mensual por el término de la misma.
-                                                    Los remitos relacionados con la presente factura se detallan en el Extracto N°..
-                                                </small>
-                                              <small id="nota_proforma" style="display:block">
-                                                   Los siguientes servicios fueron prestados por Caddy al cliente que figura en el comprobante y están sujetos 
-                                                   a verificación y control. 
-                                                   Los importes que figuran en este comprobante están sujetos a variaciones de acuerdo a situación impositiva 
-                                                   que se deduzca de la documentación entregada por el cliente.
-                                              </small>
-                                                </div>
-                                        </div> <!-- end col -->
-                                      </div>
+    h1,
+    h2,
+    h3 {
+      font-size: 16px !important;
+    }
 
+    h4,
+    h5 {
+      font-size: 13px !important;
+    }
 
-                                      <div class="row mt-2">
-                                        <div class="col-md-2">
-                                           <div class="mb-0">
+    .invoice-section h5,
+    .invoice-client-box h5,
+    .invoice-afip-box h5,
+    .invoice-totals h5 {
+      font-size: 12px !important;
+    }
 
-                                    <?php
+    .invoice-section h6,
+    .invoice-client-box h6,
+    .invoice-afip-box h6,
+    .invoice-notes h6 {
+      font-size: 11px !important;
+    }
 
-                                    $sql="SELECT IvaVentas.* FROM IvaVentas INNER JOIN Ctasctes ON Ctasctes.idIvaVentas=IvaVentas.id WHERE Ctasctes.id='$_GET[id]'";
-                                    $sql=$mysqli->query($sql);
-                                    
-                                    $row=$sql->fetch_array(MYSQLI_ASSOC);
-                                    
-                                    if($row['id']<>null){
-                                       
-                                    $a=$row['TipoDeComprobante'];
+    .invoice-section,
+    .invoice-client-box,
+    .invoice-afip-box,
+    .invoice-notes,
+    .invoice-totals,
+    .invoice-label,
+    .invoice-section div,
+    .invoice-client-box div,
+    .invoice-afip-box div,
+    .invoice-notes small,
+    .text-muted,
+    span,
+    p,
+    small {
+      font-size: 10.5px !important;
+    }
 
-                                    $sql_tipo_comp = "SELECT Codigo FROM AfipTipoDeComprobante WHERE Descripcion = ?";
-                                    $stmt = $mysqli->prepare($sql_tipo_comp);
-                                    $stmt->bind_param("s", $a);
-                                    $stmt->execute();
-                                    $result = $stmt->get_result();
-                                    $dato_tipo_comp = $result->fetch_array(MYSQLI_ASSOC);
-                                    $TipoComp=$dato_tipo_comp['Codigo'];
-                                    $stmt->close();
-                                    
-                                    $Ncomp=explode('-',$row['NumeroComprobante']);
-                                    $PtoVta=$Ncomp[0];
-                                    $Numero=$Ncomp[1];
-                                    $Documento =preg_replace("/[^0-9]/", "", $row['Cuit']); 
-                                    
-                                    $url = 'https://www.afip.gob.ar/fe/qr/'; // URL que pide AFIP que se ponga en el QR. 
+    .table,
+    table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      font-size: 9.5px !important;
+    }
 
-                                    //set it to writable location, a place for temp generated PNG files
-                                    $PNG_TEMP_DIR = dirname(__FILE__).DIRECTORY_SEPARATOR.'temp'.DIRECTORY_SEPARATOR;
-                                    
-                                    //html PNG location prefix
-                                    $PNG_WEB_DIR = 'temp/';
+    .table th,
+    table th {
+      font-size: 9.5px !important;
+      font-weight: 600 !important;
+    }
 
-                                    include "../phpqrcode/qrlib.php";    
-                                    
-                                    // genero los datos para AFIP
-                                    // $Fecha=intval(date('Y-m-d',$row['Fecha']));
-                                  
-                                    $datos_cmp_base_64 = json_encode([ 
-                                        "ver" => 1,                         // Numérico 1 digito -  OBLIGATORIO – versión del formato de los datos del comprobante	1
-                                        "fecha" => $row['Fecha'],           // full-date (RFC3339) - OBLIGATORIO – Fecha de emisión del comprobante
-                                        "cuit" => (int) 30715344943,        // Numérico 11 dígitos -  OBLIGATORIO – Cuit del Emisor del comprobante  
-                                        "ptoVta" => (int) $PtoVta,          // Numérico hasta 5 digitos - OBLIGATORIO – Punto de venta utilizado para emitir el comprobante
-                                        "tipoCmp" => (int) $TipoComp,  // Numérico hasta 3 dígitos - OBLIGATORIO – tipo de comprobante (según Tablas del sistema. Ver abajo )
-                                        "nroCmp" => (int) $Numero,          // Numérico hasta 8 dígitos - OBLIGATORIO – Número del comprobante
-                                        "importe" => (float) $row['Total'], // Decimal hasta 13 enteros y 2 decimales - OBLIGATORIO – Importe Total del comprobante (en la moneda en la que fue emitido)
-                                        "moneda" => "PES",                  // 3 caracteres - OBLIGATORIO – Moneda del comprobante (según Tablas del sistema. Ver Abajo )
-                                        "ctz" => (float) 1,                 // Decimal hasta 13 enteros y 6 decimales - OBLIGATORIO – Cotización en pesos argentinos de la moneda utilizada (1 cuando la moneda sea pesos)
-                                        "tipoDocRec" =>  80 ,               // Numérico hasta 2 dígitos - DE CORRESPONDER – Código del Tipo de documento del receptor (según Tablas del sistema )
-                                        "nroDocRec" =>  (int) $Documento,   // Numérico hasta 20 dígitos - DE CORRESPONDER – Número de documento del receptor correspondiente al tipo de documento indicado
-                                        "tipoCodAut" => "E",                // string - OBLIGATORIO – “A” para comprobante autorizado por CAEA, “E” para comprobante autorizado por CAE
-                                        "codAut" => (int) $row['CAE']       // Numérico 14 dígitos -  OBLIGATORIO – Código de autorización otorgado por AFIP para el comprobante
-                                    ]); 
+    .table td,
+    table td {
+      font-size: 9.5px !important;
+    }
 
-                                    $datos_cmp_base_64 = base64_encode($datos_cmp_base_64); 
+    .page-title-box,
+    .footer,
+    .modal,
+    .btn,
+    .d-print-none,
+    #compose-modal,
+    #standard-modal-codcliente {
+      display: none !important;
+    }
 
-                                    $to_qr = $url.'?p='.$datos_cmp_base_64;
+    .wrapper,
+    .content,
+    .container-fluid {
+      width: 100% !important;
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
 
+    .card,
+    .invoice-card {
+      border: 0 !important;
+      box-shadow: none !important;
+      border-radius: 0 !important;
+      margin: 0 !important;
+      padding: 0 !important;
+      background: #fff !important;
+    }
 
-                                    //ofcourse we need rights to create temp dir
-                                    if (!file_exists($PNG_TEMP_DIR))
-                                        mkdir($PNG_TEMP_DIR);
-                                    
-                                    
-                                    $filename = $PNG_TEMP_DIR.'test.png';
-                                    
-                                    //processing form input
-                                    //remember to sanitize user input in real-life solution !!!
-                                    $errorCorrectionLevel = 'L';
-                                    if (isset($_REQUEST['level']) && in_array($_REQUEST['level'], array('L','M','Q','H')))
-                                        $errorCorrectionLevel = $_REQUEST['level'];    
+    .invoice-header {
+      border-bottom: 1px solid #d9d9d9 !important;
+      padding-bottom: 8px !important;
+      margin-bottom: 10px !important;
+    }
 
-                                    $matrixPointSize = 2;
-                                    if (isset($_REQUEST['size']))
-                                        $matrixPointSize = min(max((int)$_REQUEST['size'], 1), 10);
+    .row {
+      display: flex !important;
+      flex-wrap: wrap !important;
+      margin-left: -4px !important;
+      margin-right: -4px !important;
+      margin-bottom: 4px !important;
+    }
 
+    .row>[class*="col-"] {
+      padding-left: 4px !important;
+      padding-right: 4px !important;
+      margin-bottom: 4px !important;
+    }
 
-                                    if (isset($_REQUEST['data'])) { 
-                                    
-                                        //it's very important!
-                                        if (trim($_REQUEST['data']) == '')
-                                            die('data cannot be empty! <a href="?">back</a>');
-                                            
-                                        // user data
-                                        $filename = $PNG_TEMP_DIR.'test'.md5($_REQUEST['data'].'|'.$errorCorrectionLevel.'|'.$matrixPointSize).'.png';
-                                        QRcode::png($_REQUEST['data'], $filename, $errorCorrectionLevel, $matrixPointSize, 2);    
-                                        
-                                    } else {    
-                                    
-                                        //default data
-                                        // echo 'You can provide data in GET parameter: <a href="?data=like_that">like that</a><hr/>';    
-                                        QRcode::png($to_qr, $filename, $errorCorrectionLevel, $matrixPointSize, 2);    
-                                        
-                                    }    
-                                        
-                                    //display generated file
-                                    echo '<img id="img_qr" src="'.$PNG_WEB_DIR.basename($filename).'" />';  
-                                    
-                                ?>
-                                            </div>
-                                        </div>
-                                        <div id="afip_pie" class="col-md-6">
-                                            <div class="mb-0 float-left">
-                                            <img src="../afip.php/images/qr.png" alt="" height="60"/><br/>    
-                                            <h5>Comprobante Autorizado</h5>
-                                            <h6>Esta Administración Federal no se responsabiliza por los datos ingresados en el detalle de la operación</h6>
-                                            </div>
-                                        </div>
-                                        <div id="afip_pie1" class="col-md-4">
-                                            <div class="mb-1">
-                                            <h5>CAE: <a id="CAE"></a></h5><br/>
-                                            <h5>Fecha Vencimiento CAE: <a id="VencimientoCAE"></a></h5>                                               
-                                            <?php
-                                            }
-                                            ?>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="d-print-none mt-4">
-                                        <div class="text-right">                         
-                                            <a id="button_compose" <?php echo $mostrarBoton ? "" : "style='visibility:hidden;'"; ?> type="button" class="btn btn-danger" data-toggle="modal" data-target="#compose-modal"><i class="mdi mdi-send"></i> Enviar</a>                                        
-                                            <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>                                          
-                                      </div>
-                                    </div>   
-                                </div> <!-- end card-body-->
-                            </div> <!-- end card -->
-                        </div> <!-- end col-->
-                    </div>
-                </div>   
-        <!-- HASTA ACA FACTURA -->      
-                <!-- content -->
-              <div class="spinner-border avatar-md text-primary" role="status" style="display:none"></div>
-              <!-- <div class="spinner-grow avatar-md text-secondary" role="status"></div> -->
-                <!-- Footer Start -->
-                <footer class="footer">
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-md-6">
-                                <script>document.write(new Date().getFullYear())</script> © Triangular S.A.
-                            </div>
-                            <div class="col-md-6">
-                                <div class="text-md-right footer-links d-none d-md-block">
-                                    <a href="javascript: void(0);">About</a>
-                                    <a href="javascript: void(0);">Support</a>
-                                    <a href="javascript: void(0);">Contact Us</a>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </footer>
-                <!-- end Footer -->
+    .col-lg-7 {
+      flex: 0 0 58.333333% !important;
+      max-width: 58.333333% !important;
+    }
+
+    .col-lg-5 {
+      flex: 0 0 41.666667% !important;
+      max-width: 41.666667% !important;
+    }
+
+    .col-md-4 {
+      flex: 0 0 33.333333% !important;
+      max-width: 33.333333% !important;
+    }
+
+    .col-md-2 {
+      flex: 0 0 16.666667% !important;
+      max-width: 16.666667% !important;
+    }
+
+    .col-md-6 {
+      flex: 0 0 50% !important;
+      max-width: 50% !important;
+    }
+
+    .col-12 {
+      flex: 0 0 100% !important;
+      max-width: 100% !important;
+    }
+
+    .invoice-section,
+    .invoice-client-box,
+    .invoice-totals,
+    .invoice-afip-box,
+    .invoice-notes {
+      background: #fff !important;
+      border: 1px solid #d9d9d9 !important;
+      box-shadow: none !important;
+      border-radius: 8px !important;
+      padding: 8px !important;
+      margin-bottom: 4px !important;
+      height: 100% !important;
+      break-inside: avoid !important;
+      page-break-inside: avoid !important;
+    }
+
+    .invoice-brand img {
+      max-height: 48px !important;
+    }
+
+    .invoice-letter {
+      width: 40px !important;
+      height: 40px !important;
+      font-size: 20px !important;
+      border: 1.5px solid #222 !important;
+      margin: 0 auto !important;
+    }
+
+    .invoice-title-box {
+      text-align: right !important;
+    }
+
+    .invoice-title-box h2 {
+      font-size: 18px !important;
+      margin-bottom: 2px !important;
+    }
+
+    .invoice-title-box h5 {
+      font-size: 11px !important;
+      margin-bottom: 0 !important;
+    }
+
+    .table th,
+    .table td,
+    table th,
+    table td {
+      border: 1px solid #d9d9d9 !important;
+      padding: 4px !important;
+      vertical-align: middle !important;
+    }
+
+    .table thead th {
+      background: #f3f3f3 !important;
+      color: #000 !important;
+    }
+
+    .table-responsive {
+      overflow: visible !important;
+    }
+
+    .invoice-total-final {
+      color: #000 !important;
+      border-top: 1px dashed #bdbdbd !important;
+      font-size: 13px !important;
+    }
+
+    /* Compactar espacios entre campos */
+    .invoice-section .mb-2,
+    .invoice-client-box .mb-2,
+    .invoice-afip-box .mb-2,
+    .invoice-totals .mb-2 {
+      margin-bottom: 3px !important;
+    }
+
+    .invoice-section .mb-3,
+    .invoice-client-box .mb-3,
+    .invoice-afip-box .mb-3,
+    .invoice-totals .mb-3 {
+      margin-bottom: 5px !important;
+    }
+
+    .invoice-section div,
+    .invoice-client-box div,
+    .invoice-afip-box div,
+    .invoice-totals div {
+      line-height: 1.1 !important;
+    }
+
+    .invoice-label {
+      min-width: 90px !important;
+      margin-right: 4px !important;
+    }
+
+    #row_tabla_facturacion {
+      display: none !important;
+    }
+
+    #row_tabla_recorridos {
+      display: flex !important;
+    }
+  }
+</style>
+<script>
+  document.addEventListener("DOMContentLoaded", function() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("print") === "1") {
+      setTimeout(function() {
+        window.focus();
+        window.print();
+      }, 700);
+    }
+  });
+</script>
+
+<body class="loading" data-layout="topnav" data-layout-config='{"layoutBoxed":false,"darkMode":false,"showRightSidebarOnStart": true}'>
+  <!-- Begin page -->
+  <div class="wrapper">
+
+    <div class="content">
+
+      <div class="modal fade" id="standard-modal-codcliente" tabindex="-1" aria-labelledby="myCenterModalLabel_codcliente" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+          <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-primary text-white">
+              <h5 class="modal-title" id="myCenterModalLabel_codcliente">Modificar código de cliente</h5>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
             </div>
-            <!-- ============================================================== -->
-            <!-- End Page content -->
-            <!-- ============================================================== -->
+            <div class="modal-body">
+              <div class="mb-3">
+                <label for="codigocliente_t" class="form-label">Código de Cliente</label>
+                <input id="codigocliente_t" type="text" class="form-control">
+                <div class="form-text">Ingresá el código del cliente a asociar al comprobante.</div>
+              </div>
+              <input type="hidden" id="cs_codigocliente">
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                <i class="mdi mdi-close mdi-18px me-1"></i>Cancelar
+              </button>
+              <button id="modificarcodigocliente_ok" type="button" class="btn btn-success">
+                <i class="mdi mdi-content-save mdi-18px me-1"></i>Guardar
+              </button>
+            </div>
+          </div>
         </div>
-        <!-- END wrapper -->
-        <!-- bundle -->
-        <script src="../hyper/dist/saas/assets/js/vendor.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/app.min.js"></script>
+      </div>
+      <!-- Start Content-->
+      <div class="container-fluid">
+        <div class="row">
+          <div class="col-12">
+            <div class="page-title-box">
+              <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                </ol>
+              </div>
+            </div>
+          </div>
+        </div>
 
-        <!-- third party js -->
-        <script src="../hyper/dist/saas/assets/js/vendor/jquery.dataTables.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.bootstrap4.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.responsive.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/responsive.bootstrap4.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.buttons.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.bootstrap4.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.html5.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.flash.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.print.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.keyTable.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.select.min.js"></script>
-        <!-- third party js ends -->
+        <!-- Large modal -->
 
-        <!-- demo app -->
-        <script src="../hyper/dist/saas/assets/js/pages/demo.datatable-init.js"></script>
+        <!-- Compose Modal -->
+        <div id="compose-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="compose-header-modalLabel" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header modal-colored-header bg-primary">
+                <h4 class="modal-title" id="compose-header-modalLabel">Enviar Factura</h4>
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+              </div>
 
-        <!-- funciones -->
-        <script src="../Menu/js/funciones.js"></script>
-        <script src="Procesos/js/invoice.js"></script>
-        <script src="../Funciones/js/datosempresa.js"></script>
-        
-          <!-- demo app -->
-        <!-- <script src="../hyper/dist/saas/assets/js/pages/demo.dashboard.js"></script> -->
-        <!-- end demo js-->
 
-  </body>
+              <div class="modal-body p-3">
+                <form id="miFormulario" class="p-1" action="../Mail/invoice.php" method="post">
+                  <div class="form-group mb-2">
+                    <label for="txtSelect">To</label>
+                    <select name="txtSelect" id="txtSelect" class="select2 form-control select2-multiple" data-toggle="select2" multiple="multiple" data-placeholder="Choose ...">
+                      <optgroup label="Contactos" id="email_contactos">
+                      </optgroup>
+                    </select>
+
+                  </div>
+                  <div class="form-group mb-2">
+                    <label for="txtAsunto">Subject</label>
+                    <input type="text" name="txtAsunto" id="txtAsunto" class="form-control" placeholder="subject">
+                  </div>
+
+                  <input type="hidden" name="txtId" id="txtId" value="">
+                  <input type="hidden" name="txtToken" id="txtToken">
+                  <input type="hidden" name="txtEmail" id="txtEmail">
+                  <input type="hidden" name="txtName" id="txtName">
+                  <input type="hidden" name="txtComprobante" id="txtComprobante" value="1">
+                  <input type="hidden" name="txtTotal" id="txtTotal">
+                  <input type="hidden" name="txtPeriodo" id="txtPeriodo">
+                  <input type="hidden" name="txtVencimiento" id="txtVencimiento">
+                  <input type="hidden" name="txtNumfactura" id="txtNumfactura">
+
+                  <button id="button_sendmail" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send mr-1"></i> Send Message</button>
+                  <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                </form>
+              </div>
+            </div><!-- /.modal-content -->
+          </div><!-- /.modal-dialog -->
+        </div><!-- /.modal -->
+
+        <!--DESDE ACA FACTURA -->
+        <div class="row" id="factura_proforma">
+          <div class="col-12">
+            <div class="card invoice-card">
+              <div class="card-body">
+
+                <!-- Header -->
+                <div class="invoice-header">
+                  <div class="row align-items-center gy-3">
+                    <div class="col-md-4">
+                      <div class="invoice-brand">
+                        <img src="../images/LogoCaddy.png" alt="Logo Caddy" class="img-fluid">
+                      </div>
+                    </div>
+
+                    <div class="col-md-4 text-center">
+                      <div class="invoice-letter" id="letra"></div>
+                    </div>
+
+                    <div class="col-md-4">
+                      <div class="invoice-title-box">
+                        <h2 id="factura_titulo" class="fw-bold text-uppercase"></h2>
+                        <h5 id="factura_titulo2" class="text-muted mt-1"></h5>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Empresa / Comprobante -->
+                <div class="row g-3 mb-3">
+                  <div class="col-lg-7">
+                    <div class="invoice-section">
+                      <h5 class="mb-3">Datos del emisor</h5>
+                      <h4 id="Emp_RazonSocial" class="mb-3"></h4>
+
+                      <div class="mb-2"><span class="invoice-label">Dirección:</span> <span id="Emp_Direccion"></span></div>
+                      <div class="mb-2"><span class="invoice-label">CUIT:</span> <span id="Emp_Cuit"></span></div>
+                      <div class="mb-2"><span class="invoice-label">IIBB:</span> <span id="Emp_IngresosBrutos"></span></div>
+                      <div class="mb-0"><span class="invoice-label">Teléfono:</span> <span id="Emp_Telefono"></span></div>
+                    </div>
+                  </div>
+
+                  <div class="col-lg-5">
+                    <div class="invoice-section">
+                      <h5 class="mb-3">Datos del comprobante</h5>
+
+                      <div class="mb-2"><span class="invoice-label">Número:</span> <span id="NumeroComprobante">00000000000</span></div>
+                      <div class="mb-2"><span class="invoice-label">Fecha:</span> <span id="FechaComprobante"></span></div>
+                      <div class="mb-2"><span class="invoice-label">Id Cliente:</span> <span id="factura_codigo"></span></div>
+                      <div class="mb-2">
+                        <span class="invoice-label">Estado:</span>
+                        <span id="estado" class="badge bg-success">Pendiente</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Condiciones -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-4">
+                    <div class="invoice-section">
+                      <h6>Condición del emisor</h6>
+                      <div>Responsable Inscripto</div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="invoice-section">
+                      <h6>Periodo facturado</h6>
+                      <div><span class="invoice-label">Desde:</span> <span id="desde_f"></span></div>
+                      <div><span class="invoice-label">Hasta:</span> <span id="hasta_f"></span></div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="invoice-section">
+                      <h6>Vencimiento de pago</h6>
+                      <div id="venc_pago"></div>
+                      <small class="text-muted">Cuenta corriente</small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Cliente -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-4">
+                    <div class="invoice-client-box">
+                      <h5 class="mb-3" id="factura_razonsocial">Razón Social</h5>
+                      <div class="mb-2"><span class="invoice-label">Dirección:</span> <span id="factura_direccion"></span></div>
+                      <div class="mb-0"><span class="invoice-label">Condición:</span> <span id="factura_condicion"></span></div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="invoice-client-box">
+                      <h5 class="mb-3">Datos fiscales</h5>
+                      <div class="mb-2"><span class="invoice-label">CUIT:</span> <span id="factura_cuit"></span></div>
+                      <div class="mb-0"><span class="invoice-label">IIBB:</span> <span id="factura_ingresosbrutos"></span></div>
+                    </div>
+                  </div>
+
+                  <div class="col-md-4">
+                    <div class="invoice-client-box">
+                      <h5 class="mb-3">Contacto</h5>
+                      <div class="mb-2"><span class="invoice-label">Teléfono:</span> <span>+54-<span id="factura_celular"></span></span></div>
+                      <div class="mb-0"><span class="invoice-label">Email:</span> <span id="factura_email"></span></div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabla servicios -->
+                <div class="row mb-4" id="row_tabla_facturacion" style="display:none;">
+                  <div class="col-12">
+                    <div class="table-responsive">
+                      <table class="table table-sm table-hover table-bordered align-middle mb-0 w-100" id="tabla_facturacion_proforma" style="font-size:11px">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Fecha</th>
+                            <th>Seguimiento</th>
+                            <th>Comprobante</th>
+                            <th>Cliente Destino</th>
+                            <th id="codigo_cliente">Código Cliente</th>
+                            <th class="text-end">Importe</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="text-end"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Tabla recorridos -->
+                <div class="row mb-4" id="row_tabla_recorridos" style="display:none">
+                  <div class="col-12">
+                    <div class="table-responsive">
+                      <table class="table table-sm table-hover table-bordered align-middle mb-0 w-100" id="tabla_facturacion_proforma_recorridos" style="font-size:11px">
+                        <thead class="table-light">
+                          <tr>
+                            <th>Fecha</th>
+                            <th>Tipo</th>
+                            <th>Comprobante</th>
+                            <th>Observaciones</th>
+                            <th class="text-end">Importe</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td></td>
+                            <td class="text-end"></td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Totales -->
+                <div class="row justify-content-end mb-4">
+                  <div class="col-lg-5">
+                    <div class="invoice-totals">
+                      <input type="hidden" id="factura_neto_f">
+                      <input type="hidden" id="factura_iva_f">
+                      <input type="hidden" id="factura_total_f">
+
+                      <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Total Neto:</span>
+                        <span id="factura_neto"></span>
+                      </div>
+
+                      <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">Descuento (%):</span>
+                        <span id="factura_descuento"></span>
+                      </div>
+
+                      <div class="d-flex justify-content-between mb-2">
+                        <span class="fw-semibold">IVA (21%):</span>
+                        <span id="factura_iva"></span>
+                      </div>
+
+                      <div class="d-flex justify-content-between invoice-total-final">
+                        <span>Total Comprobante:</span>
+                        <span id="factura_total"></span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Observaciones -->
+                <div class="row mb-4">
+                  <div class="col-12">
+                    <div class="invoice-notes">
+                      <h6 class="text-muted mb-2">Observaciones</h6>
+
+                      <small id="nota_factura" style="display:none">
+                        Producido el vencimiento la mora será automática, aplicándose una tasa de interés
+                        del 8,30 % mensual por el término de la misma.
+                        Los remitos relacionados con la presente factura se detallan en el Extracto N°..
+                      </small>
+
+                      <small id="nota_proforma" style="display:block">
+                        Los siguientes servicios fueron prestados por Caddy al cliente que figura en el comprobante y están sujetos
+                        a verificación y control.
+                        Los importes que figuran en este comprobante están sujetos a variaciones de acuerdo a la situación impositiva
+                        que se deduzca de la documentación entregada por el cliente.
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- AFIP / QR -->
+                <div class="row g-3 mb-4">
+                  <div class="col-md-2">
+                    <div class="invoice-afip-box text-center">
+
+                      <?php
+                      $idCtaCte = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+
+                      $sql = "SELECT IvaVentas.* 
+        FROM IvaVentas 
+        INNER JOIN Ctasctes ON Ctasctes.idIvaVentas = IvaVentas.id 
+        WHERE Ctasctes.id = ?";
+                      $stmt = $mysqli->prepare($sql);
+                      $stmt->bind_param("i", $idCtaCte);
+                      $stmt->execute();
+                      $result = $stmt->get_result();
+                      $row = $result->fetch_array(MYSQLI_ASSOC);
+                      $stmt->close();
+
+                      if (!empty($row['id'])) {
+
+                        $a = $row['TipoDeComprobante'];
+
+                        $sql_tipo_comp = "SELECT Codigo FROM AfipTipoDeComprobante WHERE Descripcion = ?";
+                        $stmt = $mysqli->prepare($sql_tipo_comp);
+                        $stmt->bind_param("s", $a);
+                        $stmt->execute();
+                        $result = $stmt->get_result();
+                        $dato_tipo_comp = $result->fetch_array(MYSQLI_ASSOC);
+                        $TipoComp = !empty($dato_tipo_comp['Codigo']) ? (int)$dato_tipo_comp['Codigo'] : 0;
+                        $stmt->close();
+
+                        $Ncomp = explode('-', (string)$row['NumeroComprobante']);
+                        $PtoVta = isset($Ncomp[0]) ? (int)$Ncomp[0] : 0;
+                        $Numero = isset($Ncomp[1]) ? (int)$Ncomp[1] : 0;
+                        $Documento = preg_replace("/[^0-9]/", "", (string)$row['Cuit']);
+
+                        $url = 'https://www.afip.gob.ar/fe/qr/';
+                        $PNG_TEMP_DIR = __DIR__ . DIRECTORY_SEPARATOR . 'temp' . DIRECTORY_SEPARATOR;
+                        $PNG_WEB_DIR = '/SistemaTriangular/Clientes/temp/';
+
+                        require_once "../phpqrcode/qrlib.php";
+
+                        $datos_cmp_base_64 = json_encode([
+                          "ver" => 1,
+                          "fecha" => $row['Fecha'],
+                          "cuit" => (int)30715344943,
+                          "ptoVta" => $PtoVta,
+                          "tipoCmp" => $TipoComp,
+                          "nroCmp" => $Numero,
+                          "importe" => (float)$row['Total'],
+                          "moneda" => "PES",
+                          "ctz" => 1,
+                          "tipoDocRec" => 80,
+                          "nroDocRec" => (int)$Documento,
+                          "tipoCodAut" => "E",
+                          "codAut" => (int)$row['CAE']
+                        ]);
+
+                        $datos_cmp_base_64 = base64_encode($datos_cmp_base_64);
+                        $to_qr = $url . '?p=' . $datos_cmp_base_64;
+
+                        if (!file_exists($PNG_TEMP_DIR)) {
+                          mkdir($PNG_TEMP_DIR, 0777, true);
+                        }
+
+                        $filename = $PNG_TEMP_DIR . 'qr_' . (int)$row['id'] . '_' . md5($to_qr) . '.png';
+
+                        if (!file_exists($filename)) {
+                          QRcode::png($to_qr, $filename, 'L', 3, 2);
+                        }
+
+                        if (file_exists($filename)) {
+                          echo '<img id="img_qr" src="' . $PNG_WEB_DIR . basename($filename) . '?v=' . time() . '" class="img-fluid" alt="QR AFIP">';
+                        } else {
+                          echo '<div class="text-danger small">No se pudo generar el QR</div>';
+                        }
+                      ?>
+
+                    </div>
+                  </div>
+
+                  <div id="afip_pie" class="col-md-6">
+                    <div class="invoice-afip-box">
+                      <img src="../afip.php/images/qr.png" alt="AFIP QR" height="60" class="mb-2" /><br>
+                      <h5 class="mb-2">Comprobante Autorizado</h5>
+                      <h6 class="mb-0">Esta Administración Federal no se responsabiliza por los datos ingresados en el detalle de la operación.</h6>
+                    </div>
+                  </div>
+
+                  <div id="afip_pie1" class="col-md-4">
+                    <div class="invoice-afip-box">
+                      <h5 class="mb-3">Datos de autorización</h5>
+                      <div class="mb-2"><span class="invoice-label">CAE:</span> <span id="CAE"></span></div>
+                      <div class="mb-0"><span class="invoice-label">Vto. CAE:</span> <span id="VencimientoCAE"></span></div>
+                    </div>
+                  </div>
+                <?php } ?>
+                </div>
+
+
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+  <!-- Vendor js -->
+  <script src="../hyper/dist/assets/js/vendor.min.js"></script>
+  <script src="../hyper/dist/assets/js/hyper-config.js"></script>
+  <script src="../hyper/dist/assets/js/app.js"></script>
+  <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
+  <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
+  <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+  <?php include '../Menu/php/script_maps-vector.php'; ?>
+  <!-- DataTables -->
+  <?php include '../Menu/php/script_datatables.php'; ?>
+  <!-- funciones -->
+  <script src="Procesos/js/invoice.js"></script>
+  <script src="../Funciones/js/datosempresa.js"></script>
+</body>
+
 </html>

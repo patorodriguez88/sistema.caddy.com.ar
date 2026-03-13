@@ -1,38 +1,36 @@
-<?
+<?php
 session_start();
-// https://www.caddy.com.ar/SistemaTriangular/Clientes/invoice.php?id=53555&token=b7bce0d2f5bdedcd1d2967f9309e61bf&user=331
 
-if ($_GET['token']<> null){
+
+if ($_GET['token'] <> null) {
 
     //     // Ejemplo de uso
     $dato_a_verificar = $_GET['token'];
-    $dato_a_verificar_1= $_GET['id'];
+    $dato_a_verificar_1 = $_GET['id'];
 
-    if (verificarDato($dato_a_verificar,$dato_a_verificar_1)) {
-        
-        $host="localhost";
-        $user="dinter6_report";
-        $pass="MacBook@Air2024";
+    if (verificarDato($dato_a_verificar, $dato_a_verificar_1)) {
 
-        $db="dinter6_triangular";
-        $mysqli = new mysqli($host,$user,$pass,$db);
-        mysqli_set_charset($mysqli,"utf8");
-        
-        $_SESSION['token_unique']=$_GET['token'];
-        
-    }else{
-    
+        $host = "localhost";
+        $user = "dinter6_report";
+        $pass = "MacBook@Air2024";
+
+        $db = "dinter6_triangular";
+        $mysqli = new mysqli($host, $user, $pass, $db);
+        mysqli_set_charset($mysqli, "utf8");
+
+        $_SESSION['token_unique'] = $_GET['token'];
+    } else {
+
         unset($_SESSION['token_unique']);
 
-        header("location:https://www.caddy.com.ar/SistemaTriangular/Mail/plantilla/invoice_failed.html");
-
+        header("location:https://www.sistema.caddy.com.ar/SistemaTriangular/Mail/plantilla/invoice_failed.html");
     }
-
 }
 
 
 
-function verificarDato($dato,$dato1) {
+function verificarDato($dato, $dato1)
+{
     // Configuración de la conexión a la base de datos
     $servername = "localhost";
     $username = "dinter6_report";
@@ -60,29 +58,26 @@ function verificarDato($dato,$dato1) {
         // Obtener el resultado de la consulta
         $row = $result->fetch_assoc();
         $usuarioId = $row["idCliente"];
-        $_SESSION['idusuario']=$usuarioId;
+        $_SESSION['idusuario'] = $usuarioId;
 
         $sql_user = "SELECT Nombre,NdeCliente,NIVEL,usuario FROM usuarios WHERE NdeCliente='$usuarioId' AND Activo=1";
         $result_user = $conn->query($sql_user);
-        $row_user=$result_user->fetch_assoc();
-        
-        $_SESSION['NIVEL']=$row_user['NIVEL'];
-        $_SESSION['NCliente']=$row_user['NdeCliente'];
-        $_SESSION['Usuario']=$row_user['usuario'];
+        $row_user = $result_user->fetch_assoc();
+
+        $_SESSION['NIVEL'] = $row_user['NIVEL'];
+        $_SESSION['NCliente'] = $row_user['NdeCliente'];
+        $_SESSION['Usuario'] = $row_user['usuario'];
 
         // Cerrar la conexión
         $conn->close();
-        
-        if($row_user['usuario']){
-        // Devolver el UsuarioId si el dato es correcto (existente en la base de datos)
-        return $usuarioId;
-        
-        }else{
-    
-        return null;    
-        
-        }
 
+        if ($row_user['usuario']) {
+            // Devolver el UsuarioId si el dato es correcto (existente en la base de datos)
+            return $usuarioId;
+        } else {
+
+            return null;
+        }
     } else {
         // Cerrar la conexión en caso de que no haya resultados
         $conn->close();

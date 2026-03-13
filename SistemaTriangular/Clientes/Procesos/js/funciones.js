@@ -1,5 +1,122 @@
+function hoyISO() {
+  const d = new Date();
+  return d.toISOString().split("T")[0]; // YYYY-MM-DD (ideal para <input type="date">)
+}
 function currencyFormat(num) {
   return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+}
+function formatoMonedaAplicacion(valor) {
+  valor = Number(valor || 0);
+  return (
+    "$ " +
+    valor
+      .toFixed(2)
+      .replace(/\d(?=(\d{3})+\.)/g, "$&,")
+      .replace(".", ",")
+  );
+}
+
+function ver_aplicaciones(id) {
+  if (!id) {
+    toast("error", "Error", "No se encontró el comprobante.");
+    return;
+  }
+
+  $("#aplicacion_comprobante").html("-");
+  $("#aplicacion_importe_original").html("$ 0,00");
+  $("#aplicacion_importe_aplicado").html("$ 0,00");
+  $("#aplicacion_saldo").html("$ 0,00");
+  $("#aplicaciones_empty").addClass("d-none");
+
+  if ($.fn.DataTable.isDataTable("#tabla_aplicaciones")) {
+    $("#tabla_aplicaciones").DataTable().destroy();
+  }
+
+  $("#tabla_aplicaciones tbody").empty();
+
+  $.ajax({
+    url: "Procesos/php/cargarpago.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      VerAplicaciones: 1,
+      idCtasctes: id,
+    },
+    success: function (jsonData) {
+      if (jsonData.success != 1) {
+        alerta(
+          "error",
+          "Error",
+          jsonData.msg || "No se pudieron obtener las aplicaciones.",
+        );
+        return;
+      }
+
+      $("#aplicacion_comprobante").html(jsonData.comprobante || "-");
+      $("#aplicacion_importe_original").html(
+        formatoMonedaAplicacion(jsonData.importe_original),
+      );
+      $("#aplicacion_importe_aplicado").html(
+        formatoMonedaAplicacion(jsonData.importe_aplicado),
+      );
+      $("#aplicacion_saldo").html(formatoMonedaAplicacion(jsonData.saldo));
+
+      if (!jsonData.data || jsonData.data.length === 0) {
+        $("#aplicaciones_empty").removeClass("d-none");
+      }
+
+      $("#tabla_aplicaciones").DataTable({
+        destroy: true,
+        paging: false,
+        searching: false,
+        info: false,
+        ordering: false,
+        data: jsonData.data || [],
+        columns: [
+          {
+            data: "Fecha",
+            render: function (data) {
+              if (!data) return "";
+              return data.split("-").reverse().join("/");
+            },
+          },
+          {
+            data: "TipoRelacionado",
+            defaultContent: "",
+          },
+          {
+            data: "NumeroRelacionado",
+            defaultContent: "",
+          },
+          {
+            data: "Importe",
+            render: function (data) {
+              return formatoMonedaAplicacion(data);
+            },
+          },
+          {
+            data: "Usuario",
+            defaultContent: "",
+          },
+        ],
+        language: {
+          emptyTable: "No hay aplicaciones registradas",
+        },
+      });
+
+      const modal = bootstrap.Modal.getOrCreateInstance(
+        document.getElementById("modal_aplicaciones"),
+      );
+      modal.show();
+    },
+    error: function (xhr) {
+      alerta(
+        "error",
+        "Error del servidor",
+        xhr.responseText || "No se pudo consultar el detalle.",
+      );
+    },
+  });
 }
 
 $("#asana_gid").change(function () {
@@ -32,7 +149,7 @@ $("#asana_gid").change(function () {
           "Tareas Asignadas Correctamente.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       }
     },
@@ -57,7 +174,7 @@ $("#tareas_asana").click(function () {
           "Tareas Asignadas Correctamente.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       }
     },
@@ -77,7 +194,7 @@ function obtenerUsuarios() {
             opcion.gid_asana +
             '">' +
             opcion.Nombre +
-            "</option>"
+            "</option>",
         );
       });
     },
@@ -102,58 +219,57 @@ function eliminar_pago(i) {
       Eliminar_pago_permisos: 1,
     },
     type: "POST",
-    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/eliminapago.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-
+    url: "Procesos/php/eliminapago.php",
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
+        $("#modal_eliminar_pago_text").html("Estas por eliminar el pago " + i);
         $("#modal_eliminar_pago").modal("show");
 
-        $("#modal_eliminar_pago_text").html("Estas por eliminar el pago " + i);
+        $("#modal_eliminar_pago_aceptar")
+          .off("click")
+          .on("click", function () {
+            $("#modal_eliminar_pago").modal("hide");
 
-        $("#modal_eliminar_pago_aceptar").click(function () {
-          $("#modal_eliminar_pago").modal("hide");
-
-          $.ajax({
-            data: {
-              Eliminar_pago: 1,
-              idCtasctes: i,
-            },
-            type: "POST",
-            url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/eliminapago.php",
-            success: function (response) {
-              var jsonData = JSON.parse(response);
-
-              if (jsonData.success == 1) {
-                $.NotificationApp.send(
-                  "Exito !",
-                  "Registro Eliminado.",
-                  "bottom-right",
-                  "#FFFFFF",
-                  "success"
+            $.ajax({
+              data: {
+                Eliminar_pago: 1,
+                idCtasctes: i,
+              },
+              type: "POST",
+              url: "Procesos/php/eliminapago.php",
+              dataType: "json",
+              success: function (jsonData) {
+                if (jsonData.success == 1) {
+                  toast("success", "Éxito", "Pago eliminado correctamente");
+                  $("#basic").DataTable().ajax.reload(null, false);
+                } else if (jsonData.success == 0) {
+                  toast(
+                    "error",
+                    "Error",
+                    jsonData.msg ||
+                      jsonData.error ||
+                      "No se pudo eliminar el pago",
+                  );
+                } else if (jsonData.success == 401) {
+                  $("#danger-alert-modal").modal("show");
+                }
+              },
+              error: function (xhr) {
+                toast(
+                  "error",
+                  "Error",
+                  xhr.responseText || "Error del servidor",
                 );
-                var table = $("#basic").DataTable();
-                table.ajax.reload();
-              } else if (jsonData.success == 0) {
-                $.NotificationApp.send(
-                  "Error !",
-                  jsonData.msg,
-                  "bottom-right",
-                  "#FFFFFF",
-                  "dange"
-                );
-              } else if (jsonData.success == 401) {
-                $("#danger-alert-modal").modal("show");
-              }
-
-              // console.log('idTransClientes',jsonData.idTransClientes);
-              // console.log('idTesoreria',jsonData.idTesoreria);
-            },
+              },
+            });
           });
-        });
       } else {
         $("#danger-alert-modal").modal("show");
       }
+    },
+    error: function (xhr) {
+      toast("error", "Error", xhr.responseText || "Error del servidor");
     },
   });
 }
@@ -165,18 +281,33 @@ function notifications(a) {
       id: a,
     },
     type: "POST",
-    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/invoice.php",
+    url: "../Clientes/Procesos/php/invoice.php",
     success: function (response) {
       var jsonData = JSON.parse(response);
-      var Fecha = jsonData.data[0].Fecha.split("-").reverse().join(".");
 
-      $.NotificationApp.send(
-        "Email enviado el " + Fecha + " a " + jsonData.data[0].Mail,
-        "Se han realizado cambios.",
-        "bottom-right",
-        "#FFFFFF",
-        "success"
-      );
+      if (
+        jsonData &&
+        jsonData.data &&
+        jsonData.data[0] &&
+        jsonData.data[0].Fecha
+      ) {
+        var Fecha =
+          jsonData &&
+          jsonData.data &&
+          jsonData.data[0] &&
+          jsonData.data[0].Fecha
+            ? jsonData.data[0].Fecha.split("-").reverse().join(".")
+            : "";
+        $.NotificationApp.send(
+          "Email enviado el " + Fecha + " a " + jsonData.data[0].Mail,
+          "Se han realizado cambios.",
+          "bottom-right",
+          "#FFFFFF",
+          "success",
+        );
+      } else {
+        console.warn("Fecha inválida en notifications:", jsonData);
+      }
     },
   });
 }
@@ -222,30 +353,16 @@ function eliminar_mvi(i) {
       id: i,
     },
     type: "POST",
-    url: "../Procesos/php/movimientos_internos.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-
+    url: "../Clientes/Procesos/php/movimientos_internos.php",
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
         var id = document.getElementById("codigo").value;
 
         actualizar_totales(id);
-
-        $.NotificationApp.send(
-          "Exito !",
-          "Registro Eliminado.",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        toast("success", "Éxito", "Movimiento interno eliminado correctamente");
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "Registro No Eliminado.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger"
-        );
+        toast("error", "Error", "No se pudo eliminar el movimiento interno");
       }
     },
   });
@@ -253,10 +370,6 @@ function eliminar_mvi(i) {
 
 //CONTACT
 $("#perfil_conctact").click(function () {
-  // var table_contact = $('#table-contact').DataTable();
-
-  // table_contact.destroy();
-
   var id = document.getElementById("codigo").value;
 
   $("#table-contact").DataTable({
@@ -312,7 +425,7 @@ $(document).on("click", "#contact-delete", function (e) {
     `<p>Estas por eliminar el contacto. <a href="#" id="cancel-action" class="alert-link" data-id="${dataID}">Cancelar</a></p>`,
     "bottom-right",
     "#FFFFFF",
-    "warning"
+    "warning",
   );
 
   // Iniciar un temporizador que ejecuta la operación después de 5 segundos (5000 ms)
@@ -330,7 +443,7 @@ $(document).on("click", "#contact-delete", function (e) {
             "El contacto ha sido eliminado.",
             "bottom-right",
             "#28a745",
-            "success"
+            "success",
           );
           $("#table-contact").DataTable().ajax.reload();
         },
@@ -341,7 +454,7 @@ $(document).on("click", "#contact-delete", function (e) {
             "No se pudo eliminar el contacto.",
             "bottom-right",
             "#dc3545",
-            "danger"
+            "danger",
           );
         },
       });
@@ -361,7 +474,7 @@ $(document).on("click", "#contact-delete", function (e) {
       "Operación de eliminación cancelada.",
       "bottom-right",
       "#FFFFFF",
-      "danger"
+      "danger",
     );
   });
 });
@@ -432,7 +545,7 @@ $("#contact_modal_ok").click(function () {
           "No se pudo agregar el contacto. ".jsonData.error,
           "bottom-right",
           "#dc3545",
-          "danger"
+          "danger",
         );
       }
     },
@@ -475,7 +588,7 @@ $("#contact_modal_modificar_ok").click(function () {
           "Registro modificado !",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       } else {
         $.NotificationApp.send(
@@ -483,7 +596,7 @@ $("#contact_modal_modificar_ok").click(function () {
           "No se pudo modificar el contacto. " + jsonData.error,
           "bottom-right",
           "#dc3545",
-          "danger"
+          "danger",
         );
       }
     },
@@ -545,14 +658,18 @@ $("#btn_un_ctas").click(function () {
       {
         data: "Fecha",
         render: function (data, type, row) {
+          if (type === "sort" || type === "type") {
+            return row.TimeStamp || row.Fecha;
+          }
+
           var Fecha = row.Fecha.split("-").reverse().join(".");
-          return (
-            '<td><span style="display: none;">' +
-            row.Fecha +
-            "</span>" +
-            Fecha +
-            "</td>"
-          );
+          var Hora = "";
+
+          if (row.TimeStamp) {
+            Hora = row.TimeStamp.split(" ")[1].split(":").slice(0, 2).join(":");
+          }
+
+          return Fecha + "<br><small class='text-muted'>" + Hora + "</small>";
         },
       },
       {
@@ -590,7 +707,7 @@ $("#btn_un_ctas").click(function () {
         render: function (data, type, row) {
           if (row.Haber > 0) {
             return (
-              `<td><a target='_blank' href='Informes/recibo.php?id=${row.id}' title='Recibo' ><i class='mdi mdi-18px mdi-alpha-r-circle text-success'></i></a>` +
+              `<td><a onclick='ver_recibo_modal(${row.id})' title='Recibo' ><i class='mdi mdi-18px mdi-alpha-r-circle text-success'></i></a>` +
               `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>`
             );
           } else {
@@ -602,25 +719,246 @@ $("#btn_un_ctas").click(function () {
           }
         },
       },
-      // //   {data:null,
-      // //     render: function (data,type,row){
-      // //       if(row.Debe>0){
-
-      // //         return '<td class="dtr-control dt-checkboxes-cell">'+
-      // //                '<div class="form-check"><input data-id="'+row.id+'" value="'+row.Debe+'" type="checkbox" class="form-check-input dt-checkboxes" >'+
-      // //               '<label class="form-check-label">&nbsp;</label></div></td>';
-
-      // //         }else{
-
-      // //        return '<td></td>';
-
-      // //       }
-      // //     }
-      // }
     ],
   });
 });
 
+//MODAL RECIBO
+let reciboActualId = null;
+
+function ver_recibo_modal(id) {
+  reciboActualId = id;
+  console.log("ID del recibo a mostrar:", id);
+
+  const url = "Informes/recibo.php?id=" + id + "&modal=1";
+
+  $("#iframe_recibo").attr("src", url);
+  $("#btn_abrir_recibo_nueva_pestana").attr(
+    "href",
+    "Informes/recibo.php?id=" + id,
+  );
+
+  const modal = new bootstrap.Modal(
+    document.getElementById("modal_ver_recibo"),
+  );
+  modal.show();
+}
+// MODAL RECIBO IMPRIMIR
+$("#btn_imprimir_recibo_modal").on("click", function () {
+  const iframe = document.getElementById("iframe_recibo");
+
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  } else {
+    toast("error", "Error", "No se pudo imprimir el recibo.");
+  }
+});
+
+// BOTON ENVIAR RECIBO POR MAIL
+$("#btn_enviar_recibo_modal").on("click", function () {
+  if (!reciboActualId) {
+    toast("error", "Error", "No hay recibo seleccionado.");
+    return;
+  }
+
+  $.ajax({
+    url: "/SistemaTriangular/Clientes/Informes/enviar_recibo_mail.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      ObtenerMailRecibo: 1,
+      id: reciboActualId,
+    },
+    success: function (jsonData) {
+      if (jsonData.success != 1) {
+        alerta(
+          "error",
+          "Error",
+          jsonData.msg || "No se pudo obtener el mail del cliente.",
+        );
+        return;
+      }
+
+      Swal.fire({
+        title: "Enviar recibo por mail",
+        input: "email",
+        inputLabel: "Correo destino",
+        inputValue: jsonData.mail || "",
+        inputPlaceholder: "cliente@dominio.com",
+        showCancelButton: true,
+        confirmButtonText: "Enviar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return "Debes ingresar un correo.";
+          }
+
+          const email = value.trim();
+          const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          if (!regex.test(email)) {
+            return "El correo no tiene un formato válido.";
+          }
+
+          return null;
+        },
+      }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        const mailDestino = result.value.trim();
+
+        $.ajax({
+          url: "/SistemaTriangular/Clientes/Informes/enviar_recibo_mail.php",
+          type: "POST",
+          dataType: "json",
+          data: {
+            EnviarReciboMail: 1,
+            id: reciboActualId,
+            mailDestino: mailDestino,
+          },
+          beforeSend: function () {
+            toast("info", "Procesando", "Enviando recibo por mail...");
+          },
+          success: function (jsonData) {
+            if (jsonData.success == 1) {
+              toast("success", "Perfecto", "Recibo enviado correctamente.");
+            } else {
+              alerta(
+                "error",
+                "Error",
+                jsonData.msg || "No se pudo enviar el recibo.",
+              );
+            }
+          },
+          error: function (xhr) {
+            alerta("error", "Error del servidor", xhr.responseText);
+          },
+        });
+      });
+    },
+    error: function (xhr) {
+      alerta("error", "Error del servidor", xhr.responseText);
+    },
+  });
+});
+
+$("#modal_factura_preview").on("hidden.bs.modal", function () {
+  $("#iframe_factura_preview").attr("src", "");
+  $("#btn_abrir_factura_modal").attr("href", "#");
+  facturaActualId = null;
+});
+//ENVIAR FACTURA POR MAIL
+// let facturaActualId =
+// new URLSearchParams(window.location.search).get("id") || null;
+let facturaActualId = null;
+function abrirModalFactura(id) {
+  if (!id) {
+    toast("error", "Error", "No hay factura seleccionada.");
+    return;
+  }
+
+  facturaActualId = id;
+
+  const urlFactura = `/SistemaTriangular/Clientes/invoice.php?id=${id}`;
+
+  $("#iframe_factura_preview").attr("src", urlFactura);
+  $("#btn_abrir_factura_modal").attr("href", urlFactura);
+
+  const modalEl = document.getElementById("modal_factura_preview");
+  const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+  modal.show();
+}
+
+// BOTON ENVIAR FACTURA POR MAIL
+$("#btn_enviar_factura_modal").on("click", function () {
+  if (!facturaActualId) {
+    toast("error", "Error", "No hay factura seleccionada.");
+    return;
+  }
+
+  $.ajax({
+    url: "/SistemaTriangular/Clientes/Informes/enviar_factura_mail.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      ObtenerMailFactura: 1,
+      id: facturaActualId,
+    },
+    success: function (jsonData) {
+      if (jsonData.success != 1) {
+        alerta(
+          "error",
+          "Error",
+          jsonData.msg || "No se pudo obtener el mail del cliente.",
+        );
+        return;
+      }
+
+      Swal.fire({
+        title: "Enviar factura por mail",
+        input: "email",
+        inputLabel: "Correo destino",
+        inputValue: jsonData.mail || "",
+        inputPlaceholder: "cliente@dominio.com",
+        showCancelButton: true,
+        confirmButtonText: "Enviar",
+        cancelButtonText: "Cancelar",
+        reverseButtons: true,
+        inputValidator: (value) => {
+          if (!value || !value.trim()) {
+            return "Debes ingresar un correo.";
+          }
+
+          const email = value.trim();
+          const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+          if (!regex.test(email)) {
+            return "El correo no tiene un formato válido.";
+          }
+
+          return null;
+        },
+      }).then((result) => {
+        if (!result.isConfirmed) return;
+
+        const mailDestino = result.value.trim();
+
+        $.ajax({
+          url: "/SistemaTriangular/Clientes/Informes/enviar_factura_mail.php",
+          type: "POST",
+          dataType: "json",
+          data: {
+            EnviarFacturaMail: 1,
+            id: facturaActualId,
+            mailDestino: mailDestino,
+          },
+          beforeSend: function () {
+            toast("info", "Procesando", "Enviando factura por mail...");
+          },
+          success: function (jsonData) {
+            if (jsonData.success == 1) {
+              toast("success", "Perfecto", "Factura enviada correctamente.");
+            } else {
+              alerta(
+                "error",
+                "Error",
+                jsonData.msg || "No se pudo enviar la factura.",
+              );
+            }
+          },
+          error: function (xhr) {
+            alerta("error", "Error del servidor", xhr.responseText);
+          },
+        });
+      });
+    },
+    error: function (xhr) {
+      alerta("error", "Error del servidor", xhr.responseText);
+    },
+  });
+});
 $(document).ready(function () {
   $("#switch3").change(function () {
     var switchValue = $(this).is(":checked") ? 1 : 0; // Obtener el valor del switch (1 si está activado, 0 si está desactivado)
@@ -630,7 +968,7 @@ $(document).ready(function () {
       url: "Procesos/php/funciones.php", // Ruta al script PHP que manejará la solicitud
       data: { Colecta: 1, idCliente: id, switchValue: switchValue }, // Datos a enviar (valor del switch)
       success: function (response) {
-        var jsonData = JSON.parse(respuesta);
+        var jsonData = JSON.parse(response);
 
         if (jsonData.success == 1) {
           $.NotificationApp.send(
@@ -638,18 +976,18 @@ $(document).ready(function () {
             "Registro Actualizado.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
 
           if (switchValue == 0) {
             $("#info_facturacion").css("display", "block");
             $("#info_facturacion_text").html(
-              "<strong>Info - Facturación:</strong> El cliente <b>no</b> utiliza el servicio de <b>colecta</b>"
+              "<strong>Info - Facturación:</strong> El cliente <b>no</b> utiliza el servicio de <b>colecta</b>",
             );
           } else {
             $("#info_facturacion").css("display", "block");
             $("#info_facturacion_text").html(
-              "<strong>Info - Facturación:</strong> El cliente utiliza el servicio de <b>colecta</b>"
+              "<strong>Info - Facturación:</strong> El cliente utiliza el servicio de <b>colecta</b>",
             );
           }
         } else {
@@ -658,7 +996,7 @@ $(document).ready(function () {
             jsonData.error,
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
       },
@@ -697,7 +1035,7 @@ $(document).ready(function () {
   table_enviadas.destroy();
   //DESTRUIMOS LA TABLA FACTURACION PROFORMA
   var table_facturacion_proforma_recorridos = $(
-    "#tabla_facturacion_proforma_recorridos"
+    "#tabla_facturacion_proforma_recorridos",
   ).DataTable();
   table_facturacion_proforma_recorridos.destroy();
   //DESTRUIMOS LA TABLA RECORRIDOS
@@ -732,7 +1070,7 @@ $("#ciclo_facturacion").change(function () {
           "Registro Actualizado.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       } else {
         $.NotificationApp.send(
@@ -740,7 +1078,7 @@ $("#ciclo_facturacion").change(function () {
           "Registro No Actualizado.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
     },
@@ -814,7 +1152,7 @@ function buscarcomprobante(a) {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       $("#ncomprobante_up_r").val(
-        jsonData.PuntoVenta + "-" + jsonData.NComprobante
+        jsonData.PuntoVenta + "-" + jsonData.NComprobante,
       );
       $("#comprobante_up_r").val(jsonData.Comprobante);
       $("#select_up_r").val(jsonData.Comprobante);
@@ -824,17 +1162,17 @@ function buscarcomprobante(a) {
 
       if (comp == 0) {
         document.getElementById(
-          "confirmarfacturaxrecorrido_AFIP_boton"
+          "confirmarfacturaxrecorrido_AFIP_boton",
         ).style.display = "none";
         document.getElementById(
-          "confirmarfacturaxrecorrido_boton"
+          "confirmarfacturaxrecorrido_boton",
         ).style.display = "block";
       } else {
         document.getElementById(
-          "confirmarfacturaxrecorrido_AFIP_boton"
+          "confirmarfacturaxrecorrido_AFIP_boton",
         ).style.display = "block";
         document.getElementById(
-          "confirmarfacturaxrecorrido_boton"
+          "confirmarfacturaxrecorrido_boton",
         ).style.display = "none";
       }
     },
@@ -898,7 +1236,7 @@ $("#comprobante_nc_nd_selectA").change(function () {
             option.Total +
             '">' +
             option.NumeroComprobante +
-            "</option>"
+            "</option>",
         );
       });
     },
@@ -925,7 +1263,7 @@ $("#comprobante_selectA").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
         document.getElementById("cbteasoc").style.display = "none";
 
@@ -936,7 +1274,7 @@ $("#comprobante_selectA").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "block";
         document.getElementById("cbteasoc").style.display = "none";
 
@@ -955,7 +1293,7 @@ $("#comprobante_selectA").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "block";
         document.getElementById("cbteasoc").style.display = "none";
 
@@ -971,7 +1309,7 @@ $("#comprobante_selectA").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "block";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
         document.getElementById("cbteasoc").style.display = "none";
         break;
@@ -1002,7 +1340,7 @@ $("#comprobante_selectA").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
         document.getElementById("cbteasoc").style.display = "none";
         break;
@@ -1021,7 +1359,7 @@ $("#comprobante_selectA").change(function () {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       $("#ncomprobante_up").val(
-        jsonData.PuntoVenta + "-" + jsonData.NComprobante
+        jsonData.PuntoVenta + "-" + jsonData.NComprobante,
       );
 
       var comp_2 = parseInt($("#tipo_de_factura").val());
@@ -1049,7 +1387,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
         document.getElementById("cbteasoc").style.display = "none";
 
@@ -1061,7 +1399,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "block";
         document.getElementById("cbteasoc").style.display = "none";
 
@@ -1080,7 +1418,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "block";
         document.getElementById("cbteasoc").style.display = "none";
 
@@ -1095,7 +1433,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "block";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
         break;
       case 1: //FACTURAS A
@@ -1104,7 +1442,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
 
         break;
@@ -1114,7 +1452,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
 
         break;
@@ -1127,7 +1465,7 @@ $("#comprobante_selectB").change(function () {
         document.getElementById("confirmarfactura_boton").style.display =
           "none";
         document.getElementById(
-          "confirmar_generar_comprobante_AFIP_boton"
+          "confirmar_generar_comprobante_AFIP_boton",
         ).style.display = "none";
         document.getElementById("cbteasoc").style.display = "none";
         break;
@@ -1150,7 +1488,7 @@ $("#comprobante_selectB").change(function () {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       $("#ncomprobante_up").val(
-        jsonData.PuntoVenta + "-" + jsonData.NComprobante
+        jsonData.PuntoVenta + "-" + jsonData.NComprobante,
       );
 
       var comp_2 = parseInt($("#tipo_de_factura").val());
@@ -1266,7 +1604,7 @@ $("#nueva_relacion").change(function () {
           "Registro Actualizado.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       }
     },
@@ -1304,7 +1642,7 @@ for (var i = 0; i < divs.length; i++) {
       "Se han realizado cambios.",
       "bottom-right",
       "#FFFFFF",
-      "info"
+      "info",
     );
   });
 }
@@ -1320,7 +1658,7 @@ for (var i = 0; i < divsC.length; i++) {
       "Se han realizado cambios.",
       "bottom-right",
       "#FFFFFF",
-      "info"
+      "info",
     );
   });
 }
@@ -1336,13 +1674,13 @@ function obs_modify(id) {
       idctasctes: id,
     },
     url: "Procesos/php/funciones.php",
+
     type: "post",
-    beforeSend: function () {
-      // $("#buscando").html("Buscando...");
-      // alert('enviando...');
-    },
-    success: function (respuesta) {
-      var jsonData = JSON.parse(respuesta);
+
+    beforeSend: function () {},
+    dataType: "json",
+    success: function (jsonData) {
+      // var jsonData = JSON.parse(respuesta);
       $("#textarea-comentario").val(jsonData.obs);
       $("#center_modal").modal("show");
       $("#textarea-comentario_id").val(id);
@@ -1416,7 +1754,7 @@ $("#buscarcliente").change(function () {
 
   //DESTRUIMOS LA TABLA FACTURACION PROFORMA
   var table_facturacion_proforma_recorridos = $(
-    "#tabla_facturacion_proforma_recorridos"
+    "#tabla_facturacion_proforma_recorridos",
   ).DataTable();
   table_facturacion_proforma_recorridos.destroy();
 
@@ -1479,14 +1817,14 @@ $("#buscarcliente").change(function () {
         if (jsonData.Colecta == 1) {
           $("#info_facturacion").css("display", "block");
           $("#info_facturacion_text").html(
-            "<strong>Info - Facturación:</strong> El cliente utiliza el servicio de <b>colecta</b>"
+            "<strong>Info - Facturación:</strong> El cliente utiliza el servicio de <b>colecta</b>",
           );
         } else {
           $("#info_facturacion").css("display", "block");
           $("#info_facturacion_text")
             .css("display", "block")
             .html(
-              "<strong>Info - Facturación:</strong> El cliente <b>no</b> utiliza el servicio de <b>colecta</b>"
+              "<strong>Info - Facturación:</strong> El cliente <b>no</b> utiliza el servicio de <b>colecta</b>",
             );
         }
 
@@ -1520,7 +1858,7 @@ $("#buscarcliente").change(function () {
         }
         var id = document.getElementById("codigo").value;
 
-        var datatable = $("#basic").DataTable({
+        $("#basic").DataTable({
           dom: "Bfrtip",
           buttons: ["copy", "csv", "excel", "pdf", "print"],
           paging: true,
@@ -1571,13 +1909,22 @@ $("#buscarcliente").change(function () {
             {
               data: "Fecha",
               render: function (data, type, row) {
+                if (type === "sort" || type === "type") {
+                  return row.TimeStamp || row.Fecha;
+                }
+
                 var Fecha = row.Fecha.split("-").reverse().join(".");
+                var Hora = "";
+
+                if (row.TimeStamp) {
+                  Hora = row.TimeStamp.split(" ")[1]
+                    .split(":")
+                    .slice(0, 2)
+                    .join(":");
+                }
+
                 return (
-                  '<td><span style="display: none;">' +
-                  row.Fecha +
-                  "</span>" +
-                  Fecha +
-                  "</td>"
+                  Fecha + "<br><small class='text-muted'>" + Hora + "</small>"
                 );
               },
             },
@@ -1587,21 +1934,21 @@ $("#buscarcliente").change(function () {
             {
               data: "TipoDeComprobante",
               render: function (data, type, row) {
+                var comprobante = "";
+
                 if (
                   row.TipoDeComprobante === "Recibo de Pago" ||
                   row.TipoDeComprobante === "MOVIMIENTO INTERNO"
                 ) {
-                  var comprobante =
-                    row.TipoDeComprobante + " " + row.NumeroVenta;
+                  comprobante = row.TipoDeComprobante + " " + row.NumeroVenta;
                 } else {
-                  var comprobante =
-                    row.TipoDeComprobante + " " + row.NumeroFactura;
+                  comprobante = row.TipoDeComprobante + " " + row.NumeroFactura;
                 }
 
                 if (row.TipoDeComprobante == "MOVIMIENTO INTERNO") {
-                  return `${row.TipoDeComprobante} ${row.NumeroVenta}<br><small class="mr-2 text-muted"> ${row.Comentario} </small>`;
+                  return `${comprobante}<br><small class="mr-2 text-muted">${row.Comentario || ""}</small>`;
                 } else {
-                  return `${comprobante}<br><small class="mr-2 text-muted"><a id="${row.id}" onclick="obs_modify(this.id)"><i class='mdi mdi-14px mdi-pencil-outline text-muted'>  ${row.Comentario} </i></a></small>`;
+                  return `${comprobante}<br><small class="mr-2 text-muted"><a id="${row.id}" onclick="obs_modify(this.id)"><i class='mdi mdi-14px mdi-pencil-outline text-muted'> ${row.Comentario || ""} </i></a></small>`;
                 }
               },
             },
@@ -1613,38 +1960,73 @@ $("#buscarcliente").change(function () {
               data: "Haber",
               render: $.fn.dataTable.render.number(".", ",", 2, "$ "),
             },
+
+            {
+              data: "EstadoAplicacion",
+              render: function (data, type, row) {
+                let badgeClass = "bg-light text-dark";
+                let texto = "S/D";
+
+                if (data === "PENDIENTE") {
+                  badgeClass = "bg-danger";
+                  texto = "Pendiente";
+                } else if (data === "PARCIAL") {
+                  badgeClass = "bg-warning text-dark";
+                  texto = "Parcial";
+                } else if (data === "CANCELADA") {
+                  badgeClass = "bg-success";
+                  texto = "Cancelada";
+                } else if (data === "DISPONIBLE") {
+                  badgeClass = "bg-info";
+                  texto = "Disponible";
+                } else if (data === "APLICADO") {
+                  badgeClass = "bg-secondary";
+                  texto = "Aplicado";
+                }
+
+                return `
+                <span 
+                  class="badge ${badgeClass}" 
+                  style="cursor:pointer"
+                  onclick="ver_aplicaciones(${row.id})"
+                  title="Ver aplicaciones"
+                >
+                  ${texto}
+                </span>
+              `;
+              },
+            },
             {
               data: "id",
               render: function (data, type, row) {
                 if (row.TipoDeComprobante != "MOVIMIENTO INTERNO") {
-                  //RECIBO DE PAGO
                   if (row.Haber > 0) {
                     if (row.idNotifications == 0) {
                       return (
-                        `<td><a target='_blank' href='Informes/recibo.php?id=${row.id}' title='Recibo' ><i class='mdi mdi-18px mdi-alpha-r-circle text-success mr-1'></i></a>` +
-                        `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></td>`
+                        `<a onclick='ver_recibo_modal(${row.id})' title='Recibo'><i class='mdi mdi-18px mdi-alpha-r-circle text-success'></i></a>` +
+                        `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>`
                       );
                     } else {
-                      return `<td><a target='_blank' href='Informes/recibo.php?id=${row.id}' title='Recibo' ><i class='mdi mdi-18px mdi-alpha-r-circle text-success mr-2'></i></a><a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger mr-2'></i></a><a onclick=''><i class='mdi mdi-18px mdi-email-check text-success'></i></a></td>`;
+                      return (
+                        `<a onclick='ver_recibo_modal(${row.id})' title='Recibo'><i class='mdi mdi-18px mdi-alpha-r-circle text-success mr-2'></i></a>` +
+                        `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger mr-2'></i></a>`
+                      );
                     }
-                    //FACTURA
                   } else {
                     if (row.idNotifications == 0) {
                       return (
-                        `<td><a target='_blank' href='invoice.php?id=${row.id}' title='Comprobante' ><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-                        `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'>` +
-                        `<i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a></td>`
+                        `<a onclick='abrirModalFactura(${row.id})' title='Comprobante'><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
+                        `<a target='_blank' href='invoice_details.php?id=${row.id}' title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>`
                       );
                     } else {
                       return (
-                        `<td><a target='_blank' href='invoice.php?id=${row.id}' title='Comprobante' ><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-                        `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'>` +
-                        `<i class='mdi mdi-18px mdi-alpha-d-circle text-warning mr-2'></i></a><a onclick='notifications(${row.idNotifications})'><i class='mdi mdi-18px mdi-email-check text-success'></i></a></td></td>`
+                        `<a onclick='abrirModalFactura(${row.id})' title='Comprobante'><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
+                        `<a target='_blank' href='invoice_details.php?id=${row.id}' title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning mr-2'></i></a>`
                       );
                     }
                   }
                 } else {
-                  return `<td><a onclick='eliminar_mvi(${row.id})' class='action-icon'> <i class='mdi mdi-18px mdi-trash-can text-danger'></i></td>`;
+                  return `<a onclick='eliminar_mvi(${row.id})' class='action-icon'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>`;
                 }
               },
             },
@@ -1652,7 +2034,7 @@ $("#buscarcliente").change(function () {
         });
 
         //TABLA RELACIONES
-        var datatable_relaciones = $("#relaciones_tabla").DataTable({
+        $("#relaciones_tabla").DataTable({
           dom: "Bfrtip",
           buttons: ["copy", "excel", "pdf"],
           paging: true,
@@ -1705,7 +2087,7 @@ $("#buscarcliente").change(function () {
             // Set the checked state of the checkbox in the table
             $("input.editor-active", row).prop(
               "checked",
-              data.AdminEnvios == 1
+              data.AdminEnvios == 1,
             );
           },
         });
@@ -1738,7 +2120,7 @@ $("#buscarcliente").change(function () {
                     "Se han realizado cambios.",
                     "bottom-right",
                     "#FFFFFF",
-                    "success"
+                    "success",
                   );
                 } else {
                   $.NotificationApp.send(
@@ -1746,12 +2128,12 @@ $("#buscarcliente").change(function () {
                     "No se realizaron cambios.",
                     "bottom-right",
                     "#FFFFFF",
-                    "danger"
+                    "danger",
                   );
                 }
               },
             });
-          }
+          },
         );
         //TABLA TARIFAS
         $("#botontarifas").click(function () {
@@ -1761,10 +2143,10 @@ $("#buscarcliente").change(function () {
 
           document.getElementById("cargarpago_botton").style.display = "none";
           document.getElementById(
-            "generar_comprobante_afip_button"
+            "generar_comprobante_afip_button",
           ).style.display = "none";
           document.getElementById(
-            "asociar_pago_comprobante_button"
+            "asociar_pago_comprobante_button",
           ).style.display = "none";
 
           document.getElementById("descuento_botton").style.display = "none";
@@ -1822,20 +2204,12 @@ $("#buscarcliente").change(function () {
             success: function (response1) {
               var jsonData = JSON.parse(response1);
               if (jsonData.success == "1") {
-                $.NotificationApp.send(
-                  "Registro Eliminado !",
-                  "Se han realizado cambios.",
-                  "bottom-right",
-                  "#FFFFFF",
-                  "success"
-                );
+                toast("success", "Perfecto", "Pago registrado correctamente");
               } else {
-                $.NotificationApp.send(
-                  "Registro No Eliminado !",
-                  "No se han realizado cambios.",
-                  "bottom-right",
-                  "#FFFFFF",
-                  "waring"
+                toast(
+                  "error",
+                  "Ocurrio un Error !",
+                  "No se realizaron cambios.",
                 );
               }
             },
@@ -1877,8 +2251,12 @@ $("#buscarcliente").change(function () {
         // $("#total_saldo").html(Saldo);
 
         //FECHA
-        var Fecha = jsonData.UltFacFecha.split("-").reverse().join(".");
-        $("#fecha").html(Fecha);
+        if (jsonData.UltFacFecha) {
+          var Fecha = jsonData.UltFacFecha.split("-").reverse().join(".");
+          $("#fecha").html(Fecha);
+        } else {
+          $("#fecha").html("Sin fecha");
+        }
         var Debe = currencyFormat(Number(jsonData.UltFacDebe));
         $("#debe").html(Debe);
 
@@ -1893,11 +2271,13 @@ $("#buscarcliente").change(function () {
         var PromedioMensualAnt = jsonData.PromedioMensualAnt;
         $("#ventas_mes_ant").html(PromedioMensualAnt.toFixed(2));
 
-        var FechaUltPago = jsonData.FechaUltPago.split("-").reverse().join(".");
-        if (!jsonData.FechaUltPago) {
-          $("#fecha_ult_pago").html("Sin Pagos");
-        } else {
+        if (jsonData.FechaUltPago) {
+          var FechaUltPago = jsonData.FechaUltPago.split("-")
+            .reverse()
+            .join(".");
           $("#fecha_ult_pago").html("Últ. Pago el " + FechaUltPago);
+        } else {
+          $("#fecha_ult_pago").html("Sin Pagos");
         }
 
         var ComprasMes = currencyFormat(Number(jsonData.ComprasMesAnt));
@@ -1925,18 +2305,19 @@ $("#buscarcliente").change(function () {
     },
     url: "Procesos/php/funciones.php",
     type: "post",
-    //         beforeSend: function(){
-    //         $("#buscando").html("Buscando...");
-    //         },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-      if (jsonData.data[0].Pass != null) {
-        $("#claveweb_label").val(jsonData.data[0].Pass);
+    dataType: "json",
 
-        //                   $.NotificationApp.send("Registro Actualizado !","Se han realizado cambios.","bottom-right","#FFFFFF","success");
+    success: function (jsonData) {
+      if (
+        jsonData &&
+        Array.isArray(jsonData.data) &&
+        jsonData.data.length > 0 &&
+        jsonData.data[0].Pass != null
+      ) {
+        $("#claveweb_label").val(jsonData.data[0].Pass);
       } else {
         $("#claveweb_label").val("");
-        //                   $.NotificationApp.send("Ocurrio un Error !","No se realizaron cambios.","bottom-right","#FFFFFF","danger");
+        console.warn("No se encontraron datos de usuario:", jsonData);
       }
     },
   });
@@ -1948,9 +2329,8 @@ $("#buscarcliente").change(function () {
     },
     url: "../Clientes/Procesos/php/tablas.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
         var totalenviados = currencyFormat(Number(jsonData.totalenviados));
 
@@ -2065,7 +2445,7 @@ $("#agregar_botton").click(function () {
           "Creamos el Proveedor",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       } else if (jsonData.success == "2") {
         $.NotificationApp.send(
@@ -2073,7 +2453,7 @@ $("#agregar_botton").click(function () {
           "El Nombre, Direccion o Cuit, ya existen en el sistema",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       } else if (jsonData.success == "3") {
         $.NotificationApp.send(
@@ -2081,7 +2461,7 @@ $("#agregar_botton").click(function () {
           "El nombre no puede ser NULL",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
     },
@@ -2112,19 +2492,19 @@ $("#guardar_botton").click(function () {
 
   if (document.getElementById("nueva_condicion_facturacion").value != "") {
     var condiva_f = document.getElementById(
-      "nueva_condicion_facturacion"
+      "nueva_condicion_facturacion",
     ).value;
   } else {
     var condiva_f = document.getElementById("condicion_facturacion").value;
   }
 
   var tipodocumento_f = document.getElementById(
-    "tipodocumento_facturacion"
+    "tipodocumento_facturacion",
   ).value;
   var documento_f = document.getElementById("cuit_facturacion").value;
   var cai_f = document.getElementById("cai_facturacion").value;
   var observaciones_f = document.getElementById(
-    "observaciones_facturacion"
+    "observaciones_facturacion",
   ).value;
 
   var dato = {
@@ -2193,7 +2573,7 @@ $("#eliminar_botton").click(function () {
   if (total_saldo == "$0.00") {
     $("#modal_eliminar_cliente").modal("show");
     $("#modal_eliminar_cliente_text").text(
-      "Estas por eliminar el cliente " + id
+      "Estas por eliminar el cliente " + id,
     );
   } else {
     $.NotificationApp.send(
@@ -2201,7 +2581,7 @@ $("#eliminar_botton").click(function () {
       "No se puede eliminar ya que el saldo es " + total_saldo,
       "bottom-right",
       "#FFFFFF",
-      "danger"
+      "danger",
     );
   }
 });
@@ -2226,7 +2606,7 @@ $("#modal_eliminar_cliente_aceptar").click(function () {
           "Se elimino el cliente " + id,
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
 
         setTimeout(function () {}, 3000);
@@ -2278,7 +2658,7 @@ $("#botonfacturacion").click(function () {
     datatable_facturacion.destroy();
 
     var table_facturacion_proforma_recorridos = $(
-      "#tabla_facturacion_proforma_recorridos"
+      "#tabla_facturacion_proforma_recorridos",
     ).DataTable();
     table_facturacion_proforma_recorridos.destroy();
 
@@ -2319,7 +2699,7 @@ $("#botonfacturacion").click(function () {
         {
           data: "Fecha",
           render: function (data, type, row) {
-            var Fecha = row.Fecha.split("-").reverse().join(".");
+            var Fecha = row.FechaPedido.split("-").reverse().join(".");
             return (
               '<td><span style="display: none;">' +
               row.Fecha +
@@ -2424,11 +2804,6 @@ $("#botonfacturacion").click(function () {
               dato +
               "</b></a></td>"
             );
-            // }else{
-
-            // return '<td></td>';
-
-            // }
           },
         },
 
@@ -2528,7 +2903,7 @@ $("#botonfacturacion").click(function () {
         } else {
           select = 0;
         }
-      }
+      },
     );
   }); //filtro
 });
@@ -2569,7 +2944,7 @@ $("#modificarcodigocliente_ok").click(function () {
             "Se han realizado cambios.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
           $("#codigocliente_t").val("");
           var table = $("#facturacion_tabla").DataTable();
@@ -2581,7 +2956,7 @@ $("#modificarcodigocliente_ok").click(function () {
             "No se realizaron cambios.",
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
       },
@@ -2740,7 +3115,7 @@ function eliminar_elemento_rec(i) {
             "Registro Actualizado.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
         } else {
           $.NotificationApp.send(
@@ -2748,7 +3123,7 @@ function eliminar_elemento_rec(i) {
             "No pudimos cargar el registro.",
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
         $("#ctasctes_warning-modal").modal("hide");
@@ -3152,7 +3527,8 @@ $("#cargarpago_botton").click(function () {
       FormaDePago: 1,
     },
     type: "POST",
-    url: "../SistemaTriangular/Funciones/php/tablas.php",
+    url: "../Funciones/php/tablas.php",
+
     success: function (response) {
       $(".selector-formadepago select").html(response).fadeIn();
     },
@@ -3165,7 +3541,7 @@ $("#debitocredito_botton").click(function () {
 
 $("#modal_movimientos_internos").on("show.bs.modal", function (e) {
   $("#form_mi")[0].reset();
-
+  $("#fecha_movimientos_internos").val(hoyISO());
   //BUSCO EL ULTIMO COMPROBANTE DE MOVIMIENTOS INTERNOS
   $.ajax({
     data: {
@@ -3173,9 +3549,11 @@ $("#modal_movimientos_internos").on("show.bs.modal", function (e) {
     },
     type: "POST",
     url: "../Clientes/Procesos/php/movimientos_internos.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       $("#comprobante_movimientos_internos").val(jsonData.dato);
+      var table = $("#basic").DataTable();
+      table.ajax.reload(null, false);
     },
   });
 });
@@ -3203,9 +3581,8 @@ $("#confirmar_movimientos_internos_botton").click(function () {
     },
     type: "POST",
     url: "../Clientes/Procesos/php/movimientos_internos.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
         //ACTUALIZO LOS TOTALES
         actualizar_totales(id);
@@ -3385,7 +3762,7 @@ $("#facturar_boton").click(function () {
       "No hay Remitos Seleccionados. No se puede avanzar.",
       "bottom-right",
       "#FFFFFF",
-      "danger"
+      "danger",
     );
   }
 });
@@ -3408,7 +3785,7 @@ $("#facturar_detalle_boton").click(function () {
       $("#Emp_Web_detalle").html(jsonData.data[0].Web);
       $("#Emp_IngresosBrutos_detalle").html(jsonData.data[0].IngresosBrutos);
       $("#Emp_InicioActividades_detalle").html(
-        jsonData.data[0].InicioActividades
+        jsonData.data[0].InicioActividades,
       );
     },
   });
@@ -3454,7 +3831,7 @@ $("#facturar_detalle_boton").click(function () {
             "block";
 
           document.getElementById(
-            "row_tabla_facturacion_detalle"
+            "row_tabla_facturacion_detalle",
           ).style.display = "block";
           document.getElementById("row_tabla_recorridos").style.display =
             "none";
@@ -3480,7 +3857,7 @@ $("#facturar_detalle_boton").click(function () {
 
     //TABLA FACTURACION PROFORMA REMITOS
     var datatable_facturacion = $(
-      "#tabla_facturacion_proforma_detalle"
+      "#tabla_facturacion_proforma_detalle",
     ).DataTable({
       paging: false,
       searching: false,
@@ -3559,7 +3936,7 @@ $("#facturar_detalle_boton").click(function () {
       "No hay Remitos Seleccionados. No se puede avanzar.",
       "bottom-right",
       "#FFFFFF",
-      "danger"
+      "danger",
     );
   }
 });
@@ -3631,7 +4008,7 @@ $("#facturar_recorridos_boton").click(function () {
 
     //TABLA FACTURACION PROFORMA RECORRIDOS
     var datatable_facturacion_recorridos = $(
-      "#tabla_facturacion_proforma_recorridos"
+      "#tabla_facturacion_proforma_recorridos",
     ).DataTable({
       paging: false,
       searching: false,
@@ -3706,14 +4083,6 @@ $("#facturar_recorridos_boton").click(function () {
           },
         },
       ],
-      //               select: {
-      //                   style: 'os',
-      //                   selector: 'td:not(:last-child)' // no row selection on last column
-      //               },
-      //               rowCallback: function ( row, data ) {
-      //                   // Set the checked state of the checkbox in the table
-      //               $('input.editor-active1', row).prop( 'checked', data.id == 1 );
-      //               }
     });
     //FECHAS
     $.ajax({
@@ -3723,11 +4092,8 @@ $("#facturar_recorridos_boton").click(function () {
       },
       url: "Procesos/php/funciones.php",
       type: "post",
-      //         beforeSend: function(){
-      //         $("#buscando").html("Buscando...");
-      //         },
-      success: function (response) {
-        var jsonData = JSON.parse(response);
+      dataType: "json",
+      success: function (jsonData) {
         $("#desde_f").html(jsonData.Desde);
         $("#hasta_f").html(jsonData.Hasta);
       },
@@ -3738,7 +4104,7 @@ $("#facturar_recorridos_boton").click(function () {
       "No hay Remitos Seleccionados. No se puede avanzar.",
       "bottom-right",
       "#FFFFFF",
-      "danger"
+      "danger",
     );
   }
 });
@@ -3797,13 +4163,13 @@ $("#info-header-modal").on("show.bs.modal", function (e) {
     document.getElementById("confirmarfactura_boton").style.display = "block";
     document.getElementById("confirmarfactura_boton").style.display = "none";
     $("#alert_facturacion_label").html(
-      "La Razon Social no puede ser Null. Agregue una Razon Social desde Datos | Datos Facturación."
+      "La Razon Social no puede ser Null. Agregue una Razon Social desde Datos | Datos Facturación.",
     );
   } else if (documento_f == null || documento_f == "") {
     document.getElementById("confirmarfactura_boton").style.display = "block";
     document.getElementById("confirmarfactura_boton").style.display = "none";
     $("#alert_facturacion_label").html(
-      "El Cuit no puede ser Null. Agregue un Cuit válido desde Datos | Datos Facturación."
+      "El Cuit no puede ser Null. Agregue un Cuit válido desde Datos | Datos Facturación.",
     );
   }
 
@@ -3812,7 +4178,7 @@ $("#info-header-modal").on("show.bs.modal", function (e) {
   var cai_f = document.getElementById("cai_facturacion").value;
 
   var tipodocumento_f = document.getElementById(
-    "tipodocumento_facturacion"
+    "tipodocumento_facturacion",
   ).value;
   var documento_f = document.getElementById("cuit_facturacion").value;
   var id = document.getElementById("buscarcliente").value;
@@ -3823,7 +4189,7 @@ $("#info-header-modal").on("show.bs.modal", function (e) {
 
   if (document.getElementById("nueva_condicion_facturacion").value != "") {
     var condiva_f = document.getElementById(
-      "nueva_condicion_facturacion"
+      "nueva_condicion_facturacion",
     ).value;
   } else {
     var condiva_f = document.getElementById("condicion_facturacion").value;
@@ -3836,14 +4202,14 @@ $("#info-header-modal").on("show.bs.modal", function (e) {
       "block";
     document.getElementById("confirmarfactura_boton").style.display = "none";
     document.getElementById(
-      "confirmar_generar_comprobante_AFIP_boton"
+      "confirmar_generar_comprobante_AFIP_boton",
     ).style.display = "none";
   } else {
     document.getElementById("confirmarfactura_AFIP_boton").style.display =
       "none";
     document.getElementById("confirmarfactura_boton").style.display = "block";
     document.getElementById(
-      "confirmar_generar_comprobante_AFIP_boton"
+      "confirmar_generar_comprobante_AFIP_boton",
     ).style.display = "none";
   }
 
@@ -3861,7 +4227,7 @@ $("#info-header-modal").on("show.bs.modal", function (e) {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       $("#ncomprobante_up").val(
-        jsonData.PuntoVenta + "-" + jsonData.NComprobante
+        jsonData.PuntoVenta + "-" + jsonData.NComprobante,
       );
 
       var partesFecha = jsonData.Fecha.split("-");
@@ -3892,20 +4258,20 @@ $("#Facturacion_recorridos_modal").on("show.bs.modal", function (e) {
 
   if ($("#comprobante_tipo_r").val() == 0) {
     document.getElementById(
-      "confirmarfacturaxrecorrido_AFIP_boton"
+      "confirmarfacturaxrecorrido_AFIP_boton",
     ).style.display = "none";
     document.getElementById("confirmarfacturaxrecorrido_boton").style.display =
       "block";
   } else {
     document.getElementById(
-      "confirmarfacturaxrecorrido_AFIP_boton"
+      "confirmarfacturaxrecorrido_AFIP_boton",
     ).style.display = "block";
     document.getElementById("confirmarfacturaxrecorrido_boton").style.display =
       "none";
   }
 
   var tipodocumento_f = document.getElementById(
-    "tipodocumento_facturacion"
+    "tipodocumento_facturacion",
   ).value;
   var documento_f = document.getElementById("cuit_facturacion").value;
   var id = document.getElementById("buscarcliente").value;
@@ -3922,7 +4288,7 @@ $("#Facturacion_recorridos_modal").on("show.bs.modal", function (e) {
 
   if (document.getElementById("nueva_condicion_facturacion").value != "") {
     var condiva_f = document.getElementById(
-      "nueva_condicion_facturacion"
+      "nueva_condicion_facturacion",
     ).value;
   } else {
     var condiva_f = document.getElementById("condicion_facturacion").value;
@@ -3944,7 +4310,7 @@ $("#Facturacion_recorridos_modal").on("show.bs.modal", function (e) {
       var jsonData = JSON.parse(respuesta);
 
       $("#ncomprobante_up_r").val(
-        jsonData.PuntoVenta + "-" + jsonData.NComprobante
+        jsonData.PuntoVenta + "-" + jsonData.NComprobante,
       );
       $("#comprobante_up_r").val(jsonData.Comprobante);
       $("#select_up_r").val(jsonData.Comprobante);
@@ -3961,17 +4327,17 @@ $("#Facturacion_recorridos_modal").on("show.bs.modal", function (e) {
         $("#comprobante_tipo_r").val(1);
 
         document.getElementById(
-          "confirmarfacturaxrecorrido_AFIP_boton"
+          "confirmarfacturaxrecorrido_AFIP_boton",
         ).style.display = "block";
         document.getElementById(
-          "confirmarfacturaxrecorrido_boton"
+          "confirmarfacturaxrecorrido_boton",
         ).style.display = "none";
       } else {
         document.getElementById(
-          "confirmarfacturaxrecorrido_AFIP_boton"
+          "confirmarfacturaxrecorrido_AFIP_boton",
         ).style.display = "none";
         document.getElementById(
-          "confirmarfacturaxrecorrido_boton"
+          "confirmarfacturaxrecorrido_boton",
         ).style.display = "block";
       }
     },
@@ -4003,7 +4369,7 @@ $("#confirmarfactura_boton").click(function () {
   var razonsocial_f = document.getElementById("razonsocial_facturacion").value;
   var direccion_f = document.getElementById("direccion_facturacion").value;
   var tipodocumento_f = document.getElementById(
-    "tipodocumento_facturacion"
+    "tipodocumento_facturacion",
   ).value;
   var documento_f = document.getElementById("cuit_facturacion").value;
   var cai_f = document.getElementById("cai_facturacion").value;
@@ -4012,12 +4378,12 @@ $("#confirmarfactura_boton").click(function () {
   var fecha = document.getElementById("fecha_up").value;
   var comprobante = document.getElementById("comprobante_up").value;
   var observaciones_ctasctes = document.getElementById(
-    "observaciones_ctasctes"
+    "observaciones_ctasctes",
   ).value;
 
   if (document.getElementById("nueva_condicion_facturacion").value != "") {
     var condiva_f = document.getElementById(
-      "nueva_condicion_facturacion"
+      "nueva_condicion_facturacion",
     ).value;
   } else {
     var condiva_f = document.getElementById("condicion_facturacion").value;
@@ -4095,7 +4461,7 @@ $("#confirmarfactura_boton").click(function () {
           "Se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
         //DESTRUIMOS LA TABLA FACTURACION
         var table = $("#tabla_facturacion_proforma").DataTable();
@@ -4116,7 +4482,7 @@ $("#confirmarfactura_boton").click(function () {
           "No se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       } else if (jsonData1.success == 3) {
         $.NotificationApp.send(
@@ -4124,7 +4490,7 @@ $("#confirmarfactura_boton").click(function () {
           "No se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
       //   }
@@ -4138,7 +4504,7 @@ $("#confirmarfactura_boton").click(function () {
 $("#confirmarfactura_boton_cnl_r").click(function () {
   $("#Facturacion_recorridos_modal").modal("toggle");
   var table_facturacion_proforma_recorridos = $(
-    "#tabla_facturacion_proforma_recorridos"
+    "#tabla_facturacion_proforma_recorridos",
   ).DataTable();
   table_facturacion_proforma_recorridos.destroy();
 });
@@ -4160,18 +4526,18 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
   var condiva_f = document.getElementById("comprobante_up_r").value;
 
   var tipodocumento_f = document.getElementById(
-    "tipodocumento_facturacion"
+    "tipodocumento_facturacion",
   ).value;
   var comprobante = document.getElementById("select_up_r").value;
   var documento_f = document.getElementById("cuit_facturacion").value;
   var cai_f = document.getElementById("cai_facturacion").value;
   var observaciones_ctasctes = document.getElementById(
-    "observaciones_ctasctes"
+    "observaciones_ctasctes",
   ).value;
 
   if (document.getElementById("nueva_condicion_facturacion").value != "") {
     var condiva_f = document.getElementById(
-      "nueva_condicion_facturacion"
+      "nueva_condicion_facturacion",
     ).value;
   } else {
     var condiva_f = document.getElementById("condicion_facturacion").value;
@@ -4259,7 +4625,7 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
           "Se procesaron " + jsonData1.cuento + " recorridos.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       } else if (jsonData1.success == 0) {
         $.NotificationApp.send(
@@ -4267,7 +4633,7 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
           "No se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       } else if (jsonData1.success == 3) {
         $.NotificationApp.send(
@@ -4275,7 +4641,7 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
           "No se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
       }
     },
@@ -4292,7 +4658,7 @@ function ComprobarNombre(n) {
       ComprobarNombre: 1,
       Nombre: n,
     },
-    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Procesos/php/funciones.php",
+    url: "../Ventas/Procesos/php/funciones.php",
     type: "post",
     success: function (response) {
       var jsonData = JSON.parse(response);
@@ -4305,7 +4671,7 @@ function ComprobarNombre(n) {
             jsonData.num +
             " " +
             n +
-            " cargados en el sistema, verifique !"
+            " cargados en el sistema, verifique !",
         );
       }
     },
@@ -4343,7 +4709,7 @@ $("#AgregarCliente").click(function () {
 
   $.ajax({
     data: dato,
-    url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Procesos/php/crearcliente.php",
+    url: "../Ventas/Procesos/php/crearcliente.php",
     type: "post",
     beforeSend: function () {
       // $("#buscando").html("Buscando...");
@@ -4359,7 +4725,7 @@ $("#AgregarCliente").click(function () {
           "Se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
         $("#nuevocliente-modal-lg").modal("hide");
       } else {
@@ -4368,7 +4734,7 @@ $("#AgregarCliente").click(function () {
           "Se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
         $("#nuevocliente-modal-lg").modal("hide");
       }

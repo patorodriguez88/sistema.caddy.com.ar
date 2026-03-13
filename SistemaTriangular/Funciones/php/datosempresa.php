@@ -1,7 +1,7 @@
 <?php
-
 include_once "../../Conexion/Conexioni.php";
-if ($_POST['Empresa'] == 1) {
+
+if (isset($_POST['Empresa'])) {
   $sql = "SELECT * FROM DatosEmpresa";
   $Resultado = $mysqli->query($sql);
   $rows = array();

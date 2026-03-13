@@ -31,13 +31,13 @@ document
       data: data,
       url: "Procesos/php/ConfirmarVenta.php",
       type: "post",
+      dataType: "json",
       beforeSend: function () {
         console.log("Enviando datos...");
       },
-      success: function (respuesta) {
-        console.log("Respuesta de PHP:", respuesta); // Esto ayudará a ver exactamente qué se recibe
+      success: function (jsonData) {
+        console.log("Respuesta de PHP:", jsonData); // Esto ayudará a ver exactamente qué se recibe
         try {
-          var jsonData = JSON.parse(respuesta);
           if (jsonData.success == 1) {
             console.log("Si, está success 1");
             $("#success-alert-modal").modal("show");
@@ -49,7 +49,7 @@ document
                   jsonData.data +
                   "<br>Cerrando en " +
                   segundos +
-                  " segundos..."
+                  " segundos...",
               );
               segundos--;
               if (segundos == 0) {
@@ -66,7 +66,7 @@ document
             "Error al parsear JSON:",
             e,
             "Respuesta recibida:",
-            respuesta
+            respuesta,
           );
         }
       },

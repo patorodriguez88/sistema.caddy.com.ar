@@ -380,26 +380,52 @@ function handleOrdenCargar(mysqli $mysqli)
 
 if (isset($_POST['Logistica'])) {
 
-  $Fecha = explode(' - ', $_POST['Fechas'], 2);
+  $sql = "SELECT r.Nombre,
+                 l.NumerodeOrden,
+                 l.Fecha,
+                 l.Hora,
+                 l.HoraRetorno,
+                 l.Kilometros,
+                 l.KilometrosRegreso,
+                 l.KilometrosRecorridos,
+                 l.Recorrido,
+                 l.Estado,
+                 l.NombreChofer,
+                 l.NombreChofer2,
+                 l.Facturado,
+                 l.TotalFacturado,
+                 l.TotalRecorrido,
+                 v.Marca,
+                 v.Modelo,
+                 v.Dominio
+          FROM Logistica as l
+          INNER JOIN Vehiculos as v ON l.Patente=v.Dominio
+          INNER JOIN Recorridos as r ON l.Recorrido=r.Numero
+          WHERE l.Eliminado=0";
 
-  $FechaInicio = explode('/', $Fecha[0], 3);
-  $FechaI = $FechaInicio[2] . '-' . $FechaInicio[0] . '-' . $FechaInicio[1];
+  // Si viene rango de fechas
+  if (!empty($_POST['Fechas'])) {
 
-  $FechaFinal = explode('/', $Fecha[1], 3);
-  $FechaF = $FechaFinal[2] . '-' . $FechaFinal[0] . '-' . $FechaFinal[1];
+    $Fecha = explode(' - ', $_POST['Fechas'], 2);
 
-  $sql = "SELECT r.Nombre,l.NumerodeOrden,l.Fecha,l.Hora,l.HoraRetorno,l.Kilometros,l.KilometrosRegreso,l.KilometrosRecorridos,l.Recorrido,l.Estado,
-    l.NombreChofer,l.NombreChofer2,l.Facturado,l.TotalFacturado,l.TotalRecorrido,v.Marca,v.Modelo,v.Dominio 
-    FROM Logistica as l 
-    INNER JOIN Vehiculos as v ON l.Patente=v.Dominio
-    INNER JOIN Recorridos as r ON l.Recorrido=r.Numero
-    WHERE l.Eliminado=0 AND l.Fecha>='$FechaI' AND l.Fecha<='$FechaF'";
+    $FechaInicio = explode('/', $Fecha[0], 3);
+    $FechaI = $FechaInicio[2] . '-' . $FechaInicio[0] . '-' . $FechaInicio[1];
+
+    $FechaFinal = explode('/', $Fecha[1], 3);
+    $FechaF = $FechaFinal[2] . '-' . $FechaFinal[0] . '-' . $FechaFinal[1];
+
+    $sql .= " AND l.Fecha >= '$FechaI' AND l.Fecha <= '$FechaF'";
+  } else {
+
+    // Si NO hay fecha → mostrar pendientes
+    $sql .= " AND l.Estado IN ('Pendiente','Cargada')";
+  }
 
   $Resultado = $mysqli->query($sql);
+
   $rows = array();
 
   while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-
     $rows[] = $row;
   }
 

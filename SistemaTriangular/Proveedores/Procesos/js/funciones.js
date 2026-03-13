@@ -12,7 +12,7 @@ function obtenerUsuarios() {
             opcion.gid_asana +
             '">' +
             opcion.Nombre +
-            "</option>"
+            "</option>",
         );
       });
     },
@@ -58,7 +58,7 @@ function borrar(i) {
           j.data.RazonSocial +
           " por un importe de $" +
           j.data.Debe +
-          "</br></br><b> Confirmás la operación ?.</b>"
+          "</br></br><b> Confirmás la operación ?.</b>",
       );
     },
   });
@@ -85,7 +85,7 @@ function borrar_pago(i) {
           j.data.RazonSocial +
           " por un importe de $" +
           j.data.Haber +
-          "</br></br><b> Confirmás la operación ?.</b>"
+          "</br></br><b> Confirmás la operación ?.</b>",
       );
     },
   });
@@ -109,7 +109,7 @@ $("#btn_eliminar_ok").click(function () {
           "Se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
         var table = $("#basic").DataTable();
         table.ajax.reload();
@@ -120,7 +120,7 @@ $("#btn_eliminar_ok").click(function () {
           "No se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "warning"
+          "warning",
         );
       }
     },
@@ -145,7 +145,7 @@ $("#btn_eliminar_pago_ok").click(function () {
           "Se han realizado cambios.",
           "bottom-right",
           "#FFFFFF",
-          "danger"
+          "danger",
         );
         var table = $("#basic").DataTable();
         table.ajax.reload();
@@ -185,7 +185,7 @@ $(document).ready(function () {
       // Iterar sobre los datos y agregarlos al select
       data.forEach(function (cuenta) {
         $("#nueva_cuentaasignada").append(
-          `<option value="${cuenta.Cuenta}">${cuenta.Cuenta} | ${cuenta.NombreCuenta}</option>`
+          `<option value="${cuenta.Cuenta}">${cuenta.Cuenta} | ${cuenta.NombreCuenta}</option>`,
         );
       });
     },
@@ -293,7 +293,7 @@ $(document).ready(function () {
             Swal.fire(
               "Aviso",
               "No se encontró el tipo de comprobante.",
-              "info"
+              "info",
             );
           }
         } catch (e) {
@@ -317,15 +317,15 @@ $(document).ready(function () {
     // })
 
     var table = $("#basic").DataTable();
-    table.destroy();
+    table.clear().destroy();
 
     var dato = { Datos: 1, id: id };
     $.ajax({
       data: dato,
       url: "Procesos/php/funciones.php",
       type: "post",
-      success: function (response) {
-        var jsonData = JSON.parse(response);
+      dataType: "json",
+      success: function (jsonData) {
         if (jsonData.success == "1") {
           document.getElementById("steps").style.display = "flex";
 
@@ -379,39 +379,116 @@ $(document).ready(function () {
             buttons: ["copy", "csv", "excel", "pdf", "print"],
             paging: true,
             searching: true,
+            // footerCallback: function (row, data, start, end, display) {
+            //   total = this.api()
+            //     .column(4) //numero de columna a sumar
+            //     //.column(1, {page: 'current'})//para sumar solo la pagina actual
+            //     .data()
+            //     .reduce(function (a, b) {
+            //       return parseInt(a) + parseInt(b);
+            //     }, 0);
+            //   total1 = this.api()
+            //     .column(5) //numero de columna a sumar
+            //     //.column(1, {page: 'current'})//para sumar solo la pagina actual
+            //     .data()
+            //     .reduce(function (a, b) {
+            //       return parseInt(a) + parseInt(b);
+            //     }, 0);
+            //   var sumadebe = currencyFormat(total);
+            //   var sumahaber = currencyFormat(total1);
+            //   var saldo = currencyFormat(total - total1);
+            //   var saldo1 = Number(total - total1);
+
+            //   $("#saldo_ctacte").html(saldo);
+
+            //   if (saldo1 == 0) {
+            //     document.getElementById("saldo_ctacte").className = "text-info";
+            //   } else if (saldo1 > 0) {
+            //     document.getElementById("saldo_ctacte").className =
+            //       "text-danger";
+            //   } else if (saldo1 < 0) {
+            //     document.getElementById("saldo_ctacte").className =
+            //       "text-warning";
+            //   }
+            //   $(this.api().column(4).footer()).html(sumadebe);
+            //   $(this.api().column(5).footer()).html(sumahaber);
+            // },
             footerCallback: function (row, data, start, end, display) {
-              total = this.api()
-                .column(4) //numero de columna a sumar
-                //.column(1, {page: 'current'})//para sumar solo la pagina actual
+              const api = this.api();
+
+              // Si no hay data o no hay columnas, no hacer nada (evita crashes)
+              if (!data || !data.length) return;
+              const colCount = api.columns().count();
+              if (colCount === 0) return;
+
+              // Índices esperados
+              const colDebe = 4;
+              const colHaber = 5;
+
+              // Si la tabla que se inicializó no tiene esas columnas, cortar
+              if (colDebe >= colCount || colHaber >= colCount) return;
+
+              // Helper numérico: soporta "$ 1.234,56", "1,234.56", "", null, etc.
+              function toNumber(v) {
+                if (v == null) return 0;
+
+                // si viene HTML, sacamos tags
+                v = String(v)
+                  .replace(/<[^>]*>/g, "")
+                  .trim();
+
+                // remover moneda y espacios
+                v = v.replace(/\s/g, "").replace(/\$/g, "");
+
+                // Si viene estilo es-AR "1.234,56" => "1234.56"
+                // 1) quitar separadores de miles "."
+                // 2) cambiar coma decimal por punto
+                if (v.indexOf(",") > -1 && v.indexOf(".") > -1) {
+                  // asumo miles="." decimal=","
+                  v = v.replace(/\./g, "").replace(",", ".");
+                } else if (v.indexOf(",") > -1 && v.indexOf(".") === -1) {
+                  // solo coma: decimal
+                  v = v.replace(",", ".");
+                } else {
+                  // solo punto o nada: ya ok
+                  v = v;
+                }
+
+                const n = Number(v);
+                return Number.isFinite(n) ? n : 0;
+              }
+
+              const totalDebe = api
+                .column(colDebe, { page: "all" }) // o { page:'current' } si querés solo página actual
                 .data()
-                .reduce(function (a, b) {
-                  return parseInt(a) + parseInt(b);
-                }, 0);
-              total1 = this.api()
-                .column(5) //numero de columna a sumar
-                //.column(1, {page: 'current'})//para sumar solo la pagina actual
+                .reduce((acc, v) => acc + toNumber(v), 0);
+
+              const totalHaber = api
+                .column(colHaber, { page: "all" })
                 .data()
-                .reduce(function (a, b) {
-                  return parseInt(a) + parseInt(b);
-                }, 0);
-              var sumadebe = currencyFormat(total);
-              var sumahaber = currencyFormat(total1);
-              var saldo = currencyFormat(total - total1);
-              var saldo1 = Number(total - total1);
+                .reduce((acc, v) => acc + toNumber(v), 0);
+
+              const saldoNum = totalDebe - totalHaber;
+
+              const sumadebe = currencyFormat(totalDebe);
+              const sumahaber = currencyFormat(totalHaber);
+              const saldo = currencyFormat(saldoNum);
 
               $("#saldo_ctacte").html(saldo);
 
-              if (saldo1 == 0) {
-                document.getElementById("saldo_ctacte").className = "text-info";
-              } else if (saldo1 > 0) {
-                document.getElementById("saldo_ctacte").className =
-                  "text-danger";
-              } else if (saldo1 < 0) {
-                document.getElementById("saldo_ctacte").className =
-                  "text-warning";
+              const el = document.getElementById("saldo_ctacte");
+              if (el) {
+                el.classList.remove("text-info", "text-danger", "text-warning");
+                if (saldoNum === 0) el.classList.add("text-info");
+                else if (saldoNum > 0) el.classList.add("text-danger");
+                else el.classList.add("text-warning");
               }
-              $(this.api().column(4).footer()).html(sumadebe);
-              $(this.api().column(5).footer()).html(sumahaber);
+
+              // Footers
+              const fDebe = api.column(colDebe).footer();
+              const fHaber = api.column(colHaber).footer();
+              if (fDebe) $(fDebe).html(sumadebe);
+              if (fHaber) $(fHaber).html(sumahaber);
             },
             ajax: {
               url: "Procesos/php/tablas.php",
@@ -556,8 +633,9 @@ $(document).ready(function () {
       data: { Tablero: 1, id: id },
       url: "Procesos/php/funciones.php",
       type: "post",
-      success: function (response1) {
-        var jsonData = JSON.parse(response1);
+      dataType: "json",
+      success: function (jsonData) {
+        // var jsonData = JSON.parse(response1);
         if (jsonData.success == "1") {
           var ComprasMes = currencyFormat(Number(jsonData.ComprasMesAnt));
           var ComprasAno = currencyFormat(Number(jsonData.ComprasAno));
@@ -568,7 +646,7 @@ $(document).ready(function () {
             .join(".");
           var Debe = currencyFormat(Number(jsonData.UltFacDebe));
           var PromedioMensual = currencyFormat(
-            Number(jsonData.PromedioMensual)
+            Number(jsonData.PromedioMensual),
           );
           var PromedioMensualAnt = jsonData.PromedioMensualAnt;
           var ComprasAnoAntT = jsonData.ComprasAnoAntT.toFixed(2);
@@ -767,7 +845,7 @@ $(document).ready(function () {
             "Datos Guardados",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
         } else {
         }
@@ -804,7 +882,7 @@ function abrir_factura() {
         "Seleccione de a un comprobante por vez para Imputar Pagos.",
         "bottom-right",
         "#FFFFFF",
-        "waring"
+        "waring",
       );
     } else {
       $("#btn_pago_facturas").css("display", "block");

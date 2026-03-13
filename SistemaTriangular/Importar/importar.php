@@ -54,44 +54,46 @@
                 <div class="container-fluid">
 
 
-                    <form id="formImportExcel" enctype="multipart/form-data" class="card p-3">
-                        <div class="row g-3 align-items-end">
+                    <form id="formImportExcel" enctype="multipart/form-data" class="card shadow-sm">
+                        <div class="card-body">
 
-                            <!-- Origen (Cliente) -->
-                            <div class="col-md-6 mt-8">
-                                <label for="cliente_relacion" class="form-label">Origen (Cliente)</label>
-                                <select id="cliente_relacion" class="form-select" data-placeholder="Buscar cliente..." style="height: 100%;padding: .5rem .75rem;"></select>
-                                <div class="form-text">Seleccioná el cliente origen.</div>
-                                <input type="hidden" name="relacion_id" id="relacion_id" value="">
-                            </div>
+                            <div class="row g-3 align-items-center">
+                                <!-- Origen -->
+                                <div class="col-lg-6">
+                                    <label for="cliente_relacion" class="form-label mb-1">Origen (Cliente)</label>
+                                    <select id="cliente_relacion" class="form-select" data-placeholder="Buscar cliente..."></select>
+                                    <div class="form-text">Seleccioná el cliente origen.</div>
+                                    <input type="hidden" name="relacion_id" id="relacion_id">
+                                </div>
 
-                            <!-- Archivo Excel -->
-                            <div class="col-md-4">
-                                <label for="excel" class="form-label">Archivo Excel</label>
-                                <input type="file" id="excel" name="excel" class="form-control" accept=".xlsx,.xls,.csv" required>
-                            </div>
+                                <!-- Archivo -->
+                                <div class="col-lg-4">
+                                    <label for="excel" class="form-label mb-1">Archivo Excel</label>
+                                    <input type="file" id="excel" name="excel" class="form-control" accept=".xlsx,.xls,.csv" required>
+                                </div>
 
-                            <!-- Botón -->
-                            <div class="col-md-2">
-                                <button type="submit" id="btnImport" class="btn btn-success w-100">
-                                    <i class="mdi mdi-upload me-1"></i> Importar
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Progreso -->
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <div class="progress" style="height: 36px; display:none;" id="importProgressWrap">
-                                    <div id="importProgress" class="progress-bar progress-bar-striped progress-bar-animated" style="width:0%">0%</div>
+                                <!-- Botón -->
+                                <div class="col-lg-2">
+                                    <label class="form-label mb-1 d-none d-lg-block">&nbsp;</label>
+                                    <button type="submit" id="btnImport" class="btn btn-success w-100 btn-import">
+                                        <i class="mdi mdi-upload mdi-18px me-1"></i> Importar
+                                    </button>
                                 </div>
                             </div>
-                        </div>
 
-                        <small class="text-muted d-block mt-2">
-                            Formato recomendado: Encabezados en la fila 1. Acepta: Fecha, Cliente, Localidad, Provincia, Dirección,
-                            CP, Teléfono, Producto, Cantidad, Importe (o Precio), Web (0/1), DíaSalida, Obs.
-                        </small>
+                            <div class="mt-3 d-none" id="importProgressWrap">
+                                <div class="progress" style="height: 28px;">
+                                    <div id="importProgress" class="progress-bar progress-bar-striped progress-bar-animated"
+                                        role="progressbar" style="width:0%">0%</div>
+                                </div>
+                            </div>
+
+                            <small class="text-muted d-block mt-3">
+                                Formato recomendado: Encabezados en la fila 1. Acepta: Fecha, Cliente, Localidad, Provincia, Dirección,
+                                CP, Teléfono, Producto, Cantidad, Importe (o Precio), Web (0/1), DíaSalida, Obs.
+                            </small>
+
+                        </div>
                     </form>
 
                     <!-- Select2 (si no lo tenés ya en tu layout) -->
@@ -115,7 +117,7 @@
                                 </thead>
                                 <tbody></tbody>
                             </table>
-                            <div class="d-flex gap-2 mt-3">
+                            <div class="d-flex gap-2 mt-3 text-end">
                                 <button id="btnConfirmarImport" class="btn btn-primary">
                                     <i class="mdi mdi-check"></i> Confirmar importación
                                 </button>

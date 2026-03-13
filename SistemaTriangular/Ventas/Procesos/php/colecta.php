@@ -251,6 +251,15 @@ if (isset($_POST['CargarVenta'])) {
         //obtengo el id de transclientes  
         $idTransClientes = $mysqli->insert_id;
 
+        $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
+        WHERE Flex = 1
+        AND IngBrutosOrigen = {$id_origen}
+        AND Entregado=0
+        AND Eliminado = 0
+        AND (idColecta IS NULL OR idColecta = 0)";
+
+        $mysqli->query($sqlUpdateHijos);
+
         //AGREGAR EN VENTAS
         $sql = "INSERT INTO Ventas(Codigo,FechaPedido,Titulo,Precio,Cantidad,Comentario,Terminado,Total,Cliente,NumeroRepo,
         ImporteNeto,Iva1,NumPedido,Usuario,idCliente)

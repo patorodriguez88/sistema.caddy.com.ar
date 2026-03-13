@@ -1,3 +1,70 @@
+$(document).on("change", ".dt-checkbox-factura", function () {
+  sumar_facturas();
+});
+
+$(document).on("change", ".dt-checkbox-pago", function () {
+  sumar_pagos();
+});
+
+function resetFormularioPago() {
+  $("#fecha_pago").val(hoyISO());
+
+  $("#importe_efectivo").val(0);
+  $("#importe_transferencia").val(0);
+  $("#importe_cheque").val(0);
+  $("#importe_transferencia_mp").val(0);
+  $("#fee_transferencia_mp").val(0);
+
+  $("#numero_transferencia").val("");
+  $("#numero_transferencia_mp").val("");
+  $("#numero_cheque").val("");
+  $("#banco_cheque").val("");
+  $("#descripcion_transferencia_mp").val("");
+
+  $("#fecha_transferencia").val("");
+  $("#fecha_transferencia_mp").val("");
+  $("#fecha_cheque").val("");
+
+  $("#mercadopago_api").hide();
+  $("#status_mp").html("");
+  $("#confirmarpago_botton").prop("disabled", true);
+}
+
+function noComa(e) {
+  const key = e.key;
+  if (key === ",") {
+    e.preventDefault();
+  }
+}
+
+function formatearARS(valor) {
+  valor = valor.replace(/\D/g, "");
+  if (valor === "") return "";
+
+  let numero = parseInt(valor, 10) / 100;
+
+  return numero.toLocaleString("es-AR", {
+    style: "currency",
+    currency: "ARS",
+    minimumFractionDigits: 2,
+  });
+}
+
+function formatoMoneda(valor) {
+  valor = Number(valor || 0);
+  return "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
+}
+
+$(".input-moneda").on("input", function () {
+  let valor = $(this).val();
+  let limpio = valor.replace(/\D/g, "");
+  $(this).val(formatearARS(limpio));
+});
+
+$("#standard-modal").on("show.bs.modal", function () {
+  resetFormularioPago();
+});
+
 $("#search_mp").click(function () {
   let op = $("#noperacion_mp").val();
 
@@ -11,45 +78,28 @@ $("#search_mp").click(function () {
       },
       url: "Procesos/php/buscar_pago_mp.php",
       type: "post",
-      beforeSend: function () {},
       success: function (respuesta) {
         var jsonData = JSON.parse(respuesta);
 
-        console.log("success", jsonData.success);
-
         if (jsonData.success === undefined) {
-          //compruebo que el pago no este cargado
-
           if (jsonData.data.collector_id != undefined) {
-            document.getElementById("mercadopago_api").style.display = "flex";
+            $("#mercadopago_api").css("display", "flex");
 
             $("#fee_transferencia_mp").val(jsonData.data.fee_details[0].amount);
-
             $("#numero_transferencia_mp").val(jsonData.data.collector_id);
-
             $("#importe_transferencia_mp").val(
-              jsonData.data.transaction_amount
+              jsonData.data.transaction_amount,
             );
 
             var fecha = jsonData.data.date_approved;
-
             let fecha_transferencia = fecha.substr(0, 10);
 
             $("#fecha_transferencia_mp").val(fecha_transferencia);
-
             $("#status_mp").html(jsonData.data.status);
-
             $("#descripcion_transferencia_mp").val(jsonData.data.description);
-
             $("#confirmarpago_botton").prop("disabled", false);
           } else {
-            $.NotificationApp.send(
-              "Error !",
-              jsonData.data.message,
-              "bottom-right",
-              "#FFFFFF",
-              "danger"
-            );
+            alerta("error", "Error!", jsonData.data.message);
           }
         }
       },
@@ -58,14 +108,11 @@ $("#search_mp").click(function () {
 });
 
 $("#confirmarpago_botton").click(function () {
-  var id = document.getElementById("codigo").value;
-  var formadepago = document.getElementById("formadepago").value;
-  var formadepagofecha = document.getElementById("fecha_pago").value;
-
-  console.log("formadepago", formadepago);
+  var id = $("#codigo").val();
+  var formadepago = $("#formadepago").val();
+  var formadepagofecha = $("#fecha_pago").val();
 
   if (formadepago == "000111400") {
-    console.log("formadepago enviada", formadepago);
     var fee = $("#fee_transferencia_mp").val();
     var fecha_mp = $("#fecha_transferencia_mp").val();
     var importe = $("#importe_transferencia_mp").val();
@@ -86,54 +133,41 @@ $("#confirmarpago_botton").click(function () {
       },
       url: "Procesos/php/cargarpago_mp.php",
       type: "post",
-      beforeSend: function () {
-        $("#standard-modal").modal("hide");
-        $("#info-alert-modal").modal("show");
-        $("#info-alert-modal").modal({ backdrop: "static", keyboard: false });
-      },
-      success: function (response) {
-        var jsonData = JSON.parse(response);
-
+      dataType: "json",
+      success: function (jsonData) {
         if (jsonData.success == 1) {
-          $.NotificationApp.send(
-            "Exito !",
-            "Pago cargado con exito",
-            "bottom-right",
-            "#FFFFFF",
-            "success"
-          );
+          toast("success", "Éxito", "Pago cargado con éxito");
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            "Pago no cargado",
-            "bottom-right",
-            "#FFFFFF",
-            "danger"
-          );
+          alerta("error", "Error", "Pago no cargado");
         }
+      },
+      error: function (xhr) {
+        alerta("error", "Error del servidor", xhr.responseText);
       },
     });
   } else {
-    if (formadepago == "000111200") {
-      var importe = document.getElementById("importe_transferencia").value;
-      var numerotrans = document.getElementById("numero_transferencia").value;
-      var fechatrans = document.getElementById("fecha_transferencia").value;
-    }
-    // BANCO GALICIA CTA 3553
-    if (formadepago == "000111210") {
-      var importe = document.getElementById("importe_transferencia").value;
-      var numerotrans = document.getElementById("numero_transferencia").value;
-      var fechatrans = document.getElementById("fecha_transferencia").value;
+    var importe = 0;
+    var numerotrans = "";
+    var fechatrans = "";
+    var numerocheque = "";
+    var fechacheque = "";
+    var banco = "";
+
+    if (formadepago == "000111200" || formadepago == "000111210") {
+      importe = $("#importe_transferencia").val();
+      numerotrans = $("#numero_transferencia").val();
+      fechatrans = $("#fecha_transferencia").val();
     }
 
     if (formadepago == "000111100") {
-      var importe = document.getElementById("importe_efectivo").value;
+      importe = $("#importe_efectivo").val();
     }
+
     if (formadepago == "000112400") {
-      var importe = document.getElementById("importe_cheque").value;
-      var numerocheque = document.getElementById("numero_cheque").value;
-      var fechacheque = document.getElementById("fecha_cheque").value;
-      var banco = document.getElementById("banco_cheque").value;
+      importe = $("#importe_cheque").val();
+      numerocheque = $("#numero_cheque").val();
+      fechacheque = $("#fecha_cheque").val();
+      banco = $("#banco_cheque").val();
     }
 
     if (formadepago != "") {
@@ -153,66 +187,112 @@ $("#confirmarpago_botton").click(function () {
           },
           url: "Procesos/php/cargarpago.php",
           type: "post",
-          beforeSend: function () {
-            $("#standard-modal").modal("hide");
-            $("#info-alert-modal").modal("show");
-            $("#info-alert-modal").modal({
-              backdrop: "static",
-              keyboard: false,
-            });
-          },
-          success: function (response) {
-            var jsonData = JSON.parse(response);
-            if (jsonData.success == "1") {
-              $.NotificationApp.send(
-                "Exito !",
-                "Se han realizado cambios.",
-                "bottom-right",
-                "#FFFFFF",
-                "success"
-              );
-              //DESTRUIMOS LA TABLA BASIC
-              var table_basic = $("#basic").DataTable();
-              table_basic.ajax.reload();
+          dataType: "json",
+          success: function (jsonData) {
+            if (jsonData.success == "1" || jsonData.success == 1) {
+              $("#standard-modal").modal("hide");
+              toast("success", "Éxito", "Pago cargado con éxito");
+              $("#basic").DataTable().ajax.reload(null, false);
             } else {
-              $.NotificationApp.send(
-                "Ocurrio un Error !",
-                "No se realizaron cambios.",
-                "bottom-right",
-                "#FFFFFF",
-                "danger"
-              );
+              toast("error", "Error", "Pago no cargado");
             }
-            $("#info-alert-modal").modal("hide");
+          },
+          error: function (xhr) {
+            toast("error", "Error del servidor", xhr.responseText);
           },
         });
       } else {
-        $.NotificationApp.send(
-          "Ocurrio un Error !",
-          "El importe no puede ser 0 ni nulo.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger"
-        );
+        toast("error", "Error!", "El importe no puede ser 0 ni nulo.");
       }
     } else {
-      $.NotificationApp.send(
-        "Ocurrio un Error !",
-        "La Forma de Pago no puede ser nula.",
-        "bottom-right",
-        "#FFFFFF",
-        "danger"
-      );
+      toast("error", "Error!", "La Forma de Pago no puede ser nula.");
     }
   }
+});
+
+/* =========================================================
+   ASOCIACION PAGOS / FACTURAS
+========================================================= */
+
+let checkedPagos = [];
+let checkedPagosid = [];
+let checkedFacturas = [];
+let checkedFacturasid = [];
+
+function limpiarEstadoAsociacion() {
+  checkedPagos = [];
+  checkedPagosid = [];
+  checkedFacturas = [];
+  checkedFacturasid = [];
+
+  $("#footer_total_anticipos").html("$ 0.00");
+  $("#footer_total").html("$ 0.00");
+  $("#footer_saldo").html("$ 0.00");
+  $("#footer_total_input").val(0);
+  $("#footer_total_saldo").val(0);
+  $("#total_anticipos_control").val(0);
+}
+
+function recalcularAsociacion() {
+  checkedFacturas = [];
+  checkedFacturasid = [];
+  checkedPagos = [];
+  checkedPagosid = [];
+
+  let totalFacturas = 0;
+  let totalPagos = 0;
+
+  $("#tabla_asociar-pagos_facturas .chk-factura:checked").each(function () {
+    const importe = Number($(this).attr("data-importe") || 0);
+    const id = $(this).attr("data-id");
+
+    checkedFacturas.push(importe);
+    checkedFacturasid.push(id);
+    totalFacturas += importe;
+  });
+
+  $("#tabla_asociar-pagos_pagos .chk-pago:checked").each(function () {
+    const importe = Number($(this).attr("data-importe") || 0);
+    const id = $(this).attr("data-id");
+
+    checkedPagos.push(importe);
+    checkedPagosid.push(id);
+    totalPagos += importe;
+  });
+
+  const saldo = totalFacturas - totalPagos;
+
+  $("#footer_total_anticipos").html(formatoMoneda(totalFacturas));
+  $("#footer_total").html(formatoMoneda(totalPagos));
+  $("#footer_saldo").html(formatoMoneda(saldo));
+  $("#footer_total_input").val(totalPagos);
+  $("#footer_total_saldo").val(saldo);
+  $("#total_anticipos_control").val(totalFacturas);
+}
+
+$(document).on("change", ".chk-factura, .chk-pago", function () {
+  recalcularAsociacion();
 });
 
 $("#asociar_pago_comprobante_button").click(function () {
   $("#asociar-pagos-modal").modal("show");
 
-  var idCliente = document.getElementById("codigo").value;
+  const idCliente = $("#codigo").val();
 
-  var datatable = $("#tabla_asociar-pagos_facturas").DataTable({
+  limpiarEstadoAsociacion();
+
+  if ($.fn.DataTable.isDataTable("#tabla_asociar-pagos_facturas")) {
+    $("#tabla_asociar-pagos_facturas").DataTable().destroy();
+    $("#tabla_asociar-pagos_facturas tbody").empty();
+  }
+
+  if ($.fn.DataTable.isDataTable("#tabla_asociar-pagos_pagos")) {
+    $("#tabla_asociar-pagos_pagos").DataTable().destroy();
+    $("#tabla_asociar-pagos_pagos tbody").empty();
+  }
+
+  $("#tabla_asociar-pagos_facturas").DataTable({
+    destroy: true,
     pageLength: 5,
     lengthMenu: [
       [5, 10, 20, -1],
@@ -220,73 +300,76 @@ $("#asociar_pago_comprobante_button").click(function () {
     ],
     paging: true,
     searching: false,
-    bInfo: false,
-    footerCallback: function (row, data, start, end, display) {
-      total = this.api()
-        .column(3) //numero de columna a sumar
-        .data()
-        .reduce(function (a, b) {
-          return parseInt(a) + parseInt(b);
-        }, 0);
-    },
+    info: false,
     ajax: {
       url: "Procesos/php/cargarpago.php",
-      data: { Asociar_pago_comprobantes: 1, id: idCliente },
+      data: {
+        Asociar_pago_comprobantes: 1,
+        id: idCliente,
+      },
       type: "post",
+      dataSrc: "data",
     },
     columns: [
       {
         data: "Fecha",
         render: function (data, type, row) {
-          var Fecha = row.Fecha.split("-").reverse().join(".");
+          const fecha = row.Fecha
+            ? row.Fecha.split("-").reverse().join(".")
+            : "";
           return (
-            '<td><span style="display: none;">' +
-            row.Fecha +
+            '<span style="display:none;">' +
+            (row.Fecha || "") +
             "</span>" +
-            Fecha +
-            "</td>"
+            fecha
           );
-        },
-      },
-      {
-        data: "TipoDeComprobante",
-        render: function (data, type, row) {
-          return `${row.TipoDeComprobante} - ${row.NumeroVenta}`;
-        },
-      },
-      {
-        data: "Comentario",
-        render: function (data, type, row) {
-          return "<td style='max-width: 15px;'>" + row.Comentario + "</td>";
-        },
-      },
-      {
-        data: "Debe",
-        render: function (data, type, row) {
-          let valor = Number(row.Debe);
-          let val =
-            "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-          return val;
         },
       },
       {
         data: null,
         render: function (data, type, row) {
           return (
-            '<td class="dtr-control dt-checkboxes-cell">' +
-            '<div class="form-check"><input data-id="' +
+            (row.TipoDeComprobante || "") +
+            " - " +
+            (row.NumeroVenta || row.NumeroFactura || "")
+          );
+        },
+      },
+      {
+        data: "Comentario",
+        render: function (data) {
+          return data || "";
+        },
+      },
+      {
+        data: "SaldoPendiente",
+        render: function (data) {
+          const valor = Number(data || 0);
+          return formatoMoneda(valor);
+        },
+      },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function (data, type, row) {
+          return (
+            '<div class="form-check mb-0">' +
+            '<input data-id="' +
             row.id +
-            '" value="' +
-            row.Debe +
-            '" type="checkbox" class="form-check-input dt-checkboxes" onclick="sumar_facturas()" >' +
-            '<label class="form-check-label">&nbsp;</label></div></td>'
+            '" data-importe="' +
+            row.SaldoPendiente +
+            '" type="checkbox" class="form-check-input chk-factura">' +
+            '<label class="form-check-label">&nbsp;</label>' +
+            "</div>"
           );
         },
       },
     ],
   });
 
-  var datatable = $("#tabla_asociar-pagos_pagos").DataTable({
+  $("#tabla_asociar-pagos_pagos").DataTable({
+    destroy: true,
     pageLength: 5,
     lengthMenu: [
       [5, 10, 20, -1],
@@ -294,239 +377,116 @@ $("#asociar_pago_comprobante_button").click(function () {
     ],
     paging: true,
     searching: false,
-    bInfo: false,
-    footerCallback: function (row, data, start, end, display) {
-      total = this.api()
-        .column(3) //numero de columna a sumar
-        .data()
-        .reduce(function (a, b) {
-          return parseInt(a) + parseInt(b);
-        }, 0);
-    },
+    info: false,
     ajax: {
       url: "Procesos/php/cargarpago.php",
-      data: { Asociar_pago_pagos: 1, id: idCliente },
+      data: {
+        Asociar_pago_pagos: 1,
+        id: idCliente,
+      },
       type: "post",
+      dataSrc: "data",
     },
     columns: [
       {
         data: "Fecha",
         render: function (data, type, row) {
-          var Fecha = row.Fecha.split("-").reverse().join(".");
+          const fecha = row.Fecha
+            ? row.Fecha.split("-").reverse().join(".")
+            : "";
           return (
-            '<td><span style="display: none;">' +
-            row.Fecha +
+            '<span style="display:none;">' +
+            (row.Fecha || "") +
             "</span>" +
-            Fecha +
-            "</td>"
+            fecha
           );
-        },
-      },
-      {
-        data: "TipoDeComprobante",
-        render: function (data, type, row) {
-          return `${row.TipoDeComprobante} - ${row.NumeroVenta}`;
-        },
-      },
-      {
-        data: "Comentario",
-        render: function (data, type, row) {
-          return "<td style='max-width: 15px;'>" + row.Comentario + "</td>";
-        },
-      },
-      {
-        data: "Haber",
-        render: function (data, type, row) {
-          let valor = Number(row.Haber);
-          let val =
-            "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-          return val;
         },
       },
       {
         data: null,
         render: function (data, type, row) {
           return (
-            '<td class="dtr-control dt-checkboxes-cell">' +
-            '<div class="form-check"><input data-id="' +
+            (row.TipoDeComprobante || "") +
+            " - " +
+            (row.NumeroVenta || row.NumeroFactura || "")
+          );
+        },
+      },
+      {
+        data: "Comentario",
+        render: function (data) {
+          return data || "";
+        },
+      },
+      {
+        data: "SaldoDisponible",
+        render: function (data) {
+          const valor = Number(data || 0);
+          return formatoMoneda(valor);
+        },
+      },
+      {
+        data: null,
+        orderable: false,
+        searchable: false,
+        render: function (data, type, row) {
+          return (
+            '<div class="form-check mb-0">' +
+            '<input data-id="' +
             row.id +
-            '" value="' +
-            row.Haber +
-            '" type="checkbox" class="form-check-input dt-checkboxes" onclick="sumar_pagos()" >' +
-            '<label class="form-check-label">&nbsp;</label></div></td>'
+            '" data-importe="' +
+            row.SaldoDisponible +
+            '" type="checkbox" class="form-check-input chk-pago">' +
+            '<label class="form-check-label">&nbsp;</label>' +
+            "</div>"
           );
         },
       },
     ],
   });
 });
-const checkedPagos = [];
-const checkedPagosid = [];
-const checkedFacturas = [];
-const checkedFacturasid = [];
-
-function sumar_facturas() {
-  var oTable = $("#tabla_asociar-pagos_facturas").dataTable();
-
-  var allPages = oTable.fnGetNodes();
-
-  //Creamos un array que almacenará los valores de los input "checked"
-  var checked = [];
-  var importes = Number(0);
-
-  //Recorremos todos los input checkbox que se encuentren "checked"
-  $("input.form-check-input:checked", allPages).each(function () {
-    //Mediante la función push agregamos al arreglo los values de los checkbox
-    if ($(this).attr("value") != null) {
-      checked.push($(this).attr("value"));
-      checkedFacturas.push($(this).attr("value"));
-      checkedFacturasid.push($(this).attr("data-id"));
-
-      importes = importes + Number($(this).attr("value"));
-    } else {
-      importes = Number(0);
-    }
-
-    let valor = Number(importes);
-    let val = "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-    $("#footer_total_anticipos").html(val);
-    $("#total_anticipos_control").val(valor);
-    var valor_comprobantes = $("#footer_total_input").val();
-
-    var footer_saldo = Number(valor_comprobantes - valor);
-    console.log("Final", footer_saldo.toFixed(2));
-
-    if (checked.length > 1 && footer_saldo < 0) {
-      // $(this).prop('checked',false);
-
-      let valor_ant = Number(valor_comprobantes);
-      let val_ant =
-        "$ " + valor_ant.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-      // $('#footer_total_anticipos').html(val_ant);
-      let valor_saldo = Number(footer_saldo.toFixed(2));
-      let val_saldo =
-        "$ " + valor_saldo.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-      $("#footer_saldo").html(val_saldo);
-      $("#footer_total_saldo").val(valor_saldo);
-    } else {
-      let valor_saldo = Number(footer_saldo.toFixed(2));
-      let val_saldo =
-        "$ " + valor_saldo.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-      $("#footer_saldo").html(val_saldo);
-      $("#footer_total_saldo").val(valor_saldo);
-    }
-  });
-  if (checked.length == 0) {
-    let valor = Number(0);
-    let val = "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-    $("#footer_total_anticipos").html(val);
-    $("#total_anticipos_control").val(0);
-    let valor_comprobantes = Number($("#footer_total_input").val());
-    let val_comprobantes =
-      "$ " +
-      valor_comprobantes.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-    $("#footer_saldo").html(val_comprobantes);
-    $("#footer_total_saldo").val(valor_comprobantes);
-    checkedFacturas = null;
-    checkedFacturasid = null;
-  }
-}
-
-function sumar_pagos() {
-  var oTable = $("#tabla_asociar-pagos_pagos").dataTable();
-
-  var allPages = oTable.fnGetNodes();
-
-  //Creamos un array que almacenará los valores de los input "checked"
-  var checked = [];
-
-  var importes = Number(0);
-
-  //Recorremos todos los input checkbox que se encuentren "checked"
-  $("input.form-check-input:checked", allPages).each(function () {
-    //Mediante la función push agregamos al arreglo los values de los checkbox
-    if ($(this).attr("value") != null) {
-      checked.push($(this).attr("value"));
-      checkedPagos.push($(this).attr("value"));
-      checkedPagosid.push($(this).attr("data-id"));
-
-      importes = importes + Number($(this).attr("value"));
-    } else {
-      importes = Number(0);
-    }
-
-    let valor = Number(importes);
-    let val = "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-    $("#footer_total").html(val);
-    // $('#total_anticipos_control').val(valor);
-    // var valor_comprobantes=$('#footer_total_input').val();
-    var valor_comprobantes = $("#total_anticipos_control").val();
-    var footer_saldo = Number(valor_comprobantes - valor);
-    console.log("Final", footer_saldo.toFixed(2));
-
-    if (checked.length > 1 && footer_saldo < 0) {
-      // $(this).prop('checked',false);
-
-      let valor_ant = Number(valor_comprobantes);
-      let val_ant =
-        "$ " + valor_ant.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-      // $('#footer_total_anticipos').html(val_ant);
-      let valor_saldo = Number(footer_saldo.toFixed(2));
-      let val_saldo =
-        "$ " + valor_saldo.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-      $("#footer_saldo").html(val_saldo);
-      $("#footer_total_saldo").val(valor_saldo);
-    } else {
-      let valor_saldo = Number(footer_saldo.toFixed(2));
-      let val_saldo =
-        "$ " + valor_saldo.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-
-      $("#footer_saldo").html(val_saldo);
-      $("#footer_total_saldo").val(valor_saldo);
-    }
-  });
-
-  if (checked.length == 0) {
-    let valor = Number(0);
-    let val = "$ " + valor.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-    $("#footer_total").html(val);
-    // $('#total_anticipos_control').val(0);
-    let valor_comprobantes = Number($("#footer_total_input").val());
-    let val_comprobantes =
-      "$ " +
-      valor_comprobantes.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
-    $("#footer_saldo").html(val_comprobantes);
-    $("#footer_total_saldo").val(valor_comprobantes);
-    checkedPagos = null;
-    checkedPagosid = null;
-  }
-}
 
 $("#asociar-pagos-modal-ok").click(function () {
-  console.log("cheched_pagos", checkedPagos);
-  console.log("cheched_pagos id", checkedPagosid);
-  console.log("cheched_facturas", checkedFacturas);
-  console.log("cheched_facturas id", checkedFacturasid);
+  if (checkedFacturasid.length === 0) {
+    toast("error", "Error", "Seleccioná al menos una factura.");
+    return;
+  }
+
+  if (checkedPagosid.length === 0) {
+    toast("error", "Error", "Seleccioná al menos un pago.");
+    return;
+  }
 
   $.ajax({
     data: {
       Asociar_pagos: 1,
       Pagosid: checkedPagosid,
       Facturasid: checkedFacturasid,
-      Pagos: checkedPagos,
-      Facturas: checkedFacturas,
     },
     url: "Procesos/php/cargarpago.php",
     type: "post",
-    beforeSend: function () {},
-    success: function (respuesta) {
-      var jsonData = JSON.parse(respuesta);
+    dataType: "json",
+    beforeSend: function () {
+      toast("info", "Procesando", "Asociando pagos y facturas...");
+    },
+    success: function (jsonData) {
+      if (jsonData.success == 1) {
+        toast("success", "Perfecto", jsonData.msg || "Asociación realizada.");
+        $("#asociar-pagos-modal").modal("hide");
+
+        if ($.fn.DataTable.isDataTable("#basic")) {
+          $("#basic").DataTable().ajax.reload(null, false);
+        }
+      } else {
+        alerta("error", "Error", jsonData.msg || "No se pudo asociar.");
+      }
+    },
+    error: function (xhr) {
+      alerta(
+        "error",
+        "Error del servidor",
+        xhr.responseText || "Error inesperado",
+      );
     },
   });
 });
