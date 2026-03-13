@@ -90,8 +90,8 @@ $TransClientesQuery = "INSERT INTO TransClientes(Fecha, RazonSocial, Cuit, TipoD
     CodigoSeguimiento, NumeroVenta, Cantidad, DomicilioOrigen, SituacionFiscalOrigen, LocalidadOrigen, IngBrutosOrigen, TelefonoOrigen,
     FormaDePago, EntregaEn, Usuario, CodigoProveedor, Observaciones, Transportista, Recorrido, ProvinciaDestino, ProvinciaOrigen, Retirado,
     idClienteDestino, CobrarEnvio, CobrarCaddy, ValorDeclarado, PisoDeptoDestino, FechaEntrega, idClienteFacturacion, Kilometros, google_km,
-    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden,idClienteOrigen)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
 
 $stmt = $mysqli->prepare($TransClientesQuery);
 
@@ -112,6 +112,7 @@ $domicilioOrigen = $row['Direccion'];
 $situacionFiscalOrigen = $row['SituacionFiscal'];
 $localidadOrigen = $row['Ciudad'];
 $ingBrutosOrigen = $row['id'];
+$idClienteOrigen = $row['id'];
 $telefonoOrigen = "{$row['Telefono']} - {$row['Celular']}";
 $formadepago = $_POST['formadepago_t'];
 $entregaEn = $_POST['entregaen_t'];
@@ -143,7 +144,7 @@ if (!$stmt) {
 
 // Enlace de parámetros
 if (!$stmt->bind_param(
-    "sssssdddsssssssssdsssssssssdssssddsddssssiisisddii",
+    "sssssdddsssssssssdsssssssssdssssddsddssssiisisddiii",
     $FechaActual,
     $razonSocial,
     $cuit,
@@ -193,7 +194,8 @@ if (!$stmt->bind_param(
     $Flex,
     $idPago,
     $Avisado,
-    $NumeroDeOrden
+    $NumeroDeOrden,
+    $idClienteOrigen
 )) {
     // Error en el enlace de parámetros
     die("Error en bind_param: " . $stmt->error);

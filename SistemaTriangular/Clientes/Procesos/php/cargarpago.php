@@ -72,7 +72,9 @@ if (isset($_POST['CargarPago'])) {
     $Sucursal = $_SESSION['Sucursal'];
 
 
-    $NumeroTrans = $_POST['numerotrans'] ?? 0;
+    $NumeroTrans = isset($_POST['NumeroTrans']) && $_POST['NumeroTrans'] !== ''
+        ? (int) $_POST['NumeroTrans']
+        : 0;
     $NumeroCheque = $_POST['numerocheque'] ?? null;
     $Banco = $_POST['banco'] ?? null;
 
@@ -152,14 +154,14 @@ VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroCom
 	 Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Usuario,Sucursal,NumeroAsiento,FechaTrans,
      NumeroTrans,FormaDePago,idCtasctes,InfoABM,Caja) VALUES 
 	 ('{$Fecha}','{$Cuenta1}','{$Cuenta0}',{$Importe},'{$Observaciones}','{$Banco}',{$FechaChequeSQL},'{$NumeroCheque}','{$Usuario}','{$Sucursal}',
-     '{$NAsiento}',{$FechaTransSQL},'{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}' ,'{$Caja}')";
+     '{$NAsiento}',{$FechaTransSQL},{$NumeroTrans},'{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}' ,'{$Caja}')";
 
     //HABER
     $sqlTesoreriaHaber = "INSERT INTO `Tesoreria`(
 	 Fecha,NombreCuenta,Cuenta,
 	 Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Usuario,Sucursal,NumeroAsiento,FechaTrans,NumeroTrans,FormaDePago,idCtasctes,InfoABM,Caja) VALUES 
 	 ('{$Fecha}','{$Cuenta2}','{$Cuenta3}',{$Importe},'{$Observaciones}','{$Banco}',{$FechaChequeSQL},'{$NumeroCheque}','{$Usuario}','{$Sucursal}',
-     '{$NAsiento}',{$FechaTransSQL},'{$NumeroTrans}','{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}' ,'{$Caja}')";
+     '{$NAsiento}',{$FechaTransSQL},{$NumeroTrans},'{$FormaDePagoTabla}','{$idCtasctes}','{$InfoABM}' ,'{$Caja}')";
 
     if ($mysqli->query($sqlTesoreriaDebe)) {
         $insertTesoreriaDebe = 1;

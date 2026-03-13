@@ -114,8 +114,8 @@ function ComprobarNombre(n) {
     data: { ComprobarNombre: 1, Nombre: n },
     url: "Procesos/php/funciones.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         document.getElementById("errorname").style.display = "none";
       } else {
@@ -125,7 +125,7 @@ function ComprobarNombre(n) {
             jsonData.num +
             " " +
             n +
-            " cargados en el sistema, verifique !"
+            " cargados en el sistema, verifique !",
         );
       }
     },
@@ -198,11 +198,9 @@ function eliminar(a) {
     data: { id: a, Eliminar: 1, id_origen: idOrigen },
     url: "Procesos/php/AgregarVenta.php",
     type: "post",
-    beforeSend: function () {
-      //           document.getElementById("spinner").style.display="block";
-    },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    beforeSend: function () {},
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         var tabletotales = $("#basic-total").DataTable();
         tabletotales.ajax.reload();
@@ -215,7 +213,7 @@ function eliminar(a) {
           "Eliminaste el registro correctamente ",
           "bottom-right",
           "#FFFFFF",
-          "success"
+          "success",
         );
       }
     },
@@ -258,8 +256,8 @@ function distancia() {
     type: "POST",
     // url: "../Google/distancematrix.php",
     url: "../OpenStreetMap/distance_osm.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       var dis = jsonData.distancia / 1000;
       $("#distancia").html("km: " + dis.toFixed(2));
       $("#duration").html(jsonData.duration);
@@ -285,15 +283,15 @@ $(document).ready(function () {
     data: { Limpiar: 1 },
     url: "Procesos/php/funciones.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         $.NotificationApp.send(
           "Limpieza",
           "Limpieza de " + jsonData.Num + " registros realizada",
           "top-right",
           "#0ACF97",
-          "info"
+          "info",
         );
       }
     },
@@ -308,11 +306,11 @@ $(document).ready(function () {
     data: { Servicios: 1 },
     url: "Procesos/php/ventas-tablas.php",
     type: "POST",
-    dataType: "json", // Asegúrate de especificar que esperas JSON
+    dataType: "json",
     success: function (data) {
       data.forEach(function (servicio) {
         $("#servicio").append(
-          `<option value="${servicio.id}">${servicio.Titulo} | $ ${servicio.PrecioVenta}</option>`
+          `<option value="${servicio.id}">${servicio.Titulo} | $ ${servicio.PrecioVenta}</option>`,
         );
       });
     },
@@ -350,11 +348,10 @@ $("#cobroacuenta_button").click(function () {
     },
     url: "Procesos/php/AgregarVenta.php",
     type: "post",
-    beforeSend: function () {
-      //           document.getElementById("spinner").style.display="block";
-    },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+
+    beforeSend: function () {},
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         var table = $("#basic").DataTable();
         table.ajax.reload();
@@ -366,7 +363,7 @@ $("#cobroacuenta_button").click(function () {
           "No seleccionaste ningún cliente origen ",
           "bottom-right",
           "#FFFFFF",
-          "error"
+          "error",
         );
       } else {
         $.NotificationApp.send(
@@ -374,7 +371,7 @@ $("#cobroacuenta_button").click(function () {
           "No seleccionaste ningún servicio ",
           "bottom-right",
           "#FFFFFF",
-          "error"
+          "error",
         );
       }
     },
@@ -413,11 +410,9 @@ function valor_declarado() {
     },
     url: "Procesos/php/AgregarVenta.php",
     type: "post",
-    beforeSend: function () {
-      //           document.getElementById("spinner").style.display="block";
-    },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    beforeSend: function () {},
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         var table = $("#basic").DataTable();
         table.ajax.reload();
@@ -430,7 +425,7 @@ function valor_declarado() {
           "No seleccionaste ningún cliente origen ",
           "bottom-right",
           "#FFFFFF",
-          "error"
+          "error",
         );
       } else if (jsonData.success == "3") {
         $.NotificationApp.send(
@@ -438,7 +433,7 @@ function valor_declarado() {
           "No aplica seguro extra porque Valor Declarado esta establecido en $ 10.000",
           "bottom-right",
           "#FFFFFF",
-          "error"
+          "error",
         );
       } else {
         $.NotificationApp.send(
@@ -446,7 +441,7 @@ function valor_declarado() {
           "No seleccionaste ningún servicio ",
           "bottom-right",
           "#FFFFFF",
-          "error"
+          "error",
         );
       }
     },
@@ -503,7 +498,7 @@ function subir() {
       "No seleccionaste ningún servicio ",
       "bottom-right",
       "#FFFFFF",
-      "error"
+      "error",
     );
     document.getElementById("servicio").style.background = "red";
   } else {
@@ -540,14 +535,10 @@ function subir() {
       },
       url: "Procesos/php/AgregarVenta.php",
       type: "post",
-      beforeSend: function () {
-        //           document.getElementById("spinner").style.display="block";
-      },
-      success: function (response) {
-        var jsonData = JSON.parse(response);
+      dataType: "json",
+      beforeSend: function () {},
+      success: function (jsonData) {
         if (jsonData.success == "1") {
-          // var table = $("#basic").DataTable();
-          // table.ajax.reload();
           // Para la tabla principal
           if ($.fn.DataTable.isDataTable("#basic")) {
             $("#basic").DataTable().ajax.reload();
@@ -579,11 +570,11 @@ function oculto_origen(id) {
     data: dato,
     url: "Procesos/php/funciones.php",
     type: "post",
+    dataType: "json",
     beforeSend: function () {
       document.getElementById("spinner").style.display = "block";
     },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         $("#origen_ok").css("display", "inline");
         if (jsonData.Direccion1 != "") {
@@ -620,10 +611,9 @@ function sure(id) {
     data: { Seguro: 1, id_cliente: id, cs: cs },
     url: "Procesos/php/sure.php",
     type: "post",
+    dataType: "json",
     beforeSend: function () {},
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-
+    success: function (jsonData) {
       $("#valordeclarado_input").val(jsonData.Sure);
       var table = $("#basic").DataTable();
       table.ajax.reload();
@@ -632,9 +622,8 @@ function sure(id) {
       tabletotales.ajax.reload();
 
       // SI EL VALOR DECLARADO ES SUPERIOR A 10.000 (ESTO SACARLO PARA QUE EJECUTE TODOS LOS SEGUROS)
-      // if(jsonData.Sure>10000){
+
       valor_declarado();
-      // }
     },
   });
 }
@@ -644,8 +633,6 @@ function robot(id) {
   } else {
     var todos = 0;
   }
-
-  // console.log('robot',todos);
 
   $.ajax({
     data: { RobotRecorrido: 1, id: id, Todos: todos },
@@ -663,11 +650,8 @@ function oculto_destino(id) {
     data: dato,
     url: "Procesos/php/funciones.php",
     type: "post",
-    //         beforeSend: function(){
-    //         $("#buscando").html("Buscando...");
-    //         },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         document.getElementById("destino_ok").style.display = "block";
         document.getElementById("destino_ok").innerHTML =
@@ -698,11 +682,8 @@ function oculto_tercero(id) {
     data: dato,
     url: "Procesos/php/funciones.php",
     type: "post",
-    //         beforeSend: function(){
-    //         $("#buscando").html("Buscando...");
-    //         },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         //            document.getElementById('tercero_ok').style.display="block";
         document.getElementById("tercero_ok").innerHTML =
@@ -727,7 +708,7 @@ function formadepago(selec) {
       "Seleccionaste que paga " + selec,
       "top-right",
       "#0ACF97",
-      "info"
+      "info",
     );
   } else if (selec == "Destino") {
     sure(document.getElementById("id_destino").value);
@@ -742,7 +723,7 @@ function formadepago(selec) {
       "Seleccionaste que paga " + selec,
       "top-right",
       "#0ACF97",
-      "info"
+      "info",
     );
   } else if (selec == "Tercero") {
     document.getElementById("row_fp_tercero").style.display = "inline";
@@ -757,7 +738,7 @@ function formadepago(selec) {
       "Seleccionaste que paga Otro Cliente",
       "top-right",
       "#0ACF97",
-      "info"
+      "info",
     );
   } else if (selec == "") {
     document.getElementById("row_fp_tercero").style.display = "none";
@@ -779,11 +760,8 @@ function cargar(id) {
     data: dato,
     url: "Procesos/php/funciones.php",
     type: "post",
-    //         beforeSend: function(){
-    //         $("#buscando").html("Buscando...");
-    //         },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         document.getElementById("precioventa").value = jsonData.PrecioVenta;
         document.getElementById("codigo").value = jsonData.Codigo;
@@ -831,12 +809,10 @@ $("#AgregarCliente").click(function () {
     data: dato,
     url: "Procesos/php/crearcliente.php",
     type: "post",
-    beforeSend: function () {
-      // $("#buscando").html("Buscando...");
-      // alert('enviando...');
-    },
-    success: function (respuesta) {
-      var jsonData = JSON.parse(respuesta);
+    dataType: "json",
+
+    beforeSend: function () {},
+    success: function (jsonData) {
       if (jsonData.success == "1") {
         var NombreCliente = jsonData.NombreCliente;
         var id = jsonData.id;

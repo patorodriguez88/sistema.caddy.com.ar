@@ -313,7 +313,7 @@
                         <div class="card-body">
                             <div class="table-responsive">
                                 <!-- <table id="ordenes" class="table table-striped table-hover align-middle w-100"> -->
-                                <table id="ordenes" class="table w-100" style="font-size: 10px;">
+                                <table id="ordenes" class="table w-100 mt-2" style="font-size: 10px;">
                                     <thead class="table-light">
                                         <tr>
                                             <th class="text-nowrap">Número</th>
@@ -465,27 +465,15 @@
                     </div>
                 </div>
             </div>
-
         </div>
-
-
     </div>
-    <!-- content -->
 
     <!-- Footer Start -->
     <div id="menuhyper_footer"></div>
-    <!-- end Footer -->
-
     <!-- Vendor js -->
     <script src="../hyper/dist/assets/js/vendor.min.js"></script>
-
     <!-- App js -->
     <script src="../hyper/dist/assets/js/app.js"></script>
-
-    <!-- Daterangepicker js -->
-    <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
-    <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
-
     <!-- Vector Map js -->
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
@@ -494,10 +482,8 @@
     <script src="Proceso/js/ordenes.js"></script>
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
-
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>

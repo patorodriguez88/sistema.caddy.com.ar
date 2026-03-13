@@ -659,14 +659,7 @@
             <!-- end Footer -->
 
         </div>
-
-        <!-- ============================================================== -->
-        <!-- End Page content -->
-        <!-- ============================================================== -->
-
     </div>
-    <!-- END wrapper -->
-
     <!-- Vendor js -->
     <script src="../hyper/dist/assets/js/vendor.min.js"></script>
     <!-- App js -->
@@ -680,23 +673,15 @@
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
-    <!-- Dashboard App js -->
-    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
-    <!-- Funciones -->
-
     <script src="../Menu/js/funciones.js"></script>
     <script src="Procesos/js/funciones.js"></script>
     <script src="Procesos/js/confirmar_venta.js"></script>
     <script src="Procesos/js/redespacho.js"></script>
     <script src="Procesos/js/select2_clientes.js"></script>
-
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- funciones -->
-    <!-- Direcciones -->
     <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&libraries=places&callback=BuscarDireccion">
     </script>
