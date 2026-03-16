@@ -987,7 +987,7 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     AND TC.Entregado = 0
     AND TC.Devuelto = 0
     AND TC.Haber = 0
-    AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
+    AND (CL.wepoint_id = 0 OR CL.wepoint_id IS NULL)
     AND TC.NumerodeOrden = ? ;";
 
     // $sql = "SELECT 
