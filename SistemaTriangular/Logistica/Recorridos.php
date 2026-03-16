@@ -326,8 +326,6 @@
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
-    <!-- Dashboard App js -->
-    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <script src="Proceso/js/recorridos.js"></script>
     <script src="../Funciones/js/seguimiento.js"></script>

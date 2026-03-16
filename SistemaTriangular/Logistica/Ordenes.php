@@ -301,9 +301,6 @@
                         </div>
                     </div>
                     <!-- Start Content-->
-                    <!-- <div class="container-fluid"> -->
-
-
                     <div class="card" id="div_ordenes" style="display:none;">
                         <div class="card-header d-flex align-items-center justify-content-between">
                             <h4 class="mb-0">ÓRDENES DE SALIDA · Caddy Logística</h4>
@@ -337,17 +334,16 @@
                     <!-- Modal Cerrar Orden -->
                     <!-- Modal Cerrar Orden (Bootstrap 5) -->
                     <div class="modal fade" id="modal_cerrar_orden" tabindex="-1" aria-labelledby="modal_cerrar_orden_label" aria-hidden="true">
-                        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
                             <div class="modal-content">
 
                                 <div class="modal-header">
-                                    <h5 class="modal-title text-danger" id="modal_cerrar_orden_label">Cerrar Orden</h5>
+                                    <h4 class="modal-title text-danger" id="modal_cerrar_orden_label">Cerrar Orden</h4>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                 </div>
 
                                 <form id="form_cerrar_orden">
                                     <div class="modal-body">
-
                                         <div class="row mt-2">
                                             <div class="col-md-4 mb-2">
                                                 <label class="form-label">Fecha de Alta:</label>
@@ -371,7 +367,7 @@
                                                 <input type="text" class="form-control" id="chofer" readonly>
                                             </div>
                                             <div class="col-md-4 mb-2">
-                                                <label class="form-label">Acompañante:</label>
+                                                <label class="form-label" id="lbl_acompanante">Acompañante:</label>
                                                 <input type="text" class="form-control" id="acompanante">
                                             </div>
 
@@ -385,32 +381,32 @@
                                             </div>
                                             <div class="col-md-4 mb-2">
                                                 <label class="form-label">Kilómetros Salida:</label>
-                                                <input type="number" class="form-control" id="km_salida">
+                                                <input type="number" class="form-control" id="km_salida" readonly>
                                             </div>
 
                                             <div class="col-md-4 mb-2">
                                                 <label class="form-label">Combustible Salida:</label>
-                                                <input type="text" class="form-control" id="comb_salida">
+                                                <input type="text" class="form-control" id="comb_salida" readonly>
                                             </div>
                                             <div class="col-md-4 mb-2">
-                                                <label class="form-label">Fecha Retorno:</label>
+                                                <label class="form-label" id="lbl_fecha_retorno">Fecha Retorno:</label>
                                                 <input type="date" class="form-control" id="fecha_retorno">
                                             </div>
                                             <div class="col-md-4 mb-2">
-                                                <label class="form-label">Hora Retorno:</label>
+                                                <label class="form-label" id="lbl_hora_retorno">Hora Retorno:</label>
                                                 <input type="time" class="form-control" id="hora_retorno">
                                             </div>
 
                                             <div class="col-md-4 mb-2">
-                                                <label class="form-label">Kilómetros Regreso:</label>
+                                                <label class="form-label" id="lbl_km_regreso">Kilómetros Regreso:</label>
                                                 <input type="number" class="form-control" id="km_regreso">
                                             </div>
                                             <div class="col-md-4 mb-2">
-                                                <label class="form-label">Cargo Combustible (litros):</label>
+                                                <label class="form-label" id="lbl_cargo_combustible">Cargo Combustible (litros):</label>
                                                 <input type="text" class="form-control" id="cargo_combustible">
                                             </div>
                                             <div class="col-md-4 mb-2">
-                                                <label class="form-label">Tanque de Combustible:</label>
+                                                <label class="form-label" id="lbl_tanque_combustible">Tanque de Combustible:</label>
                                                 <select class="form-select" id="tanque_combustible">
                                                     <option value="Vacio">Vacío</option>
                                                     <option value="1/4">1/4</option>
@@ -420,22 +416,41 @@
                                                 </select>
                                             </div>
 
-                                            <div class="col-12 mb-2">
-                                                <label class="form-label">Observaciones:</label>
-                                                <textarea class="form-control" id="observaciones" rows="4" placeholder="Observaciones sobre el vehículo o la orden..."></textarea>
+                                            <div class="col-12 mb-0">
+                                                <label class="form-label" id="lbl_observaciones">Observaciones:</label>
+                                                <textarea class="form-control" id="observaciones" rows="2" placeholder="Observaciones sobre el vehículo o la orden..."></textarea>
                                             </div>
+                                        </div> <!-- cierre .row -->
+                                    </div> <!-- cierre .modal-body -->
+
+                                    <div class="modal-footer d-flex justify-content-between align-items-center flex-wrap gap-2">
+                                        <div id="bloque_mantenimiento_wrapper" style="display:none;">
+                                            <button type="button" class="btn btn-outline-warning" id="btn_abrir_mantenimiento">
+                                                <i class="mdi mdi-wrench me-1"></i> Generar ficha de mantenimiento
+                                            </button>
                                         </div>
 
+                                        <div class="d-flex align-items-center gap-2 ms-auto">
+                                            <button type="submit" class="btn btn-success" id="cerrar_orden_ok">
+                                                <i class="mdi mdi-check me-1"></i> Guardar
+                                            </button>
+                                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
+                                                <i class="mdi mdi-close-circle-outline me-1"></i> Cancelar
+                                            </button>
+                                        </div>
                                     </div>
 
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-success" id="cerrar_orden_ok">
-                                            <i class="mdi mdi-check me-1"></i> Guardar
-                                        </button>
-                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
-                                            <i class="mdi mdi-close-circle-outline me-1"></i> Cancelar
-                                        </button>
+                                    <div id="resumen_mantenimiento" class="alert alert-success mt-3 d-none mb-0">
+                                        <strong>Mantenimiento generado:</strong>
+                                        <span id="resumen_mantenimiento_texto"></span>
                                     </div>
+                                    <input type="hidden" id="generar_mantenimiento_hidden" value="0">
+                                    <input type="hidden" id="mant_titulo_hidden">
+                                    <input type="hidden" id="mant_notas_hidden">
+                                    <input type="hidden" id="mant_prioridad_hidden">
+                                    <input type="hidden" id="mant_estado_hidden">
+                                    <input type="hidden" id="mantenimiento_creado" value="0">
+                                    <input type="hidden" id="mantenimiento_id">
                                 </form>
 
                             </div>
@@ -463,6 +478,75 @@
                             </div>
                         </div>
                     </div>
+                    <div class="modal fade" id="modal_mantenimiento" tabindex="-1" aria-labelledby="modal_mantenimiento_label" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning">
+                                    <h5 class="modal-title text-white" id="modal_mantenimiento_label">
+                                        Generar ficha de mantenimiento
+                                    </h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+
+                                <div class="modal-body">
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <label class="form-label">Vehículo</label>
+                                            <input type="text" class="form-control" id="mant_dominio" readonly>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">Orden</label>
+                                            <input type="text" class="form-control" id="mant_orden" readonly>
+                                        </div>
+
+                                        <div class="col-md-4">
+                                            <label class="form-label">Chofer</label>
+                                            <input type="text" class="form-control" id="mant_nombre_chofer" readonly>
+                                        </div>
+
+                                        <div class="col-md-6">
+                                            <label class="form-label" id="lbl_mant_titulo">Título</label>
+                                            <input type="text" class="form-control" id="mant_titulo" placeholder="Ej: Ruido en tren delantero">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label class="form-label" id="lbl_mant_prioridad">Prioridad</label>
+                                            <select class="form-select" id="mant_prioridad">
+                                                <option value="">Seleccionar</option>
+                                                <option value="Baja">Baja</option>
+                                                <option value="Media">Media</option>
+                                                <option value="Alta">Alta</option>
+                                                <option value="Urgente">Urgente</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label class="form-label">Estado</label>
+                                            <select class="form-select" id="mant_estado">
+                                                <option value="Pendiente" selected>Pendiente</option>
+                                                <option value="En Proceso">En Proceso</option>
+                                                <option value="Resuelto">Resuelto</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="col-12">
+                                            <label class="form-label" id="lbl_mant_notas">Notas</label>
+                                            <textarea class="form-control" id="mant_notas" rows="5" placeholder="Detalle del problema detectado"></textarea>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-warning" id="btn_guardar_datos_mantenimiento">
+                                        <i class="mdi mdi-check me-1"></i> Guardar datos de ficha
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

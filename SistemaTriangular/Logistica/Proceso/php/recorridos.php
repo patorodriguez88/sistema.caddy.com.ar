@@ -1,5 +1,6 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
+
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -21,7 +22,8 @@ if (isset($_POST['Recorridos'])) {
     $rows[] = $row;
   }
 
-  echo json_encode(array('data' => $rows, JSON_UNESCAPED_UNICODE));
+
+  echo json_encode(array('data' => $rows), JSON_UNESCAPED_UNICODE);
 }
 
 //VER ENVIOS FIJOS DEL RECORRIDO
@@ -93,50 +95,63 @@ if (isset($_POST['Rec_num'])) {
 if (isset($_POST['AgregarRecorridos'])) {
 
   $name = $_POST['name'];
-  $number = $_POST['number'];
+  $number = (int)$_POST['number'];
   $zone = $_POST['zone'];
   $km = $_POST['km'];
   $toll = $_POST['toll'];
-  $guest = $_POST['guest'];
-  $service = $_POST['service'];
+  $guest = isset($_POST['guest']) && $_POST['guest'] !== '' ? (int)$_POST['guest'] : 0;
+  $service = isset($_POST['service']) && $_POST['service'] !== '' ? (int)$_POST['service'] : 0;
   $color = $_POST['color'];
+  $fijo = isset($_POST['fijo']) ? (int)$_POST['fijo'] : 0;
 
-  $sql = $mysqli->query("INSERT INTO `Recorridos`(`Numero`, `Nombre`, `Zona`, `Kilometros`, `Peajes`, `Cliente`, `CodigoProductos`, `Activo`, `Color`) 
-VALUES ('{$number}','{$name}','{$zone}','{$km}','{$toll}','{$guest}','{$service}','1','{$color}')");
+  $sql = $mysqli->query("INSERT INTO `Recorridos`
+    (`Numero`, `Nombre`, `Zona`, `Kilometros`, `Peajes`, `Cliente`, `CodigoProductos`, `Activo`, `Color`, `Fijo`) 
+    VALUES
+    ('{$number}','{$name}','{$zone}','{$km}','{$toll}','{$guest}','{$service}','1','{$color}','{$fijo}')");
 
   echo json_encode(array('success' => 1));
+  exit;
 }
 
 //MODIFICAR RECORRIDOS
 
 if (isset($_POST['ModificarRecorridos'])) {
-  $id = $_POST['id'];
+  $id = (int)$_POST['id'];
   $name = $_POST['name'];
-  $number = $_POST['number'];
+  $number = (int)$_POST['number'];
   $zone = $_POST['zone'];
   $km = $_POST['km'];
   $toll = $_POST['toll'];
-  $guest = $_POST['guest'];
-  $service = $_POST['service'];
+  $guest = isset($_POST['guest']) && $_POST['guest'] !== '' ? (int)$_POST['guest'] : 0;
+  $service = isset($_POST['service']) && $_POST['service'] !== '' ? (int)$_POST['service'] : 0;
   $color0 = explode('#', $_POST['color']);
-  $color = $color0[1];
+  $color = isset($color0[1]) ? $color0[1] : $color0[0];
+  $fijo = isset($_POST['fijo']) ? (int)$_POST['fijo'] : 0;
 
-  for ($i = 0; $i < count($_POST['dias']); $i++) {
-    if ($i == count($_POST['dias']) - 1) {
-      $dia = $_POST['dias'][$i];
-    } else {
-      $dia = $_POST['dias'][$i] . ",";
-    }
-    $dias .= $dia;
+  $dias = '';
+  if (isset($_POST['dias']) && is_array($_POST['dias'])) {
+    $dias = implode(',', $_POST['dias']);
   }
-  $sql = "UPDATE `Recorridos` SET `Numero`='$number', `Nombre`='$name', `Zona`='$zone', `Kilometros`='$km', `Peajes`='$toll',
-     `Cliente`='$guest', `CodigoProductos`='$service', `Color`='$color',`DiaSalida`='$dias' WHERE id='$id'";
+
+  $sql = "UPDATE `Recorridos` SET 
+            `Numero`='$number',
+            `Nombre`='$name',
+            `Zona`='$zone',
+            `Kilometros`='$km',
+            `Peajes`='$toll',
+            `Cliente`='$guest',
+            `CodigoProductos`='$service',
+            `Color`='$color',
+            `DiaSalida`='$dias',
+            `Fijo`='$fijo'
+          WHERE id='$id'";
 
   if ($mysqli->query($sql)) {
     echo json_encode(array('success' => 1));
   } else {
-    echo json_encode(array('success' => 0));
+    echo json_encode(array('success' => 0, 'error' => $mysqli->error));
   }
+  exit;
 }
 
 
@@ -164,7 +179,8 @@ if (isset($_POST['ListarClientes'])) {
   while ($row = $res->fetch_assoc()) {
     $clientes[] = $row;
   }
-  echo json_encode($clientes);
+  echo json_encode(array('data' => $clientes), JSON_UNESCAPED_UNICODE);
+
   exit;
 }
 
@@ -176,6 +192,6 @@ if (isset($_POST['ListarServicios'])) {
   while ($row = $res->fetch_assoc()) {
     $servicios[] = $row;
   }
-  echo json_encode($servicios);
+  echo json_encode(array('data' => $servicios), JSON_UNESCAPED_UNICODE);
   exit;
 }
