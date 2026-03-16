@@ -186,39 +186,34 @@ function ver_fijos(i) {
 }
 
 function eliminar_fijo(i) {
-  // alert(i);
-
   $("#remove_permanent_warning-header-modal").modal("show");
 
-  $("#btn_remove_permanent").click(function () {
-    $.ajax({
-      data: { EliminarFijo: 1, id: i },
-      url: "Proceso/php/recorridos.php",
-      type: "post",
-      success: function (response) {
-        var jsonData = JSON.parse(response);
-        if (jsonData.success == 1) {
-          var datatable = $("#envios_fijos").DataTable();
-          datatable.ajax.reload();
-          var datatable_1 = $("#recorridos").DataTable();
-          datatable_1.ajax.reload();
-          $("#remove_permanent_warning-header-modal").modal("hide");
-        }
-      },
+  $("#btn_remove_permanent")
+    .off("click")
+    .on("click", function () {
+      $.ajax({
+        data: { EliminarFijo: 1, id: i },
+        url: "Proceso/php/recorridos.php",
+        type: "post",
+        dataType: "json",
+        success: function (jsonData) {
+          if (jsonData.success == 1) {
+            $("#envios_fijos").DataTable().ajax.reload();
+            $("#recorridos").DataTable().ajax.reload();
+            $("#remove_permanent_warning-header-modal").modal("hide");
+          }
+        },
+      });
     });
-  });
 }
 
 function modificar(i, a) {
-  // var a=$(this).attr("data-id");
-  // alert(a);
-
   $.ajax({
     data: { ActivarRecorridos: 1, id: i, Activo: a },
     url: "Proceso/php/recorridos.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       var datatable = $("#recorridos").DataTable();
       datatable.ajax.reload();
       //   $.NotificationApp.send("Exito","Recorrido Activado.","bottom-right","success","success");
@@ -250,13 +245,11 @@ function showmodal(i) {
     data: { Rec_datos: 1, Rec: i },
     url: "Proceso/php/recorridos.php",
     type: "post",
-    success: function (response) {
+    dataType: "json",
+    success: function (jsonData) {
       $("#standard-modal-rec").modal("show");
-      $("#recorrido_ok").css("display", "none");
-      $("#recorrido_mod_ok").css("display", "block");
-
-      var jsonData = JSON.parse(response);
-
+      $("#recorrido_ok").addClass("d-none");
+      $("#recorrido_mod_ok").removeClass("d-none");
       // Obtén la referencia al elemento del interruptor
       var switchElement = document.getElementById("fijo_switch");
 
@@ -284,29 +277,18 @@ function showmodal(i) {
         "MODIFICAR RECORRIDO NUMERO " + jsonData.data[0].Numero,
       );
 
-      var values = jsonData.data[0].DiaSalida.split(",");
+      var values = String(jsonData.data[0].DiaSalida || "")
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
 
-      for (var i = 0; i < values.length; i++) {
-        $("#dates").append(
-          `<option value="${values[i]}"selected>${values[i]}</option>`,
-        );
-      }
-
-      const select = document.querySelector("#recorrido_guest");
-      const option = document.createElement("option");
-      option.setAttribute("selected", true);
-      const valor = jsonData.data[0].Cliente;
-      option.value = valor;
-      option.text = `${jsonData.data[0].Cliente} - ${jsonData.data[0].nombrecliente}  (Dir.:${jsonData.data[0].Direccion})`;
-      select.appendChild(option);
-
-      const select_service = document.querySelector("#recorrido_service");
-      const option_service = document.createElement("option");
-      option_service.setAttribute("selected", true);
-      const valor_service = jsonData.data[0].CodigoProductos;
-      option_service.value = valor_service;
-      option_service.text = `${jsonData.data[0].CodigoProductos} - ${jsonData.data[0].Titulo}  $ ${jsonData.data[0].PrecioVenta}`;
-      select_service.appendChild(option_service);
+      $("#dates").val(values).trigger("change");
+      $("#recorrido_guest")
+        .val(jsonData.data[0].Cliente || "")
+        .trigger("change");
+      $("#recorrido_service")
+        .val(jsonData.data[0].CodigoProductos || "")
+        .trigger("change");
 
       $("#recorrido_color").val("#" + jsonData.data[0].Color);
     },
@@ -324,7 +306,7 @@ $("#recorrido_ok").click(function () {
   var guest = $("#recorrido_guest").val();
   var service = $("#recorrido_service").val();
   var color = $("#recorrido_color").val();
-
+  var fijo = $("#fijo_switch").is(":checked") ? 1 : 0;
   $.ajax({
     data: {
       AgregarRecorridos: 1,
@@ -336,11 +318,12 @@ $("#recorrido_ok").click(function () {
       service: service,
       color: color,
       number: number,
+      fijo: fijo,
     },
     url: "Proceso/php/recorridos.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       var datatable = $("#recorridos").DataTable();
       datatable.ajax.reload();
       $("#standard-modal-rec").modal("hide");
@@ -356,11 +339,12 @@ $("#recorrido_mod_ok").click(function () {
   var zone = $("#recorrido_zone").val();
   var km = $("#recorrido_km").val();
   var toll = $("#recorrido_toll").val();
-  var guest = $("#recorrido_guest").val();
-  var service = $("#recorrido_service").val();
+  var guest = $("#recorrido_guest").val() || 0;
+  var service = $("#recorrido_service").val() || 0;
   var color = $("#recorrido_color").val();
   var id = $("#id_mod_rec").val();
   var dias = $("#dates").val();
+  var fijo = $("#fijo_switch").is(":checked") ? 1 : 0;
   $.ajax({
     data: {
       ModificarRecorridos: 1,
@@ -374,30 +358,18 @@ $("#recorrido_mod_ok").click(function () {
       color: color,
       number: number,
       dias: dias,
+      fijo: fijo,
     },
     url: "Proceso/php/recorridos.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
         var datatable = $("#recorridos").DataTable();
         datatable.ajax.reload();
-
-        $.toast({
-          heading: "Listo!",
-          text: "Recorrido Modificado",
-          position: "bottom-right",
-          stack: false,
-          icon: "success",
-        });
+        toast("success", "Éxito", "Recorrido modificado");
       } else {
-        $.toast({
-          heading: "Error!",
-          text: "El Recorrido no fue modificado",
-          position: "bottom-right",
-          stack: false,
-          icon: "error",
-        });
+        toast("error", "Error", "El Recorrido no fue modificado");
       }
 
       $("#standard-modal-rec").modal("hide");
@@ -406,8 +378,10 @@ $("#recorrido_mod_ok").click(function () {
 });
 
 $("#agregar_rec_btn").click(function () {
-  $("#recorrido_mod_ok").css("display", "none");
-  $("#recorrido_ok").css("display", "block");
+  $("#dates").val(null).trigger("change");
+
+  $("#recorrido_mod_ok").addClass("d-none");
+  $("#recorrido_ok").removeClass("d-none");
   $(".form-control").val("");
   $("#standard-modal-rec-header").removeClass(
     "modal-header modal-colored-header bg-warning",
@@ -424,356 +398,81 @@ $("#agregar_rec_btn").click(function () {
     data: { Rec_num: 1 },
     url: "Proceso/php/recorridos.php",
     type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       $("#recorrido_number").val(jsonData.next_num_rec);
     },
   });
 });
-
-//desde aca ia
-// Proceso/js/recorridos.js
-// Requiere: jQuery, DataTables, Select2, SweetAlert2
-
-// ---------- Utils ----------
-function notify(title, text, type) {
-  if (
-    window.$ &&
-    $.NotificationApp &&
-    typeof $.NotificationApp.send === "function"
-  ) {
-    $.NotificationApp.send(title, text, "bottom-right", "#FFF", type || "info");
-  } else if (window.Swal && typeof Swal.fire === "function") {
-    Swal.fire({ title, text, icon: type || "info" });
-  } else {
-    console.log(`[${type || "info"}] ${title} - ${text}`);
-  }
-}
-
-function ajaxPost(actionData, onDone, onFail) {
-  $.ajax({
-    url: "Proceso/php/recorridos.php",
-    type: "POST",
-    dataType: "json",
-    data: actionData,
-  })
-    .done((res) => onDone && onDone(res))
-    .fail((xhr) => {
-      console.error("AJAX fail", actionData, xhr && xhr.responseText);
-      onFail && onFail(xhr);
-      notify("Error", "No se pudo procesar la solicitud", "error");
-    });
-}
-
-// ---------- Carga Selects (sin PHP embebido) ----------
-function loadClientesSelect() {
-  ajaxPost({ ListarClientes: 1 }, (res) => {
-    const $sel = $("#recorrido_guest");
-    $sel.empty().append('<option value="">Seleccionar un Cliente</option>');
-    (res?.data || []).forEach((c) => {
-      $sel.append(
-        `<option value="${c.id}">${c.id} - ${c.nombrecliente} (Dir.: ${
-          c.Direccion || "-"
-        })</option>`,
-      );
-    });
-    $sel.trigger("change");
-  });
-}
-
-function loadServiciosSelect() {
-  ajaxPost({ ListarServicios: 1 }, (res) => {
-    const $sel = $("#recorrido_service");
-    $sel.empty().append('<option value="">Seleccionar un Servicio</option>');
-    (res?.data || []).forEach((s) => {
-      $sel.append(
-        `<option value="${s.Codigo}">${s.Codigo} - ${s.Titulo} $ ${s.PrecioVenta}</option>`,
-      );
-    });
-    $sel.trigger("change");
-  });
-}
-
-// ---------- DataTable de recorridos ----------
-let dtRecorridos = null;
-
-function renderEstadoBadge(v) {
-  const on = String(v).toLowerCase() === "activo" || v === 1;
-  return `<span class="badge ${on ? "bg-success" : "bg-secondary"}">${
-    on ? "Activo" : "Inactivo"
-  }</span>`;
-}
-
-function renderColorDot(hex) {
-  return `<span style="display:inline-block;width:16px;height:16px;border-radius:50%;background:${
-    hex || "#999"
-  };border:1px solid #ddd"></span>`;
-}
-
-function initTablaRecorridos() {
-  dtRecorridos = $("#recorridos").DataTable({
-    ajax: {
-      url: "Proceso/php/recorridos.php",
-      type: "POST",
-      data: { ListarRecorridos: 1 },
-      dataSrc: (res) => res?.data || [],
-    },
-    destroy: true,
-    responsive: true,
-    fixedHeader: true,
-    columns: [
-      { data: "Numero" },
-      { data: "Nombre" },
-      { data: "Kilometros" },
-      { data: "Peajes" },
-      { data: "Servicio" },
-      { data: "EnviosFijos", defaultContent: 0 },
-      {
-        data: "DiasSalida",
-        render: (d) => (Array.isArray(d) ? d.join(", ") : d || "-"),
-      },
-      { data: "Color", render: (d) => renderColorDot(d) },
-      { data: "Estado", render: renderEstadoBadge },
-      {
-        data: null,
-        orderable: false,
-        render: (row) => `
-          <div class="btn-group">
-            <button class="btn btn-sm btn-primary btn-editar" data-id="${row.id}"><i class="mdi mdi-pencil"></i></button>
-            <button class="btn btn-sm btn-danger btn-eliminar" data-id="${row.id}" data-nombre="${row.Nombre}"><i class="mdi mdi-trash-can-outline"></i></button>
-            <button class="btn btn-sm btn-info btn-fijos" data-id="${row.id}" data-nombre="${row.Nombre}"><i class="mdi mdi-table-plus"></i></button>
-          </div>
-        `,
-      },
-    ],
-  });
-}
-
-function reloadTabla() {
-  dtRecorridos && dtRecorridos.ajax.reload(null, false);
-}
-
-// ---------- Modal Alta/Edición ----------
-function openModalNuevo() {
-  $("#myCenterModalLabel_rec").text("AGREGAR NUEVO RECORRIDO");
-  $("#standard-modal-rec-header")
-    .removeClass("bg-warning")
-    .addClass("bg-success");
-  $("#modal-rec-form")[0].reset();
-  $("#id_mod_rec").val("");
-  $("#recorrido_mod_ok").hide();
-  $("#recorrido_ok").show();
-  $("#standard-modal-rec").modal("show");
-}
-
-function openModalEditar(id) {
-  ajaxPost({ ObtenerRecorrido: 1, id: id }, (res) => {
-    const r = res?.data;
-    if (!r) return notify("Atención", "No se encontró el recorrido", "warning");
-    $("#myCenterModalLabel_rec").text("MODIFICAR RECORRIDO");
-    $("#standard-modal-rec-header")
-      .removeClass("bg-success")
-      .addClass("bg-warning");
-    $("#id_mod_rec").val(r.id || "");
-    $("#recorrido_number").val(r.Numero || "");
-    $("#recorrido_name").val(r.Nombre || "");
-    $("#recorrido_zone").val(r.Zona || "");
-    $("#recorrido_km").val(r.Kilometros || "");
-    $("#recorrido_toll").val(r.Peajes || "");
-    $("#recorrido_color").val(r.Color || "#999999");
-    $("#recorrido_guest")
-      .val(r.idCliente || "")
-      .trigger("change");
-    $("#recorrido_service")
-      .val(r.CodigoServicio || "")
-      .trigger("change");
-    // días salida
-    if (Array.isArray(r.DiasSalida)) {
-      $("#dates").val(r.DiasSalida).trigger("change");
-    }
-    // fijo switch
-    $("#fijo_switch").prop("checked", !!r.Fijo);
-    $("#recorrido_ok").hide();
-    $("#recorrido_mod_ok").show();
-    $("#standard-modal-rec").modal("show");
-  });
-}
-
-function recogerFormRecorrido() {
-  const dias = $("#dates").val() || [];
-  return {
-    Numero: $("#recorrido_number").val().trim(),
-    Nombre: $("#recorrido_name").val().trim(),
-    Zona: $("#recorrido_zone").val().trim(),
-    Kilometros: $("#recorrido_km").val().trim(),
-    Peajes: $("#recorrido_toll").val().trim(),
-    Color: $("#recorrido_color").val(),
-    idCliente: $("#recorrido_guest").val() || "",
-    CodigoServicio: $("#recorrido_service").val() || "",
-    DiasSalida: dias, // array
-    Fijo: $("#fijo_switch").is(":checked") ? 1 : 0,
-  };
-}
-
-// Guardar nuevo
-$("#recorrido_ok").on("click", function () {
-  const payload = recogerFormRecorrido();
-  if (!payload.Numero || !payload.Nombre)
-    return notify(
-      "Faltan datos",
-      "Número y Nombre son obligatorios",
-      "warning",
-    );
-  ajaxPost({ CrearRecorrido: 1, ...payload }, (res) => {
-    if (res?.ok) {
-      notify("Éxito", "Recorrido creado", "success");
-      $("#standard-modal-rec").modal("hide");
-      reloadTabla();
-    } else {
-      notify("Error", res?.msg || "No se pudo crear", "error");
-    }
-  });
-});
-
-// Guardar edición
-$("#recorrido_mod_ok").on("click", function () {
-  const id = $("#id_mod_rec").val();
-  if (!id) return notify("Error", "ID inválido", "error");
-  const payload = recogerFormRecorrido();
-  ajaxPost({ ModificarRecorrido: 1, id, ...payload }, (res) => {
-    if (res?.ok) {
-      notify("Éxito", "Recorrido actualizado", "success");
-      $("#standard-modal-rec").modal("hide");
-      reloadTabla();
-    } else {
-      notify("Error", res?.msg || "No se pudo actualizar", "error");
-    }
-  });
-});
-
-// Abrir modal nuevo
-$("#agregar_rec_btn").on("click", function () {
-  openModalNuevo();
-});
-
-// Click editar / eliminar / fijos en tabla
-$(document).on("click", ".btn-editar", function () {
-  openModalEditar($(this).data("id"));
-});
-
-$(document).on("click", ".btn-eliminar", function () {
-  const id = $(this).data("id");
-  const nombre = $(this).data("nombre");
-  $("#id_eliminar").val(id);
-  $("#warning-modal-body").html(`¿Eliminar el recorrido <b>${nombre}</b>?`);
-  $("#warning-modal").modal("show");
-});
-
-$("#warning-modal-ok").on("click", function () {
-  const id = $("#id_eliminar").val();
-  ajaxPost({ EliminarRecorrido: 1, id }, (res) => {
-    if (res?.ok) {
-      notify("Eliminado", "El recorrido fue eliminado", "success");
-      $("#warning-modal").modal("hide");
-      reloadTabla();
-    } else {
-      notify("Error", res?.msg || "No se pudo eliminar", "error");
-    }
-  });
-});
-
-// ---------- Servicios Fijos (modal bs-fijos-modal-lg) ----------
-$(document).on("click", ".btn-fijos", function () {
-  const idRec = $(this).data("id");
-  $("#bs-fijos-modal-lg").data("idRec", idRec).modal("show");
-  listarFijos(idRec);
-  cargarServiciosUnicos(idRec); // carga el select de “Seleccione un Servicio”
-});
-
-function listarFijos(idRec) {
-  ajaxPost({ ListarFijos: 1, idRecorrido: idRec }, (res) => {
-    const tbody = $("#envios_fijos tbody");
-    tbody.empty();
-    (res?.data || []).forEach((r) => {
-      tbody.append(`<tr>
-        <td>${r.Origen || "-"}</td>
-        <td>${r.Destino || "-"}</td>
-        <td><button class="btn btn-xs btn-danger btn-fijo-del" data-id="${
-          r.id
-        }"><i class="mdi mdi-trash-can-outline"></i></button></td>
-      </tr>`);
-    });
-  });
-}
-
-// Rellena el select del modal con servicios “única vez” del recorrido
-function cargarServiciosUnicos(idRec) {
-  ajaxPost({ ListarServiciosUnicos: 1, idRecorrido: idRec }, (res) => {
-    const $sel = $("#bs-fijos-modal-lg select.select2");
-    $sel.empty().append('<option value="">Seleccionar Servicio</option>');
-    (res?.data || []).forEach((s) => {
-      const servicio = s.Retirado == 0 ? "Retiro" : "Entrega";
-      $sel.append(
-        `<option value="${s.id}">Origen: ${s.Origen} Destino: <b>${s.Destino}</b> $ ${s.Debe} ${s.EntregaEn} ${servicio}</option>`,
-      );
-    });
-    $sel.trigger("change");
-  });
-}
-
-// Agregar a fijos (icono plus del modal)
-$("#sumar, .mdi-table-plus").on("click", function () {
-  const idRec = $("#bs-fijos-modal-lg").data("idRec");
-  const idServicio = $("#bs-fijos-modal-lg select.select2").val();
-  if (!idRec || !idServicio)
-    return notify("Atención", "Seleccione un Servicio", "warning");
-  ajaxPost({ AgregarFijo: 1, idRecorrido: idRec, idServicio }, (res) => {
-    if (res?.ok) {
-      notify("Éxito", "Servicio fijo agregado", "success");
-      listarFijos(idRec);
-      reloadTabla();
-    } else {
-      notify("Error", res?.msg || "No se pudo agregar", "error");
-    }
-  });
-});
-
-// Eliminar fijo (modal “remove_permanent_warning-header-modal”)
-let _fijoAEliminar = null;
-$(document).on("click", ".btn-fijo-del", function () {
-  _fijoAEliminar = $(this).data("id");
-  $("#remove_permanent_warning-header-modal").modal("show");
-});
-
-$("#btn_remove_permanent").on("click", function () {
-  if (!_fijoAEliminar) return;
-  ajaxPost({ EliminarFijo: 1, id: _fijoAEliminar }, (res) => {
-    if (res?.ok) {
-      notify("Eliminado", "Servicio fijo eliminado", "success");
-      $("#remove_permanent_warning-header-modal").modal("hide");
-      const idRec = $("#bs-fijos-modal-lg").data("idRec");
-      listarFijos(idRec);
-      reloadTabla();
-    } else {
-      notify("Error", res?.msg || "No se pudo eliminar", "error");
-    }
-  });
-});
-
-$("#btn_not_remove_permanent").on("click", function () {
-  _fijoAEliminar = null;
-  $("#remove_permanent_warning-header-modal").modal("hide");
-});
-
-// ---------- Ready ----------
-$(function () {
-  // Enlazar Select2 si está cargado
+$(document).ready(function () {
   if ($.fn.select2) {
-    $("#recorrido_guest, #recorrido_service, #dates").select2({
+    $("#dates").select2({
       width: "100%",
+      placeholder: "Elegí uno o más días",
+      allowClear: true,
+      dropdownParent: $("#standard-modal-rec"),
+    });
+
+    $("#recorrido_guest").select2({
+      width: "100%",
+      dropdownParent: $("#standard-modal-rec"),
+    });
+
+    $("#recorrido_service").select2({
+      width: "100%",
+      dropdownParent: $("#standard-modal-rec"),
     });
   }
-  loadClientesSelect();
-  loadServiciosSelect();
-  initTablaRecorridos();
+
+  cargarClientes();
+  cargarServicios();
 });
+function cargarClientes() {
+  $.ajax({
+    data: { ListarClientes: 1 },
+    url: "Proceso/php/recorridos.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      $("#recorrido_guest").empty();
+      $("#recorrido_guest").append(
+        `<option value="">Seleccionar un Cliente</option>`,
+      );
+
+      if (jsonData.data) {
+        $.each(jsonData.data, function (i, item) {
+          $("#recorrido_guest").append(
+            `<option value="${item.id}">${item.id} - ${item.nombrecliente} (Dir.: ${item.Direccion || ""})</option>`,
+          );
+        });
+      }
+
+      $("#recorrido_guest").trigger("change");
+    },
+  });
+}
+
+function cargarServicios() {
+  $.ajax({
+    data: { ListarServicios: 1 },
+    url: "Proceso/php/recorridos.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      $("#recorrido_service").empty();
+      $("#recorrido_service").append(
+        `<option value="">Seleccionar un Servicio</option>`,
+      );
+
+      if (jsonData.data) {
+        $.each(jsonData.data, function (i, item) {
+          $("#recorrido_service").append(
+            `<option value="${item.Codigo}">${item.Codigo} - ${item.Titulo} $ ${item.PrecioVenta}</option>`,
+          );
+        });
+      }
+
+      $("#recorrido_service").trigger("change");
+    },
+  });
+}

@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
@@ -448,7 +450,7 @@ if (isset($_POST['BuscoRecorridos'])) {
   // $Recorrido_nombre = $Fecha . " " . $Hora . " - " . $Chofer;
 
   $recorridos = [];
-  $sql = "SELECT Numero, Nombre FROM Recorridos WHERE Activo = 1 AND Fijo=1 ORDER BY Numero ASC";
+  $sql = "SELECT Numero, Nombre FROM Recorridos WHERE Fijo=1 ORDER BY Numero ASC";
   $res = $mysqli->query($sql);
 
   if ($res && $res->num_rows > 0) {
@@ -693,7 +695,7 @@ if (isset($_POST['alta_orden'])) {
 
 if (isset($_POST['CerrarOrden'])) {
   $numero = $_POST['numero_orden'];
-  $sql = "SELECT * FROM Logistica WHERE NumerodeOrden = '$numero' LIMIT 1";
+  $sql = "SELECT Logistica.*,Vehiculos.Aliados FROM Logistica INNER JOIN Vehiculos ON Logistica.Patente=Vehiculos.Dominio WHERE NumerodeOrden = '$numero' LIMIT 1;";
   $res = $mysqli->query($sql);
 
   if ($res->num_rows > 0) {
@@ -716,5 +718,271 @@ if (isset($_POST['CerrarOrden'])) {
 
 if (isset($_POST['Orden']) && $_POST['Orden'] === 'Cargar') {
   handleOrdenCargar($mysqli);
+  exit;
+}
+
+// CERRAR ORDEN
+
+if (isset($_POST['CerrarOrdenGuardar'])) {
+
+  header('Content-Type: application/json; charset=utf-8');
+
+  $numeroOrden       = isset($_POST['numero_orden']) ? trim($_POST['numero_orden']) : '';
+  $vehiculo          = isset($_POST['vehiculo']) ? trim($_POST['vehiculo']) : '';
+  $recorrido         = isset($_POST['recorrido']) ? trim($_POST['recorrido']) : '';
+
+  $acompanante       = isset($_POST['acompanante']) ? trim($_POST['acompanante']) : '';
+  $fechaRetorno      = isset($_POST['fecha_retorno']) ? trim($_POST['fecha_retorno']) : '';
+  $horaRetorno       = isset($_POST['hora_retorno']) ? trim($_POST['hora_retorno']) : '';
+  $kmRegreso         = isset($_POST['km_regreso']) ? trim($_POST['km_regreso']) : 0;
+  $cargoCombustible = isset($_POST['cargo_combustible']) && $_POST['cargo_combustible'] !== ''
+    ? (int)$_POST['cargo_combustible']
+    : 0;
+  $tanqueCombustible = isset($_POST['tanque_combustible']) ? trim($_POST['tanque_combustible']) : '';
+  $observaciones     = isset($_POST['observaciones']) ? trim($_POST['observaciones']) : '';
+  $generarMantenimiento = isset($_POST['generar_mantenimiento']) ? (int)$_POST['generar_mantenimiento'] : 0;
+  $mantTitulo = isset($_POST['mant_titulo']) ? trim($_POST['mant_titulo']) : '';
+  $mantNotas = isset($_POST['mant_notas']) ? trim($_POST['mant_notas']) : '';
+  $mantPrioridad = isset($_POST['mant_prioridad']) ? trim($_POST['mant_prioridad']) : '';
+  $mantEstado = isset($_POST['mant_estado']) ? trim($_POST['mant_estado']) : 'Pendiente';
+  $nombreChofer = isset($_POST['nombre_chofer']) ? trim($_POST['nombre_chofer']) : '';
+  $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'sistema';
+  if ($generarMantenimiento === 1) {
+
+    if ($mantTitulo === '' || $mantPrioridad === '' || $mantNotas === '') {
+      throw new Exception("Para generar mantenimiento debés completar título, prioridad y notas.");
+    }
+
+    $fechaMantenimiento = date('Y-m-d');
+    $ordenMantenimiento = $numeroOrden;
+    $eliminadoMantenimiento = 0;
+    $gidTask = '';
+    $gidProjects = '';
+
+    $sqlMant = "INSERT INTO Mantenimiento
+        (Fecha, Dominio, Titulo, Notas, Usuario, Prioridad, gid_task, gid_projects, Estado, TimeStamp, Orden, Eliminado, NombreChofer)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)";
+
+    if (!$stmt = $mysqli->prepare($sqlMant)) {
+      throw new Exception("No se pudo preparar INSERT de Mantenimiento.");
+    }
+
+    $stmt->bind_param(
+      'sssssssssiss',
+      $fechaMantenimiento,
+      $vehiculo,
+      $mantTitulo,
+      $mantNotas,
+      $usuario,
+      $mantPrioridad,
+      $gidTask,
+      $gidProjects,
+      $mantEstado,
+      $ordenMantenimiento,
+      $eliminadoMantenimiento,
+      $nombreChofer
+    );
+
+    $stmt->execute();
+
+    if ($stmt->errno) {
+      throw new Exception("Error al insertar mantenimiento: " . $stmt->error);
+    }
+
+    $stmt->close();
+  }
+  if ($numeroOrden === '' || $vehiculo === '' || $recorrido === '') {
+    echo json_encode([
+      'success' => 0,
+      'message' => 'Faltan datos obligatorios para cerrar la orden.'
+    ]);
+    exit;
+  }
+
+  $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'sistema';
+
+  $mysqli->begin_transaction();
+
+  try {
+
+    // 1) Cerrar orden en Logistica
+    $sql = "UPDATE Logistica
+                SET 
+                    NombreChofer2 = ?,
+                    FechaRetorno = ?,
+                    HoraRetorno = ?,
+                    KilometrosRegreso = ?,
+                    CargaLitros = ?,
+                    CombustibleRegreso = ?,
+                    Observaciones = ?,
+                    Estado = 'Cerrada'
+                WHERE NumerodeOrden = ?
+                  AND Eliminado = 0
+                LIMIT 1";
+
+    if (!$stmt = $mysqli->prepare($sql)) {
+      throw new Exception("No se pudo preparar UPDATE de Logistica.");
+    }
+
+    $stmt->bind_param(
+      'sssissss',
+      $acompanante,
+      $fechaRetorno,
+      $horaRetorno,
+      $kmRegreso,
+      $cargoCombustible,
+      $tanqueCombustible,
+      $observaciones,
+      $numeroOrden
+    );
+
+    $stmt->execute();
+
+    if ($stmt->errno) {
+      throw new Exception("Error al actualizar Logistica: " . $stmt->error);
+    }
+
+    $stmt->close();
+
+    // 2) Vehículo disponible
+    $sqlVeh = "UPDATE Vehiculos SET Estado = 'Disponible' WHERE Dominio = ? LIMIT 1";
+
+    if (!$stmt = $mysqli->prepare($sqlVeh)) {
+      throw new Exception("No se pudo preparar UPDATE de Vehiculos.");
+    }
+
+    $stmt->bind_param('s', $vehiculo);
+    $stmt->execute();
+
+    if ($stmt->errno) {
+      throw new Exception("Error al actualizar Vehiculos: " . $stmt->error);
+    }
+
+    $stmt->close();
+
+    // 3) Ver si el recorrido es fijo
+    $fijo = 0;
+
+    $sqlRec = "SELECT Fijo FROM Recorridos WHERE Numero = ? LIMIT 1";
+
+    if (!$stmt = $mysqli->prepare($sqlRec)) {
+      throw new Exception("No se pudo preparar SELECT de Recorridos.");
+    }
+
+    $stmt->bind_param('s', $recorrido);
+    $stmt->execute();
+    $stmt->bind_result($fijoDB);
+
+    if ($stmt->fetch()) {
+      $fijo = (int)$fijoDB;
+    }
+
+    $stmt->close();
+
+    // 4) Activar o desactivar el recorrido según si es fijo
+    $activoRecorrido = ($fijo === 1) ? 1 : 0;
+
+    $sqlUpdRec = "UPDATE Recorridos SET Activo = ? WHERE Numero = ? LIMIT 1";
+
+    if (!$stmt = $mysqli->prepare($sqlUpdRec)) {
+      throw new Exception("No se pudo preparar UPDATE de Recorridos.");
+    }
+
+    $stmt->bind_param('is', $activoRecorrido, $recorrido);
+    $stmt->execute();
+
+    if ($stmt->errno) {
+      throw new Exception("Error al actualizar Recorridos: " . $stmt->error);
+    }
+
+    $stmt->close();
+
+    $mysqli->commit();
+
+    echo json_encode([
+      'success' => 1,
+      'message' => 'Orden cerrada correctamente.'
+    ]);
+    exit;
+  } catch (Exception $e) {
+    $mysqli->rollback();
+
+    echo json_encode([
+      'success' => 0,
+      'message' => $e->getMessage()
+    ]);
+    exit;
+  }
+}
+if (isset($_POST['GuardarMantenimientoManual'])) {
+
+  header('Content-Type: application/json; charset=utf-8');
+
+  $fecha = date('Y-m-d');
+  $dominio = isset($_POST['dominio']) ? trim($_POST['dominio']) : '';
+  $orden = isset($_POST['orden']) ? trim($_POST['orden']) : '';
+  $nombreChofer = isset($_POST['nombre_chofer']) ? trim($_POST['nombre_chofer']) : '';
+  $titulo = isset($_POST['titulo']) ? trim($_POST['titulo']) : '';
+  $notas = isset($_POST['notas']) ? trim($_POST['notas']) : '';
+  $prioridad = isset($_POST['prioridad']) ? trim($_POST['prioridad']) : '';
+  $estado = isset($_POST['estado']) ? trim($_POST['estado']) : 'Pendiente';
+  $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'sistema';
+
+  $gid_task = '';
+  $gid_projects = '';
+  $eliminado = 0;
+
+  if ($dominio === '' || $titulo === '' || $notas === '' || $prioridad === '') {
+    echo json_encode([
+      'success' => 0,
+      'message' => 'Faltan datos obligatorios para guardar mantenimiento.'
+    ]);
+    exit;
+  }
+
+  $sql = "INSERT INTO Mantenimiento
+            (Fecha, Dominio, Titulo, Notas, Usuario, Prioridad, gid_task, gid_projects, Estado, TimeStamp, Orden, Eliminado, NombreChofer)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?)";
+
+  $stmt = $mysqli->prepare($sql);
+
+  if (!$stmt) {
+    echo json_encode([
+      'success' => 0,
+      'message' => 'No se pudo preparar la consulta: ' . $mysqli->error
+    ]);
+    exit;
+  }
+
+  $stmt->bind_param(
+    'sssssssssiss',
+    $fecha,
+    $dominio,
+    $titulo,
+    $notas,
+    $usuario,
+    $prioridad,
+    $gid_task,
+    $gid_projects,
+    $estado,
+    $orden,
+    $eliminado,
+    $nombreChofer
+  );
+
+  if ($stmt->execute()) {
+    echo json_encode([
+      'success' => 1,
+      'id' => $stmt->insert_id,
+      'message' => 'Ficha de mantenimiento creada correctamente.'
+    ]);
+  } else {
+    echo json_encode([
+      'success' => 0,
+      'message' => 'Error al guardar mantenimiento: ' . $stmt->error
+    ]);
+  }
+
+  $stmt->close();
   exit;
 }

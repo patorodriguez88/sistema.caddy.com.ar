@@ -18,3 +18,5 @@
 
     <!-- Datatable Custom js -->
     <script src="../hyper/dist/assets/js/pages/demo.datatable-init.js"></script>
+    <!--funciones-->
+    <script src="/SistemaTriangular/Funciones/js/alertas.js"></script>

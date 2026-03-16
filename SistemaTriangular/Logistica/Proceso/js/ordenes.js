@@ -253,48 +253,75 @@ $("#formCargarOrden").on("submit", function (e) {
 });
 
 //CERRAR ORDEN
-function cerrarOrden(orden) {
-  // $("#form_cerrar_orden_div").css("display", "block");
-  $("#modal_cerrar_orden").modal("show");
-  $("#fechas_ordenes").css("display", "none");
-  // $("#div_ordenes").css("display", "none");
-  $("#numero_orden").val(orden);
+function cerrarOrden(numero) {
   $.ajax({
-    type: "POST",
+    data: { CerrarOrden: 1, numero_orden: numero },
     url: "Proceso/php/ordenes.php",
-    data: { CerrarOrden: 1, numero_orden: orden },
+    type: "post",
     dataType: "json",
-    success: function (response) {
-      if (response.success == 1) {
-        $("#controla").val(response.data.Controla);
-        $("#vehiculo").val(response.data.Vehiculo);
-        $("#chofer").val(response.data.NombreChofer);
-        $("#recorrido").val(response.data.Recorrido);
-        $("#km_recorrido").val(response.data.KilometrosRecorridos);
-        $("#km_salida").val(response.data.KilometrosSalida);
-        $("#combustible_salida").val(response.data.CombustibleSalida);
-        // ... continuar con los demás campos
-      } else {
-        $.NotificationApp.send(
-          "Atención",
-          response.msg,
-          "bottom-right",
-          "#fff",
-          "warning",
+    success: function (jsonData) {
+      if (jsonData.success == 1) {
+        const row = jsonData.data;
+
+        if (row.Aliados == "0") {
+          $("#modal_cerrar_orden_label").text("Cerrar Orden Vehículo Propio");
+        } else {
+          $("#modal_cerrar_orden_label").text(
+            "Cerrar Orden Vehículo de Externo",
+          );
+        }
+
+        $("#fecha_alta").val(row.Fecha || "");
+        $("#numero_orden").val(row.NumerodeOrden || "");
+        $("#controla").val(row.Controla || "");
+        $("#vehiculo").val(row.Patente || "");
+        $("#chofer").val(row.NombreChofer || "");
+        $("#acompanante").val(row.NombreChofer2 || "");
+        $("#recorrido").val(row.Recorrido || "");
+        $("#km_segun_recorrido").val(row.Kilometros || "");
+        $("#km_salida").val(row.Kilometros || "");
+        $("#comb_salida").val(row.CombustibleSalida || "");
+
+        $("#fecha_retorno").val(
+          row.FechaRetorno && row.FechaRetorno !== "0000-00-00"
+            ? row.FechaRetorno
+            : "",
         );
+
+        $("#hora_retorno").val(
+          row.HoraRetorno && row.HoraRetorno !== "00:00:00"
+            ? row.HoraRetorno
+            : "",
+        );
+
+        $("#km_regreso").val(row.KilometrosRegreso || "");
+        $("#cargo_combustible").val(row.CargaLitros || "");
+        $("#tanque_combustible").val(row.CombustibleRegreso || "Vacio");
+        $("#observaciones").val(row.Observaciones || "");
+
+        if (parseInt(row.Aliados || 0, 10) === 0) {
+          $("#bloque_mantenimiento_wrapper").show();
+        } else {
+          $("#bloque_mantenimiento_wrapper").hide();
+        }
+
+        $("#generar_mantenimiento_hidden").val("0");
+        $("#mant_titulo_hidden").val("");
+        $("#mant_notas_hidden").val("");
+        $("#mant_prioridad_hidden").val("");
+        $("#mant_estado_hidden").val("");
+        $("#resumen_mantenimiento").addClass("d-none");
+        $("#resumen_mantenimiento_texto").text("");
+        setCamposObligatoriosCierre(row.Aliados);
+
+        $("#modal_cerrar_orden").modal("show");
+      } else {
+        toast("error", "Error", jsonData.msg || "No se pudo abrir la orden");
       }
-    },
-    error: function () {
-      $.NotificationApp.send(
-        "Error",
-        "No se pudo consultar la orden",
-        "bottom-right",
-        "#fff",
-        "danger",
-      );
     },
   });
 }
+
 $(document).ready(function () {
   var today = new Date();
 
@@ -774,4 +801,208 @@ $(document).on("click", "#btn_edit_recorrido", function () {
       .removeClass("mdi-check text-success")
       .addClass("mdi-pencil text-warning");
   }
+});
+
+$(document).on("submit", "#form_cerrar_orden", function (e) {
+  e.preventDefault();
+  const form = this;
+
+  if (!form.checkValidity()) {
+    form.reportValidity();
+    return;
+  }
+
+  const numeroOrden = $("#numero_orden").val();
+  const vehiculo = $("#vehiculo").val();
+  const recorrido = $("#recorrido").val();
+
+  const acompanante = $("#acompanante").val();
+  const fechaRetorno = $("#fecha_retorno").val();
+  const horaRetorno = $("#hora_retorno").val();
+  const kmRegreso = $("#km_regreso").val() || 0;
+
+  const cargoCombustible = $("#cargo_combustible").val() || 0;
+  const tanqueCombustible = $("#tanque_combustible").val();
+  const observaciones = $("#observaciones").val();
+  const nombreChofer = $("#chofer").val();
+
+  if (!numeroOrden) {
+    toast("error", "Error", "No se encontró el número de orden.");
+    return;
+  }
+
+  $.ajax({
+    url: "Proceso/php/ordenes.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      CerrarOrdenGuardar: 1,
+      numero_orden: numeroOrden,
+      vehiculo: vehiculo,
+      recorrido: recorrido,
+      acompanante: acompanante,
+      fecha_retorno: fechaRetorno,
+      hora_retorno: horaRetorno,
+      km_regreso: kmRegreso,
+      cargo_combustible: cargoCombustible,
+      tanque_combustible: tanqueCombustible,
+      observaciones: observaciones,
+      nombre_chofer: nombreChofer,
+    },
+    success: function (jsonData) {
+      if (jsonData.success == 1) {
+        toast("success", "Éxito", "Orden cerrada correctamente.");
+        $("#modal_cerrar_orden").modal("hide");
+
+        if ($.fn.DataTable.isDataTable("#ordenes")) {
+          $("#ordenes").DataTable().ajax.reload(null, false);
+        }
+      } else {
+        toast(
+          "error",
+          "Error",
+          jsonData.message || "No se pudo cerrar la orden.",
+        );
+      }
+    },
+    error: function (xhr) {
+      console.error(xhr.responseText);
+      toast("error", "Error", "Falló la comunicación con el servidor.");
+    },
+  });
+});
+
+function marcarLabelObligatorio(selectorLabel, obligatorio) {
+  const $lbl = $(selectorLabel);
+  const textoBase = $lbl
+    .text()
+    .replace(/\s*\*$/, "")
+    .trim();
+  $lbl.html(
+    obligatorio ? `${textoBase} <span class="text-danger">*</span>` : textoBase,
+  );
+}
+
+function setCamposObligatoriosCierre(aliados) {
+  $("#acompanante").prop("required", false);
+  $("#fecha_retorno").prop("required", false);
+  $("#hora_retorno").prop("required", false);
+  $("#km_regreso").prop("required", false);
+  $("#cargo_combustible").prop("required", false);
+  $("#tanque_combustible").prop("required", false);
+  $("#observaciones").prop("required", false);
+
+  marcarLabelObligatorio("#lbl_acompanante", false);
+  marcarLabelObligatorio("#lbl_fecha_retorno", false);
+  marcarLabelObligatorio("#lbl_hora_retorno", false);
+  marcarLabelObligatorio("#lbl_km_regreso", false);
+  marcarLabelObligatorio("#lbl_cargo_combustible", false);
+  marcarLabelObligatorio("#lbl_tanque_combustible", false);
+  marcarLabelObligatorio("#lbl_observaciones", false);
+
+  aliados = parseInt(aliados || 0, 10);
+
+  if (aliados === 1) {
+    $("#fecha_retorno").prop("required", true);
+    $("#hora_retorno").prop("required", true);
+
+    marcarLabelObligatorio("#lbl_fecha_retorno", true);
+    marcarLabelObligatorio("#lbl_hora_retorno", true);
+  } else {
+    $("#fecha_retorno").prop("required", true);
+    $("#hora_retorno").prop("required", true);
+    $("#km_regreso").prop("required", true);
+    $("#cargo_combustible").prop("required", true);
+    $("#tanque_combustible").prop("required", true);
+    $("#observaciones").prop("required", true);
+
+    marcarLabelObligatorio("#lbl_fecha_retorno", true);
+    marcarLabelObligatorio("#lbl_hora_retorno", true);
+    marcarLabelObligatorio("#lbl_km_regreso", true);
+    marcarLabelObligatorio("#lbl_cargo_combustible", true);
+    marcarLabelObligatorio("#lbl_tanque_combustible", true);
+    marcarLabelObligatorio("#lbl_observaciones", true);
+  }
+}
+function setCamposMantenimientoObligatorios(obligatorio) {
+  $("#mant_titulo").prop("required", obligatorio);
+  $("#mant_prioridad").prop("required", obligatorio);
+  $("#mant_notas").prop("required", obligatorio);
+
+  marcarLabelObligatorio("#lbl_mant_titulo", obligatorio);
+  marcarLabelObligatorio("#lbl_mant_prioridad", obligatorio);
+  marcarLabelObligatorio("#lbl_mant_notas", obligatorio);
+}
+
+$(document).on("click", "#btn_abrir_mantenimiento", function () {
+  $("#mant_dominio").val($("#vehiculo").val() || "");
+  $("#mant_orden").val($("#numero_orden").val() || "");
+  $("#mant_nombre_chofer").val($("#chofer").val() || "");
+
+  $("#mant_titulo").val($("#mant_titulo_hidden").val() || "");
+  $("#mant_notas").val($("#mant_notas_hidden").val() || "");
+  $("#mant_prioridad").val($("#mant_prioridad_hidden").val() || "");
+  $("#mant_estado").val($("#mant_estado_hidden").val() || "Pendiente");
+
+  $("#modal_mantenimiento").modal("show");
+});
+
+$(document).on("click", "#btn_guardar_datos_mantenimiento", function () {
+  const titulo = $("#mant_titulo").val().trim();
+  const prioridad = $("#mant_prioridad").val().trim();
+  const estado = $("#mant_estado").val().trim();
+  const notas = $("#mant_notas").val().trim();
+  const dominio = $("#mant_dominio").val().trim();
+  const orden = $("#mant_orden").val().trim();
+  const nombreChofer = $("#mant_nombre_chofer").val().trim();
+
+  if (!titulo || !prioridad || !notas) {
+    toast("error", "Error", "Completá título, prioridad y notas.");
+    return;
+  }
+
+  if ($("#mantenimiento_creado").val() == "1") {
+    toast("warning", "Atención", "La ficha de mantenimiento ya fue creada.");
+    return;
+  }
+
+  $.ajax({
+    url: "Proceso/php/ordenes.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      GuardarMantenimientoManual: 1,
+      dominio: dominio,
+      orden: orden,
+      nombre_chofer: nombreChofer,
+      titulo: titulo,
+      prioridad: prioridad,
+      estado: estado,
+      notas: notas,
+    },
+    success: function (resp) {
+      if (resp.success == 1) {
+        $("#mantenimiento_creado").val("1");
+        $("#mantenimiento_id").val(resp.id || "");
+
+        $("#resumen_mantenimiento_texto").html(
+          `Ficha creada: <b>${titulo}</b> | ${prioridad} | ${estado}`,
+        );
+        $("#resumen_mantenimiento").removeClass("d-none");
+
+        $("#modal_mantenimiento").modal("hide");
+        toast(
+          "success",
+          "Éxito",
+          "Ficha de mantenimiento creada correctamente.",
+        );
+      } else {
+        toast("error", "Error", resp.message || "No se pudo crear la ficha.");
+      }
+    },
+    error: function (xhr) {
+      console.error(xhr.responseText);
+      toast("error", "Error", "Falló la comunicación con el servidor.");
+    },
+  });
 });
