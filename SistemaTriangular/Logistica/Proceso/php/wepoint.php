@@ -437,17 +437,6 @@ function wepoint_get_bulto_estado(string $token, int $idWe): array
 
 
 
-
-
-
-
-
-
-
-
-
-
-
 /** ===========================================================
  * CREAR EGRESO EN WEPOINT: envía id_bulto (id_wepoint) para generar Orden de Egreso
  * POST: CrearEgreso=1, token, NumerodeOrden, ids_bulto[] (opcional), fecha_egreso?, observaciones?, no_referencia?, recorrido?
@@ -987,7 +976,7 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     AND TC.Entregado = 0
     AND TC.Devuelto = 0
     AND TC.Haber = 0
-    AND (CL.wepoint_id = 0 OR CL.wepoint_id IS NULL)
+    AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
     AND TC.NumerodeOrden = ? ;";
 
     // $sql = "SELECT 
