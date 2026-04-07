@@ -1772,11 +1772,12 @@ $("#buscarcliente").change(function () {
     data: dato,
     url: "Procesos/php/funciones.php",
     type: "post",
+    dataType: "json",
     //         beforeSend: function(){
     //         $("#buscando").html("Buscando...");
     //         },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    success: function (jsonData) {
+      // var jsonData = JSON.parse(response);
       if (jsonData.success == "1") {
         document.getElementById("steps").style.display = "flex";
         $("#codigo").val(jsonData.id);
