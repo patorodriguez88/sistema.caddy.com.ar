@@ -207,14 +207,12 @@ if (isset($_POST['TipoDeDocumento'])) {
 if (isset($_POST['TipoDeResponsable'])) {
 
   $BuscarVenta = $mysqli->query("SELECT Codigo,Descripcion FROM AfipTipoDeResponsables");
-  $Rec = $Recorrido['Codigo'];
-  $Rec_label = "Seleccionar Tipo De Responsable";
-  echo '<option value=' . $Rec . '>' . $Rec_label . '</option>';
+
+  echo '<option value="">Seleccionar Tipo De Responsable</option>';
+
   while (($fila = $BuscarVenta->fetch_array(MYSQLI_ASSOC)) != NULL) {
     echo '<option value="' . $fila["Codigo"] . '">' . $fila["Descripcion"] . '</option>';
   }
-  // Liberar resultados
-  // mysql_free_result($BuscarVenta);
 }
 
 if (isset($_POST['RobotRecorrido'])) {

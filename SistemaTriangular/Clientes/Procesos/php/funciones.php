@@ -766,8 +766,8 @@ if (isset($_POST['Datos'])) {
     'sure_perc' => $row['sure_perc'],
     'Observaciones_f' => $Observaciones_f,
     'Colecta' => $row['Colecta'],
-    'TareasAsana' => $row['TareasAsana'],
-    'TareasAsana_gid' => $row['TareasAsana_gid']
+    'TareasAsana' => $row['TareasAsana'] ?? null,
+    'TareasAsana_gid' => $row['TareasAsana_gid'] ?? null
   ));
 }
 

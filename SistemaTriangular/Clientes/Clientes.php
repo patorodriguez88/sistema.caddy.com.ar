@@ -2334,7 +2334,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div class="dropdown float-right">
+                                            <div class="dropdown float-end">
                                                 <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="mdi mdi-dots-vertical"></i>
                                                 </a>
