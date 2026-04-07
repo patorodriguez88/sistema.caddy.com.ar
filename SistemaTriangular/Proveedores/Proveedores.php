@@ -1027,20 +1027,19 @@
                                                             <!-- <h4 class="header-title mt-2">Anticipos: <a class="text-success" id="anticipos_ctacte"></a></h4> -->
                                                             <div class="table-responsive">
                                                                 <table class="table table-centered w-100" id="basic" style="font-size:13px">
-                                                                    <tbody>
-                                                                        <thead>
-                                                                            <tr>
-                                                                                <th>Fecha</th>
-                                                                                <th>Comprobante</th>
-                                                                                <th>Numero</th>
-                                                                                <th>Descripcion</th>
-                                                                                <th>Debe</th>
-                                                                                <th>Haber</th>
-                                                                                <th>Ver</th>
-                                                                                <th>Accion</th>
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Fecha</th>
+                                                                            <th>Comprobante</th>
+                                                                            <th>Numero</th>
+                                                                            <th>Descripcion</th>
+                                                                            <th>Debe</th>
+                                                                            <th>Haber</th>
+                                                                            <th>Ver</th>
+                                                                            <th>Accion</th>
+                                                                        </tr>
+                                                                    </thead>
 
-                                                                            </tr>
-                                                                        </thead>
                                                                     <tbody>
                                                                         <tr>
                                                                             <td></td>
@@ -1053,8 +1052,17 @@
                                                                             <td></td>
                                                                         </tr>
                                                                     </tbody>
+
                                                                     <tfoot>
                                                                         <tr>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th class="text-end">Totales:</th>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th></th>
+                                                                            <th></th>
                                                                         </tr>
                                                                     </tfoot>
                                                                 </table>
