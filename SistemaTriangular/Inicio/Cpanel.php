@@ -56,6 +56,7 @@
                             </div>
                         </div>
                     </div>
+
                     <!-- MODAL VER RECORRIDO GESTYA -->
                     <!-- Full width modal -->
                     <!-- <button  type="button" class="btn btn-primary" data-bs-toggle="modal" data-target="#full-width-modal">Full width Modal</button> -->
@@ -350,26 +351,26 @@
 
                                                     <div class="table-responsive">
                                                         <table class="table table-centered table-nowrap table-hover mb-0" id="tabla_pendientesmapa">
-                                                            <tbody>
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Estado</th>
-                                                                        <th>Numero</th>
-                                                                        <th>Fecha</th>
-                                                                        <th>Codigo</th>
-                                                                        <th>Origen</th>
-                                                                        <th>N Provee.</th>
-                                                                        <th>Destino</th>
-                                                                        <th>Servicio</th>
-                                                                        <th>Recorrido</th>
-                                                                        <th>Bultos</th>
-                                                                        <th>Total</th>
-                                                                        <th>Remito</th>
-                                                                        <th>Rotulo</th>
-                                                                        <th>Seguimiento</th>
-                                                                        <th>Eliminar</th>
-                                                                    </tr>
-                                                            </tbody>
+
+                                                            <thead>
+                                                                <tr>
+                                                                    <th>Estado</th>
+                                                                    <th>Numero</th>
+                                                                    <th>Fecha</th>
+                                                                    <th>Codigo</th>
+                                                                    <th>Origen</th>
+                                                                    <th>N Provee.</th>
+                                                                    <th>Destino</th>
+                                                                    <th>Servicio</th>
+                                                                    <th>Recorrido</th>
+                                                                    <th>Bultos</th>
+                                                                    <th>Total</th>
+                                                                    <th>Remito</th>
+                                                                    <th>Rotulo</th>
+                                                                    <th>Seguimiento</th>
+                                                                    <th>Eliminar</th>
+                                                                </tr>
+                                                            <tbody></tbody>
                                                         </table>
                                                     </div> <!-- end table-responsive-->
                                                 </div> <!-- end card-body-->
@@ -408,15 +409,15 @@
 
                                     <div class="table-responsive">
                                         <table class="table table-centered table-nowrap table-hover mb-0" id="tabla_preventa">
-                                            <tbody>
-                                                <thead class="text-danger">
-                                                    <tr class="bg-danger text-white">
-                                                        <th>Origen</th>
-                                                        <th>Domicilio</th>
-                                                        <th>Cantidad</th>
-                                                        <th>Ver</th>
-                                                    </tr>
-                                            </tbody>
+
+                                            <thead class="text-danger">
+                                                <tr class="bg-danger text-white">
+                                                    <th>Origen</th>
+                                                    <th>Domicilio</th>
+                                                    <th>Cantidad</th>
+                                                    <th>Ver</th>
+                                                </tr>
+                                            <tbody></tbody>
                                         </table>
                                     </div> <!-- end table-responsive-->
                                 </div> <!-- end card-body-->
@@ -424,106 +425,183 @@
                         </div> <!-- end col-->
                     </div>
 
+
                     <div class="row g-3 mb-3">
 
-                        <!-- Envios Simples -->
-                        <div class="col-xl-3 col-lg-6 ">
-                            <div class="card widget-flat h-100">
+                        <!-- PENDIENTES -->
+                        <div class="col-xl-3 col-md-6 d-flex">
+                            <div class="card shadow-sm border-0 h-100 w-100">
                                 <div class="card-body">
-                                    <div class="float-end">
-                                        <i class="mdi mdi-truck-delivery widget-icon bg-success rounded-circle text-white"></i>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="text-muted mb-1 text-uppercase fw-semibold" style="font-size:11px; letter-spacing:.5px;">
+                                                Pendientes
+                                            </h6>
+                                            <h2 class="fw-bold mb-1" id="kpi_pendientes_total">0</h2>
+                                            <div class="text-muted small">
+                                                <span class="badge bg-warning text-dark" id="kpi_pendientes_sin_salir">0 sin salir</span>
+                                                <span class="badge bg-info ms-1" id="kpi_pendientes_en_ruta">0 en ruta</span>
+                                            </div>
+                                        </div>
+                                        <div class="avatar-sm bg-warning bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="ri-time-line text-warning font-22"></i>
+                                        </div>
                                     </div>
-
-                                    <h6 class="text-muted fw-normal mt-0">Envíos Simples</h6>
-
-                                    <h3 class="mt-3 mb-1" id="entregas_dia"></h3>
-
-                                    <span id="entregas_dia_flex" class="badge bg-success text-white me-1"></span>
-                                    <span id="entregas_dia_simple" class="badge bg-warning text-white"></span>
-
-                                    <div class="mt-2">
-                                        <span class="text-muted" id="entregas_mes"></span><br>
-                                        <span id="envios_flex" class="badge bg-success text-white me-1"></span>
-                                        <span id="envios_simple" class="badge bg-warning text-white"></span>
-                                    </div>
-
-                                    <p class="mb-0 text-muted mt-2">
-                                        <span id="entregas_porc_color" class="badge bg-info me-1">
-                                            <i id="entregas_porc"></i>
-                                        </span>
-                                        <span id="entregas_mesant"></span>
-                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Envios Recorridos -->
-                        <div class="col-xl-3 col-lg-6">
-                            <div class="card border h-100">
+                        <!-- EN RUTA -->
+                        <div class="col-xl-3 col-md-6 d-flex">
+                            <div class="card shadow-sm border-0 h-100 w-100">
                                 <div class="card-body">
-                                    <div class="float-end">
-                                        <i class="mdi mdi-truck-delivery widget-icon bg-success rounded-circle text-white"></i>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="text-muted mb-1 text-uppercase fw-semibold" style="font-size:11px; letter-spacing:.5px;">
+                                                En ruta
+                                            </h6>
+                                            <h2 class="fw-bold mb-1" id="kpi_en_ruta_total">0</h2>
+                                            <div class="text-muted small" id="kpi_en_ruta_recorridos">
+                                                0 recorridos activos
+                                            </div>
+                                        </div>
+                                        <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="ri-truck-line text-primary font-22"></i>
+                                        </div>
                                     </div>
-
-                                    <h6 class="text-muted fw-normal mt-0">Envíos Recorridos</h6>
-
-                                    <h3 class="mt-3 mb-2" id="entregasr_dia"></h3>
-
-                                    <p class="mb-0 text-muted">
-                                        <span id="entregasr_porc_color" class="badge bg-info text-white me-1">
-                                            <i id="entregasr_porc"></i>
-                                        </span>
-                                        <span id="entregasr_mesant"></span>
-                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Clientes Activos -->
-                        <div class="col-xl-3 col-lg-6">
-                            <div class="card h-100">
+                        <!-- ENTREGADOS -->
+                        <div class="col-xl-3 col-md-6 d-flex">
+                            <div class="card shadow-sm border-0 h-100 w-100">
                                 <div class="card-body">
-                                    <div class="float-end">
-                                        <i class="mdi mdi-account-multiple widget-icon bg-danger rounded-circle text-white"></i>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="text-muted mb-1 text-uppercase fw-semibold" style="font-size:11px; letter-spacing:.5px;">
+                                                Entregados
+                                            </h6>
+                                            <h2 class="fw-bold mb-1 text-success" id="kpi_entregados_total">0</h2>
+                                            <div class="text-muted small">
+                                                <span class="text-success fw-semibold" id="kpi_entregados_variacion">0%</span> vs ayer
+                                            </div>
+                                        </div>
+                                        <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="ri-checkbox-circle-line text-success font-22"></i>
+                                        </div>
                                     </div>
-
-                                    <h6 class="text-muted fw-normal mt-0">Clientes Activos</h6>
-
-                                    <h3 class="mt-3 mb-2" id="clientes_dia"></h3>
-                                    <span class="text-muted" id="clientes_mes"></span>
-
-                                    <p class="mb-0 text-muted mt-2">
-                                        <span id="clientes_porc_color" class="badge bg-info me-1">
-                                            <i id="clientes_porc"></i>
-                                        </span>
-                                        <span id="clientes_mesant"></span>
-                                    </p>
                                 </div>
                             </div>
                         </div>
 
-                        <!-- Kilometros -->
-                        <div class="col-xl-3 col-lg-6">
-                            <div class="card border-0 shadow-none h-100">
+                        <!-- INCIDENCIAS -->
+                        <div class="col-xl-3 col-md-6 d-flex">
+                            <div class="card shadow-sm border-0 h-100 w-100">
                                 <div class="card-body">
-                                    <div class="float-end">
-                                        <i class="mdi mdi-truck-fast widget-icon bg-danger rounded-circle text-white"></i>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <h6 class="text-muted mb-1 text-uppercase fw-semibold" style="font-size:11px; letter-spacing:.5px;">
+                                                Incidencias
+                                            </h6>
+                                            <h2 class="fw-bold mb-1 text-danger" id="kpi_incidencias_total">0</h2>
+                                            <div class="text-muted small" id="kpi_incidencias_detalle">
+                                                0 ausentes · 0 rechazados · 0 reprog.
+                                            </div>
+                                        </div>
+                                        <div class="avatar-sm bg-danger bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="ri-error-warning-line text-danger font-22"></i>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+
+
+                    <div class="card mt-3 shadow-sm border-0">
+                        <div class="card-body">
+                            <h5 class="mb-3 fw-semibold">Operativo del día</h5>
+
+                            <div class="row text-center">
+
+                                <!-- SIMPLES -->
+                                <div class="col-md-4 border-end">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-muted mb-0">Simples</h6>
+                                        <span class="fw-semibold" id="op_simples_pct_label">0%</span>
                                     </div>
 
-                                    <h6 class="text-muted fw-normal mt-0">Kilómetros Recorridos</h6>
+                                    <h2 class="fw-bold text-warning mt-2" id="op_simples_total">0</h2>
 
-                                    <h3 class="mt-3 mb-2" id="kilometros_dia"></h3>
+                                    <div class="d-flex justify-content-center gap-2 mt-2">
+                                        <span class="badge bg-success" id="op_simples_entregados">0 entregados</span>
+                                        <span class="badge bg-secondary" id="op_simples_pendientes">0 pendientes</span>
+                                    </div>
 
-                                    <p class="mb-0 text-muted">
-                                        <span id="kilometros_porc_color" class="badge bg-info text-white me-1">
-                                            <i id="kilometros_porc"></i>
-                                        </span>
-                                        <span id="kilometros_mesant"></span>
-                                    </p>
+                                    <div class="progress mt-3" style="height:6px;">
+                                        <div class="progress-bar bg-success" id="op_simples_bar_ok" style="width:0%"></div>
+                                        <div class="progress-bar bg-warning" id="op_simples_bar_pend" style="width:100%"></div>
+                                    </div>
+
+                                    <div class="text-end small text-muted mt-1" id="op_simples_pct_text">
+                                        0% completado
+                                    </div>
                                 </div>
+
+                                <!-- FLEX -->
+                                <div class="col-md-4 border-end">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-muted mb-0">Flex</h6>
+                                        <span class="fw-semibold" id="op_flex_pct_label">0%</span>
+                                    </div>
+
+                                    <h2 class="fw-bold text-success mt-2" id="op_flex_total">0</h2>
+
+                                    <div class="d-flex justify-content-center gap-2 mt-2">
+                                        <span class="badge bg-success" id="op_flex_entregados">0 entregados</span>
+                                        <span class="badge bg-secondary" id="op_flex_pendientes">0 pendientes</span>
+                                    </div>
+
+                                    <div class="progress mt-3" style="height:6px;">
+                                        <div class="progress-bar bg-success" id="op_flex_bar_ok" style="width:0%"></div>
+                                        <div class="progress-bar bg-warning" id="op_flex_bar_pend" style="width:100%"></div>
+                                    </div>
+
+                                    <div class="text-end small text-muted mt-1" id="op_flex_pct_text">
+                                        0% completado
+                                    </div>
+                                </div>
+
+                                <!-- MELI -->
+                                <div class="col-md-4">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <h6 class="text-muted mb-0">MELI</h6>
+                                        <span class="fw-semibold" id="op_meli_pct_label">0%</span>
+                                    </div>
+
+                                    <h2 class="fw-bold text-danger mt-2" id="op_meli_total">0</h2>
+
+                                    <div class="d-flex justify-content-center gap-2 mt-2">
+                                        <span class="badge bg-success" id="op_meli_entregados">0 entregados</span>
+                                        <span class="badge bg-secondary" id="op_meli_pendientes">0 pendientes</span>
+                                    </div>
+
+                                    <div class="progress mt-3" style="height:6px;">
+                                        <div class="progress-bar bg-success" id="op_meli_bar_ok" style="width:0%"></div>
+                                        <div class="progress-bar bg-warning" id="op_meli_bar_pend" style="width:100%"></div>
+                                    </div>
+
+                                    <div class="text-end small text-muted mt-1" id="op_meli_pct_text">
+                                        0% completado
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
                     </div>
+
 
                     <!-- end row-->
                     <div class="row">
@@ -577,18 +655,17 @@
                                     </p>
                                     <div class="table-responsive">
                                         <table class="table table-centered table-nowrap table-hover mb-0" id="logistica">
-                                            <tbody>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Color</th>
-                                                        <th>Recorrido</th>
-                                                        <th>Vehiculo</th>
-                                                        <th>Chofer</th>
-                                                        <th>Pendientes</th>
-                                                        <th>Ver</th>
+                                            <thead>
+                                                <tr>
+                                                    <th>Color</th>
+                                                    <th>Recorrido</th>
+                                                    <th>Vehiculo</th>
+                                                    <th>Chofer</th>
+                                                    <th>Pendientes</th>
+                                                    <th>Ver</th>
 
-                                                    </tr>
-                                            </tbody>
+                                                </tr>
+                                            <tbody></tbody>
                                         </table>
                                     </div> <!-- end table-responsive-->
                                 </div> <!-- end card-body-->
@@ -608,18 +685,18 @@
                                     </p>
                                     <div class="table-responsive">
                                         <table class="table table-centered table-nowrap table-hover mb-0" id="logistica1">
-                                            <tbody>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Color</th>
-                                                        <th>Recorrido</th>
-                                                        <th>Zona</th>
-                                                        <th>Pendientes</th>
-                                                        <th>Ver</th>
-                                                        <!-- <th>Cambiar</th> -->
-                                                        <th>Vaciar</th>
-                                                    </tr>
-                                            </tbody>
+
+                                            <thead>
+                                                <tr>
+                                                    <th>Color</th>
+                                                    <th>Recorrido</th>
+                                                    <th>Zona</th>
+                                                    <th>Pendientes</th>
+                                                    <th>Ver</th>
+                                                    <!-- <th>Cambiar</th> -->
+                                                    <th>Vaciar</th>
+                                                </tr>
+                                            <tbody></tbody>
                                         </table>
                                     </div> <!-- end table-responsive-->
                                 </div> <!-- end card-body-->
@@ -637,16 +714,15 @@
 
                                     <div class="table-responsive">
                                         <table class="table table-centered table-nowrap table-hover mb-0" id="flota">
-                                            <tbody>
-                                                <thead>
-                                                    <tr>
-                                                        <th>Marca | Modelo</th>
-                                                        <th>Dominio</th>
-                                                        <th>Año</th>
-                                                        <th>Kilometros</th>
-                                                        <th>Estado</th>
-                                                    </tr>
-                                            </tbody>
+                                            <thead>
+                                                <tr>
+                                                    <th>Marca | Modelo</th>
+                                                    <th>Dominio</th>
+                                                    <th>Año</th>
+                                                    <th>Kilometros</th>
+                                                    <th>Estado</th>
+                                                </tr>
+                                            <tbody></tbody>
                                         </table>
                                     </div> <!-- end table-responsive-->
                                 </div> <!-- end card-body-->
@@ -655,22 +731,8 @@
                     </div>
                 </div>
             </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
         </div>
         <!-- container -->
-
     </div>
     <!-- content -->
 
@@ -679,11 +741,9 @@
     <!-- end Footer -->
 
     </div>
-
     <!-- ============================================================== -->
     <!-- End Page content -->
     <!-- ============================================================== -->
-
     </div>
     <!-- END wrapper -->
 
