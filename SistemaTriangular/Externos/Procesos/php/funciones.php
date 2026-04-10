@@ -1,4 +1,6 @@
 <?php
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
 // Polígono en formato [lng, lat]
@@ -357,10 +359,11 @@ if (isset($_POST['Reporte'])) {
         JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
         JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
         WHERE 
-        Seg.Eliminado = 0 
+                Seg.Eliminado = 0 
         AND ts.Eliminado = 0 
         AND Seg.NumerodeOrden = " . $_POST['NOrden'] . " AND Seg.Visitas<>0
         AND Seg.Estado <>'Retirado del Cliente'
+        AND ts.idPago = 0,
         AND Seg.Usuario = '" . $NombreUsuario . "'");
 
         $ROWS = [];

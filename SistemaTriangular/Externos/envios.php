@@ -582,7 +582,7 @@
                             <div class="card">
                                 <div class="card-body">
                                     <h4 class="header-title mt-2">Listado de Repartidores Externos </h4>
-                                    <div class="text-right">
+                                    <div class="text-end">
                                         <a id="button_liquidaciones" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a></h4>
                                         <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a></h4>
                                         <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
@@ -654,14 +654,14 @@
     <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
 
     <!-- Apex Charts js -->
-    <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+    <!-- <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script> -->
 
     <!-- Vector Map js -->
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <!-- <script src="js/funcionesCpanel.js"></script> -->
     <script src="Procesos/js/funciones.js"></script>
