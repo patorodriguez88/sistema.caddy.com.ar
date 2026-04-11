@@ -363,7 +363,7 @@ if (isset($_POST['Reporte'])) {
         AND ts.Eliminado = 0 
         AND Seg.NumerodeOrden = " . $_POST['NOrden'] . " AND Seg.Visitas<>0
         AND Seg.Estado <>'Retirado del Cliente'
-        AND ts.idPago = 0,
+        AND ts.idPago = 0
         AND Seg.Usuario = '" . $NombreUsuario . "'");
 
         $ROWS = [];
