@@ -776,7 +776,7 @@ function report(a, b, c, d, f) {
         render: function (data, type, row) {
           if (row.Estado == "Entregado al Cliente") {
             var badge = `<span class="badge badge-success text-white">Entregado al Cliente</span>`;
-          } else if (row.Estado == "No se Pudo entregar") {
+          } else if (row.Estado == "No se pudo entregar") {
             badge = `<span class="badge badge-danger text-white">No se Pudo entregar</span>`;
           } else {
             badge = `<span class="badge badge-warning text-white">${row.Estado}</span>`;
