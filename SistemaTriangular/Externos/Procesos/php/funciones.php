@@ -280,43 +280,39 @@ if (isset($_POST['Agregar_externo'])) {
 }
 
 if (isset($_POST['Desempeno'])) {
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-
-
 
     $SQL_EXTERNOS = $mysqli->query("SELECT Usuario FROM usuarios WHERE id='" . $_POST['id'] . "' ");
     $DATO_EXTERNOS = $SQL_EXTERNOS->fetch_array(MYSQLI_ASSOC);
     $NombreUsuario = $DATO_EXTERNOS['Usuario'];
-    $SQL = $mysqli->query("SELECT 
-    Logistica.Rendicion,
-    Logistica.Costo_rendicion,
-    Recorridos.Nombre,
-    Logistica.Fecha,
-    Logistica.Recorrido,
-    Logistica.NumerodeOrden,
-    COUNT(Seguimiento.id)as Total 
-    FROM `Logistica` 
-    JOIN Seguimiento ON Seguimiento.NumerodeOrden=Logistica.NumerodeOrden  
-    JOIN Recorridos ON Recorridos.Numero=Logistica.Recorrido
-    WHERE Logistica.Fecha>='" . $_POST['Desde'] . "' AND Logistica.Fecha<='" . $_POST['Hasta'] . "' 
-    AND Logistica.Eliminado=0 and Logistica.idUsuarioChofer='" . $_POST['id'] . "' 
-    AND Seguimiento.Usuario='" . $NombreUsuario . "' 
-    AND Seguimiento.Eliminado=0 GROUP BY NumerodeOrden");
 
+    $SQL = $mysqli->query("SELECT 
+        Logistica.Rendicion,
+        Logistica.Costo_rendicion,
+        Recorridos.Nombre,
+        Logistica.Fecha,
+        Logistica.Recorrido,
+        Logistica.NumerodeOrden,
+        COUNT(DISTINCT Seguimiento.CodigoSeguimiento) AS Total
+    FROM Logistica
+    JOIN Seguimiento 
+        ON Seguimiento.NumerodeOrden = Logistica.NumerodeOrden
+    JOIN TransClientes 
+        ON TransClientes.CodigoSeguimiento = Seguimiento.CodigoSeguimiento
+    JOIN Recorridos 
+        ON Recorridos.Numero = Logistica.Recorrido
+    WHERE Logistica.Fecha >= '" . $_POST['Desde'] . "'
+    AND Logistica.Fecha <= '" . $_POST['Hasta'] . "'
+    AND Logistica.Eliminado = 0
+    AND Logistica.idUsuarioChofer = '" . $_POST['id'] . "'
+    AND Seguimiento.Usuario = '" . $NombreUsuario . "'
+    AND Seguimiento.Eliminado = 0
+    AND Seguimiento.Visitas <> 0
+    AND Seguimiento.Estado <> 'Retirado del Cliente'
+    AND TransClientes.Eliminado = 0
+    GROUP BY Logistica.NumerodeOrden");
     $ROWS = array();
 
     while ($DATOS_CLIENTES = $SQL->fetch_array(MYSQLI_ASSOC)) {
-
-        //ACTUALIZO LOS CLIENTES
-        if ($DATOS_CLIENTES['VencimientoLicencia'] < date('Y-m-d')) {
-
-            $mysqli->query("UPDATE Empleados SET Inactivo=1 WHERE id='$DATOS_CLIENTES[id]' LIMIT 1");
-        } else {
-
-            $mysqli->query("UPDATE Empleados SET Inactivo=0 WHERE id='$DATOS_CLIENTES[id]' LIMIT 1");
-        }
 
         $ROWS[] = $DATOS_CLIENTES;
     }
