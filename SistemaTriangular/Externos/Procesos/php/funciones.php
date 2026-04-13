@@ -439,19 +439,54 @@ if (isset($_POST['Reporte'])) {
             }
             $stmtTarifa->close();
 
+            // // Tarifa por distancia
+            // if (!$tieneTarifaEspecial) {
+            //     if ($km > 50) $idTarifa = 4;
+            //     elseif ($km > 25) $idTarifa = 3;
+            //     elseif (!$dentro) $idTarifa = 2;
+            //     else $idTarifa = 1;
+            // }
+
+            // $row['Kilometros'] = $km;
+            // $row['DentroAnillo'] = $dentro;
+            // $row['TarifaID'] = $idTarifa;
+            // $row['Precio'] = isset($tarifas[$idTarifa]) ? $tarifas[$idTarifa] : 0;
+            // $row['NombreTarifa'] = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
+
             // Tarifa por distancia
             if (!$tieneTarifaEspecial) {
-                if ($km > 50) $idTarifa = 4;
-                elseif ($km > 25) $idTarifa = 3;
-                elseif (!$dentro) $idTarifa = 2;
-                else $idTarifa = 1;
+                if ($km > 50) {
+                    $idTarifa = 4;
+                } elseif ($km > 25) {
+                    $idTarifa = 3;
+                } elseif (!$dentro) {
+                    $idTarifa = 2;
+                } else {
+                    $idTarifa = 1;
+                }
             }
 
             $row['Kilometros'] = $km;
             $row['DentroAnillo'] = $dentro;
             $row['TarifaID'] = $idTarifa;
-            $row['Precio'] = isset($tarifas[$idTarifa]) ? $tarifas[$idTarifa] : 0;
-            $row['NombreTarifa'] = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
+
+            // Precio base normal
+            $precioBase = isset($tarifas[$idTarifa]) ? floatval($tarifas[$idTarifa]) : 0;
+            $nombreTarifa = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
+
+            // REGLA ESPECIAL CLIENTE 47305:
+            // visitado pero NO entregado = cobrar 50%
+            if (
+                intval($row['ingBrutosOrigen']) === 47305 &&
+                intval($row['Entregado']) !== 1
+            ) {
+                $precioBase = round($precioBase * 0.5, 2);
+                $nombreTarifa .= " (50%)";
+            }
+
+            $row['Precio'] = $precioBase;
+            $row['NombreTarifa'] = $nombreTarifa;
+
 
             if (intval($row['Entregado']) === 1) {
                 // Obtener porcentaje de la tarifa 7
