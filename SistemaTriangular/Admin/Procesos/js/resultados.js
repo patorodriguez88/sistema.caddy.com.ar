@@ -21,6 +21,45 @@
       })
     );
   }
+  function formatearMoneda(valor) {
+    valor = parseFloat(valor || 0);
+    return (
+      "$ " +
+      valor.toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
+  }
+
+  function formatearPorcentaje(valor) {
+    if (valor === null || valor === undefined || isNaN(valor)) return "—";
+    return (
+      Number(valor).toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }) + "%"
+    );
+  }
+
+  function calcularRentabilidad(pagado, cobrado) {
+    pagado = parseFloat(pagado);
+    cobrado = parseFloat(cobrado);
+
+    if (isNaN(cobrado) || cobrado === 0) return null;
+    if (isNaN(pagado)) pagado = 0;
+
+    return ((cobrado - pagado) / cobrado) * 100;
+  }
+
+  function claseResultado(valor) {
+    valor = parseFloat(valor);
+    if (isNaN(valor)) return "text-muted";
+    if (valor > 0) return "text-success";
+    if (valor < 0) return "text-danger";
+    return "text-muted";
+  }
+
   function actualizarResumenTabla() {
     if (!dt) return;
 
@@ -41,13 +80,34 @@
       if (!isNaN(diferencia)) totalDiferencia += diferencia;
     });
 
+    const rentabilidadTotal = calcularRentabilidad(totalPagado, totalCobrado);
+    const clase = claseResultado(totalDiferencia);
+
     $("#card_total_pagado").text(formatearMoneda(totalPagado));
     $("#card_total_cobrado").text(formatearMoneda(totalCobrado));
-    $("#card_total_diferencia").text(formatearMoneda(totalDiferencia));
+
+    $("#card_total_diferencia")
+      .removeClass("text-success text-danger text-muted")
+      .addClass(clase)
+      .text(formatearMoneda(totalDiferencia));
+
+    $("#card_total_rentabilidad_pct")
+      .removeClass("text-success text-danger text-muted")
+      .addClass(clase)
+      .text(formatearPorcentaje(rentabilidadTotal));
 
     $("#total_pagado").text(formatearMoneda(totalPagado));
     $("#total_cobrado").text(formatearMoneda(totalCobrado));
-    $("#total_diferencia").text(formatearMoneda(totalDiferencia));
+
+    $("#total_diferencia")
+      .removeClass("text-success text-danger text-muted")
+      .addClass(clase)
+      .text(formatearMoneda(totalDiferencia));
+
+    $("#total_rentabilidad_pct")
+      .removeClass("text-success text-danger text-muted")
+      .addClass(clase)
+      .text(formatearPorcentaje(rentabilidadTotal));
   }
   function dmy(iso) {
     if (!iso) return "";
@@ -204,33 +264,46 @@
         // Montos con formato $ y 2 decimales
         {
           data: "PrecioCobrado_SinIVA",
-          render: $.fn.dataTable.render.number(",", ".", 2, "$ "),
+          render: function (data, type, row) {
+            if (type !== "display") return data;
+            return formatearMoneda(data);
+          },
         },
-
         {
           data: "PrecioPagado_SinIVA",
-          render: $.fn.dataTable.render.number(",", ".", 2, "$ "),
+          render: function (data, type, row) {
+            if (type !== "display") return data;
+            return formatearMoneda(data);
+          },
         },
         {
           data: "Diferencia_SinIVA",
-          render: $.fn.dataTable.render.number(",", ".", 2, "$ "),
-        },
+          render: function (data, type, row) {
+            if (type !== "display") return data;
 
-        // FechaComprobante
-        // {
-        //   data: "FechaComprobante",
-        //   render: function (data, type, row) {
-        //     if (!data) return "";
-        //     if (type === "display" || type === "filter") {
-        //       return (
-        //         '<span style="display:none;">' + data + "</span>" + dmy(data)
-        //       );
-        //     }
-        //     return data;
-        //   },
-        // },
-        // { data: "NumeroComprobante" },
-        // { data: "IdEmpleado" },
+            const valor = parseFloat(data);
+            const clase = claseResultado(valor);
+
+            return `<span class="${clase} fw-semibold">${formatearMoneda(valor)}</span>`;
+          },
+        },
+        {
+          data: null,
+          title: "Rentab. %",
+          render: function (data, type, row) {
+            const pagado = parseFloat(row.PrecioPagado_SinIVA);
+            const cobrado = parseFloat(row.PrecioCobrado_SinIVA);
+            const pct = calcularRentabilidad(pagado, cobrado);
+
+            if (type !== "display") {
+              return pct === null ? "" : pct;
+            }
+
+            const clase = claseResultado(row.Diferencia_SinIVA);
+
+            return `<span class="${clase} fw-semibold">${formatearPorcentaje(pct)}</span>`;
+          },
+        },
       ],
       dom: "Bfrtip",
       buttons: [

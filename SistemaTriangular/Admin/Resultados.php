@@ -109,8 +109,9 @@
                                 <div class="col-md-4">
                                     <div class="card border shadow-sm h-100">
                                         <div class="card-body">
-                                            <h6 class="text-muted mb-1">Diferencia s/IVA</h6>
-                                            <h4 id="card_total_diferencia" class="mb-0">$ 0,00</h4>
+                                            <h6 class="text-muted mb-1">Rentabilidad s/IVA</h6>
+                                            <h4 id="card_total_diferencia" class="mb-1">$ 0,00</h4>
+                                            <div id="card_total_rentabilidad_pct" class="fw-semibold">0,00%</div>
                                         </div>
                                     </div>
                                 </div>
@@ -127,18 +128,11 @@
                                                     <th>Fecha</th>
                                                     <th>NombreCliente</th>
                                                     <th>CodigoSeguimiento</th>
-                                                    <!-- <th>CodigoProveedor</th> -->
-
-                                                    <!-- <th>Wepoint_f</th> -->
                                                     <th>Estado</th>
-                                                    <!-- <th>Facturado</th> -->
                                                     <th>PrecioCobrado (s/IVA)</th>
                                                     <th>PrecioPagado (s/IVA)</th>
-
                                                     <th>Diferencia (s/IVA)</th>
-                                                    <!-- <th>FechaComprobante</th> -->
-                                                    <!-- <th>NumeroComprobante</th> -->
-                                                    <!-- <th>IdEmpleado</th> -->
+                                                    <th>Rentab. %</th>
                                                 </tr>
                                             </thead>
                                             <tbody></tbody>
@@ -149,7 +143,12 @@
                                             <div class="d-flex justify-content-end gap-4 flex-wrap border-top pt-3">
                                                 <div><strong>Total Cobrado s/IVA:</strong> <span id="total_cobrado">$ 0,00</span></div>
                                                 <div><strong>Total Pagado s/IVA:</strong> <span id="total_pagado">$ 0,00</span></div>
-                                                <div><strong>Total Diferencia s/IVA:</strong> <span id="total_diferencia">$ 0,00</span></div>
+
+                                                <div>
+                                                    <strong>Total Diferencia s/IVA:</strong>
+                                                    <span id="total_diferencia">$ 0,00</span>
+                                                    <span id="total_rentabilidad_pct" class="ms-2 fw-semibold">0,00%</span>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
