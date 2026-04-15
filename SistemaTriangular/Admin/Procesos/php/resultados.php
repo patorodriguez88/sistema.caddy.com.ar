@@ -23,67 +23,122 @@ if ($Inicio === '' || $Final === '') {
 }
 
 // --------- Cargar clientes (distinct) ----------
+// if ($action === 'clientes') {
+//     $sql = "SELECT DISTINCT ingBrutosOrigen AS CodigoProveedor 
+//           FROM TransClientes
+//           WHERE Eliminado=0 AND Fecha>=? AND Fecha<=?
+//           ORDER BY CodigoProveedor";
+//     if (!($stmt = $mysqli->prepare($sql))) jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
+//     $stmt->bind_param('ss', $Inicio, $Final);
+//     if (!$stmt->execute()) jexit(['ok' => false, 'error' => 'Execute failed: ' . $stmt->error]);
+//     $res = $stmt->get_result();
+//     $clientes = array();
+
+//     while ($r = $res->fetch_assoc()) {
+//         if ($r['CodigoProveedor'] !== null && $r['CodigoProveedor'] !== '') {
+//             $clientes[] = $r['CodigoProveedor'];
+//         }
+//     }
+//     $stmt->close();
+//     jexit(['ok' => true, 'clientes' => $clientes]);
+// }
+
 if ($action === 'clientes') {
-    $sql = "SELECT DISTINCT ingBrutosOrigen AS CodigoProveedor 
-          FROM TransClientes
-          WHERE Eliminado=0 AND Fecha>=? AND Fecha<=?
-          ORDER BY CodigoProveedor";
-    if (!($stmt = $mysqli->prepare($sql))) jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
+    $sql = "
+        SELECT DISTINCT
+            TS.ingBrutosOrigen AS CodigoProveedor,
+            CONCAT(C.nombrecliente, ' (', TS.ingBrutosOrigen, ')') AS Nombre
+        FROM TransClientes TS
+        LEFT JOIN Clientes C ON C.id = TS.ingBrutosOrigen
+        WHERE TS.Eliminado = 0
+          AND TS.Fecha >= ?
+          AND TS.Fecha <= ?
+          AND TS.ingBrutosOrigen <> ''
+        ORDER BY C.nombrecliente ASC
+    ";
+
+    if (!($stmt = $mysqli->prepare($sql))) {
+        jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
+    }
+
     $stmt->bind_param('ss', $Inicio, $Final);
-    if (!$stmt->execute()) jexit(['ok' => false, 'error' => 'Execute failed: ' . $stmt->error]);
+
+    if (!$stmt->execute()) {
+        jexit(['ok' => false, 'error' => 'Execute failed: ' . $stmt->error]);
+    }
+
     $res = $stmt->get_result();
     $clientes = array();
+
     while ($r = $res->fetch_assoc()) {
-        if ($r['CodigoProveedor'] !== null && $r['CodigoProveedor'] !== '') {
-            $clientes[] = $r['CodigoProveedor'];
-        }
+        $clientes[] = array(
+            'CodigoProveedor' => $r['CodigoProveedor'],
+            'Nombre' => $r['Nombre'] ? $r['Nombre'] : ('Cliente ' . $r['CodigoProveedor'])
+        );
     }
+
     $stmt->close();
     jexit(['ok' => true, 'clientes' => $clientes]);
 }
 
 // --------- Listar datos ----------
 if ($action === 'listar') {
-    $clientes = isset($_POST['clientes']) ? $_POST['clientes'] : array();
+    // $clientes = isset($_POST['clientes']) ? $_POST['clientes'] : array();
+    // $filtroClientes = '';
+    // $params = array($Inicio, $Final);
+    // $types  = 'ss';
+
+    // if (is_array($clientes) && count($clientes) > 0) {
+    //     // construir IN dinámico
+    //     $place = array_fill(0, count($clientes), '?');
+    //     $filtroClientes = " AND TS.ingBrutosOrigen IN (" . implode(',', $place) . ") ";
+    //     foreach ($clientes as $c) {
+    //         $params[] = $c;
+    //         $types .= 's';
+    //     }
+    // }
+    $cliente = isset($_POST['cliente']) ? trim($_POST['cliente']) : '';
     $filtroClientes = '';
     $params = array($Inicio, $Final);
     $types  = 'ss';
 
-    if (is_array($clientes) && count($clientes) > 0) {
-        // construir IN dinámico
-        $place = array_fill(0, count($clientes), '?');
-        $filtroClientes = " AND TS.ingBrutosOrigen IN (" . implode(',', $place) . ") ";
-        foreach ($clientes as $c) {
-            $params[] = $c;
-            $types .= 's';
-        }
+    if ($cliente !== '') {
+        $filtroClientes = " AND TS.ingBrutosOrigen = ? ";
+        $params[] = $cliente;
+        $types .= 's';
     }
-
     $sql = "
     SELECT 
       TS.Fecha,
       TS.CodigoSeguimiento,
       TS.CodigoProveedor,
+      C.nombrecliente AS NombreCliente,
       TS.Wepoint_f,
       TS.Entregado,
       TS.Devuelto,
       TS.Facturado,
       TS.NumeroF,
-      IFNULL(ER.PrecioPagado,0)  AS PrecioPagado_SinIVA,
-      IFNULL(ER.PrecioCobrado,0) AS PrecioCobrado_SinIVA,
-      (IFNULL(ER.PrecioCobrado,0) - IFNULL(ER.PrecioPagado,0)) / 1.21 AS Diferencia_SinIVA,
+      ER.PrecioPagado  AS PrecioPagado_SinIVA,
+        ER.PrecioCobrado AS PrecioCobrado_SinIVA,
+        CASE 
+            WHEN ER.PrecioCobrado IS NOT NULL OR ER.PrecioPagado IS NOT NULL
+            THEN (IFNULL(ER.PrecioCobrado,0) - IFNULL(ER.PrecioPagado,0)) / 1.21
+            ELSE NULL
+        END AS Diferencia_SinIVA,
       ER.FechaComprobante,
       ER.NumeroComprobante,
       ER.IdEmpleado
     FROM TransClientes AS TS
     LEFT JOIN Externos_rendicion AS ER 
       ON TS.CodigoSeguimiento = ER.CodigoSeguimiento
+    LEFT JOIN Clientes AS C
+      ON C.id = TS.ingBrutosOrigen
     WHERE TS.Eliminado=0
       AND TS.Fecha>=?
       AND TS.Fecha<=?
       $filtroClientes
     ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
-  ";
+    ";
 
     if (!($stmt = $mysqli->prepare($sql))) {
         jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);

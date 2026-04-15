@@ -73,22 +73,44 @@
                                             <input type="date" id="fhasta" class="form-control">
                                         </div>
                                         <div class="col-sm-4">
-                                            <label class="form-label d-flex justify-content-between align-items-center">
-                                                <span>Clientes (CódigoProveedor)</span>
-                                                <span class="form-check">
-                                                    <input class="form-check-input" type="checkbox" id="chkTodos">
-                                                    <label class="form-check-label" for="chkTodos">Todos</label>
-                                                </span>
-                                            </label>
-                                            <div id="wrapClientes" class="clientes-box">
-                                                <!-- JS inyecta checklist -->
-                                                <div class="text-muted small">Cargando clientes…</div>
-                                            </div>
+                                            <label class="form-label">Cliente</label>
+                                            <select id="fcliente" class="form-control">
+                                                <option value="">Todos los clientes</option>
+                                            </select>
                                         </div>
                                         <div class="col-sm-2 text-end">
                                             <button class="btn btn-primary w-100" id="btnBuscar">
                                                 <i class="mdi mdi-magnify"></i> Buscar
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="row g-3 mb-3" id="cardsTotales">
+                                <div class="col-md-4">
+                                    <div class="card border shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="text-muted mb-1">Total Cobrado s/IVA</h6>
+                                            <h4 id="card_total_cobrado" class="mb-0">$ 0,00</h4>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="card border shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="text-muted mb-1">Total Pagado s/IVA</h6>
+                                            <h4 id="card_total_pagado" class="mb-0">$ 0,00</h4>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="col-md-4">
+                                    <div class="card border shadow-sm h-100">
+                                        <div class="card-body">
+                                            <h6 class="text-muted mb-1">Diferencia s/IVA</h6>
+                                            <h4 id="card_total_diferencia" class="mb-0">$ 0,00</h4>
                                         </div>
                                     </div>
                                 </div>
@@ -99,25 +121,37 @@
 
                                 <div class="card-body" style="background-color: #f8f9fa;">
                                     <div class="table-responsive">
-                                        <table id="tablaResultados" class="table table-striped table-bordered w-100 table-sm" style="font-size: 0.85rem;">
+                                        <table id="tablaResultados" class="table table-striped table-bordered w-100 table-sm mt-2" style="font-size: 0.85rem;">
                                             <thead>
                                                 <tr>
                                                     <th>Fecha</th>
+                                                    <th>NombreCliente</th>
                                                     <th>CodigoSeguimiento</th>
-                                                    <th>CodigoProveedor</th>
-                                                    <th>Wepoint_f</th>
+                                                    <!-- <th>CodigoProveedor</th> -->
+
+                                                    <!-- <th>Wepoint_f</th> -->
                                                     <th>Estado</th>
-                                                    <th>Facturado</th>
-                                                    <th>PrecioPagado (s/IVA)</th>
+                                                    <!-- <th>Facturado</th> -->
                                                     <th>PrecioCobrado (s/IVA)</th>
+                                                    <th>PrecioPagado (s/IVA)</th>
+
                                                     <th>Diferencia (s/IVA)</th>
-                                                    <th>FechaComprobante</th>
-                                                    <th>NumeroComprobante</th>
-                                                    <th>IdEmpleado</th>
+                                                    <!-- <th>FechaComprobante</th> -->
+                                                    <!-- <th>NumeroComprobante</th> -->
+                                                    <!-- <th>IdEmpleado</th> -->
                                                 </tr>
                                             </thead>
                                             <tbody></tbody>
                                         </table>
+                                    </div>
+                                    <div class="row mt-3">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-end gap-4 flex-wrap border-top pt-3">
+                                                <div><strong>Total Cobrado s/IVA:</strong> <span id="total_cobrado">$ 0,00</span></div>
+                                                <div><strong>Total Pagado s/IVA:</strong> <span id="total_pagado">$ 0,00</span></div>
+                                                <div><strong>Total Diferencia s/IVA:</strong> <span id="total_diferencia">$ 0,00</span></div>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -159,7 +193,7 @@
     <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
 
     <!-- Apex Charts js -->
-    <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+    <!-- <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script> -->
 
     <!-- Vector Map js -->
     <?php include '../Menu/php/script_maps-vector.php'; ?>

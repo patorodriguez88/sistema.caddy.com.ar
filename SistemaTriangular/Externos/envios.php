@@ -583,8 +583,8 @@
                                 <div class="card-body">
                                     <h4 class="header-title mt-2">Listado de Repartidores Externos </h4>
                                     <div class="text-end">
-                                        <a id="button_liquidaciones" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a></h4>
-                                        <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a></h4>
+                                        <a id="button_liquidaciones" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
+                                        <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
                                         <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
                                         <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
                                         <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
@@ -596,23 +596,24 @@
                                         </div><!-- end col-->
                                     </div>
 
-                                    <table class="table table-striped table-centered mb-0" id="externos" style="font-size:12px">
-                                        <thead>
-                                            <tr>
-                                                <th>id</th>
-                                                <th>Nombre|Vehiculo</th>
-                                                <th>Documento</th>
-                                                <th>Telefono</th>
-                                                <th>Alta</th>
-                                                <th>Venc.Licencia</th>
-                                                <th>Observaciones</th>
-                                                <th>Estado</th>
-                                                <th>Accion</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                        </tbody>
-                                    </table>
+                                    <div class="table-responsive">
+                                        <table class="table table-striped table-centered mb-0 w-100" id="externos" style="font-size:12px">
+                                            <thead>
+                                                <tr>
+                                                    <th>id</th>
+                                                    <th>Nombre|Vehiculo</th>
+                                                    <th>Documento</th>
+                                                    <th>Telefono</th>
+                                                    <th>Alta</th>
+                                                    <th>Venc.Licencia</th>
+                                                    <th>Observaciones</th>
+                                                    <th>Estado</th>
+                                                    <th>Accion</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -660,13 +661,10 @@
     <?php include '../Menu/php/script_maps-vector.php'; ?>
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
-    <!-- Dashboard App js -->
-    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <!-- <script src="js/funcionesCpanel.js"></script> -->
     <script src="Procesos/js/funciones.js"></script>
     <script src="../Menu/js/funciones.js"></script>
-    <!-- <script src="js/mapa_inicio.js"></script> -->
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 

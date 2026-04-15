@@ -11,7 +11,44 @@
     $("#fdesde").val(first.toISOString().slice(0, 10));
     $("#fhasta").val(last.toISOString().slice(0, 10));
   }
+  function formatearMoneda(valor) {
+    valor = parseFloat(valor || 0);
+    return (
+      "$ " +
+      valor.toLocaleString("es-AR", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      })
+    );
+  }
+  function actualizarResumenTabla() {
+    if (!dt) return;
 
+    let totalPagado = 0;
+    let totalCobrado = 0;
+    let totalDiferencia = 0;
+
+    dt.rows({ search: "applied" }).every(function () {
+      const row = this.data();
+      if (!row) return;
+
+      const pagado = parseFloat(row.PrecioPagado_SinIVA);
+      const cobrado = parseFloat(row.PrecioCobrado_SinIVA);
+      const diferencia = parseFloat(row.Diferencia_SinIVA);
+
+      if (!isNaN(pagado)) totalPagado += pagado;
+      if (!isNaN(cobrado)) totalCobrado += cobrado;
+      if (!isNaN(diferencia)) totalDiferencia += diferencia;
+    });
+
+    $("#card_total_pagado").text(formatearMoneda(totalPagado));
+    $("#card_total_cobrado").text(formatearMoneda(totalCobrado));
+    $("#card_total_diferencia").text(formatearMoneda(totalDiferencia));
+
+    $("#total_pagado").text(formatearMoneda(totalPagado));
+    $("#total_cobrado").text(formatearMoneda(totalCobrado));
+    $("#total_diferencia").text(formatearMoneda(totalDiferencia));
+  }
   function dmy(iso) {
     if (!iso) return "";
     // iso: YYYY-MM-DD
@@ -24,9 +61,9 @@
   function cargarClientes() {
     const Inicio = $("#fdesde").val();
     const Final = $("#fhasta").val();
-    $("#wrapClientes").html(
-      '<div class="text-muted small">Cargando clientes…</div>'
-    );
+
+    $("#fcliente").html('<option value="">Cargando clientes...</option>');
+
     $.post(
       "/SistemaTriangular/Admin/Procesos/php/resultados.php",
       {
@@ -36,35 +73,37 @@
       },
       function (json) {
         if (!json || !json.ok) {
-          $("#wrapClientes").html(
-            '<div class="text-danger small">No se pudieron cargar los clientes.</div>'
+          $("#fcliente").html(
+            '<option value="">No se pudieron cargar</option>',
           );
           return;
         }
+
         const list = json.clientes || [];
+        let html = '<option value="">Todos los clientes</option>';
+
         if (!list.length) {
-          $("#wrapClientes").html(
-            '<div class="text-muted small">Sin clientes en el período.</div>'
-          );
-          return;
+          html = '<option value="">Sin clientes en el período</option>';
+        } else {
+          html += list
+            .map(function (cli) {
+              return `<option value="${cli.CodigoProveedor}">${cli.Nombre}</option>`;
+            })
+            .join("");
         }
-        const html = list
-          .map(function (cod) {
-            const id = "cli_" + cod;
-            return `
-          <div class="form-check">
-            <input class="form-check-input chk-cli" type="checkbox" value="${cod}" id="${id}">
-            <label class="form-check-label" for="${id}">${cod}</label>
-          </div>`;
-          })
-          .join("");
-        $("#wrapClientes").html(html);
-        // si está "Todos" marcado, marcar todo
-        if ($("#chkTodos").prop("checked")) {
-          $(".chk-cli").prop("checked", true);
+
+        $("#fcliente").html(html);
+
+        if ($.fn.select2) {
+          $("#fcliente").select2("destroy");
+          $("#fcliente").select2({
+            width: "100%",
+            placeholder: "Buscar cliente...",
+            allowClear: true,
+          });
         }
       },
-      "json"
+      "json",
     );
   }
 
@@ -83,17 +122,12 @@
         data: function (d) {
           const Inicio = $("#fdesde").val();
           const Final = $("#fhasta").val();
-          let clientes = [];
-          if (!$("#chkTodos").prop("checked")) {
-            $(".chk-cli:checked").each(function () {
-              clientes.push($(this).val());
-            });
-          }
+          const cliente = $("#fcliente").val();
           return {
             action: "listar",
             Inicio: Inicio,
             Final: Final,
-            clientes: clientes, // array
+            cliente: cliente,
           };
         },
         dataSrc: function (json) {
@@ -117,21 +151,64 @@
             return data;
           },
         },
+        { data: "NombreCliente" },
         { data: "CodigoSeguimiento" },
-        { data: "CodigoProveedor" },
-        { data: "Wepoint_f" },
-        { data: "Entregado" },
-        { data: "Devuelto" },
-        { data: "Facturado" },
-        { data: "NumeroF" },
+        // { data: "CodigoProveedor" },
+
+        // { data: "Wepoint_f" },
+        {
+          data: null,
+          title: "Estado",
+          render: function (data, type, row) {
+            if (type !== "display") {
+              let estadoEntrega = "";
+              if (parseInt(row.Devuelto) === 1) {
+                estadoEntrega = "Devuelto";
+              } else if (parseInt(row.Entregado) === 1) {
+                estadoEntrega = "Entregado";
+              } else {
+                estadoEntrega = "No Entregado";
+              }
+
+              let estadoFactura =
+                parseInt(row.Facturado) === 1 ? "Facturado" : "No Facturado";
+
+              return estadoEntrega + " " + estadoFactura;
+            }
+
+            let badgeEntrega = "";
+            if (parseInt(row.Devuelto) === 1) {
+              badgeEntrega = '<span class="badge bg-danger">Devuelto</span>';
+            } else if (parseInt(row.Entregado) === 1) {
+              badgeEntrega = '<span class="badge bg-success">Entregado</span>';
+            } else {
+              badgeEntrega =
+                '<span class="badge bg-warning text-dark">No Entregado</span>';
+            }
+
+            let badgeFactura =
+              parseInt(row.Facturado) === 1
+                ? '<span class="badge bg-info">Facturado</span>'
+                : '<span class="badge bg-secondary">No Facturado</span>';
+
+            return `
+              <div class="d-flex flex-column gap-1">
+                <div>${badgeEntrega}</div>
+                <div>${badgeFactura}</div>
+              </div>
+            `;
+          },
+        },
+        // { data: "NumeroF" },
 
         // Montos con formato $ y 2 decimales
         {
-          data: "PrecioPagado_SinIVA",
+          data: "PrecioCobrado_SinIVA",
           render: $.fn.dataTable.render.number(",", ".", 2, "$ "),
         },
+
         {
-          data: "PrecioCobrado_SinIVA",
+          data: "PrecioPagado_SinIVA",
           render: $.fn.dataTable.render.number(",", ".", 2, "$ "),
         },
         {
@@ -140,39 +217,42 @@
         },
 
         // FechaComprobante
-        {
-          data: "FechaComprobante",
-          render: function (data, type, row) {
-            if (!data) return "";
-            if (type === "display" || type === "filter") {
-              return (
-                '<span style="display:none;">' + data + "</span>" + dmy(data)
-              );
-            }
-            return data;
-          },
-        },
-        { data: "NumeroComprobante" },
-        { data: "IdEmpleado" },
+        // {
+        //   data: "FechaComprobante",
+        //   render: function (data, type, row) {
+        //     if (!data) return "";
+        //     if (type === "display" || type === "filter") {
+        //       return (
+        //         '<span style="display:none;">' + data + "</span>" + dmy(data)
+        //       );
+        //     }
+        //     return data;
+        //   },
+        // },
+        // { data: "NumeroComprobante" },
+        // { data: "IdEmpleado" },
       ],
       dom: "Bfrtip",
       buttons: [
         {
           extend: "excelHtml5",
-          text: '<i class="mdi mdi-file-excel"></i> Exportar Excel',
-          className: "btn btn-success btn-sm",
-          title: "Resultados_TransClientes_vs_Externos",
+          text: '<i class="mdi mdi-file-excel-outline"></i> Exportar Excel',
+          className: "btn btn-success btn-sm ms-0 mt-3",
+          title: "Resultados_Caddy_" + new Date().toISOString().slice(0, 10),
           exportOptions: { columns: ":visible" },
         },
       ],
     });
+    dt.on("draw", function () {
+      actualizarResumenTabla();
+    });
   }
 
   // Eventos
-  $("#chkTodos").on("change", function () {
-    const on = $(this).prop("checked");
-    $(".chk-cli").prop("checked", on);
-  });
+  // $("#chkTodos").on("change", function () {
+  //   const on = $(this).prop("checked");
+  //   $(".chk-cli").prop("checked", on);
+  // });
 
   $("#btnBuscar").on("click", function () {
     if (dt) dt.ajax.reload();

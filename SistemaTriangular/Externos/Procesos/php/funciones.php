@@ -372,7 +372,7 @@ function determinarTipoLiquidacion($row)
     return 'VISITA';
 }
 
-if ($_POST['Envios'] == 1) {
+if (isset($_POST['Envios']) && $_POST['Envios'] === '1') {
 
     if ($_POST['Filtro'] == 'inactivo') {
         $SQL = $mysqli->query("SELECT Empleados.id,Empleados.NombreCompleto,Empleados.Dni,Empleados.Telefono,Empleados.Puesto,Empleados.FechaIngreso,Empleados.VencimientoLicencia,Empleados.Inactivo,Empleados.Observaciones, Vehiculos.Marca,Vehiculos.Modelo,Vehiculos.Dominio,Empleados.Usuario FROM `Empleados` 
@@ -405,7 +405,7 @@ if ($_POST['Envios'] == 1) {
     echo json_encode(array('data' => $ROWS));
 }
 //VER EXTERNO
-if ($_POST['VerExterno'] == 1) {
+if (isset($_POST['VerExterno'])) {
 
     // $SQL=$mysqli->query("SELECT * FROM `Empleados` WHERE id='".$_POST['id']."'");
     $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD FROM `Empleados` INNER JOIN usuarios ON Empleados.Usuario=usuarios.id WHERE Empleados.id='" . $_POST['id'] . "'");
@@ -420,7 +420,7 @@ if ($_POST['VerExterno'] == 1) {
 }
 
 //MODIFICAR EXTERNO
-if ($_POST['ModificarExterno'] == 1) {
+if (isset($_POST['ModificarExterno'])) {
     $VencimientoLic = explode("/", $_POST['licencia'], 3);
     $FechaVencimientoLicencia = $VencimientoLic[2] . '-' . $VencimientoLic[0] . '-' . $VencimientoLic[1];
 
@@ -446,7 +446,7 @@ if ($_POST['ModificarExterno'] == 1) {
 }
 
 //AGREGAR EXTERNO
-if ($_POST['Agregar_externo'] == 1) {
+if (isset($_POST['Agregar_externo'])) {
 
     $FechaHoy = date('Y-m-d');
     $Usuario = $_POST['nombre'];
