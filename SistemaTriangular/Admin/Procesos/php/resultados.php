@@ -108,37 +108,41 @@ if ($action === 'listar') {
         $types .= 's';
     }
     $sql = "
-    SELECT 
-      TS.Fecha,
-      TS.CodigoSeguimiento,
-      TS.CodigoProveedor,
-      C.nombrecliente AS NombreCliente,
-      TS.Wepoint_f,
-      TS.Entregado,
-      TS.Devuelto,
-      TS.Facturado,
-      TS.NumeroF,
-      ER.PrecioPagado  AS PrecioPagado_SinIVA,
-        ER.PrecioCobrado AS PrecioCobrado_SinIVA,
-        CASE 
-            WHEN ER.PrecioCobrado IS NOT NULL OR ER.PrecioPagado IS NOT NULL
-            THEN (IFNULL(ER.PrecioCobrado,0) - IFNULL(ER.PrecioPagado,0)) / 1.21
+        SELECT 
+        TS.Fecha,
+        TS.CodigoSeguimiento,
+        TS.CodigoProveedor,
+        C.nombrecliente AS NombreCliente,
+        TS.Wepoint_f,
+        TS.Entregado,
+        TS.Devuelto,
+        TS.Facturado,
+        TS.NumeroF,
+        ER.TotalPagado AS PrecioPagado_SinIVA,
+        TS.Debe AS PrecioCobrado_SinIVA,
+        CASE
+            WHEN TS.Debe IS NOT NULL OR ER.TotalPagado IS NOT NULL
+            THEN IFNULL(TS.Debe, 0) - IFNULL(ER.TotalPagado, 0)
             ELSE NULL
         END AS Diferencia_SinIVA,
-      ER.FechaComprobante,
-      ER.NumeroComprobante,
-      ER.IdEmpleado
-    FROM TransClientes AS TS
-    LEFT JOIN Externos_rendicion AS ER 
-      ON TS.CodigoSeguimiento = ER.CodigoSeguimiento
-    LEFT JOIN Clientes AS C
-      ON C.id = TS.ingBrutosOrigen
-    WHERE TS.Eliminado=0
-      AND TS.Fecha>=?
-      AND TS.Fecha<=?
-      $filtroClientes
-    ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
-    ";
+        IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones
+        FROM TransClientes AS TS
+        LEFT JOIN (
+            SELECT 
+                CodigoSeguimiento,
+                SUM(IFNULL(PrecioPagado, 0)) AS TotalPagado,
+                COUNT(*) AS CantidadRendiciones
+            FROM Externos_rendicion
+            GROUP BY CodigoSeguimiento
+        ) AS ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+        LEFT JOIN Clientes AS C
+        ON C.id = TS.ingBrutosOrigen
+        WHERE TS.Eliminado = 0
+        AND TS.Fecha >= ?
+        AND TS.Fecha <= ?
+        $filtroClientes
+        ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
+        ";
 
     if (!($stmt = $mysqli->prepare($sql))) {
         jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
