@@ -12,7 +12,42 @@ $("#filtro_todos").click(function () {
   filtro = "todos";
   actualizarTabla();
 });
+function restaurarFilaPrecio(row, $tdPrecio, $tdAccion) {
+  let cobrarHTML = "";
+  if (parseFloat(row.CobrarEnvio || 0) > 0) {
+    cobrarHTML = `<div class="text-primary"><small>+ Cobranza: $${parseFloat(
+      row.CobrarEnvio,
+    ).toFixed(2)}</small></div>`;
+  }
 
+  $tdPrecio.html(`
+    <span>$${parseFloat(row.Precio || 0).toFixed(2)}</span>
+    ${cobrarHTML}
+    ${row.ObservacionManual ? `<br><small class="text-muted">${row.ObservacionManual}</small>` : ""}
+  `);
+
+  $tdAccion.html(`
+    <i class="mdi mdi-pencil editar-tarifa me-2" 
+       data-id="${row.CodigoSeguimiento}" 
+       style="cursor:pointer; color:goldenrod; font-size:18px;" 
+       title="Editar tarifa"></i>
+    ${
+      parseInt(row.Rendido) === 0
+        ? `
+        <i class="mdi mdi-cash-remove no-pagar-tarifa me-2" 
+           data-id="${row.CodigoSeguimiento}" 
+           style="cursor:pointer; color:crimson; font-size:18px;" 
+           title="Marcar como NO PAGAR"></i>
+
+        <i class="mdi mdi-trash-can eliminar-renglon me-2" 
+           data-id="${row.CodigoSeguimiento}" 
+           style="cursor:pointer; color:red; font-size:18px;" 
+           title="Eliminar de esta rendición"></i>
+      `
+        : ""
+    }
+  `);
+}
 // Función para actualizar la tabla con el filtro actualizado
 function actualizarTabla() {
   var datatable_externos = $("#externos").DataTable();
@@ -85,9 +120,6 @@ $(document).on("click", "#imprimir", function () {
 });
 //MUESTRO LA TABLA
 var datatable = $("#externos").DataTable({
-  scrollX: true,
-  autoWidth: false,
-  responsive: false,
   dom: "Bfrtip",
   buttons: ["pageLength", "copy", "excel", "pdf"],
   paging: true,
@@ -719,9 +751,9 @@ function report(a, b, c, d, f) {
   $("#report_fecha").html(c);
   $("#report_recorrido").html(d);
 
-  var datatable = $("#reporte_tabla").DataTable();
-  datatable.destroy();
-
+  if ($.fn.DataTable.isDataTable("#reporte_tabla")) {
+    $("#reporte_tabla").DataTable().clear().destroy();
+  }
   var datatable = $("#reporte_tabla").DataTable({
     paging: false,
     // pageLength: 17,
@@ -740,7 +772,9 @@ function report(a, b, c, d, f) {
       construirResumenPorFecha();
 
       const registros = json.data || [];
-      const hayPendientes = registros.some((row) => parseInt(row.idPago) === 0);
+      const hayPendientes = registros.some(
+        (row) => parseInt(row.Rendido) === 0,
+      );
 
       if (!hayPendientes) {
         $("#generar_liquidacion").hide(); // Oculta el botón
@@ -776,13 +810,13 @@ function report(a, b, c, d, f) {
         render: function (data, type, row) {
           if (row.Estado == "Entregado al Cliente") {
             var badge = `<span class="badge badge-success text-white">Entregado al Cliente</span>`;
-          } else if (row.Estado == "No se Pudo entregar") {
+          } else if (row.Estado == "No se pudo entregar") {
             badge = `<span class="badge badge-danger text-white">No se Pudo entregar</span>`;
           } else {
             badge = `<span class="badge badge-warning text-white">${row.Estado}</span>`;
           }
 
-          if (row.idPago == 0) {
+          if (row.Rendido == 0) {
             return (
               badge +
               `<br>` +
@@ -827,57 +861,91 @@ function report(a, b, c, d, f) {
         data: "Precio",
         className: "editable-precio text-center",
         render: function (data, type, row) {
-          // aseguramos que 'data' sea numérico
           let precio = isNaN(parseFloat(data)) ? 0 : parseFloat(data);
           let obs = row.ObservacionManual ? row.ObservacionManual : "";
-
-          // aseguramos que 'CobrarEnvio' sea numérico
           let cobrar = isNaN(parseFloat(row.CobrarEnvio))
             ? 0
             : parseFloat(row.CobrarEnvio);
 
+          let modificacionHTML = "";
+          if (
+            row.UsuarioModifico ||
+            row.FechaModificacion ||
+            row.PrecioAnterior
+          ) {
+            modificacionHTML = `
+        <div class="mt-1">
+          <span class="badge bg-warning text-dark">Modificado</span>
+        </div>
+        <small class="text-warning d-block">
+          ${row.UsuarioModifico ? "Por: " + row.UsuarioModifico : ""}
+          ${row.FechaModificacion ? "<br>Fecha: " + row.FechaModificacion : ""}
+          ${
+            row.PrecioAnterior &&
+            parseFloat(row.PrecioAnterior) != parseFloat(row.Precio)
+              ? "<br>Antes: $" + parseFloat(row.PrecioAnterior).toFixed(2)
+              : ""
+          }
+        </small>
+      `;
+          }
+
           return `
-    <span>$${precio.toFixed(2)}</span>
-    ${
-      cobrar > 0
-        ? `<div class="text-primary"><small>+ Cobranza: $${cobrar.toFixed(
-            2,
-          )}</small></div>`
-        : ""
-    }
-    ${obs ? `<br><small class="text-muted">${obs}</small>` : ""}
-  `;
+      <span>$${precio.toFixed(2)}</span>
+      ${
+        cobrar > 0
+          ? `<div class="text-primary"><small>+ Cobranza: $${cobrar.toFixed(2)}</small></div>`
+          : ""
+      }
+      ${obs ? `<br><small class="text-muted">${obs}</small>` : ""}
+      ${modificacionHTML}
+    `;
         },
       },
       {
         data: null,
         className: "text-center accion-editar",
         render: function (data, type, row) {
-          if (row.idPago == 0) {
-            return `
-            <i class="mdi mdi-pencil editar-tarifa me-2" 
-              data-id="${row.CodigoSeguimiento}" 
-              style="cursor:pointer; color:goldenrod; font-size:18px;" 
-              title="Editar tarifa"></i>
+          let html = `
+      <i class="mdi mdi-pencil editar-tarifa me-2" 
+        data-id="${row.CodigoSeguimiento}" 
+        style="cursor:pointer; color:goldenrod; font-size:18px;" 
+        title="Editar tarifa"></i>
+    `;
 
+          // Solo permitir NO PAGAR y eliminar antes de generar la rendición
+          if (parseInt(row.Rendido) === 0) {
+            html += `
+        <i class="mdi mdi-cash-remove no-pagar-tarifa me-2" 
+          data-id="${row.CodigoSeguimiento}" 
+          style="cursor:pointer; color:crimson; font-size:18px;" 
+          title="Marcar como NO PAGAR"></i>
 
-            <i class="mdi mdi-cash-remove no-pagar-tarifa" 
-              data-id="${row.CodigoSeguimiento}" 
-              style="cursor:pointer; color:crimson; font-size:18px;" 
-              title="Marcar como NO PAGAR"></i>
-            
-            <i class="mdi mdi-trash-can eliminar-renglon me-2" 
-              data-id="${row.CodigoSeguimiento}" 
-              style="cursor:pointer; color:red; font-size:18px;" 
-              title="Eliminar de esta rendición"></i>
-
-          `;
-          } else {
-            return ""; // No mostrar lápiz si ya fue liquidado
+        <i class="mdi mdi-trash-can eliminar-renglon me-2" 
+          data-id="${row.CodigoSeguimiento}" 
+          style="cursor:pointer; color:red; font-size:18px;" 
+          title="Eliminar de esta rendición"></i>
+      `;
           }
+
+          return html;
         },
       },
     ],
+    drawCallback: function () {
+      marcarDuplicados();
+
+      const tabla = $("#reporte_tabla").DataTable();
+
+      tabla.rows().every(function () {
+        const row = this.data();
+        const $tr = $(this.node());
+
+        if (row.UsuarioModifico && row.FechaModificacion) {
+          $tr.addClass("table-warning");
+        }
+      });
+    },
   });
 }
 //BOTON NO PAGAR
@@ -931,78 +999,133 @@ $("#reporte_tabla tbody").on(
     const tabla = $("#reporte_tabla").DataTable();
     const fila = tabla.row($(this).parents("tr"));
     const row = fila.data();
-    const $tdPrecio = $(this).closest("tr").find("td.editable-precio");
-    const $tdAccion = $(this).closest("td");
+    const $tr = $(this).closest("tr");
+    const $tdPrecio = $tr.find("td.editable-precio");
+    const $tdAccion = $tr.find("td.accion-editar");
 
     if ($(this).hasClass("editar-tarifa")) {
-      if (row.idPago != 0) return; // no editar si ya fue liquidado
-
       const obsActual = row.ObservacionManual || "";
 
       $tdPrecio.html(`
-      <input type="number" class="form-control form-control-sm input-precio" 
-             value="${parseFloat(row.Precio).toFixed(2)}" 
-             step="0.01" 
-             style="width: 90px; font-size: 11px;" />
-      <textarea class="form-control form-control-sm mt-1 input-observacion"
-                data-codigo="${row.CodigoSeguimiento}"
-                rows="1"
-                style="font-size:11px;"
-                placeholder="Observaciones...">${obsActual}</textarea>
-    `);
+        <input type="number" class="form-control form-control-sm input-precio" 
+               value="${parseFloat(row.Precio || 0).toFixed(2)}" 
+               step="0.01" 
+               style="width: 90px; font-size: 11px;" />
+        <textarea class="form-control form-control-sm mt-1 input-observacion"
+                  rows="1"
+                  style="font-size:11px;"
+                  placeholder="Observaciones...">${obsActual}</textarea>
+      `);
 
       $tdAccion.html(`
-      <i class="mdi mdi-content-save guardar-tarifa" 
-         style="cursor:pointer; color:green; font-size:18px;"></i>
-    `);
-    } else if ($(this).hasClass("guardar-tarifa")) {
-      const nuevoPrecio = parseFloat(
-        $(this).closest("tr").find(".input-precio").val(),
-      );
-      const nuevaObs = $(this)
-        .closest("tr")
-        .find(".input-observacion")
-        .val()
-        .trim();
-
-      if (!isNaN(nuevoPrecio)) {
-        let precioOriginal = parseFloat(row.Precio).toFixed(2);
-        let precioNuevo = parseFloat(nuevoPrecio).toFixed(2);
-        let obsOriginal = (row.ObservacionManual || "").trim();
-
-        const hayCambio =
-          precioOriginal !== precioNuevo || obsOriginal !== nuevaObs;
-
-        if (hayCambio) {
-          row.Precio = parseFloat(precioNuevo);
-          row.ObservacionManual = nuevaObs;
-          row.ModificadoManualmente = true;
-          fila.node().classList.add("table-warning");
-        } else {
-          fila.node().classList.remove("table-warning");
-        }
-
-        fila.data(row).invalidate(); // actualiza la fila
-        let cobrarHTML = "";
-        if (parseFloat(row.CobrarEnvio || 0) > 0) {
-          cobrarHTML = `<div class="text-primary"><small>+ Cobranza: $${parseFloat(
-            row.CobrarEnvio,
-          ).toFixed(2)}</small></div>`;
-        }
-
-        $tdPrecio.html(`
-        <span>$${precioNuevo}</span>
-        ${cobrarHTML}
-        ${nuevaObs ? `<br><small class="text-muted">${nuevaObs}</small>` : ""}
+        <i class="mdi mdi-content-save guardar-tarifa" 
+           style="cursor:pointer; color:green; font-size:18px;"
+           title="Guardar"></i>
       `);
 
-        $tdAccion.html(`
-        <i class="mdi mdi-pencil editar-tarifa" 
-           data-id="${row.CodigoSeguimiento}" 
-           style="cursor:pointer; color:goldenrod; font-size:18px;"></i>
-      `);
+      return;
+    }
 
+    if ($(this).hasClass("guardar-tarifa")) {
+      const nuevoPrecio = parseFloat($tr.find(".input-precio").val());
+      const nuevaObs = $tr.find(".input-observacion").val().trim();
+
+      if (isNaN(nuevoPrecio)) {
+        Swal.fire("Atención", "Ingresá un precio válido", "warning");
+        return;
+      }
+
+      const precioOriginal = parseFloat(row.Precio || 0).toFixed(2);
+      const precioNuevo = parseFloat(nuevoPrecio).toFixed(2);
+      const obsOriginal = (row.ObservacionManual || "").trim();
+
+      const hayCambio =
+        precioOriginal !== precioNuevo || obsOriginal !== nuevaObs;
+
+      if (!hayCambio) {
+        restaurarFilaPrecio(row, $tdPrecio, $tdAccion);
+        return;
+      }
+
+      row.Precio = parseFloat(precioNuevo);
+      row.ObservacionManual = nuevaObs;
+      row.ModificadoManualmente = true;
+
+      console.log("row.idExternoRendicion:", row.idExternoRendicion);
+      console.log("row completo:", row);
+
+      // SI EXISTE EN EXTERNOS_RENDICION => GUARDAR EN BD
+      if (parseInt(row.idExternoRendicion || 0) > 0) {
+        $.ajax({
+          url: "Procesos/php/funciones.php",
+          type: "post",
+          dataType: "json",
+          data: {
+            ModificarTarifaRendicion: 1,
+            idExternoRendicion: row.idExternoRendicion,
+            CodigoSeguimiento: row.CodigoSeguimiento,
+            idRendicion: $("#report_id").text().trim(),
+            TarifaID: row.TarifaID,
+            Precio: row.Precio,
+            Observacion: row.ObservacionManual,
+          },
+          beforeSend: function () {
+            console.log("Enviando AJAX ModificarTarifaRendicion", {
+              idExternoRendicion: row.idExternoRendicion,
+              CodigoSeguimiento: row.CodigoSeguimiento,
+              idRendicion: $("#report_id").text().trim(),
+              TarifaID: row.TarifaID,
+              Precio: row.Precio,
+              Observacion: row.ObservacionManual,
+            });
+          },
+          success: function (resp) {
+            console.log("Respuesta AJAX:", resp);
+
+            if (resp.success == 1) {
+              fila.node().classList.add("table-warning");
+              fila.data(row).invalidate();
+
+              restaurarFilaPrecio(row, $tdPrecio, $tdAccion);
+              actualizarTotales();
+              construirResumenPorFecha();
+
+              $.NotificationApp.send(
+                "Tarifa actualizada",
+                "La modificación se guardó correctamente.",
+                "bottom-right",
+                "#FFFFFF",
+                "success",
+              );
+            } else {
+              $.NotificationApp.send(
+                "Error",
+                resp.msg || "No se pudo guardar la modificación.",
+                "bottom-right",
+                "#FFFFFF",
+                "danger",
+              );
+            }
+          },
+          error: function (xhr, status, error) {
+            console.log("Error AJAX:", xhr.responseText, status, error);
+
+            $.NotificationApp.send(
+              "Error",
+              "Falló la comunicación con el servidor.",
+              "bottom-right",
+              "#FFFFFF",
+              "danger",
+            );
+          },
+        });
+      } else {
+        fila.node().classList.add("table-warning");
+        fila.data(row).invalidate();
+
+        restaurarFilaPrecio(row, $tdPrecio, $tdAccion);
         actualizarTotales();
+        construirResumenPorFecha();
       }
     }
   },

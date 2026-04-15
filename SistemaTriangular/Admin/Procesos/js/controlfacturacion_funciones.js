@@ -4,19 +4,19 @@ $(document).ready(function () {
   }
 
   $("#fac").click(function () {
-    var datatable1 = $("#tablactasctes").DataTable();
-    datatable1.destroy();
+    if ($.fn.DataTable.isDataTable("#tablactasctes")) {
+      $("#tablactasctes").DataTable().clear().destroy();
+    }
 
     veoveo(1);
   });
-
   $("#sfac").click(function () {
-    var datatable = $("#tablactasctes").DataTable();
-    datatable.destroy();
+    if ($.fn.DataTable.isDataTable("#tablactasctes")) {
+      $("#tablactasctes").DataTable().clear().destroy();
+    }
 
     veoveo(0);
   });
-
   //VER QUE ES ESTO
   // $("input[name='customRadio1']").click(function(){
 
@@ -107,8 +107,9 @@ $(document).ready(function () {
 
   //IMPUT SELECT
   $('input[name="customRadio0"]').change(function () {
-    var datatable = $("#tablactasctes").DataTable();
-    datatable.destroy();
+    if ($.fn.DataTable.isDataTable("#tablactasctes")) {
+      $("#tablactasctes").DataTable().clear().destroy();
+    }
 
     var table = $("#tabladirectos").DataTable();
     table.destroy();
@@ -132,7 +133,7 @@ $(document).ready(function () {
       valorSeleccionado === null
     ) {
       $("#title_guias").html(
-        "CONTROL FACTURACION CLIENTES TODOS LOS CICLOS DE FACTURACION"
+        "CONTROL FACTURACION CLIENTES TODOS LOS CICLOS DE FACTURACION",
       );
     } else if (valorSeleccionado === 1) {
       $("#title_guias").html("CONTROL FACTURACION CLIENTES CICLO DIARIO");
@@ -240,14 +241,14 @@ $(document).ready(function () {
           header: true,
           pageSize: "A4",
           customize: function (doc) {
-            (doc.styles.tableHeader = {
+            ((doc.styles.tableHeader = {
               fillColor: "#525659",
               color: "#FFF",
               fontSize: "7",
               alignment: "left",
               bold: true,
             }), //para cambiar el backgorud del escabezado
-              (doc.defaultStyle.fontSize = 6);
+              (doc.defaultStyle.fontSize = 6));
             doc.pageMargins = [50, 50, 30, 30]; //left,top,right,bottom
             doc.content[1].margin = [5, 0, 0, 5]; // margenes para la datables
           },
@@ -506,7 +507,7 @@ $(document).ready(function () {
           var sumaf = currencyFormat(Number(jsonData.totalf));
           var sumanf = currencyFormat(Number(jsonData.totalnf));
           var afacturar = currencyFormat(
-            Number(jsonData.totalnf) - Number(jsonData.totalf)
+            Number(jsonData.totalnf) - Number(jsonData.totalf),
           );
           $("#total_dashboard").html(suma);
           $("#total_dashboard2").html(jsonData.servicios + " servicios");
@@ -521,11 +522,17 @@ $(document).ready(function () {
 
   function generarTabla_rec(f, ciclo, desde, hasta) {
     var facturado = f;
-    var ciclo = ciclo;
+
+    if ($.fn.DataTable.isDataTable("#tablarecorridos")) {
+      $("#tablarecorridos").DataTable().clear().destroy();
+    }
 
     $("#tablarecorridos").DataTable({
+      processing: true,
+      destroy: true,
       ajax: {
         url: "../Admin/Procesos/php/control_facturacion.php",
+        type: "post",
         data: {
           Recorridos: 1,
           desde: desde,
@@ -533,20 +540,18 @@ $(document).ready(function () {
           facturado: facturado,
           ciclo: ciclo,
         },
-        type: "post",
       },
       columns: [
         {
           data: "Fecha",
           render: function (data, type, row) {
-            var Fecha = row.Fecha.split("-").reverse().join("/");
-            return Fecha;
+            return row.Fecha.split("-").reverse().join("/");
           },
         },
         {
           data: null,
           render: function (data, type, row) {
-            return `<td><b>${row.NumerodeOrden}</b></td>`;
+            return "<b>" + row.NumerodeOrden + "</b>";
           },
         },
         { data: "Cliente" },
@@ -585,7 +590,7 @@ function ver(i) {
             "Se ha actualizado el Recorrido.",
             "bottom-right",
             "#FFFFFF",
-            "success"
+            "success",
           );
 
           var datatable1 = $("#tablactasctes").DataTable();
@@ -596,7 +601,7 @@ function ver(i) {
             "No se pudo eliminar el registro.",
             "bottom-right",
             "#FFFFFF",
-            "danger"
+            "danger",
           );
         }
         $("#warning-header-modal").modal("hide");

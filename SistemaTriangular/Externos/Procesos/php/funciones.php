@@ -136,7 +136,243 @@ function obtenerDistanciaORS($lat1, $lon1, $lat2, $lon2, $apiKey)
     }
 }
 
-if (isset($_POST['Envios'])) {
+function obtenerIdExternoRendicionExistente($mysqli, $codigoSeguimiento, $idRendicion)
+{
+    $sql = $mysqli->prepare("
+        SELECT 
+            id,
+            PrecioPagado,
+            Observaciones,
+            idExternos_tarifas,
+            TipoLiquidacion,
+            Rendido,
+            FechaRendido,
+            UsuarioRendido,
+            UsuarioModifico,
+            FechaModificacion,
+            PrecioAnterior,
+            TarifaAnteriorId
+        FROM Externos_rendicion 
+        WHERE CodigoSeguimiento = ? 
+          AND idRendicion = ? 
+        LIMIT 1
+    ");
+
+    if (!$sql) {
+        return false;
+    }
+
+    $sql->bind_param("si", $codigoSeguimiento, $idRendicion);
+    $sql->execute();
+    $resultado = $sql->get_result();
+    $fila = $resultado->fetch_assoc();
+    $sql->close();
+
+    return $fila ? $fila : false;
+}
+
+if (isset($_POST['ModificarTarifaRendicion'])) {
+    header('Content-Type: application/json; charset=UTF-8');
+
+    $idExternoRendicion = isset($_POST['idExternoRendicion']) ? (int)$_POST['idExternoRendicion'] : 0;
+    $codigoSeguimiento  = isset($_POST['CodigoSeguimiento']) ? trim($_POST['CodigoSeguimiento']) : '';
+    $idRendicion        = isset($_POST['idRendicion']) ? (int)$_POST['idRendicion'] : 0;
+    $tarifaNuevaId      = isset($_POST['TarifaID']) ? (int)$_POST['TarifaID'] : 0;
+    $precioNuevo        = isset($_POST['Precio']) ? (float)$_POST['Precio'] : 0;
+    $observacion        = isset($_POST['Observacion']) ? trim($_POST['Observacion']) : '';
+    $usuarioModifico    = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'Desconocido';
+
+    if ($idExternoRendicion <= 0 || $codigoSeguimiento === '' || $tarifaNuevaId <= 0) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'Faltan datos obligatorios para modificar la tarifa.'
+        ]);
+        exit;
+    }
+
+    $mysqli->begin_transaction();
+
+    try {
+        $sqlActual = $mysqli->prepare("
+            SELECT 
+                id,
+                CodigoSeguimiento,
+                idRendicion,
+                idExternos_tarifas,
+                PrecioPagado
+            FROM Externos_rendicion
+            WHERE id = ?
+            LIMIT 1
+        ");
+
+        if (!$sqlActual) {
+            throw new Exception('Error preparando SELECT actual: ' . $mysqli->error);
+        }
+
+        $sqlActual->bind_param("i", $idExternoRendicion);
+        $sqlActual->execute();
+        $resultadoActual = $sqlActual->get_result();
+        $actual = $resultadoActual->fetch_assoc();
+        $sqlActual->close();
+
+        if (!$actual) {
+            throw new Exception('No se encontró el registro de rendición a modificar.');
+        }
+
+        $tarifaAnteriorId = (int)$actual['idExternos_tarifas'];
+        $precioAnterior   = (float)$actual['PrecioPagado'];
+
+        if ($tarifaAnteriorId === $tarifaNuevaId && (float)$precioAnterior === (float)$precioNuevo) {
+            echo json_encode([
+                'success' => 1,
+                'msg' => 'No hubo cambios para guardar.'
+            ]);
+            exit;
+        }
+        $fechaActual = date('Y-m-d H:i:s');
+
+        $sqlHistorial = $mysqli->prepare("
+            INSERT INTO Externos_rendicion_historial
+            (
+                idExternoRendicion,
+                CodigoSeguimiento,
+                idRendicion,
+                tarifa_anterior_id,
+                tarifa_nueva_id,
+                precio_anterior,
+                precio_nuevo,
+                usuario_modifico,
+                fecha_modificacion,
+                observacion
+            )
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ");
+
+        if (!$sqlHistorial) {
+            throw new Exception('Error preparando INSERT historial: ' . $mysqli->error);
+        }
+
+        $idRendicionHist = (int)$actual['idRendicion'];
+        $codigoHist      = $actual['CodigoSeguimiento'];
+
+        $sqlHistorial->bind_param(
+            "isiiiddsss",
+            $idExternoRendicion,
+            $codigoHist,
+            $idRendicionHist,
+            $tarifaAnteriorId,
+            $tarifaNuevaId,
+            $precioAnterior,
+            $precioNuevo,
+            $usuarioModifico,
+            $fechaActual,
+            $observacion
+        );
+
+        if (!$sqlHistorial->execute()) {
+            throw new Exception('Error insertando historial: ' . $sqlHistorial->error);
+        }
+
+        $sqlHistorial->close();
+
+        $tipoLiquidacion = 'AJUSTE_MANUAL';
+        $fechaHoraActual = date('Y-m-d H:i:s');
+
+        $sqlUpdate = $mysqli->prepare("
+            UPDATE Externos_rendicion
+            SET
+                PrecioAnterior = ?,
+                TarifaAnteriorId = ?,
+                PrecioPagado = ?,
+                idExternos_tarifas = ?,
+                UsuarioModifico = ?,
+                FechaModificacion = ?,
+                Observaciones = ?,
+                TipoLiquidacion = ?
+            WHERE id = ?
+            LIMIT 1
+        ");
+
+        if (!$sqlUpdate) {
+            throw new Exception('Error preparando UPDATE principal: ' . $mysqli->error);
+        }
+
+        $sqlUpdate->bind_param(
+            "didissssi",
+            $precioAnterior,
+            $tarifaAnteriorId,
+            $precioNuevo,
+            $tarifaNuevaId,
+            $usuarioModifico,
+            $fechaHoraActual,
+            $observacion,
+            $tipoLiquidacion,
+            $idExternoRendicion
+        );
+
+        if (!$sqlUpdate->execute()) {
+            throw new Exception('Error actualizando Externos_rendicion: ' . $sqlUpdate->error);
+        }
+
+        $sqlUpdate->close();
+
+        $mysqli->commit();
+
+        echo json_encode([
+            'success' => 1,
+            'msg' => 'Tarifa modificada correctamente.',
+            'precio_anterior' => $precioAnterior,
+            'precio_nuevo' => $precioNuevo,
+            'tarifa_anterior_id' => $tarifaAnteriorId,
+            'tarifa_nueva_id' => $tarifaNuevaId,
+            'usuario' => $usuarioModifico
+        ]);
+    } catch (Exception $e) {
+        $mysqli->rollback();
+
+        echo json_encode([
+            'success' => 0,
+            'msg' => $e->getMessage()
+        ]);
+    }
+
+    exit;
+}
+function determinarTipoLiquidacion($row)
+{
+    $slug = isset($row['Slug']) ? $row['Slug'] : '';
+
+    if (intval($row['idClienteDestino']) === 18587) {
+        return 'COLECTA';
+    }
+
+    if ($slug === 'delivered') {
+        if (floatval($row['CobrarEnvio']) > 0) {
+            return 'ENTREGA_CON_COBRANZA';
+        }
+        return 'ENTREGA';
+    }
+
+    if ($slug === '1st_visit_fail') {
+        return 'NO_ENTREGA';
+    }
+
+    if ($slug === 'returned_to_origin' || $slug === 'declined') {
+        return 'DEVOLUCION';
+    }
+
+    if ($slug === 'internal_shift') {
+        return 'INTERNO';
+    }
+
+    if ($slug === 'last_mile') {
+        return 'TRANSITO';
+    }
+
+    return 'VISITA';
+}
+
+if (isset($_POST['Envios']) && $_POST['Envios'] === '1') {
 
     if ($_POST['Filtro'] == 'inactivo') {
         $SQL = $mysqli->query("SELECT Empleados.id,Empleados.NombreCompleto,Empleados.Dni,Empleados.Telefono,Empleados.Puesto,Empleados.FechaIngreso,Empleados.VencimientoLicencia,Empleados.Inactivo,Empleados.Observaciones, Vehiculos.Marca,Vehiculos.Modelo,Vehiculos.Dominio,Empleados.Usuario FROM `Empleados` 
@@ -210,83 +446,60 @@ if (isset($_POST['ModificarExterno'])) {
 }
 
 //AGREGAR EXTERNO
-
 if (isset($_POST['Agregar_externo'])) {
 
     $FechaHoy = date('Y-m-d');
-    $Usuario  = $_POST['nombre'];
+    $Usuario = $_POST['nombre'];
 
-    // 1) Insert usuario
-    $SQL_USUARIO = "INSERT INTO `usuarios`
-        (`Nombre`, `PASSWORD`, `NIVEL`, `ACTIVO`, `Direccion`, `Localidad`, `Ciudad`, `Telefono`,
-         `Observaciones`, `Usuario`, `FechaPassword`, `Estado`)
-        VALUES (
-         '{$_POST['nombre']}','{$_POST['dni']}','3','1','{$_POST['domicilio']}','{$_POST['city']}','{$_POST['state']}',
-         '{$_POST['telefono']}','{$_POST['obs']}','{$Usuario}','{$FechaHoy}','Activo'
-        )";
+    //SQL USUARIO
+    $SQL_USUARIO = "INSERT INTO `usuarios`(`Nombre`, `PASSWORD`, `NIVEL`, `ACTIVO`, `Direccion`, `Localidad`, `Ciudad`,`Telefono`, `Observaciones`, `Usuario`, `FechaPassword`,`Estado`) VALUES 
+    ('{$_POST['nombre']}','{$_POST['dni']}','3','1','{$_POST['domicilio']}','{$_POST['city']}','{$_POST['state']}','{$_POST['telefono']}','{$_POST['obs']}','{$Usuario}','{$FechaHoy}','Activo')";
     $mysqli->query($SQL_USUARIO);
     $id_usuario = $mysqli->insert_id;
 
-    // 2) Insert empleado
-    $SQL = "INSERT INTO `Empleados`
-        (`NombreCompleto`, `Domicilio`, `Localidad`, `Provincia`, `CodigoPostal`, `Telefono`,
-         `FechaNacimiento`, `FechaIngreso`, `Dni`, `VencimientoLicencia`, `Puesto`, `Observaciones`,
-         `CuentaAnticipos`, `GrupoSanguineo`, `TelefonoEmergencia`, `Inactivo`, `Aliados`, `Usuario`)
-        VALUES (
-         '{$_POST['nombre']}','{$_POST['domicilio']}','{$_POST['city']}','{$_POST['state']}','{$_POST['codigopostal']}',
-         '{$_POST['telefono']}','{$_POST['nac']}','{$_POST['ing']}','{$_POST['dni']}','{$_POST['lic']}',
-         'Transportista','{$_POST['obs']}','112500','{$_POST['gruposanguineo']}','{$_POST['phone_emergency']}',
-         '0','1','{$id_usuario}'
-        )";
+    //SQL EMPLEADO
+    $SQL = "INSERT INTO `Empleados`(`NombreCompleto`, `Domicilio`, `Localidad`, `Provincia`, `CodigoPostal`, `Telefono`, `FechaNacimiento`, `FechaIngreso`, `Dni`, `VencimientoLicencia`, `Puesto`, `Observaciones`, `CuentaAnticipos`, `GrupoSanguineo`, `TelefonoEmergencia`,`Inactivo`, `Aliados`,`Usuario`) 
+    VALUES ('{$_POST['nombre']}','{$_POST['domicilio']}','{$_POST['city']}','{$_POST['state']}','{$_POST['codigopostal']}','{$_POST['telefono']}','{$_POST['nac']}','{$_POST['ing']}','{$_POST['dni']}','{$_POST['lic']}','Transportista','{$_POST['obs']}','112500','{$_POST['gruposanguineo']}','{$_POST['phone_emergency']}','0','1','{$id_usuario}')";
 
-    $vehiculo      = 0;
-    $SQL_VEHICULO  = null; // <- IMPORTANTE: inicializar
 
-    // 3) Preparar (solo si hay datos de vehículo)
-    if (!empty($_POST['marca']) && !empty($_POST['modelo']) && !empty($_POST['dominio'])) {
-        $SQL_VEHICULO = "INSERT INTO `Vehiculos`
-            (`Marca`, `Modelo`, `Dominio`, `FechaVencSeguro`, `Kilometros`, `Color`, `Seguro`,
-             `NumeroPoliza`, `Motor`, `Chasis`, `Ano`, `Observaciones`, `Activo`, `ObleaITV`,
-             `FechaVencITV`, `Estado`, `CapacidadTotalCarga`, `PesoTotalCarga`, `VehiculoOperativo`,
-             `Aliados`, `id_usuario`)
-            VALUES (
-             '{$_POST['marca']}','{$_POST['modelo']}','{$_POST['dominio']}','{$_POST['seguro_vencimiento']}',
-             '{$_POST['km']}','{$_POST['color']}','{$_POST['seguro']}','{$_POST['poliza']}','{$_POST['motor']}',
-             '{$_POST['chasis']}','{$_POST['ano']}','{$_POST['vehiculo_obs']}','Si','{$_POST['itv_oblea']}',
-             '{$_POST['itv_vencimiento']}','Disponible','{$_POST['volumen']}','{$_POST['peso']}','1','1','{$id_usuario}'
-            )";
+    //SI EXISTENN LAS VARIABLES MARCA MODELO Y DOMINIO CARGO EL VEHICULO
+    if (($_POST['marca']) && ($_POST['modelo']) && ($_POST['dominio'])) {
+
+        $SQL_VEHICULO = "INSERT INTO `Vehiculos`(`Marca`, `Modelo`, `Dominio`, `FechaVencSeguro`, `Kilometros`, `Color`, `Seguro`, `NumeroPoliza`, `Motor`, `Chasis`,`Ano`, `Observaciones`, `Activo`,`ObleaITV`, `FechaVencITV`, `Estado`, `CapacidadTotalCarga`, `PesoTotalCarga`, `VehiculoOperativo`, `Aliados`,`id_usuario`) 
+    VALUES ('{$_POST['marca']}','{$_POST['modelo']}','{$_POST['dominio']}','{$_POST['seguro_vencimiento']}','{$_POST['km']}','{$_POST['color']}','{$_POST['seguro']}','{$_POST['poliza']}','{$_POST['motor']}','{$_POST['chasis']}','{$_POST['ano']}','{$_POST['vehiculo_obs']}','Si','{$_POST['itv_oblea']}','{$_POST['itv_vencimiento']}','Disponible','{$_POST['volumen']}','{$_POST['peso']}','1','1','{$id_usuario}')";
+    } else {
+
+        $vehiculo = 0;
     }
 
     if ($mysqli->query($SQL)) {
-        // actualizar usuario
-        $Usuario = strtok($_POST['nombre'], " ") . "_" . $id_usuario;
-        $mysqli->query("UPDATE usuarios SET Usuario='$Usuario' WHERE id='$id_usuario' AND PASSWORD='{$_POST['dni']}' LIMIT 1");
 
-        // 4) Ejecutar vehículo SOLO si hay query
-        if (is_string($SQL_VEHICULO) && $SQL_VEHICULO !== '') {
-            if ($mysqli->query($SQL_VEHICULO)) {
-                $vehiculo = 1;
-            }
+        $Usuario = strtok($_POST['nombre'], " ") . "_" . $id_usuario;
+
+        $mysqli->query("UPDATE usuarios SET Usuario='$Usuario' WHERE id='$id_usuario' AND PASSWORD='" . $_POST['dni'] . "' LIMIT 1");
+
+        //SI SE CARGA EL EXTERNO CARGO EL VECHICULO
+        if ($mysqli->query($SQL_VEHICULO)) {
+            $vehiculo = 1;
+        } else {
+            $vehiculo = 0;
         }
 
         $aliado = 1;
     } else {
+
         $aliado = 0;
     }
 
-    echo json_encode(['success' => $aliado, 'vehiculo' => $vehiculo, 'user_id' => $id_usuario]);
+    echo json_encode(array('success' => $aliado, 'vehiculo' => $vehiculo, 'user_id' => $id_usuario));
 }
 
 if (isset($_POST['Desempeno'])) {
-    ini_set('display_errors', 1);
-    ini_set('display_startup_errors', 1);
-    error_reporting(E_ALL);
-
-
 
     $SQL_EXTERNOS = $mysqli->query("SELECT Usuario FROM usuarios WHERE id='" . $_POST['id'] . "' ");
     $DATO_EXTERNOS = $SQL_EXTERNOS->fetch_array(MYSQLI_ASSOC);
     $NombreUsuario = $DATO_EXTERNOS['Usuario'];
+
     $SQL = $mysqli->query("SELECT 
     Logistica.Rendicion,
     Logistica.Costo_rendicion,
@@ -294,27 +507,28 @@ if (isset($_POST['Desempeno'])) {
     Logistica.Fecha,
     Logistica.Recorrido,
     Logistica.NumerodeOrden,
-    COUNT(Seguimiento.id)as Total 
-    FROM `Logistica` 
-    JOIN Seguimiento ON Seguimiento.NumerodeOrden=Logistica.NumerodeOrden  
-    JOIN Recorridos ON Recorridos.Numero=Logistica.Recorrido
-    WHERE Logistica.Fecha>='" . $_POST['Desde'] . "' AND Logistica.Fecha<='" . $_POST['Hasta'] . "' 
-    AND Logistica.Eliminado=0 and Logistica.idUsuarioChofer='" . $_POST['id'] . "' 
-    AND Seguimiento.Usuario='" . $NombreUsuario . "' 
-    AND Seguimiento.Eliminado=0 GROUP BY NumerodeOrden");
+    COUNT(DISTINCT Seguimiento.CodigoSeguimiento) AS Total
+    FROM Logistica
+    JOIN Seguimiento 
+        ON Seguimiento.NumerodeOrden = Logistica.NumerodeOrden
+    JOIN TransClientes 
+        ON TransClientes.CodigoSeguimiento = Seguimiento.CodigoSeguimiento
+    JOIN Recorridos 
+        ON Recorridos.Numero = Logistica.Recorrido
+    WHERE Logistica.Fecha >= '" . $_POST['Desde'] . "'
+    AND Logistica.Fecha <= '" . $_POST['Hasta'] . "'
+    AND Logistica.Eliminado = 0
+    AND Logistica.idUsuarioChofer = '" . $_POST['id'] . "'
+    AND Seguimiento.Usuario = '" . $NombreUsuario . "'
+    AND Seguimiento.Eliminado = 0
+    AND Seguimiento.Visitas <> 0
+    AND Seguimiento.Estado <> 'Retirado del Cliente'
+    AND TransClientes.Eliminado = 0
+    GROUP BY Logistica.NumerodeOrden");
 
     $ROWS = array();
 
     while ($DATOS_CLIENTES = $SQL->fetch_array(MYSQLI_ASSOC)) {
-
-        //ACTUALIZO LOS CLIENTES
-        if ($DATOS_CLIENTES['VencimientoLicencia'] < date('Y-m-d')) {
-
-            $mysqli->query("UPDATE Empleados SET Inactivo=1 WHERE id='$DATOS_CLIENTES[id]' LIMIT 1");
-        } else {
-
-            $mysqli->query("UPDATE Empleados SET Inactivo=0 WHERE id='$DATOS_CLIENTES[id]' LIMIT 1");
-        }
 
         $ROWS[] = $DATOS_CLIENTES;
     }
@@ -325,52 +539,56 @@ if (isset($_POST['Desempeno'])) {
 // -------------------- LÓGICA PRINCIPAL --------------------
 
 if (isset($_POST['Reporte'])) {
+
     if ($_POST['controlado'] == 0) {
         ini_set('display_errors', 1);
         ini_set('display_startup_errors', 1);
         error_reporting(E_ALL);
-        // include_once "../../Conexion/Conexioni.php";
+
+        $numeroOrden = intval($_POST['NOrden']);
 
         $SQL_EXTERNOS = $mysqli->query("SELECT Usuario FROM usuarios WHERE id='" . $_POST['id'] . "' ");
         $DATO_EXTERNOS = $SQL_EXTERNOS->fetch_array(MYSQLI_ASSOC);
         $NombreUsuario = $DATO_EXTERNOS['Usuario'];
 
         $SQL = $mysqli->query("SELECT 
-        Seg.Entregado,
-        ts.RazonSocial,
-        ts.ingBrutosOrigen,
-        ts.Recorrido,
-        ts.idPago,
-        ts.ClienteDestino,
-        ts.idClienteDestino,
-        Seg.Fecha,
-        ts.DomicilioDestino,
-        ts.LocalidadDestino,
-        ts.CodigoSeguimiento,
-        Seg.Estado,
-        CONCAT(Seg.Usuario, '_', Seg.Fecha, 'T', Seg.Hora) AS infoABM,
-        ts.Kilometros,
-        ts.Debe,
-        cl.Latitud,
-        cl.Longitud
+            Seg.Entregado,
+            ts.RazonSocial,
+            ts.ingBrutosOrigen,
+            ts.Recorrido,
+            ts.idPago,
+            ts.ClienteDestino,
+            ts.idClienteDestino,
+            Seg.Fecha,
+            ts.DomicilioDestino,
+            ts.LocalidadDestino,
+            ts.CodigoSeguimiento,
+            Seg.Estado,
+            e.Slug,
+            CONCAT(Seg.Usuario, '_', Seg.Fecha, 'T', Seg.Hora) AS infoABM,
+            ts.Kilometros,
+            ts.Debe,
+            cl.Latitud,
+            cl.Longitud
         FROM Seguimiento AS Seg
         JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
         JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
+        LEFT JOIN Estados AS e ON e.Estado = Seg.Estado
         WHERE 
-        Seg.Eliminado = 0 
-        AND ts.Eliminado = 0 
-        AND Seg.NumerodeOrden = " . $_POST['NOrden'] . " AND Seg.Visitas<>0
-        AND Seg.Estado <>'Retirado del Cliente'
-        AND Seg.Usuario = '" . $NombreUsuario . "'");
+            Seg.Eliminado = 0
+            AND ts.Eliminado = 0
+            AND Seg.NumerodeOrden = " . $numeroOrden . "
+            AND Seg.Visitas <> 0
+            AND Seg.Estado <> 'Retirado del Cliente'
+            AND Seg.Usuario = '" . $NombreUsuario . "'");
 
-        $ROWS = [];
+        $ROWS = array();
         $latOrigen = -31.445003929354897;
         $lngOrigen = -64.17790870319338;
-        $apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ2N2MyOGNjMTI0ZjQxY2VhMTQ0NzZkYzU2NWUzYThlIiwiaCI6Im11cm11cjY0In0=';
+        $apiKey = 'TU_API_KEY';
 
-        // Tarifa externas
-        $tarifas = [];
-        $tarifas_nombres = [];
+        $tarifas = array();
+        $tarifas_nombres = array();
         $q = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
 
         while ($r = $q->fetch_assoc()) {
@@ -378,22 +596,22 @@ if (isset($_POST['Reporte'])) {
             $tarifas_nombres[$r['id']] = $r['Nombre'];
         }
 
-        // Preconteo para promedios
-        $conteoServicios = [];
-        $tempRows = [];
+        $conteoServicios = array();
+        $tempRows = array();
 
         while ($row = $SQL->fetch_array(MYSQLI_ASSOC)) {
             $key = $row['Recorrido'] . '_' . $row['ingBrutosOrigen'];
+
             if (floatval($row['Debe']) == 0 && intval($row['idClienteDestino']) != 18587) {
                 if (!isset($conteoServicios[$key])) {
                     $conteoServicios[$key] = 0;
                 }
                 $conteoServicios[$key]++;
             }
+
             $tempRows[] = $row;
         }
 
-        // Procesar filas
         foreach ($tempRows as $row) {
             $lat2 = $row['Latitud'];
             $lng2 = $row['Longitud'];
@@ -404,168 +622,268 @@ if (isset($_POST['Reporte'])) {
                 $distancia = obtenerDistanciaORS($latOrigen, $lngOrigen, $lat2, $lng2, $apiKey);
                 if (is_array($distancia)) {
                     $km = $distancia['km'];
-                    $stmt = $mysqli->prepare("UPDATE TransClientes SET Kilometros = ? WHERE CodigoSeguimiento = ? LIMIT 1");
-                    $stmt->bind_param("ds", $km, $row['CodigoSeguimiento']);
-                    $stmt->execute();
+
+                    $stmtKm = $mysqli->prepare("UPDATE TransClientes SET Kilometros = ? WHERE CodigoSeguimiento = ? LIMIT 1");
+                    if ($stmtKm) {
+                        $stmtKm->bind_param("ds", $km, $row['CodigoSeguimiento']);
+                        $stmtKm->execute();
+                        $stmtKm->close();
+                    }
                 }
             }
 
-            // Si es Colecta (Wepoint)
-            if ($row['idClienteDestino'] == 18587) {
+            // COLECTA
+            if (intval($row['idClienteDestino']) == 18587) {
                 $row['TarifaID'] = 6;
-                $row['Precio'] = isset($tarifas[6]) ? $tarifas[6] : 0;
+                $row['Precio'] = isset($tarifas[6]) ? floatval($tarifas[6]) : 0;
                 $row['NombreTarifa'] = isset($tarifas_nombres[6]) ? $tarifas_nombres[6] : "Colecta";
                 $row['Kilometros'] = $km;
                 $row['DentroAnillo'] = $dentro;
                 $row['CobrarEnvio'] = 0;
-                $row['Total'] = round(floatval($row['Precio']) + floatval($row['CobrarEnvio']), 2);
-                $ROWS[] = $row;
-                continue;
-            }
+                $row['TipoLiquidacion'] = 'COLECTA';
+            } else {
 
-            // Buscar tarifa especial desde recorrido
-            $idTarifa = 0;
-            $stmtTarifa = $mysqli->prepare("SELECT Tarifa_externos FROM Recorridos WHERE Numero = ? AND Cliente = ? LIMIT 1");
-            $stmtTarifa->bind_param("ii", $row['Recorrido'], $row['ingBrutosOrigen']);
-            $stmtTarifa->execute();
-            $stmtTarifa->bind_result($tarifa_externa_id);
-            $tieneTarifaEspecial = false;
-            if ($stmtTarifa->fetch() && $tarifa_externa_id > 0 && isset($tarifas[$tarifa_externa_id])) {
-                $idTarifa = $tarifa_externa_id;
-                $tieneTarifaEspecial = true;
-            }
-            $stmtTarifa->close();
+                $idTarifa = 0;
+                $stmtTarifa = $mysqli->prepare("SELECT Tarifa_externos FROM Recorridos WHERE Numero = ? AND Cliente = ? LIMIT 1");
+                $stmtTarifa->bind_param("ii", $row['Recorrido'], $row['ingBrutosOrigen']);
+                $stmtTarifa->execute();
+                $stmtTarifa->bind_result($tarifa_externa_id);
+                $tieneTarifaEspecial = false;
 
-            // Tarifa por distancia
-            if (!$tieneTarifaEspecial) {
-                if ($km > 50) $idTarifa = 4;
-                elseif ($km > 25) $idTarifa = 3;
-                elseif (!$dentro) $idTarifa = 2;
-                else $idTarifa = 1;
-            }
-
-            $row['Kilometros'] = $km;
-            $row['DentroAnillo'] = $dentro;
-            $row['TarifaID'] = $idTarifa;
-            $row['Precio'] = isset($tarifas[$idTarifa]) ? $tarifas[$idTarifa] : 0;
-            $row['NombreTarifa'] = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
-
-            if (intval($row['Entregado']) === 1) {
-                // Obtener porcentaje de la tarifa 7
-                $sql_tarifa_externos_cobranza = $mysqli->prepare("SELECT Precio FROM Externos_tarifas WHERE id = ?");
-                $tarifa_numero = 9;
-                $sql_tarifa_externos_cobranza->bind_param("i", $tarifa_numero);
-                $sql_tarifa_externos_cobranza->execute();
-                $sql_tarifa_externos_cobranza->bind_result($porcentaje);
-
-                $porcentaje = 0;
-                if ($sql_tarifa_externos_cobranza->fetch()) {
-                    // porcentaje ya seteado
+                if ($stmtTarifa->fetch() && $tarifa_externa_id > 0 && isset($tarifas[$tarifa_externa_id])) {
+                    $idTarifa = $tarifa_externa_id;
+                    $tieneTarifaEspecial = true;
                 }
-                $sql_tarifa_externos_cobranza->close();
+                $stmtTarifa->close();
 
-                // Obtener CobrarEnvio
-                $sql_ventas = $mysqli->prepare("SELECT CobrarEnvio FROM Ventas WHERE Eliminado = 0 AND surrender_number <> 0 AND NumPedido = ?");
-                $sql_ventas->bind_param("s", $row['CodigoSeguimiento']);
-                $sql_ventas->execute();
-                $sql_ventas->bind_result($cobrarEnvio);
+                if (!$tieneTarifaEspecial) {
+                    if ($km > 50) {
+                        $idTarifa = 4;
+                    } elseif ($km > 25) {
+                        $idTarifa = 3;
+                    } elseif (!$dentro) {
+                        $idTarifa = 2;
+                    } else {
+                        $idTarifa = 1;
+                    }
+                }
 
-                if ($sql_ventas->fetch()) {
-                    $row['CobrarEnvio'] = round(($cobrarEnvio * $porcentaje / 100), 2);
+                $row['Kilometros'] = $km;
+                $row['DentroAnillo'] = $dentro;
+                $row['TarifaID'] = $idTarifa;
+
+                $precioBase = isset($tarifas[$idTarifa]) ? floatval($tarifas[$idTarifa]) : 0;
+                $nombreTarifa = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
+
+                if (intval($row['ingBrutosOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
+                    $precioBase = round($precioBase * 0.5, 2);
+                    $nombreTarifa .= " (50%)";
+                }
+
+                $row['Precio'] = $precioBase;
+                $row['NombreTarifa'] = $nombreTarifa;
+
+                if (intval($row['Entregado']) === 1) {
+                    $sql_tarifa_externos_cobranza = $mysqli->prepare("SELECT Precio FROM Externos_tarifas WHERE id = ?");
+                    $tarifa_numero = 9;
+                    $sql_tarifa_externos_cobranza->bind_param("i", $tarifa_numero);
+                    $sql_tarifa_externos_cobranza->execute();
+                    $sql_tarifa_externos_cobranza->bind_result($porcentaje);
+
+                    $porcentaje = 0;
+                    $sql_tarifa_externos_cobranza->fetch();
+                    $sql_tarifa_externos_cobranza->close();
+
+                    $sql_ventas = $mysqli->prepare("SELECT CobrarEnvio FROM Ventas WHERE Eliminado = 0 AND surrender_number <> 0 AND NumPedido = ?");
+                    $sql_ventas->bind_param("s", $row['CodigoSeguimiento']);
+                    $sql_ventas->execute();
+                    $sql_ventas->bind_result($cobrarEnvio);
+
+                    if ($sql_ventas->fetch()) {
+                        $row['CobrarEnvio'] = round(($cobrarEnvio * $porcentaje / 100), 2);
+                    } else {
+                        $row['CobrarEnvio'] = 0;
+                    }
+                    $sql_ventas->close();
                 } else {
                     $row['CobrarEnvio'] = 0;
                 }
 
-                $sql_ventas->close();
-            }
+                if (floatval($row['Debe']) == 0) {
+                    $recorrido = intval($row['Recorrido']);
+                    $cliente = intval($row['ingBrutosOrigen']);
+                    $key = $recorrido . '_' . $cliente;
 
-            // Si Debe es 0 y no es colecta, buscar precio prorrateado
-            if (floatval($row['Debe']) == 0) {
-                $recorrido = intval($row['Recorrido']);
-                $cliente = intval($row['ingBrutosOrigen']);
-                $key = $recorrido . '_' . $cliente;
+                    $sql_recorrido = $mysqli->prepare("SELECT CodigoProductos FROM Recorridos WHERE Numero = ? AND Cliente = ? LIMIT 1");
+                    $sql_recorrido->bind_param("ii", $recorrido, $cliente);
+                    $sql_recorrido->execute();
+                    $sql_recorrido->bind_result($codigoProducto);
 
-                $sql_recorrido = $mysqli->prepare("SELECT CodigoProductos FROM Recorridos WHERE Numero = ? AND Cliente = ? LIMIT 1");
-                $sql_recorrido->bind_param("ii", $recorrido, $cliente);
-                $sql_recorrido->execute();
-                $sql_recorrido->bind_result($codigoProducto);
+                    if ($sql_recorrido->fetch() && $codigoProducto) {
+                        $sql_recorrido->close();
 
-                if ($sql_recorrido->fetch() && $codigoProducto) {
-                    $sql_recorrido->close();
+                        $sql_precio = $mysqli->prepare("SELECT PrecioVenta FROM Productos WHERE Codigo = ? LIMIT 1");
+                        $sql_precio->bind_param("s", $codigoProducto);
+                        $sql_precio->execute();
+                        $sql_precio->bind_result($precioTotal);
 
-                    $sql_precio = $mysqli->prepare("SELECT PrecioVenta FROM Productos WHERE Codigo = ? LIMIT 1");
-                    $sql_precio->bind_param("s", $codigoProducto);
-                    $sql_precio->execute();
-                    $sql_precio->bind_result($precioTotal);
-
-                    if ($sql_precio->fetch() && $conteoServicios[$key] > 0) {
-                        $row['Debe'] = round($precioTotal / $conteoServicios[$key], 2);
+                        if ($sql_precio->fetch() && isset($conteoServicios[$key]) && $conteoServicios[$key] > 0) {
+                            $row['Debe'] = round($precioTotal / $conteoServicios[$key], 2);
+                        }
+                        $sql_precio->close();
+                    } else {
+                        $sql_recorrido->close();
                     }
-                    $sql_precio->close();
-                } else {
-                    $sql_recorrido->close();
                 }
-            }
 
-            $row['CobrarEnvio'] = isset($row['CobrarEnvio']) ? $row['CobrarEnvio'] : 0;
+                $row['TipoLiquidacion'] = determinarTipoLiquidacion($row);
+            }
 
             $row['Total'] = round(floatval($row['Precio']) + floatval($row['CobrarEnvio']), 2);
+
+            // ===== INICIALIZAR O RECUPERAR Externos_rendicion =====
+            $existente = obtenerIdExternoRendicionExistente($mysqli, $row['CodigoSeguimiento'], $numeroOrden);
+
+            if ($existente) {
+                $row['idExternoRendicion'] = intval($existente['id']);
+                $row['Precio'] = floatval($existente['PrecioPagado']);
+                $row['ObservacionManual'] = $existente['Observaciones'];
+                $row['TarifaID'] = intval($existente['idExternos_tarifas']);
+                $row['TipoLiquidacion'] = $existente['TipoLiquidacion'];
+                $row['Rendido'] = intval($existente['Rendido']);
+                $row['FechaRendido'] = $existente['FechaRendido'];
+                $row['UsuarioRendido'] = $existente['UsuarioRendido'];
+                $row['UsuarioModifico'] = $existente['UsuarioModifico'];
+                $row['FechaModificacion'] = $existente['FechaModificacion'];
+                $row['PrecioAnterior'] = $existente['PrecioAnterior'];
+                $row['TarifaAnteriorId'] = $existente['TarifaAnteriorId'];
+                $row['NombreTarifa'] = isset($tarifas_nombres[$row['TarifaID']]) ? $tarifas_nombres[$row['TarifaID']] : $row['NombreTarifa'];
+            } else {
+                $observacionManual = isset($row['ObservacionManual']) ? $row['ObservacionManual'] : '';
+                $tipoLiquidacion = isset($row['TipoLiquidacion']) ? $row['TipoLiquidacion'] : 'VISITA';
+
+                $stmtIns = $mysqli->prepare("
+                INSERT INTO Externos_rendicion 
+                (
+                    CodigoSeguimiento, 
+                    IdEmpleado, 
+                    PrecioPagado, 
+                    PrecioCobrado, 
+                    Timestamp, 
+                    Usuario, 
+                    Observaciones, 
+                    idRendicion, 
+                    Kilometros, 
+                    idExternos_tarifas, 
+                    TipoLiquidacion,
+                    Rendido
+                )
+                VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0)
+            ");
+
+                if ($stmtIns) {
+                    $stmtIns->bind_param(
+                        "siddssidis",
+                        $row['CodigoSeguimiento'],
+                        $_POST['id'],
+                        $row['Precio'],
+                        $row['Debe'],
+                        $NombreUsuario,
+                        $observacionManual,
+                        $numeroOrden,
+                        $row['Kilometros'],
+                        $row['TarifaID'],
+                        $tipoLiquidacion
+                    );
+
+                    if ($stmtIns->execute()) {
+                        $row['idExternoRendicion'] = $mysqli->insert_id;
+                        $row['ObservacionManual'] = $observacionManual;
+                        $row['Rendido'] = 0;
+                        $row['FechaRendido'] = null;
+                        $row['UsuarioRendido'] = null;
+                        $row['UsuarioModifico'] = null;
+                        $row['FechaModificacion'] = null;
+                        $row['PrecioAnterior'] = null;
+                        $row['TarifaAnteriorId'] = null;
+                    } else {
+                        $row['idExternoRendicion'] = 0;
+                        $row['Rendido'] = 0;
+                    }
+
+                    $stmtIns->close();
+                } else {
+                    $row['idExternoRendicion'] = 0;
+                    $row['Rendido'] = 0;
+                }
+            }
 
             $ROWS[] = $row;
         }
 
-        echo json_encode(['data' => $ROWS]);
+        echo json_encode(array('data' => $ROWS));
+        exit;
     } elseif ($_POST['controlado'] == 1) {
 
+        $numeroOrden = intval($_POST['NOrden']);
 
         $SQL_EXTERNOS = $mysqli->query("SELECT Usuario FROM usuarios WHERE id='" . $_POST['id'] . "' ");
         $DATO_EXTERNOS = $SQL_EXTERNOS->fetch_array(MYSQLI_ASSOC);
         $NombreUsuario = $DATO_EXTERNOS['Usuario'];
 
-        $SQL = $mysqli->query("SELECT 
-        Seg.Entregado,
-        ts.RazonSocial,
-        ts.ingBrutosOrigen,
-        ts.Recorrido,
-        ts.idPago,
-        ts.ClienteDestino,
-        ts.idClienteDestino,
-        Seg.Fecha,
-        ts.DomicilioDestino,
-        ts.LocalidadDestino,
-        ts.CodigoSeguimiento,
-        Seg.Estado,
-        CONCAT(Seg.Usuario, '_', Seg.Fecha, 'T', Seg.Hora) AS infoABM,
-        ts.Kilometros,
-        ts.Debe,
-        cl.Latitud,
-        cl.Longitud,
-        er.PrecioPagado as Precio,
-        er.Observaciones as ObservacionManual,
-        er.idExternos_tarifas as TarifaID,
-        et.Nombre as NombreTarifa,
-        ROUND(IFNULL(vt.CobrarEnvio, 0) * 0.02, 2) AS CobrarEnvio
-        FROM Seguimiento AS Seg
-        JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
-        JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
-        JOIN Externos_rendicion AS er ON Seg.CodigoSeguimiento=er.CodigoSeguimiento
-        JOIN Externos_tarifas AS et ON er.idExternos_tarifas = et.id
-        LEFT JOIN Ventas AS vt ON vt.NumPedido = Seg.CodigoSeguimiento AND vt.Eliminado = 0 AND vt.surrender_number <> 0
-        WHERE Seg.Eliminado = 0 
-        AND ts.Eliminado = 0 
-        AND Seg.NumerodeOrden = " . $_POST['NOrden'] . "
-        AND Seg.Visitas<>0
-        AND Seg.Usuario = '" . $NombreUsuario . "'
-        AND Seg.Estado <>'Retirado del Cliente' 
-        AND er.idRendicion = " . $_POST['NOrden'] . " ");
+        $SQL = $mysqli->query("
+            SELECT 
+                er.id AS idExternoRendicion,
+                Seg.Entregado,
+                ts.RazonSocial,
+                ts.ingBrutosOrigen,
+                ts.Recorrido,
+                ts.ClienteDestino,
+                ts.idClienteDestino,
+                Seg.Fecha,
+                ts.DomicilioDestino,
+                ts.LocalidadDestino,
+                ts.CodigoSeguimiento,
+                Seg.Estado,
+                e.Slug,
+                CONCAT(Seg.Usuario, '_', Seg.Fecha, 'T', Seg.Hora) AS infoABM,
+                ts.Kilometros,
+                ts.Debe,
+                cl.Latitud,
+                cl.Longitud,
+                er.PrecioPagado AS Precio,
+                er.Observaciones AS ObservacionManual,
+                er.idExternos_tarifas AS TarifaID,
+                er.TipoLiquidacion,
+                er.Rendido,
+                er.FechaRendido,
+                er.UsuarioRendido,
+                er.UsuarioModifico,
+                er.FechaModificacion,
+                er.PrecioAnterior,
+                er.TarifaAnteriorId,
+                et.Nombre AS NombreTarifa,
+                ROUND(IFNULL(vt.CobrarEnvio, 0) * 0.02, 2) AS CobrarEnvio
+            FROM Seguimiento AS Seg
+            JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
+            JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
+            JOIN Externos_rendicion AS er ON er.CodigoSeguimiento = Seg.CodigoSeguimiento AND er.idRendicion = Seg.NumerodeOrden
+            JOIN Externos_tarifas AS et ON er.idExternos_tarifas = et.id
+            LEFT JOIN Ventas AS vt ON vt.NumPedido = Seg.CodigoSeguimiento AND vt.Eliminado = 0 AND vt.surrender_number <> 0
+            LEFT JOIN Estados AS e ON e.Estado = Seg.Estado
+            WHERE Seg.Eliminado = 0
+              AND ts.Eliminado = 0
+              AND Seg.NumerodeOrden = " . $numeroOrden . "
+              AND Seg.Visitas <> 0
+              AND Seg.Estado <> 'Retirado del Cliente'
+              AND Seg.Usuario = '" . $NombreUsuario . "'
+        ");
 
-        $ROWS = [];
+        $ROWS = array();
 
         while ($row = $SQL->fetch_array(MYSQLI_ASSOC)) {
             $ROWS[] = $row;
         }
-
-        //OBTENGO EL TOTAL PARA VERIFICACION
 
         $total = 0;
         foreach ($ROWS as $row) {
@@ -573,15 +891,20 @@ if (isset($_POST['Reporte'])) {
         }
         $total = round($total, 2);
 
-        $sql = $mysqli->prepare("UPDATE Logistica SET Costo_rendicion = ? WHERE Eliminado=0 AND NumerodeOrden = ? LIMIT 1");
-        $sql->bind_param("di", $total, $_POST['NOrden']);
-        $sql->execute();
-        $sql->close();
+        $sql = $mysqli->prepare("UPDATE Logistica SET Costo_rendicion = ? WHERE Eliminado = 0 AND NumerodeOrden = ? LIMIT 1");
+        if ($sql) {
+            $sql->bind_param("di", $total, $numeroOrden);
+            $sql->execute();
+            $sql->close();
+        }
 
-        echo json_encode(['data' => $ROWS, 'total_verificacion' => $total]);
+        echo json_encode(array(
+            'data' => $ROWS,
+            'total_verificacion' => $total
+        ));
+        exit;
     }
 }
-
 $input = json_decode(file_get_contents("php://input"), true);
 
 if (isset($input['Rendicion'])) {
@@ -616,66 +939,101 @@ if (isset($input['Rendicion'])) {
     $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'Desconocido';
 
     foreach ($input['rendicion'] as $row) {
-        // Validación mínima por fila
-        if (!isset($row['CodigoSeguimiento']) || !isset($row['Precio']) || !isset($row['Debe']) || !isset($row['Kilometros'])) {
+
+        if (
+            !isset($row['CodigoSeguimiento']) ||
+            !isset($row['Precio']) ||
+            !isset($row['Debe']) ||
+            !isset($row['Kilometros']) ||
+            !isset($row['idExternoRendicion'])
+
+        ) {
             $errores[] = "Datos incompletos para una fila. Código: " . (isset($row['CodigoSeguimiento']) ? $row['CodigoSeguimiento'] : 'N/D');
             continue;
         }
 
-        $stmt = $mysqli->prepare("INSERT INTO Externos_rendicion(CodigoSeguimiento, IdEmpleado, PrecioPagado, PrecioCobrado, Timestamp, Usuario, Observaciones, idRendicion, Kilometros,idExternos_tarifas)VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)");
+        $tipoLiquidacion = determinarTipoLiquidacion($row);
+        $observacionManual = isset($row['ObservacionManual']) ? $row['ObservacionManual'] : '';
+        $idExternoRendicion = isset($row['idExternoRendicion']) ? intval($row['idExternoRendicion']) : 0;
+        $fechaActual = date('Y-m-d H:i:s');
 
-        if (!$stmt) {
-            $errores[] = "Error al preparar INSERT: " . $mysqli->error;
-            continue;
+        if ($idExternoRendicion > 0) {
+
+            $stmt = $mysqli->prepare("UPDATE Externos_rendicion
+        SET
+            PrecioPagado = ?,
+            PrecioCobrado = ?,
+            Observaciones = ?,
+            Kilometros = ?,
+            idExternos_tarifas = ?,
+            TipoLiquidacion = ?,
+            Rendido = 1,
+            FechaRendido = ?,
+            UsuarioRendido = ?
+        WHERE id = ?
+        LIMIT 1");
+
+            if (!$stmt) {
+                $errores[] = "Error al preparar UPDATE Externos_rendicion: " . $mysqli->error;
+                continue;
+            }
+
+            $stmt->bind_param(
+                "ddsdisssi",
+                $row['Precio'],
+                $row['Debe'],
+                $observacionManual,
+                $row['Kilometros'],
+                $row['TarifaID'],
+                $tipoLiquidacion,
+                $fechaActual,
+                $usuario,
+                $idExternoRendicion
+            );
+
+
+            if (!$stmt->execute()) {
+                $errores[] = "Error al actualizar Externos_rendicion para código " . $row['CodigoSeguimiento'] . ": " . $stmt->error;
+            }
+
+
+            $stmt->close();
+        } else {
+
+            $stmt = $mysqli->prepare("INSERT INTO Externos_rendicion
+            (CodigoSeguimiento, IdEmpleado, PrecioPagado, PrecioCobrado, Timestamp, Usuario, Observaciones, idRendicion, Kilometros, idExternos_tarifas, TipoLiquidacion)
+            VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)");
+
+            if (!$stmt) {
+                $errores[] = "Error al preparar INSERT: " . $mysqli->error;
+                continue;
+            }
+
+            $stmt->bind_param(
+                "siddssidis",
+                $row['CodigoSeguimiento'],
+                $idExterno,
+                $row['Precio'],
+                $row['Debe'],
+                $usuario,
+                $observacionManual,
+                $idRendicion,
+                $row['Kilometros'],
+                $row['TarifaID'],
+                $tipoLiquidacion
+            );
+
+            if (!$stmt->execute()) {
+                $errores[] = "Error al ejecutar INSERT para código " . $row['CodigoSeguimiento'] . ": " . $stmt->error;
+            }
+
+            $stmt->close();
         }
-
-
-        $stmt->bind_param(
-            "siddssidi",
-            $row['CodigoSeguimiento'],
-            $idExterno,
-            $row['Precio'],
-            $row['Debe'],
-            $usuario,
-            $row['ObservacionManual'], // 👈 esta
-            $idRendicion,
-            $row['Kilometros'],
-            $row['TarifaID']
-        );
-
-        if (!$stmt->execute()) {
-            $errores[] = "Error al ejecutar INSERT para código " . $row['CodigoSeguimiento'] . ": " . $stmt->error;
-        }
-
-        $stmt->close();
-
-        // Actualizar idPago en TransClientes
-        $update = $mysqli->prepare("UPDATE TransClientes SET idPago = ? WHERE CodigoSeguimiento = ? AND Eliminado = 0 LIMIT 1");
-
-        if (!$update) {
-            $errores[] = "Error al preparar UPDATE: " . $mysqli->error;
-            continue;
-        }
-
-        $update->bind_param("is", $idRendicion, $row['CodigoSeguimiento']);
-
-        if (!$update->execute()) {
-            $errores[] = "Error al ejecutar UPDATE para código " . $row['CodigoSeguimiento'] . ": " . $update->error;
-        }
-
-        $update->close();
     }
 
     // Calcular el total de la rendición
-    // $total_rendicion = 0;
-    // $total_rendicion = $row['Total_rendicion'];
     $total_rendicion = isset($input['Total_rendicion']) ? (float)$input['Total_rendicion'] : 0.0;
     $total_rendicion = round($total_rendicion, 2);
-
-
-    // foreach ($input['rendicion'] as $row) {
-    //     $total_rendicion += floatval($row['Total']+floatval($row['']));
-    // }
 
     // Actualizar Logistica
     $updateLogistica = $mysqli->prepare("UPDATE Logistica SET Costo_rendicion = ?, Observaciones_rendicion = ? WHERE Eliminado=0 AND NumerodeOrden = ? LIMIT 1;");
