@@ -217,13 +217,13 @@ if ($action === 'detalle') {
             C.nombrecliente AS NombreCliente,
 
             CASE
-                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
-                WHEN IFNULL(TS.Debe, 0) = 0
-                    AND IFNULL(TS.Haber, 0) = 0
-                    AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
-                THEN PR.PrecioUnitarioImputado
-                ELSE 0
-            END AS TotalConIVA,
+    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN TS.Debe
+    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
+         AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
+         AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
+    THEN PR.PrecioUnitarioImputado
+    ELSE 0
+END AS TotalConIVA,
 
             ROUND(
                 (
@@ -269,13 +269,13 @@ if ($action === 'detalle') {
             IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado,
 
             CASE
-                WHEN IFNULL(TS.Debe, 0) > 0 THEN 'TRANSCLIENTES'
-                WHEN IFNULL(TS.Debe, 0) = 0
-                    AND IFNULL(TS.Haber, 0) = 0
-                    AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
-                THEN 'PRORRATEO_RECORRIDO'
-                ELSE 'SIN_VALOR'
-            END AS OrigenCobrado
+    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN 'TRANSCLIENTES'
+    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
+         AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
+         AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
+    THEN 'PRORRATEO_RECORRIDO'
+    ELSE 'SIN_VALOR'
+END AS OrigenCobrado
 
         FROM TransClientes TS
         LEFT JOIN Clientes C 
