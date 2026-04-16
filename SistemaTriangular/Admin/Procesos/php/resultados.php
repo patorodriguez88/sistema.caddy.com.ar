@@ -23,26 +23,6 @@ if ($Inicio === '' || $Final === '') {
 }
 
 // --------- Cargar clientes (distinct) ----------
-// if ($action === 'clientes') {
-//     $sql = "SELECT DISTINCT ingBrutosOrigen AS CodigoProveedor 
-//           FROM TransClientes
-//           WHERE Eliminado=0 AND Fecha>=? AND Fecha<=?
-//           ORDER BY CodigoProveedor";
-//     if (!($stmt = $mysqli->prepare($sql))) jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
-//     $stmt->bind_param('ss', $Inicio, $Final);
-//     if (!$stmt->execute()) jexit(['ok' => false, 'error' => 'Execute failed: ' . $stmt->error]);
-//     $res = $stmt->get_result();
-//     $clientes = array();
-
-//     while ($r = $res->fetch_assoc()) {
-//         if ($r['CodigoProveedor'] !== null && $r['CodigoProveedor'] !== '') {
-//             $clientes[] = $r['CodigoProveedor'];
-//         }
-//     }
-//     $stmt->close();
-//     jexit(['ok' => true, 'clientes' => $clientes]);
-// }
-
 if ($action === 'clientes') {
     $sql = "
         SELECT DISTINCT
@@ -54,6 +34,7 @@ if ($action === 'clientes') {
           AND TS.Fecha >= ?
           AND TS.Fecha <= ?
           AND TS.ingBrutosOrigen <> ''
+          AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         ORDER BY C.nombrecliente ASC
     ";
 
@@ -176,6 +157,7 @@ if ($action === 'listar') {
     WHERE TS.Eliminado = 0
     AND TS.Fecha >= ?
     AND TS.Fecha <= ?
+    AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
     $filtroClientes
 
     ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
