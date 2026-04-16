@@ -30,11 +30,31 @@ if ($action === 'clientes') {
             CONCAT(C.nombrecliente, ' (', TS.ingBrutosOrigen, ')') AS Nombre
         FROM TransClientes TS
         LEFT JOIN Clientes C ON C.id = TS.ingBrutosOrigen
-        WHERE TS.Eliminado = 0
-          AND TS.Fecha >= ?
-          AND TS.Fecha <= ?
-          AND TS.ingBrutosOrigen <> ''
-          AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
+        LEFT JOIN (
+    SELECT 
+        NumerodeOrden,
+        MAX(Fecha) AS FechaLogistica
+    FROM Logistica
+    WHERE Eliminado = 0
+    GROUP BY NumerodeOrden
+        ) AS LF ON LF.NumerodeOrden = TS.NumerodeOrden
+                WHERE TS.Eliminado = 0
+        AND (
+            CASE
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+                ELSE TS.Fecha
+            END
+        ) >= ?
+        AND (
+            CASE
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+                ELSE TS.Fecha
+            END
+        ) <= ?
+        AND TS.ingBrutosOrigen <> ''
+        AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         ORDER BY C.nombrecliente ASC
     ";
 
@@ -169,8 +189,20 @@ if ($action === 'listar') {
         ON PR.NumerodeOrden = TS.NumerodeOrden
 
     WHERE TS.Eliminado = 0
-    AND TS.Fecha >= ?
-    AND TS.Fecha <= ?
+    AND (
+        CASE
+            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+            WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+            ELSE TS.Fecha
+        END
+    ) >= ?
+    AND (
+        CASE
+            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+            WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+            ELSE TS.Fecha
+        END
+    ) <= ?
     AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
     $filtroClientes
 
