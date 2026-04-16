@@ -97,7 +97,7 @@
     return `
     <div class="mb-4">
       <h6 class="text-uppercase text-muted">Proceso de venta</h6>
-      <div class="border rounded p-3">
+      <div class="border rounded p-3" style="font-size: 0.65rem;">
 
         <div class="d-flex justify-content-between border-bottom py-1">
           <span class="fw-semibold">Código</span>
@@ -108,10 +108,15 @@
           <span class="fw-semibold">Cliente</span>
           <span class="text-end ms-3">${venta.NombreCliente || "-"}</span>
         </div>
+        
+        <div class="d-flex justify-content-between border-bottom py-1">
+          <span class="fw-semibold">Numero de Orden</span>
+          <span>${venta.NumerodeOrden || "-"}</span>
+        </div>
 
         <div class="d-flex justify-content-between border-bottom py-1">
           <span class="fw-semibold">Recorrido</span>
-          <span>${venta.NumerodeOrden || "-"}</span>
+          <span>${venta.Recorrido || "-"}</span>
         </div>
 
         <div class="d-flex justify-content-between border-bottom py-1">

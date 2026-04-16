@@ -86,6 +86,7 @@ if ($action === 'listar') {
     TS.Devuelto,
     TS.Facturado,
     TS.NumeroF,
+    TS.Recorrido,
 
     IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
 
@@ -196,6 +197,7 @@ if ($action === 'detalle') {
         SELECT 
             TS.CodigoSeguimiento,
             TS.CodigoProveedor,
+            TS.Recorrido,
             C.nombrecliente AS NombreCliente,
 
             CASE
