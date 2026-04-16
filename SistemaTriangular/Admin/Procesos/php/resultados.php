@@ -95,44 +95,91 @@ if ($action === 'listar') {
         $types .= 's';
     }
     $sql = "
+    SELECT 
+    TS.Fecha,
+    TS.CodigoSeguimiento,
+    TS.CodigoProveedor,
+    C.nombrecliente AS NombreCliente,
+    TS.Wepoint_f,
+    TS.Entregado,
+    TS.Devuelto,
+    TS.Facturado,
+    TS.NumeroF,
+
+    IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
+
+    ROUND(
+        (
+        CASE
+            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+            WHEN IFNULL(TS.Debe, 0) = 0 
+                AND IFNULL(TS.Haber, 0) = 0
+                AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+            THEN PR.PrecioUnitarioImputado
+            ELSE 0
+        END
+        ) / 1.21
+    , 2) AS PrecioCobrado_SinIVA,
+
+    ROUND(
+        (
+        (
+            CASE
+            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+            WHEN IFNULL(TS.Debe, 0) = 0 
+                AND IFNULL(TS.Haber, 0) = 0
+                AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                THEN PR.PrecioUnitarioImputado
+            ELSE 0
+            END
+        ) / 1.21
+        ) - IFNULL(ER.TotalPagado, 0)
+    , 2) AS Diferencia_SinIVA,
+
+    IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones,
+    IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado
+
+    FROM TransClientes AS TS
+
+    LEFT JOIN (
         SELECT 
-        TS.Fecha,
-        TS.CodigoSeguimiento,
-        TS.CodigoProveedor,
-        C.nombrecliente AS NombreCliente,
-        TS.Wepoint_f,
-        TS.Entregado,
-        TS.Devuelto,
-        TS.Facturado,
-        TS.NumeroF,
+            CodigoSeguimiento,
+            SUM(IFNULL(PrecioPagado, 0)) AS TotalPagado,
+            COUNT(*) AS CantidadRendiciones
+        FROM Externos_rendicion
+        GROUP BY CodigoSeguimiento
+    ) AS ER 
+        ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
 
-        IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
-        ROUND(IFNULL(TS.Debe, 0) / 1.21, 2) AS PrecioCobrado_SinIVA,
-        ROUND((IFNULL(TS.Debe, 0) / 1.21) - IFNULL(ER.TotalPagado, 0), 2) AS Diferencia_SinIVA,
-
-        IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones
-
-        FROM TransClientes AS TS
-
-        LEFT JOIN (
-            SELECT 
-                CodigoSeguimiento,
-                SUM(IFNULL(PrecioPagado, 0)) AS TotalPagado,
-                COUNT(*) AS CantidadRendiciones
-            FROM Externos_rendicion
-            GROUP BY CodigoSeguimiento
-        ) AS ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-
-        LEFT JOIN Clientes AS C
+    LEFT JOIN Clientes AS C
         ON C.id = TS.ingBrutosOrigen
 
-        WHERE TS.Eliminado = 0
-        AND TS.Fecha >= ?
-        AND TS.Fecha <= ?
-        $filtroClientes
+    LEFT JOIN (
+        SELECT 
+            L.NumerodeOrden,
+            L.PrecioRecorrido,
+            COUNT(TC.id) AS CantidadServiciosSinImporte,
+            CASE
+                WHEN COUNT(TC.id) > 0 THEN L.PrecioRecorrido / COUNT(TC.id)
+                ELSE 0
+            END AS PrecioUnitarioImputado
+        FROM Logistica L
+        INNER JOIN TransClientes TC 
+            ON L.NumerodeOrden = TC.NumerodeOrden
+        WHERE TC.Eliminado = 0
+        AND IFNULL(TC.Debe,0) = 0
+        AND IFNULL(TC.Haber,0) = 0
+        GROUP BY L.NumerodeOrden, L.PrecioRecorrido
+    ) AS PR
+        ON PR.NumerodeOrden = TS.NumerodeOrden
 
-        ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
-        ";
+    WHERE TS.Eliminado = 0
+    AND TS.Fecha >= ?
+    AND TS.Fecha <= ?
+    $filtroClientes
+
+    ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
+    ";
 
     if (!($stmt = $mysqli->prepare($sql))) {
         jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
