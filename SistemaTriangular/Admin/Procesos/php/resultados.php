@@ -215,14 +215,89 @@ if ($action === 'detalle') {
             TS.CodigoSeguimiento,
             TS.CodigoProveedor,
             C.nombrecliente AS NombreCliente,
-            TS.Debe AS TotalConIVA,
-            ROUND(IFNULL(TS.Debe,0) / 1.21, 2) AS NetoSinIVA,
-            ROUND(IFNULL(TS.Debe,0) - (IFNULL(TS.Debe,0) / 1.21), 2) AS IVA,
+
+            CASE
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                WHEN IFNULL(TS.Debe, 0) = 0
+                    AND IFNULL(TS.Haber, 0) = 0
+                    AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                THEN PR.PrecioUnitarioImputado
+                ELSE 0
+            END AS TotalConIVA,
+
+            ROUND(
+                (
+                    CASE
+                        WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                        WHEN IFNULL(TS.Debe, 0) = 0
+                            AND IFNULL(TS.Haber, 0) = 0
+                            AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                        THEN PR.PrecioUnitarioImputado
+                        ELSE 0
+                    END
+                ) / 1.21
+            , 2) AS NetoSinIVA,
+
+            ROUND(
+                (
+                    CASE
+                        WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                        WHEN IFNULL(TS.Debe, 0) = 0
+                            AND IFNULL(TS.Haber, 0) = 0
+                            AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                        THEN PR.PrecioUnitarioImputado
+                        ELSE 0
+                    END
+                ) - (
+                    (
+                        CASE
+                            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                            WHEN IFNULL(TS.Debe, 0) = 0
+                                AND IFNULL(TS.Haber, 0) = 0
+                                AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                            THEN PR.PrecioUnitarioImputado
+                            ELSE 0
+                        END
+                    ) / 1.21
+                )
+            , 2) AS IVA,
+
             TS.Facturado,
             TS.NumeroF,
-            TS.Fecha
+            TS.Fecha,
+            TS.NumerodeOrden,
+            IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado,
+
+            CASE
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN 'TRANSCLIENTES'
+                WHEN IFNULL(TS.Debe, 0) = 0
+                    AND IFNULL(TS.Haber, 0) = 0
+                    AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                THEN 'PRORRATEO_RECORRIDO'
+                ELSE 'SIN_VALOR'
+            END AS OrigenCobrado
+
         FROM TransClientes TS
-        LEFT JOIN Clientes C ON C.id = TS.ingBrutosOrigen
+        LEFT JOIN Clientes C 
+            ON C.id = TS.ingBrutosOrigen
+        LEFT JOIN (
+            SELECT 
+                L.NumerodeOrden,
+                L.PrecioRecorrido,
+                COUNT(TC.id) AS CantidadServiciosSinImporte,
+                CASE
+                    WHEN COUNT(TC.id) > 0 THEN L.PrecioRecorrido / COUNT(TC.id)
+                    ELSE 0
+                END AS PrecioUnitarioImputado
+            FROM Logistica L
+            INNER JOIN TransClientes TC 
+                ON L.NumerodeOrden = TC.NumerodeOrden
+            WHERE TC.Eliminado = 0
+            AND IFNULL(TC.Debe,0) = 0
+            AND IFNULL(TC.Haber,0) = 0
+            GROUP BY L.NumerodeOrden, L.PrecioRecorrido
+        ) PR 
+            ON PR.NumerodeOrden = TS.NumerodeOrden
         WHERE TS.CodigoSeguimiento = ?
         LIMIT 1
     ";

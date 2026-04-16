@@ -99,13 +99,14 @@
       <h6 class="text-uppercase text-muted">Proceso de venta</h6>
       <div class="border rounded p-3">
         <div><strong>Código:</strong> ${venta.CodigoSeguimiento || "-"}</div>
-        <div><strong>Cliente:</strong> ${venta.NombreCliente || "-"}</div>
-        <div><strong>Importe neto:</strong> ${formatearMoneda(venta.NetoSinIVA)}</div>
-        <div><strong>IVA:</strong> ${formatearMoneda(venta.IVA)}</div>
-        <div><strong>Total:</strong> ${formatearMoneda(venta.TotalConIVA)}</div>
+        <div><strong>Cliente:</strong> ${venta.NombreCliente || "-"}</div>      
         <div><strong>Facturado:</strong> ${parseInt(venta.Facturado, 10) === 1 ? "Sí" : "No"}</div>
         <div><strong>Número de factura:</strong> ${venta.NumeroF || "-"}</div>
         <div><strong>Fecha factura:</strong> ${dmy(venta.Fecha || "")}</div>
+        <div><strong>Origen cobrado:</strong> ${venta.OrigenCobrado || "-"}</div>
+        <div><strong>Importe neto:</strong> ${formatearMoneda(venta.NetoSinIVA)}</div>
+        <div><strong>IVA:</strong> ${formatearMoneda(venta.IVA)}</div>
+        <div><strong>Total:</strong> ${formatearMoneda(venta.TotalConIVA)}</div>
       </div>
     </div>
 
