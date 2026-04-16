@@ -77,7 +77,11 @@ if ($action === 'listar') {
     }
     $sql = "
     SELECT 
-    TS.Fecha,
+    CASE
+        WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+        WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+        ELSE TS.Fecha
+    END AS Fecha,
     TS.CodigoSeguimiento,
     TS.CodigoProveedor,
     C.nombrecliente AS NombreCliente,
@@ -135,11 +139,20 @@ if ($action === 'listar') {
 
     LEFT JOIN Clientes AS C
         ON C.id = TS.ingBrutosOrigen
-
     LEFT JOIN (
         SELECT 
-            L.NumerodeOrden,
-            L.PrecioRecorrido,
+            NumerodeOrden,
+            MAX(Fecha) AS FechaLogistica
+        FROM Logistica
+        WHERE Eliminado = 0
+        GROUP BY NumerodeOrden
+    ) AS LF
+        ON LF.NumerodeOrden = TS.NumerodeOrden
+
+        LEFT JOIN (
+            SELECT 
+                L.NumerodeOrden,
+                L.PrecioRecorrido,
             COUNT(TC.id) AS CantidadServiciosSinImporte,
             CASE
                 WHEN COUNT(TC.id) > 0 THEN L.PrecioRecorrido / COUNT(TC.id)
