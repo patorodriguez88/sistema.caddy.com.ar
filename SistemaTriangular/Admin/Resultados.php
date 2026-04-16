@@ -40,6 +40,15 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        #tablaResultados tbody tr.table-active td {
+            background-color: rgba(13, 110, 253, 0.12) !important;
+        }
+
+        #tablaResultados tbody tr {
+            cursor: pointer;
+        }
+    </style>
 </head>
 
 <body>
@@ -157,14 +166,20 @@
 
                         </div>
                     </div>
-                    <!-- </div> -->
-
-
-
 
                 </div>
                 <!-- container -->
-
+                <div class="offcanvas offcanvas-end" tabindex="-1" id="offcanvasDetalleResultado" aria-labelledby="offcanvasDetalleResultadoLabel" style="width: 520px;">
+                    <div class="offcanvas-header">
+                        <h5 id="offcanvasDetalleResultadoLabel" class="offcanvas-title">Detalle del servicio</h5>
+                        <button type="button" class="btn-close text-reset" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="offcanvas-body">
+                        <div id="detalleResultadoContenido">
+                            <div class="text-muted">Seleccione un registro...</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <!-- content -->
 

@@ -11,16 +11,160 @@
     $("#fdesde").val(first.toISOString().slice(0, 10));
     $("#fhasta").val(last.toISOString().slice(0, 10));
   }
-  function formatearMoneda(valor) {
-    valor = parseFloat(valor || 0);
-    return (
-      "$ " +
-      valor.toLocaleString("es-AR", {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2,
+  function badgeTipoLiquidacion(tipo) {
+    if (!tipo) return "-";
+
+    const t = String(tipo).toUpperCase();
+
+    if (t.indexOf("NO ENTREGADO") !== -1) {
+      return '<span class="badge bg-warning text-dark">No Entregado</span>';
+    }
+    if (t.indexOf("DEVOLUCION") !== -1 || t.indexOf("DEVUELTO") !== -1) {
+      return '<span class="badge bg-danger">Devolución</span>';
+    }
+    if (t.indexOf("ENTREGA") !== -1) {
+      return '<span class="badge bg-success">Entrega</span>';
+    }
+    if (t.indexOf("COLECTA") !== -1) {
+      return '<span class="badge bg-info">Colecta</span>';
+    }
+
+    return '<span class="badge bg-secondary">' + tipo + "</span>";
+  }
+  function renderTablaCompras(compras) {
+    if (!compras || !compras.length) {
+      return '<div class="text-muted">Sin pagos al externo registrados.</div>';
+    }
+
+    let totalPagado = 0;
+
+    const filas = compras
+      .map(function (c, i) {
+        const pagado = parseFloat(c.PrecioPagado || 0);
+        totalPagado += isNaN(pagado) ? 0 : pagado;
+
+        return `
+        <tr>
+          <td>${i + 1}</td>
+          <td>${c.Repartidor || "-"}</td>
+          <td>${badgeTipoLiquidacion(c.TipoLiquidacion)}</td>
+          <td class="text-end">${formatearMoneda(c.PrecioPagado)}</td>
+          <td>${c.NumeroComprobante || "-"}</td>
+          <td>${dmy(c.FechaComprobante || "")}</td>
+          <td>${dmy(c.FechaRendido || "")}</td>
+        </tr>
+      `;
       })
+      .join("");
+
+    return `
+    <div class="table-responsive">
+      
+      <table class="table table-sm table-bordered table-hover align-middle mb-0" style="font-size: 0.60rem;">
+      <thead class="table-light">
+          <tr>
+            <th>#</th>
+            <th>Repartidor</th>
+            <th>Tipo</th>
+            <th class="text-end">Pagado</th>
+            <th>Comprobante</th>
+            <th>Fecha Comp.</th>
+            <th>Fecha Rendido</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${filas}
+        </tbody>
+        <tfoot>
+          <tr>
+            <th colspan="3" class="text-end">Total pagado</th>
+            <th class="text-end text-danger">${formatearMoneda(totalPagado)}</th>
+            <th colspan="3"></th>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  `;
+  }
+  function renderDetalleResultado(resp) {
+    const venta = resp.venta || {};
+    const compras = resp.compras || [];
+    const resumen = resp.resumen || {};
+
+    const claseResultadoFinal = claseResultado(resumen.Resultado);
+    const claseRentabilidad = claseResultado(resumen.Resultado);
+
+    return `
+    <div class="mb-4">
+      <h6 class="text-uppercase text-muted">Proceso de venta</h6>
+      <div class="border rounded p-3">
+        <div><strong>Código:</strong> ${venta.CodigoSeguimiento || "-"}</div>
+        <div><strong>Cliente:</strong> ${venta.NombreCliente || "-"}</div>
+        <div><strong>Importe neto:</strong> ${formatearMoneda(venta.NetoSinIVA)}</div>
+        <div><strong>IVA:</strong> ${formatearMoneda(venta.IVA)}</div>
+        <div><strong>Total:</strong> ${formatearMoneda(venta.TotalConIVA)}</div>
+        <div><strong>Facturado:</strong> ${parseInt(venta.Facturado, 10) === 1 ? "Sí" : "No"}</div>
+        <div><strong>Número de factura:</strong> ${venta.NumeroF || "-"}</div>
+        <div><strong>Fecha factura:</strong> ${dmy(venta.Fecha || "")}</div>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <h6 class="text-uppercase text-muted">Proceso de compra / pagos al externo</h6>
+      ${renderTablaCompras(compras)}
+    </div>
+
+    <div>
+      <h6 class="text-uppercase text-muted">Resultado del servicio</h6>
+      <div class="border rounded p-3">
+        <div><strong>Total cobrado neto:</strong> ${formatearMoneda(resumen.TotalCobradoNeto)}</div>
+        <div><strong>Total pagado:</strong> ${formatearMoneda(resumen.TotalPagado)}</div>
+        <div><strong>Resultado:</strong> <span class="${claseResultadoFinal} fw-semibold">${formatearMoneda(resumen.Resultado)}</span></div>
+        <div><strong>Rentabilidad:</strong> <span class="${claseRentabilidad} fw-semibold">${formatearPorcentaje(resumen.Rentabilidad)}</span></div>
+      </div>
+    </div>
+  `;
+  }
+
+  function abrirDetalleResultado(codigoSeguimiento) {
+    $.post(
+      "/SistemaTriangular/Admin/Procesos/php/resultados.php",
+      {
+        action: "detalle",
+        Inicio: $("#fdesde").val(),
+        Final: $("#fhasta").val(),
+        CodigoSeguimiento: codigoSeguimiento,
+      },
+      function (json) {
+        if (!json || !json.ok) {
+          $("#detalleResultadoContenido").html(
+            '<div class="text-danger">No se pudo cargar el detalle.</div>',
+          );
+          return;
+        }
+
+        $("#detalleResultadoContenido").html(renderDetalleResultado(json));
+
+        const offcanvasEl = document.getElementById(
+          "offcanvasDetalleResultado",
+        );
+        const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+        offcanvas.show();
+      },
+      "json",
     );
   }
+  $("#tablaResultados tbody").on("click", "tr", function () {
+    if (!dt) return;
+
+    $("#tablaResultados tbody tr").removeClass("table-active");
+    $(this).addClass("table-active");
+
+    const data = dt.row(this).data();
+    if (!data || !data.CodigoSeguimiento) return;
+
+    abrirDetalleResultado(data.CodigoSeguimiento);
+  });
   function formatearMoneda(valor) {
     valor = parseFloat(valor || 0);
     return (
@@ -264,26 +408,24 @@
         // Montos con formato $ y 2 decimales
         {
           data: "PrecioCobrado_SinIVA",
-          render: function (data, type, row) {
+          render: function (data, type) {
             if (type !== "display") return data;
             return formatearMoneda(data);
           },
         },
         {
           data: "PrecioPagado_SinIVA",
-          render: function (data, type, row) {
+          render: function (data, type) {
             if (type !== "display") return data;
             return formatearMoneda(data);
           },
         },
         {
           data: "Diferencia_SinIVA",
-          render: function (data, type, row) {
+          render: function (data, type) {
             if (type !== "display") return data;
-
             const valor = parseFloat(data);
             const clase = claseResultado(valor);
-
             return `<span class="${clase} fw-semibold">${formatearMoneda(valor)}</span>`;
           },
         },
@@ -300,7 +442,6 @@
             }
 
             const clase = claseResultado(row.Diferencia_SinIVA);
-
             return `<span class="${clase} fw-semibold">${formatearPorcentaje(pct)}</span>`;
           },
         },
