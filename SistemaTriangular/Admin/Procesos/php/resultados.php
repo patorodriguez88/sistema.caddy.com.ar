@@ -204,9 +204,9 @@ if ($action === 'detalle') {
             ER.NumeroComprobante,
             ER.FechaComprobante,
             ER.FechaRendido,
-            E.NombreCompleto AS Repartidor
+            E.Usuario AS Repartidor
         FROM Externos_rendicion ER
-        LEFT JOIN Empleados E ON E.id = ER.IdEmpleado
+        LEFT JOIN usuarios E ON E.id = ER.IdEmpleado
         WHERE ER.CodigoSeguimiento = ?
         ORDER BY ER.id ASC
     ";
