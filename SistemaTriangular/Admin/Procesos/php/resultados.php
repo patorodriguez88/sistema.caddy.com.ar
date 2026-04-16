@@ -83,20 +83,7 @@ if ($action === 'clientes') {
 
 // --------- Listar datos ----------
 if ($action === 'listar') {
-    // $clientes = isset($_POST['clientes']) ? $_POST['clientes'] : array();
-    // $filtroClientes = '';
-    // $params = array($Inicio, $Final);
-    // $types  = 'ss';
 
-    // if (is_array($clientes) && count($clientes) > 0) {
-    //     // construir IN dinámico
-    //     $place = array_fill(0, count($clientes), '?');
-    //     $filtroClientes = " AND TS.ingBrutosOrigen IN (" . implode(',', $place) . ") ";
-    //     foreach ($clientes as $c) {
-    //         $params[] = $c;
-    //         $types .= 's';
-    //     }
-    // }
     $cliente = isset($_POST['cliente']) ? trim($_POST['cliente']) : '';
     $filtroClientes = '';
     $params = array($Inicio, $Final);
@@ -118,15 +105,15 @@ if ($action === 'listar') {
         TS.Devuelto,
         TS.Facturado,
         TS.NumeroF,
-        ER.TotalPagado AS PrecioPagado_SinIVA,
-        TS.Debe AS PrecioCobrado_SinIVA,
-        CASE
-            WHEN TS.Debe IS NOT NULL OR ER.TotalPagado IS NOT NULL
-            THEN IFNULL(TS.Debe, 0) - IFNULL(ER.TotalPagado, 0)
-            ELSE NULL
-        END AS Diferencia_SinIVA,
+
+        IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
+        ROUND(IFNULL(TS.Debe, 0) / 1.21, 2) AS PrecioCobrado_SinIVA,
+        ROUND((IFNULL(TS.Debe, 0) / 1.21) - IFNULL(ER.TotalPagado, 0), 2) AS Diferencia_SinIVA,
+
         IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones
+
         FROM TransClientes AS TS
+
         LEFT JOIN (
             SELECT 
                 CodigoSeguimiento,
@@ -135,12 +122,15 @@ if ($action === 'listar') {
             FROM Externos_rendicion
             GROUP BY CodigoSeguimiento
         ) AS ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+
         LEFT JOIN Clientes AS C
         ON C.id = TS.ingBrutosOrigen
+
         WHERE TS.Eliminado = 0
         AND TS.Fecha >= ?
         AND TS.Fecha <= ?
         $filtroClientes
+
         ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
         ";
 
@@ -165,6 +155,101 @@ if ($action === 'listar') {
     $stmt->close();
     jexit(['ok' => true, 'data' => $data]);
 }
+if ($action === 'detalle') {
+    $codigo = isset($_POST['CodigoSeguimiento']) ? trim($_POST['CodigoSeguimiento']) : '';
+
+    if ($codigo === '') {
+        jexit(['ok' => false, 'error' => 'Código requerido']);
+    }
+
+    // ===== Proceso de venta =====
+    $sqlVenta = "
+        SELECT 
+            TS.CodigoSeguimiento,
+            TS.CodigoProveedor,
+            C.nombrecliente AS NombreCliente,
+            TS.Debe AS TotalConIVA,
+            ROUND(IFNULL(TS.Debe,0) / 1.21, 2) AS NetoSinIVA,
+            ROUND(IFNULL(TS.Debe,0) - (IFNULL(TS.Debe,0) / 1.21), 2) AS IVA,
+            TS.Facturado,
+            TS.NumeroF,
+            TS.Fecha
+        FROM TransClientes TS
+        LEFT JOIN Clientes C ON C.id = TS.ingBrutosOrigen
+        WHERE TS.CodigoSeguimiento = ?
+        LIMIT 1
+    ";
+
+    $stmtVenta = $mysqli->prepare($sqlVenta);
+    if (!$stmtVenta) {
+        jexit(['ok' => false, 'error' => 'Error preparando venta: ' . $mysqli->error]);
+    }
+
+    $stmtVenta->bind_param("s", $codigo);
+
+    if (!$stmtVenta->execute()) {
+        jexit(['ok' => false, 'error' => 'Error ejecutando venta: ' . $stmtVenta->error]);
+    }
+
+    $venta = $stmtVenta->get_result()->fetch_assoc();
+    $stmtVenta->close();
+
+    // ===== Proceso de compra / rendiciones =====
+    $sqlCompra = "
+        SELECT 
+            ER.id,
+            ER.CodigoSeguimiento,
+            ER.PrecioPagado,
+            ER.TipoLiquidacion,
+            ER.NumeroComprobante,
+            ER.FechaComprobante,
+            ER.FechaRendido,
+            E.NombreCompleto AS Repartidor
+        FROM Externos_rendicion ER
+        LEFT JOIN Empleados E ON E.id = ER.IdEmpleado
+        WHERE ER.CodigoSeguimiento = ?
+        ORDER BY ER.id ASC
+    ";
+
+    $stmtCompra = $mysqli->prepare($sqlCompra);
+    if (!$stmtCompra) {
+        jexit(['ok' => false, 'error' => 'Error preparando compra: ' . $mysqli->error]);
+    }
+
+    $stmtCompra->bind_param("s", $codigo);
+
+    if (!$stmtCompra->execute()) {
+        jexit(['ok' => false, 'error' => 'Error ejecutando compra: ' . $stmtCompra->error]);
+    }
+
+    $resCompra = $stmtCompra->get_result();
+    $compras = [];
+    $totalPagado = 0;
+
+    while ($row = $resCompra->fetch_assoc()) {
+        $totalPagado += (float)$row['PrecioPagado'];
+        $compras[] = $row;
+    }
+
+    $stmtCompra->close();
+
+    $totalCobradoNeto = isset($venta['NetoSinIVA']) ? (float)$venta['NetoSinIVA'] : 0;
+    $resultado = $totalCobradoNeto - $totalPagado;
+    $rentabilidad = $totalCobradoNeto > 0 ? (($resultado / $totalCobradoNeto) * 100) : null;
+
+    jexit([
+        'ok' => true,
+        'venta' => $venta,
+        'compras' => $compras,
+        'resumen' => [
+            'TotalCobradoNeto' => round($totalCobradoNeto, 2),
+            'TotalPagado' => round($totalPagado, 2),
+            'Resultado' => round($resultado, 2),
+            'Rentabilidad' => $rentabilidad !== null ? round($rentabilidad, 2) : null
+        ]
+    ]);
+}
+
 
 // acción desconocida
 jexit(['ok' => false, 'error' => 'Acción inválida']);
