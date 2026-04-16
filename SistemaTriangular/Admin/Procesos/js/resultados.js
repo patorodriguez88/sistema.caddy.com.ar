@@ -95,19 +95,54 @@
     const claseRentabilidad = claseResultado(resumen.Resultado);
 
     return `
-    <div class="mb-4">
-      <h6 class="text-uppercase text-muted">Proceso de venta</h6>
-      <div class="border rounded p-3">
-        <div><strong>Código:</strong> ${venta.CodigoSeguimiento || "-"}</div>
-        <div><strong>Cliente:</strong> ${venta.NombreCliente || "-"}</div>      
-        <div><strong>Facturado:</strong> ${parseInt(venta.Facturado, 10) === 1 ? "Sí" : "No"}</div>
-        <div><strong>Número de factura:</strong> ${venta.NumeroF || "-"}</div>
-        <div><strong>Fecha factura:</strong> ${dmy(venta.Fecha || "")}</div>
-        <div><strong>Origen cobrado:</strong> ${venta.OrigenCobrado || "-"}</div>
-        <div><strong>Importe neto:</strong> ${formatearMoneda(venta.NetoSinIVA)}</div>
-        <div><strong>IVA:</strong> ${formatearMoneda(venta.IVA)}</div>
-        <div><strong>Total:</strong> ${formatearMoneda(venta.TotalConIVA)}</div>
-      </div>
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Código</span>
+    <span>${venta.CodigoSeguimiento || "-"}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Cliente</span>
+    <span>${venta.NombreCliente || "-"}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Recorrido</span>
+    <span>${venta.NumerodeOrden || "-"}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Origen cobrado</span>
+    <span class="${venta.OrigenCobrado === "PRORRATEO_RECORRIDO" ? "text-info fw-semibold" : "text-muted"}">
+    ${venta.OrigenCobrado || "-"}
+    </span>
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Facturado</span>
+    <span>${parseInt(venta.Facturado, 10) === 1 ? "Sí" : "No"}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Número factura</span>
+    <span>${venta.NumeroF || "-"}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Fecha factura</span>
+    <span>${dmy(venta.Fecha || "")}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">Importe neto</span>
+    <span>${formatearMoneda(venta.NetoSinIVA)}</span>
+    </div>
+
+    <div class="d-flex justify-content-between border-bottom py-1">
+    <span class="fw-semibold">IVA</span>
+    <span>${formatearMoneda(venta.IVA)}</span>
+    </div>
+
+    <div class="d-flex justify-content-between py-1">
+    <span class="fw-semibold">Total</span>
+    <span class="fw-bold">${formatearMoneda(venta.TotalConIVA)}</span>
     </div>
 
     <div class="mb-4">
