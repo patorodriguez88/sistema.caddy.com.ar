@@ -1,3 +1,4 @@
+$.fn.dataTable.ext.errMode = "throw";
 // Normalizar formato del número
 function normalizarFormato(numero) {
   // Eliminar guiones existentes y espacios
@@ -82,8 +83,16 @@ function ver(id, name) {
       {
         data: null,
         render: function (data, type, row) {
-          var Fecha = row.Fecha.split("-").reverse().join(".");
-          return `<td>${Fecha}</td>`;
+          if (!row.Fecha) return "";
+
+          var Fecha = String(row.Fecha).split("-").reverse().join(".");
+          return (
+            '<td><span style="display:none;">' +
+            row.Fecha +
+            "</span>" +
+            Fecha +
+            "</td>"
+          );
         },
       },
       { data: "Cantidad" },
@@ -118,7 +127,7 @@ function ver(id, name) {
   });
 
   // Botón para copiar códigos "No Entregados"
-  $("#copyNoEntregados").on("click", function () {
+  $("#copyNoEntregados").off("click", function () {
     var data = datatable.rows().data(); // Obtener todos los datos de las filas
     var noEntregados = [];
 
@@ -147,12 +156,19 @@ function ver(id, name) {
 }
 
 $(document).ready(function () {
-  var datatable1 = $("#facturacion").DataTable();
-  datatable1.destroy();
+  if ($.fn.DataTable.isDataTable("#facturacion")) {
+    $("#facturacion").DataTable().destroy();
+  }
 
   function ver_tabla(desde, hasta) {
     $("#row-facturacion").css("display", "block");
+
+    if ($.fn.DataTable.isDataTable("#facturacion")) {
+      $("#facturacion").DataTable().clear().destroy();
+    }
+
     $("#facturacion").DataTable({
+      destroy: true,
       dom: "Bfrtip",
       pageLength: 50,
       buttons: [
@@ -178,11 +194,12 @@ $(document).ready(function () {
       searching: true,
       footerCallback: function (row, data, start, end, display) {
         var total = this.api()
-          .column(2, { page: "current" }) // Sumar solo la página actual
+          .column(2, { page: "current" })
           .data()
           .reduce(function (a, b) {
             return Number(a) + Number(b);
           }, 0);
+
         var saldo = currencyFormat(total);
         $(this.api().column(2).footer()).html(saldo);
       },
@@ -190,6 +207,15 @@ $(document).ready(function () {
         url: "Procesos/php/facturacion.php",
         data: { Facturacion: 1, Desde: desde, Hasta: hasta },
         type: "post",
+        dataSrc: function (json) {
+          console.log("respuesta facturacion:", json);
+          return json.data || json;
+        },
+        error: function (xhr, status, error) {
+          console.log("status:", status);
+          console.log("error:", error);
+          console.log("response:", xhr.responseText);
+        },
       },
       columns: [
         {
@@ -202,18 +228,11 @@ $(document).ready(function () {
           data: "CicloFacturacion",
           render: function (data, type, row, meta) {
             if (row.CicloFacturacion === "Mensual") {
-              return (
-                `<span class="badge bg-success" style="cursor:pointer">` +
-                row.CicloFacturacion +
-                `</span>`
-              );
+              return `<span class="badge bg-success" style="cursor:pointer">${row.CicloFacturacion}</span>`;
             } else if (row.CicloFacturacion === "Quincenal") {
-              return (
-                `<span class="badge bg-warning" style="cursor:pointer">` +
-                row.CicloFacturacion +
-                `</span>`
-              );
+              return `<span class="badge bg-warning" style="cursor:pointer">${row.CicloFacturacion}</span>`;
             }
+            return row.CicloFacturacion || "";
           },
         },
         {

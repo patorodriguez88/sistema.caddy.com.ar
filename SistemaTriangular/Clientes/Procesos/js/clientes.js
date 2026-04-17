@@ -1,20 +1,3 @@
-// $("#btn_imprimir_factura_modal").on("click", function () {
-//   if (!facturaActualId) {
-//     toast("error", "Error", "No hay factura seleccionada.");
-//     return;
-//   }
-
-//   const urlImpresion =
-//     "/SistemaTriangular/Clientes/invoice.php?id=" +
-//     facturaActualId +
-//     "&print=1";
-
-//   const win = window.open(urlImpresion, "_blank");
-
-//   if (!win) {
-//     toast("error", "Error", "El navegador bloqueó la ventana de impresión.");
-//   }
-// });
 $("#btn_imprimir_factura_modal").on("click", function () {
   const iframe = document.getElementById("iframe_factura_preview");
 
