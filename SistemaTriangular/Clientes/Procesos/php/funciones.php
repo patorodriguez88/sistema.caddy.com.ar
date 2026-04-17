@@ -1,7 +1,71 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
+if (isset($_POST['ControlFacturacion'])) {
+  header('Content-Type: application/json; charset=utf-8');
 
+  $idTransClientes = isset($_POST['idTransClientes']) ? (int)$_POST['idTransClientes'] : 0;
+
+  if ($idTransClientes <= 0) {
+    echo json_encode([
+      'success' => 0,
+      'error' => 'ID inválido'
+    ]);
+    exit;
+  }
+
+  $stmt = $mysqli->prepare("SELECT Control_facturacion FROM TransClientes WHERE id = ? LIMIT 1");
+  if (!$stmt) {
+    echo json_encode([
+      'success' => 0,
+      'error' => 'Error preparando SELECT: ' . $mysqli->error
+    ]);
+    exit;
+  }
+
+  $stmt->bind_param("i", $idTransClientes);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $row = $result->fetch_assoc();
+  $stmt->close();
+
+  if (!$row) {
+    echo json_encode([
+      'success' => 0,
+      'error' => 'No se encontró el registro'
+    ]);
+    exit;
+  }
+
+  $estadoActual = (int)$row['Control_facturacion'];
+  $nuevoEstado = $estadoActual === 1 ? 0 : 1;
+
+  $stmt = $mysqli->prepare("UPDATE TransClientes SET Control_facturacion = ? WHERE id = ? LIMIT 1");
+  if (!$stmt) {
+    echo json_encode([
+      'success' => 0,
+      'error' => 'Error preparando UPDATE: ' . $mysqli->error
+    ]);
+    exit;
+  }
+
+  $stmt->bind_param("ii", $nuevoEstado, $idTransClientes);
+
+  if ($stmt->execute()) {
+    echo json_encode([
+      'success' => 1,
+      'estado' => $nuevoEstado
+    ]);
+  } else {
+    echo json_encode([
+      'success' => 0,
+      'error' => 'No se pudo actualizar el estado'
+    ]);
+  }
+
+  $stmt->close();
+  exit;
+}
 //MODIFICAR EL SERVICIO DE SIMPLE A FLEX O VICEVERSA
 if (isset($_POST['CambiarServicio'])) {
 

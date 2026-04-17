@@ -2617,7 +2617,46 @@ $("#modal_eliminar_cliente_aceptar").click(function () {
     },
   });
 });
+function control_facturacion(id, el, ev) {
+  if (ev) ev.stopPropagation();
 
+  $.ajax({
+    url: "Procesos/php/funciones.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      ControlFacturacion: 1,
+      idTransClientes: id,
+    },
+    beforeSend: function () {
+      $(el).css("pointer-events", "none").css("opacity", "0.6");
+    },
+    success: function (jsonData) {
+      if (parseInt(jsonData.success, 10) === 1) {
+        const estado = parseInt(jsonData.estado, 10);
+        const $icon = $(el).find("i");
+
+        if (estado === 1) {
+          $icon
+            .removeClass("mdi-check-circle-outline text-muted")
+            .addClass("mdi-check-circle text-success");
+        } else {
+          $icon
+            .removeClass("mdi-check-circle text-success")
+            .addClass("mdi-check-circle-outline text-muted");
+        }
+      } else {
+        toast("error", "Error", jsonData.error || "No se pudo actualizar.");
+      }
+    },
+    error: function (xhr) {
+      toast("error", "Error", xhr.responseText || "Error del servidor");
+    },
+    complete: function () {
+      $(el).css("pointer-events", "").css("opacity", "");
+    },
+  });
+}
 //MODIFICAR EL SERVICIO DE SIMPLE A FLEX O VICEVERSA
 function change_service(id) {
   $.ajax({
@@ -2668,10 +2707,6 @@ $("#botonfacturacion").click(function () {
       buttons: ["pageLength", "copy", "excel", "pdf"],
       paging: false,
       searching: true,
-      //   lengthMenu: [
-      //     [10, 25, 50, -1],
-      //     [10, 25, 50, 'All']
-      //   ],
       footerCallback: function (row, data, start, end, display) {
         total = this.api()
           .column(5) //numero de columna a sumar
@@ -2751,17 +2786,6 @@ $("#botonfacturacion").click(function () {
             }
           },
         },
-        //               {data: "Observaciones",
-        //               render: function (data, type, row) {
-        //                 if(row.Observaciones!=""){
-        //                 $('#observaciones_body').html(row.Observaciones);
-        //                   console.log('row',row);
-        //                   return '<a href="#" data-toggle="modal" data-target="#bs-example-modal-sm" class="badge badge-info badge-pill">Observaciones</a>';
-        //                 }else{
-        //                   return '';
-        //                   }
-        //                 }
-        //               },
         {
           data: "ClienteDestino",
           render: function (data, type, row) {
@@ -2855,12 +2879,22 @@ $("#botonfacturacion").click(function () {
               '<td class="table-action">' +
               '<a data-id="' +
               row.id +
-              '" data-toggle="modal" data-target="#standard-modal-modificar" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>' +
+              '" data-toggle="modal" data-target="#standard-modal-modificar" class="action-icon">' +
+              '<i class="mdi mdi-pencil text-success"></i></a>' +
               '<a data-id="' +
               row.id +
               '" data-tabla="trans" data-title="' +
               row.CodigoSeguimiento +
-              '" data-toggle="modal" data-target="#warning-modal" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a>' +
+              '" data-toggle="modal" data-target="#warning-modal" class="action-icon">' +
+              '<i class="mdi mdi-delete text-danger"></i></a>' +
+              '<a href="javascript:void(0)" onclick="control_facturacion(' +
+              row.id +
+              ', this, event)" class="action-icon" title="Control de facturación">' +
+              '<i class="mdi ' +
+              (parseInt(row.Control_facturacion, 10) === 1
+                ? "mdi-check-circle text-success"
+                : "mdi-check-circle-outline text-muted") +
+              '"></i></a>' +
               "</td>"
             );
           },

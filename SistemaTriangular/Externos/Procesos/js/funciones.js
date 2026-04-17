@@ -217,7 +217,7 @@ var datatable = $("#externos").DataTable({
     },
   ],
 });
-
+datatable.buttons().container().appendTo("#externos_botones");
 //DESEMPEÑO
 function desempeno(a, b) {
   $("#desempeno_modal").modal("show");
