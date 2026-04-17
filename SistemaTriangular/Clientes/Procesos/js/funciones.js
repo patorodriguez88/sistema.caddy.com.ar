@@ -2700,14 +2700,17 @@ $("#botonfacturacion").click(function () {
         {
           data: "Fecha",
           render: function (data, type, row) {
-            if (!row.FechaPedido) return "";
-            var Fecha = row.FechaPedido.split("-").reverse().join(".");
+            if (!data) return "";
+
+            if (type === "sort" || type === "type") {
+              return data;
+            }
+
             return (
-              '<td><span style="display: none;">' +
-              row.Fecha +
+              '<span style="display: none;">' +
+              data +
               "</span>" +
-              Fecha +
-              "</td>"
+              data.split("-").reverse().join(".")
             );
           },
         },
