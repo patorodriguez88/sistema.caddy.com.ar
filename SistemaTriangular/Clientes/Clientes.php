@@ -2451,18 +2451,36 @@
 
                                                 <div class="tab-content">
                                                     <div class="tab-pane show active" id="guias_todas">
-                                                        <div id="div_filtro" class="d-print-none text-right">
-                                                            <div class="custom-control custom-control-inline mt-3">
-                                                                <label for="min">Desde </label>
-                                                                <input class="form-control ml-2" type="date" id="min" name="min">
+                                                        <div id="div_filtro" class="d-print-none d-flex justify-content-end align-items-end flex-wrap gap-3 mb-3">
+
+                                                            <div>
+                                                                <label for="min" class="form-label mb-1">Desde</label>
+                                                                <input
+                                                                    class="form-control"
+                                                                    type="date"
+                                                                    id="min"
+                                                                    name="min"
+                                                                    style="width: 245px;">
                                                             </div>
-                                                            <div class="custom-control custom-control-inline">
-                                                                <label for="max">Hasta </label>
-                                                                <input class="form-control ml-2" type="date" id="max" name="max">
+
+                                                            <div>
+                                                                <label for="max" class="form-label mb-1">Hasta</label>
+                                                                <input
+                                                                    class="form-control"
+                                                                    type="date"
+                                                                    id="max"
+                                                                    name="max"
+                                                                    style="width: 245px;">
                                                             </div>
-                                                            <div class="custom-control custom-checkbox custom-control-inline">
-                                                                <a id="filtro" type="button" class="btn btn-info float-right mt-3"><i class="mdi mdi-filter me-1"></i><span> Filtro </span></a>
+
+                                                            <div>
+                                                                <label class="form-label mb-1 d-block">&nbsp;</label>
+                                                                <a id="filtro" class="btn btn-info px-4">
+                                                                    <i class="mdi mdi-filter ms-0 me-1"></i>
+                                                                    <span>Filtro</span>
+                                                                </a>
                                                             </div>
+
                                                         </div>
 
                                                         <div id="info_facturacion" class="alert alert-info bg-info text-white border-0 mt-2" role="alert" style="display:none">

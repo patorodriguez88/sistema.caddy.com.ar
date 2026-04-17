@@ -661,7 +661,7 @@ $("#btn_un_ctas").click(function () {
           if (type === "sort" || type === "type") {
             return row.TimeStamp || row.Fecha;
           }
-
+          if (!row.Fecha) return "";
           var Fecha = row.Fecha.split("-").reverse().join(".");
           var Hora = "";
 
@@ -1913,7 +1913,7 @@ $("#buscarcliente").change(function () {
                 if (type === "sort" || type === "type") {
                   return row.TimeStamp || row.Fecha;
                 }
-
+                if (!row.Fecha) return "";
                 var Fecha = row.Fecha.split("-").reverse().join(".");
                 var Hora = "";
 
@@ -2700,6 +2700,7 @@ $("#botonfacturacion").click(function () {
         {
           data: "Fecha",
           render: function (data, type, row) {
+            if (!row.FechaPedido) return "";
             var Fecha = row.FechaPedido.split("-").reverse().join(".");
             return (
               '<td><span style="display: none;">' +
@@ -3008,6 +3009,8 @@ $("#recorridos_boton").click(function () {
       {
         data: "Fecha",
         render: function (data, type, row) {
+          if (!row.Fecha) return "";
+
           var Fecha = row.Fecha.split("-").reverse().join(".");
           return (
             '<td><span style="display: none;">' +
@@ -3179,6 +3182,7 @@ $("#guias_recibidas_boton").click(function () {
       {
         data: "Fecha",
         render: function (data, type, row) {
+          if (!row.Fecha) return "";
           var Fecha = row.Fecha.split("-").reverse().join(".");
           return (
             '<td><span class="d-print-none" style="display: none;">' +
@@ -3332,6 +3336,7 @@ $("#guias_enviadas_boton").click(function () {
       {
         data: "Fecha",
         render: function (data, type, row) {
+          if (!row.Fecha) return "";
           var Fecha = row.Fecha.split("-").reverse().join(".");
           return (
             '<td><span class="d-print-none" style="display: none;">' +
@@ -3705,6 +3710,7 @@ $("#facturar_boton").click(function () {
         {
           data: "Fecha",
           render: function (data, type, row) {
+            if (!row.Fecha) return "";
             var Fecha = row.Fecha.split("-").reverse().join(".");
             return (
               '<td><span style="display: none;">' +
@@ -4054,6 +4060,7 @@ $("#facturar_recorridos_boton").click(function () {
         {
           data: "Fecha",
           render: function (data, type, row) {
+            if (!row.Fecha) return "";
             var Fecha = row.Fecha.split("-").reverse().join(".");
             return (
               '<td><span style="display: none;">' +
