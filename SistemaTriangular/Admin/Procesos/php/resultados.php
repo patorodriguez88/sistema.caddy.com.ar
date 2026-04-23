@@ -81,12 +81,60 @@ if ($action === 'clientes') {
     $stmt->close();
     jexit(['ok' => true, 'clientes' => $clientes]);
 }
+if ($action === 'repartidores') {
+    $sql = "
+        SELECT DISTINCT
+            U.id,
+            U.Usuario AS Nombre
+        FROM Externos_rendicion ER
+        INNER JOIN usuarios U ON U.id = ER.IdEmpleado
+        WHERE (
+            CASE
+                WHEN ER.FechaRendido IS NOT NULL AND ER.FechaRendido <> ''
+                THEN ER.FechaRendido
+                ELSE ER.FechaComprobante
+            END
+        ) >= ?
+        AND (
+            CASE
+                WHEN ER.FechaRendido IS NOT NULL AND ER.FechaRendido <> ''
+                THEN ER.FechaRendido
+                ELSE ER.FechaComprobante
+            END
+        ) <= ?
+        ORDER BY U.Usuario ASC
+    ";
 
+    if (!($stmt = $mysqli->prepare($sql))) {
+        jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
+    }
+
+    $stmt->bind_param('ss', $Inicio, $Final);
+
+    if (!$stmt->execute()) {
+        jexit(['ok' => false, 'error' => 'Execute failed: ' . $stmt->error]);
+    }
+
+    $res = $stmt->get_result();
+    $repartidores = array();
+
+    while ($r = $res->fetch_assoc()) {
+        $repartidores[] = array(
+            'id' => $r['id'],
+            'Nombre' => $r['Nombre']
+        );
+    }
+
+    $stmt->close();
+    jexit(['ok' => true, 'repartidores' => $repartidores]);
+}
 // --------- Listar datos ----------
 if ($action === 'listar') {
 
     $cliente = isset($_POST['cliente']) ? trim($_POST['cliente']) : '';
+    $repartidor = isset($_POST['repartidor']) ? trim($_POST['repartidor']) : '';
     $filtroClientes = '';
+    $filtroRepartidor = '';
     $params = array($Inicio, $Final);
     $types  = 'ss';
 
@@ -95,6 +143,25 @@ if ($action === 'listar') {
         $params[] = $cliente;
         $types .= 's';
     }
+    if ($repartidor !== '') {
+
+        $filtroRepartidor = " AND EXISTS (
+
+        SELECT 1
+
+        FROM Externos_rendicion ERF
+
+        WHERE ERF.CodigoSeguimiento = TS.CodigoSeguimiento
+
+        AND ERF.IdEmpleado = ?
+
+    ) ";
+
+        $params[] = $repartidor;
+
+        $types .= 'i';
+    }
+
     $sql = "
     SELECT 
     CASE
@@ -205,6 +272,7 @@ if ($action === 'listar') {
     ) <= ?
     AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
     $filtroClientes
+    $filtroRepartidor
 
     ORDER BY TS.Fecha DESC, TS.CodigoSeguimiento DESC
     ";
