@@ -81,10 +81,16 @@
                                             <label class="form-label">Hasta</label>
                                             <input type="date" id="fhasta" class="form-control">
                                         </div>
-                                        <div class="col-sm-4">
+                                        <div class="col-sm-3">
                                             <label class="form-label">Cliente</label>
                                             <select id="fcliente" class="form-control">
                                                 <option value="">Todos los clientes</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label for="frepartidor" class="form-label">Repartidor</label>
+                                            <select id="frepartidor" class="form-select">
+                                                <option value="">Todos los repartidores</option>
                                             </select>
                                         </div>
                                         <div class="col-sm-2 text-end">

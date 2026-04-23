@@ -359,7 +359,56 @@
       "json",
     );
   }
+  function cargarRepartidores() {
+    const Inicio = $("#fdesde").val();
+    const Final = $("#fhasta").val();
 
+    $("#frepartidor").html(
+      '<option value="">Cargando repartidores...</option>',
+    );
+
+    $.post(
+      "/SistemaTriangular/Admin/Procesos/php/resultados.php",
+      {
+        action: "repartidores",
+        Inicio: Inicio,
+        Final: Final,
+      },
+      function (json) {
+        if (!json || !json.ok) {
+          $("#frepartidor").html(
+            '<option value="">No se pudieron cargar</option>',
+          );
+          return;
+        }
+
+        const list = json.repartidores || [];
+        let html = '<option value="">Todos los repartidores</option>';
+
+        if (!list.length) {
+          html = '<option value="">Sin repartidores en el período</option>';
+        } else {
+          html += list
+            .map(function (rep) {
+              return `<option value="${rep.id}">${rep.Nombre}</option>`;
+            })
+            .join("");
+        }
+
+        $("#frepartidor").html(html);
+
+        if ($.fn.select2) {
+          $("#frepartidor").select2("destroy");
+          $("#frepartidor").select2({
+            width: "100%",
+            placeholder: "Buscar repartidor...",
+            allowClear: true,
+          });
+        }
+      },
+      "json",
+    );
+  }
   // Init DataTable
   function initDT() {
     dt = $tabla.DataTable({
@@ -376,11 +425,13 @@
           const Inicio = $("#fdesde").val();
           const Final = $("#fhasta").val();
           const cliente = $("#fcliente").val();
+          const repartidor = $("#frepartidor").val();
           return {
             action: "listar",
             Inicio: Inicio,
             Final: Final,
             cliente: cliente,
+            repartidor: repartidor,
           };
         },
         dataSrc: function (json) {
@@ -524,10 +575,12 @@
   // Reload clientes cuando cambian fechas
   $("#fdesde, #fhasta").on("change", function () {
     cargarClientes();
+    cargarRepartidores();
   });
 
   // Start
   defaultFechas();
   cargarClientes();
+  cargarRepartidores();
   initDT();
 })();
