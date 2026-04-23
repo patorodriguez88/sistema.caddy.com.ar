@@ -64,7 +64,7 @@
 </style>
 
 <body>
-    <!-- Begin page -->
+
     <div class="wrapper">
 
         <div id="menuhyper_head"></div>
@@ -72,10 +72,6 @@
 
         <div class="content-page">
             <div class="content">
-
-                <!-- Start Content-->
-                <!-- <div class="container-fluid"> -->
-
                 <div class="modal fade" id="desempeno_modal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-xl modal-dialog-scrollable">
                         <div class="modal-content">
@@ -94,21 +90,27 @@
                                             <!-- <h4 id="desempeno_header" class="header-title mt-2">Listado de Repartidores Externos </h4> -->
                                             <input type="hidden" id="id_desempeno">
                                             <input type="hidden" id="name_desempeno">
-                                            <div class="row">
+                                            <div class="row align-items-end">
                                                 <div class="col-md-4">
                                                     <div class="form-group mb-3">
                                                         <label>Desde</label>
                                                         <input id="desempeno_desde" type="text" class="form-control" data-provide="datepicker" data-date-format="d-m-yyyy" autocomplete="off">
                                                     </div>
                                                 </div>
+
                                                 <div class="col-md-4">
                                                     <div class="form-group mb-3">
                                                         <label>Hasta</label>
                                                         <input id="desempeno_hasta" type="text" class="form-control" data-provide="datepicker" data-date-format="d-m-yyyy" autocomplete="off">
                                                     </div>
                                                 </div>
-                                                <div class="text-end mt-3">
-                                                    <button id="desempeno_button" type="button" class="btn btn-success">Buscar</button>
+
+                                                <div class="col-md-2">
+                                                    <div class="form-group mb-3">
+                                                        <button id="desempeno_button" type="button" class="btn btn-success w-100">
+                                                            Buscar
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -581,23 +583,24 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <h4 class="header-title mt-2">Listado de Repartidores Externos </h4>
-                                    <div class="text-end">
-                                        <a id="button_liquidaciones" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
-                                        <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
-                                        <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
-                                        <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
-                                        <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
+                                    <h4 class="header-title mt-2">Listado de Repartidores Externos</h4>
 
+                                    <div class="row mb-3 align-items-center">
+                                        <div class="col-md-6">
+                                            <div id="externos_botones"></div>
+                                        </div>
+
+                                        <div class="col-md-6 text-end">
+                                            <a id="button_liquidaciones" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
+                                            <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
+                                            <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
+                                            <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
+                                            <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
+                                        </div>
                                     </div>
 
-                                    <div class="row mb-2">
-                                        <div class="col-sm-8">
-                                        </div><!-- end col-->
-                                    </div>
-
-                                    <div class="table-responsive">
-                                        <table class="table table-striped table-centered mb-0 w-100" id="externos" style="font-size:12px">
+                                    <div class="table-responsive pt-2">
+                                        <table class="table table-striped table-centered w-100" id="externos" style="font-size:12px">
                                             <thead>
                                                 <tr>
                                                     <th>id</th>
@@ -621,12 +624,7 @@
                 </div>
             </div>
         </div>
-        <!-- </div> -->
-
-
-
-    </div>
-    <!-- container -->
+        <!-- container -->
 
     </div>
     <!-- content -->
