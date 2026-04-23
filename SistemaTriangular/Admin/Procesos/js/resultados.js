@@ -362,6 +362,7 @@
   function cargarRepartidores() {
     const Inicio = $("#fdesde").val();
     const Final = $("#fhasta").val();
+    const cliente = $("#fcliente").val();
 
     $("#frepartidor").html(
       '<option value="">Cargando repartidores...</option>',
@@ -373,6 +374,7 @@
         action: "repartidores",
         Inicio: Inicio,
         Final: Final,
+        cliente: cliente,
       },
       function (json) {
         if (!json || !json.ok) {
@@ -567,6 +569,9 @@
   //   const on = $(this).prop("checked");
   //   $(".chk-cli").prop("checked", on);
   // });
+  $("#fcliente").on("change", function () {
+    cargarRepartidores();
+  });
 
   $("#btnBuscar").on("click", function () {
     if (dt) dt.ajax.reload();

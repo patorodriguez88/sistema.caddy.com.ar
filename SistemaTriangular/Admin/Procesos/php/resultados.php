@@ -81,27 +81,58 @@ if ($action === 'clientes') {
     $stmt->close();
     jexit(['ok' => true, 'clientes' => $clientes]);
 }
+
 if ($action === 'repartidores') {
+    $cliente = isset($_POST['cliente']) ? trim($_POST['cliente']) : '';
+    $filtroCliente = '';
+    $types = 'ss';
+    $params = array($Inicio, $Final);
+
+    if ($cliente !== '') {
+        $filtroCliente = " AND TS.ingBrutosOrigen = ? ";
+        $types .= 's';
+        $params[] = $cliente;
+    }
+
     $sql = "
         SELECT DISTINCT
             U.id,
             U.Usuario AS Nombre
-        FROM Externos_rendicion ER
-        INNER JOIN usuarios U ON U.id = ER.IdEmpleado
-        WHERE (
+        FROM TransClientes TS
+
+        LEFT JOIN (
+            SELECT 
+                NumerodeOrden,
+                MAX(Fecha) AS FechaLogistica
+            FROM Logistica
+            WHERE Eliminado = 0
+            GROUP BY NumerodeOrden
+        ) AS LF
+            ON LF.NumerodeOrden = TS.NumerodeOrden
+
+        INNER JOIN Externos_rendicion ER
+            ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+
+        INNER JOIN usuarios U
+            ON U.id = ER.IdEmpleado
+
+        WHERE TS.Eliminado = 0
+        AND (
             CASE
-                WHEN ER.FechaRendido IS NOT NULL AND ER.FechaRendido <> ''
-                THEN ER.FechaRendido
-                ELSE ER.FechaComprobante
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+                ELSE TS.Fecha
             END
         ) >= ?
         AND (
             CASE
-                WHEN ER.FechaRendido IS NOT NULL AND ER.FechaRendido <> ''
-                THEN ER.FechaRendido
-                ELSE ER.FechaComprobante
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
+                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
+                ELSE TS.Fecha
             END
         ) <= ?
+        AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
+        $filtroCliente
         ORDER BY U.Usuario ASC
     ";
 
@@ -109,7 +140,7 @@ if ($action === 'repartidores') {
         jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
     }
 
-    $stmt->bind_param('ss', $Inicio, $Final);
+    $stmt->bind_param($types, ...$params);
 
     if (!$stmt->execute()) {
         jexit(['ok' => false, 'error' => 'Execute failed: ' . $stmt->error]);
@@ -128,6 +159,7 @@ if ($action === 'repartidores') {
     $stmt->close();
     jexit(['ok' => true, 'repartidores' => $repartidores]);
 }
+
 // --------- Listar datos ----------
 if ($action === 'listar') {
 
