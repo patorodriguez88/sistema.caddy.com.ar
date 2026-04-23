@@ -528,12 +528,12 @@ $("#desempeno_button").click(function () {
         render: function (data, type, row) {
           if (row.Rendicion == 0) {
             if (row.Costo_rendicion != 0) {
-              return `<td><span class="badge badge-success">Controlado</span></td>`;
+              return `<span class="badge bg-success">Controlado</span>`;
             } else {
-              return `<td><span class="badge badge-danger">No Controlado</span></td>`;
+              return `<span class="badge bg-danger">No Controlado</span>`;
             }
           } else {
-            return `<td><span class="badge badge-primary">Facturado</span></td>`;
+            return `<span class="badge bg-primary">Facturado</span>`;
           }
         },
       },
