@@ -74,17 +74,17 @@
                                 <div class="card-body">
                                     <div class="row g-3 align-items-end filters">
 
-                                        <div class="col-sm-3">
+                                        <div class="col-sm-2">
                                             <label class="form-label">Desde</label>
                                             <input type="date" id="fdesde" class="form-control">
                                         </div>
 
-                                        <div class="col-sm-3">
+                                        <div class="col-sm-2">
                                             <label class="form-label">Hasta</label>
                                             <input type="date" id="fhasta" class="form-control">
                                         </div>
 
-                                        <div class="col-sm-3">
+                                        <div class="col-sm-2">
                                             <label class="form-label">Cliente</label>
                                             <select id="fcliente" class="form-control">
                                                 <option value="">Todos los clientes</option>
