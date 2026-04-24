@@ -247,14 +247,16 @@ if ($action === 'listar') {
     FROM TransClientes AS TS
 
     LEFT JOIN (
-        SELECT 
-            CodigoSeguimiento,
-            SUM(IFNULL(PrecioPagado, 0)) AS TotalPagado,
-            COUNT(*) AS CantidadRendiciones
-        FROM Externos_rendicion
-        GROUP BY CodigoSeguimiento
+    SELECT 
+        CodigoSeguimiento,
+        SUM(
+            IFNULL(PrecioPagado, 0) + IFNULL(CobranzaIntegrada, 0)
+        ) AS TotalPagado,
+        COUNT(*) AS CantidadRendiciones
+    FROM Externos_rendicion
+    GROUP BY CodigoSeguimiento
     ) AS ER 
-        ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+    ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
 
     LEFT JOIN Clientes AS C
         ON C.id = TS.ingBrutosOrigen
@@ -346,13 +348,13 @@ if ($action === 'detalle') {
             C.nombrecliente AS NombreCliente,
 
             CASE
-    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN TS.Debe
-    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
-         AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
-         AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
-    THEN PR.PrecioUnitarioImputado
-    ELSE 0
-END AS TotalConIVA,
+            WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN TS.Debe
+            WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
+                AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
+                AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
+            THEN PR.PrecioUnitarioImputado
+            ELSE 0
+        END AS TotalConIVA,
 
             ROUND(
                 (
@@ -397,14 +399,14 @@ END AS TotalConIVA,
             TS.NumerodeOrden,
             IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado,
 
-            CASE
-    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN 'TRANSCLIENTES'
-    WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
-         AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
-         AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
-    THEN 'PRORRATEO_RECORRIDO'
-    ELSE 'SIN_VALOR'
-END AS OrigenCobrado
+                    CASE
+            WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN 'TRANSCLIENTES'
+            WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
+                AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
+                AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
+            THEN 'PRORRATEO_RECORRIDO'
+            ELSE 'SIN_VALOR'
+        END AS OrigenCobrado
 
         FROM TransClientes TS
         LEFT JOIN Clientes C 
@@ -451,6 +453,9 @@ END AS OrigenCobrado
             ER.id,
             ER.CodigoSeguimiento,
             ER.PrecioPagado,
+            ER.CobranzaIntegrada,
+            ER.PrecioPagado + ER.CobranzaIntegrada AS TotalPagado,  
+            (IFNULL(ER.PrecioPagado, 0) + IFNULL(ER.CobranzaIntegrada, 0)) AS TotalPagadoReal,
             ER.TipoLiquidacion,
             ER.NumeroComprobante,
             ER.FechaComprobante,
@@ -478,7 +483,7 @@ END AS OrigenCobrado
     $totalPagado = 0;
 
     while ($row = $resCompra->fetch_assoc()) {
-        $totalPagado += (float)$row['PrecioPagado'];
+        $totalPagado += (float)$row['TotalPagadoReal'];
         $compras[] = $row;
     }
 

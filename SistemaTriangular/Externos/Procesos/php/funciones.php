@@ -142,6 +142,7 @@ function obtenerIdExternoRendicionExistente($mysqli, $codigoSeguimiento, $idRend
         SELECT 
             id,
             PrecioPagado,
+            CobranzaIntegrada,
             Observaciones,
             idExternos_tarifas,
             TipoLiquidacion,
@@ -747,6 +748,8 @@ if (isset($_POST['Reporte'])) {
             if ($existente) {
                 $row['idExternoRendicion'] = intval($existente['id']);
                 $row['Precio'] = floatval($existente['PrecioPagado']);
+                $row['CobrarEnvio'] = floatval($existente['CobranzaIntegrada']);
+                $row['Total'] = round(floatval($row['Precio']) + floatval($row['CobrarEnvio']), 2);
                 $row['ObservacionManual'] = $existente['Observaciones'];
                 $row['TarifaID'] = intval($existente['idExternos_tarifas']);
                 $row['TipoLiquidacion'] = $existente['TipoLiquidacion'];
@@ -767,7 +770,8 @@ if (isset($_POST['Reporte'])) {
                 (
                     CodigoSeguimiento, 
                     IdEmpleado, 
-                    PrecioPagado, 
+                    PrecioPagado,
+                    CobranzaIntegrada,
                     PrecioCobrado, 
                     Timestamp, 
                     Usuario, 
@@ -778,15 +782,16 @@ if (isset($_POST['Reporte'])) {
                     TipoLiquidacion,
                     Rendido
                 )
-                VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0)
             ");
 
                 if ($stmtIns) {
                     $stmtIns->bind_param(
-                        "siddssidis",
+                        "sidddssidis",
                         $row['CodigoSeguimiento'],
                         $_POST['id'],
                         $row['Precio'],
+                        $row['CobrarEnvio'],
                         $row['Debe'],
                         $NombreUsuario,
                         $observacionManual,
@@ -799,6 +804,7 @@ if (isset($_POST['Reporte'])) {
                     if ($stmtIns->execute()) {
                         $row['idExternoRendicion'] = $mysqli->insert_id;
                         $row['ObservacionManual'] = $observacionManual;
+                        $row['Total'] = round(floatval($row['Precio']) + floatval($row['CobrarEnvio']), 2);
                         $row['Rendido'] = 0;
                         $row['FechaRendido'] = null;
                         $row['UsuarioRendido'] = null;
@@ -863,13 +869,12 @@ if (isset($_POST['Reporte'])) {
                 er.PrecioAnterior,
                 er.TarifaAnteriorId,
                 et.Nombre AS NombreTarifa,
-                ROUND(IFNULL(vt.CobrarEnvio, 0) * 0.02, 2) AS CobrarEnvio
+                er.CobranzaIntegrada AS CobrarEnvio
             FROM Seguimiento AS Seg
             JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
             JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
             JOIN Externos_rendicion AS er ON er.CodigoSeguimiento = Seg.CodigoSeguimiento AND er.idRendicion = Seg.NumerodeOrden
-            JOIN Externos_tarifas AS et ON er.idExternos_tarifas = et.id
-            LEFT JOIN Ventas AS vt ON vt.NumPedido = Seg.CodigoSeguimiento AND vt.Eliminado = 0 AND vt.surrender_number <> 0
+            JOIN Externos_tarifas AS et ON er.idExternos_tarifas = et.id        
             LEFT JOIN Estados AS e ON e.Estado = Seg.Estado
             WHERE Seg.Eliminado = 0
               AND ts.Eliminado = 0
@@ -956,12 +961,13 @@ if (isset($input['Rendicion'])) {
         $observacionManual = isset($row['ObservacionManual']) ? $row['ObservacionManual'] : '';
         $idExternoRendicion = isset($row['idExternoRendicion']) ? intval($row['idExternoRendicion']) : 0;
         $fechaActual = date('Y-m-d H:i:s');
-
+        $cobranzaIntegrada = isset($row['CobrarEnvio']) ? (float)$row['CobrarEnvio'] : 0;
         if ($idExternoRendicion > 0) {
 
             $stmt = $mysqli->prepare("UPDATE Externos_rendicion
         SET
             PrecioPagado = ?,
+            CobranzaIntegrada = ?,
             PrecioCobrado = ?,
             Observaciones = ?,
             Kilometros = ?,
@@ -979,8 +985,9 @@ if (isset($input['Rendicion'])) {
             }
 
             $stmt->bind_param(
-                "ddsdisssi",
+                "dddsdisssi",
                 $row['Precio'],
+                $cobranzaIntegrada,
                 $row['Debe'],
                 $observacionManual,
                 $row['Kilometros'],
@@ -1001,8 +1008,8 @@ if (isset($input['Rendicion'])) {
         } else {
 
             $stmt = $mysqli->prepare("INSERT INTO Externos_rendicion
-            (CodigoSeguimiento, IdEmpleado, PrecioPagado, PrecioCobrado, Timestamp, Usuario, Observaciones, idRendicion, Kilometros, idExternos_tarifas, TipoLiquidacion)
-            VALUES (?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)");
+            (CodigoSeguimiento, IdEmpleado, PrecioPagado, CobranzaIntegrada, PrecioCobrado, Timestamp, Usuario, Observaciones, idRendicion, Kilometros, idExternos_tarifas, TipoLiquidacion)
+            VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?)");
 
             if (!$stmt) {
                 $errores[] = "Error al preparar INSERT: " . $mysqli->error;
@@ -1010,10 +1017,11 @@ if (isset($input['Rendicion'])) {
             }
 
             $stmt->bind_param(
-                "siddssidis",
+                "sidddssidis",
                 $row['CodigoSeguimiento'],
                 $idExterno,
                 $row['Precio'],
+                $cobranzaIntegrada,
                 $row['Debe'],
                 $usuario,
                 $observacionManual,

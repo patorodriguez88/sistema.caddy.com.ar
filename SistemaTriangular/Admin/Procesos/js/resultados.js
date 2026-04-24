@@ -40,7 +40,7 @@
 
     const filas = compras
       .map(function (c, i) {
-        const pagado = parseFloat(c.PrecioPagado || 0);
+        const pagado = parseFloat(c.TotalPagadoReal || 0);
         totalPagado += isNaN(pagado) ? 0 : pagado;
 
         return `
@@ -49,6 +49,8 @@
           <td>${c.Repartidor || "-"}</td>
           <td>${badgeTipoLiquidacion(c.TipoLiquidacion)}</td>
           <td class="text-end">${formatearMoneda(c.PrecioPagado)}</td>
+          <td class="text-end text-info">${formatearMoneda(c.CobranzaIntegrada)}</td>
+          <td class="text-end fw-semibold">${formatearMoneda(c.TotalPagadoReal)}</td>
           <td>${c.NumeroComprobante || "-"}</td>
           <td>${dmy(c.FechaComprobante || "")}</td>
           <td>${dmy(c.FechaRendido || "")}</td>
@@ -67,6 +69,8 @@
             <th>Repartidor</th>
             <th>Tipo</th>
             <th class="text-end">Pagado</th>
+            <th class="text-end">C.O.D.</th>
+            <th class="text-end">Total</th>
             <th>Comprobante</th>
             <th>Fecha Comp.</th>
             <th>Fecha Rendido</th>
@@ -78,6 +82,8 @@
         <tfoot>
           <tr>
             <th colspan="3" class="text-end">Total pagado</th>
+            <th></th>
+            <th></th>
             <th class="text-end text-danger">${formatearMoneda(totalPagado)}</th>
             <th colspan="3"></th>
           </tr>
