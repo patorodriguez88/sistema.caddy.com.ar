@@ -151,10 +151,17 @@
           <span class="fw-semibold">Importe neto</span>
           <span>${formatearMoneda(venta.NetoSinIVA)}</span>
         </div>
-        <div class="d-flex justify-content-between border-bottom py-1">
-          <span class="fw-semibold">C.O.D. no facturado</span>
-          <span class="text-danger fw-bold">${formatearMoneda(venta.COD_NotInvoice)}</span>
-        </div>
+       <div class="d-flex justify-content-between border-bottom py-1">
+  <span class="fw-semibold">C.O.D. no facturado</span>
+  <span class="text-danger fw-bold">
+    ${formatearMoneda(venta.COD_NotInvoice)}
+    ${
+      venta.SurrenderNumbers
+        ? `<small class="ms-2 text-muted">Surrender: ${venta.SurrenderNumbers}</small>`
+        : ""
+    }
+  </span>
+</div>
 
         <div class="d-flex justify-content-between border-bottom py-1">
           <span class="fw-semibold">IVA</span>

@@ -212,6 +212,7 @@ if ($action === 'listar') {
     TS.Recorrido,
     IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
     IFNULL(VNI.COD_NotInvoice, 0) AS COD_NotInvoice,
+    IFNULL(VNI.SurrenderNumbers, '') AS SurrenderNumbers,
     ROUND(
         (
             (
@@ -292,15 +293,17 @@ if ($action === 'listar') {
     ) AS PR
         ON PR.NumerodeOrden = TS.NumerodeOrden
         LEFT JOIN (
-            SELECT 
-                NumPedido,
-                SUM(IFNULL(CobrarEnvio, 0)) AS COD_NotInvoice
-            FROM Ventas
-            WHERE Eliminado = 0
-            AND not_invoice = 1
-            GROUP BY NumPedido
-        ) AS VNI
-            ON VNI.NumPedido = TS.CodigoSeguimiento        
+        SELECT 
+            NumPedido,
+            SUM(IFNULL(Total, 0)) AS COD_NotInvoice,
+            GROUP_CONCAT(DISTINCT surrender_number ORDER BY surrender_number SEPARATOR ', ') AS SurrenderNumbers
+        FROM Ventas
+        WHERE Eliminado = 0
+        AND not_invoice = 1
+        AND IFNULL(surrender_number, 0) <> 0
+        GROUP BY NumPedido
+    ) AS VNI
+    ON VNI.NumPedido = TS.CodigoSeguimiento      
 
     WHERE TS.Eliminado = 0
     AND (
@@ -379,6 +382,7 @@ if ($action === 'detalle') {
             END
 
         ) + IFNULL(VNI.COD_NotInvoice, 0) AS TotalConIVA,
+         IFNULL(VNI.SurrenderNumbers, '') AS SurrenderNumbers,
 
             ROUND(
                     (
@@ -458,10 +462,12 @@ if ($action === 'detalle') {
             LEFT JOIN (
     SELECT 
         NumPedido,
-        SUM(IFNULL(CobrarEnvio, 0)) AS COD_NotInvoice
+        SUM(IFNULL(Total, 0)) AS COD_NotInvoice,
+        GROUP_CONCAT(DISTINCT surrender_number ORDER BY surrender_number SEPARATOR ', ') AS SurrenderNumbers
     FROM Ventas
     WHERE Eliminado = 0
       AND not_invoice = 1
+      AND IFNULL(surrender_number, 0) <> 0
     GROUP BY NumPedido
 ) AS VNI
     ON VNI.NumPedido = TS.CodigoSeguimiento
