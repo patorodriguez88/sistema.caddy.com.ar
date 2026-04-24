@@ -93,11 +93,11 @@
                                                 <option value="">Todos los repartidores</option>
                                             </select>
                                         </div>
-                                        <div class="col-sm-2 text-end">
-                                            <button class="btn btn-primary w-100" id="btnBuscar">
-                                                <i class="mdi mdi-magnify"></i> Buscar
-                                            </button>
-                                        </div>
+                                    </div>
+                                    <div class="col-sm-2 text-end">
+                                        <button class="btn btn-primary w-100" id="btnBuscar">
+                                            <i class="mdi mdi-magnify"></i> Buscar
+                                        </button>
                                     </div>
                                 </div>
                             </div>
