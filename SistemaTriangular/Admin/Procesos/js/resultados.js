@@ -152,14 +152,14 @@
           <span>${formatearMoneda(venta.NetoSinIVA)}</span>
         </div>
        <div class="d-flex justify-content-between border-bottom py-1">
-  <span class="fw-semibold">C.O.D. [${formatearMoneda(venta.COD_NotInvoice)}]</span>
+  <span class="fw-semibold">C.O.D.[${
+    venta.SurrenderNumbers
+      ? `<small class="ms-2 text-muted">Surrender: ${venta.SurrenderNumbers}</small>`
+      : ""
+  }]</span>
   <span class="text-danger fw-bold">
-
-    ${
-      venta.SurrenderNumbers
-        ? `<small class="ms-2 text-muted">Surrender: ${venta.SurrenderNumbers}</small>`
-        : ""
-    }
+  ${formatearMoneda(venta.COD_NotInvoice)}
+    
   </span>
 </div>
 
