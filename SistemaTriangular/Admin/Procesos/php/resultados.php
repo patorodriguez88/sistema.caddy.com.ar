@@ -39,20 +39,8 @@ if ($action === 'clientes') {
     GROUP BY NumerodeOrden
         ) AS LF ON LF.NumerodeOrden = TS.NumerodeOrden
                 WHERE TS.Eliminado = 0
-        AND (
-            CASE
-                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-                ELSE TS.Fecha
-            END
-        ) >= ?
-        AND (
-            CASE
-                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-                ELSE TS.Fecha
-            END
-        ) <= ?
+        AND TS.Fecha >= ?
+        AND TS.Fecha <= ?
         AND TS.ingBrutosOrigen <> ''
         AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         ORDER BY C.nombrecliente ASC
@@ -117,20 +105,8 @@ if ($action === 'repartidores') {
             ON U.id = ER.IdEmpleado
 
         WHERE TS.Eliminado = 0
-        AND (
-            CASE
-                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-                ELSE TS.Fecha
-            END
-        ) >= ?
-        AND (
-            CASE
-                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-                WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-                ELSE TS.Fecha
-            END
-        ) <= ?
+       AND TS.Fecha >= ?
+        AND TS.Fecha <= ?
         AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         $filtroCliente
         ORDER BY U.Usuario ASC
@@ -196,10 +172,7 @@ if ($action === 'listar') {
 
     $sql = "
     SELECT 
-    CASE
-        WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-        WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-        ELSE TS.Fecha
+    TS.Fecha AS Fecha,
     END AS Fecha,
     TS.CodigoSeguimiento,
     TS.CodigoProveedor,
@@ -306,20 +279,8 @@ if ($action === 'listar') {
     ON VNI.NumPedido = TS.CodigoSeguimiento      
 
     WHERE TS.Eliminado = 0
-    AND (
-        CASE
-            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-            WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-            ELSE TS.Fecha
-        END
-    ) >= ?
-    AND (
-        CASE
-            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Fecha
-            WHEN IFNULL(TS.Debe, 0) = 0 AND IFNULL(TS.Haber, 0) = 0 THEN IFNULL(LF.FechaLogistica, TS.Fecha)
-            ELSE TS.Fecha
-        END
-    ) <= ?
+    AND TS.Fecha >= ?
+    AND TS.Fecha <= ?
     AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
     $filtroClientes
     $filtroRepartidor
