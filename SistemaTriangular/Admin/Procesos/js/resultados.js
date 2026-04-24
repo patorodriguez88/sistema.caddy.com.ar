@@ -365,7 +365,10 @@
         $("#fcliente").html(html);
 
         if ($.fn.select2) {
-          $("#fcliente").select2("destroy");
+          if ($("#fcliente").hasClass("select2-hidden-accessible")) {
+            $("#fcliente").select2("destroy");
+          }
+
           $("#fcliente").select2({
             width: "100%",
             placeholder: "Buscar cliente...",
@@ -417,7 +420,10 @@
         $("#frepartidor").html(html);
 
         if ($.fn.select2) {
-          $("#frepartidor").select2("destroy");
+          if ($("#frepartidor").hasClass("select2-hidden-accessible")) {
+            $("#frepartidor").select2("destroy");
+          }
+
           $("#frepartidor").select2({
             width: "100%",
             placeholder: "Buscar repartidor...",
