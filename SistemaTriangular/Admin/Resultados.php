@@ -73,31 +73,41 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div class="row g-3 align-items-end filters">
+
                                         <div class="col-sm-3">
                                             <label class="form-label">Desde</label>
                                             <input type="date" id="fdesde" class="form-control">
                                         </div>
+
                                         <div class="col-sm-3">
                                             <label class="form-label">Hasta</label>
                                             <input type="date" id="fhasta" class="form-control">
                                         </div>
+
                                         <div class="col-sm-3">
                                             <label class="form-label">Cliente</label>
                                             <select id="fcliente" class="form-control">
                                                 <option value="">Todos los clientes</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-3">
+
+                                        <div class="col-md-2">
                                             <label for="frepartidor" class="form-label">Repartidor</label>
                                             <select id="frepartidor" class="form-select">
                                                 <option value="">Todos los repartidores</option>
                                             </select>
                                         </div>
-                                    </div>
-                                    <div class="col-sm-2 text-end">
-                                        <button class="btn btn-primary w-100" id="btnBuscar">
-                                            <i class="mdi mdi-magnify"></i> Buscar
-                                        </button>
+
+                                        <div class="col-md-2 d-grid">
+
+                                            <button class="btn btn-primary" id="btnBuscar">
+
+                                                <i class="mdi mdi-magnify me-1"></i> Buscar
+
+                                            </button>
+
+                                        </div>
+
                                     </div>
                                 </div>
                             </div>
