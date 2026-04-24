@@ -173,7 +173,6 @@ if ($action === 'listar') {
     $sql = "
     SELECT 
     TS.Fecha AS Fecha,
-    END AS Fecha,
     TS.CodigoSeguimiento,
     TS.CodigoProveedor,
     C.nombrecliente AS NombreCliente,
