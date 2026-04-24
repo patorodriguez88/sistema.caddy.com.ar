@@ -210,36 +210,39 @@ if ($action === 'listar') {
     TS.Facturado,
     TS.NumeroF,
     TS.Recorrido,
-
     IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
-
+    IFNULL(VNI.COD_NotInvoice, 0) AS COD_NotInvoice,
     ROUND(
         (
-        CASE
-            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
-            WHEN IFNULL(TS.Debe, 0) = 0 
-                AND IFNULL(TS.Haber, 0) = 0
-                AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
-            THEN PR.PrecioUnitarioImputado
-            ELSE 0
-        END
-        ) / 1.21
+            (
+                CASE
+                    WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                    WHEN IFNULL(TS.Debe, 0) = 0 
+                        AND IFNULL(TS.Haber, 0) = 0
+                        AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                    THEN PR.PrecioUnitarioImputado
+                    ELSE 0
+                END
+            ) / 1.21
+        ) + IFNULL(VNI.COD_NotInvoice, 0)
     , 2) AS PrecioCobrado_SinIVA,
 
     ROUND(
+    (
         (
-        (
-            CASE
-            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
-            WHEN IFNULL(TS.Debe, 0) = 0 
-                AND IFNULL(TS.Haber, 0) = 0
-                AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
-                THEN PR.PrecioUnitarioImputado
-            ELSE 0
-            END
-        ) / 1.21
-        ) - IFNULL(ER.TotalPagado, 0)
-    , 2) AS Diferencia_SinIVA,
+            (
+                CASE
+                    WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                    WHEN IFNULL(TS.Debe, 0) = 0 
+                        AND IFNULL(TS.Haber, 0) = 0
+                        AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                    THEN PR.PrecioUnitarioImputado
+                    ELSE 0
+                END
+            ) / 1.21
+        ) + IFNULL(VNI.COD_NotInvoice, 0)
+    ) - IFNULL(ER.TotalPagado, 0)
+, 2) AS Diferencia_SinIVA,
 
     IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones,
     IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado
@@ -288,6 +291,16 @@ if ($action === 'listar') {
         GROUP BY L.NumerodeOrden, L.PrecioRecorrido
     ) AS PR
         ON PR.NumerodeOrden = TS.NumerodeOrden
+        LEFT JOIN (
+            SELECT 
+                NumPedido,
+                SUM(IFNULL(CobrarEnvio, 0)) AS COD_NotInvoice
+            FROM Ventas
+            WHERE Eliminado = 0
+            AND not_invoice = 1
+            GROUP BY NumPedido
+        ) AS VNI
+            ON VNI.NumPedido = TS.CodigoSeguimiento        
 
     WHERE TS.Eliminado = 0
     AND (
@@ -347,27 +360,40 @@ if ($action === 'detalle') {
             TS.Recorrido,
             C.nombrecliente AS NombreCliente,
 
+            (
+
             CASE
-            WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN TS.Debe
-            WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
-                AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
-                AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
-            THEN PR.PrecioUnitarioImputado
-            ELSE 0
-        END AS TotalConIVA,
+
+                WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN TS.Debe
+
+                WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
+
+                    AND CAST(IFNULL(TS.Haber, 0) AS DECIMAL(15,2)) = 0
+
+                    AND CAST(IFNULL(PR.PrecioUnitarioImputado, 0) AS DECIMAL(15,2)) > 0
+
+                THEN PR.PrecioUnitarioImputado
+
+                ELSE 0
+
+            END
+
+        ) + IFNULL(VNI.COD_NotInvoice, 0) AS TotalConIVA,
 
             ROUND(
-                (
-                    CASE
-                        WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
-                        WHEN IFNULL(TS.Debe, 0) = 0
-                            AND IFNULL(TS.Haber, 0) = 0
-                            AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
-                        THEN PR.PrecioUnitarioImputado
-                        ELSE 0
-                    END
-                ) / 1.21
-            , 2) AS NetoSinIVA,
+                    (
+                        (
+                            CASE
+                                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                                WHEN IFNULL(TS.Debe, 0) = 0 
+                                    AND IFNULL(TS.Haber, 0) = 0
+                                    AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                                THEN PR.PrecioUnitarioImputado
+                                ELSE 0
+                            END
+                        ) / 1.21
+                    ) + IFNULL(VNI.COD_NotInvoice, 0)
+                , 2) AS NetoSinIVA,
 
             ROUND(
                 (
@@ -398,7 +424,7 @@ if ($action === 'detalle') {
             TS.Fecha,
             TS.NumerodeOrden,
             IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado,
-
+            IFNULL(VNI.COD_NotInvoice, 0) AS COD_NotInvoice,
                     CASE
             WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) > 0 THEN 'TRANSCLIENTES'
             WHEN CAST(IFNULL(TS.Debe, 0) AS DECIMAL(15,2)) = 0
@@ -429,6 +455,16 @@ if ($action === 'detalle') {
             GROUP BY L.NumerodeOrden, L.PrecioRecorrido
         ) PR 
             ON PR.NumerodeOrden = TS.NumerodeOrden
+            LEFT JOIN (
+    SELECT 
+        NumPedido,
+        SUM(IFNULL(CobrarEnvio, 0)) AS COD_NotInvoice
+    FROM Ventas
+    WHERE Eliminado = 0
+      AND not_invoice = 1
+    GROUP BY NumPedido
+) AS VNI
+    ON VNI.NumPedido = TS.CodigoSeguimiento
         WHERE TS.CodigoSeguimiento = ?
         LIMIT 1
     ";
