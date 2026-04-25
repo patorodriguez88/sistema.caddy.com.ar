@@ -61,9 +61,23 @@ curl_setopt_array($curl, array(
 
 $response = curl_exec($curl);
 curl_close($curl);
+
 $result = json_decode($response, true);
+
 $lat = array();
 $lng = array();
+
+if (!isset($result['posiciones']) || !is_array($result['posiciones'])) {
+  echo json_encode(array(
+    'lat' => array(),
+    'lng' => array(),
+    'Desde' => $Desde,
+    'Hasta' => $Hasta,
+    'Recorrido' => $Recorrido,
+    'warning' => 'Gestya no devolvió posiciones'
+  ));
+  exit;
+}
 
 for ($i = 0; $i < count($result['posiciones']); $i++) {
   $lat[] = $result['posiciones'][$i]['latitud'];

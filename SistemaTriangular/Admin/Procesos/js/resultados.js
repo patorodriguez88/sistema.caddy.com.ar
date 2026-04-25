@@ -326,11 +326,15 @@
     if (p.length !== 3) return iso;
     return [p[2], p[1], p[0]].join("/");
   }
-
+  $("#ftipo_fecha").on("change", function () {
+    cargarClientes();
+    if (dt) dt.ajax.reload();
+  });
   // Cargar checklist de clientes
   function cargarClientes() {
     const Inicio = $("#fdesde").val();
     const Final = $("#fhasta").val();
+    const tipo_fecha = $("#ftipo_fecha").val();
 
     $("#fcliente").html('<option value="">Cargando clientes...</option>');
 
@@ -340,6 +344,7 @@
         action: "clientes",
         Inicio: Inicio,
         Final: Final,
+        tipo_fecha: tipo_fecha,
       },
       function (json) {
         if (!json || !json.ok) {
@@ -375,6 +380,8 @@
             allowClear: true,
           });
         }
+
+        cargarRepartidores();
       },
       "json",
     );
@@ -383,6 +390,7 @@
     const Inicio = $("#fdesde").val();
     const Final = $("#fhasta").val();
     const cliente = $("#fcliente").val();
+    const tipo_fecha = $("#ftipo_fecha").val();
 
     $("#frepartidor").html(
       '<option value="">Cargando repartidores...</option>',
@@ -395,6 +403,7 @@
         Inicio: Inicio,
         Final: Final,
         cliente: cliente,
+        tipo_fecha: tipo_fecha,
       },
       function (json) {
         if (!json || !json.ok) {
@@ -451,12 +460,14 @@
           const Final = $("#fhasta").val();
           const cliente = $("#fcliente").val();
           const repartidor = $("#frepartidor").val();
+          const tipo_fecha = $("#ftipo_fecha").val();
           return {
             action: "listar",
             Inicio: Inicio,
             Final: Final,
             cliente: cliente,
             repartidor: repartidor,
+            tipo_fecha: tipo_fecha,
           };
         },
         dataSrc: function (json) {
@@ -600,12 +611,11 @@
   // Reload clientes cuando cambian fechas
   $("#fdesde, #fhasta").on("change", function () {
     cargarClientes();
-    cargarRepartidores();
   });
 
   // Start
   defaultFechas();
   cargarClientes();
-  cargarRepartidores();
+
   initDT();
 })();
