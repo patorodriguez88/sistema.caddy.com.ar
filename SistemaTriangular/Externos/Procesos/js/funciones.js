@@ -533,7 +533,12 @@ $("#desempeno_button").click(function () {
               return `<span class="badge bg-danger">No Controlado</span>`;
             }
           } else {
-            return `<span class="badge bg-primary">Facturado</span>`;
+            const comprobante =
+              row.TipoComprobante && row.NumeroComprobante
+                ? `<br><span class="badge bg-dark text-white mt-1">${row.TipoComprobante} ${row.NumeroComprobante}</span>`
+                : "";
+
+            return `<span class="badge bg-primary">Facturado</span>${comprobante}`;
           }
         },
       },

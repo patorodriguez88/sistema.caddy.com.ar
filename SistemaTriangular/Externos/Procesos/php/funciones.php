@@ -504,6 +504,8 @@ if (isset($_POST['Desempeno'])) {
     $SQL = $mysqli->query("SELECT 
     Logistica.Rendicion,
     Logistica.Costo_rendicion,
+    MAX(ER.TipoComprobante) AS TipoComprobante,
+    MAX(ER.NumeroComprobante) AS NumeroComprobante,
     Recorridos.Nombre,
     Logistica.Fecha,
     Logistica.Recorrido,
@@ -516,6 +518,8 @@ if (isset($_POST['Desempeno'])) {
         ON TransClientes.CodigoSeguimiento = Seguimiento.CodigoSeguimiento
     JOIN Recorridos 
         ON Recorridos.Numero = Logistica.Recorrido
+        LEFT JOIN Externos_rendicion ER
+        ON ER.idRendicion = Logistica.NumerodeOrden
     WHERE Logistica.Fecha >= '" . $_POST['Desde'] . "'
     AND Logistica.Fecha <= '" . $_POST['Hasta'] . "'
     AND Logistica.Eliminado = 0
