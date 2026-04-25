@@ -18,6 +18,15 @@ function jexit($arr)
 $action = isset($_POST['action']) ? $_POST['action'] : '';
 $Inicio = isset($_POST['Inicio']) ? trim($_POST['Inicio']) : '';
 $Final  = isset($_POST['Final'])  ? trim($_POST['Final'])  : '';
+
+$tipoFecha = isset($_POST['tipo_fecha']) ? trim($_POST['tipo_fecha']) : 'servicio';
+
+$campoFecha = "TS.Fecha";
+
+if ($tipoFecha === 'entrega') {
+    $campoFecha = "FS.FechaEntrega";
+}
+
 if ($Inicio === '' || $Final === '') {
     jexit(['ok' => false, 'error' => 'Fechas requeridas']);
 }
@@ -38,9 +47,19 @@ if ($action === 'clientes') {
     WHERE Eliminado = 0
     GROUP BY NumerodeOrden
         ) AS LF ON LF.NumerodeOrden = TS.NumerodeOrden
-                WHERE TS.Eliminado = 0
-        AND TS.Fecha >= ?
-        AND TS.Fecha <= ?
+    LEFT JOIN (
+        SELECT 
+            CodigoSeguimiento,
+            MAX(Fecha) AS FechaEntrega
+        FROM Seguimiento
+        WHERE Eliminado = 0
+        AND Estado = 'Entregado al Cliente'
+        GROUP BY CodigoSeguimiento
+    ) AS FS
+        ON FS.CodigoSeguimiento = TS.CodigoSeguimiento
+        WHERE TS.Eliminado = 0
+        AND $campoFecha >= ?
+        AND $campoFecha <= ?
         AND TS.ingBrutosOrigen <> ''
         AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         ORDER BY C.nombrecliente ASC
@@ -97,16 +116,23 @@ if ($action === 'repartidores') {
             GROUP BY NumerodeOrden
         ) AS LF
             ON LF.NumerodeOrden = TS.NumerodeOrden
-
+        LEFT JOIN (
+            SELECT 
+                CodigoSeguimiento,
+                MAX(Fecha) AS FechaEntrega
+            FROM Seguimiento
+            WHERE Eliminado = 0
+            AND Estado = 'Entregado al Cliente'
+            GROUP BY CodigoSeguimiento
+        ) AS FS
+            ON FS.CodigoSeguimiento = TS.CodigoSeguimiento
         INNER JOIN Externos_rendicion ER
             ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-
         INNER JOIN usuarios U
             ON U.id = ER.IdEmpleado
-
         WHERE TS.Eliminado = 0
-       AND TS.Fecha >= ?
-        AND TS.Fecha <= ?
+        AND $campoFecha >= ?
+        AND $campoFecha <= ?
         AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         $filtroCliente
         ORDER BY U.Usuario ASC
@@ -172,7 +198,7 @@ if ($action === 'listar') {
 
     $sql = "
     SELECT 
-    TS.Fecha AS Fecha,
+    $campoFecha AS Fecha,
     TS.CodigoSeguimiento,
     TS.CodigoProveedor,
     C.nombrecliente AS NombreCliente,
@@ -275,11 +301,21 @@ if ($action === 'listar') {
         AND IFNULL(surrender_number, 0) <> 0
         GROUP BY NumPedido
     ) AS VNI
-    ON VNI.NumPedido = TS.CodigoSeguimiento      
+    ON VNI.NumPedido = TS.CodigoSeguimiento  
+    LEFT JOIN (
+    SELECT 
+        CodigoSeguimiento,
+        MAX(Fecha) AS FechaEntrega
+    FROM Seguimiento
+    WHERE Eliminado = 0
+      AND Estado = 'Entregado al Cliente'
+    GROUP BY CodigoSeguimiento
+) AS FS
+    ON FS.CodigoSeguimiento = TS.CodigoSeguimiento    
 
     WHERE TS.Eliminado = 0
-    AND TS.Fecha >= ?
-    AND TS.Fecha <= ?
+    AND $campoFecha >= ?
+    AND $campoFecha <= ?
     AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
     $filtroClientes
     $filtroRepartidor

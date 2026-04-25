@@ -73,7 +73,13 @@
                             <div class="card">
                                 <div class="card-body">
                                     <div class="row g-3 align-items-end filters">
-
+                                        <div class="col-sm-2">
+                                            <label class="form-label">Buscar por fecha</label>
+                                            <select id="ftipo_fecha" class="form-select">
+                                                <option value="servicio">Fecha servicio</option>
+                                                <option value="entrega">Fecha entrega</option>
+                                            </select>
+                                        </div>
                                         <div class="col-sm-2">
                                             <label class="form-label">Desde</label>
                                             <input type="date" id="fdesde" class="form-control">
