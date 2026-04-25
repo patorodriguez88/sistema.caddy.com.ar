@@ -809,7 +809,7 @@ function report(a, b, c, d, f) {
         data: "Estado",
         render: function (data, type, row) {
           if (row.Estado == "Entregado al Cliente") {
-            var badge = `<span class="badge bg-success text-white">Entregado al Cliente</span>`;
+            var badge = `<span class="badge bg-success">Entregado al Cliente</span>`;
           } else if (row.Estado == "No se pudo entregar") {
             badge = `<span class="badge bg-danger text-white">No se Pudo entregar</span>`;
           } else {
@@ -820,13 +820,13 @@ function report(a, b, c, d, f) {
             return (
               badge +
               `<br>` +
-              `<span class="badge bg-outline-danger">No Liquidada</span>`
+              `<span class="badge border border-danger text-danger bg-white mt-1">No Liquidada</span>`
             );
           } else {
             return (
               badge +
               `<br>` +
-              `<span class="badge bg-outline-success">Liquidada</span>`
+              `<span class="badge border border-success text-success bg-white mt-1">Liquidada</span>`
             );
           }
         },
