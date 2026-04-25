@@ -505,6 +505,7 @@ if (isset($_POST['Desempeno'])) {
     Logistica.Rendicion,
     Logistica.Costo_rendicion,
     MAX(ER.TipoComprobante) AS TipoComprobante,
+    MAX(AFIP.Descripcion) AS TipoComprobanteDescripcion,
     MAX(ER.NumeroComprobante) AS NumeroComprobante,
     Recorridos.Nombre,
     Logistica.Fecha,
@@ -520,6 +521,8 @@ if (isset($_POST['Desempeno'])) {
         ON Recorridos.Numero = Logistica.Recorrido
         LEFT JOIN Externos_rendicion ER
         ON ER.idRendicion = Logistica.NumerodeOrden
+        LEFT JOIN AfipTipoDeComprobante AFIP
+        ON AFIP.Codigo = ER.TipoComprobante
     WHERE Logistica.Fecha >= '" . $_POST['Desde'] . "'
     AND Logistica.Fecha <= '" . $_POST['Hasta'] . "'
     AND Logistica.Eliminado = 0
