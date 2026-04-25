@@ -482,9 +482,6 @@
         },
         { data: "NombreCliente" },
         { data: "CodigoSeguimiento" },
-        // { data: "CodigoProveedor" },
-
-        // { data: "Wepoint_f" },
         {
           data: null,
           title: "Estado",

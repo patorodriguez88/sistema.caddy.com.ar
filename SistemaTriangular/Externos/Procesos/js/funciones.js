@@ -729,13 +729,13 @@ function report(a, b, c, d, f) {
   if (f === 1) {
     $("report_status")
       .html("Controlado")
-      .removeClass("badge-danger")
-      .addClass("badge-success");
+      .removeClass("bg-danger")
+      .addClass("bg-success");
   } else {
     $("report_status")
       .html("No Controlado")
-      .removeClass("badge-success")
-      .addClass("badge-danger");
+      .removeClass("bg-success")
+      .addClass("bg-danger");
   }
 
   $("#full-width-modal").modal("show");
@@ -809,24 +809,24 @@ function report(a, b, c, d, f) {
         data: "Estado",
         render: function (data, type, row) {
           if (row.Estado == "Entregado al Cliente") {
-            var badge = `<span class="badge badge-success text-white">Entregado al Cliente</span>`;
+            var badge = `<span class="badge bg-success text-white">Entregado al Cliente</span>`;
           } else if (row.Estado == "No se pudo entregar") {
-            badge = `<span class="badge badge-danger text-white">No se Pudo entregar</span>`;
+            badge = `<span class="badge bg-danger text-white">No se Pudo entregar</span>`;
           } else {
-            badge = `<span class="badge badge-warning text-white">${row.Estado}</span>`;
+            badge = `<span class="badge bg-warning text-white">${row.Estado}</span>`;
           }
 
           if (row.Rendido == 0) {
             return (
               badge +
               `<br>` +
-              `<span class="badge badge-outline-danger">No Liquidada</span>`
+              `<span class="badge bg-outline-danger">No Liquidada</span>`
             );
           } else {
             return (
               badge +
               `<br>` +
-              `<span class="badge badge-outline-success">Liquidada</span>`
+              `<span class="badge bg-outline-success">Liquidada</span>`
             );
           }
         },
