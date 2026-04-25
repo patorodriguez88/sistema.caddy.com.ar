@@ -535,7 +535,11 @@ $("#desempeno_button").click(function () {
           } else {
             const comprobante =
               row.TipoComprobanteDescripcion && row.NumeroComprobante
-                ? `<br><span class="badge bg-dark text-white mt-1">${row.TipoComprobanteDescripcion} ${row.NumeroComprobante}</span>`
+                ? `<br>
+       <span class="badge bg-dark text-white mt-1 px-2 py-1" 
+             style="font-size: 10px;">
+         ${row.TipoComprobanteDescripcion} ${row.NumeroComprobante}
+       </span>`
                 : "";
 
             return `<span class="badge bg-primary">Facturado</span>${comprobante}`;
