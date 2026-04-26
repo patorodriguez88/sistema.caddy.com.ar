@@ -246,13 +246,20 @@ if (strpos($q, 'flex') !== false && contieneAlguna($q, ['pendiente', 'pendientes
 
 if (strpos($q, 'flex') !== false && contieneAlguna($q, ['salieron', 'salio', 'salida', 'salidas', 'total', 'cuantos', 'paquetes', 'envios', 'cargaron', 'cargados'])) {
     $total = contar($mysqli, "
-        SELECT COUNT(DISTINCT TS.CodigoSeguimiento) AS total
-        FROM TransClientes TS
-        WHERE TS.Eliminado = 0
-          AND TS.Flex = 1
-          AND TS.Fecha = '$fechaConsultaSQL'
-          AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
-    ");
+    SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
+    FROM Seguimiento S
+    INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+    LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+    WHERE TS.Eliminado = 0
+      AND S.Eliminado = 0
+      AND TS.Flex = 1
+      AND S.Fecha = '$fechaConsultaSQL'
+      AND (
+            S.Estado_id IN (5,6)
+            OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
+            OR E.Slug = 'last_mile'
+      )
+");
 
     salir([
         'success' => 1,
@@ -305,14 +312,20 @@ if ((strpos($q, 'meli') !== false || strpos($q, 'mercado libre') !== false) && c
 
 if ((strpos($q, 'meli') !== false || strpos($q, 'mercado libre') !== false) && contieneAlguna($q, ['salieron', 'salio', 'salida', 'salidas', 'total', 'cuantos', 'paquetes', 'envios', 'cargaron', 'cargados'])) {
     $total = contar($mysqli, "
-        SELECT COUNT(DISTINCT TS.CodigoSeguimiento) AS total
-        FROM TransClientes TS
-        WHERE TS.Eliminado = 0
-          AND IFNULL(TS.shipments_id, 0) <> 0
-          AND TS.Fecha = '$fechaConsultaSQL'
-          AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
-    ");
-
+    SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
+    FROM Seguimiento S
+    INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+    LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+    WHERE TS.Eliminado = 0
+      AND S.Eliminado = 0
+      AND IFNULL(TS.shipments_id, 0) <> 0
+      AND S.Fecha = '$fechaConsultaSQL'
+      AND (
+            S.Estado_id IN (5,6)
+            OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
+            OR E.Slug = 'last_mile'
+      )
+");
     salir([
         'success' => 1,
         'respuesta' => "El día <strong>$textoFechaConsulta</strong> salieron/cargaron <strong>$total</strong> paquetes Meli.",
@@ -474,22 +487,26 @@ if (strpos($q, 'retir') !== false) {
     ]);
 }
 
-if (contieneAlguna($q, ['paquetes', 'envios', 'salieron', 'salio', 'salida', 'cargaron', 'cargados'])) {
+if (contieneAlguna($q, ['paquetes', 'envios', 'salieron', 'salio', 'salida', 'cargaron', 'cargados', 'ruta'])) {
     $total = contar($mysqli, "
-        SELECT COUNT(DISTINCT TS.CodigoSeguimiento) AS total
-        FROM TransClientes TS
-        WHERE TS.Eliminado = 0
-          AND TS.Fecha = '$fechaConsultaSQL'
-          AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
+        SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
+        FROM Seguimiento S
+        LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+        WHERE S.Eliminado = 0
+          AND S.Fecha = '$fechaConsultaSQL'
+          AND (
+                S.Estado_id IN (5,6)
+                OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
+                OR E.Slug = 'last_mile'
+          )
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> se cargaron/salieron <strong>$total</strong> paquetes.",
-        'detalle' => "Criterio: TransClientes.Fecha = $fechaConsultaSQL."
+        'respuesta' => "El día <strong>$textoFechaConsulta</strong> salieron a ruta <strong>$total</strong> paquetes.",
+        'detalle' => "Criterio: Seguimiento.Fecha = $fechaConsultaSQL y estado En Tránsito / Cargado en Hoja de Ruta."
     ]);
 }
-
 /* =========================
    RENDICIÓN / FACTURACIÓN
 ========================= */
