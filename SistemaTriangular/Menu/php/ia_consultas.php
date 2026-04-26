@@ -381,27 +381,31 @@ if (
    ENTREGADOS POR REPARTIDOR
 ========================= */
 
+/* =========================
+   ENTREGADOS POR REPARTIDOR
+========================= */
+
 if (strpos($q, 'entreg') !== false) {
     $usuarioDetectado = detectarNombreRepartidor($mysqli, $q);
 
     if ($usuarioDetectado) {
         $usuarioSeguimiento = $mysqli->real_escape_string($usuarioDetectado['UsuarioSistema']);
         $nombreUsuario = $usuarioDetectado['NombreCompleto'];
-        $sql = "
+
+        $total = contar($mysqli, "
             SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
             FROM Seguimiento S
-            INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
-            INNER JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-            LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+            INNER JOIN TransClientes TS 
+                ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+            LEFT JOIN Estados E 
+                ON E.id = S.Estado_id OR E.Estado = S.Estado
             WHERE TS.Eliminado = 0
               AND S.Eliminado = 0
               AND S.Usuario = '$usuarioSeguimiento'
               AND S.Fecha >= '$fechaDesdeSQL'
               AND S.Fecha <= '$fechaHastaSQL'
               AND " . condicionEntregado() . "
-        ";
-
-        $total = contar($mysqli, $sql);
+        ");
 
         $sqlListado = "
             SELECT DISTINCT
@@ -409,9 +413,10 @@ if (strpos($q, 'entreg') !== false) {
                 TS.ClienteDestino,
                 TS.LocalidadDestino
             FROM Seguimiento S
-            INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
-            INNER JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-            LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+            INNER JOIN TransClientes TS 
+                ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+            LEFT JOIN Estados E 
+                ON E.id = S.Estado_id OR E.Estado = S.Estado
             WHERE TS.Eliminado = 0
               AND S.Eliminado = 0
               AND S.Usuario = '$usuarioSeguimiento'
@@ -436,7 +441,7 @@ if (strpos($q, 'entreg') !== false) {
         salir([
             'success' => 1,
             'respuesta' => "En <strong>$textoPeriodoConsulta</strong>, <strong>$nombreUsuario</strong> entregó <strong>$total</strong> paquetes.",
-            'detalle' => ($detalleListado ?: 'Sin detalle para mostrar.') . "<hr class='my-1'><small>Criterio: usuario LIKE '%{$usuarioDetectado['busqueda']}%', Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado.</small>"
+            'detalle' => ($detalleListado ?: 'Sin detalle para mostrar.') . "<hr class='my-1'><small>Criterio: Seguimiento.Usuario = '$usuarioSeguimiento', Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado.</small>"
         ]);
     }
 }
