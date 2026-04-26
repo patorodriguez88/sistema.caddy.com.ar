@@ -164,11 +164,9 @@ function detectarNombreRepartidor($mysqli, $q)
         'paquetes',
         'paquete',
         'entrego',
-        'entrego',
+        'entregó',
         'entregados',
         'entregaron',
-        'entregadas',
-        'entregada',
         'este',
         'esta',
         'mes',
@@ -186,14 +184,7 @@ function detectarNombreRepartidor($mysqli, $q)
         'flex',
         'meli',
         'mercado',
-        'libre',
-        'salieron',
-        'salio',
-        'ruta',
-        'pendientes',
-        'pendiente',
-        'fallidos',
-        'fallaron'
+        'libre'
     ];
 
     $palabras = preg_split('/\s+/', $q);
@@ -206,32 +197,33 @@ function detectarNombreRepartidor($mysqli, $q)
         }
     }
 
-    if (empty($candidatos)) {
-        return false;
-    }
-
     foreach ($candidatos as $nombre) {
         $like = '%' . $mysqli->real_escape_string($nombre) . '%';
 
         $stmt = $mysqli->prepare("
-            SELECT id, Usuario
-            FROM usuarios
-            WHERE Usuario LIKE ?
-               OR Nombre LIKE ?
+            SELECT 
+                E.id AS idEmpleado,
+                E.NombreCompleto,
+                U.id AS idUsuario,
+                U.Usuario AS UsuarioSistema
+            FROM Empleados E
+            INNER JOIN usuarios U ON U.id = E.Usuario
+            WHERE E.NombreCompleto LIKE ?
+              AND E.Aliados = 1
             LIMIT 1
         ");
 
         if (!$stmt) continue;
 
-        $stmt->bind_param("ss", $like, $like);
+        $stmt->bind_param("s", $like);
         $stmt->execute();
         $res = $stmt->get_result();
-        $usuario = $res->fetch_assoc();
+        $empleado = $res->fetch_assoc();
         $stmt->close();
 
-        if ($usuario) {
-            $usuario['busqueda'] = $nombre;
-            return $usuario;
+        if ($empleado) {
+            $empleado['busqueda'] = $nombre;
+            return $empleado;
         }
     }
 
@@ -393,9 +385,8 @@ if (strpos($q, 'entreg') !== false) {
     $usuarioDetectado = detectarNombreRepartidor($mysqli, $q);
 
     if ($usuarioDetectado) {
-        $idUsuario = (int)$usuarioDetectado['id'];
-        $nombreUsuario = $usuarioDetectado['Usuario'];
-
+        $usuarioSeguimiento = $mysqli->real_escape_string($usuarioDetectado['UsuarioSistema']);
+        $nombreUsuario = $usuarioDetectado['NombreCompleto'];
         $sql = "
             SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
             FROM Seguimiento S
@@ -404,7 +395,7 @@ if (strpos($q, 'entreg') !== false) {
             LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
             WHERE TS.Eliminado = 0
               AND S.Eliminado = 0
-              AND ER.IdEmpleado = $idUsuario
+              AND S.Usuario = '$usuarioSeguimiento'
               AND S.Fecha >= '$fechaDesdeSQL'
               AND S.Fecha <= '$fechaHastaSQL'
               AND " . condicionEntregado() . "
@@ -423,7 +414,7 @@ if (strpos($q, 'entreg') !== false) {
             LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
             WHERE TS.Eliminado = 0
               AND S.Eliminado = 0
-              AND ER.IdEmpleado = $idUsuario
+              AND S.Usuario = '$usuarioSeguimiento'
               AND S.Fecha >= '$fechaDesdeSQL'
               AND S.Fecha <= '$fechaHastaSQL'
               AND " . condicionEntregado() . "
