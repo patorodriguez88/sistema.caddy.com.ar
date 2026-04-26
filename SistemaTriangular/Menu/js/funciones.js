@@ -301,3 +301,65 @@ window.ensureGoogleMapsLoaded = function (callbackName) {
 
   return window.__gmapsLoadingPromise;
 };
+$(document).on("click", ".ia-pregunta-rapida", function () {
+  const pregunta = $(this).data("pregunta") || "";
+  $("#ia_consulta_texto").val(pregunta);
+  $("#btn_ia_consultar").trigger("click");
+});
+
+$(document).on("click", "#btn_ia_consultar", function () {
+  const pregunta = $("#ia_consulta_texto").val().trim();
+
+  if (!pregunta) {
+    Swal.fire("Atención", "Escribí una pregunta.", "warning");
+    return;
+  }
+
+  $("#ia_consulta_respuesta").html(`
+    <div class="text-muted">
+      <span class="spinner-border spinner-border-sm me-1"></span>
+      Consultando...
+    </div>
+  `);
+
+  $.ajax({
+    url: "../Menu/php/ia_consultas.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      pregunta: pregunta,
+    },
+    success: function (resp) {
+      if (!resp || resp.success != 1) {
+        $("#ia_consulta_respuesta").html(`
+          <div class="text-danger">
+            ${resp && resp.msg ? resp.msg : "No se pudo procesar la consulta."}
+          </div>
+        `);
+        return;
+      }
+
+      $("#ia_consulta_respuesta").html(`
+        <div class="fw-semibold mb-2">Respuesta</div>
+        <div>${resp.respuesta}</div>
+        ${
+          resp.detalle
+            ? `<hr><small class="text-muted">${resp.detalle}</small>`
+            : ""
+        }
+      `);
+    },
+    error: function (xhr) {
+      console.log(xhr.responseText);
+      $("#ia_consulta_respuesta").html(`
+        <div class="text-danger">Error consultando el asistente.</div>
+      `);
+    },
+  });
+});
+
+$(document).on("keydown", "#ia_consulta_texto", function (e) {
+  if (e.ctrlKey && e.key === "Enter") {
+    $("#btn_ia_consultar").trigger("click");
+  }
+});
