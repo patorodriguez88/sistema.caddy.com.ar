@@ -26,27 +26,39 @@ function restaurarFilaPrecio(row, $tdPrecio, $tdAccion) {
     ${row.ObservacionManual ? `<br><small class="text-muted">${row.ObservacionManual}</small>` : ""}
   `);
 
-  $tdAccion.html(`
-    <i class="mdi mdi-pencil editar-tarifa me-2" 
-       data-id="${row.CodigoSeguimiento}" 
-       style="cursor:pointer; color:goldenrod; font-size:18px;" 
-       title="Editar tarifa"></i>
-    ${
-      parseInt(row.Rendido) === 0
-        ? `
-        <i class="mdi mdi-cash-remove no-pagar-tarifa me-2" 
-           data-id="${row.CodigoSeguimiento}" 
-           style="cursor:pointer; color:crimson; font-size:18px;" 
-           title="Marcar como NO PAGAR"></i>
+  let accionesHTML = "";
 
-        <i class="mdi mdi-trash-can eliminar-renglon me-2" 
-           data-id="${row.CodigoSeguimiento}" 
-           style="cursor:pointer; color:red; font-size:18px;" 
-           title="Eliminar de esta rendición"></i>
-      `
-        : ""
-    }
-  `);
+  if (parseInt(window.USUARIO_NIVEL || 0) === 1) {
+    accionesHTML += `
+    <i class="mdi mdi-chart-line analizar-servicio me-2"
+       data-id="${row.CodigoSeguimiento}"
+       style="cursor:pointer; color:#0dcaf0; font-size:18px;"
+       title="Analizar venta / costo"></i>
+  `;
+  }
+
+  accionesHTML += `
+  <i class="mdi mdi-pencil editar-tarifa me-2" 
+     data-id="${row.CodigoSeguimiento}" 
+     style="cursor:pointer; color:goldenrod; font-size:18px;" 
+     title="Editar tarifa"></i>
+`;
+
+  if (parseInt(row.Rendido) === 0) {
+    accionesHTML += `
+    <i class="mdi mdi-cash-remove no-pagar-tarifa me-2" 
+       data-id="${row.CodigoSeguimiento}" 
+       style="cursor:pointer; color:crimson; font-size:18px;" 
+       title="Marcar como NO PAGAR"></i>
+
+    <i class="mdi mdi-trash-can eliminar-renglon me-2" 
+       data-id="${row.CodigoSeguimiento}" 
+       style="cursor:pointer; color:red; font-size:18px;" 
+       title="Eliminar de esta rendición"></i>
+  `;
+  }
+
+  $tdAccion.html(accionesHTML);
 }
 // Función para actualizar la tabla con el filtro actualizado
 function actualizarTabla() {
@@ -915,12 +927,23 @@ function report(a, b, c, d, f) {
         data: null,
         className: "text-center accion-editar",
         render: function (data, type, row) {
-          let html = `
-      <i class="mdi mdi-pencil editar-tarifa me-2" 
-        data-id="${row.CodigoSeguimiento}" 
-        style="cursor:pointer; color:goldenrod; font-size:18px;" 
-        title="Editar tarifa"></i>
-    `;
+          let html = "";
+
+          if (parseInt(window.USUARIO_NIVEL || 0) === 1) {
+            html += `
+            <i class="mdi mdi-chart-line analizar-servicio me-2"
+              data-id="${row.CodigoSeguimiento}"
+              style="cursor:pointer; color:#0dcaf0; font-size:18px;"
+              title="Analizar venta / costo"></i>
+          `;
+          }
+
+          html += `
+            <i class="mdi mdi-pencil editar-tarifa me-2" 
+              data-id="${row.CodigoSeguimiento}" 
+              style="cursor:pointer; color:goldenrod; font-size:18px;" 
+              title="Editar tarifa"></i>
+          `;
 
           // Solo permitir NO PAGAR y eliminar antes de generar la rendición
           if (parseInt(row.Rendido) === 0) {
@@ -1213,7 +1236,144 @@ $("#generar_liquidacion").click(function () {
     }
   });
 });
+function monedaARS(v) {
+  v = parseFloat(v || 0);
+  return (
+    "$ " +
+    v.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
+}
 
+function porcentaje(v) {
+  if (v === null || v === undefined || isNaN(v)) return "—";
+  return (
+    parseFloat(v).toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }) + "%"
+  );
+}
+
+$("#reporte_tabla tbody").on("click", ".analizar-servicio", function () {
+  const tabla = $("#reporte_tabla").DataTable();
+  const fila = tabla.row($(this).parents("tr"));
+  const row = fila.data();
+
+  if (!row || !row.CodigoSeguimiento) {
+    Swal.fire("Atención", "No se pudo identificar el servicio.", "warning");
+    return;
+  }
+
+  $.ajax({
+    url: "Procesos/php/funciones.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      AnalizarServicioRendicion: 1,
+      CodigoSeguimiento: row.CodigoSeguimiento,
+      idRendicion: $("#report_id").text().trim(),
+    },
+    success: function (resp) {
+      if (!resp || resp.success != 1) {
+        Swal.fire(
+          "Error",
+          resp.msg || "No se pudo analizar el servicio.",
+          "error",
+        );
+        return;
+      }
+
+      const d = resp.data || {};
+      const claseResultado =
+        parseFloat(d.Resultado || 0) >= 0 ? "text-success" : "text-danger";
+
+      Swal.fire({
+        title: "Análisis del servicio",
+        width: 760,
+        html: `
+          <div class="text-start" style="font-size:12px;">
+            <div class="mb-2">
+              <span class="badge bg-dark">${d.CodigoSeguimiento || "-"}</span>
+              <span class="badge bg-secondary">${d.OrigenCobrado || "-"}</span>
+              ${
+                d.SurrenderNumbers
+                  ? `<span class="badge bg-danger">C.O.D. Surrender ${d.SurrenderNumbers}</span>`
+                  : ""
+              }
+            </div>
+
+            <div class="border rounded p-2 mb-2">
+              <div><strong>Cliente:</strong> ${d.RazonSocial || "-"}</div>
+              <div><strong>Destino:</strong> ${d.ClienteDestino || "-"} - ${d.DomicilioDestino || ""} ${d.LocalidadDestino || ""}</div>
+              <div><strong>Recorrido:</strong> ${d.Recorrido || "-"} | <strong>Orden:</strong> ${d.NumerodeOrden || "-"}</div>
+              <div><strong>Fecha servicio:</strong> ${d.FechaServicio || "-"}</div>
+            </div>
+
+            <div class="row g-2">
+              <div class="col-md-6">
+                <div class="border rounded p-2 h-100">
+                  <h6 class="mb-2">Venta / ingreso</h6>
+                  <div class="d-flex justify-content-between">
+                    <span>Venta neta facturable</span>
+                    <strong>${monedaARS(d.VentaNetaFacturable)}</strong>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span>C.O.D. no facturado</span>
+                    <strong class="text-danger">${monedaARS(d.COD_NotInvoice)}</strong>
+                  </div>
+                  <hr class="my-1">
+                  <div class="d-flex justify-content-between">
+                    <span>Ingreso operativo</span>
+                    <strong>${monedaARS(d.IngresoOperativo)}</strong>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-md-6">
+                <div class="border rounded p-2 h-100">
+                  <h6 class="mb-2">Costo externo</h6>
+                  <div class="d-flex justify-content-between">
+                    <span>Tarifa externa</span>
+                    <strong>${monedaARS(d.PrecioPagado)}</strong>
+                  </div>
+                  <div class="d-flex justify-content-between">
+                    <span>C.O.D. externo</span>
+                    <strong class="text-info">${monedaARS(d.CobranzaIntegrada)}</strong>
+                  </div>
+                  <div><small class="text-muted">${d.NombreTarifa || ""} / ${d.TipoLiquidacion || ""}</small></div>
+                  <hr class="my-1">
+                  <div class="d-flex justify-content-between">
+                    <span>Total costo</span>
+                    <strong>${monedaARS(d.CostoExterno)}</strong>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="border rounded p-2 mt-2">
+              <div class="d-flex justify-content-between">
+                <span><strong>Resultado</strong></span>
+                <strong class="${claseResultado}">${monedaARS(d.Resultado)}</strong>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span><strong>Rentabilidad</strong></span>
+                <strong class="${claseResultado}">${porcentaje(d.Rentabilidad)}</strong>
+              </div>
+            </div>
+          </div>
+        `,
+        confirmButtonText: "Cerrar",
+      });
+    },
+    error: function (xhr) {
+      console.log(xhr.responseText);
+      Swal.fire("Error", "Falló la comunicación con el servidor.", "error");
+    },
+  });
+});
 // Cargar tipos de comprobante
 function cargarTiposComprobante() {
   $.post(
