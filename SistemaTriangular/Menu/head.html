@@ -64,6 +64,19 @@
     </div>
 
     <ul class="topbar-menu d-flex align-items-center gap-3">
+      <li class="d-none d-sm-inline-block">
+        <a
+          class="nav-link"
+          data-bs-toggle="offcanvas"
+          href="#ia-consultas-offcanvas"
+          role="button"
+          aria-controls="ia-consultas-offcanvas"
+          title="Asistente Caddy"
+        >
+          <i class="ri-robot-2-line font-22"></i>
+        </a>
+      </li>
+
       <li class="dropdown notification-list">
         <a
           class="nav-link dropdown-toggle arrow-none"
@@ -366,3 +379,130 @@
   </div>
 </div>
 <!-- ========== Topbar End ========== -->
+<div
+  class="offcanvas offcanvas-end"
+  tabindex="-1"
+  id="ia-consultas-offcanvas"
+  aria-labelledby="iaConsultasLabel"
+  style="width: 420px"
+>
+  <div class="offcanvas-header border-bottom">
+    <div>
+      <h5 class="offcanvas-title mb-0" id="iaConsultasLabel">
+        Asistente Caddy
+      </h5>
+      <small class="text-muted">Consultas rápidas del sistema</small>
+    </div>
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="offcanvas"
+      aria-label="Cerrar"
+    ></button>
+  </div>
+
+  <div class="offcanvas-body d-flex flex-column">
+    <div class="mb-2">
+      <label class="form-label">Preguntá algo</label>
+      <textarea
+        id="ia_consulta_texto"
+        class="form-control"
+        rows="3"
+        placeholder="Ej: ¿Cuántos paquetes se entregaron hoy?"
+      ></textarea>
+    </div>
+
+    <div class="d-grid mb-3">
+      <button class="btn btn-primary" id="btn_ia_consultar">
+        <i class="ri-send-plane-line me-1"></i> Consultar
+      </button>
+    </div>
+
+    <div class="mb-3">
+      <small class="text-muted d-block mb-1">Ejemplos:</small>
+
+      <div class="d-flex flex-wrap gap-1">
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos paquetes se entregaron hoy?"
+        >
+          Entregados hoy
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos paquetes no se pudieron entregar hoy?"
+        >
+          No entregados hoy
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos paquetes Flex salieron hoy?"
+        >
+          Flex salieron
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos Flex están en ruta?"
+        >
+          Flex en ruta
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos Flex se entregaron hoy?"
+        >
+          Flex entregados
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos Flex fallaron hoy?"
+        >
+          Flex fallidos
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos paquetes de Meli pendientes?"
+        >
+          Meli pendientes
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="Pendientes por repartidor hoy"
+        >
+          Pendientes por repartidor
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántas rendiciones están pendientes?"
+        >
+          Rendiciones pendientes
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuántos recorridos hay hoy?"
+        >
+          Recorridos hoy
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuánto se facturó este mes?"
+        >
+          Facturado mes
+        </button>
+        <button
+          class="btn btn-sm btn-light ia-pregunta-rapida"
+          data-pregunta="¿Cuánta cobranza integrada se pagó este mes?"
+        >
+          C.O.D. mes
+        </button>
+      </div>
+    </div>
+
+    <div
+      id="ia_consulta_respuesta"
+      class="border rounded p-3 bg-light flex-grow-1"
+      style="font-size: 13px; overflow-y: auto"
+    >
+      <span class="text-muted">La respuesta aparecerá acá.</span>
+    </div>
+  </div>
+</div>
