@@ -12,15 +12,17 @@ function salir($arr)
 function normalizarTexto($texto)
 {
     return str_replace(
-        ['á', 'é', 'í', 'ó', 'ú', 'ñ', '¿', '?'],
-        ['a', 'e', 'i', 'o', 'u', 'n', '', ''],
-        mb_strtolower($texto, 'UTF-8')
+        ['á', 'é', 'í', 'ó', 'ú', 'ñ', '¿', '?', '.', ',', ';', ':'],
+        ['a', 'e', 'i', 'o', 'u', 'n', '', '', '', '', '', ''],
+        mb_strtolower(trim($texto), 'UTF-8')
     );
 }
 
 function contieneAlguna($texto, $palabras)
 {
-    foreach ($palabras as $p) if (strpos($texto, $p) !== false) return true;
+    foreach ($palabras as $p) {
+        if (strpos($texto, $p) !== false) return true;
+    }
     return false;
 }
 
@@ -49,8 +51,13 @@ function detectarFechaConsulta($q)
 {
     $hoy = date('Y-m-d');
 
-    if (strpos($q, 'hoy') !== false) return [$hoy, 'hoy'];
-    if (strpos($q, 'ayer') !== false) return [date('Y-m-d', strtotime('-1 day')), 'ayer'];
+    if (strpos($q, 'hoy') !== false) {
+        return [$hoy, 'hoy'];
+    }
+
+    if (strpos($q, 'ayer') !== false) {
+        return [date('Y-m-d', strtotime('-1 day')), 'ayer'];
+    }
 
     if (preg_match('/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/', $q, $m)) {
         $dia = str_pad($m[1], 2, '0', STR_PAD_LEFT);
@@ -78,21 +85,48 @@ function detectarFechaConsulta($q)
             if (strtolower(date('l')) === $en) {
                 return [$hoy, $es];
             }
+
             return [date('Y-m-d', strtotime("last $en")), $es];
         }
     }
 
     return [$hoy, 'hoy'];
 }
+
 function detectarPeriodoConsulta($q)
 {
     if (strpos($q, 'este mes') !== false || strpos($q, 'mes actual') !== false) {
         return [date('Y-m-01'), date('Y-m-t'), 'este mes'];
     }
 
+    if (strpos($q, 'mes pasado') !== false) {
+        return [
+            date('Y-m-01', strtotime('first day of last month')),
+            date('Y-m-t', strtotime('last day of last month')),
+            'el mes pasado'
+        ];
+    }
+
+    if (strpos($q, 'esta semana') !== false) {
+        return [
+            date('Y-m-d', strtotime('monday this week')),
+            date('Y-m-d', strtotime('sunday this week')),
+            'esta semana'
+        ];
+    }
+
+    if (strpos($q, 'semana pasada') !== false) {
+        return [
+            date('Y-m-d', strtotime('monday last week')),
+            date('Y-m-d', strtotime('sunday last week')),
+            'la semana pasada'
+        ];
+    }
+
     list($fecha, $texto) = detectarFechaConsulta($q);
     return [$fecha, $fecha, $texto];
 }
+
 function condicionEntregado()
 {
     return "(S.Estado_id = 7 OR S.Estado = 'Entregado al Cliente' OR E.Slug = 'delivered')";
@@ -113,21 +147,115 @@ function condicionRetirado()
     return "(S.Estado_id = 3 OR S.Estado = 'Retirado del Cliente' OR E.Slug = 'pickup_ready')";
 }
 
+function condicionSalidaRuta()
+{
+    return "(
+        S.Estado_id IN (5,6)
+        OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
+        OR E.Slug = 'last_mile'
+    )";
+}
+
+function detectarNombreRepartidor($mysqli, $q)
+{
+    $stopwords = [
+        'cuantos',
+        'cuantas',
+        'paquetes',
+        'paquete',
+        'entrego',
+        'entrego',
+        'entregados',
+        'entregaron',
+        'entregadas',
+        'entregada',
+        'este',
+        'esta',
+        'mes',
+        'pasado',
+        'hoy',
+        'ayer',
+        'semana',
+        'la',
+        'el',
+        'los',
+        'las',
+        'por',
+        'repartidor',
+        'repartidores',
+        'flex',
+        'meli',
+        'mercado',
+        'libre',
+        'salieron',
+        'salio',
+        'ruta',
+        'pendientes',
+        'pendiente',
+        'fallidos',
+        'fallaron'
+    ];
+
+    $palabras = preg_split('/\s+/', $q);
+    $candidatos = [];
+
+    foreach ($palabras as $p) {
+        $p = trim($p);
+        if (strlen($p) >= 3 && !in_array($p, $stopwords)) {
+            $candidatos[] = $p;
+        }
+    }
+
+    if (empty($candidatos)) {
+        return false;
+    }
+
+    foreach ($candidatos as $nombre) {
+        $like = '%' . $mysqli->real_escape_string($nombre) . '%';
+
+        $stmt = $mysqli->prepare("
+            SELECT id, Usuario
+            FROM usuarios
+            WHERE Usuario LIKE ?
+               OR Nombre LIKE ?
+            LIMIT 1
+        ");
+
+        if (!$stmt) continue;
+
+        $stmt->bind_param("ss", $like, $like);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $usuario = $res->fetch_assoc();
+        $stmt->close();
+
+        if ($usuario) {
+            $usuario['busqueda'] = $nombre;
+            return $usuario;
+        }
+    }
+
+    return false;
+}
+
 $pregunta = isset($_POST['pregunta']) ? trim($_POST['pregunta']) : '';
-if ($pregunta === '') salir(['success' => 0, 'msg' => 'Pregunta vacía.']);
+
+if ($pregunta === '') {
+    salir(['success' => 0, 'msg' => 'Pregunta vacía.']);
+}
 
 $q = normalizarTexto($pregunta);
+
 list($fechaConsulta, $textoFechaConsulta) = detectarFechaConsulta($q);
 list($fechaDesdeConsulta, $fechaHastaConsulta, $textoPeriodoConsulta) = detectarPeriodoConsulta($q);
 
+$fechaConsultaSQL = $mysqli->real_escape_string($fechaConsulta);
 $fechaDesdeSQL = $mysqli->real_escape_string($fechaDesdeConsulta);
 $fechaHastaSQL = $mysqli->real_escape_string($fechaHastaConsulta);
 
 $hoy = date('Y-m-d');
 $inicioMes = date('Y-m-01');
 $finMes = date('Y-m-t');
-
-$fechaConsultaSQL = $mysqli->real_escape_string($fechaConsulta);
 
 /* =========================
    CONSULTA POR CÓDIGO
@@ -152,12 +280,16 @@ if (preg_match('/^[A-Z0-9]{6,}$/', $codigoPosible)) {
             TS.Fecha,
             TS.Flex,
             TS.shipments_id,
-            U.Usuario AS Repartidor
+            U.Usuario AS Repartidor,
+            MAX(S.Fecha) AS UltimaFechaSeguimiento,
+            MAX(S.Estado) AS UltimoEstado
         FROM TransClientes TS
         LEFT JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
         LEFT JOIN usuarios U ON U.id = ER.IdEmpleado
+        LEFT JOIN Seguimiento S ON S.CodigoSeguimiento = TS.CodigoSeguimiento AND S.Eliminado = 0
         WHERE TS.Eliminado = 0
           AND TS.CodigoSeguimiento = '$codigo'
+        GROUP BY TS.CodigoSeguimiento
         LIMIT 1
     ";
 
@@ -169,13 +301,22 @@ if (preg_match('/^[A-Z0-9]{6,}$/', $codigoPosible)) {
 
     $row = $res->fetch_assoc();
 
-    if ((int)$row['Devuelto'] === 1) $estado = "Devuelto";
-    elseif ((int)$row['Entregado'] === 1) $estado = "Entregado";
-    else $estado = "En ruta / Pendiente";
+    if ((int)$row['Devuelto'] === 1) {
+        $estado = "Devuelto";
+    } elseif ((int)$row['Entregado'] === 1) {
+        $estado = "Entregado";
+    } else {
+        $estado = "En ruta / Pendiente";
+    }
 
     $tipo = '';
-    if ((int)$row['Flex'] === 1) $tipo .= '<span class="badge bg-info me-1">Flex</span>';
-    if (!empty($row['shipments_id']) && (int)$row['shipments_id'] !== 0) $tipo .= '<span class="badge bg-warning text-dark me-1">Meli</span>';
+    if ((int)$row['Flex'] === 1) {
+        $tipo .= '<span class="badge bg-info me-1">Flex</span>';
+    }
+
+    if (!empty($row['shipments_id']) && (int)$row['shipments_id'] !== 0) {
+        $tipo .= '<span class="badge bg-warning text-dark me-1">Meli</span>';
+    }
 
     salir([
         'success' => 1,
@@ -188,14 +329,131 @@ if (preg_match('/^[A-Z0-9]{6,}$/', $codigoPosible)) {
             <strong>Destino:</strong> {$row['ClienteDestino']}<br>
             <strong>Dirección destino:</strong> {$row['DomicilioDestino']} {$row['LocalidadDestino']}<br>
             <strong>Repartidor:</strong> " . ($row['Repartidor'] ?: 'Sin asignar') . "<br>
-            <strong>Fecha carga:</strong> {$row['Fecha']}
+            <strong>Fecha carga:</strong> {$row['Fecha']}<br>
+            <strong>Último seguimiento:</strong> " . ($row['UltimoEstado'] ?: '-') . " " . ($row['UltimaFechaSeguimiento'] ?: '') . "
         "
     ]);
 }
 
 /* =========================
+   BONUS: TOP / RANKING REPARTIDORES
+========================= */
+
+if (
+    contieneAlguna($q, ['top', 'ranking', 'mejores', 'mayor', 'mas entregaron', 'mas entregas'])
+    && strpos($q, 'repartidor') !== false
+) {
+    $sql = "
+        SELECT 
+            IFNULL(U.Usuario, 'Sin repartidor') AS Repartidor,
+            COUNT(DISTINCT S.CodigoSeguimiento) AS total
+        FROM Seguimiento S
+        INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+        INNER JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+        LEFT JOIN usuarios U ON U.id = ER.IdEmpleado
+        LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+        WHERE TS.Eliminado = 0
+          AND S.Eliminado = 0
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
+          AND " . condicionEntregado() . "
+        GROUP BY U.Usuario
+        ORDER BY total DESC
+        LIMIT 10
+    ";
+
+    $res = $mysqli->query($sql);
+
+    if (!$res) {
+        salir(['success' => 0, 'msg' => 'Error consultando ranking de repartidores.']);
+    }
+
+    $detalle = '';
+    $i = 1;
+    $totalGeneral = 0;
+
+    while ($row = $res->fetch_assoc()) {
+        $totalGeneral += (int)$row['total'];
+        $detalle .= "#$i {$row['Repartidor']}: <strong>{$row['total']}</strong><br>";
+        $i++;
+    }
+
+    salir([
+        'success' => 1,
+        'respuesta' => "Ranking de repartidores en <strong>$textoPeriodoConsulta</strong>.",
+        'detalle' => $detalle ?: 'Sin entregas para ese período.'
+    ]);
+}
+
+/* =========================
+   ENTREGADOS POR REPARTIDOR
+========================= */
+
+if (strpos($q, 'entreg') !== false) {
+    $usuarioDetectado = detectarNombreRepartidor($mysqli, $q);
+
+    if ($usuarioDetectado) {
+        $idUsuario = (int)$usuarioDetectado['id'];
+        $nombreUsuario = $usuarioDetectado['Usuario'];
+
+        $sql = "
+            SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
+            FROM Seguimiento S
+            INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+            INNER JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+            LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+            WHERE TS.Eliminado = 0
+              AND S.Eliminado = 0
+              AND ER.IdEmpleado = $idUsuario
+              AND S.Fecha >= '$fechaDesdeSQL'
+              AND S.Fecha <= '$fechaHastaSQL'
+              AND " . condicionEntregado() . "
+        ";
+
+        $total = contar($mysqli, $sql);
+
+        $sqlListado = "
+            SELECT DISTINCT
+                S.CodigoSeguimiento,
+                TS.ClienteDestino,
+                TS.LocalidadDestino
+            FROM Seguimiento S
+            INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+            INNER JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+            LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+            WHERE TS.Eliminado = 0
+              AND S.Eliminado = 0
+              AND ER.IdEmpleado = $idUsuario
+              AND S.Fecha >= '$fechaDesdeSQL'
+              AND S.Fecha <= '$fechaHastaSQL'
+              AND " . condicionEntregado() . "
+            ORDER BY S.Fecha DESC, S.CodigoSeguimiento ASC
+            LIMIT 20
+        ";
+
+        $resListado = $mysqli->query($sqlListado);
+        $detalleListado = '';
+        $i = 1;
+
+        if ($resListado) {
+            while ($r = $resListado->fetch_assoc()) {
+                $detalleListado .= "#$i {$r['CodigoSeguimiento']} - {$r['ClienteDestino']} / {$r['LocalidadDestino']}<br>";
+                $i++;
+            }
+        }
+
+        salir([
+            'success' => 1,
+            'respuesta' => "En <strong>$textoPeriodoConsulta</strong>, <strong>$nombreUsuario</strong> entregó <strong>$total</strong> paquetes.",
+            'detalle' => ($detalleListado ?: 'Sin detalle para mostrar.') . "<hr class='my-1'><small>Criterio: usuario LIKE '%{$usuarioDetectado['busqueda']}%', Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado.</small>"
+        ]);
+    }
+}
+
+/* =========================
    FLEX
 ========================= */
+
 if (strpos($q, 'flex') !== false && contieneAlguna($q, ['fall', 'no entreg', 'no se pudo', 'fallidos'])) {
     $total = contar($mysqli, "
         SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
@@ -205,14 +463,15 @@ if (strpos($q, 'flex') !== false && contieneAlguna($q, ['fall', 'no entreg', 'no
         WHERE TS.Eliminado = 0
           AND S.Eliminado = 0
           AND TS.Flex = 1
-          AND S.Fecha = '$fechaConsultaSQL'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
           AND " . condicionFallido() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> no se pudieron entregar <strong>$total</strong> paquetes Flex.",
-        'detalle' => "Criterio: Flex = 1 y fallo en Seguimiento.Fecha = $fechaConsultaSQL."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> no se pudieron entregar <strong>$total</strong> paquetes Flex.",
+        'detalle' => "Criterio: Flex = 1 y fallo en Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL."
     ]);
 }
 
@@ -225,18 +484,17 @@ if (strpos($q, 'flex') !== false && contieneAlguna($q, ['entreg', 'entregados', 
         WHERE TS.Eliminado = 0
           AND S.Eliminado = 0
           AND TS.Flex = 1
-          AND S.Fecha = '$fechaConsultaSQL'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
           AND " . condicionEntregado() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> se entregaron <strong>$total</strong> paquetes Flex.",
-        'detalle' => "Criterio: Flex = 1 y entrega en Seguimiento.Fecha = $fechaConsultaSQL."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> se entregaron <strong>$total</strong> paquetes Flex.",
+        'detalle' => "Criterio: Flex = 1 y entrega en Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL."
     ]);
 }
-
-
 
 if (strpos($q, 'flex') !== false && contieneAlguna($q, ['pendiente', 'pendientes', 'ruta', 'distribucion', 'calle'])) {
     $total = contar($mysqli, "
@@ -244,7 +502,8 @@ if (strpos($q, 'flex') !== false && contieneAlguna($q, ['pendiente', 'pendientes
         FROM TransClientes TS
         WHERE TS.Eliminado = 0
           AND TS.Flex = 1
-          AND TS.Fecha = '$fechaConsultaSQL'
+          AND TS.Fecha >= '$fechaDesdeSQL'
+          AND TS.Fecha <= '$fechaHastaSQL'
           AND TS.Entregado = 0
           AND TS.Devuelto = 0
           AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
@@ -252,32 +511,29 @@ if (strpos($q, 'flex') !== false && contieneAlguna($q, ['pendiente', 'pendientes
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> hay <strong>$total</strong> paquetes Flex pendientes/en ruta.",
-        'detalle' => "Criterio: TransClientes.Fecha = $fechaConsultaSQL, Flex = 1, Entregado = 0 y Devuelto = 0."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> hay <strong>$total</strong> paquetes Flex pendientes/en ruta.",
+        'detalle' => "Criterio: TransClientes.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, Flex = 1, Entregado = 0 y Devuelto = 0."
     ]);
 }
 
 if (strpos($q, 'flex') !== false && contieneAlguna($q, ['salieron', 'salio', 'salida', 'salidas', 'total', 'cuantos', 'paquetes', 'envios', 'cargaron', 'cargados'])) {
     $total = contar($mysqli, "
-    SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
-    FROM Seguimiento S
-    INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
-    LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
-    WHERE TS.Eliminado = 0
-      AND S.Eliminado = 0
-      AND TS.Flex = 1
-      AND S.Fecha = '$fechaConsultaSQL'
-      AND (
-            S.Estado_id IN (5,6)
-            OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
-            OR E.Slug = 'last_mile'
-      )
-");
+        SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
+        FROM Seguimiento S
+        INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+        LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+        WHERE TS.Eliminado = 0
+          AND S.Eliminado = 0
+          AND TS.Flex = 1
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
+          AND " . condicionSalidaRuta() . "
+    ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> salieron/cargaron <strong>$total</strong> paquetes Flex.",
-        'detalle' => "Criterio: TransClientes.Fecha = $fechaConsultaSQL y Flex = 1."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> salieron a ruta <strong>$total</strong> paquetes Flex.",
+        'detalle' => "Criterio: Flex = 1 y Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL con estado En Tránsito / Cargado en Hoja de Ruta."
     ]);
 }
 
@@ -295,7 +551,8 @@ if ((strpos($q, 'meli') !== false || strpos($q, 'mercado libre') !== false) && c
         LEFT JOIN usuarios U ON U.id = ER.IdEmpleado
         WHERE TS.Eliminado = 0
           AND IFNULL(TS.shipments_id, 0) <> 0
-          AND TS.Fecha = '$fechaConsultaSQL'
+          AND TS.Fecha >= '$fechaDesdeSQL'
+          AND TS.Fecha <= '$fechaHastaSQL'
           AND TS.Entregado = 0
           AND TS.Devuelto = 0
           AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
@@ -309,6 +566,7 @@ if ((strpos($q, 'meli') !== false || strpos($q, 'mercado libre') !== false) && c
 
     $i = 1;
     $detalle = '';
+
     while ($row = $res->fetch_assoc()) {
         $detalle .= "#$i {$row['CodigoSeguimiento']} - {$row['Repartidor']}<br>";
         $i++;
@@ -318,31 +576,29 @@ if ((strpos($q, 'meli') !== false || strpos($q, 'mercado libre') !== false) && c
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> hay <strong>$total</strong> paquetes Meli pendientes/en ruta.",
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> hay <strong>$total</strong> paquetes Meli pendientes/en ruta.",
         'detalle' => $detalle ?: 'Sin paquetes pendientes.'
     ]);
 }
 
 if ((strpos($q, 'meli') !== false || strpos($q, 'mercado libre') !== false) && contieneAlguna($q, ['salieron', 'salio', 'salida', 'salidas', 'total', 'cuantos', 'paquetes', 'envios', 'cargaron', 'cargados'])) {
     $total = contar($mysqli, "
-    SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
-    FROM Seguimiento S
-    INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
-    LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
-    WHERE TS.Eliminado = 0
-      AND S.Eliminado = 0
-      AND IFNULL(TS.shipments_id, 0) <> 0
-      AND S.Fecha = '$fechaConsultaSQL'
-      AND (
-            S.Estado_id IN (5,6)
-            OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
-            OR E.Slug = 'last_mile'
-      )
-");
+        SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
+        FROM Seguimiento S
+        INNER JOIN TransClientes TS ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+        LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
+        WHERE TS.Eliminado = 0
+          AND S.Eliminado = 0
+          AND IFNULL(TS.shipments_id, 0) <> 0
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
+          AND " . condicionSalidaRuta() . "
+    ");
+
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> salieron/cargaron <strong>$total</strong> paquetes Meli.",
-        'detalle' => "Criterio: TransClientes.shipments_id <> 0 y Fecha = $fechaConsultaSQL."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> salieron a ruta <strong>$total</strong> paquetes Meli.",
+        'detalle' => "Criterio: shipments_id <> 0 y Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL."
     ]);
 }
 
@@ -359,7 +615,8 @@ if (strpos($q, 'pendiente') !== false && strpos($q, 'repartidor') !== false) {
         LEFT JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
         LEFT JOIN usuarios U ON U.id = ER.IdEmpleado
         WHERE TS.Eliminado = 0
-          AND TS.Fecha = '$fechaConsultaSQL'
+          AND TS.Fecha >= '$fechaDesdeSQL'
+          AND TS.Fecha <= '$fechaHastaSQL'
           AND TS.Entregado = 0
           AND TS.Devuelto = 0
           AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
@@ -383,79 +640,14 @@ if (strpos($q, 'pendiente') !== false && strpos($q, 'repartidor') !== false) {
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> hay <strong>$totalGeneral</strong> paquetes pendientes agrupados por repartidor.",
-        'detalle' => $detalle ?: 'Sin pendientes para esa fecha.'
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> hay <strong>$totalGeneral</strong> paquetes pendientes agrupados por repartidor.",
+        'detalle' => $detalle ?: 'Sin pendientes para ese período.'
     ]);
 }
 
 /* =========================
-   ENTREGADOS POR REPARTIDOR
-========================= */
-
-if (strpos($q, 'entreg') !== false) {
-
-    $palabras = explode(' ', $q);
-    $nombreBuscado = '';
-
-    foreach ($palabras as $p) {
-        if (
-            strlen($p) >= 4 &&
-            !in_array($p, ['cuantos', 'cuantas', 'paquetes', 'entrego', 'entrego', 'entrego', 'entregados', 'entregaron', 'este', 'mes', 'hoy', 'ayer'])
-        ) {
-            $nombreBuscado = $p;
-        }
-    }
-
-    if ($nombreBuscado !== '') {
-        $nombreLike = '%' . $mysqli->real_escape_string($nombreBuscado) . '%';
-
-        $stmtUser = $mysqli->prepare("
-            SELECT id, Usuario
-            FROM usuarios
-            WHERE Usuario LIKE ?
-            LIMIT 1
-        ");
-
-        $stmtUser->bind_param("s", $nombreLike);
-        $stmtUser->execute();
-        $resUser = $stmtUser->get_result();
-        $usuarioDetectado = $resUser->fetch_assoc();
-        $stmtUser->close();
-
-        if ($usuarioDetectado) {
-            $idUsuario = (int)$usuarioDetectado['id'];
-            $nombreUsuario = $usuarioDetectado['Usuario'];
-
-            $total = contar($mysqli, "
-                SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
-                FROM Seguimiento S
-                INNER JOIN TransClientes TS 
-                    ON TS.CodigoSeguimiento = S.CodigoSeguimiento
-                INNER JOIN Externos_rendicion ER 
-                    ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-                LEFT JOIN Estados E 
-                    ON E.id = S.Estado_id OR E.Estado = S.Estado
-                WHERE TS.Eliminado = 0
-                  AND S.Eliminado = 0
-                  AND ER.IdEmpleado = $idUsuario
-                  AND S.Fecha >= '$fechaDesdeSQL'
-                  AND S.Fecha <= '$fechaHastaSQL'
-                  AND " . condicionEntregado() . "
-            ");
-
-            salir([
-                'success' => 1,
-                'respuesta' => "En <strong>$textoPeriodoConsulta</strong>, <strong>$nombreUsuario</strong> entregó <strong>$total</strong> paquetes.",
-                'detalle' => "Criterio: usuario LIKE '%$nombreBuscado%', Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado."
-            ]);
-        }
-    }
-}
-/* =========================
    GENERALES OPERATIVAS
 ========================= */
-
-
 
 if (contieneAlguna($q, ['no entreg', 'no se entreg', 'no se pudo', 'fallidos', 'fallaron'])) {
     $total = contar($mysqli, "
@@ -463,30 +655,33 @@ if (contieneAlguna($q, ['no entreg', 'no se entreg', 'no se pudo', 'fallidos', '
         FROM Seguimiento S
         LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
         WHERE S.Eliminado = 0
-          AND S.Fecha = '$fechaConsultaSQL'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
           AND " . condicionFallido() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> no se pudieron entregar <strong>$total</strong> paquetes.",
-        'detalle' => "Criterio: Seguimiento.Fecha = $fechaConsultaSQL y estado fallido."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> no se pudieron entregar <strong>$total</strong> paquetes.",
+        'detalle' => "Criterio: Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado fallido."
     ]);
 }
+
 if (strpos($q, 'entreg') !== false) {
     $total = contar($mysqli, "
         SELECT COUNT(DISTINCT S.CodigoSeguimiento) AS total
         FROM Seguimiento S
         LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
         WHERE S.Eliminado = 0
-          AND S.Fecha = '$fechaConsultaSQL'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
           AND " . condicionEntregado() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> se entregaron <strong>$total</strong> paquetes.",
-        'detalle' => "Criterio: Seguimiento.Fecha = $fechaConsultaSQL y estado entregado."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> se entregaron <strong>$total</strong> paquetes.",
+        'detalle' => "Criterio: Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado."
     ]);
 }
 
@@ -496,14 +691,15 @@ if (strpos($q, 'devuelt') !== false) {
         FROM Seguimiento S
         LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
         WHERE S.Eliminado = 0
-          AND S.Fecha = '$fechaConsultaSQL'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
           AND " . condicionDevuelto() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> se devolvieron <strong>$total</strong> paquetes.",
-        'detalle' => "Criterio: Seguimiento.Fecha = $fechaConsultaSQL y estado devuelto."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> se devolvieron <strong>$total</strong> paquetes.",
+        'detalle' => "Criterio: Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado devuelto."
     ]);
 }
 
@@ -513,14 +709,15 @@ if (strpos($q, 'retir') !== false) {
         FROM Seguimiento S
         LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
         WHERE S.Eliminado = 0
-          AND S.Fecha = '$fechaConsultaSQL'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
           AND " . condicionRetirado() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> se retiraron <strong>$total</strong> paquetes.",
-        'detalle' => "Criterio: Seguimiento.Fecha = $fechaConsultaSQL y estado retirado."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> se retiraron <strong>$total</strong> paquetes.",
+        'detalle' => "Criterio: Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado retirado."
     ]);
 }
 
@@ -530,20 +727,18 @@ if (contieneAlguna($q, ['paquetes', 'envios', 'salieron', 'salio', 'salida', 'ca
         FROM Seguimiento S
         LEFT JOIN Estados E ON E.id = S.Estado_id OR E.Estado = S.Estado
         WHERE S.Eliminado = 0
-          AND S.Fecha = '$fechaConsultaSQL'
-          AND (
-                S.Estado_id IN (5,6)
-                OR S.Estado IN ('En Transito', 'Cargado en Hoja de Ruta')
-                OR E.Slug = 'last_mile'
-          )
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
+          AND " . condicionSalidaRuta() . "
     ");
 
     salir([
         'success' => 1,
-        'respuesta' => "El día <strong>$textoFechaConsulta</strong> salieron a ruta <strong>$total</strong> paquetes.",
-        'detalle' => "Criterio: Seguimiento.Fecha = $fechaConsultaSQL y estado En Tránsito / Cargado en Hoja de Ruta."
+        'respuesta' => "En <strong>$textoPeriodoConsulta</strong> salieron a ruta <strong>$total</strong> paquetes.",
+        'detalle' => "Criterio: Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado En Tránsito / Cargado en Hoja de Ruta."
     ]);
 }
+
 /* =========================
    RENDICIÓN / FACTURACIÓN
 ========================= */
@@ -583,5 +778,5 @@ if (contieneAlguna($q, ['facturado', 'facturacion']) && contieneAlguna($q, ['mes
 
 salir([
     'success' => 0,
-    'msg' => 'Todavía no tengo una consulta preparada para esa pregunta. Probá con: “¿Cuántos paquetes se entregaron hoy?”'
+    'msg' => 'Todavía no tengo una consulta preparada para esa pregunta. Probá con: “¿Cuántos paquetes se entregaron hoy?”, “¿Cuántos paquetes entregó Oriana el mes pasado?” o “Top repartidores este mes”.'
 ]);
