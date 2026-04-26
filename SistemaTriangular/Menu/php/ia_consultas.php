@@ -97,6 +97,67 @@ $hoy = date('Y-m-d');
 $inicioMes = date('Y-m-01');
 $finMes = date('Y-m-t');
 
+
+// ==========================
+// CONSULTA POR CODIGO DIRECTO
+// ==========================
+if (preg_match('/^[A-Z0-9]{6,}$/', strtoupper($pregunta))) {
+
+    $codigo = strtoupper(trim($pregunta));
+
+    $sql = "
+        SELECT 
+            TS.CodigoSeguimiento,
+            TS.ClienteDestino,
+            TS.DomicilioDestino,
+            TS.LocalidadDestino,
+            TS.Entregado,
+            TS.Devuelto,
+            TS.Fecha,
+            U.Usuario AS Repartidor
+        FROM TransClientes TS
+
+        LEFT JOIN Externos_rendicion ER 
+            ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+
+        LEFT JOIN usuarios U 
+            ON U.id = ER.IdEmpleado
+
+        WHERE TS.CodigoSeguimiento = '$codigo'
+        LIMIT 1
+    ";
+
+    $res = $mysqli->query($sql);
+
+    if (!$res || $res->num_rows == 0) {
+        salir([
+            'success' => 0,
+            'msg' => "No encontré el código <strong>$codigo</strong>."
+        ]);
+    }
+
+    $row = $res->fetch_assoc();
+
+    // Estado
+    if ($row['Devuelto'] == 1) {
+        $estado = "Devuelto";
+    } elseif ($row['Entregado'] == 1) {
+        $estado = "Entregado";
+    } else {
+        $estado = "En ruta / Pendiente";
+    }
+
+    salir([
+        'success' => 1,
+        'respuesta' => "<strong>$codigo</strong> → $estado",
+        'detalle' => "
+            Cliente: {$row['ClienteDestino']}<br>
+            Dirección: {$row['DomicilioDestino']} {$row['LocalidadDestino']}<br>
+            Repartidor: " . ($row['Repartidor'] ?: 'Sin asignar') . "<br>
+            Fecha servicio: {$row['Fecha']}
+        "
+    ]);
+}
 /*
     CONSULTAS FLEX
     Importante: van primero para que no las capture una consulta genérica.
