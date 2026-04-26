@@ -1,6 +1,7 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
+$esAdmin = isset($_SESSION['Nivel']) && (int)$_SESSION['Nivel'] === 1;
 // Polígono en formato [lng, lat]
 $poligono_circunvalacion = [
     [-64.26536754051685, -31.430159003374783],
@@ -1070,6 +1071,206 @@ if (isset($input['Rendicion'])) {
     } else {
         echo json_encode(["success" => true, "mensaje" => "Rendición y actualización realizadas correctamente."]);
     }
+}
+if (isset($_POST['AnalizarServicioRendicion'])) {
+    header('Content-Type: application/json; charset=UTF-8');
+    if (!isset($_SESSION['Nivel']) || (int)$_SESSION['Nivel'] !== 1) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'No autorizado.'
+        ]);
+        exit;
+    }
+    $codigoSeguimiento = isset($_POST['CodigoSeguimiento']) ? trim($_POST['CodigoSeguimiento']) : '';
+    $idRendicion = isset($_POST['idRendicion']) ? (int)$_POST['idRendicion'] : 0;
+
+    if ($codigoSeguimiento === '') {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'Código de seguimiento requerido.'
+        ]);
+        exit;
+    }
+
+    $sql = $mysqli->prepare("
+        SELECT
+            TS.CodigoSeguimiento,
+            TS.Fecha AS FechaServicio,
+            TS.RazonSocial,
+            TS.ClienteDestino,
+            TS.DomicilioDestino,
+            TS.LocalidadDestino,
+            TS.Recorrido,
+            TS.NumerodeOrden,
+            TS.Debe,
+            TS.Haber,
+            TS.Facturado,
+            TS.NumeroF,
+
+            ER.PrecioPagado,
+            ER.CobranzaIntegrada,
+            ER.TipoLiquidacion,
+            ER.idExternos_tarifas,
+            ER.Rendido,
+            ER.FechaRendido,
+
+            ET.Nombre AS NombreTarifa,
+
+            IFNULL(VNI.COD_NotInvoice, 0) AS COD_NotInvoice,
+            IFNULL(VNI.SurrenderNumbers, '') AS SurrenderNumbers,
+
+            IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado,
+
+            CASE
+                WHEN IFNULL(TS.Debe, 0) > 0 THEN 'TRANSCLIENTES'
+                WHEN IFNULL(TS.Debe, 0) = 0
+                     AND IFNULL(TS.Haber, 0) = 0
+                     AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                THEN 'PRORRATEO_RECORRIDO'
+                ELSE 'SIN_VALOR'
+            END AS OrigenCobrado,
+
+            ROUND(
+                (
+                    CASE
+                        WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                        WHEN IFNULL(TS.Debe, 0) = 0
+                             AND IFNULL(TS.Haber, 0) = 0
+                             AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                        THEN PR.PrecioUnitarioImputado
+                        ELSE 0
+                    END
+                ) / 1.21
+            , 2) AS VentaNetaFacturable,
+
+            ROUND(
+                (
+                    (
+                        CASE
+                            WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                            WHEN IFNULL(TS.Debe, 0) = 0
+                                 AND IFNULL(TS.Haber, 0) = 0
+                                 AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                            THEN PR.PrecioUnitarioImputado
+                            ELSE 0
+                        END
+                    ) / 1.21
+                ) + IFNULL(VNI.COD_NotInvoice, 0)
+            , 2) AS IngresoOperativo,
+
+            ROUND(
+                IFNULL(ER.PrecioPagado, 0) + IFNULL(ER.CobranzaIntegrada, 0)
+            , 2) AS CostoExterno,
+
+            ROUND(
+                (
+                    (
+                        (
+                            CASE
+                                WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
+                                WHEN IFNULL(TS.Debe, 0) = 0
+                                     AND IFNULL(TS.Haber, 0) = 0
+                                     AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
+                                THEN PR.PrecioUnitarioImputado
+                                ELSE 0
+                            END
+                        ) / 1.21
+                    ) + IFNULL(VNI.COD_NotInvoice, 0)
+                ) - (IFNULL(ER.PrecioPagado, 0) + IFNULL(ER.CobranzaIntegrada, 0))
+            , 2) AS Resultado
+
+        FROM TransClientes TS
+
+        LEFT JOIN Externos_rendicion ER
+            ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+            AND (? = 0 OR ER.idRendicion = ?)
+
+        LEFT JOIN Externos_tarifas ET
+            ON ET.id = ER.idExternos_tarifas
+
+        LEFT JOIN (
+            SELECT 
+                NumPedido,
+                SUM(IFNULL(Total, 0)) AS COD_NotInvoice,
+                GROUP_CONCAT(DISTINCT surrender_number ORDER BY surrender_number SEPARATOR ', ') AS SurrenderNumbers
+            FROM Ventas
+            WHERE Eliminado = 0
+              AND not_invoice = 1
+              AND IFNULL(surrender_number, 0) <> 0
+            GROUP BY NumPedido
+        ) AS VNI
+            ON VNI.NumPedido = TS.CodigoSeguimiento
+
+        LEFT JOIN (
+            SELECT 
+                L.NumerodeOrden,
+                L.PrecioRecorrido,
+                COUNT(TC.id) AS CantidadServiciosSinImporte,
+                CASE
+                    WHEN COUNT(TC.id) > 0 THEN L.PrecioRecorrido / COUNT(TC.id)
+                    ELSE 0
+                END AS PrecioUnitarioImputado
+            FROM Logistica L
+            INNER JOIN TransClientes TC 
+                ON L.NumerodeOrden = TC.NumerodeOrden
+            WHERE TC.Eliminado = 0
+              AND IFNULL(TC.Debe, 0) = 0
+              AND IFNULL(TC.Haber, 0) = 0
+            GROUP BY L.NumerodeOrden, L.PrecioRecorrido
+        ) PR
+            ON PR.NumerodeOrden = TS.NumerodeOrden
+
+        WHERE TS.Eliminado = 0
+          AND TS.CodigoSeguimiento = ?
+        LIMIT 1
+    ");
+
+    if (!$sql) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'Error preparando análisis: ' . $mysqli->error
+        ]);
+        exit;
+    }
+
+    $sql->bind_param(
+        "iis",
+        $idRendicion,
+        $idRendicion,
+        $codigoSeguimiento
+    );
+
+    if (!$sql->execute()) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'Error ejecutando análisis: ' . $sql->error
+        ]);
+        exit;
+    }
+
+    $row = $sql->get_result()->fetch_assoc();
+    $sql->close();
+
+    if (!$row) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'No se encontró el servicio.'
+        ]);
+        exit;
+    }
+
+    $ingreso = (float)$row['IngresoOperativo'];
+    $costo = (float)$row['CostoExterno'];
+    $resultado = (float)$row['Resultado'];
+    $rentabilidad = $ingreso > 0 ? round(($resultado / $ingreso) * 100, 2) : null;
+
+    $row['Rentabilidad'] = $rentabilidad;
+
+    echo json_encode([
+        'success' => 1,
+        'data' => $row
+    ]);
+    exit;
 }
 if (isset($_POST['TiposComprobante'])) {
     $q = $mysqli->query("SELECT Codigo,Descripcion FROM `AfipTipoDeComprobante`;");

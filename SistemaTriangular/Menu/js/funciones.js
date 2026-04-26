@@ -141,6 +141,7 @@ $(document).ready(function () {
           $("#user_sucursal").html(jsonData.Sucursal);
           $("#user_iniciales").html(jsonData.Avatar);
           $("#user_nivel").html("Nivel " + jsonData.Nivel);
+          window.USUARIO_NIVEL = parseInt(jsonData.Nivel || 0);
           // Entorno (sandbox / produccion)
           var entorno = (jsonData.Entorno || "").toString().toLowerCase();
           var $badge = $("#user_entorno_badge");
