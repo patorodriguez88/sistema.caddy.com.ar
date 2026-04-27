@@ -607,6 +607,45 @@ $("#desempeno_button").click(function () {
   }
 });
 
+function actualizarResumenDesempeno() {
+  const tabla = $("#reporte_tabla").DataTable();
+  const data = tabla.rows().data().toArray();
+
+  let entregados = 0;
+  let noEntregados = 0;
+
+  data.forEach((row) => {
+    if (
+      parseInt(row.Entregado) === 1 ||
+      row.Estado === "Entregado al Cliente"
+    ) {
+      entregados++;
+    } else {
+      noEntregados++;
+    }
+  });
+
+  const total = entregados + noEntregados;
+  const desempeno =
+    total > 0 ? ((entregados / total) * 100).toFixed(2) : "0.00";
+
+  $("#resumen_entregados").text(entregados);
+  $("#resumen_no_entregados").text(noEntregados);
+  $("#resumen_desempeno_valor").text(desempeno + "%");
+
+  let color = "bg-danger";
+
+  if (parseFloat(desempeno) >= 90) {
+    color = "bg-success";
+  } else if (parseFloat(desempeno) >= 75) {
+    color = "bg-warning text-dark";
+  }
+
+  $("#badge_resumen_desempeno")
+    .removeClass("bg-success bg-warning bg-danger bg-secondary text-dark")
+    .addClass(color);
+}
+
 //TOTALES
 function actualizarTotales() {
   const tabla = $("#reporte_tabla").DataTable();
@@ -748,12 +787,12 @@ function report(a, b, c, d, f) {
   $("#report_fechaS").html(fechaFormateada);
 
   if (f === 1) {
-    $("report_status")
+    $("#report_status")
       .html("Controlado")
       .removeClass("bg-danger")
       .addClass("bg-success");
   } else {
-    $("report_status")
+    $("#report_status")
       .html("No Controlado")
       .removeClass("bg-success")
       .addClass("bg-danger");
@@ -785,30 +824,13 @@ function report(a, b, c, d, f) {
       processing: true,
       type: "post",
     },
-    drawCallback: function () {
-      marcarDuplicados(); // <-- se asegura que se ejecute cada vez que se dibuje
-    },
+    // drawCallback: function () {
+    //   marcarDuplicados(); // <-- se asegura que se ejecute cada vez que se dibuje
+    // },
     initComplete: function (settings, json) {
       actualizarTotales();
       construirResumenPorFecha();
-
-      if (json.resumen) {
-        $("#resumen_entregados").text(json.resumen.entregados);
-        $("#resumen_no_entregados").text(json.resumen.no_entregados);
-        $("#resumen_desempeno").text(json.resumen.desempeno + "%");
-
-        let color = "bg-danger";
-
-        if (parseFloat(json.resumen.desempeno) >= 90) {
-          color = "bg-success";
-        } else if (parseFloat(json.resumen.desempeno) >= 75) {
-          color = "bg-warning text-dark";
-        }
-
-        $("#badge_resumen_desempeno")
-          .removeClass("bg-success bg-warning bg-danger text-dark")
-          .addClass(color);
-      }
+      actualizarResumenDesempeno();
 
       const registros = json.data || [];
       const hayPendientes = registros.some(
@@ -984,7 +1006,7 @@ function report(a, b, c, d, f) {
     ],
     drawCallback: function () {
       marcarDuplicados();
-
+      actualizarResumenDesempeno();
       const tabla = $("#reporte_tabla").DataTable();
 
       tabla.rows().every(function () {
@@ -1036,6 +1058,7 @@ $("#reporte_tabla tbody").on("click", ".eliminar-renglon", function () {
     if (result.isConfirmed) {
       fila.remove().draw(); // elimina visualmente la fila
       actualizarTotales(); // recalcula totales abajo
+      actualizarResumenDesempeno();
       marcarDuplicados();
       construirResumenPorFecha();
     }

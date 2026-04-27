@@ -214,20 +214,22 @@
                                             </div>
                                         </div><!-- end col -->
                                     </div>
-                                    <div class="row mb-2" id="resumen_desempeno">
-                                        <div class="col-md-3">
+                                    <div class="row mb-2" id="bloque_resumen_desempeno">
+                                        <div class="col-md-4">
                                             <span class="badge bg-success w-100 p-2">
-                                                Entregados: <span id="entregados"></span>
+                                                Entregados: <span id="resumen_entregados">0</span>
                                             </span>
                                         </div>
-                                        <div class="col-md-3">
+
+                                        <div class="col-md-4">
                                             <span class="badge bg-danger w-100 p-2">
-                                                No Entregados: <span id="no_entregados"></span>
+                                                No entregados: <span id="resumen_no_entregados">0</span>
                                             </span>
                                         </div>
-                                        <div class="col-md-3">
-                                            <span class="badge bg-primary w-100 p-2">
-                                                Desempeño: <span id="desempeno"></span>%
+
+                                        <div class="col-md-4">
+                                            <span id="badge_resumen_desempeno" class="badge bg-secondary w-100 p-2">
+                                                Desempeño: <span id="resumen_desempeno_valor">0%</span>
                                             </span>
                                         </div>
                                     </div>
