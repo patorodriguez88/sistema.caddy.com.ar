@@ -214,6 +214,23 @@
                                             </div>
                                         </div><!-- end col -->
                                     </div>
+                                    <div class="row mb-2" id="resumen_desempeno">
+                                        <div class="col-md-3">
+                                            <span class="badge bg-success w-100 p-2">
+                                                Entregados: <span id="entregados"></span>
+                                            </span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-danger w-100 p-2">
+                                                No Entregados: <span id="no_entregados"></span>
+                                            </span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <span class="badge bg-primary w-100 p-2">
+                                                Desempeño: <span id="desempeno"></span>%
+                                            </span>
+                                        </div>
+                                    </div>
 
                                     <div class="row">
                                         <div class="col-12">
