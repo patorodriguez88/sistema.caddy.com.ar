@@ -792,14 +792,32 @@ function report(a, b, c, d, f) {
       actualizarTotales();
       construirResumenPorFecha();
 
+      if (json.resumen) {
+        $("#resumen_entregados").text(json.resumen.entregados);
+        $("#resumen_no_entregados").text(json.resumen.no_entregados);
+        $("#resumen_desempeno").text(json.resumen.desempeno + "%");
+
+        let color = "bg-danger";
+
+        if (parseFloat(json.resumen.desempeno) >= 90) {
+          color = "bg-success";
+        } else if (parseFloat(json.resumen.desempeno) >= 75) {
+          color = "bg-warning text-dark";
+        }
+
+        $("#badge_resumen_desempeno")
+          .removeClass("bg-success bg-warning bg-danger text-dark")
+          .addClass(color);
+      }
+
       const registros = json.data || [];
       const hayPendientes = registros.some(
         (row) => parseInt(row.Rendido) === 0,
       );
 
       if (!hayPendientes) {
-        $("#generar_liquidacion").hide(); // Oculta el botón
-        $(".editar-tarifa").hide(); // Oculta los íconos lápiz
+        $("#generar_liquidacion").hide();
+        $(".editar-tarifa").hide();
       } else {
         $("#generar_liquidacion").show();
       }

@@ -620,8 +620,14 @@ if (isset($_POST['Reporte'])) {
 
             $tempRows[] = $row;
         }
-
+        $entregados = 0;
+        $noEntregados = 0;
         foreach ($tempRows as $row) {
+            if (intval($row['Entregado']) === 1) {
+                $entregados++;
+            } else {
+                $noEntregados++;
+            }
             $lat2 = $row['Latitud'];
             $lng2 = $row['Longitud'];
             $km = floatval($row['Kilometros']);
@@ -834,8 +840,30 @@ if (isset($_POST['Reporte'])) {
 
             $ROWS[] = $row;
         }
+        $totalPedidos = $entregados + $noEntregados;
 
-        echo json_encode(array('data' => $ROWS));
+        $desempeno = $totalPedidos > 0
+            ? round(($entregados / $totalPedidos) * 100, 2)
+            : 0;
+
+        // echo json_encode(array('data' => $ROWS));
+        echo json_encode([
+
+            'data' => $ROWS,
+
+            'resumen' => [
+
+                'entregados' => $entregados,
+
+                'no_entregados' => $noEntregados,
+
+                'total' => $totalPedidos,
+
+                'desempeno' => $desempeno
+
+            ]
+
+        ]);
         exit;
     } elseif ($_POST['controlado'] == 1) {
 
