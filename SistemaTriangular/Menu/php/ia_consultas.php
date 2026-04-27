@@ -407,41 +407,45 @@ if (strpos($q, 'entreg') !== false) {
               AND " . condicionEntregado() . "
         ");
 
-        $sqlListado = "
-            SELECT DISTINCT
-                S.CodigoSeguimiento,
-                TS.ClienteDestino,
-                TS.LocalidadDestino
-            FROM Seguimiento S
-            INNER JOIN TransClientes TS 
-                ON TS.CodigoSeguimiento = S.CodigoSeguimiento
-            LEFT JOIN Estados E 
-                ON E.id = S.Estado_id OR E.Estado = S.Estado
-            WHERE TS.Eliminado = 0
-              AND S.Eliminado = 0
-              AND S.Usuario = '$usuarioSeguimiento'
-              AND S.Fecha >= '$fechaDesdeSQL'
-              AND S.Fecha <= '$fechaHastaSQL'
-              AND " . condicionEntregado() . "
-            ORDER BY S.Fecha DESC, S.CodigoSeguimiento ASC
-            LIMIT 20
-        ";
-
-        $resListado = $mysqli->query($sqlListado);
         $detalleListado = '';
-        $i = 1;
 
-        if ($resListado) {
-            while ($r = $resListado->fetch_assoc()) {
-                $detalleListado .= "#$i {$r['CodigoSeguimiento']} - {$r['ClienteDestino']} / {$r['LocalidadDestino']}<br>";
-                $i++;
+        if ($total <= 20) {
+            $sqlListado = "
+        SELECT DISTINCT
+            S.CodigoSeguimiento,
+            TS.ClienteDestino,
+            TS.LocalidadDestino
+        FROM Seguimiento S
+        INNER JOIN TransClientes TS 
+            ON TS.CodigoSeguimiento = S.CodigoSeguimiento
+        LEFT JOIN Estados E 
+            ON E.id = S.Estado_id OR E.Estado = S.Estado
+        WHERE TS.Eliminado = 0
+          AND S.Eliminado = 0
+          AND S.Usuario = '$usuarioSeguimiento'
+          AND S.Fecha >= '$fechaDesdeSQL'
+          AND S.Fecha <= '$fechaHastaSQL'
+          AND " . condicionEntregado() . "
+        ORDER BY S.Fecha DESC, S.CodigoSeguimiento ASC
+    ";
+
+            $resListado = $mysqli->query($sqlListado);
+            $i = 1;
+
+            if ($resListado) {
+                while ($r = $resListado->fetch_assoc()) {
+                    $detalleListado .= "#$i {$r['CodigoSeguimiento']} - {$r['ClienteDestino']} / {$r['LocalidadDestino']}<br>";
+                    $i++;
+                }
             }
+        } else {
+            $detalleListado = "El total supera los 20 paquetes, por eso no se muestra el detalle para mantener la consulta liviana.";
         }
 
         salir([
             'success' => 1,
             'respuesta' => "En <strong>$textoPeriodoConsulta</strong>, <strong>$nombreUsuario</strong> entregó <strong>$total</strong> paquetes.",
-            'detalle' => ($detalleListado ?: 'Sin detalle para mostrar.') . "<hr class='my-1'><small>Criterio: Seguimiento.Usuario = '$usuarioSeguimiento', Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado.</small>"
+            'detalle' => $detalleListado . "<hr class='my-1'><small>Criterio: Seguimiento.Usuario = '$usuarioSeguimiento', Seguimiento.Fecha entre $fechaDesdeSQL y $fechaHastaSQL, estado entregado.</small>"
         ]);
     }
 }
