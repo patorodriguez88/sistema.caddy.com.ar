@@ -1,5 +1,42 @@
 <?php
+function logIA($mysqli, $data)
+{
+    $stmt = $mysqli->prepare("
+        INSERT INTO ia_logs (
+            pregunta,
+            respuesta,
+            success,
+            modulo,
+            usuario,
+            fecha,
+            tiempo_ms
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+    ");
 
+    if (!$stmt) return;
+
+    $pregunta = $data['pregunta'] ?? '';
+    $respuesta = $data['respuesta'] ?? '';
+    $success = isset($data['success']) ? (int)$data['success'] : 0;
+    $modulo = $data['modulo'] ?? '';
+    $usuario = $_SESSION['Usuario'] ?? 'sistema';
+    $fecha = date('Y-m-d H:i:s');
+    $tiempo = $data['tiempo'] ?? 0;
+
+    $stmt->bind_param(
+        "ssisssi",
+        $pregunta,
+        $respuesta,
+        $success,
+        $modulo,
+        $usuario,
+        $fecha,
+        $tiempo
+    );
+
+    $stmt->execute();
+    $stmt->close();
+}
 function salir($arr)
 {
     echo json_encode($arr);
