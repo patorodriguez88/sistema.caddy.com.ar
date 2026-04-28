@@ -97,6 +97,21 @@ function detectarClienteConsulta($mysqli, $q)
         'mostrame',
         'ver',
         'consultar',
+        'cuanto',
+
+        'cuánto',
+
+        'cuanta',
+
+        'facturo',
+
+        'facturó',
+
+        'facturar',
+
+        'facturado',
+
+        'facturada',
         'ventas',
         'venta',
         'cliente',
@@ -172,9 +187,55 @@ function consultarVentasCliente($mysqli, $ctx)
     $q = $ctx['q'];
 
     if (
-        !contieneAlguna($q, ['ventas', 'venta', 'facturacion', 'facturación', 'cliente'])
-        || !contieneAlguna($q, ['dame', 'decime', 'mostrame', 'ver', 'consultar', 'cuanto', 'cuánto'])
+
+        !contieneAlguna($q, [
+
+            'ventas',
+
+            'venta',
+
+            'facturacion',
+
+            'facturación',
+
+            'facturo',
+
+            'facturó',
+
+            'facturar',
+
+            'facturado',
+
+            'facturada',
+
+            'cliente'
+
+        ])
+
+        || !contieneAlguna($q, [
+
+            'dame',
+
+            'decime',
+
+            'mostrame',
+
+            'ver',
+
+            'consultar',
+
+            'cuanto',
+
+            'cuánto',
+
+            'cuanta',
+
+            'cuánto'
+
+        ])
+
     ) {
+
         return false;
     }
 
