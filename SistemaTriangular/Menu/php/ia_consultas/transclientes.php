@@ -98,20 +98,21 @@ function detectarClienteConsulta($mysqli, $q)
         'ver',
         'consultar',
         'cuanto',
-        'cuánto',
         'cuanta',
+        'ventas',
+        'venta',
+        'facturacion',
         'facturo',
-        'facturó',
         'facturar',
         'facturado',
         'facturada',
-        'ventas',
-        'venta',
         'cliente',
         'de',
         'del',
         'la',
         'el',
+        'las',
+        'los',
         'mes',
         'pasado',
         'este',
@@ -120,23 +121,18 @@ function detectarClienteConsulta($mysqli, $q)
         'hoy',
         'ayer',
         'envios',
-        'envíos',
-        'recepciones',
-        'facturacion',
-        'facturación'
+        'recepciones'
     ];
 
     foreach ($limpiar as $palabra) {
         $busqueda = str_replace($palabra, '', $busqueda);
     }
 
-    $busqueda = trim(preg_replace('/\s+/', ' ', $busqueda));
+    $busqueda = normalizarDB(trim(preg_replace('/\s+/', ' ', $busqueda)));
 
     if (strlen($busqueda) < 3) {
         return false;
     }
-
-    $like = '%' . $busqueda . '%';
 
     $stmt = $mysqli->prepare("
         SELECT 
@@ -144,23 +140,25 @@ function detectarClienteConsulta($mysqli, $q)
             COUNT(*) AS total
         FROM TransClientes
         WHERE Eliminado = 0
-          AND RazonSocial LIKE ?
           AND IFNULL(TRIM(RazonSocial), '') <> ''
         GROUP BY RazonSocial
         ORDER BY total DESC
-        LIMIT 5
+        LIMIT 1000
     ");
 
     if (!$stmt) return false;
 
-    $stmt->bind_param("s", $like);
     $stmt->execute();
     $res = $stmt->get_result();
 
     $clientes = [];
 
     while ($row = $res->fetch_assoc()) {
-        $clientes[] = $row;
+        $razonNormalizada = normalizarDB($row['RazonSocial']);
+
+        if (strpos($razonNormalizada, $busqueda) !== false) {
+            $clientes[] = $row;
+        }
     }
 
     $stmt->close();
@@ -171,7 +169,7 @@ function detectarClienteConsulta($mysqli, $q)
 
     return [
         'busqueda' => $busqueda,
-        'clientes' => $clientes
+        'clientes' => array_slice($clientes, 0, 5)
     ];
 }
 

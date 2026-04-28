@@ -1,4 +1,12 @@
 <?php
+function normalizarDB($texto)
+{
+    return str_replace(
+        ['á', 'é', 'í', 'ó', 'ú', 'ñ', '.', ','],
+        ['a', 'e', 'i', 'o', 'u', 'n', '', ''],
+        mb_strtolower(trim($texto), 'UTF-8')
+    );
+}
 function logIA($mysqli, $data)
 {
     $stmt = $mysqli->prepare("
