@@ -218,17 +218,27 @@ function consultarVentasCliente($mysqli, $ctx)
     }
 
     list($fechaDesdeConsulta, $fechaHastaConsulta, $textoPeriodoConsulta) = detectarPeriodoConsulta($q);
+    $clienteExacto = obtenerClienteExactoDesdePregunta($q);
 
-    $clienteDetectado = detectarClienteConsulta($mysqli, $q);
+    if ($clienteExacto) {
+        $clientes = [
+            [
+                'RazonSocial' => $clienteExacto,
+                'total' => 1
+            ]
+        ];
+    } else {
+        $clienteDetectado = detectarClienteConsulta($mysqli, $q);
 
-    if (!$clienteDetectado) {
-        salir([
-            'success' => 0,
-            'msg' => 'No pude identificar el cliente. Probá por ejemplo: “Dame las ventas de Ferniplast del mes pasado”.'
-        ]);
+        if (!$clienteDetectado) {
+            salir([
+                'success' => 0,
+                'msg' => 'No pude identificar el cliente. Probá por ejemplo: “Dame las ventas de Ferniplast del mes pasado”.'
+            ]);
+        }
+
+        $clientes = $clienteDetectado['clientes'];
     }
-
-    $clientes = $clienteDetectado['clientes'];
 
     if (count($clientes) > 1 && strpos($q, 'cliente_exacto:') === false) {
         $detalle = '';

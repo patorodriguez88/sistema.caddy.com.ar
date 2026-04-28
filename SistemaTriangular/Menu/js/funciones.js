@@ -363,3 +363,13 @@ $(document).on("keydown", "#ia_consulta_texto", function (e) {
     $("#btn_ia_consultar").trigger("click");
   }
 });
+
+$(document).on("click", ".ia-cliente-opcion", function () {
+  const cliente = $(this).data("cliente") || "";
+  const preguntaActual = $("#ia_consulta_texto").val().trim();
+
+  if (!cliente) return;
+
+  $("#ia_consulta_texto").val(`${preguntaActual} cliente_exacto:${cliente}`);
+  $("#btn_ia_consultar").trigger("click");
+});
