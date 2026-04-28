@@ -172,6 +172,14 @@ function detectarClienteConsulta($mysqli, $q)
         'clientes' => array_slice($clientes, 0, 5)
     ];
 }
+function obtenerClienteExactoDesdePregunta($q)
+{
+    if (preg_match('/cliente_exacto:(.+)$/', $q, $m)) {
+        return trim($m[1]);
+    }
+
+    return false;
+}
 
 function consultarVentasCliente($mysqli, $ctx)
 {
@@ -180,49 +188,28 @@ function consultarVentasCliente($mysqli, $ctx)
     if (
 
         !contieneAlguna($q, [
-
             'ventas',
-
             'venta',
-
             'facturacion',
-
             'facturación',
-
             'facturo',
-
             'facturó',
-
             'facturar',
-
             'facturado',
-
             'facturada',
-
             'cliente'
-
         ])
 
         || !contieneAlguna($q, [
-
             'dame',
-
             'decime',
-
             'mostrame',
-
             'ver',
-
             'consultar',
-
             'cuanto',
-
             'cuánto',
-
             'cuanta',
-
             'cuánto'
-
         ])
 
     ) {
@@ -243,18 +230,26 @@ function consultarVentasCliente($mysqli, $ctx)
 
     $clientes = $clienteDetectado['clientes'];
 
-    if (count($clientes) > 1) {
+    if (count($clientes) > 1 && strpos($q, 'cliente_exacto:') === false) {
         $detalle = '';
 
         foreach ($clientes as $i => $cli) {
-            $n = $i + 1;
-            $detalle .= "#$n {$cli['RazonSocial']} <small>({$cli['total']} registros)</small><br>";
+            $razon = htmlspecialchars($cli['RazonSocial'], ENT_QUOTES, 'UTF-8');
+
+            $detalle .= "
+            <button 
+                type='button' 
+                class='btn btn-sm btn-light border me-1 mb-1 ia-cliente-opcion'
+                data-cliente='{$razon}'>
+                {$razon} <small>({$cli['total']})</small>
+            </button>
+        ";
         }
 
         salir([
             'success' => 1,
-            'respuesta' => "Encontré varios clientes parecidos a <strong>{$clienteDetectado['busqueda']}</strong>.",
-            'detalle' => $detalle . "<hr class='my-1'><small>Consultá nuevamente usando el nombre más exacto.</small>"
+            'respuesta' => "Encontré varios clientes para <strong>{$clienteDetectado['busqueda']}</strong>. Elegí uno:",
+            'detalle' => $detalle
         ]);
     }
 
