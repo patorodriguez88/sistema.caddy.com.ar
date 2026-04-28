@@ -1,16 +1,16 @@
 <?php
-include_once "../../Conexion/Conexioni.php";
+include_once __DIR__ . "/../../Conexion/Conexioni.php";
 
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=UTF-8');
 
-include_once "ia_comunes.php";
+include_once __DIR__ . "/ia_comunes.php";
 
-include_once "ia_consultas/localidades.php";
-include_once "ia_consultas/productos.php";
-include_once "ia_consultas/transclientes.php";
-include_once "ia_consultas/seguimiento.php";
-include_once "ia_consultas/logistica.php";
+include_once __DIR__ . "/ia_consultas/localidades.php";
+include_once __DIR__ . "/ia_consultas/productos.php";
+include_once __DIR__ . "/ia_consultas/transclientes.php";
+include_once __DIR__ . "/ia_consultas/seguimiento.php";
+include_once __DIR__ . "/ia_consultas/logistica.php";
 
 $pregunta = isset($_POST['pregunta']) ? trim($_POST['pregunta']) : '';
 
