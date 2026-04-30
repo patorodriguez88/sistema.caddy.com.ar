@@ -206,7 +206,7 @@ function obtenerCobranzaIntegrada($mysqli, $codigoSeguimiento, $entregado)
           AND surrender_number <> 0
           AND CobrarEnvio > 0
           AND NumPedido = ?
-        ORDER BY id DESC
+        ORDER BY idPedido DESC
         LIMIT 1
     ");
 
