@@ -173,6 +173,61 @@ function obtenerIdExternoRendicionExistente($mysqli, $codigoSeguimiento, $idRend
     return $fila ? $fila : false;
 }
 
+function obtenerCobranzaIntegrada($mysqli, $codigoSeguimiento, $entregado)
+{
+    if ((int)$entregado !== 1) {
+        return 0;
+    }
+
+    $porcentaje = 0;
+
+    $stmtPorcentaje = $mysqli->prepare("
+        SELECT Precio 
+        FROM Externos_tarifas 
+        WHERE id = 9 
+        LIMIT 1
+    ");
+
+    if (!$stmtPorcentaje) {
+        return 0;
+    }
+
+    $stmtPorcentaje->execute();
+    $stmtPorcentaje->bind_result($porcentaje);
+    $stmtPorcentaje->fetch();
+    $stmtPorcentaje->close();
+
+    $cobrarEnvio = 0;
+
+    $stmtVenta = $mysqli->prepare("
+        SELECT CobrarEnvio
+        FROM Ventas
+        WHERE Eliminado = 0
+          AND surrender_number <> 0
+          AND CobrarEnvio > 0
+          AND NumPedido = ?
+        ORDER BY id DESC
+        LIMIT 1
+    ");
+
+    if (!$stmtVenta) {
+        return 0;
+    }
+
+    $stmtVenta->bind_param("s", $codigoSeguimiento);
+    $stmtVenta->execute();
+    $stmtVenta->bind_result($cobrarEnvio);
+    $stmtVenta->fetch();
+    $stmtVenta->close();
+
+    if ((float)$cobrarEnvio <= 0 || (float)$porcentaje <= 0) {
+        return 0;
+    }
+
+    return round(((float)$cobrarEnvio * (float)$porcentaje / 100), 2);
+}
+
+
 if (isset($_POST['ModificarTarifaRendicion'])) {
     header('Content-Type: application/json; charset=UTF-8');
 
@@ -698,31 +753,36 @@ if (isset($_POST['Reporte'])) {
                 $row['Precio'] = $precioBase;
                 $row['NombreTarifa'] = $nombreTarifa;
 
-                if (intval($row['Entregado']) === 1) {
-                    $sql_tarifa_externos_cobranza = $mysqli->prepare("SELECT Precio FROM Externos_tarifas WHERE id = ?");
-                    $tarifa_numero = 9;
-                    $sql_tarifa_externos_cobranza->bind_param("i", $tarifa_numero);
-                    $sql_tarifa_externos_cobranza->execute();
-                    $sql_tarifa_externos_cobranza->bind_result($porcentaje);
+                $row['CobrarEnvio'] = obtenerCobranzaIntegrada(
+                    $mysqli,
+                    $row['CodigoSeguimiento'],
+                    $row['Entregado']
+                );
+                // if (intval($row['Entregado']) === 1) {
+                //     $sql_tarifa_externos_cobranza = $mysqli->prepare("SELECT Precio FROM Externos_tarifas WHERE id = ?");
+                //     $tarifa_numero = 9;
+                //     $sql_tarifa_externos_cobranza->bind_param("i", $tarifa_numero);
+                //     $sql_tarifa_externos_cobranza->execute();
+                //     $sql_tarifa_externos_cobranza->bind_result($porcentaje);
 
-                    $porcentaje = 0;
-                    $sql_tarifa_externos_cobranza->fetch();
-                    $sql_tarifa_externos_cobranza->close();
+                //     $porcentaje = 0;
+                //     $sql_tarifa_externos_cobranza->fetch();
+                //     $sql_tarifa_externos_cobranza->close();
 
-                    $sql_ventas = $mysqli->prepare("SELECT CobrarEnvio FROM Ventas WHERE Eliminado = 0 AND surrender_number <> 0 AND NumPedido = ?");
-                    $sql_ventas->bind_param("s", $row['CodigoSeguimiento']);
-                    $sql_ventas->execute();
-                    $sql_ventas->bind_result($cobrarEnvio);
+                //     $sql_ventas = $mysqli->prepare("SELECT CobrarEnvio FROM Ventas WHERE Eliminado = 0 AND surrender_number <> 0 AND NumPedido = ?");
+                //     $sql_ventas->bind_param("s", $row['CodigoSeguimiento']);
+                //     $sql_ventas->execute();
+                //     $sql_ventas->bind_result($cobrarEnvio);
 
-                    if ($sql_ventas->fetch()) {
-                        $row['CobrarEnvio'] = round(($cobrarEnvio * $porcentaje / 100), 2);
-                    } else {
-                        $row['CobrarEnvio'] = 0;
-                    }
-                    $sql_ventas->close();
-                } else {
-                    $row['CobrarEnvio'] = 0;
-                }
+                //     if ($sql_ventas->fetch()) {
+                //         $row['CobrarEnvio'] = round(($cobrarEnvio * $porcentaje / 100), 2);
+                //     } else {
+                //         $row['CobrarEnvio'] = 0;
+                //     }
+                //     $sql_ventas->close();
+                // } else {
+                //     $row['CobrarEnvio'] = 0;
+                // }
 
                 if (floatval($row['Debe']) == 0) {
                     $recorrido = intval($row['Recorrido']);
@@ -760,13 +820,61 @@ if (isset($_POST['Reporte'])) {
             $existente = obtenerIdExternoRendicionExistente($mysqli, $row['CodigoSeguimiento'], $numeroOrden);
 
             if ($existente) {
+
                 $row['idExternoRendicion'] = intval($existente['id']);
+
                 $row['Precio'] = floatval($existente['PrecioPagado']);
-                $row['CobrarEnvio'] = floatval($existente['CobranzaIntegrada']);
+
+                $cobranzaCalculada = obtenerCobranzaIntegrada(
+
+                    $mysqli,
+
+                    $row['CodigoSeguimiento'],
+
+                    $row['Entregado']
+
+                );
+
+                if (intval($existente['Rendido']) === 0) {
+
+                    $row['CobrarEnvio'] = $cobranzaCalculada;
+                } else {
+
+                    $row['CobrarEnvio'] = floatval($existente['CobranzaIntegrada']);
+                }
+
+                if (
+
+                    intval($existente['Rendido']) === 0 &&
+                    (float)$existente['CobranzaIntegrada'] !== (float)$cobranzaCalculada
+                ) {
+                    $tipoLiquidacionActualizada = determinarTipoLiquidacion($row);
+                    $stmtUpdCobranza = $mysqli->prepare("
+                    UPDATE Externos_rendicion
+                    SET CobranzaIntegrada = ?,
+                        TipoLiquidacion = ?
+                    WHERE id = ?
+                    LIMIT 1");
+
+                    if ($stmtUpdCobranza) {
+                        $stmtUpdCobranza->bind_param(
+                            "dsi",
+                            $cobranzaCalculada,
+                            $tipoLiquidacionActualizada,
+                            $row['idExternoRendicion']
+                        );
+                        $stmtUpdCobranza->execute();
+                        $stmtUpdCobranza->close();
+                        $row['TipoLiquidacion'] = $tipoLiquidacionActualizada;
+                    }
+                } else {
+                    $row['TipoLiquidacion'] = $existente['TipoLiquidacion'];
+                }
+
                 $row['Total'] = round(floatval($row['Precio']) + floatval($row['CobrarEnvio']), 2);
                 $row['ObservacionManual'] = $existente['Observaciones'];
                 $row['TarifaID'] = intval($existente['idExternos_tarifas']);
-                $row['TipoLiquidacion'] = $existente['TipoLiquidacion'];
+
                 $row['Rendido'] = intval($existente['Rendido']);
                 $row['FechaRendido'] = $existente['FechaRendido'];
                 $row['UsuarioRendido'] = $existente['UsuarioRendido'];
