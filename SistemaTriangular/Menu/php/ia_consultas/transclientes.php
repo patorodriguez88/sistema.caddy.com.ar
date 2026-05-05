@@ -316,6 +316,7 @@ function consultarVentasCliente($mysqli, $ctx)
             'envió',
             'envios',
             'envíos',
+            'paquetes',
             'movimientos',
             'movimiento'
         ])
@@ -329,7 +330,16 @@ function consultarVentasCliente($mysqli, $ctx)
             'cuanto',
             'cuánto',
             'cuanta',
-            'cuánto'
+            'cuánto',
+            'cuantos',
+            'cuántos',
+            'semana',
+            'mes',
+            'hoy',
+            'ayer',
+            'este',
+            'actual',
+            'pasado'
         ])
 
     ) {
