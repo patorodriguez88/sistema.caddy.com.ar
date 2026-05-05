@@ -1,4 +1,54 @@
 <?php
+function detectarClienteFiltroSeguro($mysqli, $q)
+{
+    // Caso: "de Ferniplast", "para Ferniplast", "cliente Ferniplast"
+    if (!preg_match('/(?:de|para|cliente)\s+(.+?)(?:\s+en|\s+del|\s+de\s+abril|\s+enero|\s+febrero|\s+marzo|\s+abril|\s+mayo|\s+junio|\s+julio|\s+agosto|\s+septiembre|\s+octubre|\s+noviembre|\s+diciembre|$)/i', $q, $m)) {
+        return false;
+    }
+
+    $posibleCliente = trim($m[1]);
+
+    // Evitar falsos positivos
+    $descartar = ['seguro', 'valor declarado', 'prevision', 'previsión'];
+    foreach ($descartar as $d) {
+        if (strpos($posibleCliente, $d) !== false) {
+            return false;
+        }
+    }
+
+    $ctxTemp = $q . ' ' . $posibleCliente;
+
+    $clienteDetectado = detectarClienteConsulta($mysqli, $ctxTemp);
+
+    if (!$clienteDetectado || count($clienteDetectado['clientes']) === 0) {
+        return false;
+    }
+
+    return $clienteDetectado['clientes'][0]['RazonSocial'];
+}
+
+function detectarClientesExcluidosSeguro($q)
+{
+    $excluir = [];
+
+    if (preg_match('/excluyendo\s+(.+)$/i', $q, $m) || preg_match('/sin\s+(.+)$/i', $q, $m)) {
+        $texto = trim($m[1]);
+
+        $texto = str_replace([' y ', ','], '|', $texto);
+        $partes = explode('|', $texto);
+
+        foreach ($partes as $p) {
+            $p = trim($p);
+
+            if ($p !== '') {
+                $excluir[] = $p;
+            }
+        }
+    }
+
+    return $excluir;
+}
+
 function obtenerMontoMinimoSeguro($mysqli)
 {
     $stmt = $mysqli->prepare("
@@ -37,6 +87,25 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
 
     $minimoSeguro = obtenerMontoMinimoSeguro($mysqli);
 
+    $clienteFiltro = detectarClienteFiltroSeguro($mysqli, $q);
+    $clientesExcluidos = detectarClientesExcluidosSeguro($q);
+
+    $whereExtra = "";
+    $params = [$minimoSeguro, $minimoSeguro, $desde, $hasta];
+    $types = "ddss";
+
+    if ($clienteFiltro) {
+        $whereExtra .= " AND RazonSocial = ? ";
+        $params[] = $clienteFiltro;
+        $types .= "s";
+    }
+
+    foreach ($clientesExcluidos as $clienteExcluir) {
+        $whereExtra .= " AND LOWER(RazonSocial) NOT LIKE ? ";
+        $params[] = '%' . strtolower($clienteExcluir) . '%';
+        $types .= "s";
+    }
+
     $stmt = $mysqli->prepare("
         SELECT 
             COUNT(*) AS cantidad,
@@ -51,13 +120,14 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
         WHERE Eliminado = 0
           AND Fecha >= ?
           AND Fecha <= ?
+          $whereExtra
     ");
 
     if (!$stmt) {
         salir(['success' => 0, 'msg' => 'Error preparando consulta de seguro.']);
     }
 
-    $stmt->bind_param("ddss", $minimoSeguro, $minimoSeguro, $desde, $hasta);
+    $stmt->bind_param($types, ...$params);
     $stmt->execute();
 
     $res = $stmt->get_result();
@@ -71,6 +141,16 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
 
     $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'Pato';
 
+    $filtroTexto = "";
+
+    if ($clienteFiltro) {
+        $filtroTexto .= "<br><strong>Cliente consultado:</strong> {$clienteFiltro}";
+    }
+
+    if (count($clientesExcluidos) > 0) {
+        $filtroTexto .= "<br><strong>Clientes excluidos:</strong> " . implode(', ', $clientesExcluidos);
+    }
+
     salir([
         'success' => 1,
         'respuesta' => "{$usuario}, el valor declarado para <strong>{$textoPeriodo}</strong> es de <strong>" . dinero($totalOriginal) . "</strong>.",
@@ -78,7 +158,8 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
             📦 <strong>Cantidad de envíos:</strong> {$cantidad}<br>
             🛡️ <strong>Monto mínimo asegurado:</strong> " . dinero($minimoSeguro) . "<br>
             📊 <strong>Total ajustado para seguro:</strong> " . dinero($totalAjustado) . "<br>
-            💰 <strong>Previsión sugerida 1%:</strong> <span class='text-success fw-bold'>" . dinero($prevision) . "</span><br>
+            💰 <strong>Previsión sugerida 1%:</strong> <span class='text-success fw-bold'>" . dinero($prevision) . "</span>
+            {$filtroTexto}
             <hr class='my-1'>
             <small>
                 Criterio: cada envío menor a " . dinero($minimoSeguro) . " se calcula como mínimo asegurado.<br>

@@ -45,17 +45,86 @@ function logIA($mysqli, $data)
     $stmt->execute();
     $stmt->close();
 }
+
 function salir($arr)
 {
+    global $mysqli, $startTime;
+
+    $tiempo = isset($startTime)
+        ? round((microtime(true) - $startTime) * 1000)
+        : 0;
+
+    logIA($mysqli, [
+        'pregunta' => $_POST['pregunta'] ?? '',
+        'respuesta' => $arr['respuesta'] ?? ($arr['msg'] ?? ''),
+        'success' => $arr['success'] ?? 0,
+        'modulo' => detectarModulo($arr),
+        'tiempo' => $tiempo
+    ]);
+
     echo json_encode($arr);
     exit;
+}
+function detectarModulo($arr)
+{
+    $texto = strtolower(
+        ($arr['respuesta'] ?? '') . ' ' .
+            ($arr['detalle'] ?? '') . ' ' .
+            ($_POST['pregunta'] ?? '')
+    );
+
+    if (strpos($texto, 'seguro') !== false || strpos($texto, 'declarado') !== false) return 'seguro';
+    if (strpos($texto, 'venta') !== false || strpos($texto, 'facturacion') !== false || strpos($texto, 'cliente') !== false || strpos($texto, 'envio') !== false || strpos($texto, 'paquete') !== false) return 'ventas';
+    if (strpos($texto, 'seguimiento') !== false || strpos($texto, 'codigo') !== false) return 'seguimiento';
+    if (strpos($texto, 'logistica') !== false || strpos($texto, 'rendicion') !== false || strpos($texto, 'recorrido') !== false) return 'logistica';
+    if (strpos($texto, 'tarifa') !== false || strpos($texto, 'producto') !== false) return 'productos';
+
+    return 'general';
 }
 
 function normalizarTexto($texto)
 {
     return str_replace(
-        ['á', 'é', 'í', 'ó', 'ú', 'ñ', '¿', '?', '.', ',', ';', ':'],
-        ['a', 'e', 'i', 'o', 'u', 'n', '', '', '', '', '', ''],
+        [
+            'á',
+            'é',
+            'í',
+            'ó',
+            'ú',
+            'ñ',
+            '¿',
+            '?',
+            '.',
+            ',',
+            ';',
+            ':',
+            '"',
+            "'",
+            '“',
+            '”',
+            '‘',
+            '’'
+        ],
+        [
+            'a',
+            'e',
+            'i',
+            'o',
+            'u',
+            'n',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            ''
+        ],
         mb_strtolower(trim($texto), 'UTF-8')
     );
 }
