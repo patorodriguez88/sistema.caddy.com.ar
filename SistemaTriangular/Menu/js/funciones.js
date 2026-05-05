@@ -36,24 +36,7 @@
     });
   });
 })();
-// $(document).ajaxComplete(function (event, xhr, settings) {
-//   const sessioExpirada = xhr.status;
-//   console.log("sesionExpirada", sessioExpirada);
 
-//   if (sessioExpirada == 401) {
-//     // window.location.href = "/SistemaTriangular/inicio.php";
-//     // exit();
-//     Swal.fire({
-//       title: "Sesión expirada",
-//       text: "Tu sesión ha caducado. Por favor, volvé a iniciar sesión.",
-//       icon: "warning",
-//       confirmButtonText: "Aceptar",
-//     }).then(() => {
-//       window.location.href = "/SistemaTriangular/inicio.php";
-//       exit();
-//     });
-//   }
-// });
 // funcion para los botones de datatable
 $.extend(true, $.fn.dataTable.Buttons.defaults, {
   dom: {
@@ -65,10 +48,11 @@ $.extend(true, $.fn.dataTable.Buttons.defaults, {
 
 $(document).ready(function () {
   // Carga de menús
-  cargarConsultasFrecuentesIA();
+
   $("#menuhyper_head").load("../Menu/head.html");
 
   $("#menuhyper_topnav").load("../Menu/topnav.html", function () {
+    cargarConsultasFrecuentesIA();
     // Cambio de tema claro/oscuro
     $("#light-dark-mode").on("click", function () {
       const html = $("html");
@@ -383,7 +367,13 @@ function cargarConsultasFrecuentesIA() {
       consultas_frecuentes: 1,
     },
     success: function (res) {
-      if (!res.success || !res.data || !res.data.length) return;
+      if (!res.success || !res.data || !res.data.length) {
+        $("#ia_consultas_frecuentes").html(
+          `<span class="text-muted small">Todavía no hay consultas frecuentes.</span>`,
+        );
+
+        return;
+      }
 
       let html = "";
 
