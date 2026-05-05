@@ -1,28 +1,35 @@
 <?php
 function obtenerMontoMinimoSeguro($mysqli)
 {
-    $res = $mysqli->query("SELECT Valor FROM Variables WHERE Nombre = 'MontoMinimoSeguro' LIMIT 1");
+    $stmt = $mysqli->prepare("
+        SELECT Valor 
+        FROM Variables 
+        WHERE Nombre = 'MontoMinimoSeguro' 
+        LIMIT 1
+    ");
 
-    if ($res && $row = $res->fetch_assoc()) {
-        return (float)$row['Valor'];
+    if (!$stmt) {
+        return 0;
     }
 
-    return 0;
+    $stmt->execute();
+    $res = $stmt->get_result();
+    $row = $res->fetch_assoc();
+    $stmt->close();
+
+    return $row ? (float)$row['Valor'] : 0;
 }
 
 function consultarSeguroEntreFechas($mysqli, $ctx)
 {
     $q = $ctx['q'];
 
-    // Detectamos si habla de seguro / valor declarado
-    if (!contieneAlguna($q, [
-        'seguro',
-        'valor declarado',
-        'declarado',
-        'valor',
-        'prevision',
-        'previsión'
-    ])) {
+    if (
+        strpos($q, 'seguro') === false &&
+        strpos($q, 'declarado') === false &&
+        strpos($q, 'valor declarado') === false &&
+        strpos($q, 'prevision') === false
+    ) {
         return false;
     }
 
@@ -32,7 +39,14 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
 
     $stmt = $mysqli->prepare("
         SELECT 
-            IFNULL(ValorDeclarado, 0) AS ValorDeclarado
+            COUNT(*) AS cantidad,
+            SUM(IFNULL(ValorDeclarado, 0)) AS total_original,
+            SUM(
+                CASE 
+                    WHEN IFNULL(ValorDeclarado, 0) < ? THEN ?
+                    ELSE IFNULL(ValorDeclarado, 0)
+                END
+            ) AS total_ajustado
         FROM TransClientes
         WHERE Eliminado = 0
           AND Fecha >= ?
@@ -43,47 +57,31 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
         salir(['success' => 0, 'msg' => 'Error preparando consulta de seguro.']);
     }
 
-    $stmt->bind_param("ss", $desde, $hasta);
+    $stmt->bind_param("ddss", $minimoSeguro, $minimoSeguro, $desde, $hasta);
     $stmt->execute();
+
     $res = $stmt->get_result();
-
-    $totalOriginal = 0;
-    $totalAjustado = 0;
-    $cantidad = 0;
-
-    while ($row = $res->fetch_assoc()) {
-        $valor = (float)$row['ValorDeclarado'];
-
-        $totalOriginal += $valor;
-
-        // 🔹 Acá está la clave del negocio
-        $valorAjustado = ($valor < $minimoSeguro) ? $minimoSeguro : $valor;
-
-        $totalAjustado += $valorAjustado;
-        $cantidad++;
-    }
-
+    $datos = $res->fetch_assoc();
     $stmt->close();
 
-    // 1% del total ajustado
+    $cantidad = (int)$datos['cantidad'];
+    $totalOriginal = (float)$datos['total_original'];
+    $totalAjustado = (float)$datos['total_ajustado'];
     $prevision = $totalAjustado * 0.01;
 
-    $usuario = $_SESSION['Usuario'] ?? 'Pato';
+    $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'Pato';
 
     salir([
         'success' => 1,
-        'respuesta' => "
-            {$usuario}, el valor declarado para <strong>{$textoPeriodo}</strong> es de <strong>" . dinero($totalOriginal) . "</strong>.
-        ",
+        'respuesta' => "{$usuario}, el valor declarado para <strong>{$textoPeriodo}</strong> es de <strong>" . dinero($totalOriginal) . "</strong>.",
         'detalle' => "
             📦 <strong>Cantidad de envíos:</strong> {$cantidad}<br>
-            🛡️ <strong>Monto mínimo de seguro:</strong> " . dinero($minimoSeguro) . "<br>
+            🛡️ <strong>Monto mínimo asegurado:</strong> " . dinero($minimoSeguro) . "<br>
             📊 <strong>Total ajustado para seguro:</strong> " . dinero($totalAjustado) . "<br>
-            💰 <strong>Previsión (1%):</strong> <span class='text-success fw-bold'>" . dinero($prevision) . "</span><br>
-
+            💰 <strong>Previsión sugerida 1%:</strong> <span class='text-success fw-bold'>" . dinero($prevision) . "</span><br>
             <hr class='my-1'>
             <small>
-                Criterio: si ValorDeclarado &lt; {$minimoSeguro} → se toma {$minimoSeguro}.<br>
+                Criterio: cada envío menor a " . dinero($minimoSeguro) . " se calcula como mínimo asegurado.<br>
                 Fecha entre {$desde} y {$hasta}.
             </small>
         "
