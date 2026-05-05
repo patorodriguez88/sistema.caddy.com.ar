@@ -187,7 +187,9 @@ function detectarClienteConsulta($mysqli, $q)
         'ver',
         'consultar',
         'cuanto',
+        'cuantos',
         'cuanta',
+        'cuantas',
         'ventas',
         'venta',
         'facturacion',
@@ -196,29 +198,39 @@ function detectarClienteConsulta($mysqli, $q)
         'facturado',
         'facturada',
         'cliente',
+        'clientes',
+        'paquetes',
+        'paquete',
+        'envio',
+        'envios',
+        'envia',
+        'enviado',
+        'enviados',
+        'movimientos',
+        'movimiento',
+        'recepciones',
+        'recepcion',
+        'retiros',
+        'retiro',
         'de',
         'del',
         'la',
         'el',
         'las',
         'los',
+        'a',
+        'en',
+        'por',
+        'para',
         'mes',
-        'pasado',
-        'este',
-        'actual',
         'semana',
         'hoy',
         'ayer',
-        'envios',
-        'recepciones',
-        'cuantos',
-        'cuántos',
-        'paquetes',
-        'paquete',
-        'envio',
-        'envió',
-        'envios',
-        'envíos',
+        'este',
+        'esta',
+        'actual',
+        'pasado',
+        'pasada',
         'enero',
         'febrero',
         'marzo',
@@ -233,9 +245,14 @@ function detectarClienteConsulta($mysqli, $q)
         'diciembre'
     ];
 
+    $busqueda = normalizarDB($busqueda);
+
     foreach ($limpiar as $palabra) {
-        $busqueda = str_replace($palabra, '', $busqueda);
+        $palabra = normalizarDB($palabra);
+        $busqueda = preg_replace('/\b' . preg_quote($palabra, '/') . '\b/u', ' ', $busqueda);
     }
+
+    $busqueda = trim(preg_replace('/\s+/', ' ', $busqueda));
 
     $busqueda = normalizarDB(trim(preg_replace('/\s+/', ' ', $busqueda)));
 
