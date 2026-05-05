@@ -4,6 +4,12 @@ function consultarLogistica($mysqli, $ctx)
 {
     $q = $ctx['q'];
 
+    $clienteDetectado = detectarClienteConsulta($mysqli, $q);
+
+    if ($clienteDetectado) {
+        return false; // deja que lo maneje ventas
+    }
+
     $inicioMes = date('Y-m-01');
     $finMes = date('Y-m-t');
 
@@ -22,7 +28,6 @@ function consultarLogistica($mysqli, $ctx)
             'detalle' => "Criterio: Logistica.Rendicion = 0 y Costo_rendicion > 0."
         ]);
     }
-
     if (contieneAlguna($q, ['facturado', 'facturacion', 'facturación']) && contieneAlguna($q, ['mes', 'mensual'])) {
         if (!isset($_SESSION['Nivel']) || (int)$_SESSION['Nivel'] !== 1) {
             salir([

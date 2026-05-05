@@ -211,8 +211,14 @@ function detectarClienteConsulta($mysqli, $q)
         'ayer',
         'envios',
         'recepciones',
-
-        // 🔥 CLAVE
+        'cuantos',
+        'cuántos',
+        'paquetes',
+        'paquete',
+        'envio',
+        'envió',
+        'envios',
+        'envíos',
         'enero',
         'febrero',
         'marzo',
@@ -303,7 +309,15 @@ function consultarVentasCliente($mysqli, $ctx)
             'facturar',
             'facturado',
             'facturada',
-            'cliente'
+            'cliente',
+            'paquetes',
+            'paquete',
+            'envio',
+            'envió',
+            'envios',
+            'envíos',
+            'movimientos',
+            'movimiento'
         ])
 
         || !contieneAlguna($q, [

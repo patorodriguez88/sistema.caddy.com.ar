@@ -27,8 +27,8 @@ $contexto = [
 ];
 
 if (consultarCodigoSeguimiento($mysqli, $contexto)) exit;
-if (consultarSeguroEntreFechas($mysqli, $contexto)) exit;
 if (consultarVentasCliente($mysqli, $contexto)) exit;
+if (consultarSeguroEntreFechas($mysqli, $contexto)) exit;
 if (consultarLocalidades($mysqli, $contexto)) exit;
 if (consultarTarifas($mysqli, $contexto)) exit;
 if (consultarSeguimientoGeneral($mysqli, $contexto)) exit;
