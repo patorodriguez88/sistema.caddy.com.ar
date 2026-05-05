@@ -1,5 +1,89 @@
 <?php
+function obtenerMontoMinimoSeguro($mysqli)
+{
+    $res = $mysqli->query("SELECT Valor FROM Variables WHERE Nombre = 'MontoMinimoSeguro' LIMIT 1");
 
+    if ($res && $row = $res->fetch_assoc()) {
+        return (float)$row['Valor'];
+    }
+
+    return 0;
+}
+
+function consultarSeguroEntreFechas($mysqli, $ctx)
+{
+    $q = $ctx['q'];
+
+    // Detectamos si habla de seguro / valor declarado
+    if (!contieneAlguna($q, ['seguro', 'valor declarado', 'prevision', 'previsión'])) {
+        return false;
+    }
+
+    list($desde, $hasta, $textoPeriodo) = detectarPeriodoConsulta($q);
+
+    $minimoSeguro = obtenerMontoMinimoSeguro($mysqli);
+
+    $stmt = $mysqli->prepare("
+        SELECT 
+            IFNULL(ValorDeclarado, 0) AS ValorDeclarado
+        FROM TransClientes
+        WHERE Eliminado = 0
+          AND Fecha >= ?
+          AND Fecha <= ?
+    ");
+
+    if (!$stmt) {
+        salir(['success' => 0, 'msg' => 'Error preparando consulta de seguro.']);
+    }
+
+    $stmt->bind_param("ss", $desde, $hasta);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $totalOriginal = 0;
+    $totalAjustado = 0;
+    $cantidad = 0;
+
+    while ($row = $res->fetch_assoc()) {
+        $valor = (float)$row['ValorDeclarado'];
+
+        $totalOriginal += $valor;
+
+        // 🔹 Acá está la clave del negocio
+        $valorAjustado = ($valor < $minimoSeguro) ? $minimoSeguro : $valor;
+
+        $totalAjustado += $valorAjustado;
+        $cantidad++;
+    }
+
+    $stmt->close();
+
+    // 1% del total ajustado
+    $prevision = $totalAjustado * 0.01;
+
+    $usuario = $_SESSION['Usuario'] ?? 'Pato';
+
+    salir([
+        'success' => 1,
+        'respuesta' => "
+            {$usuario}, el valor declarado para <strong>{$textoPeriodo}</strong> es de <strong>" . dinero($totalOriginal) . "</strong>.
+        ",
+        'detalle' => "
+            📦 <strong>Cantidad de envíos:</strong> {$cantidad}<br>
+            🛡️ <strong>Monto mínimo de seguro:</strong> " . dinero($minimoSeguro) . "<br>
+            📊 <strong>Total ajustado para seguro:</strong> " . dinero($totalAjustado) . "<br>
+            💰 <strong>Previsión (1%):</strong> <span class='text-success fw-bold'>" . dinero($prevision) . "</span><br>
+
+            <hr class='my-1'>
+            <small>
+                Criterio: si ValorDeclarado &lt; {$minimoSeguro} → se toma {$minimoSeguro}.<br>
+                Fecha entre {$desde} y {$hasta}.
+            </small>
+        "
+    ]);
+
+    return true;
+}
 function consultarCodigoSeguimiento($mysqli, $ctx)
 {
     $pregunta = $ctx['pregunta'];
