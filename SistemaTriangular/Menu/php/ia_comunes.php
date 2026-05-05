@@ -166,6 +166,32 @@ function detectarPeriodoConsulta($q)
         ];
     }
 
+    // Meses por nombre: "abril", "abril 2025", etc.
+    $meses = [
+        'enero' => '01',
+        'febrero' => '02',
+        'marzo' => '03',
+        'abril' => '04',
+        'mayo' => '05',
+        'junio' => '06',
+        'julio' => '07',
+        'agosto' => '08',
+        'septiembre' => '09',
+        'octubre' => '10',
+        'noviembre' => '11',
+        'diciembre' => '12'
+    ];
+
+    if (preg_match('/(enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|octubre|noviembre|diciembre)\s*(\d{4})?/i', $q, $m)) {
+        $mes = strtolower($m[1]);
+        $anio = isset($m[2]) && $m[2] !== '' ? $m[2] : date('Y');
+
+        $desde = $anio . '-' . $meses[$mes] . '-01';
+        $hasta = date('Y-m-t', strtotime($desde));
+
+        return [$desde, $hasta, ucfirst($mes) . ' ' . $anio];
+    }
+
     list($fecha, $texto) = detectarFechaConsulta($q);
 
     return [$fecha, $fecha, $texto];
