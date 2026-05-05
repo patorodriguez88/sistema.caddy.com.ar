@@ -65,6 +65,7 @@ $.extend(true, $.fn.dataTable.Buttons.defaults, {
 
 $(document).ready(function () {
   // Carga de menús
+  cargarConsultasFrecuentesIA();
   $("#menuhyper_head").load("../Menu/head.html");
 
   $("#menuhyper_topnav").load("../Menu/topnav.html", function () {
@@ -373,3 +374,43 @@ $(document).on("click", ".ia-cliente-opcion", function () {
   $("#ia_consulta_texto").val(`${preguntaActual} cliente_exacto:${cliente}`);
   $("#btn_ia_consultar").trigger("click");
 });
+function cargarConsultasFrecuentesIA() {
+  $.ajax({
+    url: "../Menu/php/ia_consultas.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      consultas_frecuentes: 1,
+    },
+    success: function (res) {
+      if (!res.success || !res.data || !res.data.length) return;
+
+      let html = "";
+
+      res.data.forEach(function (item) {
+        html += `
+          <button 
+            type="button"
+            class="btn btn-sm btn-light border text-muted ia-tag-consulta"
+            data-pregunta="${escapeHtml(item.pregunta)}"
+            title="${escapeHtml(item.pregunta)}">
+            ${escapeHtml(item.texto)}
+            <span class="badge bg-secondary ms-1">${item.total}</span>
+          </button>
+        `;
+      });
+
+      $("#ia_consultas_frecuentes").html(html);
+    },
+  });
+}
+
+$(document).on("click", ".ia-tag-consulta", function () {
+  $("#ia_consulta_texto").val($(this).data("pregunta"));
+  $("#btn_ia_consultar").trigger("click");
+});
+function escapeHtml(text) {
+  return $("<div>")
+    .text(text || "")
+    .html();
+}
