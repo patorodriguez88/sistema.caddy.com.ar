@@ -210,7 +210,21 @@ function detectarClienteConsulta($mysqli, $q)
         'hoy',
         'ayer',
         'envios',
-        'recepciones'
+        'recepciones',
+
+        // 🔥 CLAVE
+        'enero',
+        'febrero',
+        'marzo',
+        'abril',
+        'mayo',
+        'junio',
+        'julio',
+        'agosto',
+        'septiembre',
+        'octubre',
+        'noviembre',
+        'diciembre'
     ];
 
     foreach ($limpiar as $palabra) {
@@ -245,7 +259,10 @@ function detectarClienteConsulta($mysqli, $q)
     while ($row = $res->fetch_assoc()) {
         $razonNormalizada = normalizarDB($row['RazonSocial']);
 
-        if (strpos($razonNormalizada, $busqueda) !== false) {
+        if (
+            strpos($razonNormalizada, $busqueda) !== false ||
+            strpos($busqueda, $razonNormalizada) !== false
+        ) {
             $clientes[] = $row;
         }
     }
