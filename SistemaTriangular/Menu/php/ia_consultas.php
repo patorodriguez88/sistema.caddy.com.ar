@@ -27,12 +27,13 @@ $contexto = [
 ];
 
 if (consultarCodigoSeguimiento($mysqli, $contexto)) exit;
+if (consultarSeguroEntreFechas($mysqli, $contexto)) exit;
 if (consultarVentasCliente($mysqli, $contexto)) exit;
 if (consultarLocalidades($mysqli, $contexto)) exit;
 if (consultarTarifas($mysqli, $contexto)) exit;
 if (consultarSeguimientoGeneral($mysqli, $contexto)) exit;
 if (consultarLogistica($mysqli, $contexto)) exit;
-
+if (consultarSeguroEntreFechas($mysqli, $contexto)) exit;
 salir([
     'success' => 0,
     'msg' => 'Todavía no tengo una consulta preparada para esa pregunta.'

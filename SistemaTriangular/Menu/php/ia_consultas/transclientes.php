@@ -15,7 +15,14 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
     $q = $ctx['q'];
 
     // Detectamos si habla de seguro / valor declarado
-    if (!contieneAlguna($q, ['seguro', 'valor declarado', 'prevision', 'previsión'])) {
+    if (!contieneAlguna($q, [
+        'seguro',
+        'valor declarado',
+        'declarado',
+        'valor',
+        'prevision',
+        'previsión'
+    ])) {
         return false;
     }
 
