@@ -51,6 +51,7 @@ function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores)
         ) PP ON PP.idTransProveedores = TP.id
         WHERE TP.id = ?
           AND TP.Eliminado = 0
+          AND TP.Fecha >='2026-01-01'
         LIMIT 1
     ";
 
