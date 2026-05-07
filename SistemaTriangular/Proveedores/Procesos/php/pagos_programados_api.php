@@ -6,6 +6,7 @@ header('Content-Type: application/json; charset=UTF-8');
 
 $accion = isset($_POST['accion']) ? $_POST['accion'] : '';
 $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : '';
+$fechaDesde = '2024-01-01';
 
 function responder($success, $message = '', $data = array())
 {
@@ -22,7 +23,8 @@ function n($valor)
     return is_numeric($valor) ? (float)$valor : 0;
 }
 
-function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores)
+
+function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores, $fechaDesde)
 {
     $sql = "
         SELECT 
@@ -51,7 +53,7 @@ function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores)
         ) PP ON PP.idTransProveedores = TP.id
         WHERE TP.id = ?
           AND TP.Eliminado = 0
-          AND TP.Fecha >='2026-01-01'
+          AND TP.Fecha >= ?
         LIMIT 1
     ";
 
@@ -61,7 +63,7 @@ function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores)
         return false;
     }
 
-    $stmt->bind_param("i", $idTransProveedores);
+    $stmt->bind_param("is", $idTransProveedores, $fechaDesde);
     $stmt->execute();
 
     $res = $stmt->get_result();
@@ -112,6 +114,7 @@ if ($accion == 'listar_facturas_pendientes') {
         ) PP ON PP.idTransProveedores = TP.id
         WHERE TP.Eliminado = 0
           AND TP.Debe > 0
+          AND TP.Fecha >= '{$fechaDesde}'
         HAVING SaldoPendiente > 0
         ORDER BY TP.Fecha ASC, TP.RazonSocial ASC
     ";
@@ -229,7 +232,7 @@ if ($accion == 'programar_pago') {
         responder(false, 'El importe programado debe ser mayor a cero.');
     }
 
-    $saldo = obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores);
+    $saldo = obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores, $fechaDesde);
 
     if (!$saldo) {
         responder(false, 'No se encontró la factura.');
@@ -413,8 +416,7 @@ if ($accion == 'cards') {
         'total_vencido' => 0
     );
 
-    $sqlSinProgramar = "
-        SELECT 
+    $sqlSinProgramar = "SELECT 
             COUNT(*) AS cantidad,
             SUM(SaldoPendiente) AS total
         FROM (
@@ -441,6 +443,7 @@ if ($accion == 'cards') {
             ) PP ON PP.idTransProveedores = TP.id
             WHERE TP.Eliminado = 0
               AND TP.Debe > 0
+              AND TP.Fecha >= '{$fechaDesde}'
         ) X
         WHERE X.SaldoPendiente > 0
     ";
