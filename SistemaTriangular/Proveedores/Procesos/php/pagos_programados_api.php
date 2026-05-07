@@ -6,7 +6,7 @@ header('Content-Type: application/json; charset=UTF-8');
 
 $accion = isset($_POST['accion']) ? $_POST['accion'] : '';
 $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : '';
-$fechaDesde = '2024-01-01';
+$fechaDesde = '2026-01-01';
 
 function responder($success, $message = '', $data = array())
 {
