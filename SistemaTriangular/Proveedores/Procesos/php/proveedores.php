@@ -494,34 +494,77 @@ if (isset($_POST['Borrar_Pago'])) {
 }
 
 if (isset($_POST['Borrar_Pago_ok'])) {
+
     $Info = ' B ' . $_SESSION['Usuario'] . ' ' . date('d-m-Y H:i');
     $InfoM = ' M ' . $_SESSION['Usuario'] . ' ' . date('d-m-Y H:i');
-    $idTransProveedores = $_POST['id'];
+    $idTransProveedores = isset($_POST['id']) ? (int)$_POST['id'] : 0;
 
-    $sql = $mysqli->query("SELECT NumeroAsiento,Haber FROM Tesoreria WHERE idTransProvee='$idTransProveedores' AND Eliminado=0");
+    if ($idTransProveedores <= 0) {
+        echo json_encode(array('success' => 0, 'error' => 2, 'message' => 'ID inválido'));
+        exit;
+    }
+
+    $sql = $mysqli->query("
+        SELECT NumeroAsiento, IFNULL(Haber,0) AS Haber 
+        FROM Tesoreria 
+        WHERE idTransProvee = '$idTransProveedores' 
+          AND Eliminado = 0
+        ORDER BY id DESC
+        LIMIT 1
+    ");
+
+    if (!$sql || $sql->num_rows == 0) {
+        echo json_encode(array(
+            'success' => 0,
+            'error' => 3,
+            'message' => 'No se encontró el movimiento de Tesorería asociado al pago.'
+        ));
+        exit;
+    }
+
     $datos = $sql->fetch_array(MYSQLI_ASSOC);
-    $NumeroAsiento = $datos['NumeroAsiento'];
-    $TotalHaber = $datos['Haber'];
-    // echo json_encode(array('NumeroAsiento'=>$datos['NumeroAsiento']));
 
-    if ($idTransProveedores <> '' || $idTransProveedores <> 0) {
+    $NumeroAsiento = isset($datos['NumeroAsiento']) ? $datos['NumeroAsiento'] : 0;
+    $TotalHaber = isset($datos['Haber']) ? (float)$datos['Haber'] : 0;
 
-        if ($mysqli->query("UPDATE TransProveedores SET Eliminado=1,InfoABM=CONCAT(InfoABM,'$Info') WHERE id='$idTransProveedores' LIMIT 1")) {
+    if ($mysqli->query("
+        UPDATE TransProveedores 
+        SET 
+            Eliminado = 1,
+            InfoABM = CONCAT(IFNULL(InfoABM,''),'$Info') 
+        WHERE id = '$idTransProveedores' 
+        LIMIT 1
+    ")) {
 
-            $mysqli->query("UPDATE `IvaCompras` SET Pagado=Pagado-$TotalHaber,InfoABM=CONCAT(InfoABM,'$InfoM') WHERE NumeroAsiento='$NumeroAsiento' LIMIT 1");
+        if ($NumeroAsiento != '' && $NumeroAsiento != 0) {
 
-            if ($NumeroAsiento <> '' || $NumeroAsiento <> 0) {
+            $mysqli->query("
+                UPDATE IvaCompras 
+                SET 
+                    Pagado = Pagado - $TotalHaber,
+                    InfoABM = CONCAT(IFNULL(InfoABM,''),'$InfoM') 
+                WHERE NumeroAsiento = '$NumeroAsiento' 
+                LIMIT 1
+            ");
 
-                $mysqli->query("UPDATE `Tesoreria` SET Eliminado=1,InfoABM=CONCAT(InfoABM,'$Info') WHERE NumeroAsiento='$NumeroAsiento'");
-            }
-
-            echo json_encode(array('success' => 1));
-        } else {
-
-            echo json_encode(array('success' => 0, 'error' => 1));
+            $mysqli->query("
+                UPDATE Tesoreria 
+                SET 
+                    Eliminado = 1,
+                    InfoABM = CONCAT(IFNULL(InfoABM,''),'$Info') 
+                WHERE NumeroAsiento = '$NumeroAsiento'
+            ");
         }
+
+        echo json_encode(array('success' => 1));
+        exit;
     } else {
 
-        echo json_encode(array('success' => 0, 'error' => 2));
+        echo json_encode(array(
+            'success' => 0,
+            'error' => 1,
+            'message' => $mysqli->error
+        ));
+        exit;
     }
 }
