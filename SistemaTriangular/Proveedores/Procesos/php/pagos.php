@@ -26,7 +26,10 @@ if (isset($_POST['CargarAnticipo'])) {
     $FormaDePago = $sqlCuenta0['CuentaContable'];
 
     $Importe = $_POST['importe'];
-
+    $Banco = '';
+    $NumeroCheque = '';
+    $FechaCheque = '';
+    $idCheque = 0;
     //CHEQUES PROPIOS	
     // if($FP=='5'){		
 
@@ -54,11 +57,6 @@ if (isset($_POST['CargarAnticipo'])) {
         $Banco = $DatosCheque['Banco'];
         $NumeroCheque = $DatosCheque['NumeroCheque'];
         $FechaCheque = $DatosCheque['FechaCobro'];
-
-        // CARGO LOS DATOS EN LA TABLA CHEQUE Y PONGO UTILIZADO EN 1 SI EL PAGO FUE CON CHEQUE DE TERCEROS	
-
-        $sql3 = "UPDATE Cheques SET Utilizado=1,Asiento='$NAsiento',Proveedor='$idProveedor' WHERE id='$idCheque'";
-        $mysqli->query($sql3);
     }
 
     $TipoDeComprobante = 'ANTICIPO A ACREEDORES';
@@ -68,15 +66,137 @@ if (isset($_POST['CargarAnticipo'])) {
     //INSERT EN ANTICIPO A PROVEEDORES
 
     $Descripcion = 'Anticipo a Proveedores';
-    $sql = "INSERT INTO AnticiposProveedores(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Debe,Haber,Concepto,FormaDePago,idProveedor,Disponible,usuario,Eliminado,Descripcion)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$Concepto}','{$FormaDePago}','{$idProveedor}',0,'{$Importe}','{$Usuario}',0,$Descripcion)";
-    $mysqli->query($sql);
-    $idAnticiposProveedores = $mysqli->insert_id;
+
+    $sql = "
+INSERT INTO TransProveedores
+(
+    Fecha,
+    RazonSocial,
+    Cuit,
+    TipoDeComprobante,
+    NumeroComprobante,
+    CompraMercaderia,
+    Debe,
+    Haber,
+    Eliminado,
+    Concepto,
+    FormaDePago,
+    Descripcion,
+    NoOperativo,
+    CodigoAprobacion,
+    idProveedor,
+    TimeStamp,
+    usuario,
+    Disponible,
+    img,
+    InfoABM,
+    gid_asana
+)
+VALUES
+(
+    '{$Fecha}',
+    '{$RazonSocial}',
+    '{$Cuit}',
+    '{$TipoDeComprobante}',
+    '{$NumeroComprobante}',
+    0,
+    0,
+    '{$Importe}',
+    0,
+    '{$Concepto}',
+    '{$FormaDePago}',
+    '{$Descripcion}',
+    0,
+    '',
+    '{$idProveedor}',
+    NOW(),
+    '{$Usuario}',
+    '{$Importe}',
+    0,
+    '',
+    ''
+)
+";
+
+    if (!$mysqli->query($sql)) {
+
+        echo json_encode(array(
+            'success' => 0,
+            'error' => $mysqli->error,
+            'sql' => $sql
+        ));
+
+        exit;
+    }
+
+    $idTransProveedores = $mysqli->insert_id;
+
 
     //INSERT EN TRANS PROVEEDORES
-    $sql = "INSERT INTO TransProveedores(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,Concepto,FormaDePago,idProveedor,Disponible,usuario)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$Concepto}','{$FormaDePago}','{$idProveedor}','{$Importe}','{$Usuario}')";
-    $mysqli->query($sql);
+    //INSERT EN TRANS PROVEEDORES
+
+    $sql = "
+INSERT INTO TransProveedores
+(
+    Fecha,
+    RazonSocial,
+    Cuit,
+    TipoDeComprobante,
+    NumeroComprobante,
+    CompraMercaderia,
+    Debe,
+    Haber,
+    Eliminado,
+    Concepto,
+    FormaDePago,
+    Descripcion,
+    NoOperativo,
+    CodigoAprobacion,
+    idProveedor,
+    TimeStamp,
+    usuario,
+    Disponible,
+    img,
+    InfoABM,
+    gid_asana
+)
+VALUES
+(
+    '{$Fecha}',
+    '{$RazonSocial}',
+    '{$Cuit}',
+    '{$TipoDeComprobante}',
+    '{$NumeroComprobante}',
+    0,
+    0,
+    '{$Importe}',
+    0,
+    '{$Concepto}',
+    '{$FormaDePago}',
+    '{$Descripcion}',
+    0,
+    '',
+    '{$idProveedor}',
+    NOW(),
+    '{$Usuario}',
+    '{$Importe}',
+    0,
+    '',
+    ''
+)
+";
+
+    if (!$mysqli->query($sql)) {
+
+        echo json_encode(array(
+            'success' => 0,
+            'error' => $mysqli->error,
+            'sql' => $sql
+        ));
+
+        exit;
+    }
+
     $idTransProveedores = $mysqli->insert_id;
 
     $BuscaCuenta = $mysqli->query("SELECT NombreCuenta,Cuenta FROM PlanDeCuentas WHERE Cuenta='$FormaDePago'");
@@ -102,7 +222,19 @@ if (isset($_POST['CargarAnticipo'])) {
         $row = array();
     }
     $NAsiento = trim($row['NumeroAsiento']) + 1;
+    if ($FP == '20') {
+        $sql3 = "
+        UPDATE Cheques 
+        SET 
+            Utilizado = 1,
+            Asiento = '{$NAsiento}',
+            Proveedor = '{$RazonSocial}'
+        WHERE id = '{$idCheque}'
+        LIMIT 1
+    ";
 
+        $mysqli->query($sql3);
+    }
     // CARGO LOS DATOS EN LA TABLA CHEQUE Y PONGO UTILIZADO EN 1 SI EL PAGO FUE CON CHEQUE PROPIO	
     if (($FP == 5) || ($FP == 42)) {
 
@@ -141,6 +273,22 @@ if (isset($_POST['CargarAnticipo'])) {
 //CARGAR PAGO 
 
 if (isset($_POST['CargarPago'])) {
+    $Fecha = isset($_POST['fecha']) ? $_POST['fecha'] : date('Y-m-d');
+    $RazonSocial = isset($_POST['RazonSocial']) ? $_POST['RazonSocial'] : '';
+    $Cuit = isset($_POST['Cuit']) ? $_POST['Cuit'] : '';
+    $idProveedor = isset($_POST['idproveedor']) ? $_POST['idproveedor'] : 0;
+    $FP = isset($_POST['formadepago']) ? $_POST['formadepago'] : 0;
+    $Importe = isset($_POST['importe']) ? (float)$_POST['importe'] : 0;
+
+    $Banco = '';
+    $NumeroCheque = '';
+    $FechaCheque = null;
+
+    $FechaTrans = isset($_POST['fecha_transferencia']) ? $_POST['fecha_transferencia'] : null;
+    $NumeroTrans = isset($_POST['num_transferencia']) ? $_POST['num_transferencia'] : '';
+    $BancoTrans = isset($_POST['banco_transferencia']) ? $_POST['banco_transferencia'] : '';
+
+    $idAnticiposProveedores = 0;
 
     //BUSCO EL DATO DEL COMPROBANTE MAS VIEJO
 
@@ -311,8 +459,8 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
 
         $sql1 = "INSERT INTO `Tesoreria`(
         Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES 
-        ('{$Fecha}','{$CuentaDebe}','{$NCuentaDebe}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaCheque}',
-        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
+        ('{$Fecha}','{$CuentaDebe}','{$NCuentaDebe}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaChequeSQL}',
+        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTransSQL}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
         $mysqli->query($sql1);
 
         $sql2 = "INSERT INTO `Tesoreria`(
@@ -320,9 +468,12 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
         NombreCuenta,
         Cuenta,
         Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES 
-        ('{$Fecha}','{$CuentaHaber}','{$NCuentaHaber}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaCheque}',
-        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
+        ('{$Fecha}','{$CuentaHaber}','{$NCuentaHaber}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaChequeSQL}',
+        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTransSQL}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
         $mysqli->query($sql2);
+
+        $FechaChequeSQL = $FechaCheque ? "'{$FechaCheque}'" : "NULL";
+        $FechaTransSQL = $FechaTrans ? "'{$FechaTrans}'" : "NULL";
     }
 
     //INSERT ASIENTO CONTABLE REVERSANDO 
@@ -352,53 +503,6 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
     $SQL_IVA_COMPRAS = "UPDATE `IvaCompras` SET `Pagado`=`Pagado`+'$SaldoAnticipos' WHERE `TipoDeComprobante`='$TipoDeComprobante' AND `NumeroComprobante`='$NumeroComprobante' AND `RazonSocial`='$RazonSocial' LIMIT 1";
     $mysqli->query($SQL_IVA_COMPRAS);
 
-    // for($i=0;$i < count($idFacturas);$i++){
 
-    //BUSCO EL NUMERO DE ASIENTO CONTABLE
-    // $sql=$mysqli->query("SELECT Tesoreria.NumeroAsiento FROM Tesoreria WHERE Tesoreria.idTransProvee=".$idFacturas." AND Eliminado=0 GROUP BY Tesoreria.idTransProvee");
-    // $row=$sql->fetch_array(MYSQLI_ASSOC);
-    // $NAsiento=$row['NumeroAsiento'];
-
-    //Modificamos el importe del registro del anticipo y colocamos el id de Transacciones para el que se utilizo el anticipo
-    // $sql="UPDATE AnticiposProveedores SET Disponible='0' WHERE id=".$idAnticipos[$i]." AND idTransProveedores='0'";
-
-    // if($mysqli->query($sql)){
-
-    // }else{
-    //. Si el Registro ya tiene un id de TransProveedores, generamos un registro nuevo con el Importe desde Disponible y 
-    //el registro nuevo también colocamos en idAnticipos el id original.   
-
-    //BUSCO EL IMPORTE DEL PRIMER PAGO
-    // $sql_asiento=$mysqli->query("SELECT Disponible,Fecha,FormaDePago,Concepto FROM AnticiposProveedores WHERE id=".$idAnticipos[$i]."");
-    // $row=$sql_asiento->fetch_array(MYSQLI_ASSOC);
-    // $Disponible=$row['Disponible'];
-    // $Fecha=$row['Fecha'];
-    // $FormaDePago=$row['FormaDePago'];
-    // $Concepto='PAGO A PROVEEDORES';
-
-    //     $sql=$mysqli->query("INSERT INTO `AnticiposProveedores`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, 
-    //     `NumeroComprobante`,  `Haber`, `Concepto`, `FormaDePago`, `idProveedor`,`usuario`, `Disponible`, `idTransProveedores`,
-    //       `idAnticipos`) VALUES ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}',
-    //       '{$Disponible}','{$Concepto}','{$FormaDePago}','{$idProveedor}','{$Usuario}','{$Disponible}','{".$idFacturas[$i]."}','{".$idAnticipos[$i]."}')");    
-    // }   
-
-    //Cargamos el pago en la cuenta corriente del proveedor    
-    // $Concepto='PAGO A PROVEEDORES';  
-    // $sql="INSERT INTO TransProveedores(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,Concepto,FormaDePago,idProveedor,usuario)VALUES
-    // ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$Concepto}','{$FormaDePago}','{$idProveedor}','{$Usuario}')";
-    // $mysqli->query($sql);
-
-
-    // $Observaciones="Carga de: ".$TipoDeComprobante." Numero: ".$NumeroComprobante;	
-
-    // $Importe=$idFacturas[$i];
-    // }
     echo json_encode(array('success' => 1, 'Asiento' => $NAsiento, 'Importe' => $Importe, 'Disponible' => $Disponible));
-
-    //UPDATE TRANS PROVEEDORES
-
-
-
-
-
 }
