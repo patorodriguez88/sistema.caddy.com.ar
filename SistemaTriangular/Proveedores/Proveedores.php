@@ -273,7 +273,7 @@
                                                     <div id="cuadro_forma_de_pago"></div>
 
                                                 </div>
-                                                <div class="col-lg-4 mt-0" id='total'>
+                                                <div class="col-lg-4 mt-3" id='total'>
                                                     <label for="importepago_t">Importe a Pagar:</label>
                                                     <input id='importepago_t' name='importepago_t' type='text' class='form-control' value='' require />
                                                 </div>
