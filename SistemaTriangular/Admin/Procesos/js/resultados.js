@@ -493,6 +493,7 @@
         },
         { data: "NombreCliente" },
         { data: "CodigoSeguimiento" },
+        { data: "Repartidor", title: "Repartidor" },
         {
           data: null,
           title: "Estado",
@@ -586,7 +587,9 @@
           text: '<i class="mdi mdi-file-excel-outline"></i> Exportar Excel',
           className: "btn btn-success btn-sm ms-0 mt-3",
           title: "Resultados_Caddy_" + new Date().toISOString().slice(0, 10),
-          exportOptions: { columns: ":visible" },
+          exportOptions: {
+            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+          },
         },
       ],
     });
