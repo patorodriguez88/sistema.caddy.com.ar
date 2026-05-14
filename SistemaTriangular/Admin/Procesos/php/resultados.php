@@ -196,12 +196,12 @@ if ($action === 'listar') {
         $types .= 'i';
     }
 
-    $sql = "
-    SELECT 
+    $sql = "SELECT 
     $campoFecha AS Fecha,
     TS.CodigoSeguimiento,
     TS.CodigoProveedor,
     C.nombrecliente AS NombreCliente,
+    IFNULL(ER.Repartidor, '-') AS Repartidor,
     TS.Wepoint_f,
     TS.Entregado,
     TS.Devuelto,
@@ -242,24 +242,23 @@ if ($action === 'listar') {
         ) + IFNULL(VNI.COD_NotInvoice, 0)
     ) - IFNULL(ER.TotalPagado, 0)
 , 2) AS Diferencia_SinIVA,
-
     IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones,
     IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado
-
     FROM TransClientes AS TS
-
     LEFT JOIN (
     SELECT 
-        CodigoSeguimiento,
+        ER.CodigoSeguimiento,
         SUM(
-            IFNULL(PrecioPagado, 0) + IFNULL(CobranzaIntegrada, 0)
+            IFNULL(ER.PrecioPagado, 0) + IFNULL(ER.CobranzaIntegrada, 0)
         ) AS TotalPagado,
-        COUNT(*) AS CantidadRendiciones
-    FROM Externos_rendicion
-    GROUP BY CodigoSeguimiento
+        COUNT(*) AS CantidadRendiciones,
+        GROUP_CONCAT(DISTINCT U.Usuario ORDER BY U.Usuario SEPARATOR ', ') AS Repartidor
+    FROM Externos_rendicion ER
+    LEFT JOIN usuarios U 
+        ON U.id = ER.IdEmpleado
+    GROUP BY ER.CodigoSeguimiento
     ) AS ER 
     ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-
     LEFT JOIN Clientes AS C
         ON C.id = TS.ingBrutosOrigen
     LEFT JOIN (

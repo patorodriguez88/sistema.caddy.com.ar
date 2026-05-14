@@ -159,6 +159,7 @@
                                                     <th>Fecha</th>
                                                     <th>NombreCliente</th>
                                                     <th>CodigoSeguimiento</th>
+                                                    <th>Repartidor</th>
                                                     <th>Estado</th>
                                                     <th>PrecioCobrado (s/IVA)</th>
                                                     <th>PrecioPagado (s/IVA)</th>
