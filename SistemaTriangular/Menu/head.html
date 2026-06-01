@@ -401,8 +401,8 @@
     ></button>
   </div>
 
-  <div class="offcanvas-body d-flex flex-column">
-    <div class="mb-2">
+  <div class="offcanvas-body d-flex flex-column" style="overflow: hidden;">
+    <div class="mb-2 flex-shrink-0">
       <label class="form-label">Preguntá algo</label>
       <textarea
         id="ia_consulta_texto"
@@ -412,20 +412,21 @@
       ></textarea>
     </div>
 
-    <div class="d-grid mb-3">
-      <button class="btn btn-primary" id="btn_ia_consultar">
+    <div class="d-grid mb-2 flex-shrink-0">
+      <button class="btn btn-primary btn-sm" id="btn_ia_consultar">
         <i class="ri-send-plane-line me-1"></i> Consultar
       </button>
     </div>
 
-    <div class="mt-2">
-      <small class="text-muted d-block mb-2">Consultas frecuentes:</small>
-      <div id="ia_consultas_frecuentes" class="d-flex flex-wrap gap-1"></div>
+    <div class="flex-shrink-0 mb-2">
+      <small class="text-muted d-block mb-1">Consultas frecuentes:</small>
+      <div id="ia_consultas_frecuentes" class="d-flex flex-wrap gap-1" style="max-height: 90px; overflow-y: auto;"></div>
     </div>
+
     <div
       id="ia_consulta_respuesta"
-      class="border rounded p-3 bg-light flex-grow-1 mt-3"
-      style="font-size: 13px; overflow-y: auto"
+      class="border rounded p-3 bg-light flex-grow-1"
+      style="font-size: 13px; overflow-y: auto; min-height: 0;"
     >
       <span class="text-muted">La respuesta aparecerá acá.</span>
     </div>

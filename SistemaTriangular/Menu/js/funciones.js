@@ -379,13 +379,14 @@ function cargarConsultasFrecuentesIA() {
 
       res.data.forEach(function (item) {
         html += `
-          <button 
+          <button
             type="button"
-            class="btn btn-sm btn-light border text-muted ia-tag-consulta"
+            class="btn btn-light border text-muted ia-tag-consulta"
+            style="font-size: 11px; padding: 2px 7px; line-height: 1.4;"
             data-pregunta="${escapeHtml(item.pregunta)}"
             title="${escapeHtml(item.pregunta)}">
             ${escapeHtml(item.texto)}
-            <span class="badge bg-secondary ms-1">${item.total}</span>
+            <span class="badge bg-secondary ms-1" style="font-size: 10px;">${item.total}</span>
           </button>
         `;
       });
