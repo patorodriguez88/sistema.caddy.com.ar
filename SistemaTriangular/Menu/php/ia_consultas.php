@@ -36,8 +36,8 @@ if (isset($_POST['consultas_frecuentes'])) {
 
         $data[] = [
             'pregunta' => $preguntaLog,
-            'texto' => mb_strlen($preguntaLog, 'UTF-8') > 38
-                ? mb_substr($preguntaLog, 0, 38, 'UTF-8') . '...'
+            'texto' => mb_strlen($preguntaLog, 'UTF-8') > 55
+                ? mb_substr($preguntaLog, 0, 55, 'UTF-8') . '...'
                 : $preguntaLog,
             'total' => (int)$row['total']
         ];
