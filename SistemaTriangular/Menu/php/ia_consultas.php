@@ -16,13 +16,13 @@ include_once __DIR__ . "/ia_consultas/logistica.php";
 if (isset($_POST['consultas_frecuentes'])) {
 
     $sql = "
-        SELECT 
-            pregunta,
+        SELECT
+            MIN(pregunta) AS pregunta,
             COUNT(*) AS total
         FROM ia_logs
         WHERE success = 1
           AND IFNULL(TRIM(pregunta), '') <> ''
-        GROUP BY pregunta
+        GROUP BY LOWER(TRIM(pregunta))
         ORDER BY total DESC
         LIMIT 15
     ";
@@ -54,7 +54,7 @@ if ($pregunta === '') {
     salir(['success' => 0, 'msg' => 'Pregunta vacía.']);
 }
 
-$q = normalizarTexto($pregunta);
+$q = normalizarSinonimos(normalizarTexto($pregunta));
 
 $contexto = [
     'pregunta' => $pregunta,

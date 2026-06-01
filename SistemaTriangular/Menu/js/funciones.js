@@ -286,10 +286,60 @@ window.ensureGoogleMapsLoaded = function (callbackName) {
 
   return window.__gmapsLoadingPromise;
 };
+let _iaChat = [];
+let _iaConsultando = false;
+
+function _iaChatRender() {
+  const $h = $("#ia_chat_historial");
+  if (!$h.length) return;
+
+  if (!_iaChat.length && !_iaConsultando) {
+    $h.html(`<div class="text-center text-muted py-4" id="ia_chat_empty">
+      <i class="ri-sparkling-line d-block mb-1" style="font-size:26px;"></i>
+      <small>Hacé tu primera consulta</small>
+    </div>`);
+    return;
+  }
+
+  let html = "";
+  _iaChat.forEach(function (item) {
+    html += `
+      <div class="d-flex justify-content-end">
+        <div class="bg-primary text-white rounded-3 px-3 py-2"
+             style="max-width:85%;font-size:13px;word-break:break-word;">
+          ${escapeHtml(item.pregunta)}
+        </div>
+      </div>
+      <div class="d-flex justify-content-start mb-1">
+        <div class="border rounded-3 px-3 py-2 ${item.esError ? "border-danger text-danger" : "bg-light"}"
+             style="max-width:85%;font-size:13px;word-break:break-word;">
+          ${item.esError ? escapeHtml(item.respuesta) : item.respuesta}
+          ${!item.esError && item.detalle ? `<hr class="my-1"><small class="text-muted">${item.detalle}</small>` : ""}
+        </div>
+      </div>`;
+  });
+
+  if (_iaConsultando) {
+    html += `<div class="d-flex justify-content-start">
+      <div class="bg-light border rounded-3 px-3 py-2" style="font-size:13px;">
+        <span class="spinner-border spinner-border-sm me-1"></span>Consultando...
+      </div>
+    </div>`;
+  }
+
+  $h.html(html);
+  $h.scrollTop($h[0].scrollHeight);
+}
+
 $(document).on("click", ".ia-pregunta-rapida", function () {
   const pregunta = $(this).data("pregunta") || "";
   $("#ia_consulta_texto").val(pregunta);
   $("#btn_ia_consultar").trigger("click");
+});
+
+$(document).on("click", "#btn_ia_limpiar_historial", function () {
+  _iaChat = [];
+  _iaChatRender();
 });
 
 $(document).on("click", "#btn_ia_consultar", function () {
@@ -300,45 +350,45 @@ $(document).on("click", "#btn_ia_consultar", function () {
     return;
   }
 
-  $("#ia_consulta_respuesta").html(`
-    <div class="text-muted">
-      <span class="spinner-border spinner-border-sm me-1"></span>
-      Consultando...
-    </div>
-  `);
+  $("#ia_consulta_texto").val("");
+  _iaConsultando = true;
+  _iaChatRender();
 
   $.ajax({
     url: "../Menu/php/ia_consultas.php",
     type: "POST",
     dataType: "json",
-    data: {
-      pregunta: pregunta,
-    },
+    data: { pregunta: pregunta },
     success: function (resp) {
+      _iaConsultando = false;
       if (!resp || resp.success != 1) {
-        $("#ia_consulta_respuesta").html(`
-          <div class="text-danger">
-            ${resp && resp.msg ? resp.msg : "No se pudo procesar la consulta."}
-          </div>
-        `);
-        return;
+        _iaChat.push({
+          pregunta: pregunta,
+          respuesta: resp && resp.msg ? resp.msg : "No se pudo procesar la consulta.",
+          detalle: null,
+          esError: true,
+        });
+      } else {
+        _iaChat.push({
+          pregunta: pregunta,
+          respuesta: resp.respuesta,
+          detalle: resp.detalle || null,
+          esError: false,
+        });
+        cargarConsultasFrecuentesIA();
       }
-
-      $("#ia_consulta_respuesta").html(`
-        <div class="fw-semibold mb-2">Respuesta</div>
-        <div>${resp.respuesta}</div>
-        ${
-          resp.detalle
-            ? `<hr><small class="text-muted">${resp.detalle}</small>`
-            : ""
-        }
-      `);
+      _iaChatRender();
     },
     error: function (xhr) {
       console.log(xhr.responseText);
-      $("#ia_consulta_respuesta").html(`
-        <div class="text-danger">Error consultando el asistente.</div>
-      `);
+      _iaConsultando = false;
+      _iaChat.push({
+        pregunta: pregunta,
+        respuesta: "Error consultando el asistente.",
+        detalle: null,
+        esError: true,
+      });
+      _iaChatRender();
     },
   });
 });
@@ -399,6 +449,10 @@ function cargarConsultasFrecuentesIA() {
 $(document).on("click", ".ia-tag-consulta", function () {
   $("#ia_consulta_texto").val($(this).data("pregunta"));
   $("#btn_ia_consultar").trigger("click");
+});
+
+$(document).on("show.bs.offcanvas", "#ia-consultas-offcanvas", function () {
+  cargarConsultasFrecuentesIA();
 });
 function escapeHtml(text) {
   return $("<div>")

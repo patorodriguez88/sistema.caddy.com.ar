@@ -82,6 +82,63 @@ function detectarModulo($arr)
     return 'general';
 }
 
+function normalizarSinonimos($q)
+{
+    $buscar = [
+        // Paquetes / envíos
+        'encomiendas', 'encomienda',
+        'bultos',       'bulto',
+        'pedidos',      'pedido',
+        'despachos',    'despacho',
+        // Repartidores
+        'choferes',      'chofer',
+        'mensajeros',    'mensajero',
+        'conductores',   'conductor',
+        'distribuidores','distribuidor',
+        'motoristas',    'motorista',
+        // Acciones de entrega
+        'repartidos',   'distribuidos',
+        'no llego',     'no llegaron',
+        // Localidades
+        'ciudades',     'ciudad',
+        'municipios',   'municipio',
+        'zonas',        'zona',
+        // Precios / tarifas
+        'cuesta',       'cuanto cuesta',
+        'cobran',
+        'costo',        'costos',
+        'importe',      'importes',
+        // Ventas / facturación
+        'ingresos',     'cobros',
+        'monto facturado',
+    ];
+
+    $reemplazar = [
+        'paquetes', 'paquete',
+        'paquetes', 'paquete',
+        'paquetes', 'paquete',
+        'paquetes', 'paquete',
+        'repartidores', 'repartidor',
+        'repartidores', 'repartidor',
+        'repartidores', 'repartidor',
+        'repartidores', 'repartidor',
+        'repartidores', 'repartidor',
+        'entregados',   'entregados',
+        'no entreg',    'no entregaron',
+        'localidades',  'localidad',
+        'localidades',  'localidad',
+        'localidades',  'localidad',
+        'sale',         'cuanto sale',
+        'sale',
+        'precio',       'precios',
+        'valor',        'valores',
+        'ventas',       'ventas',
+        'facturacion',
+    ];
+
+    return str_replace($buscar, $reemplazar, $q);
+}
+
 function normalizarTexto($texto)
 {
     return str_replace(
