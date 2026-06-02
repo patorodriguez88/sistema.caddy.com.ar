@@ -109,13 +109,53 @@ $nombre = $row['RazonSocial'];
 $numero = $row['NumeroFactura'];
 $tipo   = $row['TipoDeComprobante'];
 
-$asunto = $tipo . ' N° ' . $numero;
+// Periodo facturado
+$sqlPeriodo = $mysqli->query("
+    SELECT MIN(Fecha) AS FechaDesde, MAX(Fecha) AS FechaHasta
+    FROM Ctasctes
+    WHERE Eliminado = 0
+      AND idFacturado = '{$id}'
+      AND Debe > 0
+      AND Fecha IS NOT NULL
+      AND Fecha != '0000-00-00'
+");
+$periodo    = $sqlPeriodo ? $sqlPeriodo->fetch_assoc() : null;
+$fechaDesde = (!empty($periodo['FechaDesde'])) ? date('d/m/Y', strtotime($periodo['FechaDesde'])) : '';
+$fechaHasta = (!empty($periodo['FechaHasta'])) ? date('d/m/Y', strtotime($periodo['FechaHasta'])) : '';
 
-$html = '
-<p>Estimado/a ' . htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8') . ',</p>
-<p>Adjuntamos su comprobante <strong>' . htmlspecialchars($tipo, ENT_QUOTES, 'UTF-8') . ' N° ' . htmlspecialchars($numero, ENT_QUOTES, 'UTF-8') . '</strong>.</p>
-<p>Saludos cordiales.<br>Caddy Logística</p>
-';
+$textoPeriodo = '';
+if ($fechaDesde && $fechaHasta && $fechaDesde !== $fechaHasta) {
+    $textoPeriodo = ", correspondiente al per&iacute;odo del <strong>{$fechaDesde}</strong> al <strong>{$fechaHasta}</strong>";
+} elseif ($fechaDesde) {
+    $textoPeriodo = " con fecha <strong>{$fechaDesde}</strong>";
+}
+
+// Saludo según hora local (Argentina)
+$hora = (int)date('H');
+if ($hora < 12)     $saludo = 'Buenos d&iacute;as';
+elseif ($hora < 19) $saludo = 'Buenas tardes';
+else                $saludo = 'Buenas noches';
+
+$asunto = $tipo . ' N&deg; ' . $numero . ' | Caddy Log&iacute;stica';
+
+$nombreEsc = htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8');
+$tipoEsc   = htmlspecialchars($tipo,   ENT_QUOTES, 'UTF-8');
+$numeroEsc = htmlspecialchars($numero, ENT_QUOTES, 'UTF-8');
+
+$html = "
+<p>{$saludo},</p>
+<p>
+  Por medio de la presente, nos comunicamos en nombre de <strong>Caddy Log&iacute;stica</strong>
+  para hacerle entrega del comprobante <strong>{$tipoEsc} N&deg; {$numeroEsc}</strong>{$textoPeriodo},
+  emitido a nombre de <strong>{$nombreEsc}</strong>.
+</p>
+<p>El documento se encuentra adjunto en formato PDF para su descarga e impresi&oacute;n.</p>
+<p>Ante cualquier consulta, no dude en contactarnos.</p>
+<p>
+  Atentamente,<br>
+  <strong>Caddy Log&iacute;stica</strong>
+</p>
+";
 
 $nroArchivo   = preg_replace('/[^A-Za-z0-9\-]/', '-', trim($row['NumeroFactura']));
 $rutaAdjunto  = __DIR__ . '/../../archivos_tmp/Caddy_Factura_' . $nroArchivo . '.pdf';
