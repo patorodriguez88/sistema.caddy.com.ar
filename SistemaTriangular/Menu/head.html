@@ -401,111 +401,53 @@
     ></button>
   </div>
 
-  <div class="offcanvas-body d-flex flex-column">
-    <div class="mb-2">
+  <div class="offcanvas-body d-flex flex-column" style="overflow: hidden">
+    <div class="mb-2 flex-shrink-0">
       <label class="form-label">Preguntá algo</label>
       <textarea
         id="ia_consulta_texto"
         class="form-control"
-        rows="3"
-        placeholder="Ej: ¿Cuántos paquetes se entregaron hoy?"
+        rows="2"
+        placeholder="Ej: ¿Cuántos bultos entregó el chofer hoy?"
+        style="resize: none"
       ></textarea>
     </div>
 
-    <div class="d-grid mb-3">
-      <button class="btn btn-primary" id="btn_ia_consultar">
+    <div class="d-grid mb-2 flex-shrink-0">
+      <button class="btn btn-primary btn-sm" id="btn_ia_consultar">
         <i class="ri-send-plane-line me-1"></i> Consultar
       </button>
     </div>
 
-    <!-- <div class="mb-3"> -->
-    <!-- <small class="text-muted d-block mb-1">Ejemplos:</small> -->
-
-    <!-- <div class="d-flex flex-wrap gap-1">
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos paquetes se entregaron hoy?"
-        >
-          Entregados hoy
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos paquetes no se pudieron entregar hoy?"
-        >
-          No entregados hoy
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos paquetes Flex salieron hoy?"
-        >
-          Flex salieron
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos Flex están en ruta?"
-        >
-          Flex en ruta
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos Flex se entregaron hoy?"
-        >
-          Flex entregados
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos Flex fallaron hoy?"
-        >
-          Flex fallidos
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos paquetes de Meli pendientes?"
-        >
-          Meli pendientes
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="Pendientes por repartidor hoy"
-        >
-          Pendientes por repartidor
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántas rendiciones están pendientes?"
-        >
-          Rendiciones pendientes
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuántos recorridos hay hoy?"
-        >
-          Recorridos hoy
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuánto se facturó este mes?"
-        >
-          Facturado mes
-        </button>
-        <button
-          class="btn btn-sm btn-light ia-pregunta-rapida"
-          data-pregunta="¿Cuánta cobranza integrada se pagó este mes?"
-        >
-          C.O.D. mes
-        </button>
-      </div> -->
-    <!-- </div> -->
-    <div class="mt-3">
-      <small class="text-muted d-block mb-2">Consultas frecuentes:</small>
-      <div id="ia_consultas_frecuentes" class="d-flex flex-wrap gap-1"></div>
+    <div class="flex-shrink-0 mb-2">
+      <small class="text-muted d-block mb-1">Consultas frecuentes:</small>
+      <div
+        id="ia_consultas_frecuentes"
+        class="d-flex flex-wrap gap-1"
+        style="max-height: 60px; overflow-y: auto"
+      ></div>
     </div>
+
+    <div class="d-flex justify-content-end mb-1 flex-shrink-0">
+      <button
+        type="button"
+        id="btn_ia_limpiar_historial"
+        class="btn btn-link btn-sm text-muted p-0"
+        style="font-size: 11px"
+      >
+        <i class="ri-delete-bin-line me-1"></i>Limpiar historial
+      </button>
+    </div>
+
     <div
-      id="ia_consulta_respuesta"
-      class="border rounded p-3 bg-light flex-grow-1"
-      style="font-size: 13px; overflow-y: auto"
+      id="ia_chat_historial"
+      class="flex-grow-1 d-flex flex-column gap-2"
+      style="overflow-y: auto; min-height: 0"
     >
-      <span class="text-muted">La respuesta aparecerá acá.</span>
+      <div class="text-center text-muted py-4" id="ia_chat_empty">
+        <i class="ri-sparkling-line d-block mb-1" style="font-size: 26px"></i>
+        <small>Hacé tu primera consulta</small>
+      </div>
     </div>
   </div>
 </div>

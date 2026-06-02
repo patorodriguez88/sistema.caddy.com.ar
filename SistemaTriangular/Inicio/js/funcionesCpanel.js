@@ -271,14 +271,7 @@ function initPreventaCard() {
     url: "../Inicio/php/tablasCpanel.php",
     type: "post",
     success: function (response) {
-      let jsonData = {};
-      try {
-        jsonData = JSON.parse(response);
-      } catch (e) {
-        console.error("JSON parse error PreVenta", e, response);
-        return;
-      }
-
+      let jsonData = typeof response === "string" ? JSON.parse(response) : response;
       if (jsonData.success != 0) {
         document.getElementById("preventa").style.display = "block";
       }
@@ -474,14 +467,7 @@ function initOrdenesCompra() {
     url: "../Inicio/php/funcionesCpanel.php",
     type: "post",
     success: function (response) {
-      let jsonData = {};
-      try {
-        jsonData = JSON.parse(response);
-      } catch (e) {
-        console.error("JSON parse error OC", e, response);
-        return;
-      }
-
+      let jsonData = typeof response === "string" ? JSON.parse(response) : response;
       if (jsonData.success == "1") {
         $("#ordenes_de_compra").html(jsonData.Total);
         $("#ordenes_de_compra_estado").html(jsonData.Estado);

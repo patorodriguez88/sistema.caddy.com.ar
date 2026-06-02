@@ -1,5 +1,5 @@
 <?php
-session_start();
+
 include_once "../../Conexion/Conexioni.php";
 
 date_default_timezone_set('America/Argentina/Cordoba');
