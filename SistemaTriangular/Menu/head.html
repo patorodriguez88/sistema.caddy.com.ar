@@ -393,22 +393,12 @@
       </h5>
       <small class="text-muted">Consultas rápidas del sistema</small>
     </div>
-    <div class="d-flex align-items-center gap-2">
-      <button
-        type="button"
-        class="btn btn-sm btn-outline-secondary"
-        id="btn_ia_limpiar_historial"
-        title="Limpiar historial"
-      >
-        <i class="ri-delete-bin-line"></i>
-      </button>
-      <button
-        type="button"
-        class="btn-close"
-        data-bs-dismiss="offcanvas"
-        aria-label="Cerrar"
-      ></button>
-    </div>
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="offcanvas"
+      aria-label="Cerrar"
+    ></button>
   </div>
 
   <div class="offcanvas-body d-flex flex-column" style="overflow: hidden;">
@@ -434,9 +424,16 @@
       <div id="ia_consultas_frecuentes" class="d-flex flex-wrap gap-1" style="max-height: 60px; overflow-y: auto;"></div>
     </div>
 
+    <div class="d-flex justify-content-end mb-1 flex-shrink-0">
+      <button type="button" id="btn_ia_limpiar_historial"
+        class="btn btn-link btn-sm text-muted p-0" style="font-size: 11px;">
+        <i class="ri-delete-bin-line me-1"></i>Limpiar historial
+      </button>
+    </div>
+
     <div
       id="ia_chat_historial"
-      class="flex-grow-1 d-flex flex-column gap-2 pt-1"
+      class="flex-grow-1 d-flex flex-column gap-2"
       style="overflow-y: auto; min-height: 0;"
     >
       <div class="text-center text-muted py-4" id="ia_chat_empty">

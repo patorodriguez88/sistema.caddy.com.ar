@@ -306,13 +306,13 @@ function _iaChatRender() {
     html += `
       <div class="d-flex justify-content-end">
         <div class="bg-primary text-white rounded-3 px-3 py-2"
-             style="max-width:85%;font-size:13px;word-break:break-word;">
+             style="max-width:70%;font-size:13px;word-break:break-word;">
           ${escapeHtml(item.pregunta)}
         </div>
       </div>
       <div class="d-flex justify-content-start mb-1">
         <div class="border rounded-3 px-3 py-2 ${item.esError ? "border-danger text-danger" : "bg-light"}"
-             style="max-width:85%;font-size:13px;word-break:break-word;">
+             style="max-width:90%;font-size:13px;word-break:break-word;">
           ${item.esError ? escapeHtml(item.respuesta) : item.respuesta}
           ${!item.esError && item.detalle ? `<hr class="my-1"><small class="text-muted">${item.detalle}</small>` : ""}
         </div>
