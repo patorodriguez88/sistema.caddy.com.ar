@@ -32,7 +32,7 @@ $('#reclamo_enviado').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-        var jsonData = JSON.parse(response);
+        var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
         if (jsonData.Telefono !== '' && jsonData.Telefono !== null) {
    
@@ -258,7 +258,7 @@ function modify_coments(id){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
             $('#coments-textarea').val(jsonData.coments);
             
@@ -279,7 +279,7 @@ $('#coments_ok').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             if(jsonData.success==1){
 
              $.NotificationApp.send("Registro Actualizado !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");   
@@ -361,7 +361,7 @@ $('#header-modal-ok').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             var datatable1 = $('#librocontrolventas').DataTable();
             
             datatable1.ajax.reload(null,false);
@@ -621,7 +621,7 @@ $.ajax({
     type: "POST",
     url: "../Admin/Procesos/php/tablas.php",
     success: function(response) {
-    var jsonData = JSON.parse(response);
+    var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
     // Suponiendo que jsonData.sumStatusTrue es el valor numérico que deseas formatear
     var sumStatusTrue = parseFloat(jsonData.sumStatusTrue);
 
@@ -656,7 +656,7 @@ function tuFuncion(data) {
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
 
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             
             if(jsonData.Observaciones_f){
 
