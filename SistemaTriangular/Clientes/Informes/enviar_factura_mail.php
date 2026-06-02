@@ -131,7 +131,7 @@ if ($fechaDesde && $fechaHasta && $fechaDesde !== $fechaHasta) {
 }
 
 // Saludo según hora local (Argentina)
-$hora = (int)date('H');
+$hora = (int)(new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('H');
 if ($hora < 13)     $saludo = 'Buenos d&iacute;as';
 elseif ($hora < 20) $saludo = 'Buenas tardes';
 else                $saludo = 'Buenas noches';
