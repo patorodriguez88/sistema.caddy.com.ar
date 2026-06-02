@@ -132,8 +132,8 @@ if ($fechaDesde && $fechaHasta && $fechaDesde !== $fechaHasta) {
 
 // Saludo según hora local (Argentina)
 $hora = (int)date('H');
-if ($hora < 12)     $saludo = 'Buenos d&iacute;as';
-elseif ($hora < 19) $saludo = 'Buenas tardes';
+if ($hora < 13)     $saludo = 'Buenos d&iacute;as';
+elseif ($hora < 20) $saludo = 'Buenas tardes';
 else                $saludo = 'Buenas noches';
 
 $asunto = $tipo . ' N&deg; ' . $numero . ' | Caddy Log&iacute;stica';
