@@ -117,7 +117,8 @@ $html = '
 <p>Saludos cordiales.<br>Caddy Logística</p>
 ';
 
-$rutaAdjunto = __DIR__ . '/../../archivos_tmp/factura_' . $id . '_' . time() . '.pdf';
+$nroArchivo   = preg_replace('/[^A-Za-z0-9\-]/', '-', trim($row['NumeroFactura']));
+$rutaAdjunto  = __DIR__ . '/../../archivos_tmp/Caddy_Factura_' . $nroArchivo . '.pdf';
 
 if (!is_dir(dirname($rutaAdjunto))) {
     if (!mkdir(dirname($rutaAdjunto), 0755, true)) {
