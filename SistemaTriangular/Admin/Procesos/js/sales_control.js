@@ -501,7 +501,7 @@ var datatable1 = $('#librocontrolventas').DataTable({
         render:$.fn.dataTable.render.number( '.', ',', 2, '$ ' )},
         {data:"Comentario",
         render: function (data, type, row) {
-         return '<td><i id="'+row.id+'" onclick="modify_coments(this.id)" class="mdi mdi-pencil-outline"></i>'+row.Comentario+'</td>';
+         return '<td><i id="'+row.id+'" onclick="event.stopPropagation(); modify_coments(this.id)" class="mdi mdi-pencil-outline" style="cursor:pointer;"></i> '+row.Comentario+'</td>';
          }
          },
          {data:"Status",
