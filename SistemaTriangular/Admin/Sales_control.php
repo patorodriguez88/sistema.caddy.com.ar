@@ -29,30 +29,6 @@ include_once('../Conexion/Conexioni.php');
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 
-    <style>
-        /* Modal lateral derecho */
-        #right-modal .modal-dialog {
-            position: fixed;
-            top: 0;
-            right: 0;
-            margin: 0;
-            height: 100%;
-            max-width: 480px;
-            width: 100%;
-        }
-        #right-modal .modal-content {
-            height: 100%;
-            border-radius: 0;
-            border: none;
-        }
-        #right-modal.modal.fade .modal-dialog {
-            transform: translateX(100%);
-            transition: transform 0.3s ease-out;
-        }
-        #right-modal.modal.show .modal-dialog {
-            transform: translateX(0);
-        }
-    </style>
 </head>
 
 <body>
@@ -156,65 +132,62 @@ include_once('../Conexion/Conexioni.php');
                         </div>
                     </div>
 
-                    <!-- Modal: Detalle derecho (lateral) -->
-                    <div class="modal fade" id="right-modal" tabindex="-1" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <div>
-                                        <h5 class="modal-title mb-0" id="right-modal_titulo"></h5>
-                                        <small class="text-muted" id="fecha_emision"></small><br>
-                                        <small class="text-muted" id="fecha_vencimiento"></small>
-                                        <small class="text-muted" id="fecha_dias"></small>
-                                    </div>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    <!-- Offcanvas: Detalle lateral derecho -->
+                    <div class="offcanvas offcanvas-end" tabindex="-1" id="right-modal" aria-labelledby="right-modal_titulo" style="width: 480px;">
+                        <div class="offcanvas-header border-bottom">
+                            <div>
+                                <h5 class="offcanvas-title mb-0" id="right-modal_titulo"></h5>
+                                <small class="text-muted" id="fecha_emision"></small><br>
+                                <small class="text-muted" id="fecha_vencimiento"></small>
+                                <small class="text-muted" id="fecha_dias"></small>
+                            </div>
+                            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+                        </div>
+                        <div class="offcanvas-body d-flex flex-column">
+                            <input id="right-modal_id" type="hidden">
+                            <input id="right-modal_saldo" type="hidden">
+
+                            <div id="alert-coment" class="alert alert-warning" role="alert" style="display:none;">
+                                <strong>Comentarios: </strong>
+                                <span style="font-size:12px" id="right-modal_coment"></span>
+                            </div>
+
+                            <div class="mb-3">
+                                <label class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="right-modal_obs" rows="2" maxlength="350"></textarea>
+                                <div class="text-end mt-2">
+                                    <button type="button" class="btn btn-success btn-sm" id="right-modal_obs_ok">
+                                        <i class="mdi mdi-content-save me-1"></i> Guardar
+                                    </button>
                                 </div>
-                                <div class="modal-body">
-                                    <input id="right-modal_id" type="hidden">
-                                    <input id="right-modal_saldo" type="hidden">
+                            </div>
 
-                                    <div id="alert-coment" class="alert alert-warning" role="alert" style="display:none;">
-                                        <strong>Comentarios: </strong>
-                                        <span style="font-size:12px" id="right-modal_coment"></span>
-                                    </div>
+                            <div class="d-flex gap-3 mb-3">
+                                <i id="factura_enviada" class="mdi mdi-24px mdi-email text-success" style="cursor:pointer" title="Marcar factura enviada"></i>
+                                <i id="reclamo_enviado" class="mdi mdi-24px mdi-account-cash-outline text-danger" style="cursor:pointer" title="Registrar reclamo"></i>
+                                <i onclick="modify_status()" class="mdi mdi-24px mdi-check text-success" style="cursor:pointer" title="Marcar solucionado"></i>
+                            </div>
 
-                                    <div class="mb-3">
-                                        <label class="form-label">Observaciones</label>
-                                        <textarea class="form-control" id="right-modal_obs" rows="2" maxlength="350"></textarea>
-                                        <div class="text-end mt-2">
-                                            <button type="button" class="btn btn-success btn-sm" id="right-modal_obs_ok">
-                                                <i class="mdi mdi-content-save me-1"></i> Guardar
+                            <div id="notificaciones-container" class="flex-grow-1 mb-2" style="overflow-y: auto; max-height: 250px;"></div>
+
+                            <div class="mt-auto bg-light p-3 rounded">
+                                <form name="chat-form" id="chat-form" novalidate>
+                                    <div class="row g-2">
+                                        <div class="col">
+                                            <input id="notificaciones_text" type="text" class="form-control border-0"
+                                                placeholder="Ingrese su mensaje" required>
+                                        </div>
+                                        <div class="col-auto">
+                                            <button type="button" id="notificaciones_ok" class="btn btn-success">
+                                                <i class="uil uil-message"></i> Enviar
                                             </button>
                                         </div>
                                     </div>
+                                </form>
+                            </div>
 
-                                    <div class="d-flex gap-3 mb-3">
-                                        <i id="factura_enviada" class="mdi mdi-24px mdi-email text-success" style="cursor:pointer"></i>
-                                        <i id="reclamo_enviado" class="mdi mdi-24px mdi-account-cash-outline text-danger" style="cursor:pointer"></i>
-                                        <i onclick="modify_status()" class="mdi mdi-24px mdi-check text-success" style="cursor:pointer"></i>
-                                    </div>
-
-                                    <div id="notificaciones-container" style="max-height: 150px; overflow-y: auto;"></div>
-
-                                    <div class="mt-2 bg-light p-3 rounded">
-                                        <form name="chat-form" id="chat-form" novalidate>
-                                            <div class="row g-2">
-                                                <div class="col">
-                                                    <input id="notificaciones_text" type="text" class="form-control border-0"
-                                                        placeholder="Ingrese su mensaje" required>
-                                                </div>
-                                                <div class="col-auto">
-                                                    <button type="button" id="notificaciones_ok" class="btn btn-success">
-                                                        <i class="uil uil-message"></i> Enviar
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger w-100" data-bs-dismiss="modal">Cerrar</button>
-                                </div>
+                            <div class="mt-3">
+                                <button type="button" class="btn btn-danger w-100" data-bs-dismiss="offcanvas">Cerrar</button>
                             </div>
                         </div>
                     </div>

@@ -1,7 +1,7 @@
 //AL MARCAR EL ENVIO DE LA FACTURA
 $('#factura_enviada').click(function(){
     
-    $('#right-modal').modal('hide');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
     $('#success-header-modal').modal('show');
     $('#success-header-modal-ok').css('display','block');
     $('#success-header-modal-ok-reclamo').css('display','none');
@@ -14,7 +14,7 @@ $('#factura_enviada').click(function(){
 //AL MARCAR EL RECLAMO DE PAGO
 $('#reclamo_enviado').click(function(){
 
-    $('#right-modal').modal('hide');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
     $('#success-header-modal').modal('show');
     $('#success-header-modal-ok').css('display','none');
     $('#success-header-modal-ok-reclamo').css('display','block');
@@ -164,7 +164,7 @@ $('#success-header-modal-ok').click(function(){
 });
 
 //AL CERRAR EL MODAL RIGHT MODAL
-$('#right-modal').on('hide.bs.modal', function() {
+$('#right-modal').on('hide.bs.offcanvas', function() {
 
     var container = $("#notificaciones-container");
     container.html("");
@@ -172,7 +172,7 @@ $('#right-modal').on('hide.bs.modal', function() {
 });
 
 //AL ABRIR EL MODAL RIGHT MODAL
-$('#right-modal').on('shown.bs.modal', function() {
+$('#right-modal').on('shown.bs.offcanvas', function() {
     
     var idFacturacion = $('#right-modal_id').val();
     var container = $("#notificaciones-container");
@@ -328,7 +328,7 @@ function modify_status(){
     var saldo=$('#right-modal_saldo').val();
 
     $('#modal_id').val(id);
-    $('#right-modal').modal('hide');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
 
     if(saldo>0){
 
@@ -675,7 +675,7 @@ function tuFuncion(data) {
 
 
 
-    $('#right-modal').modal('show');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).show();
     $('#right-modal_id').val(data['id']);
     $('#right-modal_saldo').val(data['Saldo']);
 
