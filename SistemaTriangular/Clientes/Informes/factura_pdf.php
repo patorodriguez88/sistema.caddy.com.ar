@@ -476,9 +476,44 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
         $pdf->Cell(42,  $bold ? 9 : 7, '$ ' . number_format($valor, 2, ',', '.'), 0, 1, 'R');
     }
 
+    // ─── DATOS BANCARIOS ───────────────────────────────────────
+    $pdf->Ln(6);
+    if ($pdf->GetY() > 240) $pdf->AddPage();
+
+    $bankY = $pdf->GetY();
+    $pdf->SetFillColor(240, 245, 255);
+    $pdf->SetDrawColor(...$borderC);
+    $pdf->RoundedRect(10, $bankY, 190, 22, 3, 'FD');
+
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->SetTextColor(...$primaryC);
+    $pdf->SetXY(14, $bankY + 2.5);
+    $pdf->Cell(0, 4, 'DATOS PARA TRANSFERENCIA BANCARIA', 0, 1);
+
+    $pdf->SetFont('Arial', '', 8);
+    $pdf->SetTextColor(...$darkText);
+
+    $pdf->SetXY(14, $bankY + 8);
+    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(30, 4, 'Raz' . chr(243) . 'n Social:', 0, 0);
+    $pdf->SetFont('Arial', '', 8);  $pdf->Cell(50, 4, 'TRIANGULAR SA', 0, 0);
+    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(18, 4, 'CUIT:', 0, 0);
+    $pdf->SetFont('Arial', '', 8);  $pdf->Cell(40, 4, '30-71534494-3', 0, 0);
+    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(14, 4, 'Alias:', 0, 0);
+    $pdf->SetFont('Arial', '', 8);  $pdf->Cell(0,  4, 'Caddy.macro', 0, 1);
+
+    $pdf->SetXY(14, $bankY + 14);
+    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(30, 4, 'Banco:', 0, 0);
+    $pdf->SetFont('Arial', '', 8);  $pdf->Cell(50, 4, 'Banco Macro S.A.', 0, 0);
+    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(18, 4, 'CBU:', 0, 0);
+    $pdf->SetFont('Arial', '', 8);  $pdf->Cell(0,  4, '2850322430094220263151', 0, 1);
+
     // ─── BLOQUE AFIP ───────────────────────────────────────────
     if (!empty($afip['id']) && $rutaQR !== '' && file_exists($rutaQR)) {
-        $pdf->Ln(8);
+        $pdf->Ln(5);
+
+        // Si no caben ~38mm, nueva página
+        if ($pdf->GetY() > 240) $pdf->AddPage();
+
         $yBase = $pdf->GetY();
 
         $pdf->Image($rutaQR, 10, $yBase, 28);
@@ -489,34 +524,34 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
         $pdf->SetXY(65, $yBase);
         $pdf->SetFont('Arial', 'B', 10);
         $pdf->SetTextColor(...$darkText);
-        $pdf->Cell(90, 6, pdf_text('Comprobante Autorizado'), 0, 1, 'L');
+        $pdf->Cell(85, 6, pdf_text('Comprobante Autorizado'), 0, 1, 'L');
 
         $pdf->SetX(65);
         $pdf->SetFont('Arial', '', 7.5);
         $pdf->SetTextColor(...$mutedC);
-        $pdf->MultiCell(120, 4, pdf_text('Esta Administración Federal no se responsabiliza por los datos ingresados en el detalle de la operación.'), 0, 'L');
+        $pdf->MultiCell(85, 4, pdf_text('Esta Administración Federal no se responsabiliza por los datos ingresados en el detalle de la operación.'), 0, 'L');
 
-        $pdf->SetXY(152, $yBase);
+        $pdf->SetXY(155, $yBase);
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(...$darkText);
-        $pdf->Cell(50, 5, 'CAE:', 0, 1, 'L');
-        $pdf->SetX(152);
+        $pdf->Cell(45, 5, 'CAE:', 0, 1, 'L');
+        $pdf->SetX(155);
         $pdf->SetFont('Arial', '', 8.5);
-        $pdf->Cell(50, 5, pdf_text($afip['CAE']), 0, 1, 'L');
-        $pdf->SetX(152);
+        $pdf->Cell(45, 5, pdf_text($afip['CAE']), 0, 1, 'L');
+        $pdf->SetX(155);
         $pdf->SetFont('Arial', 'B', 9);
-        $pdf->Cell(50, 5, pdf_text('Vto. CAE:'), 0, 1, 'L');
-        $pdf->SetX(152);
+        $pdf->Cell(45, 5, pdf_text('Vto. CAE:'), 0, 1, 'L');
+        $pdf->SetX(155);
         $pdf->SetFont('Arial', '', 8.5);
         $vtoCae = !empty($afip['FechaVencimientoCAE']) ? date('d/m/Y', strtotime($afip['FechaVencimientoCAE'])) : '';
-        $pdf->Cell(50, 5, $vtoCae, 0, 1, 'L');
+        $pdf->Cell(45, 5, $vtoCae, 0, 1, 'L');
     }
 
-    // Pie de página
-    $pdf->Ln(5);
+    // Pie de página — siempre al final del contenido, centrado
+    $pdf->Ln(6);
     $pdf->SetFont('Arial', '', 7.5);
     $pdf->SetTextColor(...$mutedC);
-    $pdf->Cell(0, 5, 'Generado el ' . date('d/m/Y H:i:s'), 0, 1, 'L');
+    $pdf->Cell(0, 5, 'Generado el ' . date('d/m/Y H:i:s'), 0, 1, 'C');
 
     $pdf->Output('F', $rutaSalida);
 

@@ -136,7 +136,7 @@ if ($hora < 13)     $saludo = 'Buenos d&iacute;as';
 elseif ($hora < 20) $saludo = 'Buenas tardes';
 else                $saludo = 'Buenas noches';
 
-$asunto = $tipo . ' N&deg; ' . $numero . ' | Caddy Log&iacute;stica';
+$asunto = $tipo . ' N° ' . $numero . ' | Caddy Logística';
 
 $nombreEsc = htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8');
 $tipoEsc   = htmlspecialchars($tipo,   ENT_QUOTES, 'UTF-8');
