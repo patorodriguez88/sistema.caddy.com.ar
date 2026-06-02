@@ -1,6 +1,9 @@
 <?php
+ini_set('display_errors', 0);
+error_reporting(0);
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
+header('Content-Type: application/json; charset=utf-8');
 
 //LIBRO IVA COMPRAS
 if(isset($_POST['Iva']) && $_POST['Iva']==1){
@@ -26,27 +29,33 @@ if(isset($_POST['Iva']) && $_POST['Iva']==2){
 
 //CONTROL FACTURACION
 if(isset($_POST['Sales_control'])){
-    
-    $Filtro=$_POST['Filtro'];
 
-    // $sql="SELECT * FROM Facturacion WHERE Fecha>='2023-12-01' AND Eliminado=0 AND Facturacion.Status='$Filtro' ORDER BY Fecha ASC";
-    $sql="SELECT Facturacion.*, COALESCE(Clientes.nombrecliente, NULL) AS nombrecliente
-    FROM Facturacion 
-    LEFT JOIN Clientes ON Facturacion.idCliente = Clientes.id 
-    WHERE Facturacion.Fecha >= '2023-12-01' 
-    AND Facturacion.Eliminado = 0 
-    AND Facturacion.Status = '$Filtro' 
-    ORDER BY Facturacion.Fecha ASC;";
+    $Filtro = intval($_POST['Filtro']);
 
-    $Resultado=$mysqli->query($sql);
-    $rows=array();
-    while($row = $Resultado->fetch_array(MYSQLI_ASSOC)){
-        
-        $rows[]=$row;
+    $sql = "
+        SELECT Facturacion.*, COALESCE(Clientes.nombrecliente, NULL) AS nombrecliente
+        FROM Facturacion
+        LEFT JOIN Clientes ON Facturacion.idCliente = Clientes.id
+        WHERE Facturacion.Fecha >= '2023-12-01'
+          AND Facturacion.Eliminado = 0
+          AND Facturacion.Status = {$Filtro}
+        ORDER BY Facturacion.Fecha ASC
+    ";
+
+    $Resultado = $mysqli->query($sql);
+
+    if (!$Resultado) {
+        echo json_encode(['data' => [], 'error' => $mysqli->error]);
+        exit;
     }
-    echo json_encode(array('data'=>$rows));
 
-  }
+    $rows = [];
+    while ($row = $Resultado->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    echo json_encode(['data' => $rows]);
+    exit;
+}
 
 if(isset($_POST['Totales'])){
     
