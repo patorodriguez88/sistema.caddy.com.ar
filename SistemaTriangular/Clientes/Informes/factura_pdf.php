@@ -217,7 +217,20 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     if (file_exists($logo)) $pdf->Image($logo, 10, 10, 48);
 
     // Letra de tipo de comprobante en círculo
-    $tipoLetra = strtoupper(substr(trim($row['TipoDeComprobante']), 0, 1));
+    $letraMap = [
+        'FACTURAS A'        => 'A',
+        'FACTURAS B'        => 'B',
+        'FACTURAS C'        => 'C',
+        'FACTURA PROFORMA'  => 'F',
+        'NOTA DE CREDITO A' => 'A',
+        'NOTA DE CREDITO B' => 'B',
+        'NOTA DE CREDITO C' => 'C',
+        'NOTA DE DEBITO A'  => 'A',
+        'NOTA DE DEBITO B'  => 'B',
+        'NOTA DE DEBITO C'  => 'C',
+    ];
+    $tipoNorm  = strtoupper(trim($row['TipoDeComprobante']));
+    $tipoLetra = $letraMap[$tipoNorm] ?? strtoupper(substr($tipoNorm, 0, 1));
     $cx = 105; $cy = 20;
     $pdf->SetDrawColor(...$borderC);
     $pdf->SetLineWidth(0.4);
