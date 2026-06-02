@@ -108,11 +108,13 @@ $html = '
 $rutaAdjunto = __DIR__ . '/../../archivos_tmp/recibo_' . $numero . '.pdf';
 
 if (!is_dir(dirname($rutaAdjunto))) {
-    echo json_encode([
-        'success' => 0,
-        'msg' => 'La carpeta de adjuntos no existe: ' . dirname($rutaAdjunto)
-    ]);
-    exit;
+    if (!mkdir(dirname($rutaAdjunto), 0755, true)) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => 'No se pudo crear la carpeta de adjuntos: ' . dirname($rutaAdjunto)
+        ]);
+        exit;
+    }
 }
 
 if (!is_writable(dirname($rutaAdjunto))) {
