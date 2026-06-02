@@ -218,14 +218,14 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
 
     // Letra de tipo de comprobante en círculo
     $tipoLetra = strtoupper(substr(trim($row['TipoDeComprobante']), 0, 1));
-    $cx = 105; $cy = 22;
+    $cx = 105; $cy = 20;
     $pdf->SetDrawColor(...$borderC);
-    $pdf->SetLineWidth(0.5);
-    $pdf->Circle($cx, $cy, 11, 'S');
-    $pdf->SetFont('Arial', 'B', 16);
+    $pdf->SetLineWidth(0.4);
+    $pdf->Circle($cx, $cy, 7, 'S');
+    $pdf->SetFont('Arial', 'B', 12);
     $pdf->SetTextColor(...$mutedC);
-    $pdf->SetXY($cx - 5.5, $cy - 5);
-    $pdf->Cell(11, 10, $tipoLetra, 0, 0, 'C');
+    $pdf->SetXY($cx - 3.5, $cy - 3.5);
+    $pdf->Cell(7, 7, $tipoLetra, 0, 0, 'C');
 
     // Título derecha
     $pdf->SetFont('Arial', 'B', 20);
@@ -312,12 +312,13 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->Cell(32, 6, 'Estado:', 0, 0, 'L');
     $pdf->SetFillColor(...$greenC);
     $pdf->SetTextColor(...$whiteC);
-    $pdf->RoundedRect(150, $ly + 0.5, 22, 5.5, 2, 'F');
-    $pdf->SetXY(150, $ly + 0.3);
-    $pdf->Cell(22, 5.8, 'Pendiente', 0, 1, 'C');
+    $pdf->SetFont('Arial', 'B', 7.5);
+    $pdf->RoundedRect(150, $ly + 1, 18, 4, 2, 'F');
+    $pdf->SetXY(150, $ly + 0.9);
+    $pdf->Cell(18, 4.2, 'Pendiente', 0, 1, 'C');
 
     // ─── CARDS ROW 2 ───────────────────────────────────────────
-    $row2Y = $cardY + $cardH + 5; $row2H = 24;
+    $row2Y = $cardY + $cardH + 5; $row2H = 30;
     $pdf->SetFillColor(...$grayBg);
     $pdf->SetDrawColor(...$borderC);
 
@@ -342,11 +343,13 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', 'B', 9); $pdf->SetTextColor(...$mutedC);
     $pdf->Cell(16, 5, 'Desde:', 0, 0);
     $pdf->SetFont('Arial', '', 9); $pdf->SetTextColor(...$darkText);
-    $pdf->Cell(30, 5, $fechaDesde, 0, 0);
+    $pdf->Cell(54, 5, $fechaDesde, 0, 1);
+
+    $pdf->SetXY(76, $row2Y + 15);
     $pdf->SetFont('Arial', 'B', 9); $pdf->SetTextColor(...$mutedC);
-    $pdf->Cell(14, 5, 'Hasta:', 0, 0);
+    $pdf->Cell(16, 5, 'Hasta:', 0, 0);
     $pdf->SetFont('Arial', '', 9); $pdf->SetTextColor(...$darkText);
-    $pdf->Cell(0,  5, $fechaHasta, 0, 1);
+    $pdf->Cell(54, 5, $fechaHasta, 0, 1);
 
     // Card 3: Vencimiento de pago
     $pdf->RoundedRect(154, $row2Y, 46, $row2H, 3, 'FD');
