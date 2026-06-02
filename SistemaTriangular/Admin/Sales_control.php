@@ -28,6 +28,31 @@ include_once('../Conexion/Conexioni.php');
 
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+
+    <style>
+        /* Modal lateral derecho */
+        #right-modal .modal-dialog {
+            position: fixed;
+            top: 0;
+            right: 0;
+            margin: 0;
+            height: 100%;
+            max-width: 480px;
+            width: 100%;
+        }
+        #right-modal .modal-content {
+            height: 100%;
+            border-radius: 0;
+            border: none;
+        }
+        #right-modal.modal.fade .modal-dialog {
+            transform: translateX(100%);
+            transition: transform 0.3s ease-out;
+        }
+        #right-modal.modal.show .modal-dialog {
+            transform: translateX(0);
+        }
+    </style>
 </head>
 
 <body>
