@@ -1,7 +1,6 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+ini_set('display_errors', 0);
+error_reporting(0);
 
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
@@ -187,28 +186,27 @@ if (isset($_POST['Notificaciones'])) {
 
     $idFacturacion = $_POST['idFacturacion'];
 
-    if ($_POST['Agregar'] == 1) {
+    if (!empty($_POST['Agregar'])) {
 
-        $Fecha = date('Y-m-d H:i');
-        $usuario = $_SESSION['Usuario'];
-        $mensaje = $_POST['mensaje'];
+        $Fecha   = date('Y-m-d H:i');
+        $usuario = $_SESSION['Usuario'] ?? 'sistema';
+        $mensaje = $_POST['mensaje'] ?? '';
 
-        $sql = $mysqli->query("INSERT INTO `Facturacion_Notificaciones`(`idFacturacion`, `fecha`, `usuario`, `mensaje`) 
+        $mysqli->query("INSERT INTO `Facturacion_Notificaciones`(`idFacturacion`, `fecha`, `usuario`, `mensaje`)
         VALUES ('{$idFacturacion}','{$Fecha}','{$usuario}','{$mensaje}')");
 
-        if ($_POST['MarcaEnvioFactura'] == 1) {
-
-            $sql = $mysqli->query("UPDATE `Facturacion` SET Notificaciones='$Fecha' WHERE id='$idFacturacion'");
+        if (!empty($_POST['MarcaEnvioFactura'])) {
+            $mysqli->query("UPDATE `Facturacion` SET Notificaciones='$Fecha' WHERE id='$idFacturacion'");
         }
 
-        if ($_POST['MarcaReclamo'] == 1) {
-
-            $sql = $mysqli->query("UPDATE `Facturacion` SET Reclamos=Reclamos+1 WHERE id='$idFacturacion'");
+        if (!empty($_POST['MarcaReclamo'])) {
+            $mysqli->query("UPDATE `Facturacion` SET Reclamos=Reclamos+1 WHERE id='$idFacturacion'");
         }
-        echo json_encode(array('success' => 1));
+
+        echo json_encode(['success' => 1]);
     }
 
-    if ($_POST['Ver'] == 1) {
+    if (!empty($_POST['Ver'])) {
 
         $sql = "SELECT * FROM Facturacion_Notificaciones WHERE idFacturacion='$idFacturacion' ORDER BY id ASC";
         $Resultado = $mysqli->query($sql);
