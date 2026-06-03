@@ -132,66 +132,6 @@ include_once('../Conexion/Conexioni.php');
                         </div>
                     </div>
 
-                    <!-- Offcanvas: Detalle lateral derecho -->
-                    <div class="offcanvas offcanvas-end" tabindex="-1" id="right-modal" aria-labelledby="right-modal_titulo" style="width: 480px;">
-                        <div class="offcanvas-header border-bottom">
-                            <div>
-                                <h5 class="offcanvas-title mb-0" id="right-modal_titulo"></h5>
-                                <small class="text-muted" id="fecha_emision"></small><br>
-                                <small class="text-muted" id="fecha_vencimiento"></small>
-                                <small class="text-muted" id="fecha_dias"></small>
-                            </div>
-                            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
-                        </div>
-                        <div class="offcanvas-body d-flex flex-column">
-                            <input id="right-modal_id" type="hidden">
-                            <input id="right-modal_saldo" type="hidden">
-
-                            <div id="alert-coment" class="alert alert-warning" role="alert" style="display:none;">
-                                <strong>Comentarios: </strong>
-                                <span style="font-size:12px" id="right-modal_coment"></span>
-                            </div>
-
-                            <div class="mb-3">
-                                <label class="form-label">Observaciones</label>
-                                <textarea class="form-control" id="right-modal_obs" rows="2" maxlength="350"></textarea>
-                                <div class="text-end mt-2">
-                                    <button type="button" class="btn btn-success btn-sm" id="right-modal_obs_ok">
-                                        <i class="mdi mdi-content-save me-1"></i> Guardar
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div class="d-flex gap-3 mb-3">
-                                <i id="factura_enviada" class="mdi mdi-24px mdi-email text-success" style="cursor:pointer" title="Marcar factura enviada"></i>
-                                <i id="reclamo_enviado" class="mdi mdi-24px mdi-account-cash-outline text-danger" style="cursor:pointer" title="Registrar reclamo"></i>
-                                <i onclick="modify_status()" class="mdi mdi-24px mdi-check text-success" style="cursor:pointer" title="Marcar solucionado"></i>
-                            </div>
-
-                            <div id="notificaciones-container" class="flex-grow-1 mb-2" style="overflow-y: auto; max-height: 250px;"></div>
-
-                            <div class="mt-auto bg-light p-3 rounded">
-                                <form name="chat-form" id="chat-form" novalidate>
-                                    <div class="row g-2">
-                                        <div class="col">
-                                            <input id="notificaciones_text" type="text" class="form-control border-0"
-                                                placeholder="Ingrese su mensaje" required>
-                                        </div>
-                                        <div class="col-auto">
-                                            <button type="button" id="notificaciones_ok" class="btn btn-success">
-                                                <i class="uil uil-message"></i> Enviar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </form>
-                            </div>
-
-                            <div class="mt-3">
-                                <button type="button" class="btn btn-danger w-100" data-bs-dismiss="offcanvas">Cerrar</button>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Contenido principal -->
                     <div class="row" id="controlventas">
                         <div class="col-12">
@@ -258,6 +198,66 @@ include_once('../Conexion/Conexioni.php');
 
         </div><!-- end content-page -->
     </div><!-- end wrapper -->
+
+    <!-- Offcanvas: Detalle lateral derecho (debe estar fuera del wrapper) -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="right-modal" aria-labelledby="right-modal_titulo" style="width: 480px;">
+        <div class="offcanvas-header border-bottom">
+            <div>
+                <h5 class="offcanvas-title mb-0" id="right-modal_titulo"></h5>
+                <small class="text-muted" id="fecha_emision"></small><br>
+                <small class="text-muted" id="fecha_vencimiento"></small>
+                <small class="text-muted" id="fecha_dias"></small>
+            </div>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+        </div>
+        <div class="offcanvas-body d-flex flex-column">
+            <input id="right-modal_id" type="hidden">
+            <input id="right-modal_saldo" type="hidden">
+
+            <div id="alert-coment" class="alert alert-warning" role="alert" style="display:none;">
+                <strong>Comentarios: </strong>
+                <span style="font-size:12px" id="right-modal_coment"></span>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Observaciones</label>
+                <textarea class="form-control" id="right-modal_obs" rows="2" maxlength="350"></textarea>
+                <div class="text-end mt-2">
+                    <button type="button" class="btn btn-success btn-sm" id="right-modal_obs_ok">
+                        <i class="mdi mdi-content-save me-1"></i> Guardar
+                    </button>
+                </div>
+            </div>
+
+            <div class="d-flex gap-3 mb-3">
+                <i id="factura_enviada" class="mdi mdi-24px mdi-email text-success" style="cursor:pointer" title="Marcar factura enviada"></i>
+                <i id="reclamo_enviado" class="mdi mdi-24px mdi-account-cash-outline text-danger" style="cursor:pointer" title="Registrar reclamo"></i>
+                <i onclick="modify_status()" class="mdi mdi-24px mdi-check text-success" style="cursor:pointer" title="Marcar solucionado"></i>
+            </div>
+
+            <div id="notificaciones-container" class="mb-2" style="overflow-y: auto; max-height: 250px;"></div>
+
+            <div class="mt-auto bg-light p-3 rounded">
+                <form name="chat-form" id="chat-form" novalidate>
+                    <div class="row g-2">
+                        <div class="col">
+                            <input id="notificaciones_text" type="text" class="form-control border-0"
+                                placeholder="Ingrese su mensaje" required>
+                        </div>
+                        <div class="col-auto">
+                            <button type="button" id="notificaciones_ok" class="btn btn-success">
+                                <i class="uil uil-message"></i> Enviar
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+
+            <div class="mt-3">
+                <button type="button" class="btn btn-danger w-100" data-bs-dismiss="offcanvas">Cerrar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Scripts -->
     <script src="../hyper/dist/assets/js/vendor.min.js"></script>
