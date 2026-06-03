@@ -4,6 +4,7 @@ ini_set('display_errors', 1);
 
 include_once "../../Conexion/Conexioni.php";
 require_once "../../Funciones/php/enviar_mail.php";
+require_once "../../Funciones/php/facturacion_helper.php";
 require_once __DIR__ . "/factura_pdf.php";
 
 header('Content-Type: application/json; charset=utf-8');
@@ -192,6 +193,24 @@ $respuesta = enviarMail($para, $nombre, $asunto, $html, $rutaAdjunto);
 
 if (file_exists($rutaAdjunto)) {
     unlink($rutaAdjunto);
+}
+
+// Si el mail se envió correctamente → actualizar Facturacion
+if (!empty($respuesta['success']) && $respuesta['success'] == 1) {
+    $idFac = facturacion_id_por_numero($mysqli, $numero);
+    if ($idFac) {
+        $fecha  = date('Y-m-d H:i');
+        $msgNot = 'Factura enviada por mail a ' . $para;
+
+        // Avanzar status a Notificado (solo si todavía está Pendiente)
+        facturacion_actualizar_status($mysqli, $idFac, 1, true);
+
+        // Actualizar campo Notificaciones con la fecha
+        $mysqli->query("UPDATE Facturacion SET Notificaciones = '{$fecha}' WHERE id = {$idFac}");
+
+        // Registrar en historial
+        facturacion_insertar_notificacion($mysqli, $idFac, $msgNot);
+    }
 }
 
 echo json_encode($respuesta);

@@ -62,45 +62,76 @@ if (isset($_POST['Sales_control'])) {
 if (isset($_POST['Totales'])) {
 
     $sql = "SELECT
-    COUNT(CASE WHEN Status = 0 THEN 1 ELSE NULL END) AS `False`,
-    COUNT(CASE WHEN Status = 1 THEN 1 ELSE NULL END) AS `True`,
-    SUM(CASE WHEN Status = 0 THEN Total END) AS `False_total`,
-    SUM(CASE WHEN Status = 1 THEN Total END) AS `True_total`
-    FROM Facturacion WHERE Fecha>='2023-12-01' AND Eliminado=0";
+        COUNT(CASE WHEN Status = 0 THEN 1 END) AS pendiente,
+        COUNT(CASE WHEN Status = 1 THEN 1 END) AS notificado,
+        COUNT(CASE WHEN Status = 2 THEN 1 END) AS revision,
+        COUNT(CASE WHEN Status = 3 THEN 1 END) AS solucionado,
+        SUM(CASE WHEN Status = 0 THEN Total END) AS total_pendiente,
+        SUM(CASE WHEN Status = 3 THEN Total END) AS total_solucionado
+    FROM Facturacion WHERE Fecha >= '2023-12-01' AND Eliminado = 0";
 
-    $Resultado = $mysqli->query($sql);
+    $row = $mysqli->query($sql)->fetch_assoc();
 
-    $row = $Resultado->fetch_array(MYSQLI_ASSOC);
-    $true = $row['True'];
-    $false = $row['False'];
-    $sumtrue = $row['True_total'];
-    $sumfalse = $row['False_total'];
-
-    echo json_encode(array('countStatusTrue' => $true, 'countStatusFalse' => $false, 'sumStatusTrue' => $sumtrue, 'sumStatusFalse' => $sumfalse));
+    echo json_encode([
+        'countStatusFalse' => $row['pendiente'],
+        'countStatusTrue'  => $row['solucionado'],
+        'sumStatusFalse'   => $row['total_pendiente'],
+        'sumStatusTrue'    => $row['total_solucionado'],
+        'counts' => [
+            'pendiente'   => $row['pendiente'],
+            'notificado'  => $row['notificado'],
+            'revision'    => $row['revision'],
+            'solucionado' => $row['solucionado'],
+        ],
+    ]);
 }
 
 //MODIFICO EL STATUS
 if (isset($_POST['Modify_status'])) {
 
-    $id = $_POST['id'];
+    $id          = intval($_POST['id']);
+    $nuevoStatus = isset($_POST['newStatus']) ? max(0, min(3, intval($_POST['newStatus']))) : null;
 
-    $sql = "UPDATE Facturacion SET Status = CASE WHEN Status = 0 THEN 1 ELSE 0 END WHERE id = '$id' LIMIT 1";
+    $soloSiMenor = !empty($_POST['soloSiMenor']);
+
+    if ($nuevoStatus !== null) {
+        if ($soloSiMenor) {
+            $sql = "UPDATE Facturacion SET Status = GREATEST(Status, {$nuevoStatus}) WHERE id = {$id} AND Eliminado = 0 LIMIT 1";
+        } else {
+            $sql = "UPDATE Facturacion SET Status = {$nuevoStatus} WHERE id = {$id} AND Eliminado = 0 LIMIT 1";
+        }
+    } else {
+        $sql = "UPDATE Facturacion SET Status = LEAST(Status + 1, 3) WHERE id = {$id} AND Eliminado = 0 LIMIT 1";
+    }
 
     if ($mysqli->query($sql)) {
 
         $sql_count = $mysqli->query("SELECT
-        COUNT(CASE WHEN Status = 0 THEN 1 ELSE NULL END) AS `False`,
-        COUNT(CASE WHEN Status = 1 THEN 1 ELSE NULL END) AS `True`,
-        SUM(CASE WHEN Status = 0 THEN Total END) AS `False_total`,
-        SUM(CASE WHEN Status = 1 THEN Total END) AS `True_total`
-        FROM Facturacion WHERE Fecha>='2023-12-01' AND Eliminado=0");
+            COUNT(CASE WHEN Status = 0 THEN 1 END) AS pendiente,
+            COUNT(CASE WHEN Status = 1 THEN 1 END) AS notificado,
+            COUNT(CASE WHEN Status = 2 THEN 1 END) AS revision,
+            COUNT(CASE WHEN Status = 3 THEN 1 END) AS solucionado,
+            SUM(CASE WHEN Status = 0 THEN Total END) AS total_pendiente,
+            SUM(CASE WHEN Status = 3 THEN Total END) AS total_solucionado
+        FROM Facturacion WHERE Fecha >= '2023-12-01' AND Eliminado = 0");
 
-        $row = $sql_count->fetch_array(MYSQLI_ASSOC);
+        $row = $sql_count->fetch_assoc();
 
-        echo json_encode(array('success' => 1, 'countStatusTrue' => $row['True'], 'countStatusFalse' => $row['False'], 'sumStatusTrue' => $row['True_total'], 'sumStatusFalse' => $row['False_total']));
+        echo json_encode([
+            'success'           => 1,
+            'countStatusFalse'  => $row['pendiente'],
+            'countStatusTrue'   => $row['solucionado'],
+            'sumStatusFalse'    => $row['total_pendiente'],
+            'sumStatusTrue'     => $row['total_solucionado'],
+            'counts'            => [
+                'pendiente'   => $row['pendiente'],
+                'notificado'  => $row['notificado'],
+                'revision'    => $row['revision'],
+                'solucionado' => $row['solucionado'],
+            ],
+        ]);
     } else {
-
-        echo json_encode(array('success' => 0));
+        echo json_encode(['success' => 0]);
     }
 }
 

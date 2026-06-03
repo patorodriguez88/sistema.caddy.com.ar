@@ -548,7 +548,7 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
                       <div class="mb-2"><span class="invoice-label">Id Cliente:</span> <span id="factura_codigo"></span></div>
                       <div class="mb-2">
                         <span class="invoice-label">Estado:</span>
-                        <span id="estado" class="badge bg-success">Pendiente</span>
+                        <span id="estado" class="badge bg-danger">Pendiente</span>
                       </div>
                     </div>
                   </div>

@@ -119,7 +119,7 @@ include_once "../Conexion/Conexion.php";
                                       <a id="NumeroComprobante">00000000000</a><br>
                                       <strong>Fecha: <a id="FechaComprobante"></a></strong><br>
                                       <strong>Id de Cliente: </strong><a id="factura_codigo"></a><br>
-                                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span>
+                                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge bg-danger">Pendiente</span>
                                   </address>
                                     </div>
                                   </div>

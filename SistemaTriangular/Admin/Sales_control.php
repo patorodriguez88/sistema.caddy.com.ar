@@ -213,6 +213,7 @@ include_once('../Conexion/Conexioni.php');
         <div class="offcanvas-body d-flex flex-column">
             <input id="right-modal_id" type="hidden">
             <input id="right-modal_saldo" type="hidden">
+            <input id="right-modal_status_actual" type="hidden" value="0">
 
             <div id="alert-coment" class="alert alert-warning" role="alert" style="display:none;">
                 <strong>Comentarios: </strong>
@@ -266,6 +267,7 @@ include_once('../Conexion/Conexioni.php');
     <?php include '../Menu/php/script_datatables.php'; ?>
 
     <script src="../Menu/js/funciones.js"></script>
+    <script src="../Funciones/js/facturacion_status.js"></script>
     <script src="Procesos/js/sales_control.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

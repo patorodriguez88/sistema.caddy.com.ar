@@ -2664,7 +2664,7 @@
                                                                             document.write(f.getDate() + "/" + (f.getMonth() + 1) + "/" + f.getFullYear());
                                                                         </script><br>
                                                                         <strong>Id de Cliente: </strong><a id="factura_codigo"></a><br>
-                                                                        <strong>Estado del Comprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span>
+                                                                        <strong>Estado del Comprobante: </strong><span id="estado" class="badge bg-danger">Pendiente</span>
                                                                     </address>
                                                                 </div>
                                                             </div>
@@ -2899,7 +2899,7 @@
                                                                             document.write(f.getDate() + "/" + (f.getMonth() + 1) + "/" + f.getFullYear());
                                                                         </script><br>
                                                                         <strong>Id de Cliente: </strong><a id="factura_codigo_detalle"></a><br>
-                                                                        <strong>Estado del Comprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span>
+                                                                        <strong>Estado del Comprobante: </strong><span id="estado" class="badge bg-danger">Pendiente</span>
                                                                     </address>
                                                                 </div>
                                                             </div>

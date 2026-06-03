@@ -106,20 +106,19 @@ $('#success-header-modal-ok-reclamo').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            //CIERRO EL MODAL
+            // Actualizar Status → 2 (En Revisión) solo si es menor
+            $.post('../Admin/Procesos/php/tablas.php', {
+                'Modify_status': 1,
+                'id': idFacturacion,
+                'newStatus': 2,
+                'soloSiMenor': 1
+            });
+
             $('#success-header-modal').modal('hide');
-            
-            //MUESTRO NOTIFICACIONES
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
-            
-            //NOTIFICO
-            $.NotificationApp.send("Reclamo Generado ", "Se actualizo la marca en la tabla.", "bottom-right", "#FFFFFF", "success");   
-            
-            //ACTUALIZO TABLA
-            var datatable1 = $('#librocontrolventas').DataTable();            
-            datatable1.ajax.reload(null,false);
-
+            $.NotificationApp.send("Reclamo Generado", "Estado actualizado a En Revisión.", "bottom-right", "#FFFFFF", "success");
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 });
@@ -144,20 +143,19 @@ $('#success-header-modal-ok').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            //CIERRO EL MODAL
+            // Actualizar Status → 1 (Notificado) solo si es menor
+            $.post('../Admin/Procesos/php/tablas.php', {
+                'Modify_status': 1,
+                'id': idFacturacion,
+                'newStatus': 1,
+                'soloSiMenor': 1
+            });
+
             $('#success-header-modal').modal('hide');
-            
-            //MUESTRO NOTIFICACIONES
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
-            
-            //NOTIFICO
-            $.NotificationApp.send("Factura Enviada ", "Se agrego una marca a la tabla.", "bottom-right", "#FFFFFF", "success");   
-            
-            //ACTUALIZO TABLA
-            var datatable1 = $('#librocontrolventas').DataTable();            
-            datatable1.ajax.reload(null,false);
-
+            $.NotificationApp.send("Factura Enviada", "Estado actualizado a Notificado.", "bottom-right", "#FFFFFF", "success");
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 
@@ -322,41 +320,36 @@ $('#right-modal_obs_ok').click(function(){
 
 function modify_status(){
 
-    console.log('id',id);
-    console.log('saldo',saldo);
-    var id= $('#right-modal_id').val();
-    var saldo=$('#right-modal_saldo').val();
+    var id           = $('#right-modal_id').val();
+    var saldo        = parseFloat($('#right-modal_saldo').val()) || 0;
+    var statusActual = parseInt($('#right-modal_status_actual').val()) || 0;
 
     $('#modal_id').val(id);
     bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
 
-    if(saldo>0){
+    var aviso = saldo > 0
+        ? `<div class="alert alert-warning py-2 mb-2">Este registro aún tiene saldo $ ${saldo}</div>`
+        : '';
 
-    $('#warning-header-modal_header').removeClass('bg-success').addClass('bg-warning');
-    
-    var modal_text="Este registro aún contiene un saldo $ "+saldo;
-    
-    }else{
-    
-        var modal_text="Confirma la Solución de este registro de control?.";
-    
-        $('#warning-header-modal_header').removeClass('bg-warning').addClass('bg-success');
-
-    }
-    modal_text=$('#modal_text').html(modal_text);
+    $('#modal_text').html(
+        aviso +
+        '<label class="form-label">Seleccioná el nuevo estado:</label>' +
+        facturacionStatusSelect(statusActual, 'modal_nuevo_status')
+    );
 
     $('#warning-header-modal').modal('show');
- 
 }
 
 $('#header-modal-ok').click(function(){
-    
-    var id=$('#modal_id').val();
-    
+
+    var id        = $('#modal_id').val();
+    var newStatus = $('#modal_nuevo_status').val();
+
     $.ajax({
         data: {
           'Modify_status': 1,
-          'id': id
+          'id': id,
+          'newStatus': newStatus
         },
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
@@ -585,7 +578,7 @@ var datatable1 = $('#librocontrolventas').DataTable({
                     color_fecha='success';
                 }
 
-                 return `<a class="text-${color_fecha}">${vencimiento}<a><br><span id="${row.id}" class="badge badge-${status_text}">${status}</span>`;
+                 return `<a class="text-${color_fecha}">${vencimiento}</a><br>${facturacionStatusBadge(row.Status)}`;
             }
           },
         //  {data:null,
@@ -678,6 +671,7 @@ function tuFuncion(data) {
     bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).show();
     $('#right-modal_id').val(data['id']);
     $('#right-modal_saldo').val(data['Saldo']);
+    $('#right-modal_status_actual').val(data['Status'] || 0);
 
     
     // if(data['Comentario']!=''){

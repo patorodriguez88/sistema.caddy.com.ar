@@ -6,6 +6,7 @@ date_default_timezone_set('America/Argentina/Cordoba');
 include_once "../../../../Hubspot/php/creartarea.php";
 
 include_once "../../../Conexion/Conexioni.php";
+require_once "../../../Funciones/php/facturacion_helper.php";
 
 
 if (isset($_POST['Notificatios'])) {
@@ -75,10 +76,20 @@ if (isset($_POST['Notifications_mail'])) {
 
     if ($mysqli->query($SQL) === TRUE) {
 
-        // Obtener el ID del último INSERT
         $id_insertado = $mysqli->insert_id;
 
-        // Enviar el token como respuesta en formato JSON
+        // Actualizar status Facturacion → Notificado (solo si todavía es Pendiente)
+        $ctRes = $mysqli->query("SELECT NumeroFactura FROM Ctasctes WHERE id = '{$id_comprobante}' LIMIT 1");
+        if ($ctRes && $ctRow = $ctRes->fetch_assoc()) {
+            $idFac = facturacion_id_por_numero($mysqli, $ctRow['NumeroFactura'] ?? '');
+            if ($idFac) {
+                $fecha = date('Y-m-d H:i');
+                facturacion_actualizar_status($mysqli, $idFac, 1, true);
+                $mysqli->query("UPDATE Facturacion SET Notificaciones = '{$fecha}' WHERE id = {$idFac}");
+                facturacion_insertar_notificacion($mysqli, $idFac, 'Factura enviada por mail a ' . $email);
+            }
+        }
+
         echo json_encode(array('success' => 1, 'token' => $token, 'id_insertado' => $id_insertado));
 
         //ENVIAR LA TAREA A HUBSPOT
