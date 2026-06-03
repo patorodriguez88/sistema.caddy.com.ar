@@ -70,7 +70,7 @@ cargarRubrosEnSelect("rubro");
 function cargarRelacionEnSelect(selectId) {
   $.ajax({
     url: "Procesos/php/clientes.php", // ajustá ruta según tu estructura
-    data: { cargar_relacion: 1 },
+    data: { cargar_relaciones: 1 },
     type: "POST",
     dataType: "json",
     success: function (relaciones) {

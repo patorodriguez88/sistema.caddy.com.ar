@@ -1,5 +1,7 @@
 <?php
+ini_set('display_errors', 0);
 include_once "../../Conexion/Conexioni.php";
+header('Content-Type: application/json; charset=utf-8');
 
 if (isset($_POST['Empresa'])) {
   $sql       = "SELECT * FROM DatosEmpresa";
