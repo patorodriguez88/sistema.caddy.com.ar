@@ -578,7 +578,9 @@ var datatable1 = $('#librocontrolventas').DataTable({
                     color_fecha='success';
                 }
 
-                 return `<a class="text-${color_fecha}">${vencimiento}</a><br>${facturacionStatusBadge(row.Status)}`;
+                 const _sm = {0:{l:'Pendiente',c:'bg-danger'},1:{l:'Notificado',c:'bg-primary'},2:{l:'En Revisión',c:'bg-warning text-dark'},3:{l:'Solucionado',c:'bg-success'}};
+                 const _s  = _sm[parseInt(row.Status)] ?? _sm[0];
+                 return `<a class="text-${color_fecha}">${vencimiento}</a><br><span class="badge ${_s.c}">${_s.l}</span>`;
             }
           },
         //  {data:null,

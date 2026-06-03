@@ -2353,6 +2353,7 @@
                                                             <th>Comprobante</th>
                                                             <th>Debe</th>
                                                             <th>Haber</th>
+                                                            <th>Estado</th>
                                                             <th>Ver</th>
 
                                                         </tr>
@@ -2360,6 +2361,7 @@
                                                     <tbody></tbody>
                                                     <tfoot>
                                                         <tr>
+                                                            <th></th>
                                                             <th></th>
                                                             <th></th>
                                                             <th></th>
