@@ -236,6 +236,14 @@ var idFacturacion=$('#right-modal_id').val();
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
+            $.post('../Admin/Procesos/php/tablas.php', {
+                'Modify_status': 1,
+                'id': idFacturacion,
+                'newStatus': 1,
+                'soloSiMenor': 1
+            }, function() {
+                $('#librocontrolventas').DataTable().ajax.reload(null, false);
+            });
 
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
