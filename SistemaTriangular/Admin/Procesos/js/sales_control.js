@@ -112,13 +112,14 @@ $('#success-header-modal-ok-reclamo').click(function(){
                 'id': idFacturacion,
                 'newStatus': 2,
                 'soloSiMenor': 1
+            }, function() {
+                $('#librocontrolventas').DataTable().ajax.reload(null, false);
             });
 
             $('#success-header-modal').modal('hide');
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
             $.NotificationApp.send("Reclamo Generado", "Estado actualizado a En Revisión.", "bottom-right", "#FFFFFF", "success");
-            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 });
@@ -127,7 +128,7 @@ $('#success-header-modal-ok').click(function(){
 
     var idFacturacion = $('#right-modal_id').val();
     var noti_text=$('#success-info').val();
-    
+
     if(noti_text==''){
         noti_text='Se envió el comprobante al cliente.';
     }
@@ -149,13 +150,14 @@ $('#success-header-modal-ok').click(function(){
                 'id': idFacturacion,
                 'newStatus': 1,
                 'soloSiMenor': 1
+            }, function() {
+                $('#librocontrolventas').DataTable().ajax.reload(null, false);
             });
 
             $('#success-header-modal').modal('hide');
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
             $.NotificationApp.send("Factura Enviada", "Estado actualizado a Notificado.", "bottom-right", "#FFFFFF", "success");
-            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 
