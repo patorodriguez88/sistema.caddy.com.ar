@@ -23,7 +23,7 @@ $("#compose-modal").on("show.bs.modal", function (e) {
     url: "Procesos/php/invoice.php",
     type: "post",
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
       // console.log('email',jsonData.data[0].email);
 
       $("#txtAsunto").val("NUEVO COMPROBANTE CADDY");
@@ -111,7 +111,7 @@ $("#button_sendmail").click(function () {
     url: "Procesos/php/invoice.php",
     type: "post",
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
       console.log("genero", jsonData);
 
@@ -133,7 +133,7 @@ $("#button_sendmail").click(function () {
           success: function (response) {
             // Manejar la respuesta del servidor si es necesario
             // console.log('Solicitud exitosa:', response);
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
             if (jsonData.success == 1) {
               $.NotificationApp.send(
@@ -187,7 +187,7 @@ $(document).ready(function () {
     url: "Procesos/php/invoice.php",
     type: "post",
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
       $("#factura_razonsocial").html(jsonData.RazonSocial);
 
@@ -530,7 +530,7 @@ $(document).ready(function () {
         //         $("#buscando").html("Buscando...");
         //         },
         success: function (response) {
-          var jsonData = JSON.parse(response);
+          var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
           if (jsonData.success == 1) {
             $.NotificationApp.send(
               "Registro Actualizado !",
@@ -566,7 +566,7 @@ $(document).ready(function () {
     url: "Procesos/php/funciones.php",
     type: "post",
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
       $("#desde_f").html(jsonData.Desde);
       $("#hasta_f").html(jsonData.Hasta);
     },

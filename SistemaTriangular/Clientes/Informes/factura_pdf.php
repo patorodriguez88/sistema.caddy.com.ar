@@ -274,17 +274,17 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', '', 9);
     $pdf->SetTextColor(...$mutedC);
     $lineas = [
-        ['Direcci' . chr(243) . 'n:', 'Francisco de Arteaga 2489, C' . chr(243) . 'rdoba'],
+        ['Dirección:', 'Francisco de Arteaga 2489, Córdoba'],
         ['CUIT:',   '30-71534494-3'],
         ['IIBB:',   '281861638'],
-        ['Tel' . chr(233) . 'fono:', '3516151944'],
+        ['Teléfono:', '3516151944'],
     ];
     $ly = $cardY + 18;
     foreach ($lineas as [$label, $valor]) {
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(...$mutedC);
         $pdf->SetXY(14, $ly);
-        $pdf->Cell(28, 5, $label, 0, 0, 'L');
+        $pdf->Cell(28, 5, pdf_text($label), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
         $pdf->SetTextColor(...$darkText);
         $pdf->Cell(70, 5, pdf_text($valor), 0, 1, 'L');
@@ -302,7 +302,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->Cell(0, 5, 'DATOS DEL COMPROBANTE', 0, 1, 'L');
 
     $datosComp = [
-        ['N' . chr(250) . 'mero:',     $row['NumeroFactura']],
+        ['Número:',     $row['NumeroFactura']],
         ['Fecha:',       date('d/m/Y', strtotime($row['Fecha']))],
         ['Id Cliente:',  $row['idCliente']],
     ];
@@ -340,7 +340,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetTextColor(...$mutedC);
     $pdf->SetXY(14, $row2Y + 3);
-    $pdf->Cell(0, 4, 'CONDICI' . chr(211) . 'N DEL EMISOR', 0, 1);
+    $pdf->Cell(0, 4, pdf_text('CONDICIÓN DEL EMISOR'), 0, 1);
     $pdf->SetFont('Arial', '', 9);
     $pdf->SetTextColor(...$darkText);
     $pdf->SetXY(14, $row2Y + 9);
@@ -390,7 +390,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetTextColor(...$mutedC);
     $infoCliente = [
         'CUIT: ' . $row['Cuit'],
-        pdf_text('Direcci' . chr(243) . 'n: ' . $row['Direccion']),
+        pdf_text('Dirección: ' . $row['Direccion']),
         pdf_text('Localidad: ' . $row['Ciudad'] . ' - ' . $row['Provincia']),
         'Mail: ' . $row['Mail'],
     ];
@@ -507,7 +507,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetTextColor(...$darkText);
 
     $pdf->SetXY(14, $bankY + 8);
-    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(30, 4, 'Raz' . chr(243) . 'n Social:', 0, 0);
+    $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(30, 4, pdf_text('Razón Social:'), 0, 0);
     $pdf->SetFont('Arial', '', 8);  $pdf->Cell(50, 4, 'TRIANGULAR SA', 0, 0);
     $pdf->SetFont('Arial', 'B', 8); $pdf->Cell(18, 4, 'CUIT:', 0, 0);
     $pdf->SetFont('Arial', '', 8);  $pdf->Cell(40, 4, '30-71534494-3', 0, 0);

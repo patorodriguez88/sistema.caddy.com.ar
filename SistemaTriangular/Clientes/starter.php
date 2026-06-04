@@ -1741,7 +1741,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                       <a id="NumeroComprobante">00000000000</a><br>
                                       <strong>Fecha: </strong> <script>var f = new Date();document.write(f.getDate() + "/" + (f.getMonth() +1) + "/" + f.getFullYear());</script><br>
                                       <strong>Id de Cliente: </strong><a id="factura_codigo"></a><br>
-                                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span>
+                                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge bg-danger">Pendiente</span>
                                   </address>
                                     </div>
                                   </div>

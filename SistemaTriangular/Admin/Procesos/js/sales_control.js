@@ -1,7 +1,7 @@
 //AL MARCAR EL ENVIO DE LA FACTURA
 $('#factura_enviada').click(function(){
     
-    $('#right-modal').modal('hide');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
     $('#success-header-modal').modal('show');
     $('#success-header-modal-ok').css('display','block');
     $('#success-header-modal-ok-reclamo').css('display','none');
@@ -14,7 +14,7 @@ $('#factura_enviada').click(function(){
 //AL MARCAR EL RECLAMO DE PAGO
 $('#reclamo_enviado').click(function(){
 
-    $('#right-modal').modal('hide');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
     $('#success-header-modal').modal('show');
     $('#success-header-modal-ok').css('display','none');
     $('#success-header-modal-ok-reclamo').css('display','block');
@@ -32,7 +32,7 @@ $('#reclamo_enviado').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-        var jsonData = JSON.parse(response);
+        var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
         if (jsonData.Telefono !== '' && jsonData.Telefono !== null) {
    
@@ -106,20 +106,11 @@ $('#success-header-modal-ok-reclamo').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            //CIERRO EL MODAL
             $('#success-header-modal').modal('hide');
-            
-            //MUESTRO NOTIFICACIONES
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
-            
-            //NOTIFICO
-            $.NotificationApp.send("Reclamo Generado ", "Se actualizo la marca en la tabla.", "bottom-right", "#FFFFFF", "success");   
-            
-            //ACTUALIZO TABLA
-            var datatable1 = $('#librocontrolventas').DataTable();            
-            datatable1.ajax.reload(null,false);
-
+            Swal.fire({ icon: 'success', title: 'Reclamo Generado', text: 'Estado actualizado a En Revisión.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 });
@@ -128,7 +119,7 @@ $('#success-header-modal-ok').click(function(){
 
     var idFacturacion = $('#right-modal_id').val();
     var noti_text=$('#success-info').val();
-    
+
     if(noti_text==''){
         noti_text='Se envió el comprobante al cliente.';
     }
@@ -144,27 +135,18 @@ $('#success-header-modal-ok').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            //CIERRO EL MODAL
             $('#success-header-modal').modal('hide');
-            
-            //MUESTRO NOTIFICACIONES
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
-            
-            //NOTIFICO
-            $.NotificationApp.send("Factura Enviada ", "Se agrego una marca a la tabla.", "bottom-right", "#FFFFFF", "success");   
-            
-            //ACTUALIZO TABLA
-            var datatable1 = $('#librocontrolventas').DataTable();            
-            datatable1.ajax.reload(null,false);
-
+            Swal.fire({ icon: 'success', title: 'Factura Enviada', text: 'Estado actualizado a Notificado.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 
 });
 
 //AL CERRAR EL MODAL RIGHT MODAL
-$('#right-modal').on('hide.bs.modal', function() {
+$('#right-modal').on('hide.bs.offcanvas', function() {
 
     var container = $("#notificaciones-container");
     container.html("");
@@ -172,7 +154,7 @@ $('#right-modal').on('hide.bs.modal', function() {
 });
 
 //AL ABRIR EL MODAL RIGHT MODAL
-$('#right-modal').on('shown.bs.modal', function() {
+$('#right-modal').on('shown.bs.offcanvas', function() {
     
     var idFacturacion = $('#right-modal_id').val();
     var container = $("#notificaciones-container");
@@ -236,9 +218,9 @@ var idFacturacion=$('#right-modal_id').val();
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 });
@@ -258,7 +240,7 @@ function modify_coments(id){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
             $('#coments-textarea').val(jsonData.coments);
             
@@ -279,10 +261,10 @@ $('#coments_ok').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             if(jsonData.success==1){
 
-             $.NotificationApp.send("Registro Actualizado !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");   
+             Swal.fire({ icon: 'success', title: 'Registro Actualizado', text: 'Se han realizado cambios.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });   
             
             }
             
@@ -322,46 +304,41 @@ $('#right-modal_obs_ok').click(function(){
 
 function modify_status(){
 
-    console.log('id',id);
-    console.log('saldo',saldo);
-    var id= $('#right-modal_id').val();
-    var saldo=$('#right-modal_saldo').val();
+    var id           = $('#right-modal_id').val();
+    var saldo        = parseFloat($('#right-modal_saldo').val()) || 0;
+    var statusActual = parseInt($('#right-modal_status_actual').val()) || 0;
 
     $('#modal_id').val(id);
-    $('#right-modal').modal('hide');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).hide();
 
-    if(saldo>0){
+    var aviso = saldo > 0
+        ? `<div class="alert alert-warning py-2 mb-2">Este registro aún tiene saldo $ ${saldo}</div>`
+        : '';
 
-    $('#warning-header-modal_header').removeClass('bg-success').addClass('bg-warning');
-    
-    var modal_text="Este registro aún contiene un saldo $ "+saldo;
-    
-    }else{
-    
-        var modal_text="Confirma la Solución de este registro de control?.";
-    
-        $('#warning-header-modal_header').removeClass('bg-warning').addClass('bg-success');
-
-    }
-    modal_text=$('#modal_text').html(modal_text);
+    $('#modal_text').html(
+        aviso +
+        '<label class="form-label">Seleccioná el nuevo estado:</label>' +
+        facturacionStatusSelect(statusActual, 'modal_nuevo_status')
+    );
 
     $('#warning-header-modal').modal('show');
- 
 }
 
 $('#header-modal-ok').click(function(){
-    
-    var id=$('#modal_id').val();
-    
+
+    var id        = $('#modal_id').val();
+    var newStatus = $('#modal_nuevo_status').val();
+
     $.ajax({
         data: {
           'Modify_status': 1,
-          'id': id
+          'id': id,
+          'newStatus': newStatus
         },
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             var datatable1 = $('#librocontrolventas').DataTable();
             
             datatable1.ajax.reload(null,false);
@@ -501,7 +478,7 @@ var datatable1 = $('#librocontrolventas').DataTable({
         render:$.fn.dataTable.render.number( '.', ',', 2, '$ ' )},
         {data:"Comentario",
         render: function (data, type, row) {
-         return '<td><i id="'+row.id+'" onclick="modify_coments(this.id)" class="mdi mdi-pencil-outline"></i>'+row.Comentario+'</td>';
+         return '<td><i id="'+row.id+'" onclick="event.stopPropagation(); modify_coments(this.id)" class="mdi mdi-pencil-outline" style="cursor:pointer;"></i> '+row.Comentario+'</td>';
          }
          },
          {data:"Status",
@@ -585,7 +562,9 @@ var datatable1 = $('#librocontrolventas').DataTable({
                     color_fecha='success';
                 }
 
-                 return `<a class="text-${color_fecha}">${vencimiento}<a><br><span id="${row.id}" class="badge badge-${status_text}">${status}</span>`;
+                 const _sm = {0:{l:'Pendiente',c:'bg-danger'},1:{l:'Notificado',c:'bg-primary'},2:{l:'En Revisión',c:'bg-warning text-dark'},3:{l:'Solucionado',c:'bg-success'}};
+                 const _s  = _sm[parseInt(row.Status)] ?? _sm[0];
+                 return `<a class="text-${color_fecha}">${vencimiento}</a><br><span class="badge ${_s.c}">${_s.l}</span>`;
             }
           },
         //  {data:null,
@@ -621,7 +600,7 @@ $.ajax({
     type: "POST",
     url: "../Admin/Procesos/php/tablas.php",
     success: function(response) {
-    var jsonData = JSON.parse(response);
+    var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
     // Suponiendo que jsonData.sumStatusTrue es el valor numérico que deseas formatear
     var sumStatusTrue = parseFloat(jsonData.sumStatusTrue);
 
@@ -656,7 +635,7 @@ function tuFuncion(data) {
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
 
-            var jsonData = JSON.parse(response);
+            var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             
             if(jsonData.Observaciones_f){
 
@@ -675,9 +654,10 @@ function tuFuncion(data) {
 
 
 
-    $('#right-modal').modal('show');
+    bootstrap.Offcanvas.getOrCreateInstance(document.getElementById('right-modal')).show();
     $('#right-modal_id').val(data['id']);
     $('#right-modal_saldo').val(data['Saldo']);
+    $('#right-modal_status_actual').val(data['Status'] || 0);
 
     
     // if(data['Comentario']!=''){
