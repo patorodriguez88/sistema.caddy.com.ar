@@ -222,7 +222,7 @@ include_once('../Conexion/Conexioni.php');
 
             <div class="mb-3">
                 <label class="form-label">Observaciones</label>
-                <textarea class="form-control" id="right-modal_obs" rows="2" maxlength="350"></textarea>
+                <textarea class="form-control" id="right-modal_obs" rows="3" maxlength="350"></textarea>
                 <div class="text-end mt-2">
                     <button type="button" class="btn btn-success btn-sm" id="right-modal_obs_ok">
                         <i class="mdi mdi-content-save me-1"></i> Guardar
