@@ -33,13 +33,16 @@ if (isset($_POST['Sales_control'])) {
 
     $Filtro = intval($_POST['Filtro']);
 
+    // Filtro=0 → pendientes (Status 0,1,2), Filtro=1 → solucionados (Status=3)
+    $whereStatus = ($Filtro == 0) ? "Facturacion.Status < 3" : "Facturacion.Status = 3";
+
     $sql = "
         SELECT Facturacion.*, COALESCE(Clientes.nombrecliente, NULL) AS nombrecliente
         FROM Facturacion
         LEFT JOIN Clientes ON Facturacion.idCliente = Clientes.id
         WHERE Facturacion.Fecha >= '2023-12-01'
           AND Facturacion.Eliminado = 0
-          AND Facturacion.Status = {$Filtro}
+          AND {$whereStatus}
         ORDER BY Facturacion.Fecha ASC
     ";
 
