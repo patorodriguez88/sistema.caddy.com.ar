@@ -119,7 +119,7 @@ $('#success-header-modal-ok-reclamo').click(function(){
             $('#success-header-modal').modal('hide');
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
-            $.NotificationApp.send("Reclamo Generado", "Estado actualizado a En Revisión.", "bottom-right", "#FFFFFF", "success");
+            Swal.fire({ icon: 'success', title: 'Reclamo Generado', text: 'Estado actualizado a En Revisión.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
         }
     });
 });
@@ -157,7 +157,7 @@ $('#success-header-modal-ok').click(function(){
             $('#success-header-modal').modal('hide');
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
-            $.NotificationApp.send("Factura Enviada", "Estado actualizado a Notificado.", "bottom-right", "#FFFFFF", "success");
+            Swal.fire({ icon: 'success', title: 'Factura Enviada', text: 'Estado actualizado a Notificado.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
         }
     });
 
@@ -290,7 +290,7 @@ $('#coments_ok').click(function(){
             var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
             if(jsonData.success==1){
 
-             $.NotificationApp.send("Registro Actualizado !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");   
+             Swal.fire({ icon: 'success', title: 'Registro Actualizado', text: 'Se han realizado cambios.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });   
             
             }
             
