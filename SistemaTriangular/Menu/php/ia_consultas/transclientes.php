@@ -39,7 +39,7 @@ function detectarClientesExcluidosSeguro($q)
 
         foreach ($partes as $p) {
             $p = trim($p);
-
+            $p = preg_replace('/^sin\s+/i', '', $p); // limpiar "sin " residual de splits múltiples
             if ($p !== '') {
                 $excluir[] = $p;
             }
@@ -89,6 +89,18 @@ function consultarSeguroEntreFechas($mysqli, $ctx)
 
     $clienteFiltro = detectarClienteFiltroSeguro($mysqli, $q);
     $clientesExcluidos = detectarClientesExcluidosSeguro($q);
+
+    // Si el "cliente" detectado como filtro aparece en la lista de excluidos, ignorarlo
+    if ($clienteFiltro) {
+        $clienteFiltroNorm = normalizarDB($clienteFiltro);
+        foreach ($clientesExcluidos as $exc) {
+            if (strpos($clienteFiltroNorm, normalizarDB($exc)) !== false ||
+                strpos(normalizarDB($exc), $clienteFiltroNorm) !== false) {
+                $clienteFiltro = false;
+                break;
+            }
+        }
+    }
 
     $whereExtra = "";
     $params = [$minimoSeguro, $minimoSeguro, $desde, $hasta];
