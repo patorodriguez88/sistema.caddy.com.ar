@@ -195,12 +195,14 @@ if (isset($_POST['Notificaciones'])) {
         $mysqli->query("INSERT INTO `Facturacion_Notificaciones`(`idFacturacion`, `fecha`, `usuario`, `mensaje`)
         VALUES ('{$idFacturacion}','{$Fecha}','{$usuario}','{$mensaje}')");
 
-        if (!empty($_POST['MarcaEnvioFactura'])) {
-            $mysqli->query("UPDATE `Facturacion` SET Notificaciones='$Fecha' WHERE id='$idFacturacion'");
-        }
+        // Siempre actualiza la fecha de notificación (ícono mail verde)
+        $mysqli->query("UPDATE `Facturacion` SET Notificaciones='$Fecha' WHERE id='$idFacturacion'");
 
         if (!empty($_POST['MarcaReclamo'])) {
-            $mysqli->query("UPDATE `Facturacion` SET Reclamos=Reclamos+1 WHERE id='$idFacturacion'");
+            $mysqli->query("UPDATE `Facturacion` SET Reclamos=Reclamos+1, Status=GREATEST(Status,2) WHERE id='$idFacturacion'");
+        } else {
+            // Cualquier notificación avanza el status a al menos Notificado (1)
+            $mysqli->query("UPDATE `Facturacion` SET Status=GREATEST(Status,1) WHERE id='$idFacturacion'");
         }
 
         echo json_encode(['success' => 1]);

@@ -106,20 +106,11 @@ $('#success-header-modal-ok-reclamo').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            // Actualizar Status → 2 (En Revisión) solo si es menor
-            $.post('../Admin/Procesos/php/tablas.php', {
-                'Modify_status': 1,
-                'id': idFacturacion,
-                'newStatus': 2,
-                'soloSiMenor': 1
-            }, function() {
-                $('#librocontrolventas').DataTable().ajax.reload(null, false);
-            });
-
             $('#success-header-modal').modal('hide');
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
             Swal.fire({ icon: 'success', title: 'Reclamo Generado', text: 'Estado actualizado a En Revisión.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 });
@@ -144,20 +135,11 @@ $('#success-header-modal-ok').click(function(){
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            // Actualizar Status → 1 (Notificado) solo si es menor
-            $.post('../Admin/Procesos/php/tablas.php', {
-                'Modify_status': 1,
-                'id': idFacturacion,
-                'newStatus': 1,
-                'soloSiMenor': 1
-            }, function() {
-                $('#librocontrolventas').DataTable().ajax.reload(null, false);
-            });
-
             $('#success-header-modal').modal('hide');
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
             Swal.fire({ icon: 'success', title: 'Factura Enviada', text: 'Estado actualizado a Notificado.', toast: true, position: 'bottom-end', showConfirmButton: false, timer: 3000 });
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 
@@ -236,17 +218,9 @@ var idFacturacion=$('#right-modal_id').val();
         type: "POST",
         url: "../Admin/Procesos/php/tablas.php",
         success: function(response) {
-            $.post('../Admin/Procesos/php/tablas.php', {
-                'Modify_status': 1,
-                'id': idFacturacion,
-                'newStatus': 1,
-                'soloSiMenor': 1
-            }, function() {
-                $('#librocontrolventas').DataTable().ajax.reload(null, false);
-            });
-
             mostrarNotificaciones(idFacturacion);
             $('#notificaciones_text').val('');
+            $('#librocontrolventas').DataTable().ajax.reload(null, false);
         }
     });
 });
