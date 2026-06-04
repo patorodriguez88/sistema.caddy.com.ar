@@ -118,7 +118,6 @@ $('#success-header-modal-ok-reclamo').click(function(){
 $('#success-header-modal-ok').click(function(){
 
     var idFacturacion = $('#right-modal_id').val();
-    console.log('[DEBUG factura_enviada] idFacturacion =', idFacturacion);
     var noti_text=$('#success-info').val();
 
     if(noti_text==''){
@@ -208,7 +207,6 @@ $("#notificaciones_ok").click(function(){
 
 var noti_text=$("#notificaciones_text").val();
 var idFacturacion=$('#right-modal_id').val();
-console.log('[DEBUG notificaciones_ok] idFacturacion =', idFacturacion);
 
     $.ajax({
         data: {
