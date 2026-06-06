@@ -196,10 +196,10 @@ $('#crearorigen').click(function(){
            $.ajax({
                   data:{'origen':idOrigen,'destino':idDestino},
                   type: "POST",
-                  url: "https://www.caddy.com.ar/SistemaTriangular/Google/distancematrix.php",
-                  success: function(response)
+                  url: "../Google/distancia.php",
+                  dataType: "json",
+                  success: function(jsonData)
                   {
-                  var jsonData = JSON.parse(response);
                   var dis= jsonData.distancia/1000;
                   $("#distancia").html('km: '+dis.toFixed(2));
                   $("#duration").html(jsonData.duration);

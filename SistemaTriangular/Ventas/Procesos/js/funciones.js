@@ -291,8 +291,7 @@ function distancia() {
   $.ajax({
     data: { origen: idOrigen, destino: idDestino },
     type: "POST",
-    // url: "../Google/distancematrix.php",
-    url: "../OpenStreetMap/distance_osm.php",
+    url: "../Google/distancia.php",
     dataType: "json",
     success: function (jsonData) {
       var dis = jsonData.distancia / 1000;
