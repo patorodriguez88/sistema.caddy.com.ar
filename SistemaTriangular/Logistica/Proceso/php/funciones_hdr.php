@@ -2,7 +2,7 @@
 include_once "../../../Conexion/Conexioni.php";
 
 if (isset($_POST['Color'])) {
-  $color = explode('#', $_POST['ColorSeleccionado'], '2');
+  $color = explode('#', $_POST['ColorSeleccionado'], 2);
   $sql = "UPDATE Recorridos SET Color='$color[1]' WHERE Numero='$_POST[Recorrido]'";
   if ($mysqli->query($sql)) {
     echo json_encode(array('success' => 1));
@@ -69,7 +69,8 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     echo '<div class="float-end">';
     echo '<i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i></div>';
     if (isset($datorecorrido['Color']) && isset($datologistica['Fecha'])) {
-      echo '<h6 class="text-#' . $datorecorrido['Color'] . ' font-weight-normal mt-0 mr-3" style="color:#' . $datorecorrido['Color'] . '" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '    #' . $datologistica['Fecha'] . '</h6>';
+      $colorHex = ltrim($datorecorrido['Color'], '#');
+      echo '<h6 class="font-weight-normal mt-0 mr-3" style="color:#' . $colorHex . '" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '    #' . $datologistica['Fecha'] . '</h6>';
     } else {
       echo '<h6 class="text-muted mt-0 mr-3" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '</h6>';
     }
