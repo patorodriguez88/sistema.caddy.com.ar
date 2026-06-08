@@ -244,16 +244,21 @@ $(document).ready(function () {
 window.__gmapsLoaded = false;
 window.__gmapsLoadingPromise = null;
 
-window.ensureGoogleMapsLoaded = function (callbackName) {
+window.ensureGoogleMapsLoaded = function () {
   if (window.__gmapsLoaded) return Promise.resolve();
-
   if (window.__gmapsLoadingPromise) return window.__gmapsLoadingPromise;
 
-  // nombre de callback global que Google llamará cuando termine
-  const cb = callbackName || "onGoogleMapsReady";
-
-  window[cb] = function () {
+  // Si Maps ya fue cargado por un tag estático, sincronizamos el flag y salimos
+  if (window.google && window.google.maps) {
     window.__gmapsLoaded = true;
+    return Promise.resolve();
+  }
+
+  // Callback privado — no pisa funciones del sistema como initMap_order
+  const privateCb = "_gmapsLoaderCb";
+  window[privateCb] = function () {
+    window.__gmapsLoaded = true;
+    delete window[privateCb];
   };
 
   window.__gmapsLoadingPromise = new Promise((resolve, reject) => {
@@ -263,15 +268,14 @@ window.ensureGoogleMapsLoaded = function (callbackName) {
       "?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8" +
       "&region=AR&language=es-419" +
       "&libraries=places" +
-      "&callback=" +
-      cb +
+      "&callback=" + privateCb +
+      "&loading=async" +
       "&v=weekly";
 
     s.async = true;
     s.defer = true;
 
     s.onload = function () {
-      // Ojo: Google llama callback; pero por si tarda 1 tick:
       const check = () =>
         window.__gmapsLoaded ? resolve() : setTimeout(check, 20);
       check();
