@@ -111,7 +111,8 @@ if (!$orig || !$dest) {
     exit;
 }
 
-$Key     = 'AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk';
+require_once __DIR__ . '/../Conexion/google_config.php';
+$Key     = GOOGLE_API_KEY_SERVER;
 $Origen  = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $orig['Direccion']);
 $Destino = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $dest['Direccion']);
 $urlG    = "https://maps.googleapis.com/maps/api/distancematrix/json?origins={$Origen}&destinations={$Destino}&mode=driving&language=es-ES&key={$Key}";

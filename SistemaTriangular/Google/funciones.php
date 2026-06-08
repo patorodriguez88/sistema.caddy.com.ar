@@ -1,11 +1,10 @@
 <?php
-// funciones_OSM.php (puede renombrarse a funciones_Geo.php)
+require_once __DIR__ . '/../Conexion/google_config.php';
 
-const GOOGLE_API_KEY = 'AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk';  // 🔑 reemplazá por tu key real
 function google_normalizar_direccion(string $direccion, string $localidad = '', string $provincia = ''): array
 {
   $query = trim("$direccion, $localidad, $provincia, Argentina");
-  $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($query) . "&key=" . GOOGLE_API_KEY . "&language=es";
+  $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($query) . "&key=" . GOOGLE_API_KEY_SERVER . "&language=es";
 
   $opts = [
     "http" => [
@@ -62,7 +61,7 @@ function google_normalizar_direccion(string $direccion, string $localidad = '', 
 }
 function google_reverse_geocode(float $lat, float $lon): array
 {
-  $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lon}&key=" . GOOGLE_API_KEY . "&language=es";
+  $url = "https://maps.googleapis.com/maps/api/geocode/json?latlng={$lat},{$lon}&key=" . GOOGLE_API_KEY_SERVER . "&language=es";
 
   $response = @file_get_contents($url);
   if ($response === false) {
@@ -84,7 +83,7 @@ function google_reverse_geocode(float $lat, float $lon): array
 function google_obtener_coordenadas(string $direccion, string $localidad = '', string $provincia = ''): array
 {
   $q = trim("$direccion, $localidad, $provincia, Argentina");
-  $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($q) . "&key=" . GOOGLE_API_KEY . "&language=es";
+  $url = "https://maps.googleapis.com/maps/api/geocode/json?address=" . urlencode($q) . "&key=" . GOOGLE_API_KEY_SERVER . "&language=es";
 
   $response = @file_get_contents($url);
   if ($response === false) return [null, null];

@@ -6,7 +6,7 @@ function geolocalizar($direccion){
     // urlencode codifica datos de texto modificando simbolos como acentos
     $direccion = urlencode($direccion);
     // envio la consulta a Google map api
-    $url= "https://maps.google.com/maps/api/geocode/json?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&address={$direccion}";
+    $url= "https://maps.google.com/maps/api/geocode/json?key=AIzaSyCH5bdvP2_N90RoSsu2HmhOn4aSrt-QOX4&address={$direccion}";
 //     $url = "http://maps.google.com/maps/api/geocode/json?address={$direccion}";
     // recibo la respuesta en formato Json
     $datosjson = file_get_contents($url);

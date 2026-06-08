@@ -158,7 +158,7 @@ if(isset($_POST['BuscarDistancia'])){
 $Origenpost=$_POST['origen'];
 //DESTINO
 $Destinopost=$_POST['destino'];
-$Key = 'AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8';//APY KEY GOOGLE
+$Key = 'AIzaSyCH5bdvP2_N90RoSsu2HmhOn4aSrt-QOX4';//APY KEY GOOGLE
 
 $Origen = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Origenpost);
 $Destino= preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Destinopost);

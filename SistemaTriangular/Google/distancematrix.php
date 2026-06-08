@@ -1,5 +1,6 @@
 <?php
 include_once "../Conexion/Conexioni.php";
+require_once "../Conexion/google_config.php";
 
 // ORIGEN
 $sqlOrigen = $mysqli->query("SELECT IF(DireccionPredeterminadas=0,Direccion,Direccion1) as Direccion FROM Clientes WHERE id='$_POST[origen]'");
@@ -11,7 +12,7 @@ $sqlDestino = $mysqli->query("SELECT IF(DireccionPredeterminadas=0,Direccion,Dir
 $ResultadoDestino = $sqlDestino->fetch_array(MYSQLI_ASSOC);
 $Destinopost = $ResultadoDestino['Direccion'];
 
-$Key = 'AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk'; // Tu API KEY
+$Key = GOOGLE_API_KEY_SERVER;
 
 $Origen = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Origenpost);
 $Destino = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Destinopost);

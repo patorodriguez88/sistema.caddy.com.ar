@@ -1,7 +1,7 @@
 <?php
 // backend/config.php
 
-define('GOOGLE_API_KEY', 'AIzaSyCBLB94-APJT3srY0LcIXLWaHV2WscbI80'); // Coloca tu API Key acá
+define('GOOGLE_API_KEY', 'AIzaSyCH5bdvP2_N90RoSsu2HmhOn4aSrt-QOX4');
 define('API_URL', 'https://routes.googleapis.com/directions/v2:computeRoutes');
 
 // Opcional: Configuración de base de datos

@@ -20,7 +20,7 @@ function geolocalizar($direccion){
     // urlencode codifica datos de texto modificando simbolos como acentos
     $direccion = urlencode($direccion);
     // envio la consulta a Google map api
-    $url= "https://maps.google.com/maps/api/geocode/json?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&address={$direccion}";
+    $url= "https://maps.googleapis.com/maps/api/geocode/json?key=AIzaSyCH5bdvP2_N90RoSsu2HmhOn4aSrt-QOX4&address={$direccion}";
     // recibo la respuesta en formato Json
     $datosjson = file_get_contents($url);
     // decodificamos los datos Json
@@ -1157,5 +1157,5 @@ ob_end_flush();
 </center>
 </html>
 <script async defer
-src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&libraries=places&callback=initMap">
+src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=initMap">
 </script>
