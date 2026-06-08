@@ -290,7 +290,8 @@ function showmodal(i) {
         .val(jsonData.data[0].CodigoProductos || "")
         .trigger("change");
 
-      $("#recorrido_color").val("#" + jsonData.data[0].Color);
+      const rawColor = jsonData.data[0].Color || "";
+      $("#recorrido_color").val(rawColor.startsWith("#") ? rawColor : "#" + rawColor);
     },
   });
 }

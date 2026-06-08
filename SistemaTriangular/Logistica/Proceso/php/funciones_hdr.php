@@ -84,7 +84,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     echo '<p class="mb-0 text-muted">';
     echo  '<span class="badge badge-' . $color . ' mr-1">';
     if (isset($datorecorrido['Color']) && isset($datologistica['Estado'])) {
-      echo '<i> Orden ' . $datologistica['Estado'] . '</i> </span> <input type="color" id="color" value="#' . $datorecorrido['Color'] . '" onblur="color(this.value,' . $fila['Recorrido'] . ')" ></p>';
+      echo '<i> Orden ' . $datologistica['Estado'] . '</i> </span> <input type="color" id="color" value="#' . ltrim($datorecorrido['Color'], '#') . '" onblur="color(this.value,' . $fila['Recorrido'] . ')" ></p>';
     } else {
       echo '</span>';
     }
