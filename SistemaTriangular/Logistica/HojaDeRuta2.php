@@ -632,9 +632,9 @@
     <script src="Mapas/js/controlrecorridos.js"></script>
     <script src="Proceso/js/funciones_controlrecorridos.js"></script>
     <script src="Mapas/js/datos.js"></script>
-    <!-- <script
-        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&region=AR&language=es-419&libraries=places&callback=initMap_order&v=weekly"
-        defer></script> -->
+    <script
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&region=AR&language=es-419&libraries=places&v=weekly"
+        async defer></script>
 
 
     <!-- SweetAlert2 CSS -->

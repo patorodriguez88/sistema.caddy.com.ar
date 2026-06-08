@@ -40,7 +40,61 @@ async function realizaProceso(localidad) {
   }
 }
 
-/************* Autocomplete + validaciones Córdoba *************/
+/************* Autocomplete debounced + validaciones Córdoba *************/
+function _googleAcDebounce(inputEl, opciones) {
+  const cfg = Object.assign(
+    { fields: ["address_components"], componentRestrictions: { country: "AR" },
+      types: ["geocode", "establishment"], debounce: 400, minLength: 3, onSelect: null },
+    opciones || {}
+  );
+  const svc = new google.maps.places.AutocompleteService();
+  const placeSvc = new google.maps.places.PlacesService(document.createElement("div"));
+  let token = new google.maps.places.AutocompleteSessionToken();
+  let timer = null;
+  const wrapper = inputEl.parentElement;
+  if (getComputedStyle(wrapper).position === "static") wrapper.style.position = "relative";
+  const ul = document.createElement("ul");
+  ul.style.cssText =
+    "position:absolute;z-index:99999;width:100%;top:100%;left:0;display:none;max-height:220px;" +
+    "overflow-y:auto;border-radius:0 0 4px 4px;list-style:none;padding:0;margin:0;" +
+    "background:#fff;border:1px solid rgba(0,0,0,.15);box-shadow:0 .25rem .5rem rgba(0,0,0,.1);";
+  wrapper.appendChild(ul);
+  const close = () => { ul.style.display = "none"; };
+  const selectPlace = (placeId, description) => {
+    inputEl.value = description; close();
+    placeSvc.getDetails({ placeId, fields: cfg.fields, sessionToken: token }, (place, status) => {
+      token = new google.maps.places.AutocompleteSessionToken();
+      if (status === google.maps.places.PlacesServiceStatus.OK && cfg.onSelect) cfg.onSelect(place);
+    });
+  };
+  inputEl.addEventListener("input", function () {
+    clearTimeout(timer);
+    const val = this.value.trim();
+    if (val.length < cfg.minLength) { close(); return; }
+    const snap = val;
+    timer = setTimeout(() => {
+      svc.getPlacePredictions(
+        { input: snap, sessionToken: token, componentRestrictions: cfg.componentRestrictions, types: cfg.types },
+        (predictions, status) => {
+          ul.innerHTML = "";
+          if (status !== google.maps.places.PlacesServiceStatus.OK || !predictions) { close(); return; }
+          predictions.forEach((p) => {
+            const li = document.createElement("li");
+            li.style.cssText = "padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid #f0f0f0;";
+            li.textContent = p.description;
+            li.addEventListener("mouseover", () => { li.style.background = "#f5f5f5"; });
+            li.addEventListener("mouseout", () => { li.style.background = ""; });
+            li.addEventListener("mousedown", (e) => { e.preventDefault(); selectPlace(p.place_id, p.description); });
+            ul.appendChild(li);
+          });
+          ul.style.display = "block";
+        }
+      );
+    }, cfg.debounce);
+  });
+  inputEl.addEventListener("blur", () => { setTimeout(close, 200); });
+}
+
 function makeAutocompleteKeepCordoba(
   inputSel,
   ciudadHiddenSel,
@@ -48,42 +102,26 @@ function makeAutocompleteKeepCordoba(
 ) {
   const input = qs(inputSel);
   const hiddenCity = qs(ciudadHiddenSel);
-  const ac = new google.maps.places.Autocomplete(input);
 
-  ac.addListener("place_changed", async () => {
-    const place = ac.getPlace();
-    if (!place || !place.address_components) return;
-
-    let provincia = "",
-      ciudad = "";
-    for (const c of place.address_components) {
-      if (c.types[0] === "administrative_area_level_1") provincia = c.long_name;
-      if (c.types[0] === "locality") ciudad = c.long_name;
-    }
-
-    if (provincia !== etiquetaProvincia) {
-      Swal.fire(
-        "Atención",
-        `La provincia debe ser ${etiquetaProvincia}, no ${provincia}`,
-        "warning"
-      );
-      input.value = "";
-      input.focus();
-      return;
-    }
-
-    const okAlcance = await realizaProceso(ciudad);
-    if (!okAlcance) {
-      Swal.fire(
-        "Fuera de alcance",
-        `La localidad ${ciudad} no está a nuestro alcance (redespacho).`,
-        "info"
-      );
-      input.value = "";
-      input.focus();
-      return;
-    }
-    hiddenCity.value = ciudad;
+  _googleAcDebounce(input, {
+    onSelect: async (place) => {
+      if (!place || !place.address_components) return;
+      let provincia = "", ciudad = "";
+      for (const c of place.address_components) {
+        if (c.types[0] === "administrative_area_level_1") provincia = c.long_name;
+        if (c.types[0] === "locality") ciudad = c.long_name;
+      }
+      if (provincia !== etiquetaProvincia) {
+        Swal.fire("Atención", `La provincia debe ser ${etiquetaProvincia}, no ${provincia}`, "warning");
+        input.value = ""; input.focus(); return;
+      }
+      const okAlcance = await realizaProceso(ciudad);
+      if (!okAlcance) {
+        Swal.fire("Fuera de alcance", `La localidad ${ciudad} no está a nuestro alcance (redespacho).`, "info");
+        input.value = ""; input.focus(); return;
+      }
+      hiddenCity.value = ciudad;
+    },
   });
 }
 

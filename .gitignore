@@ -1,0 +1,14 @@
+# Archivos de credenciales y configuración sensible — NUNCA subir al repositorio
+SistemaTriangular/Conexion/google_config.php
+SistemaTriangular/Conexion/config
+SistemaTriangular/Conexion/config_local
+SistemaTriangular/Conexion/config_sandbox
+SistemaTriangular/Rutas/backend/config.php
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+
+# Logs y temporales
+*.log
+/tmp/
