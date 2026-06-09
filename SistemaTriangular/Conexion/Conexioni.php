@@ -73,17 +73,14 @@ class Conexion
         $host       = strtolower($httpHost ?: $serverName);
 
         if ($serverName === 'localhost') {
-            // 🖥️ Entorno local
             $archivo = "config_local";
-            define('ENTORNO', 'local');
+            if (!defined('ENTORNO')) define('ENTORNO', 'local');
         } elseif (strpos($host, 'sandbox.sistema.caddy.com.ar') !== false) {
-            // 🧪 Entorno sandbox
-            $archivo = "config_sandbox";   // 👈 ESTE ARCHIVO NUEVO
-            define('ENTORNO', 'sandbox');
+            $archivo = "config_sandbox";
+            if (!defined('ENTORNO')) define('ENTORNO', 'sandbox');
         } else {
-            // 🔵 Producción
             $archivo = "config";
-            define('ENTORNO', 'produccion');
+            if (!defined('ENTORNO')) define('ENTORNO', 'produccion');
         }
 
         $path = dirname(__FILE__) . "/" . $archivo;
