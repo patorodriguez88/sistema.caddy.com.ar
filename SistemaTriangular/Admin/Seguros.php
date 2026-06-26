@@ -1,153 +1,363 @@
 <?php
-ob_start();
 session_start();
-include_once "../ConexionBD.php";
-?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"><head>
-<!--<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" />-->
-<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>	
-<title>.::Triangular Logistica::.</title>
-<link href="../css/StyleCaddy.css" rel="stylesheet" type="text/css" />
-<script type="text/javascript" src="scripts/jquery.js"></script>
-<script type="text/javascript" src="scripts/jquery.animated.innerfade.js"></script>
-<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
-</head>
-  <?php
-echo "<div id='contenedor'>"; 
-echo "<div id='cabecera'>"; 
-include("../Alertas/alertas.html");     
-include("../Menu/MenuGestion.php"); 
-echo "</div>";//cabecera 
-echo "<div id='cuerpo'>"; 
-echo "<div id='lateral'>"; 
-echo "</div>"; //lateral
-echo  "<div id='principal'>";
+$usuario = htmlspecialchars($_SESSION['Usuario'] ?? 'Sistema', ENT_QUOTES);
 
-      echo "<form class='Caddy' action='' method='post' style='float:center; width:80%;' enctype='multipart/form-data'>";
-    echo "<div><titulo>Ingresar Poliza de Seguro</titulos></div>";
-    echo"<div><hr></hr></div>";
-    $date=date('Y-m-d');
-    echo "<div><label>Fecha:</label><input type='date' value='$date' name='fecha_t' readonly></div>";
-    echo "<div><label>Patente:</label><select name='patente_t' required>";
-    $sqlvehiculos=mysql_query("SELECT * FROM Vehiculos WHERE Activo = 'Si'");
-    echo "<option value=''>Seleccione un Vehiculo</option>";
-    while($row=mysql_fetch_array($sqlvehiculos)){
-    echo "<option value='$row[Dominio]'>$row[Marca] $row[Modelo] ($row[Dominio])</option>";  
-    }
-    echo "</select></div>";
-    echo "<div><label>Vigencia Desde:</label><input type='date' value='' name='vigenciadesde_t' required></div>";
-    echo "<div><label>Vigencia Hasta:</label><input type='date' name='vigenciahasta_t' size='20' type='date'  required/></div>";
-    echo "<div><label>Poliza Numero:</label><input name='numero_t' size='20' type='text' style='float:right;' value='' required/></div>";
-    echo "<div><label>Empresa Aseguradora:</label><select name='empresa_t' title='Muestra Proveedores cargados con rubro Seguros' required>";
-    $sqlvehiculos=mysql_query("SELECT * FROM Proveedores WHERE Rubro='Seguros'");
-    echo "<option value=''>Seleccione una Opcion</option>";
-    while($row=mysql_fetch_array($sqlvehiculos)){
-    echo "<option value='$row[RazonSocial]'>$row[RazonSocial]</option>";  
-    }
-    echo "</select></div>";
-    echo "<div><label style='font-size:10px;float:right;margin-top:0px;font-style: italic;color:gray'>Empresa Aseguradora: corresponde a Proveedores cargados con rubro Seguros.</label></div>";
-
-  
-    echo "<div><label>Subir Poliza:</label><input type='file' name='imagen' id='imagen' / style='float:right;width:350px'></div>";
-    echo "<div><label style='font-size:10px;float:right;margin-top:0px;font-style: italic;color:gray'>Atencion: Cargar Solamente Archivo con extension .pdf </label></div>";
-  
-    echo "<div><input name='CargarSeguro' class='bottom' type='submit' value='Aceptar'></label></div>";
-    echo "</form>";	
- 
-  if($_POST[CargarSeguro]=='Aceptar'){
- 
-  if ($_FILES["imagen"]["error"] > 0){
-	echo "ha ocurrido un error";
-} else {
-	//ahora vamos a verificar si el tipo de archivo es un tipo de imagen permitido.
-	//y que el tamano del archivo no exceda los 100kb
-// 	$permitidos = array("image/jpg", "image/pdf", "image/gif", "image/png","application/pdf");
-		$permitidos = array("image/pdf","application/pdf");
-
-    $limite_kb = 10000;
-$NumeroComprobante=$_POST[patente_t];
-  
-//   if ($_FILES['imagen']['size'] <= $limite_kb * 40960){
-	if (in_array($_FILES['imagen']['type'], $permitidos) && $_FILES['imagen']['size'] <= $limite_kb * 40960){
-		//esta es la ruta donde copiaremos la imagen
-		//recuerden que deben crear un directorio con este mismo nombre
-		//en el mismo lugar donde se encuentra el archivo subir.php
-//     $ruta = "../FacturasCompra/" . $_FILES['imagen']['name'];
-    $extension = end(explode(".", $_FILES['imagen']['name']));
-    $ruta = "../Logistica/Polizas/" . $NumeroComprobante.".".$extension;
-    //comprovamos si este archivo existe para no volverlo a copiar.
-		//pero si quieren pueden obviar esto si no es necesario.
-		//o pueden darle otro nombre para que no sobreescriba el actual.
-		if (file_exists($ruta)){
-      unlink("../Logistica/Polizas/" . $NumeroComprobante.".".$extension);
-      //aqui movemos el archivo desde la ruta temporal a nuestra ruta
-			//usamos la variable $resultado para almacenar el resultado del proceso de mover el archivo
-			//almacenara true o false
-			$resultado = @move_uploaded_file($_FILES["imagen"]["tmp_name"], $ruta);
-			if ($resultado){
-//         $sql=mysql_query("UPDATE Stock SET Imagen=1 WHERE id='$_POST[id2]'");
-				?>
-        <script>
-        alertify.success("El archivo ha sido cargado exitosamente");
-        </script>
-<!--         echo "El archivo ha sido cargado exitosamente"; -->
-        <?
-        } else {
-        ?>
-        <script>
-        alertify.error("Ocurrio un error al subir el archivo de la poliza.");
-        </script>
-        <?
-      }
-		} else {
-      $resultado = @move_uploaded_file($_FILES["imagen"]["tmp_name"], $ruta);
-			if ($resultado){
-        ?>
-        <script>
-        alertify.success("El archivo ha sido cargado exitosamente");
-        </script>
-        <?
-      } else {
-        ?>
-        <script>
-        alertify.error("Ocurrio un error al subir el archivo de la poliza.");
-        </script>
-        <?
-      }
-    }
-	} else {
-            ?>
-        <script>
-        alertify.error("archivo no permitido, es tipo de archivo prohibido o excede el tamano de <? echo  $limite_kb;?> Kilobytes");
-        </script>
-        <?
-  }
+$logoPath = realpath(__DIR__ . '/../images/LogoCaddyNoAlfa.png');
+$logoBase64 = '';
+if ($logoPath && file_exists($logoPath)) {
+    $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
 }
-  
-  //HASTA ACA PARA SUBIR EL ARCHIVO    
-    $Desde=$_POST[vigenciadesde_t];
-    $Hasta=$_POST[vigenciahasta_t];
-    $Numero=$_POST[numero_t];
-    $Empresa=$_POST[empresa_t];
-    $Dominio=$_POST[patente_t];
-    $sqlproveedores=mysql_query("SELECT * FROM Proveedores WHERE RazonSocial='$Empresa'");
-    $datoproveedores=mysql_fetch_array($sqlproveedores);    
-    $Telefono=$datoproveedores[Telefono]. " / ".$datoproveedores[Celular];
-    
-if($sql=mysql_query("UPDATE `Vehiculos` SET `FechaVencSeguro`='$Hasta',`Seguro`='$Empresa',`NumeroPoliza`='$Numero',
-`TelefonoSeguro`='$Telefono' WHERE Dominio='$Dominio'")
-    ){
-   ?><script>alertify.success("Datos de la poliza cargados con exito en el vehiculo");</script><?
-    }
-  }
-
-echo "</div>"; // principal
-echo "</div>"; //cuerpo
-echo "</div>";  //contenedor
-
-ob_end_flush();	
 ?>
-</div>
+<!DOCTYPE html>
+<html lang="es" data-layout="topnav">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Sistema Caddy | Seguros</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
+
+    <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
+    <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
+    <link href="../hyper/dist/assets/vendor/datatables/select.bootstrap5.min.css" rel="stylesheet" type="text/css">
+    <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
+    <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
+
+    <script src="../hyper/dist/assets/js/hyper-config.js"></script>
+    <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
+    <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <div class="wrapper">
+
+        <div id="menuhyper_head"></div>
+        <div id="menuhyper_topnav"></div>
+
+        <div class="content-page">
+            <div class="content">
+                <div class="container-fluid">
+
+                    <!-- Page title -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="page-title-box">
+                                <div class="page-title-right">
+                                    <ol class="breadcrumb m-0">
+                                        <li class="breadcrumb-item"><a href="javascript:void(0);">Admin</a></li>
+                                        <li class="breadcrumb-item active">Seguros</li>
+                                    </ol>
+                                </div>
+                                <h4 class="page-title"><i class="mdi mdi-shield-check me-1 text-primary"></i>Cálculo de Seguros</h4>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Filtros ─────────────────────────────────────────── -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header py-2 d-flex align-items-center">
+                                    <i class="mdi mdi-filter-outline me-2 text-primary"></i>
+                                    <h5 class="mb-0">Filtros de consulta</h5>
+                                </div>
+                                <div class="card-body py-3">
+                                    <div class="row g-2 align-items-end">
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-semibold mb-1">Desde</label>
+                                            <input type="date" id="filtro_desde" class="form-control form-control-sm">
+                                        </div>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-semibold mb-1">Hasta</label>
+                                            <input type="date" id="filtro_hasta" class="form-control form-control-sm">
+                                        </div>
+                                        <div class="col-md-1">
+                                            <label class="form-label fw-semibold mb-1">% Seguro</label>
+                                            <div class="input-group input-group-sm">
+                                                <input type="number" id="filtro_perc" class="form-control text-center"
+                                                       min="0.01" max="100" step="0.01" value="1" title="Porcentaje para calcular el monto del seguro">
+                                                <span class="input-group-text">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <label class="form-label fw-semibold mb-1">Cliente</label>
+                                            <select id="filtro_cliente" class="form-select form-select-sm" data-toggle="select2">
+                                                <option value="">— Todos los clientes —</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2" id="col_excluir">
+                                            <label class="form-label fw-semibold mb-1">Excluir clientes</label>
+                                            <select id="filtro_excluir" class="form-select form-select-sm" multiple data-toggle="select2" data-placeholder="Ninguno excluido">
+                                            </select>
+                                        </div>
+                                        <div class="col-md-2">
+                                            <button id="btn_consultar" class="btn btn-primary btn-sm w-100">
+                                                <i class="mdi mdi-magnify me-1"></i>Consultar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Resumen cards ──────────────────────────────────── -->
+                    <div class="row" id="row_resumen" style="display:none">
+                        <div class="col-md-3">
+                            <div class="card widget-flat">
+                                <div class="card-body bg-success">
+                                    <div class="float-end">
+                                        <i class="mdi mdi-shield-check widget-icon bg-success rounded-circle text-white" style="opacity:.6"></i>
+                                    </div>
+                                    <h5 class="text-white font-weight-normal mt-0">Con Seguro Propio</h5>
+                                    <h3 class="mt-2 mb-1 text-white" id="resumen_con_cant"></h3>
+                                    <p class="mb-0 text-white-50" id="resumen_con_total"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card widget-flat">
+                                <div class="card-body bg-warning">
+                                    <div class="float-end">
+                                        <i class="mdi mdi-shield-off widget-icon bg-warning rounded-circle text-white" style="opacity:.6"></i>
+                                    </div>
+                                    <h5 class="text-white font-weight-normal mt-0">Sin Seguro Propio</h5>
+                                    <h3 class="mt-2 mb-1 text-white" id="resumen_sin_cant"></h3>
+                                    <p class="mb-0 text-white-50" id="resumen_sin_total"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card widget-flat">
+                                <div class="card-body bg-secondary">
+                                    <div class="float-end">
+                                        <i class="mdi mdi-cancel widget-icon bg-secondary rounded-circle text-white" style="opacity:.6"></i>
+                                    </div>
+                                    <h5 class="text-white font-weight-normal mt-0">Excluidos</h5>
+                                    <h3 class="mt-2 mb-1 text-white" id="resumen_exc_cant"></h3>
+                                    <p class="mb-0 text-white-50" id="resumen_exc_total"></p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="card widget-flat">
+                                <div class="card-body bg-primary">
+                                    <div class="float-end">
+                                        <i class="mdi mdi-currency-usd widget-icon bg-primary rounded-circle text-white" style="opacity:.6"></i>
+                                    </div>
+                                    <h5 class="text-white font-weight-normal mt-0">Total a Asegurar</h5>
+                                    <h3 class="mt-2 mb-1 text-white" id="resumen_total"></h3>
+                                    <p class="mb-0 text-white-50">Con seguro + Sin seguro</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Cálculo % y PDF ──────────────────────────────────── -->
+                    <div class="row mb-3" id="row_calculo" style="display:none">
+                        <div class="col-md-8">
+                            <div class="card shadow-sm border-0 h-100">
+                                <div class="card-body py-3 d-flex align-items-center gap-4">
+                                    <div class="d-flex flex-column align-items-center">
+                                        <span class="text-muted small fw-semibold mb-1">% APLICADO</span>
+                                        <div class="display-6 fw-bold text-primary" id="resumen_perc_display">1%</div>
+                                    </div>
+                                    <div class="vr"></div>
+                                    <div class="flex-grow-1">
+                                        <div class="text-muted small fw-semibold mb-1">MONTO DEL SEGURO</div>
+                                        <div class="h2 fw-bold text-danger mb-0" id="resumen_monto_seguro">$ 0,00</div>
+                                        <div class="text-muted small" id="resumen_perc_formula"></div>
+                                    </div>
+                                    <div class="vr"></div>
+                                    <div class="text-muted small text-center" style="max-width:180px">
+                                        <i class="mdi mdi-information-outline me-1"></i>
+                                        El % se ajusta en el filtro superior. El monto se actualiza en tiempo real.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4 d-flex align-items-center justify-content-end">
+                            <button id="btn_pdf_general" class="btn btn-danger btn-lg shadow-sm">
+                                <i class="mdi mdi-file-pdf-box me-1 fs-4"></i>
+                                Informe PDF General
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- ── Tabla 1: Con Seguro Propio ─────────────────────── -->
+                    <div class="row" id="row_con_seguro" style="display:none">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header d-flex align-items-center justify-content-between py-2" style="background-color:rgba(10,207,151,.08)">
+                                    <h5 class="mb-0 text-success">
+                                        <i class="mdi mdi-shield-check me-1"></i>Clientes con Seguro Propio
+                                    </h5>
+                                    <span id="badge_con_seguro" class="badge bg-success"></span>
+                                </div>
+                                <div class="card-body pt-2">
+                                    <p class="text-muted font-13 mb-2">
+                                        Clientes con <b>sure=1</b>. Se aplica el porcentaje acordado sobre el valor declarado;
+                                        si el resultado es inferior al mínimo, se toma el mínimo.
+                                    </p>
+                                    <div id="no_data_con" class="alert alert-light border text-center py-3 mb-0" style="display:none">
+                                        <i class="mdi mdi-inbox-outline me-1 text-muted"></i>
+                                        Sin registros para el período seleccionado — <strong>0 registros</strong>
+                                    </div>
+                                    <div id="wrap_table_con" class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle mb-0"
+                                               id="tabla_con_seguro" style="font-size:12px">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="text-nowrap">Fecha</th>
+                                                    <th class="text-nowrap">Comprobante</th>
+                                                    <th>Cliente</th>
+                                                    <th class="text-end text-nowrap">Val. Declarado</th>
+                                                    <th class="text-center text-nowrap">% Aplicado</th>
+                                                    <th class="text-end text-nowrap">Val. Efectivo</th>
+                                                    <th class="text-end text-nowrap">Mínimo</th>
+                                                    <th class="text-end text-nowrap fw-bold">A Asegurar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                            <tfoot>
+                                                <tr class="fw-bold table-light">
+                                                    <td colspan="3">TOTALES</td>
+                                                    <td class="text-end" id="tfoot_con_declarado"></td>
+                                                    <td></td>
+                                                    <td class="text-end" id="tfoot_con_efectivo"></td>
+                                                    <td></td>
+                                                    <td class="text-end text-success" id="tfoot_con_asegurar"></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tabla 2: Sin Seguro Propio ─────────────────────── -->
+                    <div class="row" id="row_sin_seguro" style="display:none">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header d-flex align-items-center justify-content-between py-2" style="background-color:rgba(255,188,0,.08)">
+                                    <h5 class="mb-0 text-warning">
+                                        <i class="mdi mdi-shield-off me-1"></i>Clientes sin Seguro Propio
+                                        <small class="text-muted ms-2 fw-normal" id="label_monto_min_global"></small>
+                                    </h5>
+                                    <span id="badge_sin_seguro" class="badge bg-warning text-dark"></span>
+                                </div>
+                                <div class="card-body pt-2">
+                                    <p class="text-muted font-13 mb-2">
+                                        Clientes con <b>sure=0</b>. Se utiliza el monto mínimo global (Variables.<i>MontoMinimoSeguro</i>).
+                                        Si el valor declarado supera el mínimo, se toma el valor declarado.
+                                    </p>
+                                    <div id="no_data_sin" class="alert alert-light border text-center py-3 mb-0" style="display:none">
+                                        <i class="mdi mdi-inbox-outline me-1 text-muted"></i>
+                                        Sin registros para el período seleccionado — <strong>0 registros</strong>
+                                    </div>
+                                    <div id="wrap_table_sin" class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle mb-0"
+                                               id="tabla_sin_seguro" style="font-size:12px">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="text-nowrap">Fecha</th>
+                                                    <th class="text-nowrap">Comprobante</th>
+                                                    <th>Cliente</th>
+                                                    <th class="text-end text-nowrap">Val. Declarado</th>
+                                                    <th class="text-end text-nowrap">Mínimo Global</th>
+                                                    <th class="text-end text-nowrap fw-bold">A Asegurar</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                            <tfoot>
+                                                <tr class="fw-bold table-light">
+                                                    <td colspan="3">TOTALES</td>
+                                                    <td class="text-end" id="tfoot_sin_declarado"></td>
+                                                    <td class="text-end" id="tfoot_sin_minimo"></td>
+                                                    <td class="text-end text-warning" id="tfoot_sin_asegurar"></td>
+                                                </tr>
+                                            </tfoot>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ── Tabla 3: Excluidos ──────────────────────────────── -->
+                    <div class="row" id="row_excluidos" style="display:none">
+                        <div class="col-12">
+                            <div class="card shadow-sm">
+                                <div class="card-header d-flex align-items-center justify-content-between py-2" style="background-color:rgba(108,117,125,.08)">
+                                    <h5 class="mb-0 text-secondary">
+                                        <i class="mdi mdi-cancel me-1"></i>Clientes Excluidos del Cálculo
+                                    </h5>
+                                    <span id="badge_excluidos" class="badge bg-secondary"></span>
+                                </div>
+                                <div class="card-body pt-2">
+                                    <p class="text-muted font-13 mb-2">
+                                        Servicios de clientes excluidos manualmente del cálculo de seguros.
+                                    </p>
+                                    <div id="no_data_exc" class="alert alert-light border text-center py-3 mb-0" style="display:none">
+                                        <i class="mdi mdi-inbox-outline me-1 text-muted"></i>
+                                        Sin clientes excluidos — <strong>0 registros</strong>
+                                    </div>
+                                    <div id="wrap_table_exc" class="table-responsive">
+                                        <table class="table table-sm table-hover align-middle mb-0"
+                                               id="tabla_excluidos" style="font-size:12px">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th class="text-nowrap">Fecha</th>
+                                                    <th class="text-nowrap">Comprobante</th>
+                                                    <th>Cliente</th>
+                                                    <th class="text-end text-nowrap">Val. Declarado</th>
+                                                    <th class="text-center text-nowrap">Tipo Seguro</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div><!-- end container-fluid -->
+            </div><!-- end content -->
+
+            <div id="menuhyper_footer"></div>
+        </div><!-- end content-page -->
+
+    </div><!-- end wrapper -->
+
+    <!-- Vendor js -->
+    <script src="../hyper/dist/assets/js/vendor.min.js"></script>
+    <script src="../hyper/dist/assets/js/app.js"></script>
+    <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
+    <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
+
+    <!-- DataTables (includes pdfmake) -->
+    <?php include '../Menu/php/script_datatables.php'; ?>
+
+    <!-- SweetAlert2 -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Variables PHP → JS -->
+    <script>
+        var LOGO_BASE64   = '<?= $logoBase64 ?>';
+        var USUARIO_LOGADO = '<?= $usuario ?>';
+    </script>
+
+    <!-- Seguros JS -->
+    <script src="Procesos/js/seguros.js"></script>
+
+    <!-- Menu -->
+    <script src="../Menu/js/funciones.js"></script>
+
 </body>
-</center>
+</html>

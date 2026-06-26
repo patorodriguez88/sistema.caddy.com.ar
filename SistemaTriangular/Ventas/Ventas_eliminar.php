@@ -765,8 +765,8 @@ if ($_GET['ImputaPago'] == 'Aceptar') {
     $error = 1;
   }
 
-  $sql = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}')";
+  $sql = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,idClienteOrigen)VALUES
+('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}','{$idCliente[id]}','{$idCliente[id]}')";
   mysql_query($sql);
 
   //------------INGRESA EL PAGO A CTAS CTES----------------------
@@ -934,8 +934,8 @@ if ($_GET['UltimoPaso'] == 'Aceptar') {
     }
 
 
-    $sqlTransacciones = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,NumeroVenta,Usuario,FormaDePago,Redespacho)
-VALUES('{$Fecha}','{$RazonSocial}','{$Cuit2}','{$TipoDeComprobante}','{$Recibo}','{$Total}','{$NumeroComprobante}','{$Usuario}','{$FormaDePago}','{$Redespacho}')";
+    $sqlTransacciones = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,NumeroVenta,Usuario,FormaDePago,Redespacho,IngBrutosOrigen,idClienteOrigen)
+VALUES('{$Fecha}','{$RazonSocial}','{$Cuit2}','{$TipoDeComprobante}','{$Recibo}','{$Total}','{$NumeroComprobante}','{$Usuario}','{$FormaDePago}','{$Redespacho}','{$idCliente[id]}','{$idCliente[id]}')";
     mysql_query($sqlTransacciones);
 
     //------------INGRESA EL PAGOA CTAS CTES----------------------

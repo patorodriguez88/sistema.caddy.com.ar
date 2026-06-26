@@ -48,8 +48,9 @@ $datosqlbuscar=mysql_fetch_array($sqlbuscar);
 $NumeroComprobante = trim($row[0])+1;
 
   
-$sql="INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}')";
+$idClienteOrigenMP = $datosqlbuscodatos['IngBrutosOrigen'] ?? 0;
+$sql="INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,idClienteOrigen)VALUES
+('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}','{$idClienteOrigenMP}','{$idClienteOrigenMP}')";
 mysql_query($sql);
 
 $mptoken=$token;
