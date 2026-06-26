@@ -64,39 +64,46 @@ if ($logoPath && file_exists($logoPath)) {
                                     <i class="mdi mdi-filter-outline me-2 text-primary"></i>
                                     <h5 class="mb-0">Filtros de consulta</h5>
                                 </div>
-                                <div class="card-body py-3">
-                                    <div class="row g-2 align-items-end">
+                                <div class="card-body py-2">
+                                    <!-- Fila 1: Fechas, % y Cliente -->
+                                    <div class="row g-2 align-items-end mb-2">
                                         <div class="col-md-2">
-                                            <label class="form-label fw-semibold mb-1">Desde</label>
+                                            <label class="form-label fw-semibold mb-1 small">Desde</label>
                                             <input type="date" id="filtro_desde" class="form-control form-control-sm">
                                         </div>
                                         <div class="col-md-2">
-                                            <label class="form-label fw-semibold mb-1">Hasta</label>
+                                            <label class="form-label fw-semibold mb-1 small">Hasta</label>
                                             <input type="date" id="filtro_hasta" class="form-control form-control-sm">
                                         </div>
-                                        <div class="col-md-1">
-                                            <label class="form-label fw-semibold mb-1">% Seguro</label>
+                                        <div class="col-md-2">
+                                            <label class="form-label fw-semibold mb-1 small">% Seguro</label>
                                             <div class="input-group input-group-sm">
-                                                <input type="number" id="filtro_perc" class="form-control text-center"
-                                                       min="0.01" max="100" step="0.01" value="1" title="Porcentaje para calcular el monto del seguro">
+                                                <input type="number" id="filtro_perc" class="form-control form-control-sm fw-bold text-center"
+                                                       min="0.01" max="100" step="0.01" value="1"
+                                                       title="Porcentaje para calcular el monto del seguro">
                                                 <span class="input-group-text">%</span>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
-                                            <label class="form-label fw-semibold mb-1">Cliente</label>
+                                        <div class="col-md-4">
+                                            <label class="form-label fw-semibold mb-1 small">Cliente</label>
                                             <select id="filtro_cliente" class="form-select form-select-sm" data-toggle="select2">
                                                 <option value="">— Todos los clientes —</option>
                                             </select>
                                         </div>
-                                        <div class="col-md-2" id="col_excluir">
-                                            <label class="form-label fw-semibold mb-1">Excluir clientes</label>
-                                            <select id="filtro_excluir" class="form-select form-select-sm" multiple data-toggle="select2" data-placeholder="Ninguno excluido">
-                                            </select>
-                                        </div>
-                                        <div class="col-md-2">
+                                        <div class="col-md-2 ms-auto">
                                             <button id="btn_consultar" class="btn btn-primary btn-sm w-100">
                                                 <i class="mdi mdi-magnify me-1"></i>Consultar
                                             </button>
+                                        </div>
+                                    </div>
+                                    <!-- Fila 2: Excluir (solo visible cuando cliente = todos) -->
+                                    <div class="row g-2 align-items-end" id="col_excluir">
+                                        <div class="col-12">
+                                            <label class="form-label fw-semibold mb-1 small text-muted">
+                                                <i class="mdi mdi-cancel me-1"></i>Excluir clientes del cálculo
+                                            </label>
+                                            <select id="filtro_excluir" class="form-select form-select-sm" multiple data-toggle="select2" data-placeholder="Seleccioná clientes a excluir...">
+                                            </select>
                                         </div>
                                     </div>
                                 </div>
@@ -214,7 +221,7 @@ if ($logoPath && file_exists($logoPath)) {
                                                     <th class="text-nowrap">Fecha</th>
                                                     <th class="text-nowrap">Comprobante</th>
                                                     <th>Cliente</th>
-                                                    <th class="text-end text-nowrap">Val. Declarado</th>
+                                                    <th class="text-end text-nowrap">Val. Real</th>
                                                     <th class="text-center text-nowrap">% Aplicado</th>
                                                     <th class="text-end text-nowrap">Val. Efectivo</th>
                                                     <th class="text-end text-nowrap">Mínimo</th>
