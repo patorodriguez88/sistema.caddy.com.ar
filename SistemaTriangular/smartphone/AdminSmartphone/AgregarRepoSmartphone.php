@@ -158,15 +158,20 @@ $Redespacho=0;
   
   
 //INGRESAR DATOS EN TABLA TRANSCLIENTES
+$sqlIdClienteA = mysql_query("SELECT id FROM Clientes WHERE nombrecliente='$clienteA' LIMIT 1");
+$datoIdClienteA = mysql_fetch_array($sqlIdClienteA);
+$idClienteOrigenA = $datoIdClienteA ? $datoIdClienteA['id'] : 0;
+
 $sql2="INSERT INTO `TransClientes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroComprobante`, `CompraMercaderia`,
 `Debe`, `ClienteDestino`, `DocumentoDestino`, `DomicilioDestino`, `LocalidadDestino`, `SituacionFiscalDestino`,`TelefonoDestino`,
 `CodigoSeguimiento`, `NumeroVenta`, `DomicilioOrigen`, `SituacionFiscalOrigen`, `LocalidadOrigen`,`TelefonoOrigen`, `Cantidad`,
 `Usuario`, `Entregado`, `FormaDePago`, `EntregaEn`, `Eliminado`, `CodigoProveedor`, `Observaciones`,`Transportista`, `Recorrido`,
-`ProvinciaDestino`,`ProvinciaOrigen`,Redespacho)
+`ProvinciaDestino`,`ProvinciaOrigen`,Redespacho,IngBrutosOrigen,idClienteOrigen)
 VALUES ('{$fecha}','{$clienteA}',$CuitClienteA,'Remito','{$NumeroRepo}','0','{$Total}','{$clienteB}','{$CuitClienteB}','{$DomicilioB}',
 '{$LocalidadB}','{$SituacionFiscalB}','{$TelefonoB}','{$NumeroPedido}','{$NumeroRepo}','{$DomicilioA}','{$SituacionFiscalA}',
 '{$LocalidadA}','{$TelefonoA}','{$Cantidad}','{$Usuario}','0','Origen','Retira','0','{$CodigoProveedor}',
-'{$Observaciones}','{$Transportista}','{$Recorrido}','{$ProvinciaB}','{$ProvinciaA}','{$Redespacho}')";
+'{$Observaciones}','{$Transportista}','{$Recorrido}','{$ProvinciaB}','{$ProvinciaA}','{$Redespacho}',
+'{$idClienteOrigenA}','{$idClienteOrigenA}')";
 mysql_query($sql2);
 	
 //INGRESAR DATOS EN TABLA SEGUIMIENTO
