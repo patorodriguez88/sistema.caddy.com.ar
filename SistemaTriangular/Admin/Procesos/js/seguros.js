@@ -152,7 +152,7 @@ function renderTablas(data) {
                     return '<b>' + d + '</b><br><small class="text-muted">' + (row.CodigoProveedor || '') + '</small>';
                 }
             },
-            { data: 'ValorDeclarado',   className: 'text-end', render: function (d) { return fmtNum(d); } },
+            { data: 'valor_real',       className: 'text-end', render: function (d) { return fmtNum(d); } },
             {
                 data: 'perc_aplicado',
                 className: 'text-center',
@@ -172,7 +172,7 @@ function renderTablas(data) {
         ], data.con_seguro);
     }
 
-    var totConDecl = sumar(data.con_seguro, 'ValorDeclarado');
+    var totConDecl = sumar(data.con_seguro, 'valor_real');
     var totConEfec = sumar(data.con_seguro, 'valor_efectivo');
     var totConAseg = sumar(data.con_seguro, 'valor_a_asegurar');
     $('#tfoot_con_declarado').text(fmt(totConDecl));
@@ -350,7 +350,7 @@ function buildPdfRows(rows, tipo) {
     }
 
     var cols = {
-        con: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Declarado', '%', 'Val. Efectivo', 'Mínimo', 'A Asegurar'],
+        con: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Real', '%', 'Val. Efectivo', 'Mínimo', 'A Asegurar'],
         sin: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Declarado', 'Mín. Global', 'A Asegurar'],
         exc: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Declarado', 'Tipo']
     };
@@ -377,7 +377,7 @@ function buildPdfRows(rows, tipo) {
                 cellStyle(r.NumeroComprobante || '—'),
                 cellStyle(r.CodigoSeguimiento || '—'),
                 cellStyle(r.RazonSocial),
-                cellStyle(fmtNum(r.ValorDeclarado), 'right'),
+                cellStyle(fmtNum(r.valor_real), 'right'),
                 cellStyle(r.perc_aplicado + '%', 'center'),
                 cellStyle(fmtNum(r.valor_efectivo), 'right'),
                 cellStyle(fmtNum(r.monto_minimo), 'right'),
@@ -410,7 +410,7 @@ function buildPdfRows(rows, tipo) {
     if (tipo === 'con') {
         body.push([
             { text: 'TOTALES', bold: true, fontSize: 7, colSpan: 4, fillColor: '#e8e8e8', margin: [2,3,2,3] }, {}, {}, {},
-            { text: fmtNum(sumar(rows, 'ValorDeclarado')),   bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', margin: [2,3,2,3] },
+            { text: fmtNum(sumar(rows, 'valor_real')),        bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', margin: [2,3,2,3] },
             { text: '', fillColor: '#e8e8e8' },
             { text: fmtNum(sumar(rows, 'valor_efectivo')),   bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', margin: [2,3,2,3] },
             { text: '', fillColor: '#e8e8e8' },

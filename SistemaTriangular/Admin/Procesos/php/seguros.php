@@ -88,12 +88,16 @@ function datosSeguros()
         $valorDeclarado = (float) $row['ValorDeclarado'];
 
         if ($row['sure'] == 1) {
-            $perc           = (float) $row['sure_perc'];
-            $min            = (float) $row['sure_min'];
-            $valorEfectivo  = $valorDeclarado * ($perc / 100);
-            $valorAAsegurar = max($valorEfectivo, $min);
+            $perc = (float) $row['sure_perc'];
+            $min  = (float) $row['sure_min'];
 
-            $row['valor_efectivo']   = round($valorEfectivo, 2);
+            // ValorDeclarado ya viene con el % aplicado (ej: 45690 = 30% de 152300).
+            // Recuperamos el valor real revirtiéndolo y usamos ValorDeclarado como efectivo.
+            $valorReal      = $perc > 0 ? round($valorDeclarado * 100 / $perc, 2) : $valorDeclarado;
+            $valorAAsegurar = max($valorDeclarado, $min);
+
+            $row['valor_real']       = $valorReal;
+            $row['valor_efectivo']   = round($valorDeclarado, 2);
             $row['monto_minimo']     = $min;
             $row['valor_a_asegurar'] = round($valorAAsegurar, 2);
             $row['perc_aplicado']    = $perc;
@@ -101,6 +105,7 @@ function datosSeguros()
         } else {
             $valorAAsegurar = max($valorDeclarado, $montoMinGlobal);
 
+            $row['valor_real']       = $valorDeclarado;
             $row['valor_efectivo']   = $valorDeclarado;
             $row['monto_minimo']     = $montoMinGlobal;
             $row['valor_a_asegurar'] = round($valorAAsegurar, 2);
