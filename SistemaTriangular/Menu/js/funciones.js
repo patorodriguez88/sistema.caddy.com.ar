@@ -47,67 +47,60 @@ $.extend(true, $.fn.dataTable.Buttons.defaults, {
 });
 
 $(document).ready(function () {
-  // Carga de menús
-  // Cache-busting: evita que un proxy/CDN o el navegador sirvan una versión
-  // vieja del menú cuando se actualiza (ej: topnav.html cacheado en sandbox).
-  const _menuCacheBust = Date.now();
+  // El header y el topnav ahora se renderizan server-side (PHP include) en cada
+  // página, así que este código corre directo, sin esperar un .load() aparte.
+  cargarConsultasFrecuentesIA();
+  // Cambio de tema claro/oscuro
+  $("#light-dark-mode").on("click", function () {
+    const html = $("html");
+    const actual = html.attr("data-bs-theme") || "light";
+    const nuevo = actual === "dark" ? "light" : "dark";
+    html.attr("data-bs-theme", nuevo);
+    $(this).find("i").toggleClass("ri-moon-line ri-sun-line");
+    localStorage.setItem("modo-tema", nuevo);
+  });
 
-  $("#menuhyper_head").load("../Menu/head.html?v=" + _menuCacheBust);
+  // Restaurar modo tema guardado
+  const guardado = localStorage.getItem("modo-tema");
+  if (guardado) {
+    $("html").attr("data-bs-theme", guardado);
+    const icono = $("#light-dark-mode i");
+    icono.removeClass("ri-moon-line ri-sun-line");
+    icono.addClass(guardado === "dark" ? "ri-sun-line" : "ri-moon-line");
+  }
 
-  $("#menuhyper_topnav").load("../Menu/topnav.html?v=" + _menuCacheBust, function () {
-    cargarConsultasFrecuentesIA();
-    // Cambio de tema claro/oscuro
-    $("#light-dark-mode").on("click", function () {
-      const html = $("html");
-      const actual = html.attr("data-bs-theme") || "light";
-      const nuevo = actual === "dark" ? "light" : "dark";
-      html.attr("data-bs-theme", nuevo);
-      $(this).find("i").toggleClass("ri-moon-line ri-sun-line");
-      localStorage.setItem("modo-tema", nuevo);
-    });
+  // Activar/desactivar pantalla completa
+  $(document).on("click", '[data-toggle="fullscreen"]', function (e) {
+    e.preventDefault(); // ⚠️ muy importante para evitar el refresh
 
-    // Restaurar modo tema guardado
-    const guardado = localStorage.getItem("modo-tema");
-    if (guardado) {
-      $("html").attr("data-bs-theme", guardado);
-      const icono = $("#light-dark-mode i");
-      icono.removeClass("ri-moon-line ri-sun-line");
-      icono.addClass(guardado === "dark" ? "ri-sun-line" : "ri-moon-line");
+    const icono = $(this).find("i");
+    const isFullScreen =
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement;
+
+    if (isFullScreen) {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+
+      icono
+        .removeClass("ri-fullscreen-exit-line")
+        .addClass("ri-fullscreen-line");
+    } else {
+      const docElm = document.documentElement;
+      if (docElm.requestFullscreen) docElm.requestFullscreen();
+      else if (docElm.mozRequestFullScreen) docElm.mozRequestFullScreen();
+      else if (docElm.webkitRequestFullscreen)
+        docElm.webkitRequestFullscreen();
+      else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
+
+      icono
+        .removeClass("ri-fullscreen-line")
+        .addClass("ri-fullscreen-exit-line");
     }
-
-    // Activar/desactivar pantalla completa
-    $(document).on("click", '[data-toggle="fullscreen"]', function (e) {
-      e.preventDefault(); // ⚠️ muy importante para evitar el refresh
-
-      const icono = $(this).find("i");
-      const isFullScreen =
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement;
-
-      if (isFullScreen) {
-        if (document.exitFullscreen) document.exitFullscreen();
-        else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-        else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-        else if (document.msExitFullscreen) document.msExitFullscreen();
-
-        icono
-          .removeClass("ri-fullscreen-exit-line")
-          .addClass("ri-fullscreen-line");
-      } else {
-        const docElm = document.documentElement;
-        if (docElm.requestFullscreen) docElm.requestFullscreen();
-        else if (docElm.mozRequestFullScreen) docElm.mozRequestFullScreen();
-        else if (docElm.webkitRequestFullscreen)
-          docElm.webkitRequestFullscreen();
-        else if (docElm.msRequestFullscreen) docElm.msRequestFullscreen();
-
-        icono
-          .removeClass("ri-fullscreen-line")
-          .addClass("ri-fullscreen-exit-line");
-      }
-    });
   });
   // footer
   $("#menuhyper_footer").load("../Menu/footer.html", function () {

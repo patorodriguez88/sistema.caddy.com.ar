@@ -46,11 +46,8 @@
     <!-- Begin page -->
     <div class="wrapper">
 
-        <div id="menuhyper_head"></div>
-        <div id="menuhyper_topnav"></div>
-
-
-
+        <?php include "../Menu/head.html"; ?>
+        <?php include "../Menu/topnav.html"; ?>
         <!-- Modal Editar Localidad -->
         <div class="modal fade" id="modalEditarLocalidad" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">

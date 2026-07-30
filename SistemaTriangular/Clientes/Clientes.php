@@ -26,9 +26,8 @@
     <!-- Begin page -->
     <div class="wrapper">
 
-        <div id="menuhyper_head"></div>
-        <div id="menuhyper_topnav"></div>
-
+        <?php include "../Menu/head.html"; ?>
+        <?php include "../Menu/topnav.html"; ?>
         <div class="content-page">
             <div class="content">
 
