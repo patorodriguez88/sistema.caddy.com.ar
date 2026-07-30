@@ -1,6 +1,8 @@
 <?php
 error_reporting(E_ALL);
-ini_set('display_errors', 1);
+// display_errors en 0: cualquier warning/error se va al log, nunca se mezcla
+// con la respuesta JSON (rompía el "Mail enviado correctamente" con warnings).
+ini_set('display_errors', 0);
 
 include_once "../../Conexion/Conexioni.php";
 require_once "../../Funciones/php/enviar_mail.php";
@@ -8,6 +10,14 @@ require_once "../../Funciones/php/facturacion_helper.php";
 require_once __DIR__ . "/factura_pdf.php";
 
 header('Content-Type: application/json; charset=utf-8');
+
+// Desde PHP 8.1, mysqli tira excepción en los errores en vez de devolver false.
+set_exception_handler(function ($e) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['success' => 0, 'msg' => 'Error interno: ' . $e->getMessage()]);
+    exit;
+});
 
 if (isset($_POST['ObtenerMailFactura'])) {
     $id = intval($_POST['id']);

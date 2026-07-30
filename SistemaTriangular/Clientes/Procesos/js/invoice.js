@@ -12,6 +12,17 @@ function getParameterByName(name) {
 
 var id_comprobante = getParameterByName("id");
 
+// Señal de "datos de la factura ya cargados" para el auto-print de invoice.php.
+// Antes se imprimía con un setTimeout fijo, que podía disparar el print antes
+// de que terminaran las llamadas AJAX (sale la plantilla vacía, sin datos).
+window.__invoicePendingLoads = 2; // Datos (+ su tabla anidada) y Fechas_invoice
+window.__invoiceMarkLoaded = function () {
+  window.__invoicePendingLoads = Math.max(0, window.__invoicePendingLoads - 1);
+  if (window.__invoicePendingLoads === 0) {
+    document.dispatchEvent(new CustomEvent("invoiceDataReady"));
+  }
+};
+
 $("#compose-modal").on("show.bs.modal", function (e) {
   var id = $("#factura_codigo").html();
 
@@ -274,6 +285,10 @@ $(document).ready(function () {
               },
             ],
           });
+          datatable_facturacion_recorridos.one(
+            "draw.dt",
+            window.__invoiceMarkLoaded,
+          );
         } else {
           $("#row_tabla_recorridos").css("display", "none");
           $("#row_tabla_facturacion").css("display", "block");
@@ -398,6 +413,7 @@ $(document).ready(function () {
               },
             ],
           });
+          datatable_facturacion.one("draw.dt", window.__invoiceMarkLoaded);
         }
 
         if (jsonData.TipoDeComprobante == "FACTURA PROFORMA") {
@@ -485,7 +501,14 @@ $(document).ready(function () {
           $("#afip_pie").css("display", "block");
           $("#afip_pie1").css("display", "block");
         }
+      } else {
+        // No hay tabla que vaya a dispararse: damos por cargada esta parte.
+        window.__invoiceMarkLoaded();
       }
+    },
+    error: function () {
+      // Aunque falle, liberamos el auto-print (queda el fallback de todas formas).
+      window.__invoiceMarkLoaded();
     },
   });
 
@@ -569,6 +592,11 @@ $(document).ready(function () {
       var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
       $("#desde_f").html(jsonData.Desde);
       $("#hasta_f").html(jsonData.Hasta);
+      window.__invoiceMarkLoaded();
+    },
+    error: function () {
+      // Aunque falle, liberamos el auto-print (queda el fallback de todas formas).
+      window.__invoiceMarkLoaded();
     },
   });
 });

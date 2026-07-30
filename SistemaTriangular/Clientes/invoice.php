@@ -398,12 +398,24 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
 <script>
   document.addEventListener("DOMContentLoaded", function() {
     const params = new URLSearchParams(window.location.search);
-    if (params.get("print") === "1") {
-      setTimeout(function() {
-        window.focus();
-        window.print();
-      }, 700);
+    if (params.get("print") !== "1") return;
+
+    let yaImprimio = false;
+    function imprimirUnaVez() {
+      if (yaImprimio) return;
+      yaImprimio = true;
+      window.focus();
+      window.print();
     }
+
+    // Imprime en cuanto invoice.js confirma que terminó de cargar los datos
+    // (evento disparado desde invoice.js), no con un tiempo fijo que puede
+    // saltar antes de que lleguen los datos (salía la plantilla vacía).
+    document.addEventListener("invoiceDataReady", imprimirUnaVez);
+
+    // Red de seguridad: si algo no dispara el evento, igual imprime a los
+    // 4s en vez de quedar colgado para siempre.
+    setTimeout(imprimirUnaVez, 4000);
   });
 </script>
 
@@ -774,7 +786,7 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
                           "tipoDocRec" => 80,
                           "nroDocRec" => (int)$Documento,
                           "tipoCodAut" => "E",
-                          "codAut" => (int)$row['CAE']
+                          "codAut" => (int)($row['CAE'] ?? 0)
                         ]);
 
                         $datos_cmp_base_64 = base64_encode($datos_cmp_base_64);

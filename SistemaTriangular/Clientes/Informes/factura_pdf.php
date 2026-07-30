@@ -63,6 +63,16 @@ class FacturaPDF extends FPDF
             ($h - $y3) * $this->k
         ));
     }
+
+    // RG AFIP 1415/03, Anexo IV, punto 6: comprobantes de más de una hoja deben
+    // indicar "Hoja X de N" en cada una.
+    public function Footer()
+    {
+        $this->SetY(-15);
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(108, 117, 125);
+        $this->Cell(0, 10, pdf_text('Hoja ' . $this->PageNo() . ' de {nb}'), 0, 0, 'C');
+    }
 }
 
 function generarFacturaPDF($idCtasctes, $rutaSalida)
@@ -185,7 +195,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
             "ptoVta" => $PtoVta, "tipoCmp" => $TipoComp, "nroCmp" => $Numero,
             "importe" => (float)$afip['Total'], "moneda" => "PES", "ctz" => 1,
             "tipoDocRec" => 80, "nroDocRec" => (int)$Documento,
-            "tipoCodAut" => "E", "codAut" => (int)$afip['CAE']
+            "tipoCodAut" => "E", "codAut" => (int)($afip['CAE'] ?? 0)
         ]));
 
         $dirTmp = __DIR__ . '/../../archivos_tmp/';
@@ -199,6 +209,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     // DISEÑO PDF
     // =========================================================
     $pdf = new FacturaPDF('P', 'mm', 'A4');
+    $pdf->AliasNbPages();
     $pdf->SetMargins(10, 10, 10);
     $pdf->SetAutoPageBreak(true, 15);
     $pdf->AddPage();
@@ -435,8 +446,19 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', '', 8.5);
     $pdf->SetDrawColor(...$borderC);
     $altRow = false;
+
+    // RG AFIP 1415/03, Anexo IV, punto 6: al pasar de hoja hay que trasladar
+    // el subtotal acumulado (no arranca de cero en cada hoja nueva).
+    $anchoTabla  = array_sum(array_column($cols, 1));
+    $acumulado   = 0;
+
     foreach ($detalle as $item) {
         if ($pdf->GetY() > 265) {
+            $pdf->SetFont('Arial', 'B', 8.5);
+            $pdf->SetTextColor(...$darkText);
+            $pdf->SetFillColor(255, 255, 255);
+            $pdf->Cell($anchoTabla, 7, pdf_text('Subtotal (trasladado a hoja siguiente): $ ' . number_format($acumulado, 2, ',', '.')), 'T', 1, 'R');
+
             $pdf->AddPage();
             $pdf->SetFillColor(...$primaryC);
             $pdf->SetTextColor(...$whiteC);
@@ -445,8 +467,16 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
                 $pdf->Cell($w, 8, $label, 0, 0, $align, true);
             }
             $pdf->Ln();
+
+            $pdf->SetFont('Arial', 'B', 8.5);
+            $pdf->SetTextColor(...$darkText);
+            $pdf->SetFillColor(255, 255, 255);
+            $pdf->Cell($anchoTabla, 7, pdf_text('Subtotal (viene de hoja anterior): $ ' . number_format($acumulado, 2, ',', '.')), 'B', 1, 'R');
+
             $pdf->SetFont('Arial', '', 8.5);
         }
+
+        $acumulado += (float)$item['Debe'];
 
         $fecha = (!empty($item['Fecha']) && $item['Fecha'] !== '0000-00-00')
             ? date('d/m/Y', strtotime($item['Fecha'])) : '';
@@ -550,7 +580,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
         $pdf->Cell(45, 5, 'CAE:', 0, 1, 'L');
         $pdf->SetX(155);
         $pdf->SetFont('Arial', '', 8.5);
-        $pdf->Cell(45, 5, pdf_text($afip['CAE']), 0, 1, 'L');
+        $pdf->Cell(45, 5, pdf_text($afip['CAE'] ?? ''), 0, 1, 'L');
         $pdf->SetX(155);
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->Cell(45, 5, pdf_text('Vto. CAE:'), 0, 1, 'L');
