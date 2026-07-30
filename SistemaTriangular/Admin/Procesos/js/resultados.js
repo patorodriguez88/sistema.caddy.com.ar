@@ -92,9 +92,40 @@
     </div>
   `;
   }
+  function renderCostoPropio(propio) {
+    return `
+    <div class="border rounded p-3" style="font-size: 0.65rem;">
+      <div class="d-flex justify-content-between border-bottom py-1">
+        <span class="fw-semibold">Repartidor (propio)</span>
+        <span>${propio.Repartidor || "-"}</span>
+      </div>
+      <div class="d-flex justify-content-between border-bottom py-1">
+        <span class="fw-semibold">Segmento</span>
+        <span>${propio.Segmento || "Sin segmento asignado"}</span>
+      </div>
+      <div class="d-flex justify-content-between border-bottom py-1">
+        <span class="fw-semibold">Km recorridos (orden)</span>
+        <span>${propio.KilometrosRecorridos || 0}</span>
+      </div>
+      <div class="d-flex justify-content-between border-bottom py-1">
+        <span class="fw-semibold">Valor por km</span>
+        <span>${formatearMoneda(propio.ValorKm)}</span>
+      </div>
+      <div class="d-flex justify-content-between border-bottom py-1">
+        <span class="fw-semibold">Cantidad de servicios (orden)</span>
+        <span>${propio.CantidadServicios || 0}</span>
+      </div>
+      <div class="d-flex justify-content-between py-1">
+        <span class="fw-semibold">Costo imputado</span>
+        <span class="fw-bold">${formatearMoneda(propio.CostoImputado)}</span>
+      </div>
+    </div>
+  `;
+  }
   function renderDetalleResultado(resp) {
     const venta = resp.venta || {};
     const compras = resp.compras || [];
+    const propio = resp.propio || null;
     const resumen = resp.resumen || {};
 
     const claseResultadoFinal = claseResultado(resumen.Resultado);
@@ -180,6 +211,15 @@
       <h6 class="text-uppercase text-muted">Proceso de compra / pagos al externo</h6>
       ${renderTablaCompras(compras)}
     </div>
+
+    ${
+      propio
+        ? `<div class="mb-4">
+             <h6 class="text-uppercase text-muted">Costo imputado (reparto propio)</h6>
+             ${renderCostoPropio(propio)}
+           </div>`
+        : ""
+    }
 
     <div>
       <h6 class="text-uppercase text-muted">Resultado del servicio</h6>

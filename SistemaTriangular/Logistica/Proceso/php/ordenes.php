@@ -325,7 +325,7 @@ function handleOrdenCargar(mysqli $mysqli)
       $stmt->execute();
       $rs = $stmt->get_result();
 
-      $stmtBuscaSeg = $mysqli->prepare("SELECT id FROM Seguimiento WHERE CodigoSeguimiento=? AND Estado=? AND Observaciones=? LIMIT 1");
+      $stmtBuscaSeg = $mysqli->prepare("SELECT id FROM Seguimiento WHERE CodigoSeguimiento=? AND Estado=? AND Observaciones=? AND NumerodeOrden=? LIMIT 1");
       $stmtInsSeg   = $mysqli->prepare("
         INSERT INTO Seguimiento
           (Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,Destino,Recorrido,NumerodeOrden)
@@ -338,7 +338,7 @@ function handleOrdenCargar(mysqli $mysqli)
         $EstadoSeg         = ((int)$row['Retirado'] === 0) ? 'A Retirar' : 'En Transito';
         $ObsSeg            = 'Cargado en la Hoja de Ruta';
 
-        $stmtBuscaSeg->bind_param('sss', $CodigoSeguimiento, $EstadoSeg, $ObsSeg);
+        $stmtBuscaSeg->bind_param('ssss', $CodigoSeguimiento, $EstadoSeg, $ObsSeg, $Orden);
         $stmtBuscaSeg->execute();
         $stmtBuscaSeg->store_result();
         if ($stmtBuscaSeg->num_rows === 0) {
@@ -807,11 +807,12 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
 
     // 1) Cerrar orden en Logistica
     $sql = "UPDATE Logistica
-                SET 
+                SET
                     NombreChofer2 = ?,
                     FechaRetorno = ?,
                     HoraRetorno = ?,
                     KilometrosRegreso = ?,
+                    KilometrosRecorridos = GREATEST(? - Kilometros, 0),
                     CargaLitros = ?,
                     CombustibleRegreso = ?,
                     Observaciones = ?,
@@ -825,10 +826,11 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
     }
 
     $stmt->bind_param(
-      'sssissss',
+      'sssiissss',
       $acompanante,
       $fechaRetorno,
       $horaRetorno,
+      $kmRegreso,
       $kmRegreso,
       $cargoCombustible,
       $tanqueCombustible,

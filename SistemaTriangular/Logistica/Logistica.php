@@ -1046,7 +1046,7 @@ document.getElementById("botonCargar").style='opacity:0.5;filter:aplpha(opacity=
                 $sql = "INSERT INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,Destino,Recorrido,NumerodeOrden)
 VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$CodigoSeguimiento}','{$Observaciones}','{$Entregado}','{$Estado}','{$Localizacion}','$Recorrido','$Orden')";
                 // VERIFICO QUE NO ESTE CARGADO YA EN SEGUIMIENTO
-                $sqlBuscaidem = mysql_query("SELECT id FROM Seguimiento WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Estado='$Estado' AND Observaciones='$Observaciones'");
+                $sqlBuscaidem = mysql_query("SELECT id FROM Seguimiento WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Estado='$Estado' AND Observaciones='$Observaciones' AND NumerodeOrden='$Orden'");
                 $Datoidem = mysql_fetch_array($sqlBuscaidem);
                 if ($Datoidem[id] == '') {
                   mysql_query($sql);

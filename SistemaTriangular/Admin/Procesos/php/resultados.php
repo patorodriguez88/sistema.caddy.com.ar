@@ -92,50 +92,78 @@ if ($action === 'clientes') {
 if ($action === 'repartidores') {
     $cliente = isset($_POST['cliente']) ? trim($_POST['cliente']) : '';
     $filtroCliente = '';
-    $types = 'ss';
-    $params = array($Inicio, $Final);
 
     if ($cliente !== '') {
         $filtroCliente = " AND TS.ingBrutosOrigen = ? ";
-        $types .= 's';
-        $params[] = $cliente;
     }
 
-    $sql = "
-        SELECT DISTINCT
-            U.id,
-            U.Usuario AS Nombre
-        FROM TransClientes TS
+    // Los mismos parámetros se usan dos veces: una por cada mitad del UNION (externos + propios)
+    $paramsUnaVez = array($Inicio, $Final);
+    $typesUnaVez  = 'ss';
+    if ($cliente !== '') {
+        $paramsUnaVez[] = $cliente;
+        $typesUnaVez .= 's';
+    }
+    $params = array_merge($paramsUnaVez, $paramsUnaVez);
+    $types  = $typesUnaVez . $typesUnaVez;
 
-        LEFT JOIN (
-            SELECT 
-                NumerodeOrden,
-                MAX(Fecha) AS FechaLogistica
-            FROM Logistica
-            WHERE Eliminado = 0
-            GROUP BY NumerodeOrden
-        ) AS LF
-            ON LF.NumerodeOrden = TS.NumerodeOrden
-        LEFT JOIN (
-            SELECT 
-                CodigoSeguimiento,
-                MAX(Fecha) AS FechaEntrega
-            FROM Seguimiento
-            WHERE Eliminado = 0
-            AND Estado = 'Entregado al Cliente'
-            GROUP BY CodigoSeguimiento
-        ) AS FS
-            ON FS.CodigoSeguimiento = TS.CodigoSeguimiento
-        INNER JOIN Externos_rendicion ER
-            ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
-        INNER JOIN usuarios U
-            ON U.id = ER.IdEmpleado
-        WHERE TS.Eliminado = 0
-        AND $campoFecha >= ?
-        AND $campoFecha <= ?
-        AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
-        $filtroCliente
-        ORDER BY U.Usuario ASC
+    $sql = "
+        SELECT id, Nombre FROM (
+            SELECT DISTINCT
+                U.id,
+                U.Usuario AS Nombre
+            FROM TransClientes TS
+            LEFT JOIN (
+                SELECT
+                    CodigoSeguimiento,
+                    MAX(Fecha) AS FechaEntrega
+                FROM Seguimiento
+                WHERE Eliminado = 0
+                AND Estado = 'Entregado al Cliente'
+                GROUP BY CodigoSeguimiento
+            ) AS FS
+                ON FS.CodigoSeguimiento = TS.CodigoSeguimiento
+            INNER JOIN Externos_rendicion ER
+                ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
+            INNER JOIN usuarios U
+                ON U.id = ER.IdEmpleado
+            WHERE TS.Eliminado = 0
+            AND $campoFecha >= ?
+            AND $campoFecha <= ?
+            AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
+            $filtroCliente
+
+            UNION
+
+            SELECT DISTINCT
+                U.id,
+                U.Usuario AS Nombre
+            FROM TransClientes TS
+            LEFT JOIN (
+                SELECT
+                    CodigoSeguimiento,
+                    MAX(Fecha) AS FechaEntrega
+                FROM Seguimiento
+                WHERE Eliminado = 0
+                AND Estado = 'Entregado al Cliente'
+                GROUP BY CodigoSeguimiento
+            ) AS FS
+                ON FS.CodigoSeguimiento = TS.CodigoSeguimiento
+            INNER JOIN Logistica L
+                ON L.NumerodeOrden = TS.NumerodeOrden
+                AND L.Eliminado = 0
+            INNER JOIN Vehiculos V
+                ON V.Dominio = L.Patente
+                AND V.Aliados = 0
+            INNER JOIN usuarios U
+                ON U.id = L.idUsuarioChofer
+            WHERE TS.Eliminado = 0
+            AND $campoFecha >= ?
+            AND $campoFecha <= ?
+            AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
+            $filtroCliente
+        ) AS Repartidores
+        ORDER BY Nombre ASC
     ";
 
     if (!($stmt = $mysqli->prepare($sql))) {
@@ -179,21 +207,29 @@ if ($action === 'listar') {
     }
     if ($repartidor !== '') {
 
-        $filtroRepartidor = " AND EXISTS (
-
-        SELECT 1
-
-        FROM Externos_rendicion ERF
-
-        WHERE ERF.CodigoSeguimiento = TS.CodigoSeguimiento
-
-        AND ERF.IdEmpleado = ?
-
+        $filtroRepartidor = " AND (
+        EXISTS (
+            SELECT 1
+            FROM Externos_rendicion ERF
+            WHERE ERF.CodigoSeguimiento = TS.CodigoSeguimiento
+            AND ERF.IdEmpleado = ?
+        )
+        OR EXISTS (
+            SELECT 1
+            FROM Logistica LF2
+            INNER JOIN Vehiculos VF2
+                ON VF2.Dominio = LF2.Patente
+                AND VF2.Aliados = 0
+            WHERE LF2.NumerodeOrden = TS.NumerodeOrden
+            AND LF2.Eliminado = 0
+            AND LF2.idUsuarioChofer = ?
+        )
     ) ";
 
         $params[] = $repartidor;
+        $params[] = $repartidor;
 
-        $types .= 'i';
+        $types .= 'ii';
     }
 
     $sql = "SELECT 
@@ -201,14 +237,25 @@ if ($action === 'listar') {
     TS.CodigoSeguimiento,
     TS.CodigoProveedor,
     C.nombrecliente AS NombreCliente,
-    IFNULL(ER.Repartidor, '-') AS Repartidor,
+    COALESCE(ER.Repartidor, UP.Usuario, '-') AS Repartidor,
     TS.Wepoint_f,
     TS.Entregado,
     TS.Devuelto,
     TS.Facturado,
     TS.NumeroF,
     TS.Recorrido,
-    IFNULL(ER.TotalPagado, 0) AS PrecioPagado_SinIVA,
+    IFNULL(
+        ER.TotalPagado,
+        IF(
+            V.Aliados = 0,
+            IFNULL(
+                ROUND(
+                    (LOG.KilometrosRecorridos * IFNULL(VK.ValorKm, 0))
+                    / NULLIF(COALESCE(NULLIF(SR.Cant, 0), PR.CantidadServiciosSinImporte), 0)
+                , 2)
+            , 0)
+        , 0)
+    ) AS PrecioPagado_SinIVA,
     IFNULL(VNI.COD_NotInvoice, 0) AS COD_NotInvoice,
     IFNULL(VNI.SurrenderNumbers, '') AS SurrenderNumbers,
     ROUND(
@@ -216,7 +263,7 @@ if ($action === 'listar') {
             (
                 CASE
                     WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
-                    WHEN IFNULL(TS.Debe, 0) = 0 
+                    WHEN IFNULL(TS.Debe, 0) = 0
                         AND IFNULL(TS.Haber, 0) = 0
                         AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
                     THEN PR.PrecioUnitarioImputado
@@ -232,7 +279,7 @@ if ($action === 'listar') {
             (
                 CASE
                     WHEN IFNULL(TS.Debe, 0) > 0 THEN TS.Debe
-                    WHEN IFNULL(TS.Debe, 0) = 0 
+                    WHEN IFNULL(TS.Debe, 0) = 0
                         AND IFNULL(TS.Haber, 0) = 0
                         AND IFNULL(PR.PrecioUnitarioImputado, 0) > 0
                     THEN PR.PrecioUnitarioImputado
@@ -240,7 +287,18 @@ if ($action === 'listar') {
                 END
             ) / 1.21
         ) + IFNULL(VNI.COD_NotInvoice, 0)
-    ) - IFNULL(ER.TotalPagado, 0)
+    ) - IFNULL(
+        ER.TotalPagado,
+        IF(
+            V.Aliados = 0,
+            IFNULL(
+                ROUND(
+                    (LOG.KilometrosRecorridos * IFNULL(VK.ValorKm, 0))
+                    / NULLIF(COALESCE(NULLIF(SR.Cant, 0), PR.CantidadServiciosSinImporte), 0)
+                , 2)
+            , 0)
+        , 0)
+    )
 , 2) AS Diferencia_SinIVA,
     IFNULL(ER.CantidadRendiciones, 0) AS CantidadRendiciones,
     IFNULL(PR.PrecioUnitarioImputado, 0) AS PrecioRecorridoImputado
@@ -310,7 +368,27 @@ if ($action === 'listar') {
       AND Estado = 'Entregado al Cliente'
     GROUP BY CodigoSeguimiento
 ) AS FS
-    ON FS.CodigoSeguimiento = TS.CodigoSeguimiento    
+    ON FS.CodigoSeguimiento = TS.CodigoSeguimiento
+
+    LEFT JOIN Logistica AS LOG
+        ON LOG.NumerodeOrden = TS.NumerodeOrden
+        AND LOG.Eliminado = 0
+    LEFT JOIN Vehiculos AS V
+        ON V.Dominio = LOG.Patente
+    LEFT JOIN ValorxKilometro AS VK
+        ON VK.id = V.Segmento
+    LEFT JOIN usuarios AS UP
+        ON UP.id = LOG.idUsuarioChofer
+    LEFT JOIN (
+        SELECT
+            NumerodeOrden,
+            COUNT(DISTINCT CodigoSeguimiento) AS Cant
+        FROM Seguimiento
+        WHERE Eliminado = 0
+        AND Estado IN ('Entregado al Cliente', 'Retirado del Cliente', 'No se pudo entregar', 'No se pudo Retirar')
+        GROUP BY NumerodeOrden
+    ) AS SR
+        ON SR.NumerodeOrden = TS.NumerodeOrden
 
     WHERE TS.Eliminado = 0
     AND $campoFecha >= ?
@@ -526,6 +604,76 @@ if ($action === 'detalle') {
 
     $stmtCompra->close();
 
+    // ===== Costo imputado de reparto propio (solo si no hubo rendiciones de externos) =====
+    $propio = null;
+
+    if (empty($compras)) {
+        $sqlPropio = "
+            SELECT
+                V.Aliados,
+                VK.Nombre AS SegmentoNombre,
+                IFNULL(VK.ValorKm, 0) AS ValorKm,
+                IFNULL(LOG.KilometrosRecorridos, 0) AS KilometrosRecorridos,
+                UP.Usuario AS Repartidor,
+                COALESCE(NULLIF(SR.Cant, 0), PR.CantidadServiciosSinImporte) AS CantidadServicios
+            FROM TransClientes TS
+            LEFT JOIN Logistica LOG
+                ON LOG.NumerodeOrden = TS.NumerodeOrden
+                AND LOG.Eliminado = 0
+            LEFT JOIN Vehiculos V
+                ON V.Dominio = LOG.Patente
+            LEFT JOIN ValorxKilometro VK
+                ON VK.id = V.Segmento
+            LEFT JOIN usuarios UP
+                ON UP.id = LOG.idUsuarioChofer
+            LEFT JOIN (
+                SELECT L.NumerodeOrden, COUNT(TC.id) AS CantidadServiciosSinImporte
+                FROM Logistica L
+                INNER JOIN TransClientes TC ON L.NumerodeOrden = TC.NumerodeOrden
+                WHERE TC.Eliminado = 0 AND IFNULL(TC.Debe,0) = 0 AND IFNULL(TC.Haber,0) = 0
+                GROUP BY L.NumerodeOrden
+            ) AS PR
+                ON PR.NumerodeOrden = TS.NumerodeOrden
+            LEFT JOIN (
+                SELECT NumerodeOrden, COUNT(DISTINCT CodigoSeguimiento) AS Cant
+                FROM Seguimiento
+                WHERE Eliminado = 0
+                AND Estado IN ('Entregado al Cliente', 'Retirado del Cliente', 'No se pudo entregar', 'No se pudo Retirar')
+                GROUP BY NumerodeOrden
+            ) AS SR
+                ON SR.NumerodeOrden = TS.NumerodeOrden
+            WHERE TS.CodigoSeguimiento = ?
+            LIMIT 1
+        ";
+
+        $stmtPropio = $mysqli->prepare($sqlPropio);
+        if ($stmtPropio) {
+            $stmtPropio->bind_param("s", $codigo);
+            if ($stmtPropio->execute()) {
+                $rowPropio = $stmtPropio->get_result()->fetch_assoc();
+
+                if ($rowPropio && (int)$rowPropio['Aliados'] === 0 && $rowPropio['Repartidor']) {
+                    $km       = (float)$rowPropio['KilometrosRecorridos'];
+                    $valorKm  = (float)$rowPropio['ValorKm'];
+                    $cant     = (int)$rowPropio['CantidadServicios'];
+                    $costo    = $cant > 0 ? round(($km * $valorKm) / $cant, 2) : 0;
+
+                    $propio = [
+                        'Repartidor'           => $rowPropio['Repartidor'],
+                        'Segmento'             => $rowPropio['SegmentoNombre'],
+                        'KilometrosRecorridos' => $km,
+                        'ValorKm'              => $valorKm,
+                        'CantidadServicios'    => $cant,
+                        'CostoImputado'        => $costo,
+                    ];
+
+                    $totalPagado = $costo;
+                }
+            }
+            $stmtPropio->close();
+        }
+    }
+
     $totalCobradoNeto = isset($venta['NetoSinIVA']) ? (float)$venta['NetoSinIVA'] : 0;
     $resultado = $totalCobradoNeto - $totalPagado;
     $rentabilidad = $totalCobradoNeto > 0 ? (($resultado / $totalCobradoNeto) * 100) : null;
@@ -534,6 +682,7 @@ if ($action === 'detalle') {
         'ok' => true,
         'venta' => $venta,
         'compras' => $compras,
+        'propio' => $propio,
         'resumen' => [
             'TotalCobradoNeto' => round($totalCobradoNeto, 2),
             'TotalPagado' => round($totalPagado, 2),

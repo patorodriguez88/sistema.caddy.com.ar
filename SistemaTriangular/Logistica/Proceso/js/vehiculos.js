@@ -1074,6 +1074,49 @@ $("#vehicle_close").click(function () {
   $("#table_service").DataTable().destroy();
 });
 
+// Carga (con caché) los segmentos activos de ValorxKilometro en el <select> del vehículo
+var _segmentosVehiculoCache = null;
+function cargarSegmentosVehiculo(callback) {
+  if (_segmentosVehiculoCache) {
+    pintarSegmentosVehiculo(_segmentosVehiculoCache);
+    if (callback) callback();
+    return;
+  }
+
+  $.ajax({
+    data: { action: "listar" },
+    type: "POST",
+    url: "/SistemaTriangular/Admin/Procesos/php/valorxkilometro.php",
+    dataType: "json",
+    success: function (json) {
+      var segmentos =
+        json && json.ok
+          ? json.data.filter(function (s) {
+              return parseInt(s.Activo) === 1;
+            })
+          : [];
+
+      _segmentosVehiculoCache = segmentos;
+      pintarSegmentosVehiculo(segmentos);
+      if (callback) callback();
+    },
+    error: function () {
+      if (callback) callback();
+    },
+  });
+}
+
+function pintarSegmentosVehiculo(segmentos) {
+  var $select = $("#vehicle_segmento");
+  var html = '<option value="">Sin segmento asignado</option>';
+
+  segmentos.forEach(function (s) {
+    html += `<option value="${s.id}">${s.Nombre}</option>`;
+  });
+
+  $select.html(html);
+}
+
 function open_vehicle(v) {
   comprueba_imagen(v);
   $("#row_contenedor_qualification").css("display", "none");
@@ -1186,6 +1229,50 @@ function open_vehicle(v) {
       $("#vehicle_sure").html(jsonData.data[0].Seguro);
       $("#vehicle_sure_number").html(jsonData.data[0].NumeroPoliza);
       $("#vehicle_sure_phone").html(jsonData.data[0].TelefonoSeguro);
+
+      // SEGMENTO (costo por km) - solo aplica a flota propia (Aliados = 0)
+      var esPropio = String(jsonData.data[0].Aliados) === "0";
+      var segmentoActual = jsonData.data[0].Segmento;
+
+      $("#vehicle_segmento_wrapper").toggle(esPropio);
+
+      if (esPropio) {
+        cargarSegmentosVehiculo(function () {
+          $("#vehicle_segmento").val(
+            segmentoActual === null || segmentoActual === undefined
+              ? ""
+              : segmentoActual
+          );
+        });
+
+        $("#vehicle_segmento")
+          .off("change")
+          .on("change", function () {
+            var nuevoSegmento = $(this).val();
+
+            $.ajax({
+              data: { Update_segmento: 1, Dominio: v, Segmento: nuevoSegmento },
+              type: "POST",
+              url: "Proceso/php/vehiculos.php",
+              success: function (response) {
+                try {
+                  var jsonData = JSON.parse(response);
+                  if (jsonData.success != 1) {
+                    console.log("Error al actualizar el segmento");
+                  }
+                } catch (e) {
+                  console.error(
+                    "Respuesta inválida al actualizar segmento",
+                    response
+                  );
+                }
+              },
+              error: function (xhr, status, error) {
+                console.error("Error AJAX al actualizar segmento", status, error);
+              },
+            });
+          });
+      }
     },
   });
 

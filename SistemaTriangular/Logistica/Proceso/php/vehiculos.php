@@ -60,6 +60,37 @@ if (isset($_POST['Update_estado'])) {
     exit;
 }
 
+// MODIFICA EL SEGMENTO (ValorxKilometro) DE UN VEHICULO PROPIO
+
+if (isset($_POST['Update_segmento'])) {
+
+    $dominio  = $_POST['Dominio'] ?? '';
+    $segmento = isset($_POST['Segmento']) && $_POST['Segmento'] !== '' ? (int)$_POST['Segmento'] : null;
+
+    if ($dominio === '') {
+        echo json_encode(['success' => 0, 'message' => 'Dominio vacío']);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("UPDATE Vehiculos SET Segmento = ? WHERE Dominio = ? LIMIT 1");
+
+    if (!$stmt) {
+        echo json_encode(['success' => 0, 'message' => 'Error al preparar consulta', 'error' => $mysqli->error]);
+        exit;
+    }
+
+    $stmt->bind_param("is", $segmento, $dominio);
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => 1, 'message' => 'Segmento actualizado correctamente']);
+    } else {
+        echo json_encode(['success' => 0, 'message' => 'Error al ejecutar update', 'error' => $stmt->error]);
+    }
+
+    $stmt->close();
+    exit;
+}
+
 
 // BUSCAR TODA LA FLOTA
 

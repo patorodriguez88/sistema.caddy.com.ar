@@ -679,6 +679,13 @@
                                                             </div>
                                                         </div>
 
+                                                        <div class="mt-3" id="vehicle_segmento_wrapper">
+                                                            <label class="form-label font-14" for="vehicle_segmento">Segmento (costo por km, solo flota propia)</label>
+                                                            <select class="form-select form-select-sm" id="vehicle_segmento" style="max-width:280px;">
+                                                                <option value="">Sin segmento asignado</option>
+                                                            </select>
+                                                        </div>
+
                                                         <input type="hidden" id="vehicle_domain">
 
                                                         <!-- Product description -->
