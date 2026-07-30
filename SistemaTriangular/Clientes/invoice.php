@@ -404,8 +404,18 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
     function imprimirUnaVez() {
       if (yaImprimio) return;
       yaImprimio = true;
-      window.focus();
-      window.print();
+
+      // Esperamos dos frames + un pequeño margen para que el navegador
+      // termine de pintar la tabla recién insertada por DataTables antes de
+      // imprimir (si no, a veces imprime la plantilla sin la tabla).
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          setTimeout(function () {
+            window.focus();
+            window.print();
+          }, 150);
+        });
+      });
     }
 
     // Imprime en cuanto invoice.js confirma que terminó de cargar los datos

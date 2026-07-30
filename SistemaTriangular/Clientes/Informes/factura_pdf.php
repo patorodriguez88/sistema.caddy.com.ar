@@ -10,6 +10,10 @@ function pdf_text($texto)
 
 class FacturaPDF extends FPDF
 {
+    // Texto identificatorio de la hoja (tipo + número de comprobante), para que
+    // una hoja suelta se pueda identificar. Se completa antes de AddPage().
+    public $footerInfo = '';
+
     public function RoundedRect($x, $y, $w, $h, $r, $style = '')
     {
         $op = 'S';
@@ -65,13 +69,18 @@ class FacturaPDF extends FPDF
     }
 
     // RG AFIP 1415/03, Anexo IV, punto 6: comprobantes de más de una hoja deben
-    // indicar "Hoja X de N" en cada una.
+    // indicar "Hoja X de N" en cada una. Además identificamos la hoja (número
+    // de comprobante + Caddy) por si queda suelta de las demás.
     public function Footer()
     {
         $this->SetY(-15);
-        $this->SetFont('Arial', '', 8);
+        $this->SetFont('Arial', '', 7.5);
         $this->SetTextColor(108, 117, 125);
-        $this->Cell(0, 10, pdf_text('Hoja ' . $this->PageNo() . ' de {nb}'), 0, 0, 'C');
+
+        $w = ($this->w - $this->lMargin - $this->rMargin) / 2;
+
+        $this->Cell($w, 10, pdf_text($this->footerInfo), 0, 0, 'L');
+        $this->Cell($w, 10, pdf_text('Hoja ' . $this->PageNo() . ' de {nb}'), 0, 0, 'R');
     }
 }
 
@@ -210,6 +219,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     // =========================================================
     $pdf = new FacturaPDF('P', 'mm', 'A4');
     $pdf->AliasNbPages();
+    $pdf->footerInfo = trim($row['TipoDeComprobante'] . ' ' . $row['NumeroFactura'] . ' - Caddy Logística - caddy.com.ar');
     $pdf->SetMargins(10, 10, 10);
     $pdf->SetAutoPageBreak(true, 15);
     $pdf->AddPage();
