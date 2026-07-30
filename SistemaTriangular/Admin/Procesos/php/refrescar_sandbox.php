@@ -77,6 +77,7 @@ function detectarColumnaFecha($mysqli, $db, $tabla, $candidatas)
 $action = isset($_POST['action']) ? $_POST['action'] : '';
 
 if ($action === 'refrescar') {
+try {
     $dbOrigen  = 'dinter6_triangular';       // producción (solo lectura)
     $dbDestino = 'dinter6_triangularcopia';  // sandbox (se sobrescribe)
 
@@ -125,31 +126,44 @@ if ($action === 'refrescar') {
             ? detectarColumnaFecha($mysqli, $dbOrigen, $tabla, $COLUMNAS_FECHA_CANDIDATAS)
             : null;
 
-        $ok = $mysqli->query("TRUNCATE TABLE $tablaDestino");
+        // Desde PHP 8.1, mysqli tira excepción en los errores (no devuelve false).
+        // Atrapamos por tabla para que una tabla con schema desalineado no frene el resto.
+        $ok = false;
         $filas = 0;
+        $errorMsg = null;
 
-        if ($ok) {
+        try {
+            $mysqli->query("TRUNCATE TABLE $tablaDestino");
+
             if ($colFecha) {
                 $fechaEsc = $mysqli->real_escape_string($fechaDesde);
-                $ok = $mysqli->query("INSERT INTO $tablaDestino SELECT * FROM $tablaOrigen WHERE `$colFecha` >= '$fechaEsc'");
+                $mysqli->query("INSERT INTO $tablaDestino SELECT * FROM $tablaOrigen WHERE `$colFecha` >= '$fechaEsc'");
             } else {
-                $ok = $mysqli->query("INSERT INTO $tablaDestino SELECT * FROM $tablaOrigen");
+                $mysqli->query("INSERT INTO $tablaDestino SELECT * FROM $tablaOrigen");
             }
-            $filas = $ok ? $mysqli->affected_rows : 0;
+
+            $ok = true;
+            $filas = $mysqli->affected_rows;
+        } catch (\mysqli_sql_exception $e) {
+            $ok = false;
+            $errorMsg = $e->getMessage();
         }
 
         $resultado[] = array(
             'tabla'  => $tabla,
-            'ok'     => (bool)$ok,
+            'ok'     => $ok,
             'filas'  => $filas,
             'filtro' => $colFecha ? ($colFecha . ' >= ' . $fechaDesde) : 'completa',
-            'error'  => $ok ? null : $mysqli->error,
+            'error'  => $errorMsg,
         );
     }
 
     $mysqli->query("SET FOREIGN_KEY_CHECKS=1");
 
     jexit(['ok' => true, 'resultado' => $resultado]);
+} catch (\Throwable $e) {
+    jexit(['ok' => false, 'error' => 'Error inesperado: ' . $e->getMessage()]);
+}
 }
 
 jexit(['ok' => false, 'error' => 'Acción inválida']);
