@@ -5,10 +5,13 @@
   function renderResultado(resultado) {
     const filas = resultado
       .map(function (r) {
+        const omitidas = r.omitidas
+          ? `<div class="text-warning small">Omitidas: ${r.omitidas}</div>`
+          : "";
         if (r.ok) {
-          return `<tr><td>${r.tabla}</td><td class="text-success">OK</td><td class="text-end">${r.filas}</td><td>${r.filtro || ""}</td></tr>`;
+          return `<tr><td>${r.tabla}</td><td class="text-success">OK</td><td class="text-end">${r.filas}</td><td>${r.filtro || ""}${omitidas}</td></tr>`;
         }
-        return `<tr><td>${r.tabla}</td><td class="text-danger">Error</td><td></td><td class="text-danger">${r.error || ""}</td></tr>`;
+        return `<tr><td>${r.tabla}</td><td class="text-danger">Error</td><td></td><td class="text-danger">${r.error || ""}${omitidas}</td></tr>`;
       })
       .join("");
 
@@ -16,7 +19,7 @@
       <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
         <table class="table table-sm table-striped">
           <thead>
-            <tr><th>Tabla</th><th>Estado</th><th class="text-end">Filas</th><th>Filtro aplicado</th></tr>
+            <tr><th>Tabla</th><th>Estado</th><th class="text-end">Filas</th><th>Detalle</th></tr>
           </thead>
           <tbody>${filas}</tbody>
         </table>

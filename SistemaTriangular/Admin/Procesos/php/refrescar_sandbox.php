@@ -38,6 +38,31 @@ $TABLAS_SIEMPRE_COMPLETAS = array(
     'ClientesyServicios', 'ValorxKilometro'
 );
 
+// Devuelve las columnas de una tabla en orden, para poder copiar solo las que
+// existen en AMBAS bases (evita "Column count doesn't match" cuando el schema
+// de sandbox quedó desactualizado respecto a producción en alguna tabla).
+function obtenerColumnas($mysqli, $db, $tabla)
+{
+    $dbEsc    = $mysqli->real_escape_string($db);
+    $tablaEsc = $mysqli->real_escape_string($tabla);
+
+    $res = $mysqli->query("
+        SELECT COLUMN_NAME
+        FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = '$dbEsc' AND TABLE_NAME = '$tablaEsc'
+        ORDER BY ORDINAL_POSITION
+    ");
+
+    $columnas = array();
+    if ($res) {
+        while ($row = $res->fetch_row()) {
+            $columnas[] = $row[0];
+        }
+    }
+
+    return $columnas;
+}
+
 function detectarColumnaFecha($mysqli, $db, $tabla, $candidatas)
 {
     $lista = implode(',', array_map(function ($c) use ($mysqli) {
@@ -126,35 +151,57 @@ try {
             ? detectarColumnaFecha($mysqli, $dbOrigen, $tabla, $COLUMNAS_FECHA_CANDIDATAS)
             : null;
 
+        $colsOrigen  = obtenerColumnas($mysqli, $dbOrigen, $tabla);
+        $colsDestino = obtenerColumnas($mysqli, $dbDestino, $tabla);
+        $colsComunes = array_values(array_intersect($colsOrigen, $colsDestino));
+
+        $soloEnOrigen  = array_values(array_diff($colsOrigen, $colsDestino));
+        $soloEnDestino = array_values(array_diff($colsDestino, $colsOrigen));
+
+        $omitidas = null;
+        if ($soloEnOrigen || $soloEnDestino) {
+            $partes = array();
+            if ($soloEnOrigen) $partes[] = 'solo en producción: ' . implode(', ', $soloEnOrigen);
+            if ($soloEnDestino) $partes[] = 'solo en sandbox: ' . implode(', ', $soloEnDestino);
+            $omitidas = implode(' | ', $partes);
+        }
+
         // Desde PHP 8.1, mysqli tira excepción en los errores (no devuelve false).
         // Atrapamos por tabla para que una tabla con schema desalineado no frene el resto.
         $ok = false;
         $filas = 0;
         $errorMsg = null;
 
-        try {
-            $mysqli->query("TRUNCATE TABLE $tablaDestino");
+        if (empty($colsComunes)) {
+            $errorMsg = 'Sin columnas en común entre producción y sandbox.';
+        } else {
+            $listaColumnas = '`' . implode('`,`', $colsComunes) . '`';
 
-            if ($colFecha) {
-                $fechaEsc = $mysqli->real_escape_string($fechaDesde);
-                $mysqli->query("INSERT INTO $tablaDestino SELECT * FROM $tablaOrigen WHERE `$colFecha` >= '$fechaEsc'");
-            } else {
-                $mysqli->query("INSERT INTO $tablaDestino SELECT * FROM $tablaOrigen");
+            try {
+                $mysqli->query("TRUNCATE TABLE $tablaDestino");
+
+                if ($colFecha) {
+                    $fechaEsc = $mysqli->real_escape_string($fechaDesde);
+                    $mysqli->query("INSERT INTO $tablaDestino ($listaColumnas) SELECT $listaColumnas FROM $tablaOrigen WHERE `$colFecha` >= '$fechaEsc'");
+                } else {
+                    $mysqli->query("INSERT INTO $tablaDestino ($listaColumnas) SELECT $listaColumnas FROM $tablaOrigen");
+                }
+
+                $ok = true;
+                $filas = $mysqli->affected_rows;
+            } catch (\mysqli_sql_exception $e) {
+                $ok = false;
+                $errorMsg = $e->getMessage();
             }
-
-            $ok = true;
-            $filas = $mysqli->affected_rows;
-        } catch (\mysqli_sql_exception $e) {
-            $ok = false;
-            $errorMsg = $e->getMessage();
         }
 
         $resultado[] = array(
-            'tabla'  => $tabla,
-            'ok'     => $ok,
-            'filas'  => $filas,
-            'filtro' => $colFecha ? ($colFecha . ' >= ' . $fechaDesde) : 'completa',
-            'error'  => $errorMsg,
+            'tabla'    => $tabla,
+            'ok'       => $ok,
+            'filas'    => $filas,
+            'filtro'   => $colFecha ? ($colFecha . ' >= ' . $fechaDesde) : 'completa',
+            'omitidas' => $omitidas,
+            'error'    => $errorMsg,
         );
     }
 
