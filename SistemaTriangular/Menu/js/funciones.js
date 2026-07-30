@@ -48,10 +48,13 @@ $.extend(true, $.fn.dataTable.Buttons.defaults, {
 
 $(document).ready(function () {
   // Carga de menús
+  // Cache-busting: evita que un proxy/CDN o el navegador sirvan una versión
+  // vieja del menú cuando se actualiza (ej: topnav.html cacheado en sandbox).
+  const _menuCacheBust = Date.now();
 
-  $("#menuhyper_head").load("../Menu/head.html");
+  $("#menuhyper_head").load("../Menu/head.html?v=" + _menuCacheBust);
 
-  $("#menuhyper_topnav").load("../Menu/topnav.html", function () {
+  $("#menuhyper_topnav").load("../Menu/topnav.html?v=" + _menuCacheBust, function () {
     cargarConsultasFrecuentesIA();
     // Cambio de tema claro/oscuro
     $("#light-dark-mode").on("click", function () {
