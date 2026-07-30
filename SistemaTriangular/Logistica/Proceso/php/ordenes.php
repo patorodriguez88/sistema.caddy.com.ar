@@ -801,6 +801,33 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
 
   $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'sistema';
 
+  // Congelamos el costo por km con el valor VIGENTE en este momento (no se recalcula
+  // más adelante aunque después se edite ValorxKilometro), para no alterar reportes históricos.
+  $kmSalida  = 0;
+  $segmentoImputado = null;
+  $valorKmImputado  = 0;
+
+  if ($stmt = $mysqli->prepare("SELECT Kilometros, Segmento FROM Vehiculos WHERE Dominio = ? LIMIT 1")) {
+    $stmt->bind_param('s', $vehiculo);
+    $stmt->execute();
+    $stmt->bind_result($kmSalida, $segmentoImputado);
+    $stmt->fetch();
+    $stmt->close();
+  }
+
+  if ($segmentoImputado) {
+    if ($stmt = $mysqli->prepare("SELECT ValorKm FROM ValorxKilometro WHERE id = ? AND Activo = 1 LIMIT 1")) {
+      $stmt->bind_param('i', $segmentoImputado);
+      $stmt->execute();
+      $stmt->bind_result($valorKmImputado);
+      $stmt->fetch();
+      $stmt->close();
+    }
+  }
+
+  $kmRecorridosImputado = max(0, (float)$kmRegreso - (float)$kmSalida);
+  $costoKmTotalImputado = round($kmRecorridosImputado * (float)$valorKmImputado, 2);
+
   $mysqli->begin_transaction();
 
   try {
@@ -813,6 +840,9 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
                     HoraRetorno = ?,
                     KilometrosRegreso = ?,
                     KilometrosRecorridos = GREATEST(? - Kilometros, 0),
+                    CostoKmSegmentoImputado = ?,
+                    CostoKmValorImputado = ?,
+                    CostoKmTotalImputado = ?,
                     CargaLitros = ?,
                     CombustibleRegreso = ?,
                     Observaciones = ?,
@@ -826,12 +856,15 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
     }
 
     $stmt->bind_param(
-      'sssiissss',
+      'sssiiiddisss',
       $acompanante,
       $fechaRetorno,
       $horaRetorno,
       $kmRegreso,
       $kmRegreso,
+      $segmentoImputado,
+      $valorKmImputado,
+      $costoKmTotalImputado,
       $cargoCombustible,
       $tanqueCombustible,
       $observaciones,

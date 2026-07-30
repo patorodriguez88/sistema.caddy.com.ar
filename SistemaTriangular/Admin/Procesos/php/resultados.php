@@ -250,7 +250,7 @@ if ($action === 'listar') {
             V.Aliados = 0,
             IFNULL(
                 ROUND(
-                    (LOG.KilometrosRecorridos * IFNULL(VK.ValorKm, 0))
+                    LOG.CostoKmTotalImputado
                     / NULLIF(COALESCE(NULLIF(SR.Cant, 0), PR.CantidadServiciosSinImporte), 0)
                 , 2)
             , 0)
@@ -293,7 +293,7 @@ if ($action === 'listar') {
             V.Aliados = 0,
             IFNULL(
                 ROUND(
-                    (LOG.KilometrosRecorridos * IFNULL(VK.ValorKm, 0))
+                    LOG.CostoKmTotalImputado
                     / NULLIF(COALESCE(NULLIF(SR.Cant, 0), PR.CantidadServiciosSinImporte), 0)
                 , 2)
             , 0)
@@ -375,8 +375,6 @@ if ($action === 'listar') {
         AND LOG.Eliminado = 0
     LEFT JOIN Vehiculos AS V
         ON V.Dominio = LOG.Patente
-    LEFT JOIN ValorxKilometro AS VK
-        ON VK.id = V.Segmento
     LEFT JOIN usuarios AS UP
         ON UP.id = LOG.idUsuarioChofer
     LEFT JOIN (
@@ -611,9 +609,10 @@ if ($action === 'detalle') {
         $sqlPropio = "
             SELECT
                 V.Aliados,
-                VK.Nombre AS SegmentoNombre,
-                IFNULL(VK.ValorKm, 0) AS ValorKm,
+                VKF.Nombre AS SegmentoNombre,
+                IFNULL(LOG.CostoKmValorImputado, 0) AS ValorKm,
                 IFNULL(LOG.KilometrosRecorridos, 0) AS KilometrosRecorridos,
+                LOG.CostoKmTotalImputado,
                 UP.Usuario AS Repartidor,
                 COALESCE(NULLIF(SR.Cant, 0), PR.CantidadServiciosSinImporte) AS CantidadServicios
             FROM TransClientes TS
@@ -622,8 +621,8 @@ if ($action === 'detalle') {
                 AND LOG.Eliminado = 0
             LEFT JOIN Vehiculos V
                 ON V.Dominio = LOG.Patente
-            LEFT JOIN ValorxKilometro VK
-                ON VK.id = V.Segmento
+            LEFT JOIN ValorxKilometro VKF
+                ON VKF.id = LOG.CostoKmSegmentoImputado
             LEFT JOIN usuarios UP
                 ON UP.id = LOG.idUsuarioChofer
             LEFT JOIN (
@@ -653,10 +652,15 @@ if ($action === 'detalle') {
                 $rowPropio = $stmtPropio->get_result()->fetch_assoc();
 
                 if ($rowPropio && (int)$rowPropio['Aliados'] === 0 && $rowPropio['Repartidor']) {
-                    $km       = (float)$rowPropio['KilometrosRecorridos'];
-                    $valorKm  = (float)$rowPropio['ValorKm'];
-                    $cant     = (int)$rowPropio['CantidadServicios'];
-                    $costo    = $cant > 0 ? round(($km * $valorKm) / $cant, 2) : 0;
+                    $km            = (float)$rowPropio['KilometrosRecorridos'];
+                    $valorKm       = (float)$rowPropio['ValorKm'];
+                    $cant          = (int)$rowPropio['CantidadServicios'];
+                    $totalImputado = $rowPropio['CostoKmTotalImputado'];
+                    // El costo se lee del valor CONGELADO al cierre de la orden (no se recalcula
+                    // con el ValorKm actual, para no alterar reportes de órdenes ya cerradas).
+                    $costo = ($totalImputado !== null && $cant > 0)
+                        ? round(((float)$totalImputado) / $cant, 2)
+                        : 0;
 
                     $propio = [
                         'Repartidor'           => $rowPropio['Repartidor'],

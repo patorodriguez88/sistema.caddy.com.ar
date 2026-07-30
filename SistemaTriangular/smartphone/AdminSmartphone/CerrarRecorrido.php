@@ -48,9 +48,14 @@ if($_POST[Cerrar]=='Aceptar'){
   $Fecha=date('Y-m-d');
   $Hora=date("H:i"); 
   
+  // Congelamos el costo por km con el valor VIGENTE en este momento (no se recalcula
+  // más adelante aunque después se edite ValorxKilometro), para no alterar reportes históricos.
   $sql=mysql_query("UPDATE Logistica SET KilometrosRegreso='$_POST[Km]',KilometrosRecorridos=('$_POST[Km]'-Kilometros),
+CostoKmSegmentoImputado=(SELECT V.Segmento FROM Vehiculos V WHERE V.Dominio='$_POST[patente]' LIMIT 1),
+CostoKmValorImputado=IFNULL((SELECT VK.ValorKm FROM Vehiculos V LEFT JOIN ValorxKilometro VK ON VK.id=V.Segmento AND VK.Activo=1 WHERE V.Dominio='$_POST[patente]' LIMIT 1),0),
+CostoKmTotalImputado=('$_POST[Km]'-Kilometros) * IFNULL((SELECT VK.ValorKm FROM Vehiculos V LEFT JOIN ValorxKilometro VK ON VK.id=V.Segmento AND VK.Activo=1 WHERE V.Dominio='$_POST[patente]' LIMIT 1),0),
 CombustibleRegreso='$_POST[combustibleregreso_t]',ObservacionesCierre='$_POST[observacionesregreso_t]',Estado='Cerrada',
-FechaRetorno='$Fecha',HoraRetorno='$Hora',UsuarioCierre='$_SESSION[Usuario]' WHERE id='$_POST[id]'"); 
+FechaRetorno='$Fecha',HoraRetorno='$Hora',UsuarioCierre='$_SESSION[Usuario]' WHERE id='$_POST[id]'");
 
   //SEGUNDO DETECTO SI HAY MAS DE UNA ORDEN EN ESTA CAMIONETA LE CARGO LOS KM DE SALIDA Y EL TANQUE DE COMBUSTIBLE
   
