@@ -1,10 +1,22 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// display_errors en 0: si algo falla, el error se reporta como JSON (abajo),
+// nunca se imprime HTML crudo mezclado con la respuesta (rompe DataTables).
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 // SistemaTriangular/Admin/Procesos/php/resultados.php
 header('Content-Type: application/json; charset=UTF-8');
 // session_start();
+
+// Desde PHP 8.1, mysqli tira excepción en los errores en vez de devolver false.
+// Sin este handler, un error de SQL (ej: columna faltante) imprime un fatal error
+// en crudo antes del JSON y DataTables lo reporta como "Invalid JSON response".
+set_exception_handler(function ($e) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(['ok' => false, 'error' => 'Error interno: ' . $e->getMessage()]);
+    exit;
+});
 
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');

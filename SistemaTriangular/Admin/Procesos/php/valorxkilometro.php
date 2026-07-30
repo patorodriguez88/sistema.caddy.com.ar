@@ -1,9 +1,19 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// display_errors en 0: si algo falla, el error se reporta como JSON (abajo),
+// nunca se imprime HTML crudo mezclado con la respuesta (rompe DataTables).
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
 // SistemaTriangular/Admin/Procesos/php/valorxkilometro.php
 header('Content-Type: application/json; charset=UTF-8');
+
+// Desde PHP 8.1, mysqli tira excepción en los errores en vez de devolver false.
+set_exception_handler(function ($e) {
+    http_response_code(500);
+    header('Content-Type: application/json; charset=UTF-8');
+    echo json_encode(['ok' => false, 'error' => 'Error interno: ' . $e->getMessage()]);
+    exit;
+});
 
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
