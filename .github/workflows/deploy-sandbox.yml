@@ -1,8 +1,11 @@
 name: 🚀 Deploy to sandbox
-on: 
+on:
   push:
     branches:
       - develop   # 👈 Solo cuando haya push en develop
+concurrency:
+  group: deploy-sandbox
+  cancel-in-progress: true
 jobs:
   web-deploy:
     name: 🎉 Deploy
