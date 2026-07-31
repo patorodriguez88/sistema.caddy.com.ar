@@ -249,7 +249,10 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
       margin-bottom: 10px !important;
     }
 
-    .row {
+    /* Excluimos las dos tablas alternativas (facturación / recorridos): su
+       display lo decide JS según jsonData.idLogistica, y esta regla genérica
+       con !important pisaba ese "display:none" y mostraba las dos (una vacía). */
+    .row:not(#row_tabla_facturacion):not(#row_tabla_recorridos) {
       display: flex !important;
       flex-wrap: wrap !important;
       margin-left: -4px !important;
@@ -386,13 +389,10 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
       margin-right: 4px !important;
     }
 
-    #row_tabla_facturacion {
-      display: none !important;
-    }
-
-    #row_tabla_recorridos {
-      display: flex !important;
-    }
+    /* No forzamos display acá: JS ya decide cuál de las dos tablas
+       (facturación o recorridos) corresponde a esta factura según
+       jsonData.idLogistica. Forzarlo en print ocultaba la que sí tenía
+       datos y mostraba la otra vacía. */
   }
 </style>
 <script>
