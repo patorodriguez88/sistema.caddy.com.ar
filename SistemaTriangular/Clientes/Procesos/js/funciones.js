@@ -377,7 +377,7 @@ $("#perfil_conctact").click(function () {
     paging: false,
     searching: false,
     ajax: {
-      url: "../Procesos/php/tablas.php",
+      url: "Procesos/php/tablas.php",
       data: {
         Contact: 1,
         id: id,
