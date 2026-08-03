@@ -10,7 +10,10 @@ header('Content-Type: application/json; charset=utf-8');
 if (isset($_POST['ObtenerMailRecibo'])) {
     $id = intval($_POST['id']);
 
-    $sql = $mysqli->query("SELECT C.Mail
+    $sql = $mysqli->query("SELECT C.Mail AS MailCliente,
+            (SELECT mc.email FROM mail_clientes mc
+              WHERE mc.idCliente = C.id AND mc.Sector = 'Administrativo' AND mc.Eliminado = 0
+              ORDER BY mc.id LIMIT 1) AS MailAdministrativo
         FROM Ctasctes CT
         LEFT JOIN Clientes C ON C.id = CT.idCliente
         WHERE CT.id = '{$id}'
@@ -34,9 +37,11 @@ if (isset($_POST['ObtenerMailRecibo'])) {
         exit;
     }
 
+    $mailCliente = !empty($row['MailAdministrativo']) ? $row['MailAdministrativo'] : trim($row['MailCliente'] ?? '');
+
     echo json_encode([
         'success' => 1,
-        'mail' => $row['Mail'] ?? ''
+        'mail' => $mailCliente
     ]);
     exit;
 }
@@ -50,7 +55,11 @@ if (!isset($_POST['EnviarReciboMail'])) {
 
 $id = intval($_POST['id']);
 
-$sql = $mysqli->query("SELECT C.Mail, CT.RazonSocial, CT.NumeroVenta
+$sql = $mysqli->query("SELECT C.Mail AS MailCliente,
+        (SELECT mc.email FROM mail_clientes mc
+          WHERE mc.idCliente = C.id AND mc.Sector = 'Administrativo' AND mc.Eliminado = 0
+          ORDER BY mc.id LIMIT 1) AS MailAdministrativo,
+        CT.RazonSocial, CT.NumeroVenta
     FROM Ctasctes CT
     LEFT JOIN Clientes C ON C.id = CT.idCliente
     WHERE CT.id = '{$id}'
@@ -74,8 +83,10 @@ if (!$row) {
     exit;
 }
 
+$mailCliente = !empty($row['MailAdministrativo']) ? $row['MailAdministrativo'] : trim($row['MailCliente'] ?? '');
+
 $mailPost = isset($_POST['mailDestino']) ? trim($_POST['mailDestino']) : '';
-$para = $mailPost !== '' ? $mailPost : trim($row['Mail']);
+$para = $mailPost !== '' ? $mailPost : $mailCliente;
 
 if ($para === '') {
     echo json_encode([
@@ -93,7 +104,6 @@ if (!filter_var($para, FILTER_VALIDATE_EMAIL)) {
     exit;
 }
 
-$para   = trim($row['Mail']);
 $nombre = $row['RazonSocial'];
 $numero = $row['NumeroVenta'];
 

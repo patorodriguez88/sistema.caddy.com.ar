@@ -494,6 +494,7 @@ $("#contact-modal").on("shown.bs.modal", function (e) {
     $("#contact_email").val(triggerLink.attr("data-email"));
     $("#contact_sector").val(triggerLink.attr("data-sector"));
     $("#contact_telefono").val(triggerLink.attr("data-telefono"));
+    $("#id_contacto").val(triggerLink.attr("data-id"));
   } else {
     $("#contact_modal_modificar_ok").hide();
     $("#contact_modal_ok").show();
@@ -504,6 +505,7 @@ $("#contact-modal").on("shown.bs.modal", function (e) {
     $("#contact_email").val("");
     $("#contact_sector").val("");
     $("#contact_telefono").val("");
+    $("#id_contacto").val("");
   }
 });
 
@@ -542,7 +544,7 @@ $("#contact_modal_ok").click(function () {
       } else {
         $.NotificationApp.send(
           "Error",
-          "No se pudo agregar el contacto. ".jsonData.error,
+          "No se pudo agregar el contacto. " + jsonData.error,
           "bottom-right",
           "#dc3545",
           "danger",
@@ -562,11 +564,13 @@ $("#contact_modal_modificar_ok").click(function () {
   var telefono = $("#contact_telefono").val();
   var web = $("#web").val();
   var company = $("#select2-buscarcliente-container").val();
+  var id_contacto = $("#id_contacto").val();
 
   $.ajax({
     data: {
       Modificar_contacto: 1,
       idCliente: id,
+      id_contacto: id_contacto,
       contact_nombre: nombre,
       contact_lastname: lastname,
       contact_email: email,

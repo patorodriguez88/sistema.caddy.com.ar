@@ -23,7 +23,10 @@ if (isset($_POST['ObtenerMailFactura'])) {
     $id = intval($_POST['id']);
 
     $sql = $mysqli->query("
-        SELECT C.Mail
+        SELECT C.Mail AS MailCliente,
+               (SELECT mc.email FROM mail_clientes mc
+                 WHERE mc.idCliente = C.id AND mc.Sector = 'Administrativo' AND mc.Eliminado = 0
+                 ORDER BY mc.id LIMIT 1) AS MailAdministrativo
         FROM Ctasctes CT
         LEFT JOIN Clientes C ON C.id = CT.idCliente
         WHERE CT.id = '{$id}'
@@ -48,9 +51,11 @@ if (isset($_POST['ObtenerMailFactura'])) {
         exit;
     }
 
+    $mailCliente = !empty($row['MailAdministrativo']) ? $row['MailAdministrativo'] : trim($row['MailCliente'] ?? '');
+
     echo json_encode([
         'success' => 1,
-        'mail' => $row['Mail'] ?? ''
+        'mail' => $mailCliente
     ]);
     exit;
 }
@@ -66,13 +71,16 @@ if (!isset($_POST['EnviarFacturaMail'])) {
 $id = intval($_POST['id']);
 
 $sql = $mysqli->query("
-    SELECT 
+    SELECT
         CT.id,
         CT.idCliente,
         CT.RazonSocial,
         CT.NumeroFactura,
         CT.TipoDeComprobante,
-        C.Mail
+        C.Mail AS MailCliente,
+        (SELECT mc.email FROM mail_clientes mc
+          WHERE mc.idCliente = C.id AND mc.Sector = 'Administrativo' AND mc.Eliminado = 0
+          ORDER BY mc.id LIMIT 1) AS MailAdministrativo
     FROM Ctasctes CT
     LEFT JOIN Clientes C ON C.id = CT.idCliente
     WHERE CT.id = '{$id}'
@@ -97,8 +105,10 @@ if (!$row) {
     exit;
 }
 
+$mailCliente = !empty($row['MailAdministrativo']) ? $row['MailAdministrativo'] : trim($row['MailCliente'] ?? '');
+
 $mailPost = isset($_POST['mailDestino']) ? trim($_POST['mailDestino']) : '';
-$para = $mailPost !== '' ? $mailPost : trim($row['Mail']);
+$para = $mailPost !== '' ? $mailPost : $mailCliente;
 
 if ($para === '') {
     echo json_encode([

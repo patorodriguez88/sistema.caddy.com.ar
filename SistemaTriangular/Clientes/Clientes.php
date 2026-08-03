@@ -332,13 +332,19 @@
                                         </div>
                                         <div class="form-group mb-2">
                                             <label for="contact_sector">Sector</label>
-                                            <input type="text" id="contact_sector" class="form-control" placeholder="subject">
+                                            <select id="contact_sector" class="form-control">
+                                                <option value="">Seleccionar...</option>
+                                                <option value="Administrativo">Administrativo</option>
+                                                <option value="Operativo">Operativo</option>
+                                            </select>
                                         </div>
                                         <div class="form-group mb-2">
                                             <label for="contact_telefono">Telefono</label>
                                             <input type="number" id="contact_telefono" class="form-control" placeholder="subject">
                                         </div>
+                                        <input type="hidden" id="id_contacto" value="">
                                         <button id="contact_modal_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
+                                        <button id="contact_modal_modificar_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
                                         <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
                                     </form>
                                 </div>
@@ -1946,7 +1952,7 @@
                                                         </div>
                                                         <div class="col-lg-4 mt-3">
                                                             <div class="form-group">
-                                                                <label for="email">Email</label>
+                                                                <label for="email">Correo Operativo</label>
                                                                 <input type="email" id="email" name="email" class="form-control" placeholder="Email">
                                                             </div>
                                                         </div>
@@ -2263,10 +2269,12 @@
                                                                     <th>Sector</th>
                                                                     <th>Telefono</th>
                                                                     <th>Hubspot</th>
+                                                                    <th>Acciones</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 <tr>
+                                                                    <td></td>
                                                                     <td></td>
                                                                     <td></td>
                                                                     <td></td>

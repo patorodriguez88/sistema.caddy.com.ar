@@ -277,19 +277,25 @@ function hubspot_contact($email, $name, $lastname, $phone, $company, $website, $
   }
 }
 
+// Valores permitidos para Sector: define a qué correo se enruta cada tipo de notificación
+// (Administrativo = factura/recibo, Operativo = notificaciones de envío).
+$sectoresContactoValidos = ['Administrativo', 'Operativo'];
+
 if (isset($_POST['Eliminar_contacto'])) {
 
   $id = $_POST['id_contacto'];
 
-  $sql = "UPDATE mail_clientes SET Eliminado=1 WHERE id = '$id' LIMIT 1";
+  $stmt = $mysqli->prepare("UPDATE mail_clientes SET Eliminado=1 WHERE id=? LIMIT 1");
+  $stmt->bind_param("i", $id);
 
-  if ($mysqli->query($sql)) {
+  if ($stmt->execute()) {
 
     echo json_encode(array('success' => 1));
   } else {
 
     echo json_encode(array('success' => 0));
   }
+  $stmt->close();
 }
 if (isset($_POST['Agregar_contacto'])) {
 
@@ -303,9 +309,16 @@ if (isset($_POST['Agregar_contacto'])) {
   $website = $_POST['contact_website'];
   $lifecyclestage = 'marketingqualifiedlead';
 
+  if (!in_array($sector, $sectoresContactoValidos, true)) {
+    echo json_encode(array('success' => 0, 'error' => 'Sector inválido'));
+    exit;
+  }
+
   // Verificar si el registro ya existe
-  $sqlSelect = "SELECT COUNT(*) as count FROM `mail_clientes` WHERE idCliente='$id' AND email= '$email'";
-  $result = $mysqli->query($sqlSelect);
+  $stmtSelect = $mysqli->prepare("SELECT COUNT(*) as count FROM `mail_clientes` WHERE idCliente=? AND email=?");
+  $stmtSelect->bind_param("ss", $id, $email);
+  $stmtSelect->execute();
+  $result = $stmtSelect->get_result();
 
   //INSERTO EN HABSPOT RETORNA EL ID
   $result_hubspot = hubspot_contact($email, $nombre, $apellido, $telefono, $company, $website, $lifecyclestage);
@@ -313,21 +326,24 @@ if (isset($_POST['Agregar_contacto'])) {
   if ($result) {
     $row = $result->fetch_assoc();
     $count = $row['count'];
-    $sqlUpdate = $mysqli->query("UPDATE mail_clientes SET id_hubspot='$result_hubspot' WHERE idCliente='$id' AND email= '$email'");
+    $stmtUpdate = $mysqli->prepare("UPDATE mail_clientes SET id_hubspot=? WHERE idCliente=? AND email=?");
+    $stmtUpdate->bind_param("sss", $result_hubspot, $id, $email);
+    $stmtUpdate->execute();
 
     if ($count == 0) {
 
       // El registro no existe, realizar la inserción
-      $sqlInsert = "INSERT INTO `mail_clientes`(`idCliente`, `email`, `Nombre`,`Apellido`, `Sector`, `Telefono`,`lifecyclestage`,`id_hubspot`) VALUES 
-            ('{$id}','{$email}','{$nombre}','{$apellido}','{$sector}','{$telefono}','{$lifecyclestage}','{$result_hubspot}')";
+      $stmtInsert = $mysqli->prepare("INSERT INTO `mail_clientes`(`idCliente`, `email`, `Nombre`,`Apellido`, `Sector`, `Telefono`,`lifecyclestage`,`id_hubspot`, `Eliminado`) VALUES (?,?,?,?,?,?,?,?,0)");
+      $stmtInsert->bind_param("ssssssss", $id, $email, $nombre, $apellido, $sector, $telefono, $lifecyclestage, $result_hubspot);
 
-      if ($mysqli->query($sqlInsert) === TRUE) {
+      if ($stmtInsert->execute()) {
 
         echo json_encode(array('success' => 1));
       } else {
 
         echo json_encode(array('success' => 0));
       }
+      $stmtInsert->close();
     } else {
 
 
@@ -335,17 +351,19 @@ if (isset($_POST['Agregar_contacto'])) {
       $error = "El registro ya existe, no se insertará nuevamente.";
       echo json_encode(array('success' => 0, 'error' => $error));
     }
+    $stmtUpdate->close();
   } else {
 
     $error = "Error al ejecutar la consulta SELECT: " . $mysqli->error;
     echo json_encode(array('success' => 0, 'error' => $error));
   }
+  $stmtSelect->close();
 }
 
 //MODIFICAR CONTACTO
 if (isset($_POST['Modificar_contacto'])) {
 
-  $id = $_POST['idCliente'];
+  $id_contacto = $_POST['id_contacto'];
   $nombre = $_POST['contact_nombre'];
   $apellido = $_POST['contact_lastname'];
   $email = $_POST['contact_email'];
@@ -355,18 +373,25 @@ if (isset($_POST['Modificar_contacto'])) {
   $website = $_POST['contact_website'];
   $lifecyclestage = 'marketingqualifiedlead';
 
+  if (!in_array($sector, $sectoresContactoValidos, true)) {
+    echo json_encode(array('success' => 0, 'error' => 'Sector inválido'));
+    exit;
+  }
+
   //INSERTO EN HABSPOT RETORNA EL ID
   // $result_hubspot = hubspot_contact($email,$nombre,$apellido,$telefono,$company,$website,$lifecyclestage);
 
-  $sqlUpdate = "UPDATE mail_clientes SET Nombre='$nombre',Apellido='$apellido',Sector='$sector',Telefono='$telefono' WHERE idCliente='$id'";
+  $stmt = $mysqli->prepare("UPDATE mail_clientes SET Nombre=?, Apellido=?, Sector=?, Telefono=? WHERE id=?");
+  $stmt->bind_param("ssssi", $nombre, $apellido, $sector, $telefono, $id_contacto);
 
-  if ($mysqli->query($sqlUpdate) === TRUE) {
+  if ($stmt->execute()) {
 
     echo json_encode(array('success' => 1));
   } else {
 
     echo json_encode(array('success' => 0));
   }
+  $stmt->close();
 }
 
 if (isset($_POST['Recorridos_ctacte'])) {
