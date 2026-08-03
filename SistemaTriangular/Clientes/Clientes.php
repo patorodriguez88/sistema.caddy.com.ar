@@ -2256,7 +2256,7 @@
                                             <div class="tab-pane" id="contact">
                                                 <div class="row">
                                                     <div class="text-right">
-                                                        <a type="button" class="btn btn-success" data-toggle="modal" data-target="#contact-modal"><i class="mdi mdi-send"></i> Agregar Contacto</a>
+                                                        <a id="btn_agregar_contacto" type="button" class="btn btn-success" data-toggle="modal" data-target="#contact-modal"><i class="mdi mdi-send"></i> Agregar Contacto</a>
                                                     </div>
                                                 </div>
                                                 <div class="row">

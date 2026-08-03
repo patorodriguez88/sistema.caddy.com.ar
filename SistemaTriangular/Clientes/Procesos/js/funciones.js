@@ -369,6 +369,10 @@ function eliminar_mvi(i) {
 }
 
 //CONTACT
+$("#btn_agregar_contacto").click(function () {
+  $("#contact-modal").modal("show");
+});
+
 $("#perfil_conctact").click(function () {
   var id = document.getElementById("codigo").value;
 
