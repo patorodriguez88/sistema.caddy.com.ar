@@ -50,7 +50,7 @@
                     </div>
                     <!-- end page title -->
                     <!-- MODAL RECIBO DE PAGO -->
-                    <div class="modal fade" id="modal_ver_recibo" tabindex="-1" aria-labelledby="modalVerReciboLabel" aria-hidden="true">
+                    <div class="modal fade" id="modal_ver_recibo" tabindex="-1" aria-labelledby="modalVerReciboLabel" aria-hidden="true" style="z-index:1003;">
                         <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered">
                             <div class="modal-content">
 
@@ -88,7 +88,7 @@
                         </div>
                     </div>
                     <!-- MODAL FACTURA -->
-                    <div class="modal fade" id="modal_factura_preview" tabindex="-1" aria-labelledby="modalFacturaPreviewLabel" aria-hidden="true">
+                    <div class="modal fade" id="modal_factura_preview" tabindex="-1" aria-labelledby="modalFacturaPreviewLabel" aria-hidden="true" style="z-index:1003;">
                         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary text-white">
@@ -309,7 +309,7 @@
                     </div><!-- /.modal -->
 
                     <!-- AGREGAR CONTACTO -->
-                    <div id="contact-modal" class="modal fade" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+                    <div id="contact-modal" class="modal fade" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true" style="z-index:1003;">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary text-white">
@@ -358,7 +358,7 @@
                     <!-- AGREGAR CONTACTO -->
 
                     <!-- DESTINATARIOS MAIL (factura/recibo) -->
-                    <div id="modal_enviar_mail_destinatarios" class="modal fade" tabindex="-1" aria-hidden="true">
+                    <div id="modal_enviar_mail_destinatarios" class="modal fade" tabindex="-1" aria-hidden="true" style="z-index:1003;">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary text-white">
