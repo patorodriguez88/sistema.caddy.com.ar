@@ -309,49 +309,75 @@
                     </div><!-- /.modal -->
 
                     <!-- AGREGAR CONTACTO -->
-                    <div id="contact-modal" class="modal fade" tabindex="-1" role="dialog" style="z-index: 2000;" aria-labelledby="compose-header-modalLabel" aria-hidden="true">
-                        <div class="modal-dialog" style="z-index: 2000;">
-                            <div class="modal-content" style="z-index: 2000;">
-                                <div class="modal-header modal-colored-header bg-primary">
-                                    <h4 class="modal-title" id="compose-header-modalLabel">Agregar Contacto</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <div id="contact-modal" class="modal fade" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="contactModalLabel">Agregar Contacto</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body p-3">
                                     <form class="p-1">
                                         <div class="form-group mb-2">
-                                            <label for="contact_nombre">Nombre Contacto</label>
+                                            <label for="contact_nombre" class="form-label">Nombre Contacto</label>
                                             <input type="text" id="contact_nombre" class="form-control" placeholder="Nombre">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label for="contact_lastname">Apellido Contacto</label>
+                                            <label for="contact_lastname" class="form-label">Apellido Contacto</label>
                                             <input type="text" id="contact_lastname" class="form-control" placeholder="Apellido">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label for="contact_email">E Mail</label>
+                                            <label for="contact_email" class="form-label">E Mail</label>
                                             <input type="email" id="contact_email" class="form-control" placeholder="example@email.com">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label for="contact_sector">Sector</label>
-                                            <select id="contact_sector" class="form-control">
-                                                <option value="">Seleccionar...</option>
-                                                <option value="Administrativo">Administrativo</option>
-                                                <option value="Operativo">Operativo</option>
-                                            </select>
+                                            <label for="contact_sector" class="form-label">Sector</label>
+                                            <input type="text" id="contact_sector" class="form-control" placeholder="Ej: Ventas, CEO, Administración">
                                         </div>
                                         <div class="form-group mb-2">
-                                            <label for="contact_telefono">Telefono</label>
+                                            <label for="contact_telefono" class="form-label">Telefono</label>
                                             <input type="number" id="contact_telefono" class="form-control" placeholder="subject">
                                         </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="contact_notif_operativo">
+                                            <label class="form-check-label" for="contact_notif_operativo">Recibe notificaciones operativas (envíos/estados)</label>
+                                        </div>
+                                        <div class="form-check form-switch mb-2">
+                                            <input class="form-check-input" type="checkbox" id="contact_notif_administrativo">
+                                            <label class="form-check-label" for="contact_notif_administrativo">Recibe notificaciones administrativas (facturas/recibos)</label>
+                                        </div>
                                         <input type="hidden" id="id_contacto" value="">
-                                        <button id="contact_modal_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
-                                        <button id="contact_modal_modificar_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
-                                        <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                        <button id="contact_modal_ok" type="button" class="btn btn-primary"><i class="mdi mdi-send me-1"></i> Aceptar</button>
+                                        <button id="contact_modal_modificar_ok" type="button" class="btn btn-primary"><i class="mdi mdi-send me-1"></i> Aceptar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                     </form>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
                     <!-- AGREGAR CONTACTO -->
+
+                    <!-- DESTINATARIOS MAIL (factura/recibo) -->
+                    <div id="modal_enviar_mail_destinatarios" class="modal fade" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-primary text-white">
+                                    <h5 class="modal-title" id="modalEnviarMailTitulo">Enviar por mail</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <label class="form-label">Destinatarios</label>
+                                    <div id="mail_destinatarios_badges" class="d-flex flex-wrap gap-1 mb-2"></div>
+                                    <input type="email" id="mail_destinatarios_input" class="form-control" placeholder="Escribí un correo y presioná Enter">
+                                    <small class="text-muted">Se precargan los contactos marcados como administrativos. Podés sacar o agregar direcciones antes de enviar.</small>
+                                </div>
+                                <div class="modal-footer">
+                                    <button id="btn_confirmar_envio_mail" type="button" class="btn btn-primary">Enviar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="modificar_recorridos_modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog modal-sm modal-dialog-centered">
@@ -1952,12 +1978,6 @@
                                                         </div>
                                                         <div class="col-lg-4 mt-3">
                                                             <div class="form-group">
-                                                                <label for="email">Correo Operativo</label>
-                                                                <input type="email" id="email" name="email" class="form-control" placeholder="Email">
-                                                            </div>
-                                                        </div>
-                                                        <div class="col-lg-4 mt-3">
-                                                            <div class="form-group">
                                                                 <label for="web">Web</label>
                                                                 <input type="text" id="web" class="form-control">
                                                             </div>
@@ -2256,7 +2276,7 @@
                                             <div class="tab-pane" id="contact">
                                                 <div class="row">
                                                     <div class="text-right">
-                                                        <a id="btn_agregar_contacto" type="button" class="btn btn-success" data-toggle="modal" data-target="#contact-modal"><i class="mdi mdi-send"></i> Agregar Contacto</a>
+                                                        <a id="btn_agregar_contacto" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#contact-modal"><i class="mdi mdi-send"></i> Agregar Contacto</a>
                                                     </div>
                                                 </div>
                                                 <div class="row">
@@ -2268,12 +2288,16 @@
                                                                     <th>E mail</th>
                                                                     <th>Sector</th>
                                                                     <th>Telefono</th>
+                                                                    <th>Operativo</th>
+                                                                    <th>Administrativo</th>
                                                                     <th>Hubspot</th>
                                                                     <th>Acciones</th>
                                                                 </tr>
                                                             </thead>
                                                             <tbody>
                                                                 <tr>
+                                                                    <td></td>
+                                                                    <td></td>
                                                                     <td></td>
                                                                     <td></td>
                                                                     <td></td>

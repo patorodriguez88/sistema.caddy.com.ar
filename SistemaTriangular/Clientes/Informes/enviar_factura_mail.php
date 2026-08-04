@@ -23,10 +23,7 @@ if (isset($_POST['ObtenerMailFactura'])) {
     $id = intval($_POST['id']);
 
     $sql = $mysqli->query("
-        SELECT C.Mail AS MailCliente,
-               (SELECT mc.email FROM mail_clientes mc
-                 WHERE mc.idCliente = C.id AND mc.Sector = 'Administrativo' AND mc.Eliminado = 0
-                 ORDER BY mc.id LIMIT 1) AS MailAdministrativo
+        SELECT C.id AS idCliente
         FROM Ctasctes CT
         LEFT JOIN Clientes C ON C.id = CT.idCliente
         WHERE CT.id = '{$id}'
@@ -51,11 +48,22 @@ if (isset($_POST['ObtenerMailFactura'])) {
         exit;
     }
 
-    $mailCliente = !empty($row['MailAdministrativo']) ? $row['MailAdministrativo'] : trim($row['MailCliente'] ?? '');
+    $mails = [];
+    $sqlMails = $mysqli->query("
+        SELECT email, Nombre
+        FROM mail_clientes
+        WHERE idCliente = '{$row['idCliente']}' AND NotifAdministrativo = 1 AND Eliminado = 0
+        ORDER BY id
+    ");
+    if ($sqlMails) {
+        while ($m = $sqlMails->fetch_assoc()) {
+            $mails[] = $m;
+        }
+    }
 
     echo json_encode([
         'success' => 1,
-        'mail' => $mailCliente
+        'mails' => $mails
     ]);
     exit;
 }
@@ -76,11 +84,7 @@ $sql = $mysqli->query("
         CT.idCliente,
         CT.RazonSocial,
         CT.NumeroFactura,
-        CT.TipoDeComprobante,
-        C.Mail AS MailCliente,
-        (SELECT mc.email FROM mail_clientes mc
-          WHERE mc.idCliente = C.id AND mc.Sector = 'Administrativo' AND mc.Eliminado = 0
-          ORDER BY mc.id LIMIT 1) AS MailAdministrativo
+        CT.TipoDeComprobante
     FROM Ctasctes CT
     LEFT JOIN Clientes C ON C.id = CT.idCliente
     WHERE CT.id = '{$id}'
@@ -105,26 +109,30 @@ if (!$row) {
     exit;
 }
 
-$mailCliente = !empty($row['MailAdministrativo']) ? $row['MailAdministrativo'] : trim($row['MailCliente'] ?? '');
+$mailDestino = isset($_POST['mailDestino']) ? (array) $_POST['mailDestino'] : [];
+$mailDestino = array_values(array_filter(array_map('trim', $mailDestino), function ($v) {
+    return $v !== '';
+}));
 
-$mailPost = isset($_POST['mailDestino']) ? trim($_POST['mailDestino']) : '';
-$para = $mailPost !== '' ? $mailPost : $mailCliente;
-
-if ($para === '') {
+if (empty($mailDestino)) {
     echo json_encode([
         'success' => 0,
-        'msg' => 'El cliente no tiene mail cargado'
+        'msg' => 'Debés seleccionar al menos un destinatario'
     ]);
     exit;
 }
 
-if (!filter_var($para, FILTER_VALIDATE_EMAIL)) {
-    echo json_encode([
-        'success' => 0,
-        'msg' => 'El correo ingresado no es válido'
-    ]);
-    exit;
+foreach ($mailDestino as $direccion) {
+    if (!filter_var($direccion, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode([
+            'success' => 0,
+            'msg' => "El correo \"{$direccion}\" no es válido"
+        ]);
+        exit;
+    }
 }
+
+$para = $mailDestino;
 
 $nombre = $row['RazonSocial'];
 $numero = $row['NumeroFactura'];
@@ -220,7 +228,7 @@ if (!empty($respuesta['success']) && $respuesta['success'] == 1) {
     $idFac = facturacion_id_por_numero($mysqli, $numero);
     if ($idFac) {
         $fecha  = date('Y-m-d H:i');
-        $msgNot = 'Factura enviada por mail a ' . $para;
+        $msgNot = 'Factura enviada por mail a ' . implode(', ', $para);
 
         // Avanzar status a Notificado (solo si todavía está Pendiente)
         facturacion_actualizar_status($mysqli, $idFac, 1, true);

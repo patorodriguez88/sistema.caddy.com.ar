@@ -277,10 +277,6 @@ function hubspot_contact($email, $name, $lastname, $phone, $company, $website, $
   }
 }
 
-// Valores permitidos para Sector: define a qué correo se enruta cada tipo de notificación
-// (Administrativo = factura/recibo, Operativo = notificaciones de envío).
-$sectoresContactoValidos = ['Administrativo', 'Operativo'];
-
 if (isset($_POST['Eliminar_contacto'])) {
 
   $id = $_POST['id_contacto'];
@@ -308,11 +304,8 @@ if (isset($_POST['Agregar_contacto'])) {
   $company = $_POST['contact_company'];
   $website = $_POST['contact_website'];
   $lifecyclestage = 'marketingqualifiedlead';
-
-  if (!in_array($sector, $sectoresContactoValidos, true)) {
-    echo json_encode(array('success' => 0, 'error' => 'Sector inválido'));
-    exit;
-  }
+  $notifOperativo = !empty($_POST['contact_notif_operativo']) ? 1 : 0;
+  $notifAdministrativo = !empty($_POST['contact_notif_administrativo']) ? 1 : 0;
 
   // Verificar si el registro ya existe
   $stmtSelect = $mysqli->prepare("SELECT COUNT(*) as count FROM `mail_clientes` WHERE idCliente=? AND email=?");
@@ -333,8 +326,8 @@ if (isset($_POST['Agregar_contacto'])) {
     if ($count == 0) {
 
       // El registro no existe, realizar la inserción
-      $stmtInsert = $mysqli->prepare("INSERT INTO `mail_clientes`(`idCliente`, `email`, `Nombre`,`Apellido`, `Sector`, `Telefono`,`lifecyclestage`,`id_hubspot`, `Eliminado`) VALUES (?,?,?,?,?,?,?,?,0)");
-      $stmtInsert->bind_param("ssssssss", $id, $email, $nombre, $apellido, $sector, $telefono, $lifecyclestage, $result_hubspot);
+      $stmtInsert = $mysqli->prepare("INSERT INTO `mail_clientes`(`idCliente`, `email`, `Nombre`,`Apellido`, `Sector`, `Telefono`,`lifecyclestage`,`id_hubspot`, `NotifOperativo`, `NotifAdministrativo`, `Eliminado`) VALUES (?,?,?,?,?,?,?,?,?,?,0)");
+      $stmtInsert->bind_param("ssssssssii", $id, $email, $nombre, $apellido, $sector, $telefono, $lifecyclestage, $result_hubspot, $notifOperativo, $notifAdministrativo);
 
       if ($stmtInsert->execute()) {
 
@@ -372,23 +365,44 @@ if (isset($_POST['Modificar_contacto'])) {
   $company = $_POST['contact_company'];
   $website = $_POST['contact_website'];
   $lifecyclestage = 'marketingqualifiedlead';
-
-  if (!in_array($sector, $sectoresContactoValidos, true)) {
-    echo json_encode(array('success' => 0, 'error' => 'Sector inválido'));
-    exit;
-  }
+  $notifOperativo = !empty($_POST['contact_notif_operativo']) ? 1 : 0;
+  $notifAdministrativo = !empty($_POST['contact_notif_administrativo']) ? 1 : 0;
 
   //INSERTO EN HABSPOT RETORNA EL ID
   // $result_hubspot = hubspot_contact($email,$nombre,$apellido,$telefono,$company,$website,$lifecyclestage);
 
-  $stmt = $mysqli->prepare("UPDATE mail_clientes SET Nombre=?, Apellido=?, Sector=?, Telefono=? WHERE id=?");
-  $stmt->bind_param("ssssi", $nombre, $apellido, $sector, $telefono, $id_contacto);
+  $stmt = $mysqli->prepare("UPDATE mail_clientes SET Nombre=?, Apellido=?, Sector=?, Telefono=?, NotifOperativo=?, NotifAdministrativo=? WHERE id=?");
+  $stmt->bind_param("ssssiii", $nombre, $apellido, $sector, $telefono, $notifOperativo, $notifAdministrativo, $id_contacto);
 
   if ($stmt->execute()) {
 
     echo json_encode(array('success' => 1));
   } else {
 
+    echo json_encode(array('success' => 0));
+  }
+  $stmt->close();
+}
+
+//TOGGLE NOTIFICACIONES (switch inline en la grilla de contactos)
+if (isset($_POST['ToggleNotifContacto'])) {
+
+  $id_contacto = $_POST['id_contacto'];
+  $campo = $_POST['campo'];
+  $valor = !empty($_POST['valor']) ? 1 : 0;
+
+  $camposValidos = ['NotifOperativo', 'NotifAdministrativo'];
+  if (!in_array($campo, $camposValidos, true)) {
+    echo json_encode(array('success' => 0, 'error' => 'Campo inválido'));
+    exit;
+  }
+
+  $stmt = $mysqli->prepare("UPDATE mail_clientes SET `$campo`=? WHERE id=?");
+  $stmt->bind_param("ii", $valor, $id_contacto);
+
+  if ($stmt->execute()) {
+    echo json_encode(array('success' => 1));
+  } else {
     echo json_encode(array('success' => 0));
   }
   $stmt->close();

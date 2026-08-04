@@ -399,6 +399,18 @@ $("#perfil_conctact").click(function () {
       { data: "Sector" },
       { data: "Telefono" },
       {
+        data: "NotifOperativo",
+        render: function (data, type, row) {
+          return `<div class="form-check form-switch"><input class="form-check-input switch-notif" type="checkbox" data-campo="NotifOperativo" data-id="${row.id}" ${+row.NotifOperativo ? "checked" : ""}></div>`;
+        },
+      },
+      {
+        data: "NotifAdministrativo",
+        render: function (data, type, row) {
+          return `<div class="form-check form-switch"><input class="form-check-input switch-notif" type="checkbox" data-campo="NotifAdministrativo" data-id="${row.id}" ${+row.NotifAdministrativo ? "checked" : ""}></div>`;
+        },
+      },
+      {
         data: "id_hubspot",
         render: function (data, type, row) {
           return `<span class="badge badge-primary">${row.id_hubspot}</span>`;
@@ -407,14 +419,50 @@ $("#perfil_conctact").click(function () {
       {
         data: "id",
         render: function (data, type, row) {
-          // return `<td><a href="#" data-id="${row.id}" data-toggle="modal" data-target="#contact-modal"><i class="mdi mdi-pencil"></i></a></td>`;
           return (
-            `<a href="#" data-id="${row.id}" data-nombre="${row.Nombre}" data-apellido="${row.Apellido}" data-email="${row.email}" data-sector="${row.Sector}" data-telefono="${row.Telefono}" data-toggle="modal" data-target="#contact-modal"><i class="mdi mdi-pencil text-warning"></i></a>` +
+            `<a href="#" data-id="${row.id}" data-nombre="${row.Nombre}" data-apellido="${row.Apellido}" data-email="${row.email}" data-sector="${row.Sector}" data-telefono="${row.Telefono}" data-notifoperativo="${row.NotifOperativo}" data-notifadministrativo="${row.NotifAdministrativo}" data-bs-toggle="modal" data-bs-target="#contact-modal"><i class="mdi mdi-pencil text-warning"></i></a>` +
             `<a class="ml-2" id="contact-delete" data-id="${row.id}"><i class="mdi mdi-trash-can text-danger"></i></a>`
           );
         },
       },
     ],
+  });
+});
+
+$("#table-contact").on("change", ".switch-notif", function () {
+  var $switch = $(this);
+  $.ajax({
+    url: "Procesos/php/funciones.php",
+    type: "post",
+    data: {
+      ToggleNotifContacto: 1,
+      id_contacto: $switch.data("id"),
+      campo: $switch.data("campo"),
+      valor: this.checked ? 1 : 0,
+    },
+    success: function (respuesta) {
+      var jsonData = JSON.parse(respuesta);
+      if (jsonData.success != 1) {
+        $switch.prop("checked", !$switch.prop("checked"));
+        $.NotificationApp.send(
+          "Error",
+          "No se pudo actualizar la notificación.",
+          "bottom-right",
+          "#dc3545",
+          "danger",
+        );
+      }
+    },
+    error: function () {
+      $switch.prop("checked", !$switch.prop("checked"));
+      $.NotificationApp.send(
+        "Error",
+        "No se pudo actualizar la notificación.",
+        "bottom-right",
+        "#dc3545",
+        "danger",
+      );
+    },
   });
 });
 
@@ -499,6 +547,8 @@ $("#contact-modal").on("shown.bs.modal", function (e) {
     $("#contact_sector").val(triggerLink.attr("data-sector"));
     $("#contact_telefono").val(triggerLink.attr("data-telefono"));
     $("#id_contacto").val(triggerLink.attr("data-id"));
+    $("#contact_notif_operativo").prop("checked", +triggerLink.attr("data-notifoperativo") === 1);
+    $("#contact_notif_administrativo").prop("checked", +triggerLink.attr("data-notifadministrativo") === 1);
   } else {
     $("#contact_modal_modificar_ok").hide();
     $("#contact_modal_ok").show();
@@ -510,6 +560,8 @@ $("#contact-modal").on("shown.bs.modal", function (e) {
     $("#contact_sector").val("");
     $("#contact_telefono").val("");
     $("#id_contacto").val("");
+    $("#contact_notif_operativo").prop("checked", false);
+    $("#contact_notif_administrativo").prop("checked", false);
   }
 });
 
@@ -523,6 +575,8 @@ $("#contact_modal_ok").click(function () {
   var telefono = $("#contact_telefono").val();
   var web = $("#web").val();
   var company = $("#select2-buscarcliente-container").val();
+  var notifOperativo = $("#contact_notif_operativo").is(":checked") ? 1 : 0;
+  var notifAdministrativo = $("#contact_notif_administrativo").is(":checked") ? 1 : 0;
 
   $.ajax({
     data: {
@@ -535,6 +589,8 @@ $("#contact_modal_ok").click(function () {
       contact_telefono: telefono,
       contact_website: web,
       contact_company: company,
+      contact_notif_operativo: notifOperativo,
+      contact_notif_administrativo: notifAdministrativo,
     },
     url: "Procesos/php/funciones.php",
     type: "post",
@@ -545,6 +601,7 @@ $("#contact_modal_ok").click(function () {
       if (jsonData.success == 1) {
         var table_contact = $("#table-contact").DataTable();
         table_contact.ajax.reload();
+        $("#contact-modal").modal("hide");
       } else {
         $.NotificationApp.send(
           "Error",
@@ -569,6 +626,8 @@ $("#contact_modal_modificar_ok").click(function () {
   var web = $("#web").val();
   var company = $("#select2-buscarcliente-container").val();
   var id_contacto = $("#id_contacto").val();
+  var notifOperativo = $("#contact_notif_operativo").is(":checked") ? 1 : 0;
+  var notifAdministrativo = $("#contact_notif_administrativo").is(":checked") ? 1 : 0;
 
   $.ajax({
     data: {
@@ -581,6 +640,8 @@ $("#contact_modal_modificar_ok").click(function () {
       contact_sector: sector,
       contact_telefono: telefono,
       contact_website: web,
+      contact_notif_operativo: notifOperativo,
+      contact_notif_administrativo: notifAdministrativo,
     },
     url: "Procesos/php/funciones.php",
     type: "post",
@@ -591,6 +652,7 @@ $("#contact_modal_modificar_ok").click(function () {
       if (jsonData.success == 1) {
         var table_contact = $("#table-contact").DataTable();
         table_contact.ajax.reload();
+        $("#contact-modal").modal("hide");
         $.NotificationApp.send(
           "Exito",
           "Registro modificado !",
@@ -763,6 +825,69 @@ $("#btn_imprimir_recibo_modal").on("click", function () {
   }
 });
 
+// --- MODAL GENÉRICO DE DESTINATARIOS (badges) para factura/recibo ---
+let _mailDestinatarios = [];
+let _mailDestinatariosOnConfirm = null;
+
+function renderMailDestinatariosBadges() {
+  var $c = $("#mail_destinatarios_badges");
+  $c.empty();
+  _mailDestinatarios.forEach(function (email, idx) {
+    $c.append(
+      $(
+        `<span class="badge bg-primary d-inline-flex align-items-center">${email} <i class="mdi mdi-close ms-1" style="cursor:pointer" data-idx="${idx}"></i></span>`,
+      ),
+    );
+  });
+}
+
+$(document).on("click", "#mail_destinatarios_badges .mdi-close", function () {
+  _mailDestinatarios.splice($(this).data("idx"), 1);
+  renderMailDestinatariosBadges();
+});
+
+$("#mail_destinatarios_input").on("keydown", function (e) {
+  if (e.key !== "Enter" && e.key !== ",") return;
+  e.preventDefault();
+  var val = $(this).val().trim().replace(/,$/, "");
+  var regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!val) return;
+  if (!regex.test(val)) {
+    toast("error", "Correo inválido", "Revisá el formato del correo.");
+    return;
+  }
+  if (_mailDestinatarios.indexOf(val) === -1) {
+    _mailDestinatarios.push(val);
+    renderMailDestinatariosBadges();
+  }
+  $(this).val("");
+});
+
+function abrirModalDestinatarios(titulo, mailsPrecargados, onConfirm) {
+  _mailDestinatarios = mailsPrecargados.slice();
+  _mailDestinatariosOnConfirm = onConfirm;
+  $("#modalEnviarMailTitulo").text(titulo);
+  $("#mail_destinatarios_input").val("");
+  renderMailDestinatariosBadges();
+  $("#modal_enviar_mail_destinatarios").modal("show");
+}
+
+$("#btn_confirmar_envio_mail").on("click", function () {
+  var pendiente = $("#mail_destinatarios_input").val().trim();
+  var regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (pendiente && regex.test(pendiente) && _mailDestinatarios.indexOf(pendiente) === -1) {
+    _mailDestinatarios.push(pendiente);
+  }
+  if (_mailDestinatarios.length === 0) {
+    toast("error", "Error", "Agregá al menos un destinatario.");
+    return;
+  }
+  $("#modal_enviar_mail_destinatarios").modal("hide");
+  if (typeof _mailDestinatariosOnConfirm === "function") {
+    _mailDestinatariosOnConfirm(_mailDestinatarios.slice());
+  }
+});
+
 // BOTON ENVIAR RECIBO POR MAIL
 $("#btn_enviar_recibo_modal").on("click", function () {
   if (!reciboActualId) {
@@ -788,63 +913,43 @@ $("#btn_enviar_recibo_modal").on("click", function () {
         return;
       }
 
-      Swal.fire({
-        title: "Enviar recibo por mail",
-        input: "email",
-        inputLabel: "Correo destino",
-        inputValue: jsonData.mail || "",
-        inputPlaceholder: "cliente@dominio.com",
-        showCancelButton: true,
-        confirmButtonText: "Enviar",
-        cancelButtonText: "Cancelar",
-        reverseButtons: true,
-        inputValidator: (value) => {
-          if (!value || !value.trim()) {
-            return "Debes ingresar un correo.";
-          }
-
-          const email = value.trim();
-          const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-          if (!regex.test(email)) {
-            return "El correo no tiene un formato válido.";
-          }
-
-          return null;
-        },
-      }).then((result) => {
-        if (!result.isConfirmed) return;
-
-        const mailDestino = result.value.trim();
-
-        $.ajax({
-          url: "/SistemaTriangular/Clientes/Informes/enviar_recibo_mail.php",
-          type: "POST",
-          dataType: "json",
-          data: {
-            EnviarReciboMail: 1,
-            id: reciboActualId,
-            mailDestino: mailDestino,
-          },
-          beforeSend: function () {
-            toast("info", "Procesando", "Enviando recibo por mail...");
-          },
-          success: function (jsonData) {
-            if (jsonData.success == 1) {
-              toast("success", "Perfecto", "Recibo enviado correctamente.");
-            } else {
-              alerta(
-                "error",
-                "Error",
-                jsonData.msg || "No se pudo enviar el recibo.",
-              );
-            }
-          },
-          error: function (xhr) {
-            alerta("error", "Error del servidor", xhr.responseText);
-          },
-        });
+      var mailsPrecargados = (jsonData.mails || []).map(function (m) {
+        return m.email;
       });
+
+      abrirModalDestinatarios(
+        "Enviar recibo por mail",
+        mailsPrecargados,
+        function (destinatarios) {
+          $.ajax({
+            url: "/SistemaTriangular/Clientes/Informes/enviar_recibo_mail.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+              EnviarReciboMail: 1,
+              id: reciboActualId,
+              mailDestino: destinatarios,
+            },
+            beforeSend: function () {
+              toast("info", "Procesando", "Enviando recibo por mail...");
+            },
+            success: function (jsonData) {
+              if (jsonData.success == 1) {
+                toast("success", "Perfecto", "Recibo enviado correctamente.");
+              } else {
+                alerta(
+                  "error",
+                  "Error",
+                  jsonData.msg || "No se pudo enviar el recibo.",
+                );
+              }
+            },
+            error: function (xhr) {
+              alerta("error", "Error del servidor", xhr.responseText);
+            },
+          });
+        },
+      );
     },
     error: function (xhr) {
       alerta("error", "Error del servidor", xhr.responseText);
@@ -904,63 +1009,43 @@ $("#btn_enviar_factura_modal").on("click", function () {
         return;
       }
 
-      Swal.fire({
-        title: "Enviar factura por mail",
-        input: "email",
-        inputLabel: "Correo destino",
-        inputValue: jsonData.mail || "",
-        inputPlaceholder: "cliente@dominio.com",
-        showCancelButton: true,
-        confirmButtonText: "Enviar",
-        cancelButtonText: "Cancelar",
-        reverseButtons: true,
-        inputValidator: (value) => {
-          if (!value || !value.trim()) {
-            return "Debes ingresar un correo.";
-          }
-
-          const email = value.trim();
-          const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-          if (!regex.test(email)) {
-            return "El correo no tiene un formato válido.";
-          }
-
-          return null;
-        },
-      }).then((result) => {
-        if (!result.isConfirmed) return;
-
-        const mailDestino = result.value.trim();
-
-        $.ajax({
-          url: "/SistemaTriangular/Clientes/Informes/enviar_factura_mail.php",
-          type: "POST",
-          dataType: "json",
-          data: {
-            EnviarFacturaMail: 1,
-            id: facturaActualId,
-            mailDestino: mailDestino,
-          },
-          beforeSend: function () {
-            toast("info", "Procesando", "Enviando factura por mail...");
-          },
-          success: function (jsonData) {
-            if (jsonData.success == 1) {
-              toast("success", "Perfecto", "Factura enviada correctamente.");
-            } else {
-              alerta(
-                "error",
-                "Error",
-                jsonData.msg || "No se pudo enviar la factura.",
-              );
-            }
-          },
-          error: function (xhr) {
-            alerta("error", "Error del servidor", xhr.responseText);
-          },
-        });
+      var mailsPrecargados = (jsonData.mails || []).map(function (m) {
+        return m.email;
       });
+
+      abrirModalDestinatarios(
+        "Enviar factura por mail",
+        mailsPrecargados,
+        function (destinatarios) {
+          $.ajax({
+            url: "/SistemaTriangular/Clientes/Informes/enviar_factura_mail.php",
+            type: "POST",
+            dataType: "json",
+            data: {
+              EnviarFacturaMail: 1,
+              id: facturaActualId,
+              mailDestino: destinatarios,
+            },
+            beforeSend: function () {
+              toast("info", "Procesando", "Enviando factura por mail...");
+            },
+            success: function (jsonData) {
+              if (jsonData.success == 1) {
+                toast("success", "Perfecto", "Factura enviada correctamente.");
+              } else {
+                alerta(
+                  "error",
+                  "Error",
+                  jsonData.msg || "No se pudo enviar la factura.",
+                );
+              }
+            },
+            error: function (xhr) {
+              alerta("error", "Error del servidor", xhr.responseText);
+            },
+          });
+        },
+      );
     },
     error: function (xhr) {
       alerta("error", "Error del servidor", xhr.responseText);

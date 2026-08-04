@@ -12,10 +12,9 @@ $sqlLocalizacion=mysql_query("SELECT DomicilioDestino,LocalidadDestino,Redespach
 $sqlLocalizacionR=mysql_fetch_array($sqlLocalizacion);
 $Localizacion=$sqlLocalizacionR[DomicilioDestino];    
 //BUSCO LOS DATOS PARA EL ENVIO DEL MAIL
-$sqlmail=mysql_query("SELECT nombrecliente,Mail FROM Clientes WHERE id='$sqlLocalizacionR[IngBrutosOrigen]'");
+$sqlmail=mysql_query("SELECT nombrecliente FROM Clientes WHERE id='$sqlLocalizacionR[IngBrutosOrigen]'");
 $datomail=mysql_fetch_array($sqlmail);
 $NombreMail=$datomail[nombrecliente];
-$EmailMail=$datomail[Mail];
 $Fecha= date("Y-m-d");	
 $Hora=date("H:i"); 
 $Usuario=$_SESSION['Usuario'];
@@ -162,9 +161,12 @@ $message .= "<b>El equipo de Caddy Logística</b> "."<br><br>\n";
 $message .= "<img style='width: 20%; height: 10%; margin-top: 0px' src='https://www.caddy.com.ar/images/LogoCaddy.png'/>";
 $message .= "\r\n\r\n--" . $uniqueid. "--";
  
-//con la función mail de PHP enviamos el mail.
-if($EmailMail<>''){
-mail($EmailMail, utf8_decode('Tu envío de Caddy fue entregado con éxito!'), utf8_decode($message), $headers);
+//con la función mail de PHP enviamos el mail a cada contacto con notificaciones operativas activas
+$sqlDestinatarios=mysql_query("SELECT email FROM mail_clientes WHERE idCliente='$sqlLocalizacionR[IngBrutosOrigen]' AND NotifOperativo=1 AND Eliminado=0");
+while($destinatario=mysql_fetch_array($sqlDestinatarios)){
+if($destinatario[email]<>''){
+mail($destinatario[email], utf8_decode('Tu envío de Caddy fue entregado con éxito!'), utf8_decode($message), $headers);
+}
 }
 
   echo json_encode(array('resultado' => 1));

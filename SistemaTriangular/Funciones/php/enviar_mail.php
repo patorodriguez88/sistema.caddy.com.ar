@@ -29,8 +29,14 @@ function enviarMail($para, $nombre, $asunto, $html, $adjunto = null)
         // REMITENTE
         $mail->setFrom('facturacion@caddy.com.ar', 'Caddy Logística');
 
-        // DESTINATARIO
-        $mail->addAddress($para, $nombre);
+        // DESTINATARIOS (acepta un string único o un array de direcciones)
+        $destinatarios = is_array($para) ? $para : [$para];
+        foreach ($destinatarios as $direccion) {
+            $direccion = trim($direccion);
+            if ($direccion !== '') {
+                $mail->addAddress($direccion, $nombre);
+            }
+        }
 
         // CONTENIDO
         $mail->isHTML(true);
