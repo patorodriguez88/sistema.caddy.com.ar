@@ -983,7 +983,7 @@ function abrirModalFactura(id) {
 
   facturaActualId = id;
 
-  const urlFactura = `/SistemaTriangular/Clientes/invoice.php?id=${id}`;
+  const urlFactura = `/SistemaTriangular/Clientes/Informes/ver_factura_pdf.php?id=${id}`;
 
   $("#iframe_factura_preview").attr("src", urlFactura);
   $("#btn_abrir_factura_modal").attr("href", urlFactura);
@@ -992,6 +992,18 @@ function abrirModalFactura(id) {
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
   modal.show();
 }
+
+// BOTON IMPRIMIR FACTURA (antes no tenía handler bindeado, no hacía nada)
+$("#btn_imprimir_factura_modal").on("click", function () {
+  const iframe = document.getElementById("iframe_factura_preview");
+
+  if (iframe && iframe.contentWindow) {
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  } else {
+    toast("error", "Error", "No se pudo imprimir la factura.");
+  }
+});
 
 // BOTON ENVIAR FACTURA POR MAIL
 $("#btn_enviar_factura_modal").on("click", function () {

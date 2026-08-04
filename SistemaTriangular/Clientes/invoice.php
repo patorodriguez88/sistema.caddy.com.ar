@@ -198,8 +198,20 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
     .table,
     table {
       width: 100% !important;
+      table-layout: auto !important;
       border-collapse: collapse !important;
       font-size: 9.5px !important;
+    }
+
+    /* DataTables le asigna a cada <th>/<td> un ancho fijo en px calculado para
+       la ventana del navegador (autoWidth). Al imprimir, esos px inline quedaban
+       más anchos que la hoja A4 y desbordaban la tabla. Se fuerza auto para que
+       el motor de impresión recalcule el ancho de cada columna según el papel. */
+    .table th,
+    table th,
+    .table td,
+    table td {
+      width: auto !important;
     }
 
     .table th,

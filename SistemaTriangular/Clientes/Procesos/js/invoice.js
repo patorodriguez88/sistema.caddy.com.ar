@@ -372,11 +372,17 @@ $(document).ready(function () {
               {
                 data: "CodigoProveedor",
                 render: function (data, type, row) {
+                  // Sin código cargado: se deja el link para completarlo (click abre
+                  // el modal), pero sin el texto "S/D" que quedaba feo en pantalla e
+                  // impresión — igual que ya hacía el PDF, que mostraba vacío en este caso.
                   if (row.CodigoProveedor == "") {
                     var dato = "S/D";
                     var color = "muted";
+                    var textoVisible = "";
                   } else {
                     var dato = row.CodigoProveedor;
+                    var color = "";
+                    var textoVisible = row.CodigoProveedor;
                   }
 
                   // if(getParameterByName('token')===null){
@@ -393,7 +399,7 @@ $(document).ready(function () {
                     '"><b class="text-' +
                     color +
                     '">' +
-                    dato +
+                    textoVisible +
                     "</b></a></td>"
                   );
 

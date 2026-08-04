@@ -8,6 +8,42 @@ function pdf_text($texto)
     return mb_convert_encoding((string)$texto, 'ISO-8859-1', 'UTF-8');
 }
 
+// Vencimiento de pago = fecha de la factura + 7 días hábiles (sin fines de semana
+// ni feriados). Debe reflejar exactamente la misma regla que la vista previa
+// (Clientes/Procesos/js/invoice.js, función que arma "#venc_pago") — si cambia acá,
+// cambiar también ahí, porque son dos implementaciones separadas de la misma regla.
+function fechaVencimientoPago($fechaFactura)
+{
+    $diasFestivos = [
+        ['mes' => 12, 'dia' => 25], // Navidad
+        ['mes' => 1,  'dia' => 1],  // Año Nuevo
+        ['mes' => 5,  'dia' => 1],  // Día del Trabajador
+    ];
+
+    $fecha = new DateTime($fechaFactura);
+    $agregados = 0;
+
+    while ($agregados < 7) {
+        $fecha->modify('+1 day');
+
+        $esHabil = (int)$fecha->format('N') < 6; // 1=lunes ... 7=domingo
+
+        $esFeriado = false;
+        foreach ($diasFestivos as $f) {
+            if ((int)$fecha->format('n') === $f['mes'] && (int)$fecha->format('j') === $f['dia']) {
+                $esFeriado = true;
+                break;
+            }
+        }
+
+        if ($esHabil && !$esFeriado) {
+            $agregados++;
+        }
+    }
+
+    return $fecha->format('d/m/Y');
+}
+
 class FacturaPDF extends FPDF
 {
     // Texto identificatorio de la hoja (tipo + número de comprobante), para que
@@ -394,7 +430,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetTextColor(...$darkText);
     $pdf->SetXY(158, $row2Y + 9);
-    $pdf->Cell(0, 5, date('d/m/Y', strtotime($row['Fecha'] . ' +30 days')), 0, 1);
+    $pdf->Cell(0, 5, fechaVencimientoPago($row['Fecha']), 0, 1);
     $pdf->SetFont('Arial', '', 8);
     $pdf->SetTextColor(...$mutedC);
     $pdf->SetXY(158, $row2Y + 15);
