@@ -368,7 +368,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
         $pdf->SetFont('Arial', 'B', 9);
         $pdf->SetTextColor(...$mutedC);
         $pdf->SetXY(118, $ly);
-        $pdf->Cell(32, 6, $label, 0, 0, 'L');
+        $pdf->Cell(32, 6, pdf_text($label), 0, 0, 'L');
         $pdf->SetFont('Arial', '', 9);
         $pdf->SetTextColor(...$darkText);
         $pdf->Cell(50, 6, pdf_text((string)$valor), 0, 1, 'L');
