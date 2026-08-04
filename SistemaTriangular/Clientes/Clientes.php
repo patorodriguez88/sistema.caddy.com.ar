@@ -367,8 +367,10 @@
                                 </div>
                                 <div class="modal-body">
                                     <label class="form-label">Destinatarios</label>
-                                    <div id="mail_destinatarios_badges" class="d-flex flex-wrap gap-1 mb-2"></div>
-                                    <input type="email" id="mail_destinatarios_input" class="form-control" placeholder="Escribí un correo y presioná Enter">
+                                    <div id="mail_destinatarios_wrapper" class="form-control d-flex flex-wrap align-items-center gap-1" style="min-height: 44px; height: auto; cursor: text;">
+                                        <span id="mail_destinatarios_badges" class="d-flex flex-wrap gap-1"></span>
+                                        <input type="email" id="mail_destinatarios_input" class="border-0 flex-grow-1 p-0" style="outline: none; min-width: 140px;" placeholder="Escribí un correo y presioná Enter">
+                                    </div>
                                     <small class="text-muted">Se precargan los contactos marcados como administrativos. Podés sacar o agregar direcciones antes de enviar.</small>
                                 </div>
                                 <div class="modal-footer">

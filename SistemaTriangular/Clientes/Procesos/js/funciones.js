@@ -846,6 +846,10 @@ $(document).on("click", "#mail_destinatarios_badges .mdi-close", function () {
   renderMailDestinatariosBadges();
 });
 
+$("#mail_destinatarios_wrapper").on("click", function (e) {
+  if (e.target === this) $("#mail_destinatarios_input").trigger("focus");
+});
+
 $("#mail_destinatarios_input").on("keydown", function (e) {
   if (e.key !== "Enter" && e.key !== ",") return;
   e.preventDefault();
@@ -864,6 +868,11 @@ $("#mail_destinatarios_input").on("keydown", function (e) {
 });
 
 function abrirModalDestinatarios(titulo, mailsPrecargados, onConfirm) {
+  // Evita apilar este modal sobre el de vista previa (factura/recibo) que lo dispara,
+  // porque el backdrop de modales anidados no se renderiza bien en este setup.
+  $("#modal_factura_preview").modal("hide");
+  $("#modal_ver_recibo").modal("hide");
+
   _mailDestinatarios = mailsPrecargados.slice();
   _mailDestinatariosOnConfirm = onConfirm;
   $("#modalEnviarMailTitulo").text(titulo);
@@ -991,13 +1000,17 @@ $("#btn_enviar_factura_modal").on("click", function () {
     return;
   }
 
+  // Se guarda aparte porque abrirModalDestinatarios cierra #modal_factura_preview,
+  // y ese cierre resetea facturaActualId a null (ver handler "hidden.bs.modal").
+  var idFacturaEnvio = facturaActualId;
+
   $.ajax({
     url: "/SistemaTriangular/Clientes/Informes/enviar_factura_mail.php",
     type: "POST",
     dataType: "json",
     data: {
       ObtenerMailFactura: 1,
-      id: facturaActualId,
+      id: idFacturaEnvio,
     },
     success: function (jsonData) {
       if (jsonData.success != 1) {
@@ -1023,7 +1036,7 @@ $("#btn_enviar_factura_modal").on("click", function () {
             dataType: "json",
             data: {
               EnviarFacturaMail: 1,
-              id: facturaActualId,
+              id: idFacturaEnvio,
               mailDestino: destinatarios,
             },
             beforeSend: function () {
@@ -1595,8 +1608,6 @@ $("#comprobante_selectB").change(function () {
   });
 });
 
-var id = document.getElementById("codigo").value;
-
 // function currencyFormat(num) {
 // return '$' + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 // }
@@ -1609,9 +1620,6 @@ function getParameterByName(name) {
     ? ""
     : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
-
-var prodId = getParameterByName("id");
-var seguimiento_modal = getParameterByName("#");
 
 $(document).on("change", 'select[name="formadepago"]', function (e) {
   console.log("value", this.value);
@@ -1808,14 +1816,27 @@ $("#textarea-comentario_ok").click(function () {
   });
 });
 
+// Se incrementa en cada cambio de cliente; los callbacks de los AJAX que dispara
+// el change descartan su respuesta si para cuando llega ya se eligió otro cliente
+// (evita que una respuesta vieja pise datos de un cliente más nuevo).
+let _clienteChangeSeq = 0;
+
 $("#buscarcliente").change(function () {
+  var miClienteChangeSeq = ++_clienteChangeSeq;
+
   obtenerUsuarios();
 
   document.getElementById("crearcliente").style.display = "none";
   document.getElementById("relacion_select").style.display = "none";
   document.getElementById("relacion").style.display = "block";
   $("#claveweb_label").prop("readonly", false);
-  $("#buscarcliente").prop("disabled", true);
+
+  // Si el modal de "Asociar Pago" quedó abierto de la selección anterior, se cierra:
+  // sus checkboxes/arrays internos (checkedPagos, checkedFacturas, etc. en cargarpago.js)
+  // quedarían apuntando a facturas/pagos del cliente anterior.
+  if ($("#asociar-pagos-modal").hasClass("show")) {
+    $("#asociar-pagos-modal").modal("hide");
+  }
 
   //DESTRUIR TODAS LAS GUIAS
   var tabla_facturacion_proforma = $("#tabla_facturacion_proforma").DataTable();
@@ -1851,6 +1872,16 @@ $("#buscarcliente").change(function () {
   ).DataTable();
   table_facturacion_proforma_recorridos.destroy();
 
+  //DESTRUIMOS LA TABLA DE CONTACTOS (si no, queda mostrando los del cliente anterior)
+  if ($.fn.DataTable.isDataTable("#table-contact")) {
+    $("#table-contact").DataTable().destroy();
+  }
+
+  //DESTRUIMOS LA TABLA DE RECORRIDOS (mismo motivo)
+  if ($.fn.DataTable.isDataTable("#recorridos_tabla")) {
+    $("#recorridos_tabla").DataTable().destroy();
+  }
+
   //BRORRAR LOS DATOS DE FECHAS
   $("#min").val("");
   $("#max").val("");
@@ -1871,6 +1902,7 @@ $("#buscarcliente").change(function () {
     //         },
     success: function (jsonData) {
       // var jsonData = JSON.parse(response);
+      if (miClienteChangeSeq !== _clienteChangeSeq) return;
       if (jsonData.success == "1") {
         document.getElementById("steps").style.display = "flex";
         $("#codigo").val(jsonData.id);
@@ -1903,6 +1935,8 @@ $("#buscarcliente").change(function () {
         //ASANA
         if (jsonData.TareasAsana == 1) {
           $("#tareas_asana").prop("checked", true);
+        } else {
+          $("#tareas_asana").prop("checked", false);
         }
 
         $("#asana_gid").val(jsonData.TareasAsana_gid).trigger("change.select2");
@@ -2230,7 +2264,13 @@ $("#buscarcliente").change(function () {
           },
         );
         //TABLA TARIFAS
-        $("#botontarifas").click(function () {
+        // .off() antes de .on(): este bloque corre en cada cambio de cliente (dentro
+        // del success de Datos:1); sin esto, cada cambio apilaba un handler más sobre
+        // el anterior, y al abrir la pestaña Tarifas se disparaban todos juntos, cada
+        // uno con el id del cliente con el que se registró.
+        $("#botontarifas")
+          .off("click.tarifas")
+          .on("click.tarifas", function () {
           //                   document.getElementById('agregar_botton').style.display='block';
           document.getElementById("guardar_botton").style.display = "none";
           document.getElementById("eliminar_botton").style.display = "none";
@@ -2286,7 +2326,9 @@ $("#buscarcliente").change(function () {
           });
         });
 
-        $("#tarifas_tabla").on("click", "a.action-icon", function (e) {
+        $("#tarifas_tabla")
+          .off("click.tarifas", "a.action-icon")
+          .on("click.tarifas", "a.action-icon", function (e) {
           var idClientesyServicios = e.currentTarget.attributes[1].value;
           $.ajax({
             data: {
@@ -2313,6 +2355,16 @@ $("#buscarcliente").change(function () {
         $("#telefono_contacto").html(" Telefono: " + jsonData.celular);
         $("#mail_contacto").html(" Mail: " + jsonData.Mail);
         $("#contacto_contacto").html(" Contacto: " + jsonData.contacto);
+
+        // Si el usuario está parado en Contacto o Recorridos al cambiar de cliente,
+        // esas tablas ya se destruyeron más arriba: hay que recargarlas ahora que
+        // #codigo tiene el id nuevo, si no quedan en blanco hasta que se reabra la pestaña.
+        if ($("#contact").hasClass("active")) {
+          $("#perfil_conctact").trigger("click");
+        }
+        if ($("#recorridos").hasClass("active")) {
+          $("#recorridos_boton").trigger("click");
+        }
       } else {
       }
     },
@@ -2326,6 +2378,7 @@ $("#buscarcliente").change(function () {
     url: "Procesos/php/funciones.php",
     type: "post",
     success: function (response1) {
+      if (miClienteChangeSeq !== _clienteChangeSeq) return;
       var jsonData = JSON.parse(response1);
       if (jsonData.success == "1") {
         var PromedioMensual = currencyFormat(Number(jsonData.PromedioMensual));
@@ -2402,6 +2455,7 @@ $("#buscarcliente").change(function () {
     dataType: "json",
 
     success: function (jsonData) {
+      if (miClienteChangeSeq !== _clienteChangeSeq) return;
       if (
         jsonData &&
         Array.isArray(jsonData.data) &&
@@ -2425,6 +2479,7 @@ $("#buscarcliente").change(function () {
     type: "post",
     dataType: "json",
     success: function (jsonData) {
+      if (miClienteChangeSeq !== _clienteChangeSeq) return;
       if (jsonData.success == 1) {
         var totalenviados = currencyFormat(Number(jsonData.totalenviados));
 
@@ -2452,6 +2507,7 @@ $("#buscarcliente").change(function () {
     type: "POST",
     url: "../Funciones/php/tablas.php",
     success: function (response) {
+      if (miClienteChangeSeq !== _clienteChangeSeq) return;
       $(".selector-condicion select").html(response).fadeIn();
     },
   });
@@ -2465,6 +2521,7 @@ $("#buscarcliente").change(function () {
     type: "POST",
     url: "../Funciones/php/tablas.php",
     success: function (response) {
+      if (miClienteChangeSeq !== _clienteChangeSeq) return;
       $(".selector-tipodocumento select").html(response).fadeIn();
     },
   });
