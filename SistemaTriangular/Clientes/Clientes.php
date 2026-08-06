@@ -999,7 +999,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-info">
                                     <h4 class="modal-title" id="info-header-modalLabel">Facturación</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
 
@@ -1184,9 +1184,9 @@
 
 
                                     <a id="confirmarfactura_boton_cnl" class="btn btn-danger">Cancelar</a>
-                                    <a id="confirmarfactura_boton" class="btn btn-warning" data-dismiss="modal">FACTURA PROFORMA</a>
-                                    <a id="confirmarfactura_AFIP_boton" class="btn btn-primary" data-dismiss="modal">FACTURA AFIP</a>
-                                    <a id="confirmar_generar_comprobante_AFIP_boton" class="btn btn-warning" data-dismiss="modal" style="display:none">GENERAR COMPROBANTE AFIP</a>
+                                    <a id="confirmarfactura_boton" class="btn btn-warning" data-bs-dismiss="modal">FACTURA PROFORMA</a>
+                                    <a id="confirmarfactura_AFIP_boton" class="btn btn-primary" data-bs-dismiss="modal">FACTURA AFIP</a>
+                                    <a id="confirmar_generar_comprobante_AFIP_boton" class="btn btn-warning" data-bs-dismiss="modal" style="display:none">GENERAR COMPROBANTE AFIP</a>
                                 </div>
                             </div>
                             <!-- /.modal-content -->
@@ -1201,7 +1201,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-info">
                                     <h4 class="modal-title" id="Facturacion_recorridos-modalLabel">Facturacion x Recorrido</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -1301,8 +1301,8 @@
                                 </div>
                                 <div class="modal-footer">
                                     <a id="confirmarfactura_boton_cnl_r" class="btn btn-danger">Cancelar</a>
-                                    <a id="confirmarfacturaxrecorrido_boton" class="btn btn-success" data-dismiss="modal">Confirmar</a>
-                                    <a id="confirmarfacturaxrecorrido_AFIP_boton" class="btn btn-primary" data-dismiss="modal">FACTURA RECORRIDOS AFIP</a>
+                                    <a id="confirmarfacturaxrecorrido_boton" class="btn btn-success" data-bs-dismiss="modal">Confirmar</a>
+                                    <a id="confirmarfacturaxrecorrido_AFIP_boton" class="btn btn-primary" data-bs-dismiss="modal">FACTURA RECORRIDOS AFIP</a>
                                 </div>
                             </div>
                             <!-- /.modal-content -->
@@ -2878,8 +2878,8 @@
                                                             <div class="text-right">
                                                                 <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
                                                                 <!-- <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a> -->
-                                                                <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
-                                                                <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
+                                                                <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
+                                                                <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
                                                                 <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
                                                                 <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
