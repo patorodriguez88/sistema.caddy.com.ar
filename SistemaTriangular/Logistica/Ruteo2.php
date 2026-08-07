@@ -54,7 +54,7 @@ include("../ConexionBD.php");
                               <div class="modal-content">
                                   <div class="modal-header">
                                       <h4 class="modal-title" id="myCenterModalLabel">Agregar Zona</h4>
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div class="modal-body">
                                     <!-- Date Picker -->
@@ -121,7 +121,7 @@ include("../ConexionBD.php");
                                                       <div class="card-header" id="<? echo $row[Recorrido];?>">
                                                           <h5 class="m-0">
                                                               <a class="custom-accordion-title d-block py-1"
-                                                                  data-toggle="collapse" href="#collapse<? echo $row[Recorrido];?>"
+                                                                  data-bs-toggle="collapse" href="#collapse<? echo $row[Recorrido];?>"
                                                                   aria-expanded="false" aria-controls="collapse<? echo $row[Recorrido];?>" style="color:<? echo $color[ColorSistema];?>">
                                                                 <i class="uil-location-point"></i> Rec.: <? echo $row[Recorrido].' (Entregados '.$suma[Entregados].' de '.$suma[TotalServicios].')';?>
                                                                 <i class="mdi mdi-chevron-down accordion-arrow"></i>
@@ -131,7 +131,7 @@ include("../ConexionBD.php");
 
                                                       <div id="collapse<? echo $row[Recorrido];?>" class="collapse"
                                                           aria-labelledby="heading<? echo $row[Recorrido];?>"
-                                                          data-parent="#custom-accordion-one">
+                                                          data-bs-parent="#custom-accordion-one">
                                                           <div class="card-body">
                                                           <div><a><b>Estado Recorrido: </b> <? echo $row[Estado];?> </a></div>   
                                                           <div><a><b>Hora: </b> <? echo $row[Hora];?> hs. Hasta <? echo $row[HoraRetorno];?> </a></div> 

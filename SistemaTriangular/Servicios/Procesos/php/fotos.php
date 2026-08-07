@@ -209,16 +209,16 @@ if (isset($_POST['Tracker'])) {
     $width = 0;
 
     echo '<div class="step-item ' . $EnOrigen . '">';
-    echo '<span data-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">En Origen</span>';
+    echo '<span data-bs-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">En Origen</span>';
     echo '</div>';
     echo '<div class="step-item ' . $Retirado . '">';
-    echo '<span data-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">Retirado</span>';
+    echo '<span data-bs-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">Retirado</span>';
     echo '</div>';
     echo '<div class="step-item ' . $EnTransito . '">';
-    echo '<span data-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">En Transito</span>';
+    echo '<span data-bs-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">En Transito</span>';
     echo '</div>';
     echo '<div class="step-item ' . $Entregado . '' . $Devuelto . '">';
-    echo '<span data-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">' . $EntregadoEstado . '' . $DevueltoEstado . '</span>';
+    echo '<span data-bs-toggle="tooltip" data-placement="bottom" title="" data-original-title="20/08/2018 07:24 PM">' . $EntregadoEstado . '' . $DevueltoEstado . '</span>';
     echo '</div>';
     echo '</div>';
     echo '<div class="process-line" style="width:' . $width . '"></div>';
@@ -236,7 +236,7 @@ if (isset($_POST['FormaDePago'])) {
     $mysqli->query("UPDATE TransClientes SET FormaDePago='$Valor' WHERE CodigoSeguimiento='$CodigoSeguimiento'");
 
     $id = $mysqli->query("SELECT id,if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente, 
-  if(FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente
+  if(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente
   FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento'");
     $row = $id->fetch_array(MYSQLI_ASSOC);
 

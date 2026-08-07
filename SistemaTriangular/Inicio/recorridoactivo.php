@@ -87,7 +87,7 @@ include("../ConexionBD.php");
                                                       <div class="card-header" id="heading<? echo $row[Recorrido];?>">
                                                           <h5 class="m-0">
                                                               <a class="custom-accordion-title d-block py-1"
-                                                                  data-toggle="collapse" href="#collapse<? echo $row[Recorrido];?>"
+                                                                  data-bs-toggle="collapse" href="#collapse<? echo $row[Recorrido];?>"
                                                                   aria-expanded="false" aria-controls="collapse<? echo $row[Recorrido];?>" style="color:<? echo $color[ColorSistema];?>">
                                                                 <i class="uil-location-point"></i> Recorrido <? echo $row[Recorrido].' ('.$suma[TotalServicios].')';?>
                                                                 <i class="mdi mdi-chevron-down accordion-arrow"></i>
@@ -97,7 +97,7 @@ include("../ConexionBD.php");
 
                                                       <div id="collapse<? echo $row[Recorrido];?>" class="collapse"
                                                           aria-labelledby="heading<? echo $row[Recorrido];?>"
-                                                          data-parent="#custom-accordion-one">
+                                                          data-bs-parent="#custom-accordion-one">
                                                           <div class="card-body">
                                                             <table class="table table-centered mb-0">
                                                                 <thead>

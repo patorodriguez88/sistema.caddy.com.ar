@@ -16,16 +16,16 @@ $.ajax({
     success: function(response) {
     var jsonData = JSON.parse(response); 
     if(jsonData.success==0){
-        $.NotificationApp.send("Error !","No se realizaron cambios.","bottom-right","#FFFFFF","danger");      
+        toast("error", "Error !", "No se realizaron cambios.");      
     }
     if(jsonData.success_update==1){
-        $.NotificationApp.send("Registro Actualizado!","Se actualizo un registro de webhook.","bottom-right","#FFFFFF","success");      
+        toast("success", "Registro Actualizado!", "Se actualizo un registro de webhook.");      
     }
     if(jsonData.success==1){
-        $.NotificationApp.send("Registro Ingresado!","Se ingreso un registro de webhook.","bottom-right","#FFFFFF","success");      
+        toast("success", "Registro Ingresado!", "Se ingreso un registro de webhook.");      
     } 
     if(jsonData.success==2){
-        $.NotificationApp.send("Registros Actualizados !","Se actualizaron los registros de los webhook de todos los clientes relacionados.","bottom-right","#FFFFFF","success");      
+        toast("success", "Registros Actualizados !", "Se actualizaron los registros de los webhook de todos los clientes relacionados.");      
     }
     }
   });

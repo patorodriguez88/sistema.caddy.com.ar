@@ -180,11 +180,16 @@ if (isset($_POST['Facturar'])) {
       $mysqli->query($SQL);
     }
 
-    //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA  
+    //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA
     $OrdenN = $_POST['Remitos'];
 
+    if (empty($OrdenN)) {
+      echo json_encode(array('success' => 0, 'msg' => 'No hay remitos seleccionados. No se generó ningún comprobante.'));
+      exit;
+    }
+
     $sqlCtasctes = "INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`, `Usuario`, `NumeroFactura`,
-  `Observaciones`,`idCliente`,`Facturado`,`idIvaVentas`) VALUES 
+  `Observaciones`,`idCliente`,`Facturado`,`idIvaVentas`) VALUES
   ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$Comprobante}','{$NumeroComprobante}','{$Total}','{$Usuario}','{$NumeroComprobante}','{$Observaciones_ctasctes}',
   '{$id}','1','{$id_iva}')";
 
@@ -220,7 +225,7 @@ if (isset($_POST['Facturar'])) {
 
       Create_task($Projects, $name, $notes, $due_on, $assignee, $Workspaces);
 
-      echo json_encode(array('success' => 1));
+      echo json_encode(array('success' => 1, 'idFacturado' => $idFacturado));
     }
   }
 }
@@ -378,11 +383,16 @@ if ($_POST['Facturar'] == 2) {
       $id_iva = $mysqli->insert_id;
     }
 
-    //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA  
+    //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA
     $OrdenN = $_POST['Remitos'];
 
+    if (empty($OrdenN)) {
+      echo json_encode(array('success' => 0, 'msg' => 'No hay recorridos seleccionados. No se generó ningún comprobante.'));
+      exit;
+    }
+
     $sqlCtasctes = "INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`, `Usuario`, `NumeroFactura`,
-`Observaciones`,`idCliente`,`Facturado`,`idIvaVentas`,`FacturacionxRecorrido`) VALUES 
+`Observaciones`,`idCliente`,`Facturado`,`idIvaVentas`,`FacturacionxRecorrido`) VALUES
 ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$Comprobante}','{$NumeroComprobante}','{$Total}','{$Usuario}','{$NumeroComprobante}','{$Observaciones_ctasctes}',
 '{$id}','1','{$id_iva}','1')";
 
@@ -401,7 +411,7 @@ if ($_POST['Facturar'] == 2) {
 
           // ACTUALIZO FACTURADO SI DEBE ES CERO (FACTURACION X RECORRIDO)
           $sql = $mysqli->query("UPDATE `TransClientes` SET Facturado=1, `ComprobanteF`='$Comprobante',`NumeroF`='$NumeroComprobante' 
-      WHERE IngBrutosOrigen='$_POST[id]' AND NumerodeOrden='$datosOrden[NumerodeOrden]' AND Eliminado='0' AND Debe='0' AND Haber='0'");
+      WHERE idClienteOrigen='$_POST[id]' AND NumerodeOrden='$datosOrden[NumerodeOrden]' AND Eliminado='0' AND Debe='0' AND Haber='0'");
 
           //BUSCO EL IMPORTE DEL RECORRIDO ASI LO INCLUYO EN EL CAMPO ImporteF
           $sqlPrecio = $mysqli->query("SELECT PrecioVenta FROM Productos INNER JOIN Recorridos ON Productos.Codigo=Recorridos.CodigoProductos WHERE Recorridos.Numero='$datosOrden[Recorrido]'");
@@ -422,7 +432,7 @@ if ($_POST['Facturar'] == 2) {
       }
 
       if ($cuento <> 0) {
-        echo json_encode(array('success' => 1, 'cuento' => $cuento));
+        echo json_encode(array('success' => 1, 'cuento' => $cuento, 'idFacturado' => $idFacturado));
       }
     }
   }

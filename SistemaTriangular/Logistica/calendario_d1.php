@@ -145,7 +145,7 @@ include_once "../Conexion/Conexion.php";
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header py-3 px-4 border-bottom-0 d-block">
-                                                <button type="button" class="close" data-dismiss="modal"
+                                                <button type="button" class="close" data-bs-dismiss="modal"
                                                     aria-hidden="true">&times;</button>
                                                 <h5 class="modal-title" id="modal-title">Event</h5>
                                             </div>
@@ -221,7 +221,7 @@ include_once "../Conexion/Conexion.php";
                                                             <button type="button" class="btn btn-danger" id="btn-delete-event">Delete</button>
                                                         </div>
                                                         <div class="col-6 text-right">
-                                                            <button type="button" class="btn btn-light mr-1" data-dismiss="modal">Close</button>
+                                                            <button type="button" class="btn btn-light mr-1" data-bs-dismiss="modal">Close</button>
                                                             <button type="submit" class="btn btn-success" id="btn-save-event">Save</button>
                                                         </div>
                                                     </div>
@@ -376,6 +376,8 @@ include_once "../Conexion/Conexion.php";
 <!--         <script src="../hyper/dist/saas/assets/js/pages/demo.calendar.js"></script> -->
         <script src="Proceso/js/calendar_render.js"></script>
         <script src="Proceso/js/demo.calendar.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
         <!-- end demo js-->
 

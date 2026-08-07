@@ -156,13 +156,13 @@ if (isset($_POST['submit']))
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-modal-title"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro <a id="id_eliminar"></a></h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                                
                               </div>
                               <div class="modal-footer">
-                                  <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                   <button id="warning-modal-ok"type="button" class="btn btn-danger">Eliminar</button>
                               </div>
                           </div><!-- /.modal-content -->
@@ -174,13 +174,13 @@ if (isset($_POST['submit']))
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-modal-title"><i class="mdi mdi-application-import"></i> Confirmar Importar Registro <a id="id_eliminar"></a></h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="importar-modal-body" class="modal-body">
                                
                               </div>
                               <div class="modal-footer">
-                                  <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                   <button id="importar-modal-ok"type="button" class="btn btn-danger">Aceptar</button>
                               </div>
                           </div><!-- /.modal-content -->
@@ -196,7 +196,7 @@ if (isset($_POST['submit']))
                                     <h4 class="mt-2">Estamos subiendo el Excel !</h4>
                                     <p id="info-alert-body" class="mt-3"> No cierres esta ventana. </p>
                                     <div class="spinner-grow text-primary" role="status"></div>
-<!--                                   <button type="button" class="btn btn-info my-2" data-dismiss="modal">Continue</button> -->
+<!--                                   <button type="button" class="btn btn-info my-2" data-bs-dismiss="modal">Continue</button> -->
                                   </div>
                               </div>
                           </div><!-- /.modal-content -->
@@ -211,7 +211,7 @@ if (isset($_POST['submit']))
                                   <i class="dripicons-checkmark h1"></i>
                                   <h4 class="mt-2">Importacion Exitosa !</h4>
                                   <p id="success-info" class="mt-3"></p>
-                                  <button type="button" class="btn btn-light my-2" data-dismiss="modal">Continue</button>
+                                  <button type="button" class="btn btn-light my-2" data-bs-dismiss="modal">Continue</button>
                               </div>
                           </div>
                       </div><!-- /.modal-content -->
@@ -231,7 +231,7 @@ if (isset($_POST['submit']))
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">Actualizar Cliente</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div class="modal-body">
                                <div class="col-lg-12 mt-3">
@@ -246,7 +246,7 @@ if (isset($_POST['submit']))
                                 </div>
                               </div>
                               <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                 <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                           </div><!-- /.modal-content -->
@@ -415,6 +415,8 @@ if (isset($_POST['submit']))
         <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=BuscarDireccion">
         </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
   </body>
 </html>

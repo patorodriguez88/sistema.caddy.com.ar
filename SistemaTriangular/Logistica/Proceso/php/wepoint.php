@@ -638,39 +638,39 @@ function post_wepoint_oib($token, $payloadArr)
  * 
  * Devuelve el id_proveedor de WePoint.
  * - Intenta con el “natural” si lo tenés (p.ej. mapeo propio). Si no, o si falla, cae al flujo pedido:
- *   HR.idTransClientes -> TransClientes.ingBrutosOrigen -> Clientes.wepoint_id (si hay)
+ *   HR.idTransClientes -> TransClientes.idClienteOrigen -> Clientes.wepoint_id (si hay)
  *   Si no hay, crea proveedor en WePoint con datos de Clientes y actualiza su wepoint_id.
  *
  * @return array [bool ok, int|0 wepointProveedorId, array|null debug]
  */
 function resolver_wepoint_proveedor(mysqli $mysqli, string $token, array $hrRow)
 {
-    // 1) Con idTransClientes obtener ingBrutosOrigen (id de cliente origen)
-    $ingBrutosOrigen = null;
+    // 1) Con idTransClientes obtener idClienteOrigen
+    $idClienteOrigen = null;
     if (!empty($hrRow['idTransClientes'])) {
-        if ($st = $mysqli->prepare("SELECT IngBrutosOrigen FROM TransClientes WHERE id = ? LIMIT 1")) {
+        if ($st = $mysqli->prepare("SELECT idClienteOrigen FROM TransClientes WHERE id = ? LIMIT 1")) {
             $st->bind_param('i', $hrRow['idTransClientes']);
             if ($st->execute()) {
                 $res = $st->get_result()->fetch_assoc();
-                $ingBrutosOrigen = $res['IngBrutosOrigen'] ?? null;
+                $idClienteOrigen = $res['idClienteOrigen'] ?? null;
             }
             $st->close();
         }
     }
-    if (empty($ingBrutosOrigen)) {
-        return [false, 0, ['msg' => 'No se pudo resolver ingBrutosOrigen desde TransClientes', 'idTransClientes' => $hrRow['idTransClientes'] ?? null]];
+    if (empty($idClienteOrigen)) {
+        return [false, 0, ['msg' => 'No se pudo resolver idClienteOrigen desde TransClientes', 'idTransClientes' => $hrRow['idTransClientes'] ?? null]];
     }
 
     // 2) Buscar en Clientes ese id
     if ($st = $mysqli->prepare("SELECT id, nombrecliente, Telefono, Mail, Direccion, wepoint_id FROM Clientes WHERE id = ? LIMIT 1")) {
-        $st->bind_param('i', $ingBrutosOrigen);
+        $st->bind_param('i', $idClienteOrigen);
         if ($st->execute()) {
             $cli = $st->get_result()->fetch_assoc();
         }
         $st->close();
     }
     if (empty($cli)) {
-        return [false, 0, ['msg' => 'Cliente origen no existe en Clientes', 'cliente_id' => $ingBrutosOrigen]];
+        return [false, 0, ['msg' => 'Cliente origen no existe en Clientes', 'cliente_id' => $idClienteOrigen]];
     }
 
     // 3) Si ya tiene wepoint_id ⇒ usarlo como proveedor

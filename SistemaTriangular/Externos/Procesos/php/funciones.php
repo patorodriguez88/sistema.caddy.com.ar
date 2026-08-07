@@ -618,7 +618,7 @@ if (isset($_POST['Reporte'])) {
         $SQL = $mysqli->query("SELECT 
             Seg.Entregado,
             ts.RazonSocial,
-            ts.ingBrutosOrigen,
+            ts.idClienteOrigen,
             ts.Recorrido,
             ts.idPago,
             ts.ClienteDestino,
@@ -664,7 +664,7 @@ if (isset($_POST['Reporte'])) {
         $tempRows = array();
 
         while ($row = $SQL->fetch_array(MYSQLI_ASSOC)) {
-            $key = $row['Recorrido'] . '_' . $row['ingBrutosOrigen'];
+            $key = $row['Recorrido'] . '_' . $row['idClienteOrigen'];
 
             if (floatval($row['Debe']) == 0 && intval($row['idClienteDestino']) != 18587) {
                 if (!isset($conteoServicios[$key])) {
@@ -715,7 +715,7 @@ if (isset($_POST['Reporte'])) {
 
                 $idTarifa = 0;
                 $stmtTarifa = $mysqli->prepare("SELECT Tarifa_externos FROM Recorridos WHERE Numero = ? AND Cliente = ? LIMIT 1");
-                $stmtTarifa->bind_param("ii", $row['Recorrido'], $row['ingBrutosOrigen']);
+                $stmtTarifa->bind_param("ii", $row['Recorrido'], $row['idClienteOrigen']);
                 $stmtTarifa->execute();
                 $stmtTarifa->bind_result($tarifa_externa_id);
                 $tieneTarifaEspecial = false;
@@ -745,7 +745,7 @@ if (isset($_POST['Reporte'])) {
                 $precioBase = isset($tarifas[$idTarifa]) ? floatval($tarifas[$idTarifa]) : 0;
                 $nombreTarifa = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
 
-                if (intval($row['ingBrutosOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
+                if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
                     $precioBase = round($precioBase * 0.5, 2);
                     $nombreTarifa .= " (50%)";
                 }
@@ -786,7 +786,7 @@ if (isset($_POST['Reporte'])) {
 
                 if (floatval($row['Debe']) == 0) {
                     $recorrido = intval($row['Recorrido']);
-                    $cliente = intval($row['ingBrutosOrigen']);
+                    $cliente = intval($row['idClienteOrigen']);
                     $key = $recorrido . '_' . $cliente;
 
                     $sql_recorrido = $mysqli->prepare("SELECT CodigoProductos FROM Recorridos WHERE Numero = ? AND Cliente = ? LIMIT 1");
@@ -986,7 +986,7 @@ if (isset($_POST['Reporte'])) {
                 er.id AS idExternoRendicion,
                 Seg.Entregado,
                 ts.RazonSocial,
-                ts.ingBrutosOrigen,
+                ts.idClienteOrigen,
                 ts.Recorrido,
                 ts.ClienteDestino,
                 ts.idClienteDestino,

@@ -308,23 +308,11 @@ $("#modificarrecorrido_ok").on("click", async function () {
 
   // Validaciones mínimas
   if (!cs) {
-    $.NotificationApp.send(
-      "Falta Código",
-      "No encontramos el Código de Seguimiento (cs). Intenta abrir de nuevo el modal.",
-      "bottom-right",
-      "#FFFFFF",
-      "warning",
-    );
+    toast("warning", "Falta Código", "No encontramos el Código de Seguimiento (cs). Intenta abrir de nuevo el modal.");
     return;
   }
   if (!r) {
-    $.NotificationApp.send(
-      "Selecciona un Recorrido",
-      "Debes elegir un recorrido antes de guardar.",
-      "bottom-right",
-      "#FFFFFF",
-      "warning",
-    );
+    toast("warning", "Selecciona un Recorrido", "Debes elegir un recorrido antes de guardar.");
     return;
   }
 
@@ -383,13 +371,7 @@ $("#modificarrecorrido_ok").on("click", async function () {
       hideModal("standard-modal-rec");
 
       try {
-        $.NotificationApp.send(
-          "Registro Actualizado !",
-          "Se ha actualizado el Recorrido.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Registro Actualizado !", "Se ha actualizado el Recorrido.");
       } catch {}
 
       Swal.fire({
@@ -777,13 +759,7 @@ $("#modificardireccion_ok").click(function () {
       type: "post",
       success: function (response) {
         var jsonData = JSON.parse(response);
-        $.NotificationApp.send(
-          "Registro Actualizado !",
-          "Se ha actualizado la tabla Clientes correctamente.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Registro Actualizado !", "Se ha actualizado la tabla Clientes correctamente.");
         var datatable = $("#seguimiento").DataTable();
         datatable.ajax.reload();
         $("#standard-modal").modal("hide");
@@ -791,13 +767,7 @@ $("#modificardireccion_ok").click(function () {
       },
     });
   } else {
-    $.NotificationApp.send(
-      "Presione Entregado !",
-      "No se realizaron cambios.",
-      "bottom-right",
-      "#FFFFFF",
-      "warning",
-    );
+    toast("warning", "Presione Entregado !", "No se realizaron cambios.");
   }
 });
 
@@ -833,51 +803,21 @@ $("#warning-modal-ok").click(function () {
       $("#warning-modal").modal("hide");
       if (jsonData.success == 1) {
         if (jsonData.hojaderuta == 1) {
-          $.NotificationApp.send(
-            "Registro Borrado !",
-            "Se ha borrado el registro en Hoja de Ruta correctamente.",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Registro Borrado !", "Se ha borrado el registro en Hoja de Ruta correctamente.");
           var datatable = $("#seguimiento").DataTable();
           datatable.ajax.reload();
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            "No se han realizado cambios en Hoja de Ruta.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
+          toast("error", "Error !", "No se han realizado cambios en Hoja de Ruta.");
         }
         if (jsonData.transclientes == 1) {
-          $.NotificationApp.send(
-            "Registro Borrado !",
-            "Se ha borrado el registro en Trans Clientes correctamente.",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Registro Borrado !", "Se ha borrado el registro en Trans Clientes correctamente.");
           var datatable = $("#seguimiento").DataTable();
           datatable.ajax.reload();
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            "No se han realizado cambios en Trans Clientes.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
+          toast("error", "Error !", "No se han realizado cambios en Trans Clientes.");
         }
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "No se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error !", "No se han realizado cambios.");
       }
     },
   });

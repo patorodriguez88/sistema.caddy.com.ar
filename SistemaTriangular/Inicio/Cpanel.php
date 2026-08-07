@@ -58,7 +58,7 @@
 
                     <!-- MODAL VER RECORRIDO GESTYA -->
                     <!-- Full width modal -->
-                    <!-- <button  type="button" class="btn btn-primary" data-bs-toggle="modal" data-target="#full-width-modal">Full width Modal</button> -->
+                    <!-- <button  type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#full-width-modal">Full width Modal</button> -->
 
                     <div id="full-width-modal_order" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-full-width">
@@ -1458,6 +1458,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

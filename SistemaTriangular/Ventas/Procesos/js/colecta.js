@@ -171,7 +171,7 @@ function abrir_tabla(){
                     
                 }else{
             
-                    $.NotificationApp.send("No hay Registros Seleccionados !","No se han actualizado registros.","bottom-right","#FFFFFF","danger");      
+                    toast("error", "No hay Registros Seleccionados !", "No se han actualizado registros.");      
                 
                 }
 
@@ -251,11 +251,11 @@ function abrir_tabla(){
 
                     $('#standard-modal-rec').modal('hide');                                  
 
-                    $.NotificationApp.send("Registros Actualizados !","Se ha actualizado al nuevo recorrido todos los registros seleccionados.","bottom-right","#FFFFFF","success");      
+                    toast("success", "Registros Actualizados !", "Se ha actualizado al nuevo recorrido todos los registros seleccionados.");      
                     
                     }else{
                 
-                    $.NotificationApp.send("Registro No Actualizado !","No pudimos actualizar los Recorridos.","bottom-right","#FFFFFF","danger");        
+                    toast("error", "Registro No Actualizado !", "No pudimos actualizar los Recorridos.");        
                     }
                 }
                 });

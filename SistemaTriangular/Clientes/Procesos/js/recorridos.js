@@ -144,9 +144,9 @@ var id = document.getElementById('codigo').value;
               if(jsonData.success==1){
                 var tabla_asignacion = $('#asignacion_salidas').DataTable();
                 tabla_asignacion.ajax.reload(); 
-                $.NotificationApp.send("Exito !", "Registro Actualizado.", "bottom-right", "#FFFFFF", "success");                
+                toast("success", "Exito !", "Registro Actualizado.");                
               }else{
-                $.NotificationApp.send("Error !", "No pudimos cargar el registro.", "bottom-right", "#FFFFFF", "danger");
+                toast("error", "Error !", "No pudimos cargar el registro.");
               }
             //   $('#ncomprobante_up_r').val(jsonData.PuntoVenta + '-' + jsonData.NComprobante);
             //   $('#comprobante_up_r').val(jsonData.Comprobante);  
@@ -213,9 +213,9 @@ $("#Modificar_recorrido_boton_ok").click(function() {
           if (jsonData.success == "1") {
           let tabla_recorridos = $('#recorridos_tabla').DataTable();
               tabla_recorridos.ajax.reload();
-              $.NotificationApp.send("Exito !", "Registro Actualizado.", "bottom-right", "#FFFFFF", "success");                
+              toast("success", "Exito !", "Registro Actualizado.");                
             }else{
-              $.NotificationApp.send("Error !", "No pudimos cargar el registro.", "bottom-right", "#FFFFFF", "danger");
+              toast("error", "Error !", "No pudimos cargar el registro.");
             
           }
         }

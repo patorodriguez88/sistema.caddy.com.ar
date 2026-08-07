@@ -116,7 +116,7 @@ if (isset($_POST['TotalEnvios'])) {
 }
 
 if (isset($_POST['BuscarDatos'])) {
-  $sql = "SELECT id,IngBrutosOrigen,idClienteDestino,RazonSocial,ClienteDestino,Retirado,DomicilioOrigen,DomicilioDestino,
+  $sql = "SELECT id,idClienteOrigen,idClienteDestino,RazonSocial,ClienteDestino,Retirado,DomicilioOrigen,DomicilioDestino,
     CodigoSeguimiento,Entregado,CobrarEnvio,CobrarCaddy FROM TransClientes WHERE id='$_POST[id]' AND Eliminado='0'";
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
@@ -138,7 +138,7 @@ if (isset($_POST['BuscarDatos'])) {
   } else {
     $Domicilio = $row['DomicilioOrigen'];
     $RazonSocial = $row['RazonSocial'];
-    $idCliente = $row['IngBrutosOrigen'];
+    $idCliente = $row['idClienteOrigen'];
     $Servicio = 'Retiro';
   }
   echo json_encode(array('EstadoSeguimiento' => $rowseguimiento['Estado'], 'CobrarCaddy' => $row['CobrarCaddy'], 'CobrarEnvio' => $row['CobrarEnvio'], 'Entregado' => $row['Entregado'], 'Retirado' => $row['Retirado'], 'EstadoHdr' => $rowhdr['Estado'], 'RazonSocial' => $RazonSocial, 'Domicilio' => $Domicilio, 'idCliente' => $idCliente, 'CodigoSeguimiento' => $CodigoSeguimiento, 'Servicio' => $Servicio));
@@ -168,7 +168,7 @@ if (isset($_POST['ModificarDatosVentas'])) {
   $info = "M: " . $_SESSION['Usuario'] . ' | ' . date('Y-m-d (h:m:s)');
   $sql = "SELECT Fecha,IF(FormaDePago='Origen',RazonSocial,ClienteDestino)as RazonSocial,
                        IF(FormaDePago='Origen',Cuit,idClienteDestino)as Cuit,TipoDeComprobante,NumeroComprobante,Debe,
-                       IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)as idCliente,
+                       IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,
                        Observaciones,id,CodigoSeguimiento FROM TransClientes WHERE id='$_POST[idTrans]'";
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
@@ -258,7 +258,7 @@ if (isset($_POST['AgregarDatosVentas'])) {
   $sql = "SELECT if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,
                if(FechaEntrega='0000-00-00',Fecha,FechaEntrega) as Fecha, 
                if(FormaDePago='Origen',LocalidadOrigen,LocalidadDestino)as Localidad,NumeroComprobante,
-               if(FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente
+               if(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente
                FROM TransClientes WHERE CodigoSeguimiento='$_POST[codigoseguimiento]' AND Eliminado='0'";
 
   $Resultado = $mysqli->query($sql);

@@ -245,13 +245,7 @@ function eliminar(a) {
         var table = $("#basic").DataTable();
         table.ajax.reload();
 
-        $.NotificationApp.send(
-          "Listo!",
-          "Eliminaste el registro correctamente ",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Listo!", "Eliminaste el registro correctamente ");
       }
     },
   });
@@ -322,13 +316,7 @@ $(document).ready(function () {
     dataType: "json",
     success: function (jsonData) {
       if (jsonData.success == "1") {
-        $.NotificationApp.send(
-          "Limpieza",
-          "Limpieza de " + jsonData.Num + " registros realizada",
-          "top-right",
-          "#0ACF97",
-          "info",
-        );
+        toast("info", "Limpieza", "Limpieza de " + jsonData.Num + " registros realizada");
       }
     },
   });
@@ -394,21 +382,9 @@ $("#cobroacuenta_button").click(function () {
         var tabletotales = $("#basic-total").DataTable();
         tabletotales.ajax.reload();
       } else if (jsonData.success == "2") {
-        $.NotificationApp.send(
-          "Error",
-          "No seleccionaste ningún cliente origen ",
-          "bottom-right",
-          "#FFFFFF",
-          "error",
-        );
+        toast("error", "Error", "No seleccionaste ningún cliente origen ");
       } else {
-        $.NotificationApp.send(
-          "Error",
-          "No seleccionaste ningún servicio ",
-          "bottom-right",
-          "#FFFFFF",
-          "error",
-        );
+        toast("error", "Error", "No seleccionaste ningún servicio ");
       }
     },
   });
@@ -456,29 +432,11 @@ function valor_declarado() {
         var tabletotales = $("#basic-total").DataTable();
         tabletotales.ajax.reload();
       } else if (jsonData.success == "2") {
-        $.NotificationApp.send(
-          "Error",
-          "No seleccionaste ningún cliente origen ",
-          "bottom-right",
-          "#FFFFFF",
-          "error",
-        );
+        toast("error", "Error", "No seleccionaste ningún cliente origen ");
       } else if (jsonData.success == "3") {
-        $.NotificationApp.send(
-          "Error",
-          "No aplica seguro extra porque Valor Declarado esta establecido en $ 10.000",
-          "bottom-right",
-          "#FFFFFF",
-          "error",
-        );
+        toast("error", "Error", "No aplica seguro extra porque Valor Declarado esta establecido en $ 10.000");
       } else {
-        $.NotificationApp.send(
-          "Error",
-          "No seleccionaste ningún servicio ",
-          "bottom-right",
-          "#FFFFFF",
-          "error",
-        );
+        toast("error", "Error", "No seleccionaste ningún servicio ");
       }
     },
   });
@@ -529,13 +487,7 @@ function subir() {
   console.log("veo la tabla servicios");
   var dato = document.getElementById("codigo").value;
   if (dato == 0) {
-    $.NotificationApp.send(
-      "Error",
-      "No seleccionaste ningún servicio ",
-      "bottom-right",
-      "#FFFFFF",
-      "error",
-    );
+    toast("error", "Error", "No seleccionaste ningún servicio ");
     document.getElementById("servicio").style.background = "red";
   } else {
     if (document.getElementById("id_origen").value == null) {
@@ -739,13 +691,7 @@ function formadepago(selec) {
     document.getElementById("pagadestino_icon").style.display = "none";
     document.getElementById("pagatercero_icon").style.display = "none";
     document.getElementById("row_fp_tercero").style.display = "none";
-    $.NotificationApp.send(
-      "Seleccion",
-      "Seleccionaste que paga " + selec,
-      "top-right",
-      "#0ACF97",
-      "info",
-    );
+    toast("info", "Seleccion", "Seleccionaste que paga " + selec);
   } else if (selec == "Destino") {
     sure(document.getElementById("id_destino").value);
     document.getElementById("pagaorigen_label").style.color = "gray";
@@ -754,13 +700,7 @@ function formadepago(selec) {
     document.getElementById("pagadestino_label").style.color = "#08AB7C";
     document.getElementById("pagatercero_icon").style.display = "none";
     document.getElementById("row_fp_tercero").style.display = "none";
-    $.NotificationApp.send(
-      "Seleccion",
-      "Seleccionaste que paga " + selec,
-      "top-right",
-      "#0ACF97",
-      "info",
-    );
+    toast("info", "Seleccion", "Seleccionaste que paga " + selec);
   } else if (selec == "Tercero") {
     document.getElementById("row_fp_tercero").style.display = "inline";
     document.getElementById("pagaorigen_label").style.color = "gray";
@@ -769,13 +709,7 @@ function formadepago(selec) {
     document.getElementById("pagadestino_icon").style.display = "none";
     document.getElementById("pagatercero_icon").style.display = "inline";
     document.getElementById("pagatercero_label").style.color = "#08AB7C";
-    $.NotificationApp.send(
-      "Seleccion",
-      "Seleccionaste que paga Otro Cliente",
-      "top-right",
-      "#0ACF97",
-      "info",
-    );
+    toast("info", "Seleccion", "Seleccionaste que paga Otro Cliente");
   } else if (selec == "") {
     document.getElementById("row_fp_tercero").style.display = "none";
     document.getElementById("pagaorigen_label").style.color = "gray";

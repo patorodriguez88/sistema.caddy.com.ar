@@ -514,15 +514,7 @@ function bindDepositoModal() {
               $("#logistica1").DataTable().ajax.reload();
               $("#deposito-modal").modal("hide");
 
-              if ($.NotificationApp && $.NotificationApp.send) {
-                $.NotificationApp.send(
-                  "Exito !",
-                  "Se movieron los servicios a Deposito.",
-                  "bottom-right",
-                  "#FFFFFF",
-                  "success",
-                );
-              }
+              toast("success", "Exito !", "Se movieron los servicios a Deposito.");
             }
           },
           error: function (xhr) {

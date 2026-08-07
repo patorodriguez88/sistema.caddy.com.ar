@@ -30,7 +30,7 @@ $.ajax({
     url: "https://www.caddy.com.ar/SistemaTriangular/Datos/Procesos/php/webhook.php",
     type: 'post',
     success: function(response) {
-        $.NotificationApp.send("Trackeando Webhooks...", "", "bottom-left", "#FFFFFF", "success");
+        toast("success", "Trackeando Webhooks...", "");
         $('#myCenterModalLabel3').html('Tracker Actualizado '+fecha+' H: '+hora);
     }
   });
@@ -57,10 +57,10 @@ var hora = addZero(hoy.getHours()) + ':' + addZero(hoy.getMinutes()) + ':' + add
               success: function(response) {
                 // var jsonData = JSON.parse(response);
                 // if (jsonData.success == "1") {
-                  $.NotificationApp.send("Actualizando Webhooks !", "", "bottom-right", "#FFFFFF", "warning");
+                  toast("warning", "Actualizando Webhooks !", "");
                   $('#myCenterModalLabel2').html('Actualizado '+fecha+' H: '+hora);
                 // } else {
-                //   $.NotificationApp.send("Ocurrio un Error !", "No se realizaron cambios.", "bottom-right", "#FFFFFF", "danger");
+                //   toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
                 // }
               }
             });

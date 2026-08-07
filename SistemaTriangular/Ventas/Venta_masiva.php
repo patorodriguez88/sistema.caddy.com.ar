@@ -81,16 +81,16 @@ include_once "../Conexion/Conexion.php";
                               <div class="modal-content">
                                   <div class="modal-header modal-colored-header bg-success">
                                       <h4 class="modal-title" id="success-header-modalLabel">Ultimo Paso</h4>
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div class="modal-body">
                                   Cargaste con éxito la venta, el codigo de seguimiento es <a id='codseg'></a>, ahora seleccioná que sigue...
                                   </div>
                                   <div class="modal-footer">
-<!--                                       <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#standard-modal">Cargar Pago</button> -->
-<!--                                       <button id="cobrar"   type="button" class="btn btn-success" data-target="#standard-modal">Cargar Pago</button> -->
+<!--                                       <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#standard-modal">Cargar Pago</button> -->
+<!--                                       <button id="cobrar"   type="button" class="btn btn-success" data-bs-target="#standard-modal">Cargar Pago</button> -->
                                       <button id="imprimir" type="button" class="btn btn-warning">Imprimir Remito</button>
-                                      <button id="terminar" type="button" class="btn btn-light" data-dismiss="modal">Terminar</button>
+                                      <button id="terminar" type="button" class="btn btn-light" data-bs-dismiss="modal">Terminar</button>
                                                                             
                                   </div>
                               </div><!-- /.modal-content -->
@@ -106,7 +106,7 @@ include_once "../Conexion/Conexion.php";
                                         <h4 class="mt-2">Falta Información</h4>
                                         <p id="warning-redespacho-text" class="mt-3"></p>
                                         
-                                        <button type="button" class="btn btn-warning my-2" data-dismiss="modal">Continue</button>
+                                        <button type="button" class="btn btn-warning my-2" data-bs-dismiss="modal">Continue</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -208,7 +208,7 @@ include_once "../Conexion/Conexion.php";
                                   <div class="modal-header modal-colored-header bg-primary">
                                       <h4 class="modal-title" id="standard-modalLabel">Cargar Pago</h4>
                                     
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div class="modal-body">
                                     <div class="row">
@@ -314,7 +314,7 @@ include_once "../Conexion/Conexion.php";
                                       </div>
                                     </div>
                                   <div class="modal-footer">
-                                      <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                      <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                       <button type="button" class="btn btn-primary">Save changes</button>
                                   </div>
                                 </div>
@@ -337,7 +337,7 @@ include_once "../Conexion/Conexion.php";
                                     <form method="POST" class="needs-validation"  data-toggle="validator" data-disable="false" >
                                       <div class="modal-header">
                                           <h4 class="modal-title" id="fullWidthModalLabel"><a id="datonuevocliente"></a></h4>
-                                          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                          <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                       </div>
                                       <div class="modal-body">
                                         <div id="errorname" class="alert alert-warning" role="alert" style="display:none">
@@ -395,7 +395,7 @@ include_once "../Conexion/Conexion.php";
                                       </form>
                                          </div>
                                       <div class="modal-footer">
-                                          <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                           <button id="AgregarCliente" type="button" class="btn btn-primary">Agregar Cliente</button>
                                       </div>
                                   </div><!-- /.modal-content -->
@@ -449,7 +449,7 @@ include_once "../Conexion/Conexion.php";
                                                   <div class="col-lg-1 mt-2">
                                                   <label>Crear</label>
                                                   <input id="valorcrear" type="hidden">
-                                                  <a  id="crearorigen" class="btn btn-success" data-parent="Origen" data-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i></a>     
+                                                  <a  id="crearorigen" class="btn btn-success" data-parent="Origen" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i></a>     
                                                   </div>
                                                     <div id="nuevoclientedestino" class="col-lg-5 mt-2">
                                                       <label id="pagadestino_label">Cliente Destino  <i id="pagadestino_icon" class="mdi mdi-18px mdi-account-cash text-success" style="display:none"></i></label>
@@ -475,7 +475,7 @@ include_once "../Conexion/Conexion.php";
 
                                                       <div class="col-lg-1 mt-2">
                                                       <label>Crear</label>
-                                                      <a  id="creardestino" class="btn btn-success" data-parent="Destino" data-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i></a>     
+                                                      <a  id="creardestino" class="btn btn-success" data-parent="Destino" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i></a>     
                                                     </div><!-- end col -->
                                                   </div> <!-- end row -->
                                                 </div>                                            
@@ -491,7 +491,7 @@ include_once "../Conexion/Conexion.php";
                                                 </div>
                                                 <div class="col-lg-2 mt-3">
                                                    <label>Redespacho</label>
-                                                   <!-- <button id="button-redespacho" type="button" class="btn btn-primary" data-toggle="modal" data-target="#redespacho-modal"><i class="mdi mdi-alpha-r-box"> </i> Redespacho</button> -->
+                                                   <!-- <button id="button-redespacho" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#redespacho-modal"><i class="mdi mdi-alpha-r-box"> </i> Redespacho</button> -->
                                                    <button id="button-redespacho" type="button" class="btn btn-secondary text-white"><i class="mdi mdi-alpha-r-box"> </i> Redespacho</button>
                                                 </div>
                                              </div>
@@ -837,6 +837,9 @@ include_once "../Conexion/Conexion.php";
         <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=BuscarDireccion">
         </script>
-<!--         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script> -->
+<!--         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+-->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
   </body>
 </html>

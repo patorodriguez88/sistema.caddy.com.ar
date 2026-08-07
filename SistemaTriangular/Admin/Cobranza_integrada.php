@@ -58,7 +58,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="mySmallModalLabel">Modificar Improte Cobranza Integrada Id <a id="label_change_import"></a></h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div class="modal-body">
 
@@ -74,7 +74,7 @@
                                     </div>
                                     <div class="form-group mb-0 justify-content-end row">
                                         <div class="col-9 text-right">
-                                            <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                                            <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
                                             <button id="btn_ok_change_import" type="button" class="btn btn-success">Aceptar</button>
                                         </div>
                                     </div>
@@ -92,7 +92,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myCenterModalLabel_rec">Cobranza Integrada</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div class="modal-body">
                                 <!--DESDE ACA FACTURA -->
@@ -222,7 +222,7 @@
                                             </div>
                                             <div class="d-print-none modal-footer">
                                                 <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                             </div>
                                         </div><!-- /.modal-content -->
                                     </div><!-- /.modal-dialog -->
@@ -237,7 +237,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myCenterModalLabel">GENERAR LIQUIDACION DE COBRANZA INTEGRADA</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <form id="form">
                                 <div class="modal-body mb-3">
@@ -287,7 +287,7 @@
                                     </div>
                                     <div class="modal-footer mt-3">
                                         <input type="hidden" id="id_modificar">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
                                         <button id="generar_informe_ok" type="button" class="btn btn-primary">Aceptar</button>
                                     </div>
                                 </div><!-- /.modal-content -->
@@ -404,6 +404,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

@@ -114,13 +114,13 @@ $('#full-width-modal_order_button').click(function(){
           var jsonData = JSON.parse(respuesta);
           if(jsonData.resultado==1){
               if(jsonData.modificadas!=0){
-            $.NotificationApp.send("Exito !","Se reasingaron " +jsonData.modificadas+ " posiciones para el recorrido.!","bottom-right","#FFFFFF","success");                     
+            toast("success", "Exito !", "Se reasingaron " +jsonData.modificadas+ " posiciones para el recorrido.!");                     
             $('#full-width-modal_order').modal('hide');
             var datatable = $('#seguimiento').DataTable();
             datatable.ajax.reload();
 
             }else{
-                $.NotificationApp.send("Error !","No se reasingaron posiciones para el recorrido.","bottom-right","#FFFFFF","danger");                           
+                toast("error", "Error !", "No se reasingaron posiciones para el recorrido.");                           
               }             
           }
         }

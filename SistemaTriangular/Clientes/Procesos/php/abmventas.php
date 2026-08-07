@@ -92,7 +92,7 @@ if($_POST['AgregarDatosVentas']==1){
   $sql="SELECT if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,
                if(FechaEntrega='0000-00-00',Fecha,FechaEntrega) as Fecha, 
                if(FormaDePago='Origen',LocalidadOrigen,LocalidadDestino)as Localidad,NumeroComprobante,
-               if(FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente
+               if(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente
                FROM TransClientes WHERE CodigoSeguimiento='$_POST[codigoseguimiento]' AND Eliminado='0'";
 
   $Resultado=$mysqli->query($sql);  
@@ -134,7 +134,7 @@ if($_POST['ModificarDatosVentas']==1){
 $info="M: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)');
     $sql="SELECT Fecha,IF(FormaDePago='Origen',RazonSocial,ClienteDestino)as RazonSocial,
                        IF(FormaDePago='Origen',Cuit,idClienteDestino)as Cuit,TipoDeComprobante,NumeroComprobante,Debe,
-                       IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)as idCliente,
+                       IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,
                        Observaciones,id,CodigoSeguimiento FROM TransClientes WHERE id='$_POST[idTrans]'";
 
     $Resultado=$mysqli->query($sql);  
@@ -321,7 +321,7 @@ if($_POST['BuscarDatos']==1){
 
     $sql="SELECT IF(FormadePago='Origen',RazonSocial,ClienteDestino)as Cliente,
                  IF(FormadePago='Origen',DomicilioOrigen,DomicilioDestino)as Domicilio, 
-                 IF(FormadePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente, CodigoSeguimiento,Entregado FROM TransClientes WHERE id='$_POST[id]'";
+                 IF(FormadePago='Origen',idClienteOrigen,idClienteDestino)as idCliente, CodigoSeguimiento,Entregado FROM TransClientes WHERE id='$_POST[id]'";
     $Resultado=$mysqli->query($sql);  
     $row=$Resultado->fetch_array(MYSQLI_ASSOC);
     $CodigoSeguimiento = $row['CodigoSeguimiento'];

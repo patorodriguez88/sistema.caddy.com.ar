@@ -84,7 +84,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myCenterModalLabel_modificar">MODIFICAR #</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <form id="form">
                                 <div class="modal-body mb-3">
@@ -174,7 +174,7 @@
 
                                     <div class="modal-footer mt-3">
                                         <input type="hidden" id="id_modificar">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
                                         <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                                     </div>
                                 </div><!-- /.modal-content -->
@@ -265,7 +265,7 @@
 
                                 <div class="modal-footer mt-3">
                                     <input type="hidden" id="id_modificar">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                     <button id="modificarventas_ok" type="button" class="btn btn-success">Guardar Cambios</button>
                                     <button id="agregarventas_ok" type="button" class="btn btn-success" style="display:none">Agregar Venta</button>
                                 </div>
@@ -416,7 +416,7 @@
                         <div class="modal-content">
                             <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div id="warning-modal-body" class="modal-body">
 
@@ -425,7 +425,7 @@
                             <input type="hidden" id="codigoseguimiento_eliminar">
                             <div class="modal-footer">
 
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                 <button id="warning-modal-ok" type="button" class="btn btn-danger">Eliminar</button>
                                 <button id="warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                             </div>
@@ -473,6 +473,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

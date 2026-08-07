@@ -28,7 +28,7 @@ function subirArchivo() {
     // Verificar la extensión del archivo
      if (!archivo.name.toLowerCase().endsWith('.pdf')) {
         
-        $.NotificationApp.send("Error!", "Por favor selecciona un archivo con extensión .pdf.", "bottom-right", "#FFFFFF", "danger");  
+        toast("error", "Error!", "Por favor selecciona un archivo con extensión .pdf.");  
         return;
     
     }
@@ -46,12 +46,12 @@ function subirArchivo() {
 
         if (xhr.status === 200) {
 
-            $.NotificationApp.send("Exito!", "El archivo se ha subido correctamente.", "bottom-right", "#FFFFFF", "success");  
+            toast("success", "Exito!", "El archivo se ha subido correctamente.");  
             
             // Puedes realizar acciones adicionales aquí, como cerrar la ventana modal
         } else {
 
-            $.NotificationApp.send("Error!", "Ha ocurrido un error al subir el archivo.", "bottom-right", "#FFFFFF", "danger");  
+            toast("error", "Error!", "Ha ocurrido un error al subir el archivo.");  
 
         }
     };
@@ -71,13 +71,13 @@ $('#archivo_subido_borrar').click(function(){
             var jsonData = JSON.parse(response);
             if(jsonData.success==1){
                 
-                $.NotificationApp.send("Exito!", "Archivo eliminado correctamente.", "bottom-right", "#FFFFFF", "success");  
+                toast("success", "Exito!", "Archivo eliminado correctamente.");  
                 
                 $('#subir_archivo').css('display','block');
                 $('#archivo_subido').css('display', 'none');
 
             }else{
-                $.NotificationApp.send("Error!", jsonData.error, "bottom-right", "#FFFFFF", "danger");  
+                toast("error", "Error!", jsonData.error);  
             }
         }
     });
@@ -99,7 +99,7 @@ function presupuestos_edit(id){
 
                 if(jsonData.error==='Sin permisos'){
 
-                    $.NotificationApp.send("Error!", "Ud. no posee permisos suficientes para esta acción.", "bottom-right", "#FFFFFF", "danger");  
+                    toast("error", "Error!", "Ud. no posee permisos suficientes para esta acción.");  
 
                 }else{
                 
@@ -186,9 +186,9 @@ $('#presupuesto_editar_ok').click(function(){
                         $('#ordendecompra_new').modal('show');
                         var table = $('#presupuestos').DataTable();
                         table.ajax.reload();
-                        $.NotificationApp.send("Presupuesto Modificado!", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");  
+                        toast("success", "Presupuesto Modificado!", "Se han realizado cambios.");  
                     }else{
-                        $.NotificationApp.send("Error!", jsonData.error, "bottom-right", "#FFFFFF", "danger");  
+                        toast("error", "Error!", jsonData.error);  
                     }
 
                 }
@@ -238,7 +238,7 @@ function presupuestos_check(id){
 
                         $('#aprobar_presupuesto').modal('hide');                                    
 
-                        $.NotificationApp.send("Presupuesto Aprobado!", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");  
+                        toast("success", "Presupuesto Aprobado!", "Se han realizado cambios.");  
                     }
                 },
                 error: function(xhr, status, error) {
@@ -250,7 +250,7 @@ function presupuestos_check(id){
 
     } else {
 
-        $.NotificationApp.send("Error!", "Ud. no posee permisos suficientes para esta acción.", "bottom-right", "#FFFFFF", "danger");  
+        toast("error", "Error!", "Ud. no posee permisos suficientes para esta acción.");  
 
     }
 };
@@ -265,9 +265,9 @@ function enviarmail(procedimiento,id,asunto,mensaje,cantidad){
             var jsonData = JSON.parse(response);
             
             if(jsonData.success==1){
-                $.NotificationApp.send("Exito !","Mail enviado con éxito.","bottom-right","#FFFFFF","success");  
+                toast("success", "Exito !", "Mail enviado con éxito.");  
             }else{
-                $.NotificationApp.send("Error !","No se pudo enviar el mail.","bottom-right","#FFFFFF","warning");  
+                toast("warning", "Error !", "No se pudo enviar el mail.");  
             }
         }
     });
@@ -556,13 +556,13 @@ function add_pres(id) {
                 
                     console.log('error', 'Faltan Presupuestos');
                 
-                    $.NotificationApp.send("Error !","Faltan Presupuestos.","bottom-right","#FFFFFF","warning");  
+                    toast("warning", "Error !", "Faltan Presupuestos.");  
 
                 } else if (!tieneAprobado) {
 
                     console.log('ERROR', 'Debe haber al menos 1 presupuesto aprobado');
 
-                    $.NotificationApp.send("Error !","Debe haber al menos 1 presupuesto aprobado.","bottom-right","#FFFFFF","warning"); 
+                    toast("warning", "Error !", "Debe haber al menos 1 presupuesto aprobado."); 
                 
                 } else {
                     
@@ -607,12 +607,12 @@ $('#warning-alert-modal_button_ok').click(function(){
         success: function(response) {
             var jsonData = JSON.parse(response);
             if (jsonData.success == 1) {
-                $.NotificationApp.send("Registro Eliminado !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");  
+                toast("success", "Registro Eliminado !", "Se han realizado cambios.");  
                 
                 datatable.ajax.reload();
                 calcularTotalPrecios();
             } else {
-                // $.NotificationApp.send("Error!", jsonData.error, "bottom-right", "#FFFFFF", "success");  
+                // toast("success", "Error!", jsonData.error);  
             }
         },
         error: function(xhr, status, error) {
@@ -830,7 +830,7 @@ $('#filtro_new').click(function(){
                 var jsonData = JSON.parse(response);
                 
                 if(jsonData.success==1){
-                    $.NotificationApp.send("Registro Cargado !","Se han realizado cambios.","bottom-right","#FFFFFF","success");  
+                    toast("success", "Registro Cargado !", "Se han realizado cambios.");  
                     datatable.ajax.reload();
 
                     var procedimiento='OC';
@@ -843,7 +843,7 @@ $('#filtro_new').click(function(){
 
                 }else{
                     
-                    $.NotificationApp.send("Error !",jsonData.error,"bottom-right","#FFFFFF","warning");  
+                    toast("warning", "Error !", jsonData.error);  
                     
                 }
 
@@ -930,7 +930,7 @@ $('#presupuesto_aceptar').click(function(){
             var jsonData = JSON.parse(response);
             
             if(jsonData.success==1){
-                $.NotificationApp.send("Registro Cargado !","Se han realizado cambios.","bottom-right","#FFFFFF","success");  
+                toast("success", "Registro Cargado !", "Se han realizado cambios.");  
                 datatable.ajax.reload();
 
                 $('#presupuesto_new').modal('hide');
@@ -943,7 +943,7 @@ $('#presupuesto_aceptar').click(function(){
 
             }else{
                 
-                $.NotificationApp.send("Error !",jsonData.error,"bottom-right","#FFFFFF","warning");  
+                toast("warning", "Error !", jsonData.error);  
                 
             }
 
@@ -1016,7 +1016,7 @@ $('#aprobar_orden_ok').click(function(){
                 
                 if(jsonData.success==1){
 
-                    $.NotificationApp.send("Éxito !","Se Aprobó la Orden de Compra.","bottom-right","#FFFFFF","success");
+                    toast("success", "Éxito !", "Se Aprobó la Orden de Compra.");
                     $("#ordendecompra_new").modal('hide');
                     $('#aprobar_orden').modal('hide');
                     $('#ordendecompra').DataTable().ajax.reload();
@@ -1034,7 +1034,7 @@ $('#aprobar_orden_ok').click(function(){
 
     }else{
     
-        $.NotificationApp.send("Error !","Fecha de Aprobacion no puede ser NULL.","bottom-right","#FFFFFF","waring");  
+        toast("warning", "Error !", "Fecha de Aprobacion no puede ser NULL.");  
     
     }
 });
@@ -1070,9 +1070,9 @@ $('#observar_presupuesto_ok').click(function(){
                 enviarmail(procedimiento,id,asunto,mensaje);
 
 
-                $.NotificationApp.send("Exito !","Mail enviado con éxito.","bottom-right","#FFFFFF","success");  
+                toast("success", "Exito !", "Mail enviado con éxito.");  
             }else{
-                $.NotificationApp.send("Error !","No se pudo enviar el mail.","bottom-right","#FFFFFF","warning");  
+                toast("warning", "Error !", "No se pudo enviar el mail.");  
             }
         }
     });

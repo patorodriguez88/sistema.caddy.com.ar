@@ -340,18 +340,18 @@ for ($i = 0; $i <= count($idPreVenta); $i++) {
         $total_ventas = $dato_total_ventas['total_ventas'];
         $estado = 'En Origen';
 
-        $IngresaTransaccion = "INSERT INTO 
+        $IngresaTransaccion = "INSERT INTO
     TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,CompraMercaderia,Debe,Haber,
     ClienteDestino,DocumentoDestino,DomicilioDestino,LocalidadDestino,SituacionFiscalDestino,IngBrutosDestino,TelefonoDestino,
     CodigoSeguimiento,NumeroVenta,Cantidad,DomicilioOrigen,SituacionFiscalOrigen,LocalidadOrigen,IngBrutosOrigen,TelefonoOrigen,
     FormaDePago,EntregaEn,Usuario,CodigoProveedor,Observaciones,Transportista,Recorrido,ProvinciaDestino,ProvinciaOrigen,
-    idClienteDestino,Retirado,Redespacho,Kilometros,CobrarEnvio,CobrarCaddy,ValorDeclarado,FechaEntrega,order_id,shipments_id,status,Wepoint_c,Estado)
+    idClienteOrigen,idClienteDestino,Retirado,Redespacho,Kilometros,CobrarEnvio,CobrarCaddy,ValorDeclarado,FechaEntrega,order_id,shipments_id,status,Wepoint_c,Estado)
     VALUES('{$Fecha}','{$ClienteOrigen}','{$CuitClienteA}',
     '{$TipoDeComprobante}','{$NumeroRepo}','{$Compra}','{$total_ventas}','{$Haber}','{$ClienteDestino}','{$CuitDestino}',
     '{$DomicilioDestino}','{$LocalidadDestino}','{$SituacionFiscalDestino}','{$IngBrutosDestino}','{$TelefonoDestino}',
     '{$NumeroPedido}','{$NumeroRepo}','{$Cantidad}','{$DomicilioOrigen}','{$SituacionFiscalOrigen}','{$LocalidadOrigen}',
     '{$IdOrigen}','{$TelefonoOrigen}','{$FormaDePago}','{$EntregaEn}','{$Usuario}','{$CodigoProveedor}','{$Observaciones}',
-    '{$Transportista}','{$Recorrido_Limpio}','{$ProvinciaDestino}','{$ProvinciaOrigen}','{$idClienteDestino}','{$Retirado}',
+    '{$Transportista}','{$Recorrido_Limpio}','{$ProvinciaDestino}','{$ProvinciaOrigen}','{$IdOrigen}','{$idClienteDestino}','{$Retirado}',
     '{$Redespacho}','{$Kilometros}','{$CobrarEnvio_label}','{$CobrarCaddy}','{$ValorDeclarado}','{$FechaEntrega}','{$order_id}',
     '{$shipments_id}','{$status}','{$wepoint_c}','{$estado}')";
 

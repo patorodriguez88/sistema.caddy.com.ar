@@ -69,7 +69,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-primary">
                                     <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="query_selector_recorrido_t" class="col-lg-12 mt-3">
                                     <div class="selector-recorrido form-group">
@@ -80,7 +80,7 @@
                                 </div>
                                 <div class="modal-footer mt-3">
                                     <input type="hidden" id="cs_modificar_REC">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                     <button id="modificarrecorrido_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                                     <button id="modificarrecorrido_all_ok" type="button" class="btn btn-primary" style="display:none">Guardar Cambios</button>
                                     <button id="eliminarrecorrido_all_ok" type="button" class="btn btn-primary" style="display:none">Aceptar</button>
@@ -137,8 +137,8 @@
                                                         </table>
                                                         <div class="row">
                                                             <div class="col-12 text-right">
-                                                                <button id="aceptar" type="button" class="btn btn-success" data-dismiss="modal">Aceptar</button>
-                                                                <button id="modificar_recorrido_all" type="button" class="btn btn-primary" data-dismiss="modal">Cambiar de Recorrido a Seleccionados</button>
+                                                                <button id="aceptar" type="button" class="btn btn-success" data-bs-dismiss="modal">Aceptar</button>
+                                                                <button id="modificar_recorrido_all" type="button" class="btn btn-primary" data-bs-dismiss="modal">Cambiar de Recorrido a Seleccionados</button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -199,6 +199,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

@@ -94,7 +94,7 @@ $Resultado=$mysqli->query($sql);
  while($row = $Resultado->fetch_array(MYSQLI_ASSOC)){
     //  print $row[id].'<br>';
     if($row[id]<>''){
-        $sql_0="SELECT CodigoSeguimiento,Estado,ingBrutosOrigen,CodigoProveedor FROM TransClientes WHERE id='$row[id]' AND CodigoProveedor<>''";
+        $sql_0="SELECT CodigoSeguimiento,Estado,idClienteOrigen,CodigoProveedor FROM TransClientes WHERE id='$row[id]' AND CodigoProveedor<>''";
         $Resultado_0=$mysqli->query($sql_0);
         $row_0 = $Resultado_0->fetch_array(MYSQLI_ASSOC);
             if($row_0[CodigoSeguimiento]<>''){
@@ -105,7 +105,7 @@ $Resultado=$mysqli->query($sql);
                     $Resultado_2=$mysqli->query($sql_2);
                     if(($row_2=$Resultado_2->fetch_array(MYSQLI_ASSOC))==NULL){
                     //BUSCO EL LOS DATOS DE CONEXION AL WEBHOOK
-                    $sql_3=$mysqli->query("SELECT * FROM Webhook WHERE idCliente='$row_0[ingBrutosOrigen]'");
+                    $sql_3=$mysqli->query("SELECT * FROM Webhook WHERE idCliente='$row_0[idClienteOrigen]'");
                         if($sql_webhook=$sql_3->fetch_array(MYSQLI_ASSOC)){
                             $Servidor=$sql_webhook['Endpoint'];
                             $Token=$sql_webhook['Token'];  
@@ -120,7 +120,7 @@ $Resultado=$mysqli->query($sql);
                             echo json_encode(array('SERVIDOR'=>$Servidor,'TOKEN'=>$Token,'new'=>$newstatedate,'state'=>$state));
                             //COMO NO EXISTE EL SEGMENTO EN NOTIFICACIONES DE WEBHOKK INGRESO EL REGISTRO
                             $sql=$mysqli->query("INSERT INTO `Webhook_notifications`(`idCliente`, `idCaddy`, `idProveedor`, `Servidor`, `State`, `Estado`, `Fecha`, `Hora`, `User`, `Response`, `Send`) VALUES 
-                            ('{$row_0[ingBrutosOrigen]}','{$row_0[CodigoSeguimiento]}','{$row_0[CodigoProveedor]}','{$Servidor}','{$postfields}','{$state}','{$Fecha}','{$Hora}','{$_SESSION['Usuario']}','{$Response}','{$Send}')");
+                            ('{$row_0[idClienteOrigen]}','{$row_0[CodigoSeguimiento]}','{$row_0[CodigoProveedor]}','{$Servidor}','{$postfields}','{$state}','{$Fecha}','{$Hora}','{$_SESSION['Usuario']}','{$Response}','{$Send}')");
                             $sql=$mysqli->query("UPDATE Seguimiento SET Webhook=1 WHERE id='$row_1[id]' AND Webhook='0'");                        
                         }  
                     }else{

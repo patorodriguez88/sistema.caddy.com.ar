@@ -83,7 +83,7 @@ if (isset($_POST['ActualizarDireccion'])) {
 
 if (isset($_POST['BuscarDatos'])) {
 
-  $sql = "SELECT id,IngBrutosOrigen,idClienteDestino,RazonSocial,ClienteDestino,Retirado,DomicilioOrigen,DomicilioDestino,
+  $sql = "SELECT id,idClienteOrigen,idClienteDestino,RazonSocial,ClienteDestino,Retirado,DomicilioOrigen,DomicilioDestino,
     CodigoSeguimiento,Entregado,CobrarEnvio,CobrarCaddy FROM TransClientes WHERE id='$_POST[id]'";
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
@@ -105,7 +105,7 @@ if (isset($_POST['BuscarDatos'])) {
   } else {
     $Domicilio = $row['DomicilioOrigen'];
     $RazonSocial = $row['RazonSocial'];
-    $idCliente = $row['IngBrutosOrigen'];
+    $idCliente = $row['idClienteOrigen'];
     $Servicio = 'Retiro';
   }
   echo json_encode(array('EstadoSeguimiento' => $rowseguimiento['Estado'], 'CobrarCaddy' => $row['CobrarCaddy'], 'CobrarEnvio' => $row['CobrarEnvio'], 'Entregado' => $row['Entregado'], 'Retirado' => $row['Retirado'], 'EstadoHdr' => $rowhdr['Estado'], 'RazonSocial' => $RazonSocial, 'Domicilio' => $Domicilio, 'idCliente' => $idCliente, 'CodigoSeguimiento' => $CodigoSeguimiento, 'Servicio' => $Servicio));
@@ -168,7 +168,7 @@ if (isset($_POST['Pendientes'])) {
     if ($row['Retirado'] == 1) {
       $sqllat = "SELECT Latitud, Longitud FROM Clientes WHERE id='" . $row['idClienteDestino'] . "'";
     } else {
-      $sqllat = "SELECT Latitud, Longitud FROM Clientes WHERE id='" . $row['IngBrutosOrigen'] . "'";
+      $sqllat = "SELECT Latitud, Longitud FROM Clientes WHERE id='" . $row['idClienteOrigen'] . "'";
     }
 
     $Reslat = $mysqli->query($sqllat);

@@ -176,7 +176,7 @@
                                     <div class="d-print-none mt-4">
                                         <div class="text-right">
                                             <a id="imprimir" class="btn btn-primary"><i class="mdi mdi-printer"></i> Print</a>
-                                            <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                         </div>
                                     </div>
                                     <!-- end buttons -->
@@ -370,7 +370,7 @@
                                     <h4 class="header-title mt-2">Listado de Empleados </h4>
 
                                     <div class="text-right">
-                                        <a id="button_agregar_empleado" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Empleados</a></h4>
+                                        <a id="button_agregar_empleado" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Empleados</a></h4>
                                     </div>
 
                                     <div class="row mb-2">
@@ -450,6 +450,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

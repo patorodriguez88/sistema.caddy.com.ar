@@ -154,7 +154,7 @@ $('#crearorigen').click(function(){
                 var table = $('#basic').DataTable();
                 table.ajax.reload();
     
-                $.NotificationApp.send("Listo!","Eliminaste el registro correctamente ","bottom-right","#FFFFFF","success"); 
+                toast("success", "Listo!", "Eliminaste el registro correctamente "); 
                 
               }
            }  
@@ -230,7 +230,7 @@ $('#crearorigen').click(function(){
               var jsonData = JSON.parse(response);
               if (jsonData.success == "1")
               {
-              $.NotificationApp.send("Limpieza","Limpieza de "+jsonData.Num+" registros realizada","top-right","#0ACF97","info");          
+              toast("info", "Limpieza", "Limpieza de "+jsonData.Num+" registros realizada");          
               }
            }  
       });  
@@ -329,10 +329,10 @@ $('#crearorigen').click(function(){
                 tabletotales.ajax.reload();
     
               }else if(jsonData.success == "2"){
-               $.NotificationApp.send("Error","No seleccionaste ningún cliente origen ","bottom-right","#FFFFFF","error"); 
+               toast("error", "Error", "No seleccionaste ningún cliente origen "); 
     
               }else{
-               $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error"); 
+               toast("error", "Error", "No seleccionaste ningún servicio "); 
                
               }
            }  
@@ -372,11 +372,11 @@ $('#crearorigen').click(function(){
                 tabletotales.ajax.reload();
     
               }else if(jsonData.success == "2"){
-               $.NotificationApp.send("Error","No seleccionaste ningún cliente origen ","bottom-right","#FFFFFF","error"); 
+               toast("error", "Error", "No seleccionaste ningún cliente origen "); 
               }else if(jsonData.success == "3"){
-               $.NotificationApp.send("Error","El importe del Valor Declarado debe ser mayor a $ 5000","bottom-right","#FFFFFF","error"); 
+               toast("error", "Error", "El importe del Valor Declarado debe ser mayor a $ 5000"); 
               }else{
-               $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error"); 
+               toast("error", "Error", "No seleccionaste ningún servicio "); 
                
               }
            }  
@@ -425,7 +425,7 @@ $('#crearorigen').click(function(){
     function subir(){
     var dato=document.getElementById('codigo').value;
     if(dato==0){
-    $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error");
+    toast("error", "Error", "No seleccionaste ningún servicio ");
     document.getElementById('servicio').style.background='red';
     }else{
       if(document.getElementById('id_origen').value==null){
@@ -460,7 +460,7 @@ $('#crearorigen').click(function(){
                 tabletotales.ajax.reload();
     
               }else{
-               $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error"); 
+               toast("error", "Error", "No seleccionaste ningún servicio "); 
                
               }
            }  
@@ -606,7 +606,7 @@ $('#crearorigen').click(function(){
       document.getElementById('pagadestino_icon').style.display="none";
       document.getElementById('pagatercero_icon').style.display="none";  
       document.getElementById('row_fp_tercero').style.display="none"; 
-    $.NotificationApp.send("Seleccion","Seleccionaste que paga "+selec,"top-right","#0ACF97","info");
+    toast("info", "Seleccion", "Seleccionaste que paga "+selec);
       }else if(selec=='Destino'){
       document.getElementById('pagaorigen_label').style.color="gray";  
       document.getElementById('pagaorigen_icon').style.display="none";  
@@ -614,7 +614,7 @@ $('#crearorigen').click(function(){
       document.getElementById('pagadestino_label').style.color="#08AB7C";  
       document.getElementById('pagatercero_icon').style.display="none";     
       document.getElementById('row_fp_tercero').style.display="none"; 
-    $.NotificationApp.send("Seleccion","Seleccionaste que paga "+selec,"top-right","#0ACF97","info");
+    toast("info", "Seleccion", "Seleccionaste que paga "+selec);
       }else if(selec=='Tercero'){
       document.getElementById('row_fp_tercero').style.display="inline";  
       document.getElementById('pagaorigen_label').style.color="gray";  
@@ -623,7 +623,7 @@ $('#crearorigen').click(function(){
       document.getElementById('pagadestino_icon').style.display="none";  
       document.getElementById('pagatercero_icon').style.display="inline";     
       document.getElementById('pagatercero_label').style.color="#08AB7C";  
-    $.NotificationApp.send("Seleccion","Seleccionaste que paga Otro Cliente","top-right","#0ACF97","info");  
+    toast("info", "Seleccion", "Seleccionaste que paga Otro Cliente");  
       }else if(selec==""){
       document.getElementById('row_fp_tercero').style.display="none";    
       document.getElementById('pagaorigen_label').style.color="gray";  

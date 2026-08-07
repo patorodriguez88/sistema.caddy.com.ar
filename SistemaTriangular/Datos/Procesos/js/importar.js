@@ -14,6 +14,6 @@ var prodId = getParameterByName('error');
 
 if(prodId==1){
 
-    $.NotificationApp.send("Error","Error en la importacion de del archivo","bottom-right","success","Icon");
+    toast("error", "Error", "Error en la importacion de del archivo");
     
 }

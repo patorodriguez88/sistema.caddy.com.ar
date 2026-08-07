@@ -33,7 +33,7 @@
                     <div class="navbar-custom">
                         <ul class="list-unstyled topbar-right-menu float-right mb-0">
                             <li class="dropdown notification-list d-lg-none">
-                                <a class="nav-link dropdown-toggle arrow-none" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                                     <i class="dripicons-search noti-icon"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-animated dropdown-lg p-0">
@@ -43,7 +43,7 @@
                                 </div>
                             </li>
                             <li class="dropdown notification-list topbar-dropdown">
-                                <a class="nav-link dropdown-toggle arrow-none" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                                     <img src="assets/images/flags/us.jpg" alt="user-image" class="mr-0 mr-sm-1" height="12"> 
                                     <span class="align-middle d-none d-sm-inline-block">English</span> <i class="mdi mdi-chevron-down d-none d-sm-inline-block align-middle"></i>
                                 </a>
@@ -73,7 +73,7 @@
                             </li>
 
                             <li class="dropdown notification-list">
-                                <a class="nav-link dropdown-toggle arrow-none" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                                     <i class="dripicons-bell noti-icon"></i>
                                     <span class="noti-icon-badge"></span>
                                 </a>
@@ -162,7 +162,7 @@
                             </li>
 
                             <li class="dropdown notification-list d-none d-sm-inline-block">
-                                <a class="nav-link dropdown-toggle arrow-none" data-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
+                                <a class="nav-link dropdown-toggle arrow-none" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false" aria-expanded="false">
                                     <i class="dripicons-view-apps noti-icon"></i>
                                 </a>
                                 <div class="dropdown-menu dropdown-menu-right dropdown-menu-animated dropdown-lg p-0">
@@ -222,7 +222,7 @@
                             </li>
 
                             <li class="dropdown notification-list">
-                                <a class="nav-link dropdown-toggle nav-user arrow-none mr-0" data-toggle="dropdown" href="#" role="button" aria-haspopup="false"
+                                <a class="nav-link dropdown-toggle nav-user arrow-none mr-0" data-bs-toggle="dropdown" href="#" role="button" aria-haspopup="false"
                                     aria-expanded="false">
                                     <span class="account-user-avatar"> 
                                         <img src="assets/images/users/avatar-1.jpg" alt="user-image" class="rounded-circle">
@@ -374,12 +374,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#select2-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#select2-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#select2-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#select2-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -548,12 +548,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#daterange-picker-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#daterange-picker-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#daterange-picker-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#daterange-picker-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -616,12 +616,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-4">
                                             <li class="nav-item">
-                                                <a href="#switches-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#switches-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#switches-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#switches-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -687,12 +687,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#datepicker-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#datepicker-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#datepicker-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#datepicker-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -778,12 +778,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#input-masks-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#input-masks-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#input-masks-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#input-masks-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -895,12 +895,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#touchspin-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#touchspin-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#touchspin-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#touchspin-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -968,12 +968,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#maxlength-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#maxlength-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#maxlength-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#maxlength-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -1042,12 +1042,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#typeahead-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#typeahead-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#typeahead-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#typeahead-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>
@@ -1135,12 +1135,12 @@
 
                                         <ul class="nav nav-tabs nav-bordered mb-3">
                                             <li class="nav-item">
-                                                <a href="#timepicker-preview" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                <a href="#timepicker-preview" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                     Preview
                                                 </a>
                                             </li>
                                             <li class="nav-item">
-                                                <a href="#timepicker-code" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                <a href="#timepicker-code" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                     Code
                                                 </a>
                                             </li>

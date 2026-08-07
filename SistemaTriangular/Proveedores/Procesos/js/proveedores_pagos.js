@@ -85,21 +85,9 @@ $("#cargar_pago_btn_ok_n").click(function () {
 
         $("#modal_cargar_pagos").modal("hide");
 
-        $.NotificationApp.send(
-          "Exito !",
-          "Pago Cargado.",
-          "bottom-right",
-          "success",
-          "bg-success",
-        );
+        toast("success", "Exito !", "Pago Cargado.");
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "El cheque ya está cargado.",
-          "bottom-right",
-          "danger",
-          "danger",
-        );
+        toast("error", "Error !", "El cheque ya está cargado.");
       }
     },
   });
@@ -459,21 +447,9 @@ $("#cargar_pago_btn_ok").click(function () {
 
         $("#modal_cargar_pagos").modal("hide");
 
-        $.NotificationApp.send(
-          "Exito !",
-          "Pago Cargado.",
-          "bottom-right",
-          "success",
-          "bg-success",
-        );
+        toast("success", "Exito !", "Pago Cargado.");
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "El cheque ya está cargado.",
-          "bottom-right",
-          "danger",
-          "danger",
-        );
+        toast("error", "Error !", "El cheque ya está cargado.");
       }
     },
   });
@@ -510,13 +486,7 @@ $("#cargar_pago_btn_continuar").click(function () {
   console.log("valor Saldo_1", valor_saldo_1);
 
   if (valor_saldo > 0) {
-    $.NotificationApp.send(
-      "Error !",
-      "No puede ser menor el pago que el valor de los comprobantes.",
-      "bottom-right",
-      "#FFFFFF",
-      "danger",
-    );
+    toast("error", "Error !", "No puede ser menor el pago que el valor de los comprobantes.");
   } else {
     var oTable = $("#tabla_anticipos").dataTable();
 
@@ -579,21 +549,9 @@ $("#cargar_pago_btn_continuar").click(function () {
 
             $("#modal_pagos_comprobantes").modal("hide");
 
-            $.NotificationApp.send(
-              "Exito !",
-              "Pago Cargado.",
-              "bottom-right",
-              "#FFFFFF",
-              "success",
-            );
+            toast("success", "Exito !", "Pago Cargado.");
           } else {
-            $.NotificationApp.send(
-              "Error !",
-              "El cheque ya está cargado.",
-              "bottom-right",
-              "danger",
-              "danger",
-            );
+            toast("error", "Error !", "El cheque ya está cargado.");
           }
         },
       });
@@ -849,21 +807,15 @@ $("#btn_pago_facturas").click(function (e) {
 
     //             $('#selectAll').prop('checked', false);
 
-    //             $.NotificationApp.send("Exito !", 'Generaste el archivo '+jsonData.name+'.txt podés descargarlo desde la pestaña Exportados.', "bottom-right", "#FFFFFF", "success");
+    //             toast("success", "Exito !", 'Generaste el archivo '+jsonData.name+'.txt podés descargarlo desde la pestaña Exportados.');
 
     //         }else{
-    //             $.NotificationApp.send("Error !", 'No se pudo generar el archivo. Intente nuevamente.', "bottom-right", "#FFFFFF", "danger");
+    //             toast("error", "Error !", 'No se pudo generar el archivo. Intente nuevamente.');
     //         }
     //      }
     // });
   } else {
     $("#modal_pagos_comprobantes").modal("hide");
-    $.NotificationApp.send(
-      "Error !",
-      "Seleccione al menos una factura de Compras.",
-      "bottom-right",
-      "#FFFFFF",
-      "bg-danger",
-    );
+    toast("error", "Error !", "Seleccione al menos una factura de Compras.");
   }
 });

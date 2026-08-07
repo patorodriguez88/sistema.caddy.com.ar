@@ -374,7 +374,7 @@ initMap();
     //       success: function(response)
     //        {
     //       $('#zona-modal').modal('hide');
-    //       $.NotificationApp.send("Exito !","Se agrego la Zona.!","bottom-right","#FFFFFF","success");       
+    //       toast("success", "Exito !", "Se agrego la Zona.!");       
     //        }
     //     });
       
@@ -430,7 +430,7 @@ initMap();
               if(jsonData.success==1){
               console.log('veamos',jsonData.exito);  
               $("#info-alert-modal").modal('hide');  
-              $.NotificationApp.send("Exito !","Se movieron "+jsonData.cuenta+" registros.!","bottom-right","#FFFFFF","success");         
+              toast("success", "Exito !", "Se movieron "+jsonData.cuenta+" registros.!");         
               initMap();  
               }
             }

@@ -85,12 +85,12 @@ if ($_POST['datos'] == 1) {
 
     $sql = "SELECT 
   IF(TransClientes.FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,
-  IF(TransClientes.FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente,
+  IF(TransClientes.FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,
   IF(TransClientes.FormaDePago='Origen',DomicilioOrigen,DomicilioDestino)as Direccion,
   TransClientes.Fecha,
   COUNT(TransClientes.id)AS Cantidad,
   SUM(ValorDeclarado)AS ValorDeclarado
-  FROM TransClientes INNER JOIN Clientes ON IF(TransClientes.FormaDePago='Origen',TransClientes.IngBrutosOrigen,TransClientes.idClienteDestino)=Clientes.id
+  FROM TransClientes INNER JOIN Clientes ON IF(TransClientes.FormaDePago='Origen',TransClientes.idClienteOrigen,TransClientes.idClienteDestino)=Clientes.id
   WHERE TransClientes.Flex='1' AND TransClientes.Fecha>='$datos_fecha_desde' AND TransClientes.Fecha<='$datos_fecha_hasta' AND TransClientes.Eliminado=0 AND Clientes.Colecta=1
   GROUP BY TransClientes.Fecha,Cliente;";
     $Resultado = $mysqli->query($sql);
@@ -232,28 +232,28 @@ if (isset($_POST['CargarVenta'])) {
 
         //AGREGAR EN TRANSCLIENTES
 
-        $IngresaTransaccion = "INSERT INTO 
+        $IngresaTransaccion = "INSERT INTO
         TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Debe,Haber,
         ClienteDestino,DocumentoDestino,DomicilioDestino,LocalidadDestino,SituacionFiscalDestino,TelefonoDestino,
         CodigoSeguimiento,NumeroVenta,Cantidad,DomicilioOrigen,SituacionFiscalOrigen,LocalidadOrigen,IngBrutosOrigen,TelefonoOrigen,
         FormaDePago,EntregaEn,Usuario,CodigoProveedor,Observaciones,Recorrido,ProvinciaDestino,ProvinciaOrigen,
-        idClienteDestino,Retirado,Kilometros,ValorDeclarado,FechaEntrega,FechaPrometida,Wepoint_c,Redespacho,CompraMercaderia,Estado)
+        idClienteOrigen,idClienteDestino,Retirado,Kilometros,ValorDeclarado,FechaEntrega,FechaPrometida,Wepoint_c,Redespacho,CompraMercaderia,Estado)
         VALUES('{$fecha}','{$clienteorigen}','{$cuitorigen}',
         '{$tipodecomprobante}','{$numerorepo}','{$total}','0','{$clientedestino}','{$cuitdestino}',
         '{$domiciliodestino}','{$localidaddestino}','{$situacionfiscaldestino}','{$telefonodestino}',
         '{$codigo_seguimiento}','{$numerorepo}','{$cantidad}','{$domicilioorigen}','{$situacionfiscalorigen}','{$localidadorigen}',
         '{$idclienteorigen}','{$telefonoorigen}','{$formadepago}','{$entregaen}','{$usuario}','{$codigoproveedor}','{$observaciones}',
-        '{$recorrido}','{$provinciadestino}','{$provinciaorigen}','{$idclientedestino}','{$retirado}',
+        '{$recorrido}','{$provinciadestino}','{$provinciaorigen}','{$idclienteorigen}','{$idclientedestino}','{$retirado}',
         '{$kilometros}','{$valordeclarado}','{$fechaentrega}','{$fechaprometida}','{$wepoint_c}','0','0','{$Estado}')";
 
         $mysqli->query($IngresaTransaccion);
 
-        //obtengo el id de transclientes  
+        //obtengo el id de transclientes
         $idTransClientes = $mysqli->insert_id;
 
         $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
         WHERE Flex = 1
-        AND IngBrutosOrigen = {$id_origen}
+        AND idClienteOrigen = {$id_origen}
         AND Entregado=0
         AND Eliminado = 0
         AND (idColecta IS NULL OR idColecta = 0)";

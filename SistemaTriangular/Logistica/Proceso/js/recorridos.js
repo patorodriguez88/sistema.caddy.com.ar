@@ -216,7 +216,7 @@ function modificar(i, a) {
     success: function (jsonData) {
       var datatable = $("#recorridos").DataTable();
       datatable.ajax.reload();
-      //   $.NotificationApp.send("Exito","Recorrido Activado.","bottom-right","success","success");
+      //   toast("success", "Exito", "Recorrido Activado.");
       if (a != 1) {
         $.toast({
           heading: "Listo!",

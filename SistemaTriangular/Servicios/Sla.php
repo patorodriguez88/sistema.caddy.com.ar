@@ -56,7 +56,7 @@ if($_SESSION['Usuario']==''){
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-primary">
                                   <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <div class="col-lg-12 mt-3">
                               <div class="selector-recorrido form-group">
@@ -71,7 +71,7 @@ if($_SESSION['Usuario']==''){
                             </div>
                             <div class="modal-footer mt-3">
                                 <input type="hidden" id="cs_modificar_REC">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificarrecorrido_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                         </div>
@@ -83,7 +83,7 @@ if($_SESSION['Usuario']==''){
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel_modificar">MODIFICAR #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <form id="form">
                               <div class="modal-body mb-3">
@@ -176,7 +176,7 @@ if($_SESSION['Usuario']==''){
                                 
                               <div class="modal-footer mt-3">
                                 <input type="hidden" id="id_modificar">
-                                <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
                                 <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                           </div><!-- /.modal-content -->
@@ -267,7 +267,7 @@ if($_SESSION['Usuario']==''){
                                
                               <div class="modal-footer mt-3">
                                 <input type="hidden" id="id_modificar">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificarventas_ok" type="button" class="btn btn-success">Guardar Cambios</button>
                                 <button id="agregarventas_ok" type="button" class="btn btn-success" style="display:none">Agregar Venta</button>
                             </div>
@@ -282,7 +282,7 @@ if($_SESSION['Usuario']==''){
                                 <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                     <div id="modal_seguimiento_header" class="modal-header">
                                         <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                     <div class="row">
@@ -396,7 +396,7 @@ if($_SESSION['Usuario']==''){
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               
@@ -405,7 +405,7 @@ if($_SESSION['Usuario']==''){
                             <input type="hidden" id="codigoseguimiento_eliminar">  
                             <div class="modal-footer">
       
-                              <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                               <button id="warning-modal-ok"type="button" class="btn btn-danger">Eliminar</button>
                               <button id="warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                             </div>
@@ -444,6 +444,8 @@ if($_SESSION['Usuario']==''){
         <script src="Procesos/js/sla.js"></script>
         <script src="../Funciones/js/seguimiento.js"></script>
         <script src="../Menu/js/funciones.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
         <!-- Funciones Imprimir Rotulos -->
   </body>
 </html>

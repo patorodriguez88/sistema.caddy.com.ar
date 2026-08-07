@@ -81,7 +81,7 @@ include_once('../Conexion/Conexioni.php');
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-warning">
                                         <h4 class="modal-title">Agregar Observaciones</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="row">
@@ -105,7 +105,7 @@ include_once('../Conexion/Conexioni.php');
                                                 <div class="form-group mb-3">                        
                                                     <div class="text-sm-right">
                                                         <button id="observar_presupuesto_ok" type="button" class="btn btn-success">Aceptar</button>
-                                                        <button type="button" class="btn btn-danger" data-dismiss="modal" >Cancelar</button>
+                                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" >Cancelar</button>
                                                     </div>
                                                 </div>     
                                             </div>                                           
@@ -123,7 +123,7 @@ include_once('../Conexion/Conexioni.php');
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-warning">
                                         <h4 class="modal-title" id="aceptar_orden_title">Aceptar Orden de Compra</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="row">
@@ -146,7 +146,7 @@ include_once('../Conexion/Conexioni.php');
                                                 <div class="form-group mb-3">                        
                                                     <div class="text-sm-right">
                                                         <button id="aceptar_orden_ok" type="button" class="btn btn-success">Aceptar</button>
-                                                        <button type="button" class="btn btn-danger" data-dismiss="modal" >Cancelar</button>
+                                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" >Cancelar</button>
                                                     </div>
                                                 </div>     
                                             </div>                                           
@@ -163,7 +163,7 @@ include_once('../Conexion/Conexioni.php');
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-info">
                                         <h4 class="modal-title" id="aprobar_orden_title">Aprobar Orden de Compra</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                         <div class="row">
@@ -186,7 +186,7 @@ include_once('../Conexion/Conexioni.php');
                                                 <div class="form-group mb-3">                        
                                                     <div class="text-sm-right">
                                                         <button id="aprobar_orden_ok" type="button" class="btn btn-success">Aceptar</button>
-                                                        <button type="button" class="btn btn-danger" data-dismiss="modal" >Cancelar</button>
+                                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" >Cancelar</button>
                                                     </div>
                                                 </div>     
                                             </div>                                           
@@ -203,7 +203,7 @@ include_once('../Conexion/Conexioni.php');
                                             <div class="modal-content">
                                                 <div class="modal-header">
                                                     <h4 class="modal-title" id="aprobar_presupuesto_title">Aceptar Presupuesto</h4>
-                                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                                 </div>
                                                 <div class="modal-body">
                                                     <div class="row">
@@ -218,7 +218,7 @@ include_once('../Conexion/Conexioni.php');
                                                             <div class="form-group mb-3">                        
                                                                 <div class="text-sm-right">
                                                                     <button id="aprobar_presupuesto_ok" type="button" class="btn btn-success">Aceptar</button>
-                                                                    <button type="button" class="btn btn-danger" data-dismiss="modal" >Cancelar</button>
+                                                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal" >Cancelar</button>
                                                                 </div>
                                                             </div>     
                                                         </div>                                           
@@ -240,8 +240,8 @@ include_once('../Conexion/Conexioni.php');
                                         <i class="dripicons-warning h1 text-warning"></i>
                                         <h4 class="mt-2"id="warning-alert-modal_title"></h4>
                                         <p class="mt-3" id="warning-alert-modal_text"></p>
-                                        <button id="warning-alert-modal_button_ok" type="button" class="btn btn-success my-2" data-dismiss="modal">Continuar</button>
-                                        <button type="button" class="btn btn-danger my-2" data-dismiss="modal">Cancelar</button>
+                                        <button id="warning-alert-modal_button_ok" type="button" class="btn btn-success my-2" data-bs-dismiss="modal">Continuar</button>
+                                        <button type="button" class="btn btn-danger my-2" data-bs-dismiss="modal">Cancelar</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -254,7 +254,7 @@ include_once('../Conexion/Conexioni.php');
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-success">
                                         <h4 class="modal-title" id="presupuesto_new_title">Agregar Nuevo Presupuesto</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                             <div class="row">
@@ -352,7 +352,7 @@ include_once('../Conexion/Conexioni.php');
                                                         <button id="presupuesto_editar_ok" type="button" class="btn btn-success">Guardar</button>
                                                         <button id="presupuesto_editar_cnl"type="button" class="btn btn-danger">Cancelar</button>
                                                         <button id="presupuesto_aceptar" type="button" class="btn btn-success">Aceptar</button>
-                                                        <button id="presupuesto_aceptar_cnl" type="button" class="btn btn-danger" data-dismiss="modal" >Cancelar</button>
+                                                        <button id="presupuesto_aceptar_cnl" type="button" class="btn btn-danger" data-bs-dismiss="modal" >Cancelar</button>
                                                     </div>
                                                 </div>     
                                             </div>                                           
@@ -370,7 +370,7 @@ include_once('../Conexion/Conexioni.php');
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="ordendecompra_new_title">Agregar Nueva Orden de Compra</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                         <form id="Formulario_new" action='' method='post'>
@@ -483,7 +483,7 @@ include_once('../Conexion/Conexioni.php');
                                                 <button id="ordendecompra_aprobar" type="button" class="btn btn-success" style="display:none">Aprobar Orden de Compra</button>
                                                 <button id="ordendecompra_estado_aceptar" type="button" class="btn btn-info" style="display:none">Aceptar Orden de Compra</button> 
                                                 <button id="ordendecompra_aceptar" type="button" class="btn btn-success">Aceptar</button>
-                                                <button id="ordendecompra_cerrar" type="button" class="btn btn-danger" data-dismiss="modal" >Cancelar</button>
+                                                <button id="ordendecompra_cerrar" type="button" class="btn btn-danger" data-bs-dismiss="modal" >Cancelar</button>
                                             </div>
                                             </div>
                                         </form>
@@ -552,7 +552,7 @@ include_once('../Conexion/Conexioni.php');
 
                                                 <div class="text-sm-left">                                            
                                                                                         
-                                                <button id="filtro_new"  type="button" class="btn btn-outline-warning" data-toggle="modal" data-target="#ordendecompra_new"><i class="mdi mdi-cart-arrow-down mr-1"></i> <span>Nueva Orden</span> </button>
+                                                <button id="filtro_new"  type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#ordendecompra_new"><i class="mdi mdi-cart-arrow-down mr-1"></i> <span>Nueva Orden</span> </button>
     
                                             </div>    
                                             

@@ -16,7 +16,7 @@ if($_POST['CambiarEstado']==1){
     if($_POST[ctacte]==1){
      $clientes=$mysqli->query("SELECT 
                               IF(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente, 
-                              IF(FormaDePago='Origen',IngBrutosOrigen,IngBrutosDestino)as idCliente,
+                              IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,
                               Debe,NumeroComprobante,id
                               FROM TransClientes WHERE CodigoSeguimiento='$_POST[CodigoSeguimiento]'");
      $datoclientes=$clientes->fetch_array(MYSQLI_ASSOC);

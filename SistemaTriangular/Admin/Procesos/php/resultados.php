@@ -47,10 +47,10 @@ if ($Inicio === '' || $Final === '') {
 if ($action === 'clientes') {
     $sql = "
         SELECT DISTINCT
-            TS.ingBrutosOrigen AS CodigoProveedor,
-            CONCAT(C.nombrecliente, ' (', TS.ingBrutosOrigen, ')') AS Nombre
+            TS.idClienteOrigen AS CodigoProveedor,
+            CONCAT(C.nombrecliente, ' (', TS.idClienteOrigen, ')') AS Nombre
         FROM TransClientes TS
-        LEFT JOIN Clientes C ON C.id = TS.ingBrutosOrigen
+        LEFT JOIN Clientes C ON C.id = TS.idClienteOrigen
         LEFT JOIN (
     SELECT 
         NumerodeOrden,
@@ -72,7 +72,7 @@ if ($action === 'clientes') {
         WHERE TS.Eliminado = 0
         AND $campoFecha >= ?
         AND $campoFecha <= ?
-        AND TS.ingBrutosOrigen <> ''
+        AND TS.idClienteOrigen <> ''
         AND IFNULL(TRIM(TS.CodigoSeguimiento), '') <> ''
         ORDER BY C.nombrecliente ASC
     ";
@@ -106,7 +106,7 @@ if ($action === 'repartidores') {
     $filtroCliente = '';
 
     if ($cliente !== '') {
-        $filtroCliente = " AND TS.ingBrutosOrigen = ? ";
+        $filtroCliente = " AND TS.idClienteOrigen = ? ";
     }
 
     // Los mismos parámetros se usan dos veces: una por cada mitad del UNION (externos + propios)
@@ -213,7 +213,7 @@ if ($action === 'listar') {
     $types  = 'ss';
 
     if ($cliente !== '') {
-        $filtroClientes = " AND TS.ingBrutosOrigen = ? ";
+        $filtroClientes = " AND TS.idClienteOrigen = ? ";
         $params[] = $cliente;
         $types .= 's';
     }
@@ -330,7 +330,7 @@ if ($action === 'listar') {
     ) AS ER 
     ON ER.CodigoSeguimiento = TS.CodigoSeguimiento
     LEFT JOIN Clientes AS C
-        ON C.id = TS.ingBrutosOrigen
+        ON C.id = TS.idClienteOrigen
     LEFT JOIN (
         SELECT 
             NumerodeOrden,
@@ -523,7 +523,7 @@ if ($action === 'detalle') {
 
         FROM TransClientes TS
         LEFT JOIN Clientes C 
-            ON C.id = TS.ingBrutosOrigen
+            ON C.id = TS.idClienteOrigen
         LEFT JOIN (
             SELECT 
                 L.NumerodeOrden,

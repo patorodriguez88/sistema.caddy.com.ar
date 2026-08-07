@@ -98,7 +98,7 @@
                                 </table>
                             </div>
                             <div class="modal-footer">
-                                <!-- <button id="btn_close_int" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button> -->
+                                <!-- <button id="btn_close_int" type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button> -->
                                 <!-- <button id="btn_loading_inc" class="btn btn-primary" type="button" style="display:none" disabled> -->
                                 <!-- <span class="spinner-border spinner-border-sm mr-1" role="status" aria-hidden="true"></span> -->
                                 <!-- Loading... -->
@@ -331,6 +331,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

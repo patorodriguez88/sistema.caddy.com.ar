@@ -49,7 +49,7 @@ session_start();
                         <div class="modal-content">
                             <div class="modal-header modal-colored-header bg-primary">
                                 <h4 class="modal-title" id="myCenterModalLabel_codcliente"></h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div class="col-lg-12 mt-3">
 
@@ -60,7 +60,7 @@ session_start();
                             </div>
                             <div class="modal-footer mt-3">
                                 <input type="hidden" id="cs_codigocliente">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificarcodigocliente_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                     </div>
@@ -433,7 +433,7 @@ session_start();
                                     </div>
                                     <div class="d-print-none mt-4">
                                         <div class="text-right">                         
-                                            <a id="button_compose" <?php echo $mostrarBoton ? "" : "style='visibility:hidden;'"; ?> type="button" class="btn btn-danger" data-toggle="modal" data-target="#compose-modal"><i class="mdi mdi-send"></i> Enviar</a>                                        
+                                            <a id="button_compose" <?php echo $mostrarBoton ? "" : "style='visibility:hidden;'"; ?> type="button" class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#compose-modal"><i class="mdi mdi-send"></i> Enviar</a>                                        
                                             <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>                                          
                                       </div>
                                     </div>   
@@ -503,6 +503,8 @@ session_start();
         <script src="https://www.sistemacaddy.com.ar/SistemaTriangular/Menu/js/funciones.js"></script>
         <script src="Procesos/js/invoice.js"></script>
         <script src="https://www.sistemacaddy.com.ar/SistemaTriangular/Clientes/Funciones/js/datosempresa.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
         
   </body>
 </html>

@@ -1076,7 +1076,7 @@ $Localizacion_roadmap=$row[DomicilioOrigen];
 $Ciudad_roadmap=$row[LogalidadOrigen];  
 $Provincia_roadmap=$row[ProvinciaOrigen];
 $NombreCliente_roadmap=$row[ClienteOrigen];
-$idCliente_roadmap=$row[ingBrutosOrigen];
+$idCliente_roadmap=$row[idClienteOrigen];
 }
 
 $TipoDeComprobante_roadmap=$row[TipoDeComprobante];
@@ -1098,9 +1098,9 @@ if(!$IngresaRoadmap){
 $Fecha= date("Y-m-d");	
 $Hora=date("H:i"); 
 $state=$Estado;
-$sql=$mysqli->query("SELECT ingBrutosOrigen,idClienteDestino,CodigoProveedor FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento'");
+$sql=$mysqli->query("SELECT idClienteOrigen,idClienteDestino,CodigoProveedor FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento'");
 $idCliente=$sql->fetch_array(MYSQLI_ASSOC);
-$idClienteOrigen=$idCliente['ingBrutosOrigen'];
+$idClienteOrigen=$idCliente['idClienteOrigen'];
 $idClienteDestino=$idCliente['idClienteDestino'];
 
 if($idCliente['CodigoProveedor']<>''){

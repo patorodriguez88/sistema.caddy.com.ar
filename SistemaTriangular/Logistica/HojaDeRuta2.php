@@ -143,7 +143,7 @@
                                     <h4 id="info-alert-modal-title" class="mt-2">Actualizando...</h4>
                                     <p id="info-alert-body" class="mt-3"></p>
                                     <div class="spinner-grow text-primary" role="status"></div>
-                                    <!--                                   <button type="button" class="btn btn-info my-2" data-dismiss="modal">Continue</button> -->
+                                    <!--                                   <button type="button" class="btn btn-info my-2" data-bs-dismiss="modal">Continue</button> -->
                                 </div>
                             </div>
                         </div><!-- /.modal-content -->
@@ -638,6 +638,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

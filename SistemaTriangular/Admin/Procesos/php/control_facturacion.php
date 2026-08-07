@@ -108,22 +108,22 @@ function obtenerTotalesPorCiclo($mysqli, $Desde, $Hasta, $Facturado, $ciclo)
 
     $sql = ($periodicidad === "") ?
         "SELECT Clientes.CicloFacturacion,RazonSocial,
-    IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)AS idCliente,
+    IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)AS idCliente,
     IF(FormaDePago='Origen',RazonSocial,ClienteDestino)AS Pagador,
     TransClientes.id,TransClientes.Fecha,TransClientes.NumeroComprobante AS NumeroVenta,TransClientes.CodigoSeguimiento,
     TransClientes.RazonSocial,
     IF(Facturado='1',CONCAT(ComprobanteF,' ',TransClientes.NumeroF),TipoDeComprobante)as TipoDeComprobante,Facturado,Debe,
     Flex,ClienteDestino,TransClientes.Observaciones
-    FROM TransClientes INNER JOIN Clientes ON IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)=Clientes.id
+    FROM TransClientes INNER JOIN Clientes ON IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)=Clientes.id
     WHERE TransClientes.Eliminado=0 AND Fecha>='$Desde' AND Fecha<='$Hasta' AND Debe>0 AND Facturado='$Facturado'" :
         "SELECT Clientes.CicloFacturacion,RazonSocial,
-    IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)AS idCliente,
+    IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)AS idCliente,
     IF(FormaDePago='Origen',RazonSocial,ClienteDestino)AS Pagador,
     TransClientes.id,TransClientes.Fecha,TransClientes.NumeroComprobante AS NumeroVenta,TransClientes.CodigoSeguimiento,
     TransClientes.RazonSocial,
     IF(Facturado='1',CONCAT(ComprobanteF,' ',TransClientes.NumeroF),TipoDeComprobante)as TipoDeComprobante,Facturado,Debe,
     Flex,ClienteDestino,TransClientes.Observaciones
-    FROM TransClientes INNER JOIN Clientes ON IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)=Clientes.id WHERE Clientes.CicloFacturacion = '$periodicidad' AND Eliminado = 0 AND Fecha >= '$Desde' AND Fecha <= '$Hasta' AND Debe > 0 AND Facturado = '$Facturado'";
+    FROM TransClientes INNER JOIN Clientes ON IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)=Clientes.id WHERE Clientes.CicloFacturacion = '$periodicidad' AND Eliminado = 0 AND Fecha >= '$Desde' AND Fecha <= '$Hasta' AND Debe > 0 AND Facturado = '$Facturado'";
 
     // Aquí debes poner el SELECT correcto, removido para simplificar
     $res = $mysqli->query($sql);

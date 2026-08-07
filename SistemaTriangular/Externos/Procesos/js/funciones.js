@@ -339,13 +339,7 @@ $("#button_guardar").click(function () {
       var jsonData = JSON.parse(respuesta);
       if (jsonData.success == 1) {
         $("#add-new-modal").modal("hide");
-        $.NotificationApp.send(
-          "Exito !",
-          "Registro Actualizado",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito !", "Registro Actualizado");
         var datatable = $("#externos").DataTable();
         datatable.ajax.reload();
       }
@@ -431,21 +425,9 @@ $("#crear_externo").click(function () {
       }
 
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Exito !",
-          notificacion,
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito !", notificacion);
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "Externo No Cargado al Sistema",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error !", "Externo No Cargado al Sistema");
       }
 
       $("#multiple-two").modal("hide");
@@ -1163,33 +1145,15 @@ $("#reporte_tabla tbody").on(
               actualizarTotales();
               construirResumenPorFecha();
 
-              $.NotificationApp.send(
-                "Tarifa actualizada",
-                "La modificación se guardó correctamente.",
-                "bottom-right",
-                "#FFFFFF",
-                "success",
-              );
+              toast("success", "Tarifa actualizada", "La modificación se guardó correctamente.");
             } else {
-              $.NotificationApp.send(
-                "Error",
-                resp.msg || "No se pudo guardar la modificación.",
-                "bottom-right",
-                "#FFFFFF",
-                "danger",
-              );
+              toast("error", "Error", resp.msg || "No se pudo guardar la modificación.");
             }
           },
           error: function (xhr, status, error) {
             console.log("Error AJAX:", xhr.responseText, status, error);
 
-            $.NotificationApp.send(
-              "Error",
-              "Falló la comunicación con el servidor.",
-              "bottom-right",
-              "#FFFFFF",
-              "danger",
-            );
+            toast("error", "Error", "Falló la comunicación con el servidor.");
           },
         });
       } else {

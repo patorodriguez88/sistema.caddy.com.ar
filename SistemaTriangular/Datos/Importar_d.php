@@ -1189,7 +1189,10 @@ foreach ($_REQUEST as $key => $val)
                                             <script src="../Menu/js/funciones.js"></script>
                                             <script src="Procesos/js/importar.js"></script>
                                             <!-- demo app -->
-                                            <!-- <script src="../hyper/dist/saas/assets/js/pages/demo.dashboard.js"></script> -->
+                                            <!-- <script src="../hyper/dist/saas/assets/js/pages/demo.dashboard.js"></script>
+-->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
                                             <!-- end demo js-->
 
                                     </body>

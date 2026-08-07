@@ -57,7 +57,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-primary">
                                     <h4 class="modal-title" id="myCenterModalLabel_rec">AGREGAR CIERRE DE CAJA #</h4>
-                                    <!-- <button type="button" class="btn-close btn-close-white" data-dismiss="modal" aria-label="Close"></button> -->
+                                    <!-- <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button> -->
                                     <button type="button" class="btn-close btn-close-white cerrar-modal-informe" aria-label="Close"></button>
                                 </div>
 
@@ -244,7 +244,7 @@
                                     <h4 class="modal-title" id="warning-header-modalLabel">
                                         <i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro
                                     </h4>
-                                    <button type="button" class="btn-close" data-dismiss="modal" aria-label="Close"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
 
                                 <div id="warning-modal-body" class="modal-body"></div>
@@ -253,7 +253,7 @@
                                 <input type="hidden" id="codigoseguimiento_eliminar">
 
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                     <button id="warning-modal-ok" type="button" class="btn btn-danger">Eliminar</button>
                                     <button id="warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                                 </div>
@@ -319,6 +319,7 @@
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
     <script src="Procesos/js/caja.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

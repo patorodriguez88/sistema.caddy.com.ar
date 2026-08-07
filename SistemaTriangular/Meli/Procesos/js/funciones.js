@@ -9,7 +9,7 @@
 //         var jsonData = JSON.parse(response);
 //         if(jsonData.success==1){
 //             if($jsonData.total>0){
-//             $.NotificationApp.send("Exito !", "Importación de "+jsonData.total+" Pendientes Exitosa.", "bottom-right", "#FFFFFF", "success");
+//             toast("success", "Exito !", "Importación de "+jsonData.total+" Pendientes Exitosa.");
 //             }
 //         }else{
          
@@ -118,23 +118,23 @@
                                     
 //                                     if(jsonData.DATA>5){
                                     
-//                                         $.NotificationApp.send("Exito !", "Importación Exitosa.", "bottom-right", "#FFFFFF", "success");
+//                                         toast("success", "Exito !", "Importación Exitosa.");
                                     
 //                                     }else if(jsonData.DATA==0){
 
-//                                         $.NotificationApp.send("Atención !", 'Error de Consulta, no se cargó', "bottom-right", "#FFFFFF", "warning");   
+//                                         toast("warning", "Atención !", 'Error de Consulta, no se cargó');   
                                     
 //                                     }else if(jsonData.DATA==2){
                                     
-//                                         $.NotificationApp.send("Atención !", 'Shipping Id Duplicado, no se cargó', "bottom-right", "#FFFFFF", "warning");   
+//                                         toast("warning", "Atención !", 'Shipping Id Duplicado, no se cargó');   
                                     
 //                                     }else if(jsonData.DATA==3){
 
-//                                         $.NotificationApp.send("Atención !", 'Error en C.P., no se cargó', "bottom-right", "#FFFFFF", "warning");   
+//                                         toast("warning", "Atención !", 'Error en C.P., no se cargó');   
                                     
 //                                     }else if(jsonData.DATA==4){
                                         
-//                                         $.NotificationApp.send("Atención !", 'Este envio ya se encuentra entregado, no se cargó', "bottom-right", "#FFFFFF", "warning");   
+//                                         toast("warning", "Atención !", 'Este envio ya se encuentra entregado, no se cargó');   
                                     
 //                                     }
                                     
@@ -206,11 +206,11 @@ $('#warning-modal-ok').click(function(){
             var datatable = $('#envios').DataTable();
             datatable.ajax.reload();
         
-            $.NotificationApp.send("Exito !", "Importación Eliminada.", "bottom-right", "#FFFFFF", "success");
+            toast("success", "Exito !", "Importación Eliminada.");
             
             }else{
                 
-                $.NotificationApp.send("Error !", "Hubo un Problema al eliminar la Importación.", "bottom-right", "#FFFFFF", "danger");  
+                toast("error", "Error !", "Hubo un Problema al eliminar la Importación.");  
             
             }
             $('#warning-modal').modal('hide');
@@ -236,11 +236,11 @@ function cargar(i){
             var datatable = $('#envios').DataTable();
             datatable.ajax.reload();
     
-            $.NotificationApp.send("Exito !", "Pre Venta cargada.", "bottom-right", "#FFFFFF", "success");
+            toast("success", "Exito !", "Pre Venta cargada.");
 
             }else{
             
-            $.NotificationApp.send("Error !", "Hubo un Problema al cargar la Pre Venta.", "bottom-right", "#FFFFFF", "danger");  
+            toast("error", "Error !", "Hubo un Problema al cargar la Pre Venta.");  
             
             }
         }

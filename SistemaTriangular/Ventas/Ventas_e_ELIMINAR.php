@@ -691,6 +691,7 @@
   <script async defer
     src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&libraries=places&callback=BuscarDireccion">
   </script>
+    <script src="../Funciones/js/alertas.js"></script>
 
 </body>
 

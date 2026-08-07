@@ -50,7 +50,7 @@
                     </div>
                     <!-- end page title -->
                     <!-- MODAL RECIBO DE PAGO -->
-                    <div class="modal fade" id="modal_ver_recibo" tabindex="-1" aria-labelledby="modalVerReciboLabel" aria-hidden="true" style="z-index:1003;">
+                    <div class="modal fade" id="modal_ver_recibo" tabindex="-1" aria-labelledby="modalVerReciboLabel" aria-hidden="true">
                         <div class="modal-dialog modal-fullscreen-lg-down modal-xl modal-dialog-centered">
                             <div class="modal-content">
 
@@ -88,7 +88,7 @@
                         </div>
                     </div>
                     <!-- MODAL FACTURA -->
-                    <div class="modal fade" id="modal_factura_preview" tabindex="-1" aria-labelledby="modalFacturaPreviewLabel" aria-hidden="true" style="z-index:1003;">
+                    <div class="modal fade" id="modal_factura_preview" tabindex="-1" aria-labelledby="modalFacturaPreviewLabel" aria-hidden="true">
                         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary text-white">
@@ -125,7 +125,7 @@
                             </div>
                         </div>
                     </div>
-                    <div class="modal fade" id="asociar-pagos-modal" tabindex="-1" aria-labelledby="asociarPagosLabel" aria-hidden="true" style="z-index:1003;">
+                    <div class="modal fade" id="asociar-pagos-modal" tabindex="-1" aria-labelledby="asociarPagosLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-scrollable">
                             <div class="modal-content">
                                 <div class="modal-header bg-info text-white">
@@ -291,7 +291,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myCenterModalLabel_comentarios">Comentarios</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="form-group">
@@ -301,15 +301,15 @@
                                         <input type="hidden" val="" id="textarea-comentario_id"></input>
 
                                     </div>
-                                    <button id="textarea-comentario_ok" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                    <button id="textarea-comentario_ok" type="button" class="btn btn-primary" data-bs-dismiss="modal"><i class="mdi mdi-send me-1"></i> Aceptar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
 
                     <!-- AGREGAR CONTACTO -->
-                    <div id="contact-modal" class="modal fade" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true" style="z-index:1003;">
+                    <div id="contact-modal" class="modal fade" tabindex="-1" aria-labelledby="contactModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary text-white">
@@ -358,7 +358,7 @@
                     <!-- AGREGAR CONTACTO -->
 
                     <!-- DESTINATARIOS MAIL (factura/recibo) -->
-                    <div id="modal_enviar_mail_destinatarios" class="modal fade" tabindex="-1" aria-hidden="true" style="z-index:1003;">
+                    <div id="modal_enviar_mail_destinatarios" class="modal fade" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <div class="modal-header bg-primary text-white">
@@ -390,7 +390,7 @@
                                         <h4 class="mt-2">Modificar Precio a Recorridos </h4>
                                         <label>Ingrese el importe </label>
                                         <input class="form-control" type="number" id="modificar_recorridos_value" placeholder="0.00">
-                                        <button id="Modificar_recorrido_boton_ok" type="button" class="btn btn-info my-2" data-dismiss="modal">Continue</button>
+                                        <button id="Modificar_recorrido_boton_ok" type="button" class="btn btn-info my-2" data-bs-dismiss="modal">Continue</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -409,7 +409,7 @@
                                         <p class="mt-3" id="modal_eliminar_cliente_text"></p>
 
                                         <button id="modal_eliminar_cliente_aceptar" type="button" class="btn btn-success my-2">Aceptar</button>
-                                        <button type="button" class="btn btn-danger my-2" data-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-danger my-2" data-bs-dismiss="modal">Cancelar</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -426,7 +426,7 @@
                                         <h4 id="warning_mt2" class="mt-2">Atención!!</h4>
                                         <p class="mt-3" id="modal_eliminar_pago_text"></p>
                                         <button id="modal_eliminar_pago_aceptar" type="button" class="btn btn-success my-2">Aceptar</button>
-                                        <button type="button" class="btn btn-danger my-2" data-dismiss="modal">Cancelar</button>
+                                        <button type="button" class="btn btn-danger my-2" data-bs-dismiss="modal">Cancelar</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -443,7 +443,7 @@
                                         <i id="warning_icono_alert" class="dripicons-warning h1 text-warning"></i>
                                         <h4 id="warning_mt2_alert" class="mt-2">Facturacion Afip</h4>
                                         <p class="mt-3" id="warning_text"></p>
-                                        <button type="button" class="btn btn-warning my-2" data-dismiss="modal">Continue</button>
+                                        <button type="button" class="btn btn-warning my-2" data-bs-dismiss="modal">Continue</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -459,7 +459,7 @@
                                         <i class="dripicons-wrong h1"></i>
                                         <h4 class="mt-2">Error 401</h4>
                                         <p class="mt-3">No cuentas con nivel suficiente para autorizar esta solicitud.</p>
-                                        <button id="danger-alert-modal-button" type="button" class="btn btn-light my-2" data-dismiss="modal">Continue</button>
+                                        <button id="danger-alert-modal-button" type="button" class="btn btn-light my-2" data-bs-dismiss="modal">Continue</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -472,7 +472,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myCenterModalLabel_modificar">MODIFICAR # </h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <form id="form">
                                     <div class="modal-body mb-3">
@@ -562,7 +562,7 @@
 
                                         <div class="modal-footer mt-3">
                                             <!-- <input type="hidden" id="id_modificar"> -->
-                                            <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
                                             <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                                         </div>
                                     </div><!-- /.modal-content -->
@@ -641,7 +641,7 @@
                                         </div>
                                         <div class="modal-footer mt-3">
                                             <input type="hidden" id="id_modificar">
-                                            <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                             <button id="modificarventas_ok" type="button" class="btn btn-success">Guardar Cambios</button>
                                             <button id="agregarventas_ok" type="button" class="btn btn-success" style="display:none">Agregar Venta</button>
                                         </div>
@@ -657,7 +657,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-warning">
                                     <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="warning-modal-body" class="modal-body">
 
@@ -666,7 +666,7 @@
                                 <input type="hidden" id="codigoseguimiento_eliminar">
                                 <div class="modal-footer">
 
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                     <button id="warning-modal-ok" type="button" class="btn btn-danger">Eliminar</button>
                                     <button id="warning-modal-ventas-ok" type="button" id="eliminar_ventas" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                                 </div>
@@ -680,13 +680,13 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-warning">
                                     <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     Eliminar Registro de Recorridos de Cuenta Corriente.
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                     <button id="ctasctes_warning-modal-ok" type="button" class="btn btn-danger">Eliminar</button>
                                     <button id="ctasctes_warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                                 </div>
@@ -702,7 +702,7 @@
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myLargeModalLabel">Asignar Salidas a la Cuenta Corriente del Cliente</h4>
 
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
 
                                 </div>
                                 <div class="modal-body">
@@ -713,7 +713,7 @@
                                             <div class="card-header" id="headingOne">
                                                 <h5 class="m-0">
                                                     <a class="custom-accordion-title d-block pt-2 pb-2"
-                                                        data-toggle="collapse" href="#collapseOne"
+                                                        data-bs-toggle="collapse" href="#collapseOne"
                                                         aria-expanded="true" aria-controls="collapseOne">
                                                         Ingresar Registro Manual a Cuenta Corriente
                                                     </a>
@@ -721,7 +721,7 @@
                                             </div>
 
                                             <div id="collapseOne" class="collapse show"
-                                                aria-labelledby="headingOne" data-parent="#accordionExample">
+                                                aria-labelledby="headingOne" data-bs-parent="#accordionExample">
                                                 <div class="card-body">
 
                                                     <div class="row" id="asign_another_order_row0">
@@ -790,14 +790,14 @@
                                             <div class="card-header" id="headingTwo">
                                                 <h5 class="m-0">
                                                     <a class="custom-accordion-title collapsed d-block pt-2 pb-2"
-                                                        data-toggle="collapse" href="#collapseTwo"
+                                                        data-bs-toggle="collapse" href="#collapseTwo"
                                                         aria-expanded="false" aria-controls="collapseTwo">
                                                         Registros en Logistica
                                                     </a>
                                                 </h5>
                                             </div>
                                             <div id="collapseTwo" class="collapse" aria-labelledby="headingTwo"
-                                                data-parent="#accordionExample">
+                                                data-bs-parent="#accordionExample">
                                                 <div class="card-body">
 
                                                     <div class="table-responsive">
@@ -836,7 +836,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-primary">
                                     <h4 class="modal-title" id="myCenterModalLabel_codcliente"></h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="col-lg-12 mt-3">
 
@@ -847,7 +847,7 @@
                                 </div>
                                 <div class="modal-footer mt-3">
                                     <input type="hidden" id="cs_codigocliente">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                     <button id="modificarcodigocliente_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                                 </div>
                             </div>
@@ -860,9 +860,9 @@
                             <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                 <div id="modal_seguimiento_header" class="modal-header">
                                     <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                    <div class="text-sm-right">
+                                    <div class="text-sm-end">
                                         <button id="cambiar_estado" type="button" class="btn btn-light" aria-hidden="true">Cambiar Estado</button>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                 </div>
                                 <div class="modal-body">
@@ -945,7 +945,7 @@
                             <div class="modal-content modal-filled bg-warning">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="fill-warning-modalLabel">Cambiar Estado de Servicio</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     Estas por cambiar el estado del servicio a No entregado.
@@ -956,7 +956,7 @@
                                     <input type="hidden" id="codigo_seguimiento">
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                     <button id="cambiar_estado_ok" type="button" class="btn btn-outline-light">Save changes</button>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -969,7 +969,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-warning">
                                     <h4 class="modal-title" id="standard-modalLabel">Aplicar Descuento a Comprobante</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -979,7 +979,7 @@
                                                 <input id="descuentootorgado_t" type="text" class="form-control" data-toggle="input-mask" data-mask-format="00.00%">
                                                 <span class="font-13 text-muted">Ej.: 10%</span>
                                             </div>
-                                            <div class="text-right">
+                                            <div class="text-end">
                                                 <button id="confirmardescuento_botton" type="button" class="btn btn-warning"><i class="mdi mdi-check-bold me-1"></i> <span>Aplicar Descuento</span> </button>
                                             </div>
                                         </div>
@@ -993,7 +993,7 @@
 
 
                     <!--MODAL CONFIRMAR FACTURACION -->
-                    <div id="info-header-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="info-header-modalLabel" aria-hidden="true" style="z-index:1003">
+                    <div id="info-header-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="info-header-modalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg">
                             <input id="tipo_de_factura" style="display:none">
                             <div class="modal-content">
@@ -1587,7 +1587,7 @@
                                 <form method="POST" class="needs-validation" data-toggle="validator" data-disable="false">
                                     <div class="modal-header modal-colored-header bg-success">
                                         <h4 class="modal-title" id="success-header-modalLabel">Crear Nuevo Cliente</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                         <div id="errorname" class="alert alert-warning" role="alert" style="display:none">
@@ -1640,7 +1640,7 @@
                                 </form>
                             </div>
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                 <button id="AgregarCliente" type="button" class="btn btn-success">Agregar Cliente</button>
                             </div>
                         </div><!-- /.modal-content -->
@@ -1654,7 +1654,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="mySmallModalLabel">Observaciones</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="observaciones_body" class="modal-body">
                                     
@@ -1687,10 +1687,10 @@
                                     </div>
 
                                     <div class="col-sm-6" id="editor">
-                                        <div class="text-sm-right">
+                                        <div class="text-sm-end">
 
-                                            <button id="refrescar" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi mdi-heart-outline me-1"></i></button>
-                                            <button id="descuento_botton" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi-account-cash-outline me-1"></i> <span>Aplicar Descuento</span> </button>
+                                            <button id="refrescar" type="button" class="btn btn-warning" style="display:none" data-bs-toggle="modal" data-bs-target="#descuento-modal"><i class="mdi mdi mdi-heart-outline me-1"></i></button>
+                                            <button id="descuento_botton" type="button" class="btn btn-warning" style="display:none" data-bs-toggle="modal" data-bs-target="#descuento-modal"><i class="mdi mdi-account-cash-outline me-1"></i> <span>Aplicar Descuento</span> </button>
                                             <!-- <button id="cargarpago_botton" type="button" class="btn btn-success" style="display:none" data-bs-toggle="modal" data-bd-target="#standard-modal"><i class="mdi mdi-account-cash-outline me-1"></i> <span>Cargar Pago</span> </button> -->
                                             <button
                                                 id="cargarpago_botton"
@@ -1703,10 +1703,10 @@
                                                 <span>Cargar Pago</span>
                                             </button>
                                             <!-- 4986 -->
-                                            <button id="asociar_pago_comprobante_button" type="button" class="btn btn-primary" style="display:none" data-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span></span> </button>
-                                            <button id="generar_comprobante_afip_button" type="button" class="btn btn-warning" style="display:none" data-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Generar NC ND Afip</span> </button>
-                                            <button id="debitocredito_botton" type="button" class="btn btn-primary" style="display:none" data-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Movimiento Interno</span> </button>
-                                            <a id="crearcliente" class="btn btn-success" data-parent="Origen" data-toggle="modal" data-target="#nuevocliente-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i> Agregar Cliente</a>
+                                            <button id="asociar_pago_comprobante_button" type="button" class="btn btn-primary" style="display:none" data-bs-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span></span> </button>
+                                            <button id="generar_comprobante_afip_button" type="button" class="btn btn-warning" style="display:none" data-bs-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Generar NC ND Afip</span> </button>
+                                            <button id="debitocredito_botton" type="button" class="btn btn-primary" style="display:none" data-bs-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Movimiento Interno</span> </button>
+                                            <a id="crearcliente" class="btn btn-success" data-parent="Origen" data-bs-toggle="modal" data-bs-target="#nuevocliente-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i> Agregar Cliente</a>
                                             <button id="guardar_botton" type="button" class="btn btn-success" style="display:none"><i class="mdi mdi-cloud me-1"></i> <span>Guardar</span> </button>
                                             <a id="eliminar_botton" class="btn btn-danger" style="display:none"><i class="mdi mdi-account-remove me-1"></i> <span>Eliminar Cliente</span> </a>
                                         </div>
@@ -2277,7 +2277,7 @@
                                             </div>
                                             <div class="tab-pane" id="contact">
                                                 <div class="row">
-                                                    <div class="text-right">
+                                                    <div class="text-end">
                                                         <a id="btn_agregar_contacto" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#contact-modal"><i class="mdi mdi-send"></i> Agregar Contacto</a>
                                                     </div>
                                                 </div>
@@ -2647,8 +2647,8 @@
                                                         </div>
                                                         <div class="d-print-none mt-4">
                                                             <div class="btn-group float-right">
-                                                                <a id="Modificar_recorrido_boton" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-target="#modificar_recorridos_modal"><i class="mdi mdi-account-cash-outline me-1"></i>Modificar Valores</a>
-                                                                <a id="ingresar_recorridos" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-cart-plus me-1 ml-1"></i>Ingresar Recorridos</a>
+                                                                <a id="Modificar_recorrido_boton" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-bs-target="#modificar_recorridos_modal"><i class="mdi mdi-account-cash-outline me-1"></i>Modificar Valores</a>
+                                                                <a id="ingresar_recorridos" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-cart-plus me-1 ml-1"></i>Ingresar Recorridos</a>
                                                                 <a id="facturar_recorridos_boton" type="button" class="btn btn-info ml-1"><i class="mdi mdi-printer me-1 ml-1"></i> <span> Generar Comprobante </span></a>
                                                             </div>
                                                         </div>
@@ -2822,7 +2822,7 @@
 
                                                         <div class="row">
                                                             <div class="col-sm-6">
-                                                                <div class="text-sm-left">
+                                                                <div class="text-sm-start">
                                                                     <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid mr-2" /> -->
                                                                 </div>
                                                             </div>
@@ -2869,14 +2869,14 @@
 
 
                                                         <div class="col-sm-12" id="datos_cae" style="display:none">
-                                                            <div class="text-sm-right">
+                                                            <div class="text-sm-end">
                                                                 <h5>CAE: <a id="CAE"></br>
                                                                     </a> Fecha Vencimiento CAE: <a id="VencimientoCAE"></a></h5>
                                                             </div>
                                                         </div> <!-- end col-->
                                                         <div class="d-print-none mt-4">
-                                                            <div class="text-right">
-                                                                <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
+                                                            <div class="text-end">
+                                                                <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                                                 <!-- <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a> -->
                                                                 <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
                                                                 <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
@@ -3029,7 +3029,7 @@
 
                                                         <div class="row">
                                                             <div class="col-sm-6">
-                                                                <div class="text-sm-left">
+                                                                <div class="text-sm-start">
                                                                     <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid mr-2" /> -->
                                                                 </div>
                                                             </div>
@@ -3070,17 +3070,17 @@
                                                             </div> <!-- end col -->
                                                         </div>
                                                         <div class="col-sm-12" id="datos_cae" style="display:none">
-                                                            <div class="text-sm-right">
+                                                            <div class="text-sm-end">
                                                                 <h5>CAE: <a id="CAE"></a> Fecha Vencimiento CAE: <a id="VencimientoCAE"></a></h5>
                                                             </div>
                                                         </div> <!-- end col-->
 
                                                         <div class="d-print-none mt-4">
-                                                            <div class="text-right">
-                                                                <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
+                                                            <div class="text-end">
+                                                                <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                                                 <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                                                <!-- <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
-                                                                <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
+                                                                <!-- <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
+                                                                <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
                                                                 <a id="cancelarfactura_detalle_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
                                                         </div>

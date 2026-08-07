@@ -38,13 +38,7 @@ $("#modal_seguimiento").on("show.bs.modal", function (e) {
         if (jsonData.success == 1) {
           $("#fill-warning-modal").modal("hide");
           $("#modal_seguimiento").modal("hide");
-          $.NotificationApp.send(
-            "Registro Actualizado !",
-            "Se ha actualizado el registro correctamente.",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Registro Actualizado !", "Se ha actualizado el registro correctamente.");
           var tabla = $("#guias_recibidas_tabla").DataTable();
           tabla.ajax.reload();
         }

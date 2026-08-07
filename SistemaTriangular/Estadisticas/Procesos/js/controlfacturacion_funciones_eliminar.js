@@ -580,24 +580,12 @@ function ver(i) {
       success: function (response) {
         var jsonData = JSON.parse(response);
         if (jsonData.success == "1") {
-          $.NotificationApp.send(
-            "Registro Actualizado !",
-            "Se ha actualizado el Recorrido.",
-            "bottom-right",
-            "#FFFFFF",
-            "success"
-          );
+          toast("success", "Registro Actualizado !", "Se ha actualizado el Recorrido.");
 
           var datatable1 = $("#tablactasctes").DataTable();
           datatable1.ajax.reload();
         } else {
-          $.NotificationApp.send(
-            "Registro No Actualizado !",
-            "No se pudo eliminar el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger"
-          );
+          toast("error", "Registro No Actualizado !", "No se pudo eliminar el registro.");
         }
         $("#warning-header-modal").modal("hide");
       },

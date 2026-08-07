@@ -629,13 +629,7 @@ $("#agregarzonas").click(function () {
     type: "POST",
     success: function () {
       $("#zona-modal").modal("hide");
-      $.NotificationApp.send(
-        "Exito !",
-        "Se agrego la Zona.!",
-        "bottom-right",
-        "#FFFFFF",
-        "success"
-      );
+      toast("success", "Exito !", "Se agrego la Zona.!");
       cargarZonasAccordion();
     },
   });
@@ -664,13 +658,7 @@ $("#renderizar_ok").click(function () {
       var jsonData = JSON.parse(response);
       if (jsonData.success == 1) {
         $("#info-alert-modal").modal("hide");
-        $.NotificationApp.send(
-          "Exito !",
-          "Se movieron " + jsonData.cuenta + " registros.!",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        toast("success", "Exito !", "Se movieron " + jsonData.cuenta + " registros.!");
         renderZona(zonaId);
       }
     },

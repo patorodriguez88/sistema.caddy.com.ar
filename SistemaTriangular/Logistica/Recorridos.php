@@ -106,7 +106,7 @@
                             <div class="modal-footer">
 
                                 <button id="btn_remove_permanent" type="button" class="btn btn-success">Aceptar</button>
-                                <button id="btn_not_remove_permanent" type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                                <button id="btn_not_remove_permanent" type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
                             </div>
                         </div><!-- /.modal-content -->
                     </div><!-- /.modal-dialog -->
@@ -281,7 +281,7 @@
                             <input type="hidden" id="codigoseguimiento_eliminar">
 
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                 <button id="warning-modal-ok" type="button" class="btn btn-danger">Eliminar</button>
                                 <button id="warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                             </div>
@@ -334,6 +334,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

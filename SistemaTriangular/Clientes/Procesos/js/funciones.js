@@ -144,13 +144,7 @@ $("#asana_gid").change(function () {
         // $('#asana_gid').empty();
         // $('#asana_gid').append('<option value="">Seleccione</option>');
         // obtenerUsuarios();
-        $.NotificationApp.send(
-          "Exito !",
-          "Tareas Asignadas Correctamente.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito !", "Tareas Asignadas Correctamente.");
       }
     },
   });
@@ -169,13 +163,7 @@ $("#tareas_asana").click(function () {
         $("#asana_gid").empty();
         $("#asana_gid").append('<option value="">Seleccione</option>');
         obtenerUsuarios();
-        $.NotificationApp.send(
-          "Exito !",
-          "Tareas Asignadas Correctamente.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito !", "Tareas Asignadas Correctamente.");
       }
     },
   });
@@ -298,13 +286,7 @@ function notifications(a) {
           jsonData.data[0].Fecha
             ? jsonData.data[0].Fecha.split("-").reverse().join(".")
             : "";
-        $.NotificationApp.send(
-          "Email enviado el " + Fecha + " a " + jsonData.data[0].Mail,
-          "Se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Email enviado el " + Fecha + " a " + jsonData.data[0].Mail, "Se han realizado cambios.");
       } else {
         console.warn("Fecha inválida en notifications:", jsonData);
       }
@@ -444,24 +426,12 @@ $("#table-contact").on("change", ".switch-notif", function () {
       var jsonData = JSON.parse(respuesta);
       if (jsonData.success != 1) {
         $switch.prop("checked", !$switch.prop("checked"));
-        $.NotificationApp.send(
-          "Error",
-          "No se pudo actualizar la notificación.",
-          "bottom-right",
-          "#dc3545",
-          "danger",
-        );
+        toast("error", "Error", "No se pudo actualizar la notificación.");
       }
     },
     error: function () {
       $switch.prop("checked", !$switch.prop("checked"));
-      $.NotificationApp.send(
-        "Error",
-        "No se pudo actualizar la notificación.",
-        "bottom-right",
-        "#dc3545",
-        "danger",
-      );
+      toast("error", "Error", "No se pudo actualizar la notificación.");
     },
   });
 });
@@ -472,13 +442,7 @@ $(document).on("click", "#contact-delete", function (e) {
   var operationCanceled = false; // Variable para verificar si la operación fue cancelada
 
   // Mostrar la notificación con el botón "Cancelar"
-  $.NotificationApp.send(
-    "Atención !",
-    `<p>Estas por eliminar el contacto. <a href="#" id="cancel-action" class="alert-link" data-id="${dataID}">Cancelar</a></p>`,
-    "bottom-right",
-    "#FFFFFF",
-    "warning",
-  );
+  toast("warning", "Atención !", `<p>Estas por eliminar el contacto. <a href="#" id="cancel-action" class="alert-link" data-id="${dataID}">Cancelar</a></p>`);
 
   // Iniciar un temporizador que ejecuta la operación después de 5 segundos (5000 ms)
   var timeout = setTimeout(function () {
@@ -490,24 +454,12 @@ $(document).on("click", "#contact-delete", function (e) {
         data: { Eliminar_contacto: 1, id_contacto: dataID },
         success: function (response) {
           // Manejar la respuesta exitosa del servidor
-          $.NotificationApp.send(
-            "Éxito",
-            "El contacto ha sido eliminado.",
-            "bottom-right",
-            "#28a745",
-            "success",
-          );
+          toast("success", "Éxito", "El contacto ha sido eliminado.");
           $("#table-contact").DataTable().ajax.reload();
         },
         error: function (xhr, status, error) {
           // Manejar el error en la solicitud AJAX
-          $.NotificationApp.send(
-            "Error",
-            "No se pudo eliminar el contacto.",
-            "bottom-right",
-            "#dc3545",
-            "danger",
-          );
+          toast("error", "Error", "No se pudo eliminar el contacto.");
         },
       });
     }
@@ -521,13 +473,7 @@ $(document).on("click", "#contact-delete", function (e) {
     clearTimeout(timeout); // Cancelar el temporizador
 
     // Notificar al usuario que la operación ha sido cancelada
-    $.NotificationApp.send(
-      "Cancelado",
-      "Operación de eliminación cancelada.",
-      "bottom-right",
-      "#FFFFFF",
-      "danger",
-    );
+    toast("error", "Cancelado", "Operación de eliminación cancelada.");
   });
 });
 
@@ -603,13 +549,7 @@ $("#contact_modal_ok").click(function () {
         table_contact.ajax.reload();
         $("#contact-modal").modal("hide");
       } else {
-        $.NotificationApp.send(
-          "Error",
-          "No se pudo agregar el contacto. " + jsonData.error,
-          "bottom-right",
-          "#dc3545",
-          "danger",
-        );
+        toast("error", "Error", "No se pudo agregar el contacto. " + jsonData.error);
       }
     },
   });
@@ -653,21 +593,9 @@ $("#contact_modal_modificar_ok").click(function () {
         var table_contact = $("#table-contact").DataTable();
         table_contact.ajax.reload();
         $("#contact-modal").modal("hide");
-        $.NotificationApp.send(
-          "Exito",
-          "Registro modificado !",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito", "Registro modificado !");
       } else {
-        $.NotificationApp.send(
-          "Error",
-          "No se pudo modificar el contacto. " + jsonData.error,
-          "bottom-right",
-          "#dc3545",
-          "danger",
-        );
+        toast("error", "Error", "No se pudo modificar el contacto. " + jsonData.error);
       }
     },
   });
@@ -1089,13 +1017,7 @@ $(document).ready(function () {
         var jsonData = JSON.parse(response);
 
         if (jsonData.success == 1) {
-          $.NotificationApp.send(
-            "Exito !",
-            "Registro Actualizado.",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Exito !", "Registro Actualizado.");
 
           if (switchValue == 0) {
             $("#info_facturacion").css("display", "block");
@@ -1109,13 +1031,7 @@ $(document).ready(function () {
             );
           }
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            jsonData.error,
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
+          toast("error", "Error !", jsonData.error);
         }
       },
       error: function (xhr, status, error) {
@@ -1183,21 +1099,9 @@ $("#ciclo_facturacion").change(function () {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Exito !",
-          "Registro Actualizado.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito !", "Registro Actualizado.");
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "Registro No Actualizado.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error !", "Registro No Actualizado.");
       }
     },
   });
@@ -1712,13 +1616,7 @@ $("#nueva_relacion").change(function () {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Exito !",
-          "Registro Actualizado.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Exito !", "Registro Actualizado.");
       }
     },
   });
@@ -1750,13 +1648,7 @@ var divs = form_clientes.getElementsByClassName("form-control");
 for (var i = 0; i < divs.length; i++) {
   //Añades un evento a cada elemento
   divs[i].addEventListener("change", function () {
-    $.NotificationApp.send(
-      "Recuerde Guardar el formulario !",
-      "Se han realizado cambios.",
-      "bottom-right",
-      "#FFFFFF",
-      "info",
-    );
+    toast("info", "Recuerde Guardar el formulario !", "Se han realizado cambios.");
   });
 }
 //IDEM FORM PARA CUSTOM
@@ -1766,13 +1658,7 @@ var divsC = form_clientes.getElementsByClassName("custom-control-input");
 for (var i = 0; i < divsC.length; i++) {
   //Añades un evento a cada elemento
   divsC[i].addEventListener("change", function () {
-    $.NotificationApp.send(
-      "Recuerde Guardar el formulario !",
-      "Se han realizado cambios.",
-      "bottom-right",
-      "#FFFFFF",
-      "info",
-    );
+    toast("info", "Recuerde Guardar el formulario !", "Se han realizado cambios.");
   });
 }
 
@@ -2255,21 +2141,9 @@ $("#buscarcliente").change(function () {
               success: function (response) {
                 var jsonData = JSON.parse(response);
                 if (jsonData.success == "1") {
-                  $.NotificationApp.send(
-                    "Registro Actualizado !",
-                    "Se han realizado cambios.",
-                    "bottom-right",
-                    "#FFFFFF",
-                    "success",
-                  );
+                  toast("success", "Registro Actualizado !", "Se han realizado cambios.");
                 } else {
-                  $.NotificationApp.send(
-                    "Ocurrio un Error !",
-                    "No se realizaron cambios.",
-                    "bottom-right",
-                    "#FFFFFF",
-                    "danger",
-                  );
+                  toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
                 }
               },
             });
@@ -2603,29 +2477,11 @@ $("#agregar_botton").click(function () {
     success: function (response) {
       var jsonData = JSON.parse(response);
       if (jsonData.success == "1") {
-        $.NotificationApp.send(
-          "Listo!",
-          "Creamos el Proveedor",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Listo!", "Creamos el Proveedor");
       } else if (jsonData.success == "2") {
-        $.NotificationApp.send(
-          "Error!",
-          "El Nombre, Direccion o Cuit, ya existen en el sistema",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error!", "El Nombre, Direccion o Cuit, ya existen en el sistema");
       } else if (jsonData.success == "3") {
-        $.NotificationApp.send(
-          "Error!",
-          "El nombre no puede ser NULL",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error!", "El nombre no puede ser NULL");
       }
     },
   });
@@ -2739,13 +2595,7 @@ $("#eliminar_botton").click(function () {
       "Estas por eliminar el cliente " + id,
     );
   } else {
-    $.NotificationApp.send(
-      "Error !",
-      "No se puede eliminar ya que el saldo es " + total_saldo,
-      "bottom-right",
-      "#FFFFFF",
-      "danger",
-    );
+    toast("error", "Error !", "No se puede eliminar ya que el saldo es " + total_saldo);
   }
 });
 
@@ -2764,13 +2614,7 @@ $("#modal_eliminar_cliente_aceptar").click(function () {
 
       if (jsonData.success == 1) {
         $("#modal_eliminar_cliente").modal("hide");
-        $.NotificationApp.send(
-          "Exito !",
-          "Se elimino el cliente " + id,
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Exito !", "Se elimino el cliente " + id);
 
         setTimeout(function () {}, 3000);
 
@@ -3085,10 +2929,6 @@ $("#botonfacturacion").click(function () {
         style: "os",
         selector: "td:not(:last-child)", // no row selection on last column
       },
-      rowCallback: function (row, data) {
-        // Set the checked state of the checkbox in the table
-        $("input.custom-control-input", row).prop("checked");
-      },
     });
 
     $("#recorridos_tabla").on(
@@ -3140,25 +2980,13 @@ $("#modificarcodigocliente_ok").click(function () {
       success: function (response) {
         var jsonData = JSON.parse(response);
         if (jsonData.success == 1) {
-          $.NotificationApp.send(
-            "Registro Actualizado !",
-            "Se han realizado cambios.",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Registro Actualizado !", "Se han realizado cambios.");
           $("#codigocliente_t").val("");
           var table = $("#facturacion_tabla").DataTable();
           table.ajax.reload();
           $("#standard-modal-codcliente").modal("hide");
         } else {
-          $.NotificationApp.send(
-            "Ocurrio un Error !",
-            "No se realizaron cambios.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
+          toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
         }
       },
     });
@@ -3272,10 +3100,6 @@ $("#recorridos_boton").click(function () {
       style: "os",
       selector: "td:not(:last-child)", // no row selection on last column
     },
-    rowCallback: function (row, data) {
-      // Set the checked state of the checkbox in the table
-      $('input[name="checkbox_r"]', row).prop("checked", data.id == 1);
-    },
   });
 
   $("#recorridos_tabla").on("change", 'input[name="checkbox_r"]', function (e) {
@@ -3313,21 +3137,9 @@ function eliminar_elemento_rec(i) {
         if (jsonData.success == 1) {
           var tabla_asignacion = $("#recorridos_tabla").DataTable();
           tabla_asignacion.ajax.reload(null, false);
-          $.NotificationApp.send(
-            "Exito !",
-            "Registro Actualizado.",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Exito !", "Registro Actualizado.");
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            "No pudimos cargar el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
+          toast("error", "Error !", "No pudimos cargar el registro.");
         }
         $("#ctasctes_warning-modal").modal("hide");
       },
@@ -3802,6 +3614,14 @@ $("#confirmar_movimientos_internos_botton").click(function () {
 
 // FACTURAR REMITOS
 
+// Selección capturada al apretar "Facturar" / "Facturar Recorridos".
+// Se reutiliza tal cual hasta el confirmar final: NO se vuelve a escanear
+// el DOM en ese momento, para que un redibujado de la tabla en el medio
+// (filtro, reload, etc.) no pueda desincronizar el total ya calculado de
+// los remitos que realmente se adjuntan a la factura.
+var remitosSeleccionadosFacturar = [];
+var recorridosSeleccionadosFacturar = [];
+
 $("#facturar_boton").click(function () {
   var id = document.getElementById("buscarcliente").value;
   document.getElementById("Facturacion_recorridos_button").style.display =
@@ -3813,14 +3633,15 @@ $("#facturar_boton").click(function () {
   document.getElementById("nota_proforma").style.display = "flex";
 
   //Creamos un array que almacenará los valores de los input "checked"
-  var checked = [];
+  remitosSeleccionadosFacturar = [];
   //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
   $("input.custom-control-input:checked").each(function () {
     //Mediante la función push agregamos al arreglo los values de los checkbox
     if ($(this).attr("value") != null) {
-      checked.push($(this).attr("value"));
+      remitosSeleccionadosFacturar.push($(this).attr("value"));
     }
   });
+  var checked = remitosSeleccionadosFacturar;
   // Utilizamos console.log para ver comprobar que en realidad contiene algo el arreglo
 
   if (checked != 0) {
@@ -3963,13 +3784,7 @@ $("#facturar_boton").click(function () {
       },
     });
   } else {
-    $.NotificationApp.send(
-      "Error !",
-      "No hay Remitos Seleccionados. No se puede avanzar.",
-      "bottom-right",
-      "#FFFFFF",
-      "danger",
-    );
+    toast("error", "Error !", "No hay Remitos Seleccionados. No se puede avanzar.");
   }
 });
 
@@ -4137,13 +3952,7 @@ $("#facturar_detalle_boton").click(function () {
       ],
     });
   } else {
-    $.NotificationApp.send(
-      "Error !",
-      "No hay Remitos Seleccionados. No se puede avanzar.",
-      "bottom-right",
-      "#FFFFFF",
-      "danger",
-    );
+    toast("error", "Error !", "No hay Remitos Seleccionados. No se puede avanzar.");
   }
 });
 
@@ -4159,14 +3968,15 @@ $("#facturar_recorridos_boton").click(function () {
   document.getElementById("nota_proforma").style.display = "flex";
 
   //Creamos un array que almacenará los valores de los input "checked"
-  var checked_r = [];
+  recorridosSeleccionadosFacturar = [];
   //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
   $('input[name="checkbox_r"]:checked').each(function () {
     //Mediante la función push agregamos al arreglo los values de los checkbox
     if ($(this).attr("value") != null) {
-      checked_r.push($(this).attr("value"));
+      recorridosSeleccionadosFacturar.push($(this).attr("value"));
     }
   });
+  var checked_r = recorridosSeleccionadosFacturar;
   // Utilizamos console.log para ver comprobar que en realidad contiene algo el arreglo
   //   console.log('veo', checked_r);
   if (checked_r != 0) {
@@ -4306,20 +4116,14 @@ $("#facturar_recorridos_boton").click(function () {
       },
     });
   } else {
-    $.NotificationApp.send(
-      "Error !",
-      "No hay Remitos Seleccionados. No se puede avanzar.",
-      "bottom-right",
-      "#FFFFFF",
-      "danger",
-    );
+    toast("error", "Error !", "No hay Remitos Seleccionados. No se puede avanzar.");
   }
 });
 
 //BOTON CANCELAR BOTON FACTR
 $("#cancelarfactura_boton_r").click(function () {
   //VACIO LOS ARRAY
-  var checked_r = [];
+  recorridosSeleccionadosFacturar = [];
   document.getElementById("factura_primerpaso").style.display = "flex";
   document.getElementById("factura_proforma").style.display = "none";
   document.getElementById("descuento_botton").style.display = "none";
@@ -4329,8 +4133,8 @@ $("#cancelarfactura_boton_r").click(function () {
 
 $("#cancelarfactura_boton").click(function () {
   //VACIO LOS ARRAY
-  var checked = [];
-  var checked_r = [];
+  remitosSeleccionadosFacturar = [];
+  recorridosSeleccionadosFacturar = [];
   document.getElementById("factura_primerpaso").style.display = "flex";
   document.getElementById("factura_proforma").style.display = "none";
   document.getElementById("descuento_botton").style.display = "none";
@@ -4340,8 +4144,8 @@ $("#cancelarfactura_boton").click(function () {
 
 $("#cancelarfactura_detalle_boton").click(function () {
   //VACIO LOS ARRAY
-  var checked = [];
-  var checked_r = [];
+  remitosSeleccionadosFacturar = [];
+  recorridosSeleccionadosFacturar = [];
   document.getElementById("factura_primerpaso").style.display = "flex";
   document.getElementById("factura_proforma_detalle").style.display = "none";
   document.getElementById("descuento_botton").style.display = "none";
@@ -4596,15 +4400,14 @@ $("#confirmarfactura_boton").click(function () {
     var condiva_f = document.getElementById("condicion_facturacion").value;
   }
 
-  //Creamos un array que almacenará los valores de los input "checked"
-  var checked = [];
-  //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
-  $("input.custom-control-input:checked").each(function () {
-    if ($(this).attr("value") != null) {
-      //Mediante la función push agregamos al arreglo los values de los checkbox
-      checked.push($(this).attr("value"));
-    }
-  });
+  // Reusamos la selección capturada al apretar "Facturar", NO volvemos a
+  // escanear el DOM acá: si la tabla se redibujó en el medio, un re-escaneo
+  // podría no coincidir con el total ya calculado (factura "pelada").
+  var checked = remitosSeleccionadosFacturar;
+  if (!checked || checked.length === 0) {
+    toast("error", "Error !", "No hay Remitos Seleccionados. No se puede facturar.");
+    return;
+  }
   var ncomp = $("#ncomprobante_up").val();
   console.log("ids", ncomp);
   //   $('#NumeroComprobante').val();
@@ -4663,13 +4466,7 @@ $("#confirmarfactura_boton").click(function () {
       var jsonData1 = JSON.parse(respuesta);
       if (jsonData1.success == 1) {
         document.getElementById("datos_cae").style.display = "block";
-        $.NotificationApp.send(
-          "Comprobante Generado con Exito !",
-          "Se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
         //DESTRUIMOS LA TABLA FACTURACION
         var table = $("#tabla_facturacion_proforma").DataTable();
         table.destroy();
@@ -4683,22 +4480,14 @@ $("#confirmarfactura_boton").click(function () {
 
         document.getElementById("factura_primerpaso").style.display = "block";
         document.getElementById("factura_proforma").style.display = "none";
+
+        if (jsonData1.idFacturado) {
+          abrirModalFactura(jsonData1.idFacturado);
+        }
       } else if (jsonData1.success == 0) {
-        $.NotificationApp.send(
-          "Error al Intentar Generar el Comprobante !",
-          "No se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
       } else if (jsonData1.success == 3) {
-        $.NotificationApp.send(
-          "Error en el Codigo de Afip del Cliente !",
-          "No se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
       }
       //   }
       // });
@@ -4750,15 +4539,14 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
     var condiva_f = document.getElementById("condicion_facturacion").value;
   }
 
-  //   //Creamos un array que almacenará los valores de los input "checked"
-  var checked = [];
-  //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
-  $("input.custom-control-input:checked").each(function () {
-    if ($(this).attr("value") != null) {
-      //Mediante la función push agregamos al arreglo los values de los checkbox
-      checked.push($(this).attr("value"));
-    }
-  });
+  // Reusamos la selección capturada al apretar "Facturar Recorridos", NO
+  // volvemos a escanear el DOM acá (y NO usamos el selector genérico
+  // custom-control-input, que también matchea la tabla de remitos).
+  var checked = recorridosSeleccionadosFacturar;
+  if (!checked || checked.length === 0) {
+    toast("error", "Error !", "No hay Recorridos Seleccionados. No se puede facturar.");
+    return;
+  }
 
   var ncomp = $("#ncomprobante_up_r").val();
   //   var dato = {
@@ -4827,29 +4615,15 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
 
         document.getElementById("factura_primerpaso").style.display = "block";
         document.getElementById("factura_proforma").style.display = "none";
-        $.NotificationApp.send(
-          "Comprobante Generado con Exito !",
-          "Se procesaron " + jsonData1.cuento + " recorridos.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Comprobante Generado con Exito !", "Se procesaron " + jsonData1.cuento + " recorridos.");
+
+        if (jsonData1.idFacturado) {
+          abrirModalFactura(jsonData1.idFacturado);
+        }
       } else if (jsonData1.success == 0) {
-        $.NotificationApp.send(
-          "Error al Intentar Generar el Comprobante !",
-          "No se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
       } else if (jsonData1.success == 3) {
-        $.NotificationApp.send(
-          "Error en el Codigo de Afip del Cliente !",
-          "No se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
       }
     },
   });
@@ -4927,22 +4701,10 @@ $("#AgregarCliente").click(function () {
       if (jsonData.success == "1") {
         var NombreCliente = jsonData.NombreCliente;
         var id = jsonData.id;
-        $.NotificationApp.send(
-          "Cliente " + NombreCliente + " creado con éxito !",
-          "Se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Cliente " + NombreCliente + " creado con éxito !", "Se han realizado cambios.");
         $("#nuevocliente-modal-lg").modal("hide");
       } else {
-        $.NotificationApp.send(
-          "Error: El cliente no se creo !",
-          "Se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error: El cliente no se creo !", "Se han realizado cambios.");
         $("#nuevocliente-modal-lg").modal("hide");
       }
     },

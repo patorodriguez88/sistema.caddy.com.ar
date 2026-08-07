@@ -29,7 +29,7 @@ if (isset($_POST['GastosDetalles'])) {
 
 //TABLA CLIENTES
 if (isset($_POST['Clientes'])) {
-  $sql = "SELECT (SUM(Debe)/SUM(Cantidad))as Prom,if(FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente,if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,SUM(Debe)as Total,SUM(Cantidad)as Cantidad FROM 
+  $sql = "SELECT (SUM(Debe)/SUM(Cantidad))as Prom,if(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,SUM(Debe)as Total,SUM(Cantidad)as Cantidad FROM 
   TransClientes WHERE Eliminado=0  AND Debe<>0 AND CodigoSeguimiento<>'' AND Fecha>='$_POST[inicio]' AND Fecha<='$_POST[final]'  
  GROUP BY Cliente ORDER BY Total DESC LIMIT 0,20";
   $Resultado = $mysqli->query($sql);
@@ -204,7 +204,7 @@ WHERE YEAR(v.Fecha) = YEAR(CURRENT_DATE()-1) AND v.Eliminado=0 AND v.Haber=0 GRO
 }
 
 if (isset($_POST['VentasClientes'])) {
-  $sql = $mysqli->query("SELECT MONTHNAME(t.Fecha) AS Mes,SUM(t.Debe) AS Total FROM TransClientes t WHERE IF(FormaDePago='Origen',t.IngBrutosOrigen,t.idClienteDestino)='$_POST[idCliente]' AND YEAR(t.Fecha) = YEAR(CURRENT_DATE()) 
+  $sql = $mysqli->query("SELECT MONTHNAME(t.Fecha) AS Mes,SUM(t.Debe) AS Total FROM TransClientes t WHERE IF(FormaDePago='Origen',t.idClienteOrigen,t.idClienteDestino)='$_POST[idCliente]' AND YEAR(t.Fecha) = YEAR(CURRENT_DATE()) 
 AND t.Eliminado='0' GROUP BY Mes ORDER BY YEAR(t.Fecha),MONTH(t.Fecha)");
   $Mes = array();
   $Total = array();

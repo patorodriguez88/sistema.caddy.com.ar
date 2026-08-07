@@ -158,7 +158,7 @@
 
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-danger" data-dismiss="modal">Cancelar</button>
+                                    <button type="button" class="btn btn-danger" data-bs-dismiss="modal">Cancelar</button>
                                     <button id="eliminar_registro" type="button" class="btn btn-success">Si, Borrar Registro</button>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -229,12 +229,12 @@
 
                                             <ul class="nav nav-tabs nav-bordered mb-3">
                                                 <li class="nav-item">
-                                                    <a href="#select2-simples" data-toggle="tab" aria-expanded="false" class="nav-link active">
+                                                    <a href="#select2-simples" data-bs-toggle="tab" aria-expanded="false" class="nav-link active">
                                                         Envios Simples
                                                     </a>
                                                 </li>
                                                 <li class="nav-item">
-                                                    <a href="#select2-recorridos" data-toggle="tab" aria-expanded="true" class="nav-link">
+                                                    <a href="#select2-recorridos" data-bs-toggle="tab" aria-expanded="true" class="nav-link">
                                                         Recorridos
                                                     </a>
                                                 </li>
@@ -399,6 +399,7 @@
 
             <!-- SweetAlert2 JS -->
             <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

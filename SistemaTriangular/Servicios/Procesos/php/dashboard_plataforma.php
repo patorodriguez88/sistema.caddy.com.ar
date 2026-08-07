@@ -74,7 +74,7 @@ if (isset($_POST['Pendientes'])) {
 
     if ($cuantos <> 0) { // <= true
         $sqlCtaCte = $mysqli->query("SELECT * FROM TransClientes WHERE (CASE 
-        WHEN FormaDePago = 'Origen' THEN IngBrutosOrigen 
+        WHEN FormaDePago = 'Origen' THEN idClienteOrigen 
         ELSE idClienteDestino END) IN ($idCliente,$exito) AND Eliminado='0' AND Haber=0 AND Fecha>='$_POST[Inicio]' AND Fecha<='$_POST[Final]' ORDER BY id");
     } else {
         $sqlCtaCte = $mysqli->query("SELECT TC.*,
@@ -87,7 +87,7 @@ if (isset($_POST['Pendientes'])) {
     WHERE 
     (
     CASE 
-        WHEN TC.FormaDePago = 'Origen' THEN TC.IngBrutosOrigen
+        WHEN TC.FormaDePago = 'Origen' THEN TC.idClienteOrigen
         ELSE TC.idClienteDestino
     END
     ) = '$idCliente'
@@ -149,7 +149,7 @@ JOIN Clientes C ON C.id = TC.idClienteDestino
 WHERE 
   (
     CASE 
-      WHEN TC.FormaDePago = 'Origen' THEN TC.IngBrutosOrigen
+      WHEN TC.FormaDePago = 'Origen' THEN TC.idClienteOrigen
       ELSE TC.idClienteDestino
     END
   ) = '$idCliente'

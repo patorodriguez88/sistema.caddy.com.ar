@@ -18,7 +18,7 @@ if($_POST['Rotulo']==1){
 
 if($_POST['RotuloRec']==1){
 
-$sql="SELECT TransClientes.DomicilioOrigen,TransClientes.IngBrutosOrigen,TransClientes.LocalidadDestino,TransClientes.Usuario,TransClientes.NumeroVenta,TransClientes.Cantidad,TransClientes.id,TransClientes.FechaEntrega,TransClientes.RazonSocial,TransClientes.ClienteDestino,
+$sql="SELECT TransClientes.DomicilioOrigen,TransClientes.idClienteOrigen,TransClientes.LocalidadDestino,TransClientes.Usuario,TransClientes.NumeroVenta,TransClientes.Cantidad,TransClientes.id,TransClientes.FechaEntrega,TransClientes.RazonSocial,TransClientes.ClienteDestino,
 TransClientes.DomicilioDestino,TransClientes.CodigoSeguimiento FROM TransClientes INNER JOIN HojaDeRuta ON 
 HojaDeRuta.Seguimiento=TransClientes.CodigoSeguimiento 
 WHERE TransClientes.Entregado=0 AND TransClientes.Recorrido='$_POST[rec]' AND TransClientes.Eliminado=0 AND HojaDeRuta.Eliminado=0 AND TransClientes.Devuelto=0";

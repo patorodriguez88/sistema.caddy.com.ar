@@ -190,9 +190,9 @@ function imp(i){
               
             //   if (jsonData.success == "1") {
                 console.log('ver',jsonData.surrender_number);
-                // $.NotificationApp.send("Registro Actualizado !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");
+                // toast("success", "Registro Actualizado !", "Se han realizado cambios.");
             //   } else {
-                // $.NotificationApp.send("Ocurrio un Error !", "No se realizaron cambios.", "bottom-right", "#FFFFFF", "danger");
+                // toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
             //   }
             }
           });
@@ -243,11 +243,11 @@ function change(id,imp){
             
             var datatable = $('#cobranza_integrada').DataTable();
             datatable.ajax.reload();
-            $.NotificationApp.send("Registro Actualizado !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");
+            toast("success", "Registro Actualizado !", "Se han realizado cambios.");
 
         } else {
 
-            $.NotificationApp.send("Ocurrio un Error !", "No se realizaron cambios.", "bottom-right", "#FFFFFF", "danger");
+            toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
 
         }
 

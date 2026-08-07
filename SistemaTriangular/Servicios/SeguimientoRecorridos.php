@@ -53,7 +53,7 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               
@@ -61,7 +61,7 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
                             <input type="hidden" id="id_eliminar">  
                             <input type="hidden" id="codigoseguimiento_eliminar">  
                             <div class="modal-footer">
-                                  <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                   <button id="warning-modal-ok"type="button" class="btn btn-danger">Eliminar</button>
                               </div>
                           </div><!-- /.modal-content -->
@@ -82,7 +82,7 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">Modificar #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div class="modal-body">
                                 <div class="row">
@@ -174,7 +174,7 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
                                   <input type='hidden' id="servicio">
                                 </div>
                               <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                           </div><!-- /.modal-content -->
@@ -187,7 +187,7 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
                                 <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                     <div id="modal_seguimiento_header" class="modal-header">
                                         <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                     <div class="row">
@@ -315,6 +315,8 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
         <script src="Procesos/js/funciones.js"></script>
         <script src="../Funciones/js/seguimiento.js"></script>
         <script src="../Menu/js/funciones.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
         <!-- Funciones Imprimir Rotulos -->
   </body>
 </html>

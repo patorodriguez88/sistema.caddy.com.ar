@@ -374,7 +374,10 @@
         <!-- Direcciones -->
         <!-- <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=BuscarDireccion">
-        </script> -->
+        </script>
+-->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
   </body>
 </html>

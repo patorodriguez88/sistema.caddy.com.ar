@@ -72,7 +72,7 @@ include_once "../Conexion/Conexion.php";
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-primary">
                                   <h4 class="modal-title" id="asignaciones_header_rec">ASIGNACIONES #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <div class="col-lg-12 mt-3">
                                 <label>Seleccionar Recorrido</label>   
@@ -80,7 +80,7 @@ include_once "../Conexion/Conexion.php";
                             </div>
                             <div class="modal-footer mt-3">
 <!--                                 <input type="hidden" id="cs_modificar_REC"> -->
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="asignaciones_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                         </div>
@@ -95,7 +95,7 @@ include_once "../Conexion/Conexion.php";
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">Actualizar Cliente</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div class="modal-body">
                                <div class="col-lg-12 mt-3">
@@ -118,7 +118,7 @@ include_once "../Conexion/Conexion.php";
                               
                             <div class="modal-footer">
                                 
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                 <button id="modificardir_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                           </div><!-- /.modal-content -->
@@ -130,7 +130,7 @@ include_once "../Conexion/Conexion.php";
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               
@@ -138,7 +138,7 @@ include_once "../Conexion/Conexion.php";
                             <input type="hidden" id="id_eliminar">  
                             <input type="hidden" id="codigoseguimiento_eliminar">  
                             <div class="modal-footer">
-                                  <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                   <button id="warning-modal-ok"type="button" class="btn btn-danger">Eliminar</button>
                               </div>
                           </div><!-- /.modal-content -->
@@ -151,7 +151,7 @@ include_once "../Conexion/Conexion.php";
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-primary">
                                   <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <div class="col-lg-12 mt-3">
                               <div class="selector-recorrido form-group">
@@ -166,7 +166,7 @@ include_once "../Conexion/Conexion.php";
                             </div>
                             <div class="modal-footer mt-3">
                                 <input type="hidden" id="cs_modificar_REC">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificarrecorrido_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                         </div>
@@ -179,7 +179,7 @@ include_once "../Conexion/Conexion.php";
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">MODIFICAR #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <form id="form">
                               <div class="modal-body mb-3">
@@ -230,7 +230,7 @@ include_once "../Conexion/Conexion.php";
                               </div>  
                               <div class="modal-footer mt-3">
                                 <input type="hidden" id="id_modificar">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                           </div><!-- /.modal-content -->
@@ -263,14 +263,14 @@ include_once "../Conexion/Conexion.php";
                               <div class="modal-content modal-filled bg-primary">
                                   <div class="modal-header">
                                       <h4 class="modal-title" id="fill-primary-modalLabel">Imprimir Rótulos Recorrido </h4>
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div id="body-rotulos" class="modal-body">
                                       
                                   </div>
                                   <div class="modal-footer">
                                       <select id="selected_device" onchange=onDeviceSelected(this);></select> 
-                                      <button type="button" class="btn btn-light" data-dismiss="modal"> Cancelar </button>
+                                      <button type="button" class="btn btn-light" data-bs-dismiss="modal"> Cancelar </button>
                                       <button id="imp_rot_rec" type="button" class="btn btn-outline-light"> Imprimir </button>
                                       <button id="imp_rot" type="button" class="btn btn-success"> Imprimir </button>
                                   </div>
@@ -283,13 +283,13 @@ include_once "../Conexion/Conexion.php";
                               <div class="modal-content modal-filled bg-secondary">
                                   <div class="modal-header">
                                       <h4 class="modal-title" id="fill-primary-modalLabel">Imprimir Remitos Recorrido </h4>
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div id="body-remitos" class="modal-body">
                                   </div>
                                   <div class="modal-footer">
 <!--                                       <select id="selected_device" onchange=onDeviceSelected(this);></select>  -->
-                                      <button type="button" class="btn btn-light" data-dismiss="modal"> Cancelar </button>
+                                      <button type="button" class="btn btn-light" data-bs-dismiss="modal"> Cancelar </button>
                                       <button id="imp_rem_rec" type="button" class="btn btn-outline-light"> Imprimir </button>
                                       <button id="imp_rem" type="button" class="btn btn-success"> Imprimir </button>
                                   </div>
@@ -303,7 +303,7 @@ include_once "../Conexion/Conexion.php";
                                 <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                     <div id="modal_seguimiento_header" class="modal-header">
                                         <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
                                     <div class="row">
@@ -365,7 +365,7 @@ include_once "../Conexion/Conexion.php";
                                         <a id="header-title2" class="header-title mb-3"></a>
                                         <i id="marker" class="mdi mdi-18px mdi-map-marker"></i>
                                             <a id="cantidad" class="header-title- mb-3 card-drop"></a>
-                                            <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                            <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <i class="mdi mdi-dots-vertical"></i>
                                             </a>
                                             <div class="dropdown-menu dropdown-menu-right">
@@ -476,6 +476,8 @@ include_once "../Conexion/Conexion.php";
         <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=initialize">
         </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
   </body>
 </html>

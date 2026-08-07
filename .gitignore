@@ -5,6 +5,9 @@ SistemaTriangular/Conexion/config_local
 SistemaTriangular/Conexion/config_sandbox
 SistemaTriangular/Rutas/backend/config.php
 
+# Certificados, claves privadas y tickets de acceso de AFIP (WSAA/WSFE)
+SistemaTriangular/afip.php/src/Afip_res/
+
 # Sistema operativo
 .DS_Store
 Thumbs.db

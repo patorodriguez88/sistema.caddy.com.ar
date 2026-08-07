@@ -133,6 +133,8 @@ include_once "../Conexion/Conexion.php";
         <script type="text/javascript" src="../Ticket/Procesos/js/ticketscript.js"></script>
           <!-- demo app -->
         <script src="../hyper/dist/saas/assets/js/pages/demo.dashboard.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
         <!-- end demo js-->
   </body>
 </html>

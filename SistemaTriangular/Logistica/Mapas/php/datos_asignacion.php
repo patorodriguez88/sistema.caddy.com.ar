@@ -72,7 +72,7 @@ echo '<markers>';
 
 // Iterate through the rows, printing XML nodes for each
 while ($row = @mysql_fetch_assoc($result)){
-$sqltransclientes=mysql_query("SELECT RazonSocial,ClienteDestino,DomicilioOrigen,LocalidadOrigen,Retirado,IngBrutosOrigen,idClienteDestino 
+$sqltransclientes=mysql_query("SELECT RazonSocial,ClienteDestino,DomicilioOrigen,LocalidadOrigen,Retirado,idClienteOrigen,idClienteDestino 
 FROM TransClientes WHERE CodigoSeguimiento='$row[Seguimiento]' AND Eliminado=0 ");	
 $dato=mysql_fetch_array($sqltransclientes);  
 
@@ -88,7 +88,7 @@ $resultado=mysql_fetch_array($sql);
 $ciudad=$dato['LocalidadOrigen'];
 $direccion=utf8_encode($dato['DomicilioOrigen'].','.$ciudad);
 // $direccion=$dato['DomicilioOrigen'];
-$idCliente=$dato[IngBrutosOrigen];  
+$idCliente=$dato[idClienteOrigen];  
   $pais='Argentina';
 }  
 $sqllatlong=mysql_query("SELECT Latitud,Longitud FROM Clientes WHERE id='$idCliente'");

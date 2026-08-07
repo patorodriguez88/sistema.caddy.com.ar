@@ -162,7 +162,7 @@
                                             <div class="row">
                                                 <div class="col-lg-12 text-right mt-3">
                                                     <div class="form-group">
-                                                        <button type="button" class="btn btn-danger" id="cargar_pago_btn_cnl" data-dismiss="modal"> <i class="mdi mdi-cancel me-1"></i>Cancelar</button>
+                                                        <button type="button" class="btn btn-danger" id="cargar_pago_btn_cnl" data-bs-dismiss="modal"> <i class="mdi mdi-cancel me-1"></i>Cancelar</button>
                                                         <button type="button" class="btn btn-success" id="cargar_pago_btn_ok" value="Aceptar"><i class="mdi mdi-content-save me-1"></i>Aceptar</button>
                                                         <button type="button" class="btn btn-success" id="cargar_pago_btn_ok_n" value="Aceptar" style="display:none"><i class="mdi mdi-content-save me-1"></i>Aceptar</button>
                                                     </div>
@@ -182,13 +182,13 @@
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-danger">
                                         <h4 class="modal-title" id="danger-header-modalLabel"></h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
 
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                         <button id="danger-header-modal_tax_delete_btn_ok" type="button" class="btn btn-danger">Save changes</button>
                                     </div>
                                 </div><!-- /.modal-content -->
@@ -200,7 +200,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="standard-modalLabel">Subir Titulo Automotor</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
 
@@ -248,8 +248,8 @@
 
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
-                                        <button type="button" class="btn btn-primary" data-dismiss="modal">Aceptar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
                                     </div>
                                 </div><!-- /.modal-content -->
                             </div><!-- /.modal-dialog -->
@@ -261,7 +261,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="standard-modalLabel">Agregar Service Automotor</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <p id="service-up-modal_vehicle" class="ml-2 text-muted font-15">Vehiculo </p>
                                     <div class="modal-body">
@@ -292,8 +292,8 @@
 
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
-                                        <button id="service-up-modal-btn-ok" type="button" class="btn btn-primary" data-dismiss="modal">Aceptar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                        <button id="service-up-modal-btn-ok" type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
                                     </div>
                                 </div><!-- /.modal-content -->
                             </div><!-- /.modal-dialog -->
@@ -357,8 +357,8 @@
 
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
-                                        <button id="mantenimiento_btn_ok" type="button" class="btn btn-primary" data-dismiss="modal">Aceptar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                        <button id="mantenimiento_btn_ok" type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
                                     </div>
                                 </div><!-- /.modal-content -->
                             </div><!-- /.modal-dialog -->
@@ -371,7 +371,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title">Registros para Mantenimiento</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <p id="mantenimiento-modal_vehicle-asana" class="ml-2 text-muted font-15">Vehiculo </p>
                                     <div class="modal-body">
@@ -412,8 +412,8 @@
 
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
-                                        <button id="mantenimiento_btn_ok-asana" type="button" class="btn btn-primary" data-dismiss="modal">Aceptar</button>
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                        <button id="mantenimiento_btn_ok-asana" type="button" class="btn btn-primary" data-bs-dismiss="modal">Aceptar</button>
                                     </div>
                                 </div><!-- /.modal-content -->
                             </div><!-- /.modal-dialog -->
@@ -426,7 +426,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title">Subir Seguro del Automotor</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <div class="modal-body">
 
@@ -498,7 +498,7 @@
                                     </div>
                                     <div class="modal-footer">
 
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">
+                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
                                             <i class="mdi mdi-cancel me-1"></i> Cancelar
                                         </button>
                                         <button type="button" class="btn btn-success" id="vehicles-up-modal_sure_ok">
@@ -516,7 +516,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="vehicles-up-tax-modalLabel">Agregar Impuestos</h4>
-                                        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                     </div>
                                     <p id="vehicles-up-tax_vehicle" class="ml-2 text-muted font-15"> </p>
                                     <div class="modal-body">
@@ -617,7 +617,7 @@
                                         </form>
                                     </div>
                                     <div class="modal-footer">
-                                        <button type="button" class="btn btn-danger" data-dismiss="modal">
+                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal">
                                             <i class="mdi mdi-cancel me-1"></i> Cancelar
                                         </button>
                                         <button type="button" class="btn btn-success" id="vehicles-up-tax-btn-ok">
@@ -1069,6 +1069,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

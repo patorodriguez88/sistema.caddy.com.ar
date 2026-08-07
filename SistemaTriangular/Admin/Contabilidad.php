@@ -57,7 +57,7 @@
                             <div class="card">
                                 <div class="card-body">
                                     <!-- <div class="dropdown float-right">
-                                        <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                        <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                             <i class="mdi mdi-dots-horizontal"></i>
                                         </a>
                                 </div> -->

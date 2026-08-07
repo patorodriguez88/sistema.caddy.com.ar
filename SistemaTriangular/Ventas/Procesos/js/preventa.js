@@ -96,13 +96,7 @@ function eliminar(r) {
     success: function (response) {
       var datatable = $("#preventa").DataTable();
       datatable.ajax.reload();
-      $.NotificationApp.send(
-        "Registro Eliminado !",
-        "Se ha eliminado el registro de Pre Ventas.",
-        "bottom-right",
-        "#FFFFFF",
-        "success"
-      );
+      toast("success", "Registro Eliminado !", "Se ha eliminado el registro de Pre Ventas.");
     },
   });
 }
@@ -141,13 +135,7 @@ $("#aceptar_preventas").click(function (e) {
     });
     $("#info-alert-modal").modal("hide");
   } else {
-    $.NotificationApp.send(
-      "No hay Registros Seleccionados !",
-      "No se han actualizado registros.",
-      "bottom-right",
-      "#FFFFFF",
-      "danger"
-    );
+    toast("error", "No hay Registros Seleccionados !", "No se han actualizado registros.");
   }
 });
 
@@ -214,21 +202,9 @@ $("#eliminar_recorrido_all").click(function () {
             var datatable = $("#preventa").DataTable();
             datatable.ajax.reload();
             $("#standard-modal-rec").modal("hide");
-            $.NotificationApp.send(
-              "Registros Eliminados !",
-              "Se han Eliminado todos los registros seleccionados.",
-              "bottom-right",
-              "#FFFFFF",
-              "success"
-            );
+            toast("success", "Registros Eliminados !", "Se han Eliminado todos los registros seleccionados.");
           } else {
-            $.NotificationApp.send(
-              "Registro No Eliminados !",
-              "No pudimos eliminar los registros seleccionados.",
-              "bottom-right",
-              "#FFFFFF",
-              "danger"
-            );
+            toast("error", "Registro No Eliminados !", "No pudimos eliminar los registros seleccionados.");
           }
         },
       });
@@ -288,21 +264,9 @@ $("#modificar_recorrido_all").click(function () {
             var datatable = $("#preventa").DataTable();
             datatable.ajax.reload();
             $("#standard-modal-rec").modal("hide");
-            $.NotificationApp.send(
-              "Registros Actualizados !",
-              "Se ha actualizado al nuevo recorrido todos los registros seleccionados.",
-              "bottom-right",
-              "#FFFFFF",
-              "success"
-            );
+            toast("success", "Registros Actualizados !", "Se ha actualizado al nuevo recorrido todos los registros seleccionados.");
           } else {
-            $.NotificationApp.send(
-              "Registro No Actualizado !",
-              "No pudimos actualizar los Recorridos.",
-              "bottom-right",
-              "#FFFFFF",
-              "danger"
-            );
+            toast("error", "Registro No Actualizado !", "No pudimos actualizar los Recorridos.");
           }
         },
       });
@@ -323,21 +287,9 @@ $("#modificarrecorrido_ok").click(function () {
         var datatable = $("#preventa").DataTable();
         datatable.ajax.reload();
         $("#standard-modal-rec").modal("hide");
-        $.NotificationApp.send(
-          "Registro Actualizado !",
-          "Se ha actualizado el Recorrido.",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        toast("success", "Registro Actualizado !", "Se ha actualizado el Recorrido.");
       } else {
-        $.NotificationApp.send(
-          "Registro No Actualizado !",
-          "No pudimos actualizar el Recorrido.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger"
-        );
+        toast("error", "Registro No Actualizado !", "No pudimos actualizar el Recorrido.");
       }
     },
   });

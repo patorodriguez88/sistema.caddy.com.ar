@@ -197,21 +197,21 @@ var datatable = $('#seguimiento').DataTable({
               $('#warning-modal').modal('hide');
               if(jsonData.success==1){
                if(jsonData.hojaderuta==1){ 
-                $.NotificationApp.send("Registro Borrado !","Se ha borrado el registro en Hoja de Ruta correctamente.","bottom-right","#FFFFFF","success");  
+                toast("success", "Registro Borrado !", "Se ha borrado el registro en Hoja de Ruta correctamente.");  
                var datatable = $('#seguimiento').DataTable();
                 datatable.ajax.reload();   
                }else{
-                $.NotificationApp.send("Error !","No se han realizado cambios en Hoja de Ruta.","bottom-right","#FFFFFF","danger");       
+                toast("error", "Error !", "No se han realizado cambios en Hoja de Ruta.");       
                } 
                if(jsonData.transclientes==1){
-               $.NotificationApp.send("Registro Borrado !","Se ha borrado el registro en Trans Clientes correctamente.","bottom-right","#FFFFFF","success");  
+               toast("success", "Registro Borrado !", "Se ha borrado el registro en Trans Clientes correctamente.");  
                var datatable = $('#seguimiento').DataTable();
                datatable.ajax.reload();  
                }else{
-               $.NotificationApp.send("Error !","No se han realizado cambios en Trans Clientes.","bottom-right","#FFFFFF","danger");       
+               toast("error", "Error !", "No se han realizado cambios en Trans Clientes.");       
                } 
               }else{
-              $.NotificationApp.send("Error !","No se han realizado cambios.","bottom-right","#FFFFFF","danger");    
+              toast("error", "Error !", "No se han realizado cambios.");    
               }
             }
         });  
@@ -379,7 +379,7 @@ $('#modificardireccion_ok').click(function(){
         var datatable = $('#seguimiento').DataTable();
         datatable.ajax.reload();  
        $('#standard-modal').modal('hide');
-      $.NotificationApp.send("Registro Actualizado !","Se ha actualizado la tabla Clientes correctamente."+jsonData.estado,"bottom-right","#FFFFFF","success");    
+      toast("success", "Registro Actualizado !", "Se ha actualizado la tabla Clientes correctamente."+jsonData.estado);    
        var datatable = $('#seguimiento').DataTable();
         datatable.ajax.reload();  
        }  

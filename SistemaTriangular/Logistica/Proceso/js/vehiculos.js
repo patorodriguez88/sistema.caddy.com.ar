@@ -180,21 +180,9 @@ $("#service-up-modal-btn-ok").click(function () {
     },
     success: function (data) {
       if (data.success == 1) {
-        $.NotificationApp.send(
-          "Exito!",
-          "Se ha cargado el registro.",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        toast("success", "Exito!", "Se ha cargado el registro.");
       } else {
-        $.NotificationApp.send(
-          "Error!",
-          "No se ha cargado el registro error: " + data.error,
-          "bottom-right",
-          "#FFFFFF",
-          "danger"
-        );
+        toast("error", "Error!", "No se ha cargado el registro error: " + data.error);
       }
     },
   });
@@ -227,13 +215,7 @@ $("#mantenimiento_btn_ok").click(function () {
       var jsonData = data;
 
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Exito!",
-          "Se ha cargado el registro.",
-          "bottom-right",
-          "#FFFFFF",
-          "success"
-        );
+        toast("success", "Exito!", "Se ha cargado el registro.");
         $("#vehicle_breafing").css("display", "block");
 
         var datatable = $("#table_breafing").DataTable();
@@ -243,13 +225,7 @@ $("#mantenimiento_btn_ok").click(function () {
         access_breafing();
         // datatable.ajax.reload();
       } else {
-        $.NotificationApp.send(
-          "Error!",
-          "No se pudo cargar el registro error: " + jsonData.error,
-          "bottom-right",
-          "#FFFFFF",
-          "danger"
-        );
+        toast("error", "Error!", "No se pudo cargar el registro error: " + jsonData.error);
       }
     },
   });
@@ -401,24 +377,12 @@ $("#vehicles-up-tax-btn-ok").click(function () {
       success: function (response) {
         var jsonData = JSON.parse(response);
         if (jsonData.success == true) {
-          $.NotificationApp.send(
-            "Exito!",
-            "Se ha cargado el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "success"
-          );
+          toast("success", "Exito!", "Se ha cargado el registro.");
 
           var datatable = $("#table_tax").DataTable();
           datatable.ajax.reload();
         } else {
-          $.NotificationApp.send(
-            "Error!",
-            "No se pudo cargar el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger"
-          );
+          toast("error", "Error!", "No se pudo cargar el registro.");
         }
       },
     });
@@ -449,24 +413,12 @@ $("#vehicles-up-tax-btn-ok").click(function () {
       success: function (response) {
         var jsonData = JSON.parse(response);
         if (jsonData.success == true) {
-          $.NotificationApp.send(
-            "Exito!",
-            "Se modifico el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "success"
-          );
+          toast("success", "Exito!", "Se modifico el registro.");
 
           var datatable = $("#table_tax").DataTable();
           datatable.ajax.reload();
         } else {
-          $.NotificationApp.send(
-            "Error!",
-            "No se pudo modificar el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger"
-          );
+          toast("error", "Error!", "No se pudo modificar el registro.");
         }
       },
     });
@@ -1443,24 +1395,12 @@ function tax_delete(id) {
         var jsonData = JSON.parse(response);
 
         if (jsonData.success == 1) {
-          $.NotificationApp.send(
-            "Exito!",
-            "Se ha eliminado el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "success"
-          );
+          toast("success", "Exito!", "Se ha eliminado el registro.");
 
           var datatable = $("#table_tax").DataTable();
           datatable.ajax.reload();
         } else {
-          $.NotificationApp.send(
-            "Error!",
-            "No se ha eliminado el registro.",
-            "bottom-right",
-            "#FFFFFF",
-            "danger"
-          );
+          toast("error", "Error!", "No se ha eliminado el registro.");
         }
       },
     });

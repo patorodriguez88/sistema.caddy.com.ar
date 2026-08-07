@@ -135,12 +135,12 @@ if (isset($_POST['Facturacion'])) {
 
   if (($_POST['desde'] == '') && ($_POST['hasta'] == '')) {
     $sql = "SELECT CodigoProveedor,ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  IF(FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor FROM TransClientes WHERE Debe>0 
-  AND Facturado=0 AND Eliminado=0 AND (IngBrutosOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
+  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor FROM TransClientes WHERE Debe>0 
+  AND Facturado=0 AND Eliminado=0 AND (idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
   } else {
     $sql = "SELECT CodigoProveedor,ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  IF(FormaDePago='Origen',IngBrutosOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Flex FROM TransClientes WHERE Debe>0 AND Fecha>='$_POST[desde]' 
-  AND Fecha<='$_POST[hasta]' AND Facturado=0 AND Eliminado=0 AND (IngBrutosOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
+  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Flex FROM TransClientes WHERE Debe>0 AND Fecha>='$_POST[desde]' 
+  AND Fecha<='$_POST[hasta]' AND Facturado=0 AND Eliminado=0 AND (idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
   }
 
   $Resultado = $mysqli->query($sql);
@@ -187,7 +187,7 @@ if (isset($_POST['Recibidas'])) {
 //TABLA GUIAS ENVIADAS
 if (isset($_POST['Enviadas'])) {
   $sql = "SELECT ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  FormaDePago,Entregado,Facturado FROM TransClientes WHERE Eliminado=0 AND IngBrutosOrigen='$_POST[id]' AND Haber=0";
+  FormaDePago,Entregado,Facturado FROM TransClientes WHERE Eliminado=0 AND idClienteOrigen='$_POST[id]' AND Haber=0";
   $Resultado = $mysqli->query($sql);
   $rows = array();
   while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
@@ -199,7 +199,7 @@ if (isset($_POST['Enviadas'])) {
 
 if (isset($_POST['FacturacionProforma'])) {
   $sql = "SELECT Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,ClienteDestino,CodigoSeguimiento,CodigoProveedor 
-  FROM TransClientes WHERE Debe>0 AND Facturado=0 AND Eliminado=0 AND IngBrutosOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]'";
+  FROM TransClientes WHERE Debe>0 AND Facturado=0 AND Eliminado=0 AND idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]'";
   $Resultado = $mysqli->query($sql);
   $rows = array();
   $box = $_POST['Remitos'];
@@ -420,7 +420,7 @@ if (isset($_POST['TotalRemitos'])) {
 if (isset($_POST['Estadisticas'])) {
 
   $sql = $mysqli->query("SELECT MONTHNAME(v.Fecha) AS Mes,SUM(v.Debe) AS Total FROM TransClientes v WHERE YEAR(v.fecha) = YEAR(CURRENT_DATE()) 
-AND IF(FormaDePago='Origen',v.IngBrutosOrigen,v.idClienteDestino)='$_POST[idCliente]' AND Eliminado='0' GROUP BY Mes ORDER BY YEAR(v.Fecha),MONTH(v.Fecha)");
+AND IF(FormaDePago='Origen',v.idClienteOrigen,v.idClienteDestino)='$_POST[idCliente]' AND Eliminado='0' GROUP BY Mes ORDER BY YEAR(v.Fecha),MONTH(v.Fecha)");
 
   $Mes = array();
   $Total = array();
@@ -436,7 +436,7 @@ AND IF(FormaDePago='Origen',v.IngBrutosOrigen,v.idClienteDestino)='$_POST[idClie
 if (isset($_POST['EstadisticasEnvios'])) {
 
   $sql = $mysqli->query("SELECT MONTHNAME(v.FechaEntrega) AS Mes,COUNT(v.id) AS Total FROM TransClientes v 
-  WHERE YEAR(v.FechaEntrega) = YEAR(CURRENT_DATE()-1) AND v.Eliminado='0' AND IngBrutosOrigen='$_POST[idCliente]' AND v.Haber=0 GROUP BY Mes ORDER BY YEAR(v.FechaEntrega-1),MONTH(v.FechaEntrega)");
+  WHERE YEAR(v.FechaEntrega) = YEAR(CURRENT_DATE()-1) AND v.Eliminado='0' AND idClienteOrigen='$_POST[idCliente]' AND v.Haber=0 GROUP BY Mes ORDER BY YEAR(v.FechaEntrega-1),MONTH(v.FechaEntrega)");
   $Mes = array();
   $Total = array();
 
@@ -451,7 +451,7 @@ if (isset($_POST['EstadisticasEnvios'])) {
 if (isset($_POST['EstadisticasEnvios'])) {
   if ($_POST['EstadisticasEnvios'] == 2) {
     $result = $mysqli->query("SELECT CONCAT(' semana ', FLOOR(((DAY(v.Fecha) - 1) / 7) + 1)) `name`, COUNT(IF(Flex=0,1,0)) AS Total,SUM(Flex)as Flex FROM TransClientes v 
-      WHERE YEAR(v.Fecha) = YEAR(CURRENT_DATE()-1) AND MONTH(v.Fecha)=MONTH(CURRENT_DATE) AND v.Eliminado='0' AND IngBrutosOrigen='$_POST[idCliente]' AND v.Haber=0 
+      WHERE YEAR(v.Fecha) = YEAR(CURRENT_DATE()-1) AND MONTH(v.Fecha)=MONTH(CURRENT_DATE) AND v.Eliminado='0' AND idClienteOrigen='$_POST[idCliente]' AND v.Haber=0 
       GROUP BY 1 order by `name`");
 
 

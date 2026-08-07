@@ -159,10 +159,10 @@ $.ajax({
             tabletotales.ajax.reload();
 
           }else if(jsonData.success == "2"){
-           $.NotificationApp.send("Error","No seleccionaste ningún cliente origen ","bottom-right","#FFFFFF","error"); 
+           toast("error", "Error", "No seleccionaste ningún cliente origen "); 
 
           }else{
-           $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error"); 
+           toast("error", "Error", "No seleccionaste ningún servicio "); 
            
           }
        }  
@@ -204,11 +204,11 @@ $.ajax({
             tabletotales.ajax.reload();
 
           }else if(jsonData.success == "2"){
-           $.NotificationApp.send("Error","No seleccionaste ningún cliente origen ","bottom-right","#FFFFFF","error"); 
+           toast("error", "Error", "No seleccionaste ningún cliente origen "); 
           }else if(jsonData.success == "3"){
-           $.NotificationApp.send("Error","El importe del Valor Declarado debe ser mayor a $ 5000","bottom-right","#FFFFFF","error"); 
+           toast("error", "Error", "El importe del Valor Declarado debe ser mayor a $ 5000"); 
           }else{
-           $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error"); 
+           toast("error", "Error", "No seleccionaste ningún servicio "); 
            
           }
        }  
@@ -241,7 +241,7 @@ function valordeclarado(a){
 function subir(){
 var dato=document.getElementById('codigo').value;
 if(dato==0){
-$.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error");
+toast("error", "Error", "No seleccionaste ningún servicio ");
 document.getElementById('servicio').style.background='red';
 }else{
   if(document.getElementById('id_origen').value==null){
@@ -276,7 +276,7 @@ $.ajax({
             tabletotales.ajax.reload();
 
           }else{
-           $.NotificationApp.send("Error","No seleccionaste ningún servicio ","bottom-right","#FFFFFF","error"); 
+           toast("error", "Error", "No seleccionaste ningún servicio "); 
            
           }
        }  
@@ -317,7 +317,7 @@ var idOrigen=document.getElementById('id_origen').value;
             var table = $('#basic').DataTable();
             table.ajax.reload();
 
-            $.NotificationApp.send("Listo!","Eliminaste el registro correctamente ","bottom-right","#FFFFFF","success"); 
+            toast("success", "Listo!", "Eliminaste el registro correctamente "); 
             
           }
        }  

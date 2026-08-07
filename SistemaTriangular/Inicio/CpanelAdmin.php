@@ -64,7 +64,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="modal-clientes-title">Ventas Anuales </h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
 
@@ -92,7 +92,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-primary">
                                     <h4 class="modal-title" id="primary-header-modalLabel">Seleccione un Mes</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">x</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">x</button>
                                 </div>
                                 <div class="modal-body">
                                     <select class="form-control select2" data-toggle="select2" id="mes_select">
@@ -114,7 +114,7 @@
                                     </select>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                     <button id="button_mes_select" type="button" class="btn btn-primary">Guardar</button>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -128,7 +128,7 @@
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myLargeModalLabel">Gastos Seleccionados</h4>
 
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <p class="text-muted font-14" id="sub_header_gastos">Desde el 01/04/2022 Hasta el 30/04/2022</p>
@@ -215,7 +215,7 @@
                                             <div class="card widget-flat">
                                                 <div class="card-body bg-danger">
                                                     <div class="dropdown float-right">
-                                                        <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                                        <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                                             <i class="mdi mdi-dots-vertical text-white"></i>
                                                         </a>
                                                         <div class="dropdown-menu dropdown-menu-right">

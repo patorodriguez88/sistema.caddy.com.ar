@@ -149,7 +149,7 @@ function initMap_routes() {
                             
                             if(jsonData.success==1){
                             
-                                $.NotificationApp.send("Registro Actualizado !","Se ha actualizado el Recorrido.","bottom-right","#FFFFFF","success");
+                                toast("success", "Registro Actualizado !", "Se ha actualizado el Recorrido.");
                             
                             }
                         }

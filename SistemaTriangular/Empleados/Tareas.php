@@ -56,7 +56,7 @@
                             <div class="modal-content">
                                 <div class="modal-header bg-warning text-white">
                                     <h5 class="modal-title" id="modalEditarTareaLabel">Editar Tarea</h5>
-                                    <button type="button" class="btn-close" data-dismiss="modal" aria-label="Cerrar"></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                 </div>
                                 <div class="modal-body">
                                     <input type="hidden" id="tarea_id" />
@@ -117,7 +117,7 @@
                                         <i class="dripicons-checkmark h1"></i>
                                         <h4 class="mt-2">Excelente Trabajo!</h4>
                                         <p class="mt-3">Marcaste la tarea como finalizada, ahora hay que esperar la aprobación para sumar los puntos.</p>
-                                        <button type="button" class="btn btn-light my-2" data-dismiss="modal">Continue</button>
+                                        <button type="button" class="btn btn-light my-2" data-bs-dismiss="modal">Continue</button>
                                     </div>
                                 </div>
                             </div><!-- /.modal-content -->
@@ -701,6 +701,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

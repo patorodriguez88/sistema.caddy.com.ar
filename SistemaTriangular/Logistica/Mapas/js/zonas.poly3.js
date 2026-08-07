@@ -455,7 +455,7 @@ initMap();
         // if(jsonData.success==1){
         // console.log('veamos',jsonData.exito);  
         // $("#info-alert-modal").modal('hide');  
-        // $.NotificationApp.send("Exito !","Se movieron "+jsonData.cuenta+" registros.!","bottom-right","#FFFFFF","success");         
+        // toast("success", "Exito !", "Se movieron "+jsonData.cuenta+" registros.!");         
         // initMap();  
         // }
         }

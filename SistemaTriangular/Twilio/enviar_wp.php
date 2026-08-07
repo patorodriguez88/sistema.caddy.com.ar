@@ -118,7 +118,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-success">
                                     <h4 class="modal-title" id="multiple-oneModalLabel">Mensaje a Enviar</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <h5 class="mt-0">Mensaje al Cliente</h5>
@@ -141,9 +141,9 @@
                                         Por favor, selecciona una de estas opciones. Gracias ✨</p> -->
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-block btn-light" data-target="#multiple-two" data-toggle="modal" data-dismiss="modal">Aceptar Entrega</button>
-                                    <button type="button" class="btn btn-block btn-light" id="btnReprogramarEntrega" data-recorrido="1352" data-dismiss="modal">Reprogramar Entrega</button>
-                                    <button type="button" class="btn btn-block btn-light" id="btnCancelarEntrega" data-dismiss="modal" data-toggle="modal" data-dismiss="modal">Cancelar Entrega</button>
+                                    <button type="button" class="btn btn-block btn-light" data-bs-target="#multiple-two" data-bs-toggle="modal" data-bs-dismiss="modal">Aceptar Entrega</button>
+                                    <button type="button" class="btn btn-block btn-light" id="btnReprogramarEntrega" data-recorrido="1352" data-bs-dismiss="modal">Reprogramar Entrega</button>
+                                    <button type="button" class="btn btn-block btn-light" id="btnCancelarEntrega" data-bs-dismiss="modal" data-bs-toggle="modal" data-bs-dismiss="modal">Cancelar Entrega</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
@@ -154,7 +154,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-success">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Recibir Hoy</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
 
@@ -163,7 +163,7 @@
                                         Gracias por usar Caddy 🚚.</p>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
@@ -174,18 +174,18 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-waring">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Reprogramar Entrega</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
 
 
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal" data-target="#multiple-four">1</button>
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal" data-target="#multiple-four">2</button>
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal" data-target="#multiple-four">3</button>
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal" data-target="#multiple-four">4</button>
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal" data-target="#multiple-four">5</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#multiple-four">1</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#multiple-four">2</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#multiple-four">3</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#multiple-four">4</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal" data-bs-target="#multiple-four">5</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
@@ -196,7 +196,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-waring">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Informar Horario</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
 
@@ -208,7 +208,7 @@
                                     </p>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
@@ -219,13 +219,13 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-danger">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Cancelar Entrega</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <p>❌ Tu pedido ha sido cancelado. Si fue un error, escribinos y lo solucionamos. </p>
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-primary" data-bs-dismiss="modal">Close</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
@@ -247,7 +247,7 @@
 
                     <div class="row">
                         <div class="col-12 text-end">
-                            <button type="button" class="btn btn-secondary mb-2" data-toggle="modal" data-target="#multiple-one">Mensaje a Enviar</button>
+                            <button type="button" class="btn btn-secondary mb-2" data-bs-toggle="modal" data-bs-target="#multiple-one">Mensaje a Enviar</button>
                             <button id="btn_enviar_seleccionados" class="btn btn-success mb-2">
                                 <span class="spinner-border spinner-border-sm me-2 d-none" id="spinner_envio" role="status" aria-hidden="true"></span>
                                 <span id="texto_envio">Enviar seleccionados</span>

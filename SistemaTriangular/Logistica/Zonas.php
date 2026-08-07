@@ -136,8 +136,8 @@
                                     <div class="tab-content">
                                         <div class="tab-pane show active mb-3" id="default-buttons-preview">
                                             <div class="button-list">
-                                                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#zona-modal">Agregar Zona</button>
-                                                <!--                                                     <button type="button" class="btn btn-secondary" data-toggle="modal"  data-target="#renderizar-modal">Secondary</button> -->
+                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#zona-modal">Agregar Zona</button>
+                                                <!--                                                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal"  data-bs-target="#renderizar-modal">Secondary</button> -->
                                             </div>
                                         </div>
                                     </div>
@@ -246,6 +246,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

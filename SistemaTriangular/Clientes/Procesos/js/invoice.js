@@ -147,21 +147,9 @@ $("#button_sendmail").click(function () {
             var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
 
             if (jsonData.success == 1) {
-              $.NotificationApp.send(
-                "Correo enviado con éxito !",
-                `El comprobante fue enviado a ${$("#txtEmail").val()}`,
-                "bottom-right",
-                "#FFFFFF",
-                "success",
-              );
+              toast("success", "Correo enviado con éxito !", `El comprobante fue enviado a ${$("#txtEmail").val()}`);
             } else {
-              $.NotificationApp.send(
-                "Correo no enviado !",
-                `El comprobante no fue enviado Error: ${jsonData.error}`,
-                "bottom-right",
-                "#FFFFFF",
-                "danger",
-              );
+              toast("error", "Correo no enviado !", `El comprobante no fue enviado Error: ${jsonData.error}`);
             }
 
             //UPDATE EN NOTIFICATIONS
@@ -561,25 +549,13 @@ $(document).ready(function () {
         success: function (response) {
           var jsonData = typeof response === 'string' ? JSON.parse(response) : response;
           if (jsonData.success == 1) {
-            $.NotificationApp.send(
-              "Registro Actualizado !",
-              "Se han realizado cambios.",
-              "bottom-right",
-              "#FFFFFF",
-              "success",
-            );
+            toast("success", "Registro Actualizado !", "Se han realizado cambios.");
             $("#codigocliente_t").val("");
             var table = $("#tabla_facturacion_proforma").DataTable();
             table.ajax.reload();
             $("#standard-modal-codcliente").modal("hide");
           } else {
-            $.NotificationApp.send(
-              "Ocurrio un Error !",
-              "No se realizaron cambios.",
-              "bottom-right",
-              "#FFFFFF",
-              "danger",
-            );
+            toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
           }
         },
       });

@@ -59,7 +59,7 @@ include_once "../Conexion/Conexion.php";
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title">Loading...</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div class="modal-body">
                                     <a>Actualizando datos... aguarde por favor...</a>
@@ -76,7 +76,7 @@ include_once "../Conexion/Conexion.php";
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-primary">
                                   <h4 class="modal-title" id="myCenterModalLabel">MODIFICAR OBSERVACIONES #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <div class="col-lg-12 mt-3">
                               <div class="selector-recorrido form-group">
@@ -86,7 +86,7 @@ include_once "../Conexion/Conexion.php";
                             </div>
                             <div class="modal-footer mt-3">
                                 <input type="hidden" id="cs_modificar_REC">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificar_obs_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                         </div>
@@ -266,10 +266,10 @@ include_once "../Conexion/Conexion.php";
 
                                     <div class="d-print-none mt-4">
                                         <div class="text-right">
-                                          <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
+                                          <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                             <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                            <a id="send_mail" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Enviar</a>  
-                                            <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>   -->
+                                            <a id="send_mail" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Enviar</a>  
+                                            <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>   -->
                                             <!-- <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick mr-1"></i>Cancelar</a>   -->
                                       </div>
                                     </div>   

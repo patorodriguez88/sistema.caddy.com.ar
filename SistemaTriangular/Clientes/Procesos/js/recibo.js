@@ -115,9 +115,9 @@ $('#button_sendmail').click(function() {
                 var jsonData = JSON.parse(response);
 
                 if(jsonData.success==1){
-                    $.NotificationApp.send("Correo enviado con éxito !", `El comprobante fue enviado a ${$('#txtEmail').val()}`, "bottom-right", "#FFFFFF", "success");
+                    toast("success", "Correo enviado con éxito !", `El comprobante fue enviado a ${$('#txtEmail').val()}`);
                 }else{
-                    $.NotificationApp.send("Correo no enviado !", `El comprobante no fue enviado Error: ${jsonData.error}`, "bottom-right", "#FFFFFF", "danger");
+                    toast("error", "Correo no enviado !", `El comprobante no fue enviado Error: ${jsonData.error}`);
                 }
 
                 //UPDATE EN NOTIFICATIONS

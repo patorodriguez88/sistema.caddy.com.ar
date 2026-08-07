@@ -111,21 +111,9 @@ $("#button_date_blocked").click(function () {
         var jsonData = JSON.parse(response);
 
         if (jsonData.Result_Fechas === 1) {
-          $.NotificationApp.send(
-            "Exito !",
-            "Fecha modificada con éxito !",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Exito !", "Fecha modificada con éxito !");
         } else {
-          $.NotificationApp.send(
-            "Error !",
-            "No fue posible actualizar la fecha",
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
+          toast("error", "Error !", "No fue posible actualizar la fecha");
         }
 
         $("#date-modal").modal("hide");
@@ -470,20 +458,8 @@ function seguimiento(cs) {
             .addClass("breadcrumb-item");
         } else {
           $("#info-alert-modal").modal("hide");
-          $.NotificationApp.send(
-            "Error !",
-            "No existen datos para el codigo " + id,
-            "bottom-right",
-            "#FFFFFF",
-            "danger",
-          );
-          $.NotificationApp.send(
-            "Error",
-            "No existen datos para el codigo " + id,
-            "bottom-right",
-            "danger",
-            "Error",
-          );
+          toast("error", "Error !", "No existen datos para el codigo " + id);
+          toast("error", "Error", "No existen datos para el codigo " + id);
         }
       },
     });
@@ -857,11 +833,7 @@ function seguimiento(cs) {
                   $("#formadepago_b").html("Forma De Pago : Destino");
                 }
                 $("#info-alert-modal").modal("hide");
-                $.NotificationApp.send(
-                  "Exito",
-                  "Modificamos Forma De Pago",
-                  "success",
-                );
+                toast("success", "Exito", "Modificamos Forma De Pago");
               }
             },
           });
@@ -899,11 +871,7 @@ function seguimiento(cs) {
                   $("#cobrarcaddy_b").html("Cobrar Caddy : No");
                 }
                 $("#info-alert-modal").modal("hide");
-                $.NotificationApp.send(
-                  "Exito",
-                  "Modificamos Cobrar Caddy",
-                  "success",
-                );
+                toast("success", "Exito", "Modificamos Cobrar Caddy");
               }
             },
           });
@@ -944,11 +912,7 @@ function seguimiento(cs) {
                     $("#estadohdr_b").html("Estado en HDR : Cerrado");
                   }
 
-                  $.NotificationApp.send(
-                    "Éxito",
-                    "Modificamos el estado en Hoja de Ruta",
-                    "success",
-                  );
+                  toast("success", "Éxito", "Modificamos el estado en Hoja de Ruta");
                   // actualizar DOM si es necesario
                 }
               } catch (e) {
@@ -993,11 +957,7 @@ function seguimiento(cs) {
                   $("#cobrarenvio_b").html("Cobrar Envio : No");
                 }
                 $("#info-alert-modal").modal("hide");
-                $.NotificationApp.send(
-                  "Exito",
-                  "Modificamos Cobrar Envio",
-                  "success",
-                );
+                toast("success", "Exito", "Modificamos Cobrar Envio");
               }
             },
           });
@@ -1143,23 +1103,11 @@ $("#btn_confirmar_eliminacion").click(function () {
       var jsonData = JSON.parse(response);
 
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Listo!",
-          "Seguimiento Eliminado",
-          "bottom-right",
-          "#FFFFFF",
-          "success",
-        );
+        toast("success", "Listo!", "Seguimiento Eliminado");
         var datatable_seguimiento = $("#seguimiento_tabla").DataTable();
         datatable_seguimiento.ajax.reload();
       } else {
-        $.NotificationApp.send(
-          "Error!",
-          "No se pudo eliminar el seguimiento",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Error!", "No se pudo eliminar el seguimiento");
       }
     },
   });

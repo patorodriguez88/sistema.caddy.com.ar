@@ -586,7 +586,7 @@
 
                                     <div class="text-end">
                                         <button id="form_multiple-two_cancel" type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
-                                        <button id="button_volver" type="button" class="btn btn-primary" data-target="#add-new-modal" data-toggle="modal" data-bs-dismiss="modal">Volver</button>
+                                        <button id="button_volver" type="button" class="btn btn-primary" data-bs-target="#add-new-modal" data-bs-toggle="modal" data-bs-dismiss="modal">Volver</button>
                                         <button id="crear_externo" type="button" class="btn btn-success">Finalizar</button>
                                     </div>
                             </div>
@@ -609,8 +609,8 @@
                                         </div>
 
                                         <div class="col-md-6 text-end">
-                                            <a id="button_liquidaciones" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
-                                            <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
+                                            <a id="button_liquidaciones" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
+                                            <a id="button_agregar_externo" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
                                             <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
                                             <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
                                             <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
@@ -686,6 +686,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

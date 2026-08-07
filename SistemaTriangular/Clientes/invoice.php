@@ -494,7 +494,7 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
             <div class="modal-content">
               <div class="modal-header modal-colored-header bg-primary">
                 <h4 class="modal-title" id="compose-header-modalLabel">Enviar Factura</h4>
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
               </div>
 
 
@@ -523,8 +523,8 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
                   <input type="hidden" name="txtVencimiento" id="txtVencimiento">
                   <input type="hidden" name="txtNumfactura" id="txtNumfactura">
 
-                  <button id="button_sendmail" type="button" class="btn btn-primary" data-dismiss="modal"><i class="mdi mdi-send mr-1"></i> Send Message</button>
-                  <button type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                  <button id="button_sendmail" type="button" class="btn btn-primary" data-bs-dismiss="modal"><i class="mdi mdi-send mr-1"></i> Send Message</button>
+                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                 </form>
               </div>
             </div><!-- /.modal-content -->
@@ -875,6 +875,8 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
   <!-- funciones -->
   <script src="Procesos/js/invoice.js"></script>
   <script src="../Funciones/js/datosempresa.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

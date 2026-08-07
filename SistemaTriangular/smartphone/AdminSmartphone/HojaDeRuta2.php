@@ -391,13 +391,13 @@ function cuenta(){
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-modal-title"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro <a id="id_eliminar"></a></h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                                
                               </div>
                               <div class="modal-footer">
-                                  <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                  <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                   <button id="warning-modal-ok"type="button" class="btn btn-danger">Eliminar</button>
                               </div>
                           </div><!-- /.modal-content -->

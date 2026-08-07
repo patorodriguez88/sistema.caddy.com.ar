@@ -115,7 +115,7 @@
            data: 'action=update&title='+info.event.title+'&start='+moment(info.event.start).format()+'&id='+info.event.id,
            type: "POST",
            success: function(json) {
-           $.NotificationApp.send("Listo!","Movimos el registro correctamente ","bottom-right","#FFFFFF","info");     
+           toast("info", "Listo!", "Movimos el registro correctamente ");     
            }
          });
       }
@@ -175,7 +175,7 @@
            type: "POST",
            success: function(json) {
            if(json==1){
-           $.NotificationApp.send("Listo!","Eliminaste el registro correctamente ","bottom-right","#FFFFFF","success");   
+           toast("success", "Listo!", "Eliminaste el registro correctamente ");   
            }  
            }
        });   

@@ -461,7 +461,7 @@ if (isset($_POST['ClearTarifa'])) {
 
 if (isset($_POST['Tablero'])) {
   $sqlultfac = "SELECT Fecha,IFNULL(Debe,0)as Debe,TipoDeComprobante,NumeroComprobante FROM TransClientes 
-WHERE Eliminado='0' AND Debe<>'0' AND IngBrutosOrigen='$_POST[id]' ORDER BY Fecha DESC limit 0,1";
+WHERE Eliminado='0' AND Debe<>'0' AND idClienteOrigen='$_POST[id]' ORDER BY Fecha DESC limit 0,1";
   $Resultadoultfac = $mysqli->query($sqlultfac);
   $rowultfac = $Resultadoultfac->fetch_array(MYSQLI_ASSOC);
 
@@ -479,7 +479,7 @@ WHERE Eliminado='0' AND Debe<>'0' AND IngBrutosOrigen='$_POST[id]' ORDER BY Fech
 
 
   $sqlpenultfac = "SELECT Fecha,IFNULL(Debe,0)as Debe,TipoDeComprobante,NumeroComprobante FROM TransClientes 
-WHERE Eliminado='0' AND Debe<>'0' AND IngBrutosOrigen='$_POST[id]' ORDER BY Fecha DESC limit 1,1";
+WHERE Eliminado='0' AND Debe<>'0' AND idClienteOrigen='$_POST[id]' ORDER BY Fecha DESC limit 1,1";
   $Resultadopenultfac = $mysqli->query($sqlpenultfac);
   $rowpenultfac = $Resultadopenultfac->fetch_array(MYSQLI_ASSOC);
 
@@ -496,27 +496,27 @@ WHERE Eliminado='0' AND Debe<>'0' AND IngBrutosOrigen='$_POST[id]' ORDER BY Fech
   }
   //ULTIMO PAGO
   $sqlultpago = "SELECT Fecha,IFNULL(Haber,0)as Haber FROM TransClientes 
-WHERE Eliminado='0' AND Haber<>'0' AND IngBrutosOrigen='$_POST[id]' ORDER BY Fecha DESC limit 0,1";
+WHERE Eliminado='0' AND Haber<>'0' AND idClienteOrigen='$_POST[id]' ORDER BY Fecha DESC limit 0,1";
   $Resultadoultpago = $mysqli->query($sqlultpago);
   $rowultpago = $Resultadoultpago->fetch_array(MYSQLI_ASSOC);
 
-  $sqlsaldo = "SELECT IFNULL(SUM(Debe-Haber),0)as Saldo FROM TransClientes WHERE IngBrutosOrigen='$_POST[id]' AND Eliminado='0'";
+  $sqlsaldo = "SELECT IFNULL(SUM(Debe-Haber),0)as Saldo FROM TransClientes WHERE idClienteOrigen='$_POST[id]' AND Eliminado='0'";
   $Resultadosaldo = $mysqli->query($sqlsaldo);
   $rowsaldo = $Resultadosaldo->fetch_array(MYSQLI_ASSOC);
 
   //MES ACTUAL  
-  $sql = "SELECT IFNULL(SUM(Debe),0)as Total FROM TransClientes WHERE IngBrutosOrigen='$_POST[id]' AND Eliminado='0'  
+  $sql = "SELECT IFNULL(SUM(Debe),0)as Total FROM TransClientes WHERE idClienteOrigen='$_POST[id]' AND Eliminado='0'  
 AND YEAR(Fecha)=YEAR(CURRENT_DATE()) AND MONTH(Fecha)= MONTH(CURRENT_DATE())";
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
 
   //AÑO PASADO
-  $sqlanoant = "SELECT IFNULL(SUM(Debe),0)as Total FROM TransClientes WHERE IngBrutosOrigen='$_POST[id]' AND Eliminado='0'  
+  $sqlanoant = "SELECT IFNULL(SUM(Debe),0)as Total FROM TransClientes WHERE idClienteOrigen='$_POST[id]' AND Eliminado='0'  
 AND YEAR(Fecha)=YEAR(CURRENT_DATE())-1";
   $Resultadoanoant = $mysqli->query($sqlanoant);
   $rowanoant = $Resultadoanoant->fetch_array(MYSQLI_ASSOC);
 
-  $sqlano = "SELECT IFNULL(SUM(Debe),0)as Total FROM TransClientes WHERE IngBrutosOrigen='$_POST[id]' AND Eliminado='0'  
+  $sqlano = "SELECT IFNULL(SUM(Debe),0)as Total FROM TransClientes WHERE idClienteOrigen='$_POST[id]' AND Eliminado='0'  
 AND YEAR(Fecha)=YEAR(CURRENT_DATE())";
   $Resultadoano = $mysqli->query($sqlano);
   $rowano = $Resultadoano->fetch_array(MYSQLI_ASSOC);

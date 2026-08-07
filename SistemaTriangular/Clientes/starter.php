@@ -107,7 +107,7 @@ header("location:https://www.caddy.com.ar/sistema");
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">MODIFICAR #</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                             <form id="form">
                               <div class="modal-body mb-3">
@@ -196,7 +196,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                 
                               <div class="modal-footer mt-3">
                                 <!-- <input type="hidden" id="id_modificar"> -->
-                                <button type="button" class="btn btn-light" data-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal" data-bs-toggle="tooltip" data-bs-placement="bottom" title="Tooltip on bottom">Cerrar</button>
                                 <button id="modificardireccion_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                             </div>
                           </div><!-- /.modal-content -->
@@ -283,7 +283,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                 </div>
                               <div class="modal-footer mt-3">
                                 <input type="hidden" id="id_modificar">
-                                <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificarventas_ok" type="button" class="btn btn-success">Guardar Cambios</button>
                                 <button id="agregarventas_ok" type="button" class="btn btn-success" style="display:none">Agregar Venta</button>
                             </div>
@@ -299,7 +299,7 @@ header("location:https://www.caddy.com.ar/sistema");
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               
@@ -308,7 +308,7 @@ header("location:https://www.caddy.com.ar/sistema");
                             <input type="hidden" id="codigoseguimiento_eliminar">  
                             <div class="modal-footer">
       
-                              <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                               <button id="warning-modal-ok"type="button" class="btn btn-danger">Eliminar</button>
                               <button id="warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                             </div>
@@ -322,7 +322,7 @@ header("location:https://www.caddy.com.ar/sistema");
                     <div class="modal-content">
                         <div class="modal-header">
                             <h4 class="modal-title" id="myLargeModalLabel">Asignar Salidas a la Cuenta Corriente del Cliente</h4>
-                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                         </div>
                         <div class="modal-body">
                         
@@ -366,7 +366,7 @@ header("location:https://www.caddy.com.ar/sistema");
                     <div class="modal-content">
                         <div class="modal-header modal-colored-header bg-primary">
                             <h4 class="modal-title" id="myCenterModalLabel_codcliente"></h4>
-                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                         </div>
                           <div class="col-lg-12 mt-3">
 
@@ -377,7 +377,7 @@ header("location:https://www.caddy.com.ar/sistema");
                           </div>
                           <div class="modal-footer mt-3">
                               <input type="hidden" id="cs_codigocliente">
-                              <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                              <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                               <button id="modificarcodigocliente_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
                           </div>
                   </div>
@@ -392,7 +392,7 @@ header("location:https://www.caddy.com.ar/sistema");
                             <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
                             <div class="text-sm-right">
                                 <button id="cambiar_estado" type="button" class="btn btn-light" aria-hidden="true">Cambiar Estado</button>
-                            <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                            <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                         </div>
                         <div class="modal-body">
@@ -475,7 +475,7 @@ header("location:https://www.caddy.com.ar/sistema");
                   <div class="modal-content modal-filled bg-warning">
                       <div class="modal-header">
                           <h4 class="modal-title" id="fill-warning-modalLabel">Cambiar Estado de Servicio</h4>
-                          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                          <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                       </div>
                       <div class="modal-body">
                         Estas por cambiar el estado del servicio a No entregado.
@@ -486,7 +486,7 @@ header("location:https://www.caddy.com.ar/sistema");
                           <input type="hidden" id="codigo_seguimiento">
                       </div>
                       <div class="modal-footer">
-                          <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                           <button id="cambiar_estado_ok" type="button" class="btn btn-outline-light">Save changes</button>
                       </div>
                   </div><!-- /.modal-content -->
@@ -499,7 +499,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-warning">
                     <h4 class="modal-title" id="standard-modalLabel">Aplicar Descuento a Comprobante</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                   </div>
                   <div class="modal-body">
                     <div class="row">
@@ -528,7 +528,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-info">
                     <h4 class="modal-title" id="info-header-modalLabel">Facturacion</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                   </div>
                   <div class="modal-body">
                     <div 
@@ -631,7 +631,7 @@ header("location:https://www.caddy.com.ar/sistema");
                   </div>
                   <div class="modal-footer">
                     <a id="confirmarfactura_boton_cnl" class="btn btn-danger">Cancelar</a>
-                    <a id="confirmarfactura_boton" class="btn btn-success" data-dismiss="modal">Confirmar</a>
+                    <a id="confirmarfactura_boton" class="btn btn-success" data-bs-dismiss="modal">Confirmar</a>
                   </div>
                 </div>
                 <!-- /.modal-content -->
@@ -646,7 +646,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-info">
                     <h4 class="modal-title" id="Facturacion_recorridos-modalLabel">Facturacion</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                   </div>
                   <div class="modal-body">
                     <div class="row">
@@ -747,7 +747,7 @@ header("location:https://www.caddy.com.ar/sistema");
                   </div>
                   <div class="modal-footer">
                     <a id="confirmarfactura_boton_cnl_r" class="btn btn-danger">Cancelar</a>
-                    <a id="confirmarfacturaxrecorrido_boton" class="btn btn-success" data-dismiss="modal">Confirmar</a>
+                    <a id="confirmarfacturaxrecorrido_boton" class="btn btn-success" data-bs-dismiss="modal">Confirmar</a>
                   </div>
                 </div>
                 <!-- /.modal-content -->
@@ -763,7 +763,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-success">
                     <h4 class="modal-title" id="standard-modalLabel">Cargar Pago</h4>
-                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                   </div>
                   <div class="modal-body">
 
@@ -877,7 +877,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                     <form method="POST" class="needs-validation"  data-toggle="validator" data-disable="false" >
                                       <div class="modal-header modal-colored-header bg-success">
                                           <h4 class="modal-title" id="success-header-modalLabel">Crear Nuevo Cliente</h4>
-                                          <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                          <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                       </div>
                                       <div class="modal-body">
                                         <div id="errorname" class="alert alert-warning" role="alert" style="display:none">
@@ -935,7 +935,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                       </form>
                                          </div>
                                       <div class="modal-footer">
-                                          <button type="button" class="btn btn-light" data-dismiss="modal">Cancelar</button>
+                                          <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                           <button id="AgregarCliente" type="button" class="btn btn-success">Agregar Cliente</button>
                                       </div>
                                   </div><!-- /.modal-content -->
@@ -949,7 +949,7 @@ header("location:https://www.caddy.com.ar/sistema");
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="mySmallModalLabel">Observaciones</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="observaciones_body" class="modal-body">
                                     
@@ -975,9 +975,9 @@ header("location:https://www.caddy.com.ar/sistema");
                         <div class="text-sm-right">
                           
 <!--                           <button id="agregartarifa_botton" type="button" class="btn btn-warning" style="display:none"><i class="mdi mdi-rocket mr-1"></i> <span>Agregar Tarifa</span> </button> -->
-                          <button id="descuento_botton" type="button" class="btn btn-warning" style="display:none" data-toggle="modal" data-target="#descuento-modal"><i class="mdi mdi-account-cash-outline mr-1"></i> <span>Aplicar Descuento</span> </button>
-                          <button id="cargarpago_botton" type="button" class="btn btn-success" style="display:none" data-toggle="modal" data-target="#standard-modal"><i class="mdi mdi-account-cash-outline mr-1"></i> <span>Cargar Pago</span> </button>
-                          <a  id="crearcliente" class="btn btn-success" data-parent="Origen" data-toggle="modal" data-target="#nuevocliente-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i> Agregar Cliente</a>     
+                          <button id="descuento_botton" type="button" class="btn btn-warning" style="display:none" data-bs-toggle="modal" data-bs-target="#descuento-modal"><i class="mdi mdi-account-cash-outline mr-1"></i> <span>Aplicar Descuento</span> </button>
+                          <button id="cargarpago_botton" type="button" class="btn btn-success" style="display:none" data-bs-toggle="modal" data-bs-target="#standard-modal"><i class="mdi mdi-account-cash-outline mr-1"></i> <span>Cargar Pago</span> </button>
+                          <a  id="crearcliente" class="btn btn-success" data-parent="Origen" data-bs-toggle="modal" data-bs-target="#nuevocliente-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i> Agregar Cliente</a>     
                           <button id="guardar_botton" type="button" class="btn btn-success" style="display:none"><i class="mdi mdi-cloud mr-1"></i> <span>Guardar</span> </button>
                         </div>
                       </div>
@@ -985,43 +985,43 @@ header("location:https://www.caddy.com.ar/sistema");
                     
                     <ul class="nav nav-pills bg-nav-pills nav-justified mb-3 d-print-none" id="steps" style="display:none">
                       <li class="nav-item">
-                        <a href="#dashboard-information" data-toggle="tab" aria-expanded="true" class="nav-link rounded-0 active" id="botontablero">
+                        <a href="#dashboard-information" data-bs-toggle="tab" aria-expanded="true" class="nav-link rounded-0 active" id="botontablero">
                           <i class="mdi mdi-truck-fast font-18"></i>
                           <span class="d-none d-lg-block">Tablero</span>
                         </a>
                       </li>
                       <li class="nav-item">
-                        <a href="#billing-information" data-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botondatos">
+                        <a href="#billing-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botondatos">
                           <i class="mdi mdi-account-circle font-18"></i>
                           <span class="d-none d-lg-block">Datos Cliente</span>
                         </a>
                       </li>
                       <li class="nav-item">
-                        <a href="#ctacte-information" data-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botoncta">
+                        <a href="#ctacte-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botoncta">
                         <i class="mdi mdi-cash-multiple font-18"></i>
                         <span class="d-none d-lg-block">Cuenta Corriente</span>
                       </a>
                       </li>
                       <li class="nav-item">
-                        <a href="#relaciones-information" data-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botonrelacion">
+                        <a href="#relaciones-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botonrelacion">
                           <i class="mdi mdi-account-arrow-right font-18"></i>
                           <span class="d-none d-lg-block">Relaciones</span>
                         </a>
                       </li>
                       <li class="nav-item">
-                        <a href="#tarifas-information" data-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botontarifas">
+                        <a href="#tarifas-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botontarifas">
                           <i class="mdi mdi-account-cash font-18"></i>
                           <span class="d-none d-lg-block">Tarifas</span>
                         </a>
                       </li>
                       <li class="nav-item">
-                        <a href="#facturacion-information" data-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botonfacturacion">
+                        <a href="#facturacion-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botonfacturacion">
                           <i class="mdi mdi-cash-multiple font-18"></i>
                           <span class="d-none d-lg-block">Guias de Carga</span>
                       </a>
                       </li>
                       <li class="nav-item">
-                        <a href="#estadisticas-information" data-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botonestadisticas">
+                        <a href="#estadisticas-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link rounded-0" id="botonestadisticas">
                           <i class="mdi mdi-chart-line font-18"></i>
                           <span class="d-none d-lg-block">Estadisticas</span>
                       </a>
@@ -1119,13 +1119,13 @@ header("location:https://www.caddy.com.ar/sistema");
 
                                <ul class="nav nav-tabs nav-bordered mb-3">
                                   <li class="nav-item">
-                                      <a href="#home-b1" data-toggle="tab" aria-expanded="true" class="nav-link active">
+                                      <a href="#home-b1" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
                                           <i class="mdi mdi-home-variant d-md-none d-block"></i>
                                           <span class="d-none d-md-block">Datos Generales</span>
                                       </a>
                                   </li>
                                   <li class="nav-item">
-                                      <a href="#profile-b1" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a href="#profile-b1" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-account-circle d-md-none d-block"></i>
                                           <span id="pefril_facturacion"class="d-none d-md-block">Datos Facturacion</span>
                                       </a>
@@ -1529,25 +1529,25 @@ header("location:https://www.caddy.com.ar/sistema");
                             <h4 class="mt-2">Facturacion</h4>
                             <ul class="nav nav-tabs nav-bordered mb-3">
                                   <li class="nav-item">
-                                      <a id="guias_todas_boton" href="#guias_todas" data-toggle="tab" aria-expanded="true" class="nav-link active">
+                                      <a id="guias_todas_boton" href="#guias_todas" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
                                           <i class="mdi mdi-home-variant d-md-none d-block"></i>
                                           <span class="d-none d-md-block">Guias a Facturar</span>
                                       </a>
                                   </li>
                                   <li class="nav-item">
-                                      <a id="recorridos_boton" href="#recorridos" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a id="recorridos_boton" href="#recorridos" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-home-variant d-md-none d-block"></i>
                                           <span class="d-none d-md-block">Recorridos a Facturar</span>
                                       </a>
                                   </li>
                                   <li class="nav-item">
-                                      <a id="guias_recibidas_boton" href="#guias_recibidas" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a id="guias_recibidas_boton" href="#guias_recibidas" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-account-circle d-md-none d-block"></i>
                                           <span class="d-none d-md-flex">Guias Recibidas</span>
                                       </a>
                                   </li>
                                  <li class="nav-item">
-                                      <a id="guias_enviadas_boton" href="#guias_enviadas" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a id="guias_enviadas_boton" href="#guias_enviadas" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-account-circle d-md-none d-block"></i>
                                           <span class="d-none d-md-flex">Guias Enviadas</span>
                                       </a>
@@ -1697,7 +1697,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                </div>
                                <div class="d-print-none mt-4">
                                         <div class="text-right">
-                                          <a id="ingresar_recorridos" type="button" class="btn btn-primary" data-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-printer mr-1"></i>Ingresar Recorridos</a>
+                                          <a id="ingresar_recorridos" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-printer mr-1"></i>Ingresar Recorridos</a>
                                           <a id="facturar_recorridos_boton" type="button" class="btn btn-warning"><i class="mdi mdi-printer mr-1"></i> <span> Generar Comprobante </span></a>
                                       </div>
                                     </div>   
@@ -1905,10 +1905,10 @@ header("location:https://www.caddy.com.ar/sistema");
 
                                     <div class="d-print-none mt-4">
                                         <div class="text-right">
-                                          <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
+                                          <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                             <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                            <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
-                                            <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
+                                            <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
+                                            <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
                                             <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick mr-1"></i>Cancelar</a>  
                                       </div>
                                     </div>   
@@ -2037,5 +2037,7 @@ header("location:https://www.caddy.com.ar/sistema");
               <script async defer
               src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=BuscarDireccion">
               </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     </body>
 </html>

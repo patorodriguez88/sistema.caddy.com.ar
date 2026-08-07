@@ -154,7 +154,7 @@ $('#imp_rot').click(function writeToSelectedPrinter(){
             '^FO0,300^GB850,1,1^FS'+
             '^LH0,320^FX  HEADER  ^FS'+
             '^FO120,0^A0N,20,20^FH^FDOrigen^FS'+
-            '^FO120,22^A0N,24,24^FH^FDNombre: #'+ d.IngBrutosOrigen+ ' ' +d.RazonSocial +'^FS'+
+            '^FO120,22^A0N,24,24^FH^FDNombre: #'+ d.idClienteOrigen+ ' ' +d.RazonSocial +'^FS'+
             '^FO120,65^A0N,24,24^FB660,2,0,L^FH^FDDireccion Destino: '+ d.DomicilioOrigen +'^FS'+
             '^FO120,100^A0N,24,24^FB660,2,0,L^FH^FD  CP 1437^FS'+
             '^FO120,135^A0N,24,24^FDN.Venta: ^FS'+
@@ -247,7 +247,7 @@ $.ajax({
             '^FO0,300^GB850,1,1^FS'+
             '^LH0,320^FX  HEADER  ^FS'+
             '^FO120,0^A0N,20,20^FH^FDOrigen^FS'+
-            '^FO120,22^A0N,24,24^FH^FDNombre: #'+ d.IngBrutosOrigen+ ' ' +d.RazonSocial +'^FS'+
+            '^FO120,22^A0N,24,24^FH^FDNombre: #'+ d.idClienteOrigen+ ' ' +d.RazonSocial +'^FS'+
             '^FO120,65^A0N,24,24^FB660,2,0,L^FH^FDDireccion Destino: '+ d.DomicilioOrigen +'^FS'+
             '^FO120,100^A0N,24,24^FB660,2,0,L^FH^FD  CP 1437^FS'+
             '^FO120,135^A0N,24,24^FDN.Venta: ^FS'+

@@ -77,7 +77,7 @@ $.ajax({
           var table = $('#basic').DataTable();
           table.ajax.reload();
 
-          $.NotificationApp.send("Listo!","Redespacho cargado correctamente ","bottom-right","#FFFFFF","success"); 
+          toast("success", "Listo!", "Redespacho cargado correctamente "); 
           $('#redespacho').html('Redespacho');
           $('#button-redespacho').removeClass( "btn btn-secondary text-white" ).addClass( "btn btn-warning text-white" );           
           $('#redespacho_nc').val(1);

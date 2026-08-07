@@ -35,7 +35,7 @@ if($_POST['Pendientes']==1){
 
 if($_POST['BuscarDatos']==1){
   $id=$_POST[id];
-  $sql="SELECT FechaEntrega,sla,FechaPrometida,ingBrutosOrigen as idClienteOrigen,RazonSocial as ClienteOrigen,Fecha,COUNT(TransClientes.id)as Total,
+  $sql="SELECT FechaEntrega,sla,FechaPrometida,idClienteOrigen,RazonSocial as ClienteOrigen,Fecha,COUNT(TransClientes.id)as Total,
   SUM(Entregado)as Entregados,SUM(Cantidad)as Cantidad,Recorridos.Nombre as RecorridosName,Recorridos.Zona as Zona  
   FROM `TransClientes` INNER JOIN Recorridos ON TransClientes.Recorrido=Recorridos.Numero  
   WHERE  Eliminado=0 AND NumeroVenta='$id'";

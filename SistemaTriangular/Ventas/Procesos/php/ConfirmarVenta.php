@@ -346,9 +346,9 @@ $Fecha = date("Y-m-d");
 $Hora = date("H:i");
 $state = $Estado;
 $CodigoSeguimiento = $Seguimiento;
-$sql = $mysqli->query("SELECT ingBrutosOrigen,idClienteDestino,CodigoProveedor FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0");
+$sql = $mysqli->query("SELECT idClienteOrigen,idClienteDestino,CodigoProveedor FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0");
 $idCliente = $sql->fetch_array(MYSQLI_ASSOC);
-$idClienteOrigen = $idCliente['ingBrutosOrigen'];
+$idClienteOrigen = $idCliente['idClienteOrigen'];
 $idClienteDestino = $idCliente['idClienteDestino'];
 
 //SI TENGO NUMERO DE PROVEEDOR DEL CLIENTE ENVIO WEBHOOK

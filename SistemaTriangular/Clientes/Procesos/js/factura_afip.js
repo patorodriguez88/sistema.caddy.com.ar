@@ -127,9 +127,9 @@ var ncomp = $('#ncomprobante_up').val();
         
             if (jsonData.CAE != '') {                                    
             
-            $('#warning_icono').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-checkmark h1 text-success');
+            $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-checkmark h1 text-success');
         
-            $('#warning_mt2').html('Exito !');
+            $('#warning_mt2_alert').html('Exito !');
 
             $("#warning_text").html("Exito ! Comprobante N "+jsonData.Numero);
             
@@ -149,8 +149,8 @@ var ncomp = $('#ncomprobante_up').val();
             
             }else{
 
-            $('factura_titulo2').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
-            $('factura_titulo').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
+            $('#factura_titulo2').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
+            $('#factura_titulo').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
             
             }
             
@@ -190,7 +190,7 @@ var ncomp = $('#ncomprobante_up').val();
         //     success: function(respuesta) {
         //     var jsonData1 = JSON.parse(respuesta);
         //     if (jsonData1.success == 1) {
-        //         $.NotificationApp.send("Comprobante Generado con Exito !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");
+        //         toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
         //         //DESTRUIMOS LA TABLA FACTURACION
         //         var table = $('#tabla_facturacion_proforma').DataTable();
         //         table.destroy();
@@ -207,11 +207,11 @@ var ncomp = $('#ncomprobante_up').val();
                 
         //         } else if (jsonData1.success == 0) {
 
-        //         $.NotificationApp.send("Error al Intentar Generar el Comprobante !", "No se han realizado cambios.", "bottom-right", "#FFFFFF", "danger");
+        //         toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
             
         //         } else if (jsonData1.success == 3) {
             
-        //         $.NotificationApp.send("Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.", "bottom-right", "#FFFFFF", "danger");
+        //         toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
             
             //   }
             // }
@@ -220,9 +220,9 @@ var ncomp = $('#ncomprobante_up').val();
 
     }else{
     
-    $('#warning_icono').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
+    $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
 
-    $('#warning_mt2').html('Error !');
+    $('#warning_mt2_alert').html('Error !');
 
     $("#warning_text").html("Error! Comprobante No Facturado Error: "+jsonData.error);
 
@@ -231,9 +231,9 @@ var ncomp = $('#ncomprobante_up').val();
 
 } catch (err) {
     
-    $('#warning_icono').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
+    $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
     
-    $('#warning_mt2').html('Error !');
+    $('#warning_mt2_alert').html('Error !');
 
     $("#warning_text").html("Error! Comprobante No Facturado Error: "+err.message);
 
@@ -280,19 +280,15 @@ $("#confirmarfactura_AFIP_boton").click(function() {
 
     var comprobante_tipo=$('#comprobante_tipo').val();
 
-    //Creamos un array que almacenará los valores de los input "checked"
-    var checked = [];
-    //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
-    $("input.custom-control-input:checked").each(function() {
+    // Reusamos la selección capturada al apretar "Facturar" (funciones.js),
+    // NO volvemos a escanear el DOM acá.
+    var checked = remitosSeleccionadosFacturar;
+    if (!checked || checked.length === 0) {
+      toast("error", "Error", "No hay Remitos Seleccionados. No se puede facturar.");
+      return;
+    }
 
-      if ($(this).attr("value") != null) {
-        //Mediante la función push agregamos al arreglo los values de los checkbox
-        checked.push(($(this).attr("value")));
-      }
-      
-    });
-
-   var ncomp = $('#ncomprobante_up').val(); 
+   var ncomp = $('#ncomprobante_up').val();
 
    var dato = {
       'Fecha':fecha,
@@ -358,8 +354,8 @@ $("#confirmarfactura_AFIP_boton").click(function() {
             
             }else{
 
-            $('factura_titulo2').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
-            $('factura_titulo').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
+            $('#factura_titulo2').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
+            $('#factura_titulo').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
             
             }
             
@@ -399,7 +395,7 @@ $("#confirmarfactura_AFIP_boton").click(function() {
                 success: function(respuesta) {
                 var jsonData1 = JSON.parse(respuesta);
                 if (jsonData1.success == 1) {
-                    $.NotificationApp.send("Comprobante Generado con Exito !", "Se han realizado cambios.", "bottom-right", "#FFFFFF", "success");
+                    toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
                     //DESTRUIMOS LA TABLA FACTURACION
                     var table = $('#tabla_facturacion_proforma').DataTable();
                     table.destroy();
@@ -415,9 +411,9 @@ $("#confirmarfactura_AFIP_boton").click(function() {
                     document.getElementById('factura_proforma').style.display = "none";
                     
                 } else if (jsonData1.success == 0) {
-                    $.NotificationApp.send("Error al Intentar Generar el Comprobante !", "No se han realizado cambios.", "bottom-right", "#FFFFFF", "danger");
+                    toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
                 } else if (jsonData1.success == 3) {
-                    $.NotificationApp.send("Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.", "bottom-right", "#FFFFFF", "danger");
+                    toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
                 }
                 }
             });
@@ -425,9 +421,9 @@ $("#confirmarfactura_AFIP_boton").click(function() {
 
         }else{
         
-        $('#warning_icono').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
+        $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
     
-        $('#warning_mt2').html('Error !');
+        $('#warning_mt2_alert').html('Error !');
 
         $("#warning_text").html("Error! Comprobante No Facturado Error: "+jsonData.error);
     
@@ -436,9 +432,9 @@ $("#confirmarfactura_AFIP_boton").click(function() {
 
     } catch (err) {
         
-        $('#warning_icono').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
+        $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
         
-        $('#warning_mt2').html('Error !');
+        $('#warning_mt2_alert').html('Error !');
 
         $("#warning_text").html("Error! Comprobante No Facturado Error: "+err.message);
 
@@ -485,17 +481,15 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
     const newLocal = '#comprobante_tipo_r';
     var comprobante_tipo=$(newLocal).val();
 
-    //Creamos un array que almacenará los valores de los input "checked"
-    var checked = [];
-    //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
-    $("input.custom-control-input:checked").each(function() {
-      if ($(this).attr("value") != null) {
-        //Mediante la función push agregamos al arreglo los values de los checkbox
-        checked.push(($(this).attr("value")));
-      }
-    });
-
-    var ncomp = $('#ncomprobante_up_r').val();
+    // Reusamos la selección capturada al apretar "Facturar Recorridos"
+    // (funciones.js), NO volvemos a escanear el DOM acá (y NO usamos el
+    // selector genérico custom-control-input, que también matchea la
+    // tabla de remitos).
+    var checked = recorridosSeleccionadosFacturar;
+    if (!checked || checked.length === 0) {
+      toast("error", "Error", "No hay Recorridos Seleccionados. No se puede facturar.");
+      return;
+    }
 
     var dato = {
       'Fecha': fecha,
@@ -573,7 +567,7 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
             'Remitos': checked,
             'id': id,
             'condicion': sitfiscal,
-            'NumeroComprobante': ncomp,
+            'NumeroComprobante': jsonData.Numero,
             'Comprobante':comprobante,
             'CAE':jsonData.CAE,
             'FechaVencimientoCAE':jsonData.VencimientoCAE,
@@ -598,7 +592,7 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
                 
                 document.getElementById('factura_primerpaso').style.display = "block";
                 document.getElementById('factura_proforma').style.display = "none";
-                $.NotificationApp.send("Comprobante Generado con Exito !", "Se procesaron "+jsonData1.cuento+ " recorridos.", "bottom-right", "#FFFFFF", "success");
+                toast("success", "Comprobante Generado con Exito !", "Se procesaron "+jsonData1.cuento+ " recorridos.");
 
                 //REFRESCAMOS LA TABLA FACTURACION X RECORRIDO
                 var tabla_recorridos = $('#recorridos_tabla').DataTable();
@@ -606,11 +600,11 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
               
               } else if (jsonData1.success == 0) {
 
-                $.NotificationApp.send("Error al Intentar Generar el Comprobante !", "No se han realizado cambios.", "bottom-right", "#FFFFFF", "danger");
+                toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
               
               } else if (jsonData1.success == 3) {
             
-                $.NotificationApp.send("Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.", "bottom-right", "#FFFFFF", "danger");
+                toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
               }
             }
           });
@@ -623,7 +617,7 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
             $('#warning_mt2_alert').html('Error !');
     
             $("#warning_text").html("Error! Comprobante No Facturado Error: "+jsonData.error);
-            // $.NotificationApp.send("Error !", jsonData.error, "bottom-right", "#FFFFFF", "danger");
+            // toast("error", "Error !", jsonData.error);
         }
 
         } catch (err2) {

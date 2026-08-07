@@ -180,7 +180,7 @@
                                                         <h5 class="modal-title">
                                                             <i class="mdi mdi-map-marker-plus-outline me-2"></i> Nueva Localidad
                                                         </h5>
-                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-dismiss="modal" aria-label="Cerrar"></button>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                                     </div>
 
                                                     <div class="modal-body">
@@ -236,7 +236,7 @@
                                                     </div>
 
                                                     <div class="modal-footer">
-                                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" data-dismiss="modal">
+                                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal" data-bs-dismiss="modal">
                                                             <i class="mdi mdi-close-circle-outline me-1"></i>Cancelar
                                                         </button>
                                                         <button type="submit" class="btn btn-success">

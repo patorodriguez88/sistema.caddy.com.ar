@@ -110,9 +110,9 @@ $('#modificarrecorrido_ok').click(function(){
          var datatable = $('#seguimiento').DataTable();
          datatable.ajax.reload(); 
         $('#standard-modal-rec').modal('hide');
-        $.NotificationApp.send("Registro Actualizado !","Se ha actualizado el Recorrido.","bottom-right","#FFFFFF","success");      
+        toast("success", "Registro Actualizado !", "Se ha actualizado el Recorrido.");      
         }else{
-        $.NotificationApp.send("Registro No Actualizado !","No pudimos actualizar el Recorrido.","bottom-right","#FFFFFF","danger");        
+        toast("error", "Registro No Actualizado !", "No pudimos actualizar el Recorrido.");        
         }
        }
     });
@@ -143,7 +143,7 @@ if(entregado==1){
       success: function(response)
        {
         var jsonData = JSON.parse(response);
-        $.NotificationApp.send("Registro Actualizado !","Se ha actualizado la tabla Clientes correctamente.","bottom-right","#FFFFFF","success");    
+        toast("success", "Registro Actualizado !", "Se ha actualizado la tabla Clientes correctamente.");    
        var datatable = $('#seguimiento').DataTable();
         datatable.ajax.reload();  
        $('#standard-modal').modal('hide'); 
@@ -151,7 +151,7 @@ if(entregado==1){
        }  
       });
    }else{
-     $.NotificationApp.send("Presione Entregado !","No se realizaron cambios.","bottom-right","#FFFFFF","warning");    
+     toast("warning", "Presione Entregado !", "No se realizaron cambios.");    
    }
 });
 
@@ -182,21 +182,21 @@ function eliminar(e) {
               $('#warning-modal').modal('hide');
               if(jsonData.success==1){
                if(jsonData.hojaderuta==1){ 
-                $.NotificationApp.send("Registro Borrado !","Se ha borrado el registro en Hoja de Ruta correctamente.","bottom-right","#FFFFFF","success");  
+                toast("success", "Registro Borrado !", "Se ha borrado el registro en Hoja de Ruta correctamente.");  
                var datatable = $('#seguimiento').DataTable();
                 datatable.ajax.reload();   
                }else{
-                $.NotificationApp.send("Error !","No se han realizado cambios en Hoja de Ruta.","bottom-right","#FFFFFF","danger");       
+                toast("error", "Error !", "No se han realizado cambios en Hoja de Ruta.");       
                } 
                if(jsonData.transclientes==1){
-               $.NotificationApp.send("Registro Borrado !","Se ha borrado el registro en Trans Clientes correctamente.","bottom-right","#FFFFFF","success");  
+               toast("success", "Registro Borrado !", "Se ha borrado el registro en Trans Clientes correctamente.");  
                var datatable = $('#seguimiento').DataTable();
                datatable.ajax.reload();  
                }else{
-               $.NotificationApp.send("Error !","No se han realizado cambios en Trans Clientes.","bottom-right","#FFFFFF","danger");       
+               toast("error", "Error !", "No se han realizado cambios en Trans Clientes.");       
                } 
               }else{
-              $.NotificationApp.send("Error !","No se han realizado cambios.","bottom-right","#FFFFFF","danger");    
+              toast("error", "Error !", "No se han realizado cambios.");    
               }
             }
         });  

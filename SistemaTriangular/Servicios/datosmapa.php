@@ -92,7 +92,7 @@ while ($row = @mysql_fetch_assoc($result)){
 $sqlSeguimiento=mysql_query("SELECT Hora,Entregado FROM Seguimiento WHERE id=(SELECT MAX(id)FROM Seguimiento WHERE idTransClientes='$row[id]')");
 $resultSeguimiento=mysql_fetch_array($sqlSeguimiento);
   
-$sqlNCliente=mysql_query("SELECT t1.idProveedor FROM Clientes t1, HojaDeRuta t2 WHERE t2.idCliente= t1.id AND t1.id='$row[ingBrutosOrigen]'");
+$sqlNCliente=mysql_query("SELECT t1.idProveedor FROM Clientes t1, HojaDeRuta t2 WHERE t2.idCliente= t1.id AND t1.id='$row[idClienteOrigen]'");
 $DatoNCliente=mysql_fetch_array($sqlNCliente);
   
 $ciudad=$row['LocalidadDestino'];

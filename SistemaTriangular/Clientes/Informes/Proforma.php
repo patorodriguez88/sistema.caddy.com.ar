@@ -131,25 +131,25 @@
                             <h4 class="mt-2">Facturacion</h4>
                             <ul class="nav nav-tabs nav-bordered mb-3">
                                   <li class="nav-item">
-                                      <a id="guias_todas_boton" href="#guias_todas" data-toggle="tab" aria-expanded="true" class="nav-link active">
+                                      <a id="guias_todas_boton" href="#guias_todas" data-bs-toggle="tab" aria-expanded="true" class="nav-link active">
                                           <i class="mdi mdi-home-variant d-md-none d-block"></i>
                                           <span class="d-none d-md-block">Guias a Facturar</span>
                                       </a>
                                   </li>
                                   <li class="nav-item">
-                                      <a id="recorridos_boton" href="#recorridos" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a id="recorridos_boton" href="#recorridos" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-home-variant d-md-none d-block"></i>
                                           <span class="d-none d-md-block">Recorridos a Facturar</span>
                                       </a>
                                   </li>
                                   <li class="nav-item">
-                                      <a id="guias_recibidas_boton" href="#guias_recibidas" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a id="guias_recibidas_boton" href="#guias_recibidas" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-account-circle d-md-none d-block"></i>
                                           <span class="d-none d-md-flex">Guias Recibidas</span>
                                       </a>
                                   </li>
                                  <li class="nav-item">
-                                      <a id="guias_enviadas_boton" href="#guias_enviadas" data-toggle="tab" aria-expanded="false" class="nav-link">
+                                      <a id="guias_enviadas_boton" href="#guias_enviadas" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
                                           <i class="mdi mdi-account-circle d-md-none d-block"></i>
                                           <span class="d-none d-md-flex">Guias Enviadas</span>
                                       </a>
@@ -284,7 +284,7 @@
                                </div>
                                <div class="d-print-none mt-4">
                                         <div class="text-right">
-                                          <a id="ingresar_recorridos" type="button" class="btn btn-primary" data-toggle="modal" data-target="#bs-example-modal-lg"><i class="mdi mdi-printer mr-1"></i>Ingresar Recorridos</a>
+                                          <a id="ingresar_recorridos" type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-printer mr-1"></i>Ingresar Recorridos</a>
                                           <a id="facturar_recorridos_boton" type="button" class="btn btn-warning"><i class="mdi mdi-printer mr-1"></i> <span> Generar Comprobante </span></a>
                                       </div>
                                     </div>   
@@ -494,10 +494,10 @@
 
                                     <div class="d-print-none mt-4">
                                         <div class="text-right">
-                                          <!-- <button type="button" class="btn btn-success" data-toggle="modal" data-target="#success-alert-modal">Success Alert</button> -->
+                                          <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                             <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
-                                            <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
-                                            <a id="info-header-modal_button" type="button" class="btn btn-success" data-toggle="modal" data-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
+                                            <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
+                                            <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold mr-1"></i> Confirmar</a>  
                                             <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick mr-1"></i>Cancelar</a>  
                                       </div>
                                     </div>   
@@ -593,5 +593,7 @@
               <script async defer
               src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=BuscarDireccion">
               </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../../Funciones/js/alertas.js"></script>
     </body>
 </html>

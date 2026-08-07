@@ -66,7 +66,7 @@ include("../ConexionBD.php");
                               <div class="modal-content">
                                   <div class="modal-header">
                                       <h4 class="modal-title" id="myCenterModalLabel">Mover servicios a Recorrido</h4>
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div class="modal-body">
                                     <div class="col-lg-12 mt-3">
@@ -161,7 +161,7 @@ include("../ConexionBD.php");
                                         <i id="marker" class="mdi mdi-18px mdi-map-marker"></i>
                                             <a id="cantidad" class="header-title- mb-3 card-drop"></a>
 <!--                                         <input type='number' id="cantidad_n"> -->
-                                            <a href="#" class="dropdown-toggle arrow-none card-drop" data-toggle="dropdown" aria-expanded="false">
+                                            <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
                                                 <i class="mdi mdi-dots-vertical"></i>
                                             </a>
                                             <!-- <div class="dropdown-menu dropdown-menu-right"> -->
@@ -181,8 +181,8 @@ include("../ConexionBD.php");
                                         <div class="tab-content">
                                             <div class="tab-pane show active mb-3" id="default-buttons-preview">
                                                 <div class="button-list text-right mt-2">
-                                                    <!-- <button type="button" class="btn btn-primary" data-toggle="modal"  data-target="#zona-modal">Agregar Zona</button> -->
-<!--                                                     <button type="button" class="btn btn-secondary" data-toggle="modal"  data-target="#renderizar-modal">Secondary</button> -->
+                                                    <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal"  data-bs-target="#zona-modal">Agregar Zona</button> -->
+<!--                                                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal"  data-bs-target="#renderizar-modal">Secondary</button> -->
                                                     <button id="ver_mapa" type="button" class="btn btn-secondary" >Actualizar Mapa</button>
                                                     <button id="cambiar_recorrido" type="button" class="btn btn-success" >Confirmar Nueva Asignacion</button>
                                                 </div>
@@ -240,5 +240,7 @@ include("../ConexionBD.php");
         <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&callback=initMap&libraries=geometry">
         </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
   </body>
 </html>

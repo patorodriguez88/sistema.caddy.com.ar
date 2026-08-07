@@ -12,7 +12,7 @@ if($_POST['BuscarVentas']==1){
 
     $sql="SELECT 
     CASE
-        WHEN FormaDePago = 'Origen' THEN TransClientes.IngBrutosOrigen
+        WHEN FormaDePago = 'Origen' THEN TransClientes.idClienteOrigen
         ELSE idClienteDestino
         END AS idCliente,    
     

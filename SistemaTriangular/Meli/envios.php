@@ -103,7 +103,7 @@
                                     <h4 id="seguimiento_header" class="header-title mt-2">INTEGRACION MERCADO LIBRE <-> CADDY LOGISTICA </h4>
                                     <div class="row mb-2">
                                         <div class="col-sm-12 text-right">
-                                            <!-- <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#forzador-modal">Forzador Meli</button> -->
+                                            <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#forzador-modal">Forzador Meli</button> -->
                                             <!-- <a href="https://www.caddy.com.ar/SistemaTriangular/Ventas/Colecta.php" class="btn btn-success">Colectas</a> -->
                                         </div><!-- end col-->
                                     </div>
@@ -199,6 +199,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

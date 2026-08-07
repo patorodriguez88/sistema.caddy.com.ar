@@ -1071,7 +1071,7 @@ VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$CodigoSeguimiento}','{
                   $Ciudad_roadmap = $row['LogalidadOrigen'];
                   $Provincia_roadmap = $row['ProvinciaOrigen'];
                   $NombreCliente_roadmap = $row['ClienteOrigen'];
-                  $idCliente_roadmap = $row['ingBrutosOrigen'];
+                  $idCliente_roadmap = $row['idClienteOrigen'];
                 }
 
                 $TipoDeComprobante_roadmap = $row[TipoDeComprobante];
@@ -1091,9 +1091,9 @@ VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$CodigoSeguimiento}','{
                 $Fecha = date("Y-m-d");
                 $Hora = date("H:i");
                 $state = $Estado;
-                $sql = mysql_query("SELECT ingBrutosOrigen,idClienteDestino,CodigoProveedor FROM TransClientes WHERE id='$row[id]");
+                $sql = mysql_query("SELECT idClienteOrigen,idClienteDestino,CodigoProveedor FROM TransClientes WHERE id='$row[id]");
                 $idCliente = mysql_fetch_array($sql);
-                $idClienteOrigen = $idCliente['ingBrutosOrigen'];
+                $idClienteOrigen = $idCliente['idClienteOrigen'];
                 $idClienteDestino = $idCliente['idClienteDestino'];
 
                 if ($idCliente['CodigoProveedor'] <> '') {

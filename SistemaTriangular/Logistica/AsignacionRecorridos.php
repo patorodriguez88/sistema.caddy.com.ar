@@ -55,7 +55,7 @@ include("../ConexionBD.php");
                               <div class="modal-content">
                                   <div class="modal-header">
                                       <h4 class="modal-title" id="myCenterModalLabel">Agregar Zona</h4>
-                                      <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                   </div>
                                   <div class="modal-body">
                                     <!-- Date Picker -->
@@ -95,7 +95,7 @@ include("../ConexionBD.php");
                                            <div class="tab-content">
                                             <div class="tab-pane show active mb-3" id="default-buttons-preview">
                                                 <div class="button-list">
-                                                    <button type="button" class="btn btn-primary" data-toggle="modal"  data-target="#zona-modal">Agregar Zona</button>
+                                                    <button type="button" class="btn btn-primary" data-bs-toggle="modal"  data-bs-target="#zona-modal">Agregar Zona</button>
 <!--                                                     <button type="button" class="btn btn-secondary">Secondary</button> -->
                                               </div>
                                              </div>
@@ -110,7 +110,7 @@ include("../ConexionBD.php");
                                                       <div class="card-header" id="<? echo $row[Nombre];?>">
                                                           <h5 class="m-0">
                                                               <a class="custom-accordion-title d-block py-1"
-                                                                  data-toggle="collapse" href="#collapse<? echo $row[Nombre];?>"
+                                                                  data-bs-toggle="collapse" href="#collapse<? echo $row[Nombre];?>"
                                                                   aria-expanded="false" aria-controls="collapse<? echo $row[Nombre];?>"
                                                                 <i class="uil-location-point"></i> <? echo $row[Nombre];?>
                                                                 <i class="mdi mdi-chevron-down accordion-arrow"></i>
@@ -120,7 +120,7 @@ include("../ConexionBD.php");
 
                                                       <div id="collapse<? echo $row[Nombre];?>" class="collapse"
                                                           aria-labelledby="heading"
-                                                          data-parent="#custom-accordion-one">
+                                                          data-bs-parent="#custom-accordion-one">
                                                           <div class="card-body">
                                                           <div><a><b>Latitud Norte: </b> <? echo $row[LatitudN];?> </a></div>   
                                                           <div><a><b>Latitud Sur: </b> <? echo $row[LatitudS];?> </a></div> 

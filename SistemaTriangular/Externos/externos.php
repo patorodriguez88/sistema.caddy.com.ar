@@ -49,7 +49,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title text-uppercase d-print-none" id="desempeno_header"></h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div class="modal-body">
 
@@ -110,7 +110,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title text-uppercase" id="reporte_header"></h4>
-                                <button type="button" class="close d-print-none" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close d-print-none" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div class="modal-body">
                                 <div class="card-body">
@@ -169,7 +169,7 @@
                                     <div class="d-print-none mt-4">
                                         <div class="text-right">
                                             <a id="imprimir" class="btn btn-primary"><i class="mdi mdi-printer"></i> Print</a>
-                                            <button type="button" class="btn btn-light" data-dismiss="modal">Cerrar</button>
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                         </div>
                                     </div>
                                     <!-- end buttons -->
@@ -185,7 +185,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="NewTaskModalLabel">Agregar Nuevo Repartidor Externo</h4>
-                                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                             </div>
                             <div class="modal-body">
                                 <form id="new_externo" class="needs-validation" novalidate>
@@ -309,7 +309,7 @@
 
 
                                     <div class="text-end">
-                                        <button id="add-new-modal_cancel" type="button" class="btn btn-light" data-dismiss="modal">Cancel</button>
+                                        <button id="add-new-modal_cancel" type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                                         <button id="button_continuar" type="submit" class="btn btn-primary">Continuar</button>
                                         <button id="button_guardar" type="button" class="btn btn-primary" style="display:none">Guardar</button>
                                     </div>
@@ -454,7 +454,7 @@
                                     <h4 class="header-title mt-2">Listado de Repartidores Externos </h4>
 
                                     <div class="text-end">
-                                        <a id="button_agregar_externo" href="#" data-toggle="modal" data-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a></h4>
+                                        <a id="button_agregar_externo" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a></h4>
                                         <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
                                         <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
                                         <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
@@ -522,6 +522,8 @@
     <!-- funciones -->
     <script src="Procesos/js/funciones.js"></script>
     <script src="../Menu/js/funciones.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     <!-- Funciones Imprimir Rotulos -->
 </body>
 

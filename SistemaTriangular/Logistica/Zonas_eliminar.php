@@ -258,5 +258,7 @@ include("../ConexionBD.php");
         <script async defer
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&callback=initMap">
         </script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
   </body>
 </html>

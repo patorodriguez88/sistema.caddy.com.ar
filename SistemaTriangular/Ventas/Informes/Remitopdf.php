@@ -229,7 +229,7 @@ function Footer()
 	$fila = mysql_fetch_array($datoConsulta);
     $ValorDeclarado=$fila[ValorDeclarado];  
 //Observaciones Cliente Origen
-	$sqlCliente = "SELECT Observaciones FROM Clientes WHERE id='$fila[IngBrutosOrigen]'";
+	$sqlCliente = "SELECT Observaciones FROM Clientes WHERE id='$fila[idClienteOrigen]'";
 	$datoCliente = mysql_query($sqlCliente);
 	$Cliente = mysql_fetch_array($datoCliente);
 // Observaciones Cliente Destino
@@ -634,7 +634,7 @@ function Footer()
 	$fila = mysql_fetch_array($datoConsulta);
   $ValorDeclarado=$fila[ValorDeclarado];  
 //Observaciones Cliente Origen
-	$sqlCliente = "SELECT Observaciones FROM Clientes WHERE id='$fila[IngBrutosOrigen]'";
+	$sqlCliente = "SELECT Observaciones FROM Clientes WHERE id='$fila[idClienteOrigen]'";
 	$datoCliente = mysql_query($sqlCliente);
 	$Cliente = mysql_fetch_array($datoCliente);
 // Observaciones Cliente Destino

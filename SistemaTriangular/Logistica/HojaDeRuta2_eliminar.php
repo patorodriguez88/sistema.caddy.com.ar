@@ -660,6 +660,8 @@ include_once "../Conexion/Conexioni.php";
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBFDH8-tnISZXhe9BAfWw9BS-uzCv9yhvk&region=AR&language=es-419&libraries=places&callback=initMap_order&v=weekly"
         defer></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
 </body>
 

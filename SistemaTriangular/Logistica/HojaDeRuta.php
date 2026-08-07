@@ -564,7 +564,7 @@ $Datos=$idOrden->fetch_array(MYSQLI_ASSOC);
 $Fecha=$Datos[Fecha];
 $arrayfecha=explode('-',$Fecha,3);
 $Fecha2=$arrayfecha[2]."/".$arrayfecha[1]."/".$arrayfecha[0];
-$sqlBuscoOrigen=$mysqli->query("SELECT RazonSocial,DomicilioOrigen,Retirado,IngBrutosOrigen FROM TransClientes WHERE CodigoSeguimiento='$Datos[Seguimiento]'");
+$sqlBuscoOrigen=$mysqli->query("SELECT RazonSocial,DomicilioOrigen,Retirado,idClienteOrigen FROM TransClientes WHERE CodigoSeguimiento='$Datos[Seguimiento]'");
 $NombreOrigen=$sqlBuscoOrigen->fetch_array(MYSQLI_ASSOC);
 
   if($NombreOrigen['Retirado']==0){
@@ -609,7 +609,7 @@ echo "<input name='idcliente_t' type='hidden' value='".$Datos[idCliente]."'>";
   
 echo "<div><label>Cliente Origen:</label><input name='clienteorigen_t' type='text' value='$NombreOrigen[RazonSocial]' style='width:400px;' readonly/></div>";
 echo "<div><label>Direccion Retiro:</label><input name='localizacionorigen_t' id='start' class='form-control' type='text' value='$NombreOrigen[DomicilioOrigen]' style='width:400px;'/></div>";
-echo "<input name='idclienteorigen_t' type='hidden' value='$NombreOrigen[IngBrutosOrigen]' />";
+echo "<input name='idclienteorigen_t' type='hidden' value='$NombreOrigen[idClienteOrigen]' />";
 echo "<input name='calleorigen_t' id='calleorigen_t'  type='hidden' />";
 echo "<input name='numeroorigen_t' id='numeroorigen_t' type='hidden' />";
 echo "<input name='Codigo_Postalorigen_t' id='Codigo_Postalorigen_t' type='hidden' />";

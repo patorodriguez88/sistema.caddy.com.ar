@@ -376,7 +376,7 @@ $("#deposito-modal").on('show.bs.modal', function(e) {
             var datatableLogistica1 = $('#logistica1').DataTable();
             datatableLogistica1.ajax.reload();
             $('#deposito-modal').modal('hide');
-            $.NotificationApp.send("Exito !", "Se movieron los servicios a Deposito.", "bottom-right", "#FFFFFF", "success");
+            toast("success", "Exito !", "Se movieron los servicios a Deposito.");
           }
        }
    });

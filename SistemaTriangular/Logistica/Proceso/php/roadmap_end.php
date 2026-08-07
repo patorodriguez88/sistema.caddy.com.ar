@@ -8,7 +8,7 @@ if(isset($_POST['Renderizar'])){
     $mysqli->query("TRUNCATE TABLE `Roadmap_end`");
     
     $BUSCO_PENDIENTES=$mysqli->query("SELECT HojaDeRuta.Posicion,HojaDeRuta.Posicion_retiro,TransClientes.Recorrido as Recorrido,
-    TransClientes.IngBrutosOrigen as idOrigen,TransClientes.idClienteDestino as idDestino,TransClientes.CodigoSeguimiento,
+    TransClientes.idClienteOrigen as idOrigen,TransClientes.idClienteDestino as idDestino,TransClientes.CodigoSeguimiento,
     TransClientes.id as idTransClientes, HojaDeRuta.id as idHojaDeRuta,TransClientes.Retirado FROM HojaDeRuta INNER JOIN `TransClientes` ON HojaDeRuta.idTransClientes=TransClientes.id WHERE TransClientes.Eliminado=0 AND Entregado=0 AND Haber=0 AND TransClientes.Devuelto=0");
 
     while($row=$BUSCO_PENDIENTES->fetch_array(MYSQLI_ASSOC)){

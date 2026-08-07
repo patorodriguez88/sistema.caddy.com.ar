@@ -177,6 +177,8 @@ header('location:https://www.sistemacaddy.com.ar/sistema');
         <script src="Procesos/js/funciones.js"></script>
         <!-- <script src="../Funciones/js/seguimiento.js"></script> -->
         <script src="../Menu/js/funciones.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
         <!-- Funciones Imprimir Rotulos -->
   </body>
 </html>

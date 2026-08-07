@@ -151,7 +151,7 @@ function modificar(i, a) {
       var jsonData = JSON.parse(response);
       var datatable = $("#servicios").DataTable();
       datatable.ajax.reload();
-      //   $.NotificationApp.send("Exito","Recorrido Activado.","bottom-right","success","success");
+      //   toast("success", "Exito", "Recorrido Activado.");
       if (a != 0) {
         $.toast({
           heading: "Listo!",

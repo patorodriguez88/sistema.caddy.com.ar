@@ -461,7 +461,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-warning">
                                     <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                    <button type="button" class="close" data-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
                                 </div>
                                 <div id="warning-modal-body" class="modal-body">
 
@@ -470,7 +470,7 @@
                                 <input type="hidden" id="codigoseguimiento_eliminar">
                                 <div class="modal-footer">
 
-                                    <button type="button" class="btn btn-light" data-dismiss="modal">Close</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                     <button id="warning-modal-ok" type="button" class="btn btn-danger">Eliminar</button>
                                     <button id="warning-modal-ventas-ok" type="button" class="btn btn-danger" style="display:none">Eliminar Ventas</button>
                                 </div>
@@ -569,6 +569,7 @@
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

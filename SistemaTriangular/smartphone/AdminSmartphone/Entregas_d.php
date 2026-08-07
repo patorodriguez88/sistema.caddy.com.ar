@@ -284,7 +284,7 @@ $i=0;
                 <div class="card-body">
                 <div class="card-widgets">
                     <a href="javascript:;" data-toggle="reload"><i class="mdi mdi-refresh"></i></a>
-<!--                     <a data-toggle="collapse" href="#cardCollpase1" role="button" aria-expanded="false" aria-controls="cardCollpase1"><i class="mdi mdi-minus"></i></a> -->
+<!--                     <a data-bs-toggle="collapse" href="#cardCollpase1" role="button" aria-expanded="false" aria-controls="cardCollpase1"><i class="mdi mdi-minus"></i></a> -->
                     <a href="#" data-toggle="remove"><i class="mdi mdi-close"></i></a>
                 </div>
                   <h5 class="card-title mb-0 text-danger">Cobrar</h5>

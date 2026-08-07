@@ -187,7 +187,7 @@ header('location:https://www.caddy.com.ar/sistema');
                                                             </div>
                                                         <div class="d-print-none modal-footer">
                                                             <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>                                                            
-                                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                                                             <!-- <button type="button" class="btn btn-primary">Save changes</button> -->
                                                         </div>
                                                     </div><!-- /.modal-content -->

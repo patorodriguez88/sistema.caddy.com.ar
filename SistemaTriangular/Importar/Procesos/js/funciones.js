@@ -247,12 +247,12 @@ $('#warning-modal-ok').click(function(){
             var jsonData = JSON.parse(response);
               if(jsonData.success==1){
               $('#warning-modal').modal('hide');  
-              $.NotificationApp.send("Registro Borrado !","Se ha borrado el registro correctamente.","bottom-right","#FFFFFF","success");  
+              toast("success", "Registro Borrado !", "Se ha borrado el registro correctamente.");  
               var datatable = $('#seguimiento').DataTable();
               datatable.ajax.reload();  
               card();  
               }else{
-              $.NotificationApp.send("Error !","No se han realizado cambios.","bottom-right","#FFFFFF","danger");    
+              toast("error", "Error !", "No se han realizado cambios.");    
               }
             }
         });  
@@ -268,7 +268,7 @@ $.ajax({
       success:function(response){
       var jsonData = JSON.parse(response);
         if(jsonData.success==1){
-        $.NotificationApp.send("Tabla Borrada !","Se han borrado " + jsonData.regborrados + " registros.","bottom-right","#FFFFFF","success");  
+        toast("success", "Tabla Borrada !", "Se han borrado " + jsonData.regborrados + " registros.");  
         $('#tabla').hide();
         $('#VaciarTabla').hide();
         $('#response').hide();  
@@ -277,7 +277,7 @@ $.ajax({
         $('#ImportarTabla').hide();
           window.location("https:www.caddy.com.ar/SistemaTriangular/Importar/index.php");
         }else{
-        $.NotificationApp.send("Error !","No se han realizado cambios.","bottom-right","#FFFFFF","danger");    
+        toast("error", "Error !", "No se han realizado cambios.");    
         }
       }
   });  
@@ -304,7 +304,7 @@ $('#importar-modal-ok').click(function(){
         $('#success-alert-modal').modal('show');  
         $('#success-info').html('Se ingresaron '+jsonData.importados+' Clientes y se cargaron '+jsonData.preventa+' envios a Preventa');  
         }else{
-        $.NotificationApp.send("Error !","No se han ingresado registros a Clientes.","bottom-right","#FFFFFF","danger");    
+        toast("error", "Error !", "No se han ingresado registros a Clientes.");    
         }
       }
   });  

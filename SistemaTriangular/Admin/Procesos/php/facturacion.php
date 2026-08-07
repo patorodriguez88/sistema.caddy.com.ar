@@ -8,7 +8,7 @@ if (isset($_POST['Facturacion'])) {
     $Hasta = $_POST['Hasta'];
 
     $sql = "SELECT 
-    IF(FormaDePago='Origen',ingBrutosOrigen,idClienteDestino)AS idCliente,
+    IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)AS idCliente,
     IF(FormaDePago='Origen',RazonSocial,ClienteDestino)AS Pagador,
     COUNT(TransClientes.id) AS Cantidad,
     SUM(Debe) AS Debe
@@ -21,7 +21,7 @@ if (isset($_POST['Facturacion'])) {
     AND TransClientes.Debe > 0 
     AND TransClientes.Facturado = '0' 
     GROUP BY 
-    IF(TransClientes.FormaDePago='Origen', TransClientes.ingBrutosOrigen, TransClientes.idClienteDestino);";
+    IF(TransClientes.FormaDePago='Origen', TransClientes.idClienteOrigen, TransClientes.idClienteDestino);";
 
     $Resultado = $mysqli->query($sql);
     $rows = array();
@@ -69,7 +69,7 @@ if (isset($_POST['Facturacion_comprueba'])) {
     FROM 
         TransClientes 
     WHERE 
-        IF(TransClientes.FormaDePago='Origen', TransClientes.ingBrutosOrigen, TransClientes.idClienteDestino) = '$id'
+        IF(TransClientes.FormaDePago='Origen', TransClientes.idClienteOrigen, TransClientes.idClienteDestino) = '$id'
         AND TransClientes.Eliminado = 0 
         AND TransClientes.Fecha >= '$Desde' 
         AND TransClientes.Fecha <= '$Hasta' 
@@ -93,7 +93,7 @@ if (isset($_POST['Facturacion_comprueba'])) {
     FROM 
     TransClientes 
     WHERE 
-    IF(TransClientes.FormaDePago='Origen', TransClientes.ingBrutosOrigen, TransClientes.idClienteDestino) = '$id'
+    IF(TransClientes.FormaDePago='Origen', TransClientes.idClienteOrigen, TransClientes.idClienteDestino) = '$id'
     AND TransClientes.Eliminado = 0 
     AND TransClientes.Fecha >= '$Desde' 
     AND TransClientes.Fecha <= '$Hasta' 
@@ -111,7 +111,7 @@ if (isset($_POST['Facturacion_comprueba'])) {
         $rows[] = $row;
     }
 
-    $sql_no_entregados = "SELECT Fecha, CodigoSeguimiento FROM TransClientes WHERE Fecha >= '$Desde' AND Fecha <= '$Hasta' AND Entregado = 0 AND Eliminado = 0 AND IF(TransClientes.FormaDePago='Origen', TransClientes.ingBrutosOrigen, TransClientes.idClienteDestino) = '$id'";
+    $sql_no_entregados = "SELECT Fecha, CodigoSeguimiento FROM TransClientes WHERE Fecha >= '$Desde' AND Fecha <= '$Hasta' AND Entregado = 0 AND Eliminado = 0 AND IF(TransClientes.FormaDePago='Origen', TransClientes.idClienteOrigen, TransClientes.idClienteDestino) = '$id'";
     $Resultado_ne = $mysqli->query($sql_no_entregados);
     $rows_ne = array();
 

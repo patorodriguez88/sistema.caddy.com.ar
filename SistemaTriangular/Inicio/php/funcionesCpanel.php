@@ -76,7 +76,7 @@ if (isset($_POST['VaciarRecorrido'])) {
                 CodigoSeguimiento,
                 IF(Retirado=1,ClienteDestino,RazonSocial) AS Nombre,
                 IF(Retirado=1,DomicilioDestino,DomicilioOrigen) AS Domicilio,
-                IF(Retirado=1,IngBrutosOrigen,idClienteDestino) AS idCliente
+                IF(Retirado=1,idClienteOrigen,idClienteDestino) AS idCliente
             FROM TransClientes
             WHERE Recorrido=? AND Eliminado=0 AND Entregado=0";
 

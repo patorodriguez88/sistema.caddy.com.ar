@@ -104,24 +104,12 @@ $("#btn_eliminar_ok").click(function () {
       console.log("success", jsonData.success);
 
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Registro Eliminado !",
-          "Se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Registro Eliminado !", "Se han realizado cambios.");
         var table = $("#basic").DataTable();
         table.ajax.reload();
         $("#danger-header-modal").modal("hide");
       } else {
-        $.NotificationApp.send(
-          "Error !",
-          "No se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "warning",
-        );
+        toast("warning", "Error !", "No se han realizado cambios.");
       }
     },
   });
@@ -140,20 +128,14 @@ $("#btn_eliminar_pago_ok").click(function () {
       // console.log('success',jsonData.success);
 
       if (jsonData.success == 1) {
-        $.NotificationApp.send(
-          "Registro Eliminado !",
-          "Se han realizado cambios.",
-          "bottom-right",
-          "#FFFFFF",
-          "danger",
-        );
+        toast("error", "Registro Eliminado !", "Se han realizado cambios.");
         var table = $("#basic").DataTable();
         table.ajax.reload();
         $("#danger-header-modal").modal("hide");
       } else {
         console.log("NumeroAsiento", jsonData.NumeroAsiento);
 
-        // $.NotificationApp.send("Error !","No se han realizado cambios.","bottom-right","#FFFFFF","warning");
+        // toast("warning", "Error !", "No se han realizado cambios.");
       }
     },
   });
@@ -253,7 +235,7 @@ $(document).ready(function () {
   for (var i = 0; i < divs.length; i++) {
     //Añades un evento a cada elemento
     divs[i].addEventListener("change", function () {
-      //   $.NotificationApp.send("Recuerde Guardar el formulario !","Se han realizado cambios.","bottom-right","#FFFFFF","info");
+      //   toast("info", "Recuerde Guardar el formulario !", "Se han realizado cambios.");
     });
   }
   //IDEM FORM PARA CUSTOM
@@ -263,7 +245,7 @@ $(document).ready(function () {
   for (var i = 0; i < divsC.length; i++) {
     //Añades un evento a cada elemento
     divsC[i].addEventListener("change", function () {
-      //   $.NotificationApp.send("Recuerde Guardar el formulario !","Se han realizado cambios.","bottom-right","#FFFFFF","info");
+      //   toast("info", "Recuerde Guardar el formulario !", "Se han realizado cambios.");
     });
   }
 
@@ -840,13 +822,7 @@ $(document).ready(function () {
       success: function (response) {
         var jsonData = JSON.parse(response);
         if (jsonData.success == "1") {
-          $.NotificationApp.send(
-            "Listo!",
-            "Datos Guardados",
-            "bottom-right",
-            "#FFFFFF",
-            "success",
-          );
+          toast("success", "Listo!", "Datos Guardados");
         } else {
         }
       },
@@ -877,13 +853,7 @@ function abrir_factura() {
     // Utilizamos console.log para ver comprobar que en realidad contiene algo el arreglo
     if (checked.length > 1) {
       $(this).prop("checked", false);
-      $.NotificationApp.send(
-        "Error !",
-        "Seleccione de a un comprobante por vez para Imputar Pagos.",
-        "bottom-right",
-        "#FFFFFF",
-        "waring",
-      );
+      toast("warning", "Error !", "Seleccione de a un comprobante por vez para Imputar Pagos.");
     } else {
       $("#btn_pago_facturas").css("display", "block");
     }

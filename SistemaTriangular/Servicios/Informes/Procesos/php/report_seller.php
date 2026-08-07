@@ -37,7 +37,7 @@ if($_POST['Pendientes']==1){
     FROM `TransClientes` INNER JOIN  Seguimiento ON Seguimiento.idTransClientes=TransClientes.id 
     INNER JOIN Recorridos ON TransClientes.Recorrido=Recorridos.Numero 
     WHERE Seguimiento.id=(SELECT MAX(id) FROM Seguimiento where idTransClientes=TransClientes.id) 
-    AND Eliminado=0 AND FechaEntrega='$date' AND IngBrutosOrigen='$id'";
+    AND Eliminado=0 AND FechaEntrega='$date' AND idClienteOrigen='$id'";
  
 }
 
@@ -58,16 +58,16 @@ if($_POST['BuscarDatos']==1){
   $date=$_POST['date'];
 
   if($id==''){
-  $sql="SELECT FechaEntrega,sla,FechaPrometida,ingBrutosOrigen as idClienteOrigen,RazonSocial as ClienteOrigen,Fecha,COUNT(TransClientes.id)as Total,
+  $sql="SELECT FechaEntrega,sla,FechaPrometida,idClienteOrigen,RazonSocial as ClienteOrigen,Fecha,COUNT(TransClientes.id)as Total,
   SUM(Entregado)as Entregados,SUM(Cantidad)as Cantidad,Recorridos.Nombre as RecorridosName,Recorridos.Zona as Zona  
   FROM `TransClientes` INNER JOIN Recorridos ON TransClientes.Recorrido=Recorridos.Numero  
   WHERE  Eliminado=0 AND FechaEntrega='$date'";
 
   }else{
-    $sql="SELECT FechaEntrega,sla,FechaPrometida,ingBrutosOrigen as idClienteOrigen,RazonSocial as ClienteOrigen,Fecha,COUNT(TransClientes.id)as Total,
+    $sql="SELECT FechaEntrega,sla,FechaPrometida,idClienteOrigen,RazonSocial as ClienteOrigen,Fecha,COUNT(TransClientes.id)as Total,
     SUM(Entregado)as Entregados,SUM(Cantidad)as Cantidad,Recorridos.Nombre as RecorridosName,Recorridos.Zona as Zona  
     FROM `TransClientes` INNER JOIN Recorridos ON TransClientes.Recorrido=Recorridos.Numero  
-    WHERE  Eliminado=0 AND FechaEntrega='$date' AND IngBrutosOrigen='$id'";  
+    WHERE  Eliminado=0 AND FechaEntrega='$date' AND idClienteOrigen='$id'";  
 }
   $Resultado=$mysqli->query($sql);
   $rows=array();   

@@ -94,7 +94,7 @@
                                             <i class="dripicons-checkmark h1"></i>
                                             <h4 class="mt-2">Exito!</h4>
                                             <p class="mt-3">La conciliación de las cuentas se ha realizado correctamente.</p>
-                                            <button type="button" class="btn btn-light my-2" data-dismiss="modal">Aceptar</button>
+                                            <button type="button" class="btn btn-light my-2" data-bs-dismiss="modal">Aceptar</button>
                                         </div>
                                     </div>
                                 </div><!-- /.modal-content -->
