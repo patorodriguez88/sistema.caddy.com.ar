@@ -3652,6 +3652,12 @@ $("#botonrelacion").click(function () {
 // Al abrirse, reseteamos el formulario y cargamos los comprobantes fiscales
 // del cliente para elegir contra cual se emite la Nota de Crédito/Débito.
 $("#ncnd-modal").on("show.bs.modal", function () {
+  // Si el modal de Facturación (selección de remitos) sigue abierto, lo cerramos:
+  // la NC/ND es un ajuste manual independiente y no debe quedar apilada arriba de él.
+  if ($("#Facturacion_recorridos_modal").hasClass("show")) {
+    $("#Facturacion_recorridos_modal").modal("hide");
+  }
+
   var id = document.getElementById("buscarcliente").value;
 
   $("#ncnd_fecha").val(new Date().toISOString().slice(0, 10));
