@@ -1176,7 +1176,7 @@
                                 </div>
                                 <div class="modal-footer">
                                     <div class="alert alert-warning" role="alert" id="alert_facturacion_1" style="display:none">
-                                        <i class="dripicons-warning mr-2"></i> Para transformar una Factura Proforma en Comprobante Afip seleccione primero el comprobante Afip que se generara y luego el comprobante Proforma de origen.
+                                        <i class="dripicons-warning me-2"></i> Para transformar una Factura Proforma en Comprobante Afip seleccione primero el comprobante Afip que se generara y luego el comprobante Proforma de origen.
                                     </div>
                                     <div class="alert alert-danger col-lg-12" role="alert" id="alert_facturacion" style="display:none">
                                         <strong>Error - </strong><a id="alert_facturacion_label"> La Razon Social no puede ser Null. Agregue una Razon Social desde Datos | Datos Facturación.</a>
@@ -2401,7 +2401,7 @@
                                                 <div class="col-xl-3 col-lg-6">
                                                     <div class="card widget-flat text-black">
                                                         <div class="card-body">
-                                                            <div class="float-right">
+                                                            <div class="float-end">
                                                                 <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
                                                             </div>
                                                             <h5 class="text-black font-weight-normal mt-0 mb-3" title="Revenue">Saldo Cta Cte</h5>
@@ -2412,7 +2412,7 @@
                                                 <div class="col-xl-3 col-lg-6">
                                                     <div class="card widget-flat text-black">
                                                         <div class="card-body">
-                                                            <div class="float-right">
+                                                            <div class="float-end">
                                                                 <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
                                                             </div>
                                                             <h5 class="text-black font-weight-normal mt-0" title="Revenue">Remitos No Facturados</h5>
@@ -2423,7 +2423,7 @@
                                                 <div class="col-xl-3 col-lg-6">
                                                     <div class="card widget-flat text-black">
                                                         <div class="card-body">
-                                                            <div class="float-right">
+                                                            <div class="float-end">
                                                                 <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
                                                             </div>
                                                             <h5 class="text-black font-weight-normal mt-0" title="Revenue">Remitos Recibidos</h5>
@@ -2434,7 +2434,7 @@
                                                 <div class="col-xl-3 col-lg-6">
                                                     <div class="card widget-flat text-black bg-danger">
                                                         <div class="card-body">
-                                                            <div class="float-right">
+                                                            <div class="float-end">
                                                                 <i class="mdi mdi-currency-usd widget-icon bg-danger rounded-circle text-white"></i>
                                                             </div>
                                                             <h5 class="text-white font-weight-normal mt-0" title="Revenue">Saldo Total</h5>
@@ -2632,8 +2632,8 @@
                                                                     </tr>
                                                                 </tbody>
                                                             </table>
-                                                            <button id="facturar_detalle_boton" type="button" class="btn btn-warning float-right mt-3 ml-3"><i class="mdi mdi-book-search-outline me-1"></i> <span> Generar Detalle </span> </button>
-                                                            <button id="facturar_boton" type="button" class="btn btn-info float-right mt-3"><i class="mdi mdi-printer me-1"></i> <span> Generar Comprobante </span> </button>
+                                                            <button id="facturar_detalle_boton" type="button" class="btn btn-warning float-end mt-3 ms-3"><i class="mdi mdi-book-search-outline me-1"></i> <span> Generar Detalle </span> </button>
+                                                            <button id="facturar_boton" type="button" class="btn btn-info float-end mt-3"><i class="mdi mdi-printer me-1"></i> <span> Generar Comprobante </span> </button>
 
                                                         </div>
                                                     </div>
@@ -2722,10 +2722,10 @@
                                                             </table>
                                                         </div>
                                                         <div class="d-print-none mt-4">
-                                                            <div class="btn-group float-right">
-                                                                <a id="Modificar_recorrido_boton" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-bs-target="#modificar_recorridos_modal"><i class="mdi mdi-account-cash-outline me-1"></i>Modificar Valores</a>
-                                                                <a id="ingresar_recorridos" type="button" class="btn btn-primary ml-1" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-cart-plus me-1 ml-1"></i>Ingresar Recorridos</a>
-                                                                <a id="facturar_recorridos_boton" type="button" class="btn btn-info ml-1"><i class="mdi mdi-printer me-1 ml-1"></i> <span> Generar Comprobante </span></a>
+                                                            <div class="btn-group float-end">
+                                                                <a id="Modificar_recorrido_boton" type="button" class="btn btn-primary ms-1" data-bs-toggle="modal" data-bs-target="#modificar_recorridos_modal"><i class="mdi mdi-account-cash-outline me-1"></i>Modificar Valores</a>
+                                                                <a id="ingresar_recorridos" type="button" class="btn btn-primary ms-1" data-bs-toggle="modal" data-bs-target="#bs-example-modal-lg"><i class="mdi mdi-cart-plus me-1 ms-1"></i>Ingresar Recorridos</a>
+                                                                <a id="facturar_recorridos_boton" type="button" class="btn btn-info ms-1"><i class="mdi mdi-printer me-1 ms-1"></i> <span> Generar Comprobante </span></a>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2741,10 +2741,10 @@
 
                                                         <!-- Invoice Logo-->
                                                         <div class="clearfix">
-                                                            <div class="float-left mb-3">
+                                                            <div class="float-start mb-3">
                                                                 <img src="../images/LogoCaddy.png" alt="" height="70">
                                                             </div>
-                                                            <div class="float-right">
+                                                            <div class="float-end">
                                                                 <h2 class="m-0" id="factura_titulo"></h2>
                                                             </div>
                                                         </div>
@@ -2899,18 +2899,18 @@
                                                         <div class="row">
                                                             <div class="col-sm-6">
                                                                 <div class="text-sm-start">
-                                                                    <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid mr-2" /> -->
+                                                                    <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid me-2" /> -->
                                                                 </div>
                                                             </div>
                                                             <!-- end col-->
                                                             <div class="col-sm-6">
-                                                                <div class="float-right mt-3 mt-sm-0">
+                                                                <div class="float-end mt-3 mt-sm-0">
                                                                     <input type="hidden" id="factura_neto_f">
                                                                     <input type="hidden" id="factura_iva_f">
                                                                     <input type="hidden" id="factura_total_f">
-                                                                    <p><b>Total Neto: </b> <span id="factura_neto" class="float-right"></span></p>
-                                                                    <p><b>Descuento (%): </b> <span id="factura_descuento" class="float-right"></span></p>
-                                                                    <p><b>Total IVA (21 %): </b> <span id="factura_iva" class="float-right"></span></p>
+                                                                    <p><b>Total Neto: </b> <span id="factura_neto" class="float-end"></span></p>
+                                                                    <p><b>Descuento (%): </b> <span id="factura_descuento" class="float-end"></span></p>
+                                                                    <p><b>Total IVA (21 %): </b> <span id="factura_iva" class="float-end"></span></p>
                                                                     <p>
                                                                     <h4><b>Total Comprobante: </b><span id="factura_total"></h4>
                                                                     </p>
@@ -2953,10 +2953,8 @@
                                                         <div class="d-print-none mt-4">
                                                             <div class="text-end">
                                                                 <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
-                                                                <!-- <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a> -->
                                                                 <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
                                                                 <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
-                                                                <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
                                                                 <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
                                                         </div>
@@ -2978,10 +2976,10 @@
 
                                                         <!-- Invoice Logo-->
                                                         <div class="clearfix">
-                                                            <div class="float-left mb-3">
+                                                            <div class="float-start mb-3">
                                                                 <img src="../images/LogoCaddy.png" alt="" height="70">
                                                             </div>
-                                                            <div class="float-right">
+                                                            <div class="float-end">
                                                                 <h3 class="m-0" id="factura_detalle_titulo"></h3>
                                                             </div>
                                                         </div>
@@ -3106,18 +3104,18 @@
                                                         <div class="row">
                                                             <div class="col-sm-6">
                                                                 <div class="text-sm-start">
-                                                                    <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid mr-2" /> -->
+                                                                    <!--<img src="../hyper/dist/saas/assets/images/barcode.png" alt="barcode-image" class="img-fluid me-2" /> -->
                                                                 </div>
                                                             </div>
                                                             <!-- end col-->
                                                             <div class="col-sm-6">
-                                                                <div class="float-right mt-3 mt-sm-0">
+                                                                <div class="float-end mt-3 mt-sm-0">
                                                                     <input type="hidden" id="factura_neto_f">
                                                                     <input type="hidden" id="factura_iva_f">
                                                                     <input type="hidden" id="factura_total_f">
-                                                                    <p><b>Total Neto: </b> <span id="factura_neto_detalle" class="float-right"></span></p>
-                                                                    <p><b>Descuento (%): </b> <span id="factura_descuento_detalle" class="float-right"></span></p>
-                                                                    <p><b>Total IVA (21 %): </b> <span id="factura_iva_detalle" class="float-right"></span></p>
+                                                                    <p><b>Total Neto: </b> <span id="factura_neto_detalle" class="float-end"></span></p>
+                                                                    <p><b>Descuento (%): </b> <span id="factura_descuento_detalle" class="float-end"></span></p>
+                                                                    <p><b>Total IVA (21 %): </b> <span id="factura_iva_detalle" class="float-end"></span></p>
                                                                     <p>
                                                                     <h4><b>Total Comprobante: </b><span id="factura_total_detalle"></h4>
                                                                     </p>
@@ -3154,7 +3152,6 @@
                                                         <div class="d-print-none mt-4">
                                                             <div class="text-end">
                                                                 <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
-                                                                <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer"></i> Imprimir</a>
                                                                 <!-- <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
                                                                 <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
                                                                 <a id="cancelarfactura_detalle_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>

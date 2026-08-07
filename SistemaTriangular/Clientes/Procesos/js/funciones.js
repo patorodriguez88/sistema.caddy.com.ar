@@ -3048,6 +3048,10 @@ $("#botonfacturacion").click(function () {
             );
           },
           className: "dt-body-center",
+          // Sin esto, un click en el checkbox (dentro del <th> de esta
+          // columna) tambien dispara el orden-por-columna nativo de
+          // DataTables y reordena/"esconde" filas al tocar "marcar todos".
+          orderable: false,
         },
       ],
       select: {
@@ -3850,6 +3854,16 @@ $("#confirmar_movimientos_internos_botton").click(function () {
 // los remitos que realmente se adjuntan a la factura.
 var remitosSeleccionadosFacturar = [];
 var recorridosSeleccionadosFacturar = [];
+
+// Checkbox "marcar todos" del header de #facturacion_tabla. Delegado en
+// document porque las filas (tbody) se reemplazan en cada ajax.reload().
+$(document).on("change", "#customCheck1", function () {
+  var marcarTodos = $(this).prop("checked");
+  $("#facturacion_tabla tbody input.custom-control-input").prop(
+    "checked",
+    marcarTodos,
+  );
+});
 
 $("#facturar_boton").click(function () {
   var id = document.getElementById("buscarcliente").value;
