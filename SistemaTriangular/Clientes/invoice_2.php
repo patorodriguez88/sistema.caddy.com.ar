@@ -49,7 +49,7 @@ session_start();
                         <div class="modal-content">
                             <div class="modal-header modal-colored-header bg-primary">
                                 <h4 class="modal-title" id="myCenterModalLabel_codcliente"></h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="col-lg-12 mt-3">
 

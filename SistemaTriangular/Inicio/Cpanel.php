@@ -67,7 +67,7 @@
                                     <h4 class="modal-title" id="fullWidthModalLabel">RECORRIDO BY GESTYA
                                     </h4>
 
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <!-- //DESDE America -->
@@ -168,7 +168,7 @@
                             <div class="modal-content modal-filled bg-warning">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="fill-warning-modalLabel">ENVIAR SERVICIOS A DEPOSITO</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div id="deposito-modal-body" class="modal-body">
 
@@ -187,7 +187,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-info">
                                     <h4 class="modal-title" id="myCenterModalLabel">Center modal</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="form-group">
@@ -216,7 +216,7 @@
                                 <div class="modal-header">
 
                                     <h4 class="modal-title" id="fill-primary-modalLabel">Imprimir Rótulos Recorrido </h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div id="body-rotulos" class="modal-body">
 
@@ -237,7 +237,7 @@
                             <div class="modal-content modal-filled bg-secondary">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="fill-primary-modalLabel">Imprimir Remitos Recorrido </h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div id="body-remitos" class="modal-body">
                                 </div>
@@ -257,7 +257,7 @@
                             <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                 <div id="modal_seguimiento_header" class="modal-header">
                                     <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">
@@ -339,7 +339,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="tabla_pendientesmapa_title">Large modal</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <div class="row">

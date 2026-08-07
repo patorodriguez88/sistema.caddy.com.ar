@@ -107,7 +107,7 @@ header("location:https://www.caddy.com.ar/sistema");
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">MODIFICAR #</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                             <form id="form">
                               <div class="modal-body mb-3">
@@ -299,7 +299,7 @@ header("location:https://www.caddy.com.ar/sistema");
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               
@@ -322,7 +322,7 @@ header("location:https://www.caddy.com.ar/sistema");
                     <div class="modal-content">
                         <div class="modal-header">
                             <h4 class="modal-title" id="myLargeModalLabel">Asignar Salidas a la Cuenta Corriente del Cliente</h4>
-                            <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
                         
@@ -366,7 +366,7 @@ header("location:https://www.caddy.com.ar/sistema");
                     <div class="modal-content">
                         <div class="modal-header modal-colored-header bg-primary">
                             <h4 class="modal-title" id="myCenterModalLabel_codcliente"></h4>
-                            <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                           <div class="col-lg-12 mt-3">
 
@@ -392,7 +392,7 @@ header("location:https://www.caddy.com.ar/sistema");
                             <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
                             <div class="text-sm-right">
                                 <button id="cambiar_estado" type="button" class="btn btn-light" aria-hidden="true">Cambiar Estado</button>
-                            <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                         </div>
                         <div class="modal-body">
@@ -475,7 +475,7 @@ header("location:https://www.caddy.com.ar/sistema");
                   <div class="modal-content modal-filled bg-warning">
                       <div class="modal-header">
                           <h4 class="modal-title" id="fill-warning-modalLabel">Cambiar Estado de Servicio</h4>
-                          <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                       </div>
                       <div class="modal-body">
                         Estas por cambiar el estado del servicio a No entregado.
@@ -499,7 +499,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-warning">
                     <h4 class="modal-title" id="standard-modalLabel">Aplicar Descuento a Comprobante</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
                     <div class="row">
@@ -528,7 +528,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-info">
                     <h4 class="modal-title" id="info-header-modalLabel">Facturacion</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
                     <div 
@@ -646,7 +646,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-info">
                     <h4 class="modal-title" id="Facturacion_recorridos-modalLabel">Facturacion</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
                     <div class="row">
@@ -763,7 +763,7 @@ header("location:https://www.caddy.com.ar/sistema");
                 <div class="modal-content">
                   <div class="modal-header modal-colored-header bg-success">
                     <h4 class="modal-title" id="standard-modalLabel">Cargar Pago</h4>
-                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                   </div>
                   <div class="modal-body">
 
@@ -867,7 +867,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                     <form method="POST" class="needs-validation"  data-toggle="validator" data-disable="false" >
                                       <div class="modal-header modal-colored-header bg-success">
                                           <h4 class="modal-title" id="success-header-modalLabel">Crear Nuevo Cliente</h4>
-                                          <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                       </div>
                                       <div class="modal-body">
                                         <div id="errorname" class="alert alert-warning" role="alert" style="display:none">
@@ -939,7 +939,7 @@ header("location:https://www.caddy.com.ar/sistema");
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="mySmallModalLabel">Observaciones</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div id="observaciones_body" class="modal-body">
                                     

@@ -494,7 +494,7 @@ $mostrarBoton = true; // Establece esta variable según tu lógica para decidir 
             <div class="modal-content">
               <div class="modal-header modal-colored-header bg-primary">
                 <h4 class="modal-title" id="compose-header-modalLabel">Enviar Factura</h4>
-                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
               </div>
 
 

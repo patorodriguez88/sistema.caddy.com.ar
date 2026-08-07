@@ -156,7 +156,7 @@ if (isset($_POST['submit']))
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-modal-title"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro <a id="id_eliminar"></a></h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                                
@@ -174,7 +174,7 @@ if (isset($_POST['submit']))
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-modal-title"><i class="mdi mdi-application-import"></i> Confirmar Importar Registro <a id="id_eliminar"></a></h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div id="importar-modal-body" class="modal-body">
                                
@@ -223,7 +223,7 @@ if (isset($_POST['submit']))
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel">Actualizar Cliente</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div class="modal-body">
                                <div class="col-lg-12 mt-3">

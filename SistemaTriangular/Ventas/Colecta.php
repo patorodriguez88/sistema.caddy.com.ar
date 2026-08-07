@@ -69,7 +69,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-primary">
                                     <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div id="query_selector_recorrido_t" class="col-lg-12 mt-3">
                                     <div class="selector-recorrido form-group">

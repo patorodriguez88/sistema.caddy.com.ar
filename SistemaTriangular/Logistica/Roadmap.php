@@ -64,7 +64,7 @@ header('location:https://www.caddy.com.ar/sistema');
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myLargeModalLabel">Resumen de Estado de Envios </h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                             <table class="table table-striped table-centered mb-0" id="seguimiento_1" style="font-size:12px">
@@ -90,7 +90,7 @@ header('location:https://www.caddy.com.ar/sistema');
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myLargeModalLabel_2">Detalle de Envios </h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">                
                             <table class="table table-striped table-centered mb-0" id="seguimiento_2" style="font-size:10px">
@@ -337,7 +337,7 @@ header('location:https://www.caddy.com.ar/sistema');
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               

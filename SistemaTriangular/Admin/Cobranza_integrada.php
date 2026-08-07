@@ -58,7 +58,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="mySmallModalLabel">Modificar Improte Cobranza Integrada Id <a id="label_change_import"></a></h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
 
@@ -92,7 +92,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myCenterModalLabel_rec">Cobranza Integrada</h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                                 <!--DESDE ACA FACTURA -->
@@ -237,7 +237,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myCenterModalLabel">GENERAR LIQUIDACION DE COBRANZA INTEGRADA</h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <form id="form">
                                 <div class="modal-body mb-3">

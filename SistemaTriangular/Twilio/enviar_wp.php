@@ -118,7 +118,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-success">
                                     <h4 class="modal-title" id="multiple-oneModalLabel">Mensaje a Enviar</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <h5 class="mt-0">Mensaje al Cliente</h5>
@@ -154,7 +154,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-success">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Recibir Hoy</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
 
@@ -174,7 +174,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-waring">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Reprogramar Entrega</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
 
@@ -196,7 +196,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-waring">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Informar Horario</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
 
@@ -219,7 +219,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-danger">
                                     <h4 class="modal-title" id="multiple-twoModalLabel">Cancelar Entrega</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <p>❌ Tu pedido ha sido cancelado. Si fue un error, escribinos y lo solucionamos. </p>

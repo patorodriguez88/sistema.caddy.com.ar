@@ -64,7 +64,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="modal-clientes-title">Ventas Anuales </h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
 
@@ -92,7 +92,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-primary">
                                     <h4 class="modal-title" id="primary-header-modalLabel">Seleccione un Mes</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">x</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <select class="form-control select2" data-toggle="select2" id="mes_select">
@@ -128,7 +128,7 @@
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myLargeModalLabel">Gastos Seleccionados</h4>
 
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <p class="text-muted font-14" id="sub_header_gastos">Desde el 01/04/2022 Hasta el 30/04/2022</p>

@@ -84,7 +84,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="myCenterModalLabel_modificar">MODIFICAR #</h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <form id="form">
                                 <div class="modal-body mb-3">
@@ -416,7 +416,7 @@
                         <div class="modal-content">
                             <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div id="warning-modal-body" class="modal-body">
 

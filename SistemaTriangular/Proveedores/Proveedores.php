@@ -56,7 +56,7 @@
                             <div class="modal-content">
                                 <div class="modal-header modal-colored-header bg-danger">
                                     <h4 class="modal-title" id="danger-header-modalLabel">Eliminar Comprobante <a id="id_factura_borrar"></a></h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <p id="info_factura_borrar"></p>
@@ -76,7 +76,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="standard-modalLabel">Ingresar Foto del Comprobante <a id="id_comprobante_subir_html"></a></h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">x</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
 

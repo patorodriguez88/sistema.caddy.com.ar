@@ -182,7 +182,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-danger">
                                         <h4 class="modal-title" id="danger-header-modalLabel"></h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
 
@@ -200,7 +200,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="standard-modalLabel">Subir Titulo Automotor</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
 
@@ -261,7 +261,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="standard-modalLabel">Agregar Service Automotor</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <p id="service-up-modal_vehicle" class="ml-2 text-muted font-15">Vehiculo </p>
                                     <div class="modal-body">
@@ -371,7 +371,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title">Registros para Mantenimiento</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <p id="mantenimiento-modal_vehicle-asana" class="ml-2 text-muted font-15">Vehiculo </p>
                                     <div class="modal-body">
@@ -426,7 +426,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title">Subir Seguro del Automotor</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
 
@@ -516,7 +516,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header">
                                         <h4 class="modal-title" id="vehicles-up-tax-modalLabel">Agregar Impuestos</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <p id="vehicles-up-tax_vehicle" class="ml-2 text-muted font-15"> </p>
                                     <div class="modal-body">

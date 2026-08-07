@@ -48,7 +48,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="standard-modalLabel">Cargar Registro en Seguimiento</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
 
@@ -121,7 +121,7 @@
                             <div class="modal-content">
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="standard-modalLabel">Cambio de Pagador</h4>
-                                    <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">
                                     <h5>Cambio de Forma de Pago</h5>
@@ -246,7 +246,7 @@
                                 <div class="modal-content">
                                     <div class="modal-header modal-colored-header bg-primary">
                                         <h4 class="modal-title" id="primary-header-modalLabel">Modificar Fecha de Envío</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
 

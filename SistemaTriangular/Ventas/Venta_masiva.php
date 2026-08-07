@@ -81,7 +81,7 @@ include_once "../Conexion/Conexion.php";
                               <div class="modal-content">
                                   <div class="modal-header modal-colored-header bg-success">
                                       <h4 class="modal-title" id="success-header-modalLabel">Ultimo Paso</h4>
-                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                   </div>
                                   <div class="modal-body">
                                   Cargaste con éxito la venta, el codigo de seguimiento es <a id='codseg'></a>, ahora seleccioná que sigue...
@@ -208,7 +208,7 @@ include_once "../Conexion/Conexion.php";
                                   <div class="modal-header modal-colored-header bg-primary">
                                       <h4 class="modal-title" id="standard-modalLabel">Cargar Pago</h4>
                                     
-                                      <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                      <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                   </div>
                                   <div class="modal-body">
                                     <div class="row">
@@ -328,7 +328,7 @@ include_once "../Conexion/Conexion.php";
                                     <form method="POST" class="needs-validation"  data-toggle="validator" data-disable="false" >
                                       <div class="modal-header">
                                           <h4 class="modal-title" id="fullWidthModalLabel"><a id="datonuevocliente"></a></h4>
-                                          <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                       </div>
                                       <div class="modal-body">
                                         <div id="errorname" class="alert alert-warning" role="alert" style="display:none">

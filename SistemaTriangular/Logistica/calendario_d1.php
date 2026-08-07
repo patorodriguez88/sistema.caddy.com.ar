@@ -145,8 +145,8 @@ include_once "../Conexion/Conexion.php";
                                     <div class="modal-dialog">
                                         <div class="modal-content">
                                             <div class="modal-header py-3 px-4 border-bottom-0 d-block">
-                                                <button type="button" class="close" data-bs-dismiss="modal"
-                                                    aria-hidden="true">&times;</button>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                    aria-label="Close"></button>
                                                 <h5 class="modal-title" id="modal-title">Event</h5>
                                             </div>
                                             <div class="modal-body px-4 pb-4 pt-0">

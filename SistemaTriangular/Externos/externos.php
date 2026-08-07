@@ -49,7 +49,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title text-uppercase d-print-none" id="desempeno_header"></h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
 
@@ -185,7 +185,7 @@
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title" id="NewTaskModalLabel">Agregar Nuevo Repartidor Externo</h4>
-                                <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
                             <div class="modal-body">
                                 <form id="new_externo" class="needs-validation" novalidate>

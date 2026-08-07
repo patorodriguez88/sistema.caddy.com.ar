@@ -56,7 +56,7 @@ if($_SESSION['Usuario']==''){
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-primary">
                                   <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                             <div class="col-lg-12 mt-3">
                               <div class="selector-recorrido form-group">
@@ -83,7 +83,7 @@ if($_SESSION['Usuario']==''){
                           <div class="modal-content">
                               <div class="modal-header">
                                   <h4 class="modal-title" id="myCenterModalLabel_modificar">MODIFICAR #</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                             <form id="form">
                               <div class="modal-body mb-3">
@@ -282,7 +282,7 @@ if($_SESSION['Usuario']==''){
                                 <div id="modal_seguimiento_content" class="modal-content bg-primary">
                                     <div id="modal_seguimiento_header" class="modal-header">
                                         <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
-                                        <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
                                     <div class="row">
@@ -396,7 +396,7 @@ if($_SESSION['Usuario']==''){
                           <div class="modal-content">
                               <div class="modal-header modal-colored-header bg-warning">
                                 <h4 class="modal-title" id="warning-header-modalLabel"><i class="mdi mdi-trash-can-outline"></i> Confirmar Eliminar Registro</h4>
-                                  <button type="button" class="close" data-bs-dismiss="modal" aria-hidden="true">×</button>
+                                  <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
                               <div id="warning-modal-body" class="modal-body">
                               
