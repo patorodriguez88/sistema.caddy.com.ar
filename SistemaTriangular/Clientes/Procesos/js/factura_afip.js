@@ -1,41 +1,29 @@
 
-//GENERAR COMPROBANTE AFIP
+//GENERAR COMPROBANTE AFIP (Nota de Crédito / Débito) - modal propio #ncnd-modal,
+// independiente del modal de Facturación (no requiere seleccionar remitos).
 
-$("#confirmar_generar_comprobante_AFIP_boton").click(function() {
+var TIPOS_NCND = {
+    '2': 'NOTAS DE DEBITO A',
+    '3': 'NOTAS DE CREDITO A',
+    '7': 'NOTAS DE DEBITO B',
+    '8': 'NOTAS DE CREDITO B'
+};
 
-    var fecha = document.getElementById('fecha_up').value;
+$("#confirmar_ncnd_boton").click(function() {
+
+    var fecha = document.getElementById('ncnd_fecha').value;
     var id = document.getElementById('buscarcliente').value;
-    var neto = document.getElementById('neto_up').value;
-    var iva = document.getElementById('iva_up').value;
-    var total = document.getElementById('total_up').value;
-    var sitfiscal = document.getElementById('condicion').value;
+    var neto = document.getElementById('ncnd_neto').value;
+    var iva = document.getElementById('ncnd_iva').value;
+    var total = document.getElementById('ncnd_total').value;
 
-    //FACTURACION
+    //FACTURACION (datos fiscales del cliente, ya cargados al seleccionarlo)
     var razonsocial_f = document.getElementById('razonsocial_facturacion').value;
     var direccion_f = document.getElementById('direccion_facturacion').value;
     var tipodocumento_f = document.getElementById('tipodocumento_facturacion').value;
     var documento_f = document.getElementById('cuit_facturacion').value;
-    var fecha_desde=fecha;
-    var fecha_hasta=fecha;  
-    
-    var cbteasoc_tipo=document.getElementById('cbteasoc_tipo').value;
-
-    if(cbteasoc_tipo=='FACTURAS A'){
-        
-        var cbteasoc_tipo_n='1';
-
-    }else if(cbteasoc_tipo=='FACTURAS B'){
-        
-        cbteasoc_tipo_n='6';
-    }
-
-    var cbteasoc_ptovta=document.getElementById('cbteasoc_ptovta').value;
-    var cbteasoc_nro=document.getElementById('cbteasoc_nro').value;
-
-    var observaciones_ctasctes=document.getElementById('observaciones_ctasctes').value;
-
-    //CUADRO FACTURACION
-    var comprobante = document.getElementById('comprobante_up').value;
+    var fecha_desde = fecha;
+    var fecha_hasta = fecha;
 
     if (document.getElementById('nueva_condicion_facturacion').value != '') {
         var condiva_f = document.getElementById('nueva_condicion_facturacion').value;
@@ -43,23 +31,30 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
         var condiva_f = document.getElementById('condicion_facturacion').value;
     }
 
-    var comprobante_tipo=$('#comprobante_tipo').val();
+    var comprobante_tipo = $('#ncnd_comprobante_tipo').val();
+    var comprobante = TIPOS_NCND[comprobante_tipo];
+
+    var $asociado = $('#ncnd_comprobante_asociado').find(':selected');
+    var idComprobanteAsociado = $('#ncnd_comprobante_asociado').val();
+    var cbteasoc_tipo_n = $asociado.attr('data-tipo-n');
+    var cbteasoc_ptovta = $asociado.attr('data-ptovta');
+    var cbteasoc_nro = $asociado.attr('data-nro');
+
+    var observaciones_ctasctes = document.getElementById('ncnd_observaciones').value;
 
     // Validaciones minimas antes de mandar a AFIP
-    if (!comprobante_tipo) {
+    if (!comprobante) {
         toast("error", "Error", "Falta seleccionar el tipo de Nota de Crédito/Débito a generar.");
         return;
     }
-    if (!cbteasoc_tipo || !cbteasoc_nro) {
-        toast("error", "Error", "Falta el comprobante asociado (tipo y número) al que se le aplica la Nota de Crédito/Débito.");
+    if (!idComprobanteAsociado || !cbteasoc_nro) {
+        toast("error", "Error", "Falta elegir el comprobante que se quiere corregir.");
         return;
     }
     if (!total || Number(total) <= 0) {
         toast("error", "Error", "El importe total debe ser mayor a 0.");
         return;
     }
-
-    var ncomp = $('#ncomprobante_up').val();
 
    var dato = {
       'Fecha':fecha,
@@ -82,51 +77,38 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
       'CbtesAsoc_PtoVta':cbteasoc_ptovta,
       'cbteasoc_nro':cbteasoc_nro,
       'Observaciones_ctasctes':observaciones_ctasctes,
-      
+
     };
-  
+
     $.ajax({
-      data: dato, 
+      data: dato,
       url:'../afip.php/procesos/CreateVoucherncnb.php', //PRODUCCION AFIP - sin cert de homologacion disponible por ahora (ver notas 2026-08-06)
       type: 'post',
-    
+
     beforeSend: function() {
 
+        $('#ncnd-modal').modal('hide');
         $('#warning-alert-modal').modal('show');
 
         $("#warning_text").html("Enviando los datos a AFIP");
 
       },
-  
+
       success: function(respuesta) {
 
         try {
-        
+
         var jsonData = $.parseJSON(respuesta);
 
         if(jsonData.data==1){
-        
-            if (jsonData.CAE != '') {                                    
-            
+
+            if (jsonData.CAE != '') {
+
             $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-checkmark h1 text-success');
-        
+
             $('#warning_mt2_alert').html('Exito !');
 
             $("#warning_text").html("Exito ! Comprobante N "+jsonData.Numero);
-            
-
-            document.getElementById('datos_cae').style.display = "block";
-            
-            $('#CAE').html(jsonData.CAE);//HABILITAR PARA FACTURA AFIP 
-            
-            var FechaVenc=jsonData.VencimientoCAE.split('-').reverse().join('/');//HABILITAR PARA FACTURA AFIP
-
-            $('#VencimientoCAE').html(FechaVenc);//HABILITAR PARA FACTURA AFIP
-
-            $('#factura_titulo2').html(comprobante);
-            $('#factura_titulo').html(comprobante);
-
-            $('#NumeroComprobante').html(jsonData.Numero);  //HABILITAR PARA FACTURA AFIP
 
             //FACTURO EN EL SISTEMA
             var datofacturasistema = {
@@ -150,13 +132,13 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
                 'observaciones_t': observaciones_ctasctes,
                 'tipodecomprobante_t': comprobante,
                 'id': id,
-                'condicion': sitfiscal,
                 'NumeroComprobante': jsonData.Numero,
                 'PtoVta': jsonData.PtoVta,
                 'Comprobante': comprobante,
                 'CAE': jsonData.CAE,
                 'FechaVencimientoCAE': jsonData.VencimientoCAE,
-                'Observaciones_ctasctes': observaciones_ctasctes
+                'Observaciones_ctasctes': observaciones_ctasctes,
+                'idComprobanteAsociado': idComprobanteAsociado
             };
 
             $.ajax({
@@ -167,19 +149,10 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
                 var jsonData1 = JSON.parse(respuesta);
                 if (jsonData1.success == 1) {
                     toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
-                    //DESTRUIMOS LA TABLA FACTURACION
-                    var table = $('#tabla_facturacion_proforma').DataTable();
-                    table.destroy();
-
-                    var tabla_facturacion = $('#facturacion_tabla').DataTable();
-                    tabla_facturacion.ajax.reload();
 
                     //ACTUALIZO LA TABLA CTA CTE
                     var tabla_ctacte = $('#basic').DataTable();
                     tabla_ctacte.ajax.reload();
-
-                    document.getElementById('factura_primerpaso').style.display = "block";
-                    document.getElementById('factura_proforma').style.display = "none";
 
                 } else if (jsonData1.success == 0) {
 
@@ -205,9 +178,9 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
     }
 
 } catch (err) {
-    
+
     $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
-    
+
     $('#warning_mt2_alert').html('Error !');
 
     $("#warning_text").html("Error! Comprobante No Facturado Error: "+err.message);
@@ -217,7 +190,6 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
 
 }
 });
-
 });
 
 //FACTURA AFIP

@@ -861,17 +861,7 @@ header("location:https://www.caddy.com.ar/sistema");
         
         <!--END MODAL CARGAR PAGO-->
         <!--MODAL NUEVO CLIENTE -->
-                          <style>
-                          .modal{
-                              z-index: 20;   
-                          
-                            }
-                          .modal-backdrop{
-                              z-index: 10;        
-                          }
-                          </style>
-        
-                          <div id="nuevocliente-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
+<div id="nuevocliente-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
                               <div class="modal-dialog modal-lg modal-dialog-centered">
                                   <div class="modal-content">
                                     <form method="POST" class="needs-validation"  data-toggle="validator" data-disable="false" >

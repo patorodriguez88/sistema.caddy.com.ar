@@ -322,16 +322,7 @@ include_once "../Conexion/Conexion.php";
                           </div><!-- /.modal-dialog -->
 <!--                       </div><!-- /.modal --> 
                       <!-- Full width modal -->
-                          <style>
-                          .modal{
-                              z-index: 20;   
-                          
-                            }
-                          .modal-backdrop{
-                              z-index: 10;        
-                          }
-                          </style>
-                          <div id="bs-example-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
+<div id="bs-example-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
                               <div class="modal-dialog modal-lg">
                                   <div class="modal-content">
                                     <form method="POST" class="needs-validation"  data-toggle="validator" data-disable="false" >

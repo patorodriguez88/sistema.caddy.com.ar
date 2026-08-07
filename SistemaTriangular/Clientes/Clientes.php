@@ -1310,6 +1310,93 @@
                         <!-- /.modal-dialog -->
                     </div>
 
+                    <!--MODAL GENERAR NOTA DE CREDITO/DEBITO AFIP (independiente del modal de Facturacion, no requiere seleccionar remitos) -->
+                    <div id="ncnd-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="ncndModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header modal-colored-header bg-warning">
+                                    <h4 class="modal-title" id="ncndModalLabel">Generar Nota de Crédito / Débito AFIP</h4>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-warning" role="alert">
+                                        <i class="dripicons-warning me-2"></i> La Nota de Crédito/Débito es un ajuste manual contra un comprobante ya emitido. No se seleccionan remitos: el importe se carga a mano.
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-6 mt-1">
+                                            <div class="form-group">
+                                                <label for="ncnd_fecha">Fecha del Comprobante</label>
+                                                <input type="date" id="ncnd_fecha" class="form-control">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-6 mt-1">
+                                            <div class="form-group">
+                                                <label for="ncnd_comprobante_tipo">Tipo de Comprobante a Generar</label>
+                                                <select id="ncnd_comprobante_tipo" class="form-control select2" data-toggle="select2">
+                                                    <option value="">Seleccione una Opción</option>
+                                                    <optgroup label="Responsable Inscripto (A)">
+                                                        <option value="3">NOTA DE CRÉDITO A</option>
+                                                        <option value="2">NOTA DE DÉBITO A</option>
+                                                    </optgroup>
+                                                    <optgroup label="Consumidor Final / Monotributo (B)">
+                                                        <option value="8">NOTA DE CRÉDITO B</option>
+                                                        <option value="7">NOTA DE DÉBITO B</option>
+                                                    </optgroup>
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-12 mt-1">
+                                            <div class="form-group">
+                                                <label for="ncnd_comprobante_asociado">Comprobante a Corregir</label>
+                                                <select id="ncnd_comprobante_asociado" class="form-control">
+                                                    <option value="">Seleccione el comprobante emitido que quiere corregir</option>
+                                                </select>
+                                                <span class="font-13 text-muted">Lista los comprobantes fiscales (Facturas A/B) ya emitidos a este cliente.</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-4 mt-2">
+                                            <div class="form-group">
+                                                <label for="ncnd_neto">Importe Neto</label>
+                                                <input type="text" id="ncnd_neto" class="form-control" data-toggle="input-mask" data-mask-format="000.000.000.000.000,00" data-reverse="true">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4 mt-2">
+                                            <div class="form-group">
+                                                <label for="ncnd_iva">Importe IVA (21%)</label>
+                                                <input type="text" id="ncnd_iva" class="form-control" data-toggle="input-mask" data-mask-format="000.000.000.000.000,00" data-reverse="true">
+                                            </div>
+                                        </div>
+                                        <div class="col-lg-4 mt-2">
+                                            <div class="form-group">
+                                                <label for="ncnd_total">Importe Total</label>
+                                                <input type="text" id="ncnd_total" class="form-control" data-toggle="input-mask" data-mask-format="000.000.000.000.000,00" data-reverse="true">
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-lg-12 mt-1">
+                                            <div class="form-group">
+                                                <label for="ncnd_observaciones">Observaciones</label>
+                                                <input type="text" id="ncnd_observaciones" class="form-control" placeholder="Motivo del ajuste">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                    <button type="button" id="confirmar_ncnd_boton" class="btn btn-warning"><i class="mdi mdi-check-bold me-1"></i> Generar Comprobante AFIP</button>
+                                </div>
+                            </div>
+                            <!-- /.modal-content -->
+                        </div>
+                        <!-- /.modal-dialog -->
+                    </div>
+                    <!-- /.modal NCND -->
+
                     <!--MODAL CARGAR PAGO-->
                     <div
                         id="standard-modal"
@@ -1570,17 +1657,6 @@
 
 
                     <!--MODAL NUEVO CLIENTE -->
-                    <style>
-                        .modal {
-                            z-index: 20;
-
-                        }
-
-                        .modal-backdrop {
-                            z-index: 10;
-                        }
-                    </style>
-
                     <div id="nuevocliente-modal-lg" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-centered">
                             <div class="modal-content">
@@ -1704,7 +1780,7 @@
                                             </button>
                                             <!-- 4986 -->
                                             <button id="asociar_pago_comprobante_button" type="button" class="btn btn-primary" style="display:none" data-bs-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span></span> </button>
-                                            <button id="generar_comprobante_afip_button" type="button" class="btn btn-warning" style="display:none" data-bs-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Generar NC ND Afip</span> </button>
+                                            <button id="generar_comprobante_afip_button" type="button" class="btn btn-warning" style="display:none" data-bs-toggle="modal" data-bs-target="#ncnd-modal"><i class="mdi mdi-account-cash-outline"></i> <span>Generar NC ND Afip</span> </button>
                                             <button id="debitocredito_botton" type="button" class="btn btn-primary" style="display:none" data-bs-toggle="modal"><i class="mdi mdi-account-cash-outline"></i> <span>Movimiento Interno</span> </button>
                                             <a id="crearcliente" class="btn btn-success" data-parent="Origen" data-bs-toggle="modal" data-bs-target="#nuevocliente-modal-lg"><i class="mdi mdi-18px mdi-account-multiple-plus"></i> Agregar Cliente</a>
                                             <button id="guardar_botton" type="button" class="btn btn-success" style="display:none"><i class="mdi mdi-cloud me-1"></i> <span>Guardar</span> </button>

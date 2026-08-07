@@ -81,16 +81,6 @@ include("../ConexionBD.php");
   <body>
         <!-- Begin page -->
 
-                  <style>
-                  .modal{
-                      z-index: 20;   
-
-                    }
-                  .modal-backdrop{
-                      z-index: 10;        
-                  }
-                  </style>
-
 <div id="container">
       <div id="map"></div>
       <div id="sidebar">

@@ -227,18 +227,7 @@ $allowedFileType = ['application/vnd.ms-excel','text/xls','text/xlsx','applicati
                       </div><!-- /.modal-content -->
                   </div><!-- /.modal-dialog -->
                   </div><!-- /.modal -->
-              <style>
-              .modal{
-              z-index: 20;   
-              }
-              .modal-backdrop{
-              z-index: 10;        
-              }
-              </style>
-
-                  
-                  
-                  <div class="container">
+<div class="container">
                     <h3 class="mt-5">IMPORTACION DE CLIENTES Y VENTAS CADDY</h3>
                     <hr>
                     <div class="row">

@@ -69,16 +69,7 @@ header('location:https://www.caddy.com.ar/sistema');
                           </div><!-- /.modal-content -->
                       </div><!-- /.modal-dialog -->
                   </div><!-- /.modal -->
-                  <style>
-                  .modal{
-                      z-index: 20;   
-
-                    }
-                  .modal-backdrop{
-                      z-index: 10;        
-                  }
-                  </style>
-                  <!-- //MODIFICAR RECORRIDO -->
+<!-- //MODIFICAR RECORRIDO -->
                   <div class="modal fade" id="standard-modal-rec" tabindex="-1" role="dialog" aria-hidden="true">
                       <div class="modal-dialog modal-dialog-centered">
                           <div class="modal-content">

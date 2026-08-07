@@ -67,16 +67,7 @@ $_SESSION[RecorridoMapa]=$_GET[Recorrido];
                           </div><!-- /.modal-content -->
                       </div><!-- /.modal-dialog -->
                   </div><!-- /.modal -->
-                  <style>
-                  .modal{
-                      z-index: 20;   
-
-                    }
-                  .modal-backdrop{
-                      z-index: 10;        
-                  }
-                  </style>
-                <!-- //MODIFICAR DIRECCION -->
+<!-- //MODIFICAR DIRECCION -->
                   <div class="modal fade" id="standard-modal" tabindex="-1" role="dialog" aria-hidden="true">
                       <div class="modal-dialog  modal-lg modal-dialog-centered">
                           <div class="modal-content">

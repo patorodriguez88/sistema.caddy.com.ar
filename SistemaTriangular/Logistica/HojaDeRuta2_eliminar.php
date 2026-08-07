@@ -52,18 +52,7 @@ include_once "../Conexion/Conexioni.php";
                         </nav>
                     </div>
                 </div>
-                <style>
-                    .modal {
-                        z-index: 20;
-
-                    }
-
-                    .modal-backdrop {
-                        z-index: 10;
-                    }
-                </style>
-
-                <!-- MODAL ORDENAR RECORRIDO -->
+<!-- MODAL ORDENAR RECORRIDO -->
                 <!-- Full width modal -->
                 <!-- <button  type="button" class="btn btn-primary" data-toggle="modal" data-target="#full-width-modal">Full width Modal</button> -->
                 <div id="full-width-modal_order" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">

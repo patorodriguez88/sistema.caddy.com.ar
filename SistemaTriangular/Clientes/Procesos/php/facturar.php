@@ -604,16 +604,90 @@ if ($_POST['Facturar'] == 3) {
       $mysqli->query($SQL);
     }
 
-    //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA  
+    //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA
     $OrdenN = $_POST['Remitos'];
 
+    // Si esta Nota de Crédito/Débito corrige un comprobante puntual, lo vinculamos
+    // (idFacturado) y dejamos trazabilidad legible en Observaciones/Update_info.
+    $idComprobanteAsociado = isset($_POST['idComprobanteAsociado']) ? intval($_POST['idComprobanteAsociado']) : 0;
+    $idFacturadoNcNd = 'NULL';
+    $ObservacionesFinal = $Observaciones_ctasctes;
+
+    if ($idComprobanteAsociado > 0) {
+      $sqlAsociado = $mysqli->query("SELECT TipoDeComprobante, NumeroFactura FROM Ctasctes WHERE id={$idComprobanteAsociado} AND Eliminado=0 LIMIT 1");
+      $datoAsociado = $sqlAsociado ? $sqlAsociado->fetch_array(MYSQLI_ASSOC) : null;
+
+      if ($datoAsociado) {
+        $idFacturadoNcNd = $idComprobanteAsociado;
+        $notaTrazabilidad = "Corrige {$datoAsociado['TipoDeComprobante']} {$datoAsociado['NumeroFactura']}.";
+        $ObservacionesFinal = trim($notaTrazabilidad . ' ' . $Observaciones_ctasctes);
+      }
+    }
+
     $sqlCtasctes = "INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`, `Usuario`, `NumeroFactura`,
-  `Observaciones`,`idCliente`,`Facturado`,`idIvaVentas`) VALUES 
-  ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$Comprobante}','{$NumeroComprobante}','{$Total}','{$Usuario}','{$NumeroComprobante}','{$Observaciones_ctasctes}',
-  '{$id}','1','{$id_iva}')";
+  `Observaciones`,`idCliente`,`Facturado`,`idIvaVentas`,`idFacturado`,`Update_info`) VALUES
+  ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$Comprobante}','{$NumeroComprobante}','{$Total}','{$Usuario}','{$NumeroComprobante}','{$ObservacionesFinal}',
+  '{$id}','1','{$id_iva}',{$idFacturadoNcNd},'Clientes/Procesos/php/facturar.php (Facturar=3)')";
 
     $mysqli->query($sqlCtasctes);
 
     echo json_encode(array('success' => 1));
+  }
+}
+
+//TRANSFORMAR FACTURA PROFORMA EN COMPROBANTE FISCAL VALIDO (FACTURA A O B)
+if ($_POST['Facturar'] == 4) {
+
+  $id = intval($_POST['id']);
+  $idCtasctes = intval($_POST['idCtasctes']);
+  $Comprobante = $_POST['Comprobante']; // 'FACTURAS A' o 'FACTURAS B'
+  $CAE = $_POST['CAE'];
+  $FechaVencimientoCAE = $_POST['FechaVencimientoCAE'];
+  $ImporteNeto = $_POST['ImpNeto'];
+  $Iva3 = $_POST['ImpIva'];
+  $Total = $_POST['ImpTotal'];
+
+  $PtoVta = str_pad($_POST['PtoVta'], 5, '0', STR_PAD_LEFT);
+  $NumeroComp_Afip = str_pad($_POST['NumeroComprobante'], 8, '0', STR_PAD_LEFT);
+  $NumeroComprobante = $PtoVta . "-" . $NumeroComp_Afip;
+
+  // Verifico que sea una Proforma vigente de este cliente antes de tocar nada
+  $sqlProforma = $mysqli->query("SELECT * FROM Ctasctes WHERE id={$idCtasctes} AND idCliente={$id} AND TipoDeComprobante='FACTURA PROFORMA' AND Eliminado=0 LIMIT 1");
+  $datoProforma = $sqlProforma ? $sqlProforma->fetch_array(MYSQLI_ASSOC) : null;
+
+  if (!$datoProforma) {
+    echo json_encode(array('success' => 0, 'msg' => 'No se encontró la Factura Proforma indicada, o ya fue transformada.'));
+    exit;
+  }
+
+  $sqlCliente = $mysqli->query("SELECT RazonSocial_f, Cuit_f FROM Clientes WHERE id={$id}");
+  $datoCliente = $sqlCliente->fetch_array(MYSQLI_ASSOC);
+  $RazonSocial_f = $datoCliente['RazonSocial_f'];
+  $Cuit_f = $datoCliente['Cuit_f'];
+  $NumeroProformaOriginal = $datoProforma['NumeroFactura'];
+  $Fecha = $datoProforma['Fecha'];
+
+  //INGRESO EN LIBRO IVA VENTAS - siendo Proforma no estaba registrada, ahora es un comprobante fiscal real
+  $sql4 = "INSERT INTO IvaVentas(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,ImporteNeto,Iva1,Iva2,Iva3,Exento,Total,
+  CompraMercaderia,Saldo,NumeroAsiento,CAE,FechaVencimientoCAE)VALUES('{$Fecha}','{$RazonSocial_f}','{$Cuit_f}','{$Comprobante}','{$NumeroComprobante}',
+  '{$ImporteNeto}','0','0','{$Iva3}','0','{$Total}','0','{$Total}','0','{$CAE}','{$FechaVencimientoCAE}')";
+  $mysqli->query($sql4);
+  $id_iva = $mysqli->insert_id;
+
+  $SQL = "UPDATE `AfipTipoDeComprobante` SET `NumeroComprobante`='{$NumeroComprobante}' WHERE Descripcion='{$Comprobante}' LIMIT 1";
+  $mysqli->query($SQL);
+
+  $NotaTrazabilidad = "Transformado de FACTURA PROFORMA {$NumeroProformaOriginal} a {$Comprobante} el " . date('Y-m-d H:i') . ".";
+  $ObservacionesFinal = $mysqli->real_escape_string(trim($NotaTrazabilidad . ' ' . $datoProforma['Observaciones']));
+  $UpdateInfoFinal = $mysqli->real_escape_string("Clientes/Procesos/php/facturar.php (Facturar=4) - {$NotaTrazabilidad}");
+
+  $sqlUpdate = $mysqli->query("UPDATE Ctasctes SET TipoDeComprobante='{$Comprobante}', NumeroFactura='{$NumeroComprobante}',
+    idIvaVentas={$id_iva}, Observaciones='{$ObservacionesFinal}', Update_info='{$UpdateInfoFinal}'
+    WHERE id={$idCtasctes} LIMIT 1");
+
+  if ($sqlUpdate) {
+    echo json_encode(array('success' => 1));
+  } else {
+    echo json_encode(array('success' => 0, 'msg' => $mysqli->error));
   }
 }

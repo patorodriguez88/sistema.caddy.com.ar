@@ -709,10 +709,18 @@ $("#btn_un_ctas").click(function () {
               `<a onclick='eliminar_pago(${row.id})'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>`
             );
           } else {
+            var transformarBtn = "";
+            if (row.TipoDeComprobante === "FACTURA PROFORMA") {
+              transformarBtn =
+                `<a href="javascript:void(0)" onclick="transformarProformaEnFactura(${row.id}, ${row.Debe}, '${row.NumeroFactura}')" title="Transformar en Factura A/B">` +
+                `<i class="mdi mdi-18px mdi-file-swap-outline text-primary"></i></a>`;
+            }
             return (
               `<td><a target='_blank' href='invoice.php?id=${row.id}' title='Comprobante' >` +
               `<i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-              `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a></td>`
+              `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>` +
+              transformarBtn +
+              `</td>`
             );
           }
         },
@@ -720,6 +728,123 @@ $("#btn_un_ctas").click(function () {
     ],
   });
 });
+
+// TRANSFORMAR FACTURA PROFORMA EN COMPROBANTE FISCAL VALIDO (FACTURA A/B)
+function transformarProformaEnFactura(idCtasctes, debe, numeroFacturaProforma) {
+  var id = document.getElementById("buscarcliente").value;
+
+  var condivaValue = document.getElementById("nueva_condicion_facturacion").value;
+  if (condivaValue == "") {
+    condivaValue = document.getElementById("condicion_facturacion").value;
+  }
+  var esFacturaA = condivaValue == 1;
+  var comprobante_tipo = esFacturaA ? "1" : "6";
+  var comprobante = esFacturaA ? "FACTURAS A" : "FACTURAS B";
+
+  var neto = debe / 1.21;
+  var iva = debe - neto;
+
+  Swal.fire({
+    icon: "warning",
+    title: "Transformar en " + comprobante,
+    html:
+      "Se va a emitir ante AFIP una <b>" + comprobante + "</b> real por " +
+      currencyFormat(debe) + ", reemplazando la Factura Proforma " +
+      (numeroFacturaProforma || "") + ".<br>Esta acción no se puede deshacer.",
+    showCancelButton: true,
+    confirmButtonText: "Sí, transformar",
+    cancelButtonText: "Cancelar",
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+
+    var razonsocial_f = document.getElementById("razonsocial_facturacion").value;
+    var direccion_f = document.getElementById("direccion_facturacion").value;
+    var tipodocumento_f = document.getElementById("tipodocumento_facturacion").value;
+    var documento_f = document.getElementById("cuit_facturacion").value;
+    var fecha = new Date().toISOString().slice(0, 10);
+
+    var dato = {
+      Fecha: fecha,
+      razonsocial_f: razonsocial_f,
+      direccion_f: direccion_f,
+      condiva_f: condivaValue,
+      tipodocumento_f: tipodocumento_f,
+      documento_f: documento_f,
+      Documento: 99,
+      ImpTotal: debe.toFixed(2),
+      ImpTotalConc: 0,
+      ImpNeto: neto.toFixed(2),
+      ImpIva: iva.toFixed(2),
+      ImpTrib: 0,
+      Comprobante_tipo: comprobante_tipo,
+      fecha_desde: fecha,
+      fecha_hasta: fecha,
+    };
+
+    $.ajax({
+      data: dato,
+      url: "../afip.php/procesos/CreateVoucher.php",
+      type: "post",
+      beforeSend: function () {
+        $("#warning-alert-modal").modal("show");
+        $("#warning_text").html("Enviando los datos a AFIP");
+      },
+      success: function (respuesta) {
+        var jsonData;
+        try {
+          jsonData = $.parseJSON(respuesta);
+        } catch (err) {
+          $("#warning_mt2_alert").html("Error !");
+          $("#warning_text").html("Respuesta inválida de AFIP: " + err.message);
+          return;
+        }
+
+        if (jsonData.data != 1 || !jsonData.CAE) {
+          $("#warning_icono_alert").removeClass("dripicons-warning h1 text-warning").addClass("dripicons-wrong h1 text-danger");
+          $("#warning_mt2_alert").html("Error !");
+          $("#warning_text").html("Error! Comprobante No Facturado. Error: " + jsonData.error);
+          return;
+        }
+
+        $("#warning_icono_alert").removeClass("dripicons-warning h1 text-warning").addClass("dripicons-checkmark h1 text-success");
+        $("#warning_mt2_alert").html("Exito !");
+        $("#warning_text").html("Exito ! Comprobante N " + jsonData.Numero);
+
+        //GUARDO LA TRANSFORMACION EN EL SISTEMA
+        $.ajax({
+          data: {
+            Facturar: 4,
+            idCtasctes: idCtasctes,
+            id: id,
+            Comprobante: comprobante,
+            NumeroComprobante: jsonData.Numero,
+            PtoVta: jsonData.PtoVta,
+            CAE: jsonData.CAE,
+            FechaVencimientoCAE: jsonData.VencimientoCAE,
+            ImpNeto: neto.toFixed(2),
+            ImpIva: iva.toFixed(2),
+            ImpTotal: debe.toFixed(2),
+          },
+          url: "Procesos/php/facturar.php",
+          type: "post",
+          success: function (respuesta2) {
+            var jsonData1 = JSON.parse(respuesta2);
+            if (jsonData1.success == 1) {
+              toast("success", "Comprobante Generado con Exito !", "Se transformó la Proforma en " + comprobante + ".");
+              $("#basic").DataTable().ajax.reload();
+            } else {
+              toast(
+                "error",
+                "Error al guardar en el sistema",
+                "El comprobante ya se emitió en AFIP con CAE " + jsonData.CAE + " pero no se pudo guardar. Avisá a sistemas con este CAE.",
+              );
+            }
+          },
+        });
+      },
+    });
+  });
+}
 
 //MODAL RECIBO
 let reciboActualId = null;
@@ -3523,16 +3648,81 @@ $("#botonrelacion").click(function () {
 });
 
 //GENERAR COMPROBANTE NC/ND AFIP
-$("#generar_comprobante_afip_button").click(function () {
-  $("#tipo_de_factura").val(3);
+// El modal #ncnd-modal se abre solo (data-bs-toggle/data-bs-target en el boton).
+// Al abrirse, reseteamos el formulario y cargamos los comprobantes fiscales
+// del cliente para elegir contra cual se emite la Nota de Crédito/Débito.
+$("#ncnd-modal").on("show.bs.modal", function () {
+  var id = document.getElementById("buscarcliente").value;
 
-  $("#info-header-modal").modal("show");
-  $("#confirmarfactura_AFIP_boton").css("display", "none");
-  $("#confirmar_generar_comprobante_AFIP_boton").css("display", "block");
+  $("#ncnd_fecha").val(new Date().toISOString().slice(0, 10));
+  $("#ncnd_comprobante_tipo").val("").trigger("change");
+  $("#ncnd_neto").val("");
+  $("#ncnd_iva").val("");
+  $("#ncnd_total").val("");
+  $("#ncnd_observaciones").val("");
 
-  $("#cbteasoc").css("display", "block");
-  $("#alert_facturacion_1").css("display", "block");
-  $("#comprobante_up").css("display", "block");
+  var $select = $("#ncnd_comprobante_asociado");
+  $select.empty().append('<option value="">Cargando comprobantes...</option>');
+
+  $.ajax({
+    data: {
+      FacturasCliente: 1,
+      id: id,
+    },
+    url: "Procesos/php/tablas.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      $select.empty();
+      if (!jsonData.data || jsonData.data.length === 0) {
+        $select.append(
+          '<option value="">Este cliente no tiene comprobantes fiscales emitidos</option>',
+        );
+        return;
+      }
+      $select.append(
+        '<option value="">Seleccione el comprobante emitido que quiere corregir</option>',
+      );
+      jsonData.data.forEach(function (row) {
+        var partes = (row.NumeroFactura || "").split("-");
+        var ptovta = partes.length > 1 ? parseInt(partes[0], 10) : 2;
+        var nro = partes.length > 1 ? parseInt(partes[1], 10) : parseInt(partes[0], 10);
+        var tipoN = row.TipoDeComprobante === "FACTURAS A" ? "1" : "6";
+        var fechaFmt = row.Fecha ? row.Fecha.split("-").reverse().join("/") : "";
+        var label =
+          row.TipoDeComprobante +
+          " " +
+          row.NumeroFactura +
+          " - " +
+          fechaFmt +
+          " - " +
+          currencyFormat(row.Debe);
+
+        $("<option>")
+          .val(row.id)
+          .text(label)
+          .attr("data-tipo-n", tipoN)
+          .attr("data-ptovta", ptovta)
+          .attr("data-nro", nro)
+          .attr("data-importe", row.Debe)
+          .appendTo($select);
+      });
+    },
+    error: function () {
+      $select.empty().append('<option value="">No se pudo cargar la lista de comprobantes</option>');
+    },
+  });
+});
+
+// Autocompleta neto/iva/total (21%) al elegir el comprobante asociado, editable despues
+$("#ncnd_comprobante_asociado").on("change", function () {
+  var importe = Number($(this).find(":selected").attr("data-importe"));
+  if (!importe) return;
+  var neto = importe / 1.21;
+  var iva = importe - neto;
+  $("#ncnd_neto").val(neto.toFixed(2));
+  $("#ncnd_iva").val(iva.toFixed(2));
+  $("#ncnd_total").val(importe.toFixed(2));
 });
 
 //CARGAR PAGO

@@ -57,15 +57,6 @@ include_once "../Conexion/Conexion.php";
                             </nav>
                         </div>
                     </div>
-                  <style>
-                  .modal{
-                      z-index: 20;   
-
-                    }
-                  .modal-backdrop{
-                      z-index: 10;        
-                  }
-                  </style>
 <!--                   ASIGNACIONES -->
                   <div class="modal fade" id="asignaciones" tabindex="-1" role="dialog" aria-hidden="true">
                       <div class="modal-dialog modal-dialog-centered">

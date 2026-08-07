@@ -472,3 +472,28 @@ if (isset($_POST['EstadisticasEnvios'])) {
     echo $series_json;
   }
 }
+
+// COMPROBANTES FISCALES (FACTURAS A/B) DE UN CLIENTE, PARA ELEGIR CONTRA CUAL EMITIR UNA NC/ND
+if (isset($_POST['FacturasCliente'])) {
+  $idCliente = intval($_POST['id']);
+
+  $rows = array();
+  if ($idCliente > 0) {
+    $stmt = $mysqli->prepare(
+      "SELECT id, Fecha, TipoDeComprobante, NumeroFactura, Debe
+       FROM Ctasctes
+       WHERE idCliente = ? AND Eliminado = 0
+         AND TipoDeComprobante IN ('FACTURAS A','FACTURAS B')
+       ORDER BY Fecha DESC, id DESC"
+    );
+    $stmt->bind_param("i", $idCliente);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    while ($row = $result->fetch_assoc()) {
+      $rows[] = $row;
+    }
+    $stmt->close();
+  }
+
+  echo json_encode(array('data' => $rows));
+}
