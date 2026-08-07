@@ -206,9 +206,34 @@ if (isset($_POST['TipoDeDocumento'])) {
 
 if (isset($_POST['TipoDeResponsable'])) {
 
-  $BuscarVenta = $mysqli->query("SELECT Codigo,Descripcion FROM AfipTipoDeResponsables");
+  $BuscarCondicionCliente = $mysqli->query("SELECT CondicionAnteIva, CondicionAnteIva_f FROM Clientes WHERE id='$_POST[id]'");
+  $DatoCondicionCliente = $BuscarCondicionCliente->fetch_array(MYSQLI_ASSOC);
 
-  echo '<option value="">Seleccionar Tipo De Responsable</option>';
+  // "CondicionAnteIva" (Datos Generales) casi nunca se cargó historicamente.
+  // El dato real casi siempre esta en "CondicionAnteIva_f" (Datos Facturación),
+  // con el mismo codigo de AfipTipoDeResponsables pero sin ceros a la izquierda
+  // (ej: 1 en vez de 001), asi que si el primero esta vacio usamos ese.
+  if ($DatoCondicionCliente['CondicionAnteIva'] <> '') {
+    $CondicionActual = $DatoCondicionCliente['CondicionAnteIva'];
+  } elseif ($DatoCondicionCliente['CondicionAnteIva_f'] <> '') {
+    $CondicionActual = str_pad($DatoCondicionCliente['CondicionAnteIva_f'], 3, '0', STR_PAD_LEFT);
+  } else {
+    $CondicionActual = '';
+  }
+
+  if ($CondicionActual <> '') {
+    $stmtActual = $mysqli->prepare("SELECT Descripcion FROM AfipTipoDeResponsables WHERE Codigo=?");
+    $stmtActual->bind_param('s', $CondicionActual);
+    $stmtActual->execute();
+    $filaActual = $stmtActual->get_result()->fetch_assoc();
+    $stmtActual->close();
+    $CondicionActual_label = $filaActual['Descripcion'] ?? $CondicionActual;
+    echo '<option value="' . $CondicionActual . '">' . $CondicionActual_label . '</option>';
+  } else {
+    echo '<option value="">Seleccionar Tipo De Responsable</option>';
+  }
+
+  $BuscarVenta = $mysqli->query("SELECT Codigo,Descripcion FROM AfipTipoDeResponsables");
 
   while (($fila = $BuscarVenta->fetch_array(MYSQLI_ASSOC)) != NULL) {
     echo '<option value="' . $fila["Codigo"] . '">' . $fila["Descripcion"] . '</option>';

@@ -3687,6 +3687,40 @@ $("#botonrelacion").click(function () {
 });
 
 //GENERAR COMPROBANTE NC/ND AFIP
+// Reconstruye las opciones de "Tipo de Comprobante a Generar" segun la letra
+// (A o B) que corresponda. OJO: Select2 no filtra options con el atributo
+// "hidden" (eso solo tapa la opcion nativa, no la de la lista de Select2),
+// asi que hay que sacar/poner las <option> del DOM realmente para que dejen
+// de listarse.
+function renderTipoNcNd(esFacturaA) {
+  var $tipo = $("#ncnd_comprobante_tipo");
+  var valorPrevio = $tipo.val();
+
+  $tipo.empty().append('<option value="">Seleccione una Opción</option>');
+
+  if (esFacturaA) {
+    $tipo.append(
+      '<optgroup label="Responsable Inscripto (A)">' +
+        '<option value="3">NOTA DE CRÉDITO A</option>' +
+        '<option value="2">NOTA DE DÉBITO A</option>' +
+        "</optgroup>",
+    );
+  } else {
+    $tipo.append(
+      '<optgroup label="Consumidor Final / Monotributo (B)">' +
+        '<option value="8">NOTA DE CRÉDITO B</option>' +
+        '<option value="7">NOTA DE DÉBITO B</option>' +
+        "</optgroup>",
+    );
+  }
+
+  if (valorPrevio && $tipo.find('option[value="' + valorPrevio + '"]').length) {
+    $tipo.val(valorPrevio).trigger("change");
+  } else {
+    $tipo.val("").trigger("change");
+  }
+}
+
 // El modal #ncnd-modal se abre solo (data-bs-toggle/data-bs-target en el boton).
 // Al abrirse, reseteamos el formulario y cargamos los comprobantes fiscales
 // del cliente para elegir contra cual se emite la Nota de Crédito/Débito.
@@ -3707,12 +3741,9 @@ $("#ncnd-modal").on("show.bs.modal", function () {
     condivaValue = document.getElementById("condicion_facturacion").value;
   }
   var esFacturaA = condivaValue == 1;
-  var $tipo = $("#ncnd_comprobante_tipo");
-  $tipo.find('option[value="2"], option[value="3"]').prop("hidden", !esFacturaA);
-  $tipo.find('option[value="7"], option[value="8"]').prop("hidden", esFacturaA);
+  renderTipoNcNd(esFacturaA);
 
   $("#ncnd_fecha").val(new Date().toISOString().slice(0, 10));
-  $tipo.val("").trigger("change");
   $("#ncnd_neto").val("");
   $("#ncnd_iva").val("");
   $("#ncnd_total").val("");
@@ -3778,20 +3809,9 @@ $("#ncnd-modal").on("show.bs.modal", function () {
 $("#ncnd_comprobante_asociado").on("change", function () {
   var $selected = $(this).find(":selected");
   var tipoN = $selected.attr("data-tipo-n");
-  var $tipo = $("#ncnd_comprobante_tipo");
 
   if (tipoN) {
-    var esFacturaA = tipoN == "1";
-    $tipo.find('option[value="2"], option[value="3"]').prop("hidden", !esFacturaA);
-    $tipo.find('option[value="7"], option[value="8"]').prop("hidden", esFacturaA);
-
-    var tipoActual = $tipo.val();
-    var tipoActualValido =
-      (esFacturaA && (tipoActual == "2" || tipoActual == "3")) ||
-      (!esFacturaA && (tipoActual == "7" || tipoActual == "8"));
-    if (!tipoActualValido) {
-      $tipo.val("").trigger("change");
-    }
+    renderTipoNcNd(tipoN == "1");
   }
 
   var importe = Number($selected.attr("data-importe"));
