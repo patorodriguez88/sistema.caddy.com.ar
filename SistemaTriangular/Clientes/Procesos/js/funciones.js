@@ -3660,8 +3660,20 @@ $("#ncnd-modal").on("show.bs.modal", function () {
 
   var id = document.getElementById("buscarcliente").value;
 
+  // Restringe el Tipo de Comprobante a Generar segun la condicion fiscal del
+  // cliente (misma regla que se usa para elegir FACTURAS A vs B al facturar):
+  // condicion 1 = Responsable Inscripto -> A, cualquier otro valor -> B.
+  var condivaValue = document.getElementById("nueva_condicion_facturacion").value;
+  if (condivaValue === "") {
+    condivaValue = document.getElementById("condicion_facturacion").value;
+  }
+  var esFacturaA = condivaValue == 1;
+  var $tipo = $("#ncnd_comprobante_tipo");
+  $tipo.find('option[value="2"], option[value="3"]').prop("hidden", !esFacturaA);
+  $tipo.find('option[value="7"], option[value="8"]').prop("hidden", esFacturaA);
+
   $("#ncnd_fecha").val(new Date().toISOString().slice(0, 10));
-  $("#ncnd_comprobante_tipo").val("").trigger("change");
+  $tipo.val("").trigger("change");
   $("#ncnd_neto").val("");
   $("#ncnd_iva").val("");
   $("#ncnd_total").val("");
@@ -3720,9 +3732,30 @@ $("#ncnd-modal").on("show.bs.modal", function () {
   });
 });
 
-// Autocompleta neto/iva/total (21%) al elegir el comprobante asociado, editable despues
+// Autocompleta neto/iva/total (21%) al elegir el comprobante asociado, editable despues.
+// Ademas, una NC/ND solo puede emitirse con la misma letra que el comprobante que corrige
+// (AFIP no permite mezclar NC/ND A contra Factura B ni viceversa), asi que se re-restringe
+// el Tipo de Comprobante a Generar segun la letra real del comprobante elegido.
 $("#ncnd_comprobante_asociado").on("change", function () {
-  var importe = Number($(this).find(":selected").attr("data-importe"));
+  var $selected = $(this).find(":selected");
+  var tipoN = $selected.attr("data-tipo-n");
+  var $tipo = $("#ncnd_comprobante_tipo");
+
+  if (tipoN) {
+    var esFacturaA = tipoN == "1";
+    $tipo.find('option[value="2"], option[value="3"]').prop("hidden", !esFacturaA);
+    $tipo.find('option[value="7"], option[value="8"]').prop("hidden", esFacturaA);
+
+    var tipoActual = $tipo.val();
+    var tipoActualValido =
+      (esFacturaA && (tipoActual == "2" || tipoActual == "3")) ||
+      (!esFacturaA && (tipoActual == "7" || tipoActual == "8"));
+    if (!tipoActualValido) {
+      $tipo.val("").trigger("change");
+    }
+  }
+
+  var importe = Number($selected.attr("data-importe"));
   if (!importe) return;
   var neto = importe / 1.21;
   var iva = importe - neto;
