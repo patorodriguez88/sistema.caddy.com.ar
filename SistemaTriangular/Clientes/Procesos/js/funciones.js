@@ -1944,25 +1944,11 @@ $("#buscarcliente").change(function () {
 
         // "Guías a Facturar", "Remitos Recibidos/Enviados" y "Recorridos" NO
         // se recargan solos con el cliente nuevo (a diferencia de Cta.Cte /
-        // Relaciones / Tarifas, que se piden mas abajo en este mismo success):
-        // solo se reconstruyen cuando el usuario clickea esa pestaña (o, en
-        // el caso de "Guías a Facturar", el boton Filtro). Si el usuario ya
-        // estaba parado en una de esas pestañas al cambiar de cliente, sin
-        // esto la tabla queda mostrando los datos del cliente anterior hasta
-        // que la vuelva a abrir o filtre por fecha. Reforzamos re-disparando
-        // el click de la pestaña que este activa en este momento.
-        if ($("#botonfacturacion").hasClass("active")) {
-          $("#filtro").trigger("click");
-        }
-        if ($("#guias_recibidas_boton").hasClass("active")) {
-          $("#guias_recibidas_boton").trigger("click");
-        }
-        if ($("#guias_enviadas_boton").hasClass("active")) {
-          $("#guias_enviadas_boton").trigger("click");
-        }
-        if ($("#recorridos_boton").hasClass("active")) {
-          $("#recorridos_boton").trigger("click");
-        }
+        // Relaciones / Tarifas, que se piden mas abajo en este mismo success).
+        // Es a proposito: al cambiar de cliente estas tablas deben quedar
+        // vacias (ya se destruyeron mas arriba) hasta que el usuario pida una
+        // busqueda nueva a mano (clickeando esa pestaña o, en "Guías a
+        // Facturar", el boton Filtro) - no se auto-completan solas.
 
         $("#razonsocial").val(jsonData.RazonSocial);
         $("#direccion").val(jsonData.direccion);

@@ -25,7 +25,7 @@ $action = isset($_GET['action']) ? $_GET['action'] : (isset($_POST['action']) ? 
 if ($action === 'listar') {
     // ✅ Listar cuentas bancarias
     try {
-        $query = "SELECT Cuenta, NombreCuenta FROM PlanDeCuentas WHERE Cuenta IN ('111200', '111210')";
+        $query = "SELECT Cuenta, NombreCuenta FROM PlanDeCuentas WHERE CuentaBancaria = 1";
         $stmt = $mysqli->prepare($query);
 
         if (!$stmt) {
