@@ -523,10 +523,14 @@ if ($_POST['Facturar'] == 3) {
     }
 
     $ImporteNeto = $_POST['ImpNeto'] * $Valor;
+    $Iva1 = 0;
+    $Iva2 = 0;
     $Iva3 = $_POST['ImpIva'] * $Valor;
-    $Exento = $_POST['exento_t'] * $Valor;
+    $Exento = !empty($_POST['exento_t']) ? $_POST['exento_t'] * $Valor : 0;
     $Total = $_POST['ImpTotal'] * $Valor;
-    $Cantidad = $_POST['cantidad_t'];
+    $Cantidad = !empty($_POST['cantidad_t']) ? $_POST['cantidad_t'] : 1;
+    $Compra = 0;
+    $Observaciones_ctasctes = isset($_POST['Observaciones_ctasctes']) ? $_POST['Observaciones_ctasctes'] : '';
     $Usuario = $_SESSION['NombreUsuario'];
     $Sucursal = $_SESSION['Sucursal'];
     $Terminado = '1';

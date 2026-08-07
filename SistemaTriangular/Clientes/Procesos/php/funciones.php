@@ -966,6 +966,32 @@ if (isset($_POST['NComprobante'])) {
     $NComprobante = $sqlNComprobante->fetch_array(MYSQLI_ASSOC);
     $NComprobanteSiguiente = sprintf("%08d", $NComprobante['NumeroComprobante'] + 1);
     $Fecha = $NComprobante['Fecha'];
+  } elseif (in_array($_POST['tipodecomprobante'], ['2', '3', '7', '8'])) {
+
+    // NOTAS DE DEBITO/CREDITO A y B (comprobantes asociados a AFIP)
+    $tiposNcNd = [
+      '2' => 'NOTAS DE DEBITO A',
+      '3' => 'NOTAS DE CREDITO A',
+      '7' => 'NOTAS DE DEBITO B',
+      '8' => 'NOTAS DE CREDITO B',
+    ];
+    $comp = $tiposNcNd[$_POST['tipodecomprobante']];
+
+    //PUNTO DE VENTA
+    $sqlPuntoDeVenta = $mysqli->query("SELECT SUBSTRING_INDEX(`NumeroComprobante`, '-', 1)AS PuntoVenta FROM IvaVentas WHERE id=(SELECT MAX(id) from IvaVentas WHERE TipoDeComprobante='$comp' AND Eliminado=0)");
+    $PuntoDeVenta = $sqlPuntoDeVenta->fetch_array(MYSQLI_ASSOC);
+
+    if (!empty($PuntoDeVenta['PuntoVenta'])) {
+      $PuntoVenta = $PuntoDeVenta['PuntoVenta'];
+    } else {
+      $PuntoVenta = sprintf("%05d", 1);
+    }
+
+    //NUMERO DE COMPROBANTE
+    $sqlNComprobante = $mysqli->query("SELECT SUBSTRING_INDEX(`NumeroComprobante`, '-', -1)AS NumeroComprobante,Fecha FROM IvaVentas WHERE id=(SELECT MAX(id) from IvaVentas WHERE TipoDeComprobante='$comp' AND Eliminado=0)");
+    $NComprobante = $sqlNComprobante->fetch_array(MYSQLI_ASSOC);
+    $NComprobanteSiguiente = sprintf("%08d", $NComprobante['NumeroComprobante'] + 1);
+    $Fecha = $NComprobante['Fecha'];
   } else {
 
     $comp = 'FACTURA PROFORMA';

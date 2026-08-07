@@ -1,6 +1,6 @@
 <?php
 
-include '../src/Afip_false.php';
+include '../src/Afip.php';
 
 //VALORES PARA LA FACTURA
 $RazonSocial = $_POST['razonsocial_f'];
@@ -98,7 +98,7 @@ $data = array(
 );
 
 try {
-  $afip = new Afip(array('CUIT' => 30715344943, 'production' => FALSE));
+  $afip = new Afip(array('CUIT' => 30715344943, 'production' => TRUE));
   $res = $afip->ElectronicBilling->CreateNextVoucher($data);
 
   if ($res === NULL) {

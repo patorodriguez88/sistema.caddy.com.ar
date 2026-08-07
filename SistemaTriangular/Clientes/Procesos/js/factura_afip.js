@@ -31,55 +31,36 @@ $("#confirmar_generar_comprobante_AFIP_boton").click(function() {
 
     var cbteasoc_ptovta=document.getElementById('cbteasoc_ptovta').value;
     var cbteasoc_nro=document.getElementById('cbteasoc_nro').value;
-    
+
     var observaciones_ctasctes=document.getElementById('observaciones_ctasctes').value;
-    
+
     //CUADRO FACTURACION
     var comprobante = document.getElementById('comprobante_up').value;
-    
+
     if (document.getElementById('nueva_condicion_facturacion').value != '') {
         var condiva_f = document.getElementById('nueva_condicion_facturacion').value;
     } else {
         var condiva_f = document.getElementById('condicion_facturacion').value;
     }
-    
-    //CONDICION IVA
-    if(condiva_f==1){
-    
-        var nuevocomprobante=document.getElementById('comprobante_nc_nd_selectA').value;
-    
-    }else if(condiva_f==6){
-    
-        var nuevocomprobante=document.getElementById('comprobante_nc_nd_selectB').value;
-    }
-    
+
     var comprobante_tipo=$('#comprobante_tipo').val();
 
-    console.log('Comprobante Log',comprobante_tipo);
+    // Validaciones minimas antes de mandar a AFIP
+    if (!comprobante_tipo) {
+        toast("error", "Error", "Falta seleccionar el tipo de Nota de Crédito/Débito a generar.");
+        return;
+    }
+    if (!cbteasoc_tipo || !cbteasoc_nro) {
+        toast("error", "Error", "Falta el comprobante asociado (tipo y número) al que se le aplica la Nota de Crédito/Débito.");
+        return;
+    }
+    if (!total || Number(total) <= 0) {
+        toast("error", "Error", "El importe total debe ser mayor a 0.");
+        return;
+    }
 
-    console.log('Fecha:',fecha);
-    console.log('id',id);
-    console.log('neto',neto);
-    console.log('iva',iva);
-    console.log('total',total);
-    console.log('sitfiscal',sitfiscal);
-    
-    console.log('razonsocial_f',razonsocial_f);
-    console.log('direccion_f',direccion_f);
-    console.log('tipodocumento',tipodocumento_f);
-    console.log('documento_f',documento_f);
-    
-    console.log('comprobante',comprobante);
-    console.log('condiva',condiva_f);
-    console.log('Comprobante asociado tipo',cbteasoc_tipo);
-    console.log('Comprobante asociado Tipo Numero',cbteasoc_tipo_n);
-    console.log('Comprobante asociado punto de venta',cbteasoc_ptovta);
-    console.log('Comprobante asociado numero',cbteasoc_nro);
-    console.log('Nuevo Comprobante',nuevocomprobante);
+    var ncomp = $('#ncomprobante_up').val();
 
-
-var ncomp = $('#ncomprobante_up').val(); 
-    
    var dato = {
       'Fecha':fecha,
       'razonsocial_f': razonsocial_f,
@@ -106,7 +87,7 @@ var ncomp = $('#ncomprobante_up').val();
   
     $.ajax({
       data: dato, 
-      url:'../afip.php/procesos/CreateVoucherncnb_false.php', //HABILITAR PARA FACTURA AFIP _false PARA HOMOLOGACION       
+      url:'../afip.php/procesos/CreateVoucherncnb.php', //PRODUCCION AFIP - sin cert de homologacion disponible por ahora (ver notas 2026-08-06)
       type: 'post',
     
     beforeSend: function() {
@@ -138,95 +119,89 @@ var ncomp = $('#ncomprobante_up').val();
             
             $('#CAE').html(jsonData.CAE);//HABILITAR PARA FACTURA AFIP 
             
-            var FechaVenc=jsonData.VencimientoCAE.split('-').reverse().join('/');//HABILITAR PARA FACTURA AFIP 
-            
-            $('#VencimientoCAE').html(FechaVenc);//HABILITAR PARA FACTURA AFIP 
-            
-            if(condiva_f==1){
-            
-            $('#factura_titulo2').html('FACTURA A');//HABILITAR PARA FACTURA AFIP  
-            $('#factura_titulo').html('FACTURA A'); //HABILITAR PARA FACTURA AFIP 
-            
-            }else{
+            var FechaVenc=jsonData.VencimientoCAE.split('-').reverse().join('/');//HABILITAR PARA FACTURA AFIP
 
-            $('#factura_titulo2').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
-            $('#factura_titulo').html('FACTURA B');     //HABILITAR PARA FACTURA AFIP 
-            
+            $('#VencimientoCAE').html(FechaVenc);//HABILITAR PARA FACTURA AFIP
+
+            $('#factura_titulo2').html(comprobante);
+            $('#factura_titulo').html(comprobante);
+
+            $('#NumeroComprobante').html(jsonData.Numero);  //HABILITAR PARA FACTURA AFIP
+
+            //FACTURO EN EL SISTEMA
+            var datofacturasistema = {
+                'Facturar': 3,
+                'fecha': fecha,
+                'razonsocial_f': razonsocial_f,
+                'direccion_f': direccion_f,
+                'condiva_f': condiva_f,
+                'tipodocumento_f': tipodocumento_f,
+                'documento_f': documento_f,
+                'Documento': 99,
+                'NumeroDocumento': documento_f,
+                'ImpTotal': total,
+                'ImpTotalConc': 0,
+                'ImpNeto': neto,
+                'ImpIva': iva,
+                'ImpTrib': 0,
+                'exento_t': 0,
+                'cantidad_t': 1,
+                'titulo_t': comprobante,
+                'observaciones_t': observaciones_ctasctes,
+                'tipodecomprobante_t': comprobante,
+                'id': id,
+                'condicion': sitfiscal,
+                'NumeroComprobante': jsonData.Numero,
+                'PtoVta': jsonData.PtoVta,
+                'Comprobante': comprobante,
+                'CAE': jsonData.CAE,
+                'FechaVencimientoCAE': jsonData.VencimientoCAE,
+                'Observaciones_ctasctes': observaciones_ctasctes
+            };
+
+            $.ajax({
+                data: datofacturasistema,
+                url: 'Procesos/php/facturar.php',
+                type: 'post',
+                success: function(respuesta) {
+                var jsonData1 = JSON.parse(respuesta);
+                if (jsonData1.success == 1) {
+                    toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
+                    //DESTRUIMOS LA TABLA FACTURACION
+                    var table = $('#tabla_facturacion_proforma').DataTable();
+                    table.destroy();
+
+                    var tabla_facturacion = $('#facturacion_tabla').DataTable();
+                    tabla_facturacion.ajax.reload();
+
+                    //ACTUALIZO LA TABLA CTA CTE
+                    var tabla_ctacte = $('#basic').DataTable();
+                    tabla_ctacte.ajax.reload();
+
+                    document.getElementById('factura_primerpaso').style.display = "block";
+                    document.getElementById('factura_proforma').style.display = "none";
+
+                } else if (jsonData1.success == 0) {
+
+                    toast("error", "Error al Intentar Generar el Comprobante !", "El comprobante ya se emitió en AFIP con CAE " + jsonData.CAE + " pero no se pudo guardar en el sistema. Avisá a sistemas con este CAE.");
+
+                } else if (jsonData1.success == 3) {
+
+                    toast("error", "Error en el Codigo de Afip del Cliente !", "El comprobante ya se emitió en AFIP con CAE " + jsonData.CAE + " pero no se pudo guardar en el sistema. Avisá a sistemas con este CAE.");
+                }
+                }
+            });
+
             }
-            
-            $('#NumeroComprobante').html(jsonData.Numero);  //HABILITAR PARA FACTURA AFIP 
-           
-    //         //FACTURO EN EL SISTEMA
-
-    //        var datofacturasistema = {
-    //         'Facturar': 3, //0 PRUEBA
-    //         'fecha': fecha,
-    //         'razonsocial_f': razonsocial_f,
-    //         'direccion_f': direccion_f,
-    //         'condiva_f': condiva_f,
-    //         'tipodocumento_f': tipodocumento_f,
-    //         'documento_f': documento_f,
-    //         'Documento': 99,
-    //         'ImpTotal': total,
-    //         'ImpTotalConc': 0,
-    //         'ImpNeto': neto,
-    //         'ImpIva': iva,
-    //         'ImpTrib': 0,                
-    //         // 'Remitos': checked,
-    //         'id': id,
-    //         'condicion': sitfiscal,
-    //         'NumeroComprobante': jsonData.Numero,
-    //         'Comprobante':comprobante,
-    //         'CAE':jsonData.CAE,
-    //         'FechaVencimientoCAE':jsonData.VencimientoCAE,
-    //         'PtoVta':jsonData.PtoVta,
-    //         'Observaciones_ctasctes':observaciones_ctasctes            
-        };
-            
-        // $.ajax({
-        //     data: datofacturasistema,
-        //     url: 'Procesos/php/facturar.php',
-        //     type: 'post',
-        //     success: function(respuesta) {
-        //     var jsonData1 = JSON.parse(respuesta);
-        //     if (jsonData1.success == 1) {
-        //         toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
-        //         //DESTRUIMOS LA TABLA FACTURACION
-        //         var table = $('#tabla_facturacion_proforma').DataTable();
-        //         table.destroy();
-                
-        //         var tabla_facturacion = $('#facturacion_tabla').DataTable();
-        //         tabla_facturacion.ajax.reload();
-                
-        //         //ACTUALIZO LA TABLA CTA CTE
-        //         var tabla_ctacte = $('#basic').DataTable();
-        //         tabla_ctacte.ajax.reload();
-
-        //         document.getElementById('factura_primerpaso').style.display = "block";
-        //         document.getElementById('factura_proforma').style.display = "none";
-                
-        //         } else if (jsonData1.success == 0) {
-
-        //         toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
-            
-        //         } else if (jsonData1.success == 3) {
-            
-        //         toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
-            
-            //   }
-            // }
-        // });
-        // }
-
     }else{
-    
+
     $('#warning_icono_alert').removeClass('dripicons-warning h1 text-warning').addClass('dripicons-wrong h1 text-danger');
 
     $('#warning_mt2_alert').html('Error !');
 
     $("#warning_text").html("Error! Comprobante No Facturado Error: "+jsonData.error);
 
-      
+
     }
 
 } catch (err) {
