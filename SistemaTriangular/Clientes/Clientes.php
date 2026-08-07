@@ -1905,7 +1905,7 @@
                                                                 <h5 class="card-title text-white font-weight-normal mt-0" title="Revenue">Saldo Actual</h5>
                                                                 <h3 class="card-subtitle mt-3 mb-1" id="saldo"></h3>
                                                                 <p class="card-text text-white">
-                                                                    <!--                                                             <span class="badge badge-info me-1">
+                                                                    <!--                                                             <span class="badge bg-info me-1">
                                                                     <i id="fecha_ult_pago"></i> </span> -->
                                                                     <a id="fecha_ult_pago"></a>
                                                                     <span class="text-nowrap text-white" id="importe_ult_pago">Último Pago</span>

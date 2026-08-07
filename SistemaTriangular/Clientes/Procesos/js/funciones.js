@@ -395,7 +395,7 @@ $("#perfil_conctact").click(function () {
       {
         data: "id_hubspot",
         render: function (data, type, row) {
-          return `<span class="badge badge-primary">${row.id_hubspot}</span>`;
+          return `<span class="badge bg-primary">${row.id_hubspot}</span>`;
         },
       },
       {
@@ -1861,39 +1861,51 @@ $("#buscarcliente").change(function () {
     $("#asociar-pagos-modal").modal("hide");
   }
 
+  // Todos los destroy de abajo estan guardados con isDataTable: si uno solo
+  // de ellos tira un error (tabla nunca inicializada aun), corta en seco el
+  // resto de este handler -y con eso el fetch/repintado del cliente nuevo-,
+  // dejando el resto de las tablas "colgadas" mostrando al cliente anterior
+  // (mismo motivo por el que #table-contact y #recorridos_tabla ya lo tenian).
+
   //DESTRUIR TODAS LAS GUIAS
-  var tabla_facturacion_proforma = $("#tabla_facturacion_proforma").DataTable();
-  tabla_facturacion_proforma.destroy();
+  if ($.fn.DataTable.isDataTable("#tabla_facturacion_proforma")) {
+    $("#tabla_facturacion_proforma").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA FACTURACION
-  var table_facturacion = $("#facturacion_tabla").DataTable();
-  table_facturacion.destroy();
+  if ($.fn.DataTable.isDataTable("#facturacion_tabla")) {
+    $("#facturacion_tabla").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA BASIC CTA CTE
-  var table_basic = $("#basic").DataTable();
-  table_basic.destroy();
+  if ($.fn.DataTable.isDataTable("#basic")) {
+    $("#basic").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA RELACIONES
-  var table_relaciones = $("#relaciones_tabla").DataTable();
-  table_relaciones.destroy();
+  if ($.fn.DataTable.isDataTable("#relaciones_tabla")) {
+    $("#relaciones_tabla").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA TARIFAS
-  var table_tarifas = $("#tarifas_tabla").DataTable();
-  table_tarifas.destroy();
+  if ($.fn.DataTable.isDataTable("#tarifas_tabla")) {
+    $("#tarifas_tabla").DataTable().destroy();
+  }
 
   //DESTUIMOS LA TABLA RECIBIDAS
-  var table_recibidas = $("#guias_recibidas_tabla").DataTable();
-  table_recibidas.destroy();
+  if ($.fn.DataTable.isDataTable("#guias_recibidas_tabla")) {
+    $("#guias_recibidas_tabla").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA REMITOS ENVIADOS
-  var table_enviadas = $("#guias_enviadas_tabla").DataTable();
-  table_enviadas.destroy();
+  if ($.fn.DataTable.isDataTable("#guias_enviadas_tabla")) {
+    $("#guias_enviadas_tabla").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA FACTURACION PROFORMA
-  var table_facturacion_proforma_recorridos = $(
-    "#tabla_facturacion_proforma_recorridos",
-  ).DataTable();
-  table_facturacion_proforma_recorridos.destroy();
+  if ($.fn.DataTable.isDataTable("#tabla_facturacion_proforma_recorridos")) {
+    $("#tabla_facturacion_proforma_recorridos").DataTable().destroy();
+  }
 
   //DESTRUIMOS LA TABLA DE CONTACTOS (si no, queda mostrando los del cliente anterior)
   if ($.fn.DataTable.isDataTable("#table-contact")) {
@@ -1929,6 +1941,29 @@ $("#buscarcliente").change(function () {
       if (jsonData.success == "1") {
         document.getElementById("steps").style.display = "flex";
         $("#codigo").val(jsonData.id);
+
+        // "Guías a Facturar", "Remitos Recibidos/Enviados" y "Recorridos" NO
+        // se recargan solos con el cliente nuevo (a diferencia de Cta.Cte /
+        // Relaciones / Tarifas, que se piden mas abajo en este mismo success):
+        // solo se reconstruyen cuando el usuario clickea esa pestaña (o, en
+        // el caso de "Guías a Facturar", el boton Filtro). Si el usuario ya
+        // estaba parado en una de esas pestañas al cambiar de cliente, sin
+        // esto la tabla queda mostrando los datos del cliente anterior hasta
+        // que la vuelva a abrir o filtre por fecha. Reforzamos re-disparando
+        // el click de la pestaña que este activa en este momento.
+        if ($("#botonfacturacion").hasClass("active")) {
+          $("#filtro").trigger("click");
+        }
+        if ($("#guias_recibidas_boton").hasClass("active")) {
+          $("#guias_recibidas_boton").trigger("click");
+        }
+        if ($("#guias_enviadas_boton").hasClass("active")) {
+          $("#guias_enviadas_boton").trigger("click");
+        }
+        if ($("#recorridos_boton").hasClass("active")) {
+          $("#recorridos_boton").trigger("click");
+        }
+
         $("#razonsocial").val(jsonData.RazonSocial);
         $("#direccion").val(jsonData.direccion);
         $("#localidad").val(jsonData.localidad);
@@ -2885,31 +2920,31 @@ $("#botonfacturacion").click(function () {
           render: function (data, type, row) {
             if (row.Entregado == 1) {
               var entregado =
-                '<span class="badge badge-success badge-pill">Entregado</span>';
+                '<span class="badge bg-success rounded-pill">Entregado</span>';
             } else {
               var entregado =
-                '<span class="badge badge-danger badge-pill">No Entregado</span>';
+                '<span class="badge bg-danger rounded-pill">No Entregado</span>';
             }
             if (row.FormaDePago == "Origen") {
               return (
-                '<span class="badge badge-secondary">' +
+                '<span class="badge bg-secondary">' +
                 row.TipoDeComprobante +
                 " " +
                 row.NumeroComprobante +
                 "</span></br>" +
-                '<span class="badge badge-outline-primary badge-pill">' +
+                '<span class="badge badge-outline-primary rounded-pill">' +
                 row.FormaDePago +
                 "</span> " +
                 entregado
               );
             } else {
               return (
-                '<span class="badge badge-secondary">' +
+                '<span class="badge bg-secondary">' +
                 row.TipoDeComprobante +
                 " " +
                 row.NumeroComprobante +
                 "</span></br>" +
-                '<span class="badge badge-outline-secondary badge-pill">' +
+                '<span class="badge badge-outline-secondary rounded-pill">' +
                 row.FormaDePago +
                 "</span> " +
                 entregado
@@ -2975,12 +3010,12 @@ $("#botonfacturacion").click(function () {
               var servicio =
                 '<span style="cursor:pointer" onclick="change_service(' +
                 row.id +
-                ')" class="badge badge-success">Flex</span>';
+                ')" class="badge bg-success">Flex</span>';
             } else {
               servicio =
                 '<span style="cursor:pointer" onclick="change_service(' +
                 row.id +
-                ')" class="badge badge-warning text-white">Simple</span>';
+                ')" class="badge bg-warning text-white">Simple</span>';
             }
             return (
               '<td class="table-action">' +
@@ -3338,10 +3373,10 @@ $("#guias_recibidas_boton").click(function () {
         render: function (data, type, row) {
           if (row.Entregado == 1) {
             var entregado =
-              '<span class="badge badge-success badge-pill">Entregado</span></h6>';
+              '<span class="badge bg-success rounded-pill">Entregado</span></h6>';
           } else {
             var entregado =
-              '<span class="badge badge-danger badge-pill">No Entregado</span></h6>';
+              '<span class="badge bg-danger rounded-pill">No Entregado</span></h6>';
           }
 
           if (row.Facturado == 1) {
@@ -3355,10 +3390,10 @@ $("#guias_recibidas_boton").click(function () {
 
           if (row.FormaDePago == "Origen") {
             return (
-              '<h6><span class="badge badge-secondary mb-1">R:' +
+              '<h6><span class="badge bg-secondary mb-1">R:' +
               row.NumeroComprobante +
               "</span></br>" +
-              '<span class="badge badge-outline-primary badge-pill">' +
+              '<span class="badge badge-outline-primary rounded-pill">' +
               row.FormaDePago +
               "</span> " +
               entregado +
@@ -3370,10 +3405,10 @@ $("#guias_recibidas_boton").click(function () {
             );
           } else {
             return (
-              '<h6><span class="badge badge-secondary">R:' +
+              '<h6><span class="badge bg-secondary">R:' +
               row.NumeroComprobante +
               "</span></br>" +
-              '<span class="badge badge-outline-secondary badge-pill">' +
+              '<span class="badge badge-outline-secondary rounded-pill">' +
               row.FormaDePago +
               "</span> " +
               entregado +
@@ -3492,10 +3527,10 @@ $("#guias_enviadas_boton").click(function () {
         render: function (data, type, row) {
           if (row.Entregado == 1) {
             var entregado =
-              '<span class="badge badge-success badge-pill">Entregado</span></h6>';
+              '<span class="badge bg-success rounded-pill">Entregado</span></h6>';
           } else {
             var entregado =
-              '<span class="badge badge-danger badge-pill">No Entregado</span></h6>';
+              '<span class="badge bg-danger rounded-pill">No Entregado</span></h6>';
           }
 
           if (row.Facturado == 1) {
@@ -3511,7 +3546,7 @@ $("#guias_enviadas_boton").click(function () {
               '<h6><span class="badge bg-secondary text-light mb-1">R:' +
               row.NumeroComprobante +
               "</span></br>" +
-              '<span class="badge badge-outline-primary badge-pill">' +
+              '<span class="badge badge-outline-primary rounded-pill">' +
               row.FormaDePago +
               "</span> " +
               entregado +
@@ -3523,10 +3558,10 @@ $("#guias_enviadas_boton").click(function () {
             );
           } else {
             return (
-              '<span class="badge badge-outline-warning badge-pill">R:' +
+              '<span class="badge badge-outline-warning rounded-pill">R:' +
               row.NumeroComprobante +
               "</span></br>" +
-              '<span class="badge badge-outline-secondary badge-pill">' +
+              '<span class="badge badge-outline-secondary rounded-pill">' +
               row.FormaDePago +
               "</span> " +
               entregado +
