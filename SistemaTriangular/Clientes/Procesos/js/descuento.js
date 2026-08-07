@@ -39,8 +39,20 @@ $('#confirmardescuento_botton').click(function(){
         $('#factura_descuento').html(desc);
         $('#descuento-modal').modal('hide');
 
+        // Recargamos las mismas tablas que se actualizan tras confirmar una
+        // factura (ver #confirmarfactura_AFIP_boton), ya que el descuento
+        // modifica los mismos importes (TransClientes/Ctasctes) que ellas muestran.
         var tabla_facturacion_proforma = $('#tabla_facturacion_proforma').DataTable();
         tabla_facturacion_proforma.ajax.reload();
+
+        if ($.fn.DataTable.isDataTable('#facturacion_tabla')) {
+          $('#facturacion_tabla').DataTable().ajax.reload();
+        }
+
+        if ($.fn.DataTable.isDataTable('#basic')) {
+          $('#basic').DataTable().ajax.reload();
+        }
+
         toast("success", "Descuento aplicado", "Se aplicó el descuento en los remitos seleccionados.");
       },
       error: function () {
