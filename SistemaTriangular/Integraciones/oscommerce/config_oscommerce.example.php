@@ -1,5 +1,6 @@
 <?php
-// config_oscommerce.php
+// Copiar este archivo como config_oscommerce.php y completar con los valores reales.
+// config_oscommerce.php está en .gitignore — nunca se sube al repositorio.
 
 return [
     /* ========= PULL (SOAP) - opcional, por si luego te lo habilitan ========= */
@@ -9,7 +10,7 @@ return [
 
     /* ========= PUSH (Connector / Bridge) - lo que estás usando ahora ========= */
     // Token que vas a poner también en el admin del Connector (Bearer Token)
-    'bearer_token'     => 'CADDY2025TOKEN123',
+    'bearer_token'     => 'TU_BEARER_TOKEN_AQUI',
 
     // Si además querés doble seguridad por IP, dejá la allowlist (o vacía para no filtrar)
     'ip_allowlist'     => [], // p.ej. ['1.2.3.4','5.6.7.8']
