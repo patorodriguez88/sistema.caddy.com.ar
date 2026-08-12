@@ -2082,7 +2082,10 @@ $("#buscarcliente").change(function () {
               data: "Fecha",
               render: function (data, type, row) {
                 if (type === "sort" || type === "type") {
-                  return row.TimeStamp || row.Fecha;
+                  var hora = row.TimeStamp
+                    ? row.TimeStamp.split(" ")[1]
+                    : "00:00:00";
+                  return row.Fecha + " " + hora;
                 }
                 if (!row.Fecha) return "";
                 var Fecha = row.Fecha.split("-").reverse().join(".");
