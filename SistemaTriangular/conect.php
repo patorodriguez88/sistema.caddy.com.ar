@@ -1,9 +1,4 @@
 <?php
-// TEMPORAL: mostrar el error real en pantalla para diagnosticar el 500 del login.
-// Sacar este bloque en cuanto encontremos la causa.
-ini_set('display_errors', 1);
-error_reporting(E_ALL);
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -114,7 +109,13 @@ if ($fila) {
         $passwordOk = true;
         $nuevoHash = password_hash($passwordIngresada, PASSWORD_DEFAULT);
         $idFila = intval($fila['id']);
-        $mysqli->query("UPDATE usuarios SET password_hash = '" . $mysqli->real_escape_string($nuevoHash) . "' WHERE id = $idFila");
+        // Si esto falla (ej. columna todavía no migrada en este entorno), que no tumbe
+        // el login: guardar el hash es solo para la próxima vez, no para entrar ahora.
+        try {
+            $mysqli->query("UPDATE usuarios SET password_hash = '" . $mysqli->real_escape_string($nuevoHash) . "' WHERE id = $idFila");
+        } catch (mysqli_sql_exception $e) {
+            error_log('conect.php: no se pudo guardar password_hash - ' . $e->getMessage());
+        }
     }
 }
 
@@ -195,9 +196,6 @@ if ($fila && $passwordOk) {
         $CEr = $cuentaerror;
         $cuentaerror = ($CEr + 1);
     }
-    if ($web == 'si') {
-        header("location:https://www.sistema.caddy.com.ar/login.php?id=erringreso");
-    } else {
-        header("location:inicio.php?Usuario=$user&Error=Si&n=$cuentaerror");
-    }
+    // La URL vieja de este branch (login.php en la raíz de www) ya no existe.
+    header("location:inicio.php?Usuario=$user&Error=Si&n=$cuentaerror");
 }
