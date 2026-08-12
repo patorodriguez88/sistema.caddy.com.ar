@@ -4,9 +4,18 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 
 include_once "../../../Conexion/Conexioni.php";
+require_once "../../../Menu/php/permisos_menu.php";
 header('Content-Type: application/json');
 
 $mysqli = (new Conexion())->obtenerConexion();
+
+function requiereGestionRoles($mysqli)
+{
+    if (!usuarioPuedeGestionarRoles($mysqli)) {
+        echo json_encode(['success' => false, 'error' => 'No tenés permiso para gestionar roles y permisos.']);
+        exit;
+    }
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $accion = $_POST['accion'] ?? '';
@@ -15,65 +24,59 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             listarRoles($mysqli);
             break;
         case 'crear_rol':
+            requiereGestionRoles($mysqli);
             crearRol($mysqli);
+            break;
+        case 'eliminar_rol':
+            requiereGestionRoles($mysqli);
+            eliminarRol($mysqli);
             break;
         case 'listar_permisos':
             listarPermisos($mysqli);
             break;
         case 'crear_permiso':
+            requiereGestionRoles($mysqli);
             crearPermiso($mysqli);
             break;
+        case 'eliminar_permiso':
+            requiereGestionRoles($mysqli);
+            eliminarPermiso($mysqli);
+            break;
+        case 'listar_permisos_rol':
+            listarPermisosDeRol($mysqli);
+            break;
         case 'asignar_permiso_rol':
+            requiereGestionRoles($mysqli);
             asignarPermisoARol($mysqli);
             break;
         case 'listar_usuarios':
             listarUsuarios($mysqli);
             break;
+        case 'obtener_rol_usuario':
+            obtenerRolDeUsuario($mysqli);
+            break;
         case 'asignar_rol_usuario':
+            requiereGestionRoles($mysqli);
             asignarRolAUsuario($mysqli);
             break;
-        case 'eliminar_rol':
-            eliminarRol($mysqli);
+        case 'quitar_rol_usuario':
+            requiereGestionRoles($mysqli);
+            quitarRolAUsuario($mysqli);
             break;
         case 'listar_roles_permisos':
             listarRolesConPermisos($mysqli);
             break;
-        case 'listar_permisos_rol':
-            listarPermisosDeRol($mysqli);
+        case 'puede_gestionar_roles':
+            echo json_encode(['puede' => usuarioPuedeGestionarRoles($mysqli)]);
             break;
+        default:
+            echo json_encode(['success' => false, 'error' => 'Acción inválida']);
     }
 }
 
-function listarPermisosDeRol($mysqli)
-{
-    $rol_id = intval($_POST['rol_id']);
-
-    $resTodos = $mysqli->query("SELECT id, nombre FROM usuarios_permisos WHERE Eliminado = 0");
-    $todos = [];
-    while ($row = $resTodos->fetch_assoc()) {
-        $todos[] = $row;
-    }
-
-    $resAsignados = $mysqli->query("SELECT permiso_id FROM usuarios_rol_permiso WHERE rol_id = $rol_id");
-    $asignados = [];
-    while ($row = $resAsignados->fetch_assoc()) {
-        $asignados[] = intval($row['permiso_id']);
-    }
-
-    echo json_encode([
-        "todos" => $todos,
-        "asignados" => $asignados
-    ]);
-}
-function eliminarRol($mysqli)
-{
-    $id = intval($_POST['id']);
-    $mysqli->query("UPDATE usuarios_roles SET Eliminado = 1 WHERE id = $id");
-    echo json_encode(['success' => true]);
-}
 function listarRoles($mysqli)
 {
-    $res = $mysqli->query("SELECT * FROM usuarios_roles WHERE Eliminado=0");
+    $res = $mysqli->query("SELECT * FROM usuarios_roles WHERE Eliminado=0 ORDER BY nombre");
     $roles = [];
     while ($row = $res->fetch_assoc()) {
         $roles[] = $row;
@@ -83,14 +86,46 @@ function listarRoles($mysqli)
 
 function crearRol($mysqli)
 {
-    $nombre = $mysqli->real_escape_string($_POST['nombre']);
-    $mysqli->query("INSERT INTO usuarios_roles (nombre) VALUES ('$nombre')");
+    $nombre = trim($_POST['nombre'] ?? '');
+    $id = intval($_POST['id'] ?? 0);
+
+    if ($nombre === '') {
+        echo json_encode(['success' => false, 'error' => 'El nombre del rol no puede estar vacío']);
+        return;
+    }
+
+    $nombreEsc = $mysqli->real_escape_string($nombre);
+    $existe = $mysqli->query("SELECT id FROM usuarios_roles WHERE nombre = '$nombreEsc' AND Eliminado = 0" . ($id ? " AND id <> $id" : ""));
+    if ($existe && $existe->num_rows > 0) {
+        echo json_encode(['success' => false, 'error' => 'Ya existe un rol con ese nombre']);
+        return;
+    }
+
+    if ($id) {
+        $mysqli->query("UPDATE usuarios_roles SET nombre = '$nombreEsc' WHERE id = $id");
+    } else {
+        $mysqli->query("INSERT INTO usuarios_roles (nombre) VALUES ('$nombreEsc')");
+    }
+    echo json_encode(['success' => true]);
+}
+
+function eliminarRol($mysqli)
+{
+    $id = intval($_POST['id'] ?? 0);
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'Rol inválido']);
+        return;
+    }
+    $mysqli->query("UPDATE usuarios_roles SET Eliminado = 1 WHERE id = $id");
+    $mysqli->query("UPDATE usuarios SET rol_id = NULL WHERE rol_id = $id");
     echo json_encode(['success' => true]);
 }
 
 function listarPermisos($mysqli)
 {
-    $res = $mysqli->query("SELECT * FROM usuarios_permisos WHERE Eliminado=0");
+    sincronizarPermisosMenu($mysqli, __DIR__ . '/../../../Menu/topnav.html');
+
+    $res = $mysqli->query("SELECT * FROM usuarios_permisos WHERE Eliminado=0 ORDER BY es_sistema DESC, seccion, nombre");
     $permisos = [];
     while ($row = $res->fetch_assoc()) {
         $permisos[] = $row;
@@ -100,59 +135,166 @@ function listarPermisos($mysqli)
 
 function crearPermiso($mysqli)
 {
-    $nombre = $mysqli->real_escape_string($_POST['nombre']);
-    $mysqli->query("INSERT INTO usuarios_permisos (nombre) VALUES ('$nombre')");
-    echo json_encode(['success' => true]);
-}
-
-
-function listarUsuarios($mysqli)
-{
-    $sql = "SELECT u.id, u.Nombre AS nombre, u.Apellido AS apellido, u.Usuario, r.nombre AS rol
-            FROM usuarios u
-            LEFT JOIN usuarios_roles r ON u.rol_id = r.id
-            WHERE u.Activo = 1 AND Nivel <> 4";
-    $res = $mysqli->query($sql);
-    $usuarios = [];
-    while ($row = $res->fetch_assoc()) {
-        $usuarios[] = $row;
+    $nombre = trim($_POST['nombre'] ?? '');
+    if ($nombre === '') {
+        echo json_encode(['success' => false, 'error' => 'El nombre del permiso no puede estar vacío']);
+        return;
     }
-    echo json_encode(['data' => $usuarios]);
-}
 
-function asignarRolAUsuario($mysqli)
-{
-    $usuario_id = intval($_POST['usuario_id']);
-    $rol_id = intval($_POST['rol_id']);
-    $sql = "UPDATE usuarios SET rol_id = $rol_id WHERE id = $usuario_id";
-    $mysqli->query($sql);
+    $nombreEsc = $mysqli->real_escape_string($nombre);
+    $existe = $mysqli->query("SELECT id FROM usuarios_permisos WHERE nombre = '$nombreEsc' AND Eliminado = 0");
+    if ($existe && $existe->num_rows > 0) {
+        echo json_encode(['success' => false, 'error' => 'Ya existe un permiso con ese nombre']);
+        return;
+    }
+
+    $mysqli->query("INSERT INTO usuarios_permisos (nombre, seccion, es_sistema) VALUES ('$nombreEsc', 'Manual', 0)");
     echo json_encode(['success' => true]);
 }
+
+function eliminarPermiso($mysqli)
+{
+    $id = intval($_POST['id'] ?? 0);
+    if (!$id) {
+        echo json_encode(['success' => false, 'error' => 'Permiso inválido']);
+        return;
+    }
+    $check = $mysqli->query("SELECT es_sistema FROM usuarios_permisos WHERE id = $id");
+    $row = $check ? $check->fetch_assoc() : null;
+    if (!$row) {
+        echo json_encode(['success' => false, 'error' => 'Permiso inexistente']);
+        return;
+    }
+    if (intval($row['es_sistema']) === 1) {
+        echo json_encode(['success' => false, 'error' => 'Este permiso es del sistema y no se puede eliminar']);
+        return;
+    }
+    $mysqli->query("UPDATE usuarios_permisos SET Eliminado = 1 WHERE id = $id");
+    $mysqli->query("DELETE FROM usuarios_rol_permiso WHERE permiso_id = $id");
+    echo json_encode(['success' => true]);
+}
+
+function listarPermisosDeRol($mysqli)
+{
+    $rol_id = intval($_POST['rol_id'] ?? 0);
+
+    $resTodos = $mysqli->query("SELECT id, nombre, seccion, es_sistema FROM usuarios_permisos WHERE Eliminado = 0 ORDER BY es_sistema DESC, seccion, nombre");
+    $todos = [];
+    while ($row = $resTodos->fetch_assoc()) {
+        $todos[] = $row;
+    }
+
+    $asignados = [];
+    if ($rol_id) {
+        $resAsignados = $mysqli->query("SELECT permiso_id FROM usuarios_rol_permiso WHERE rol_id = $rol_id");
+        while ($row = $resAsignados->fetch_assoc()) {
+            $asignados[] = intval($row['permiso_id']);
+        }
+    }
+
+    echo json_encode([
+        "todos" => $todos,
+        "asignados" => $asignados
+    ]);
+}
+
 function asignarPermisoARol($mysqli)
 {
-    $idRol = intval($_POST['rol_id']);
-    $permisos = json_decode($_POST['permisos'], true); // ✅ viene como JSON string
+    $idRol = intval($_POST['rol_id'] ?? 0);
+    if (!$idRol) {
+        echo json_encode(['success' => false, 'error' => 'Seleccioná un rol']);
+        return;
+    }
 
+    $permisos = json_decode($_POST['permisos'] ?? '[]', true);
     if (!is_array($permisos)) {
         echo json_encode(['success' => false, 'error' => 'Permisos inválidos']);
         return;
     }
 
+    // Reemplaza la asignación completa del rol (evita acumular duplicados y permite desmarcar).
+    $mysqli->query("DELETE FROM usuarios_rol_permiso WHERE rol_id = $idRol");
+
     foreach ($permisos as $permiso_id) {
         $idPermiso = intval($permiso_id);
-        $mysqli->query("INSERT INTO usuarios_rol_permiso (rol_id, permiso_id) VALUES ($idRol, $idPermiso)");
+        if ($idPermiso > 0) {
+            $mysqli->query("INSERT INTO usuarios_rol_permiso (rol_id, permiso_id) VALUES ($idRol, $idPermiso)");
+        }
     }
 
     echo json_encode(['success' => true]);
 }
+
+function listarUsuarios($mysqli)
+{
+    $sql = "SELECT u.id, u.Nombre AS nombre, u.Apellido AS apellido, u.Usuario, u.NIVEL,
+                   r.id AS rol_id, r.nombre AS rol
+            FROM usuarios u
+            LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
+            WHERE u.Activo = 1 AND u.NIVEL IN (1, 2)
+            ORDER BY u.NIVEL, u.Nombre, u.Apellido";
+    $res = $mysqli->query($sql);
+    $usuarios = [];
+    while ($row = $res->fetch_assoc()) {
+        $row['nivel_nombre'] = intval($row['NIVEL']) === 1 ? 'SuperAdministrador' : 'Administracion';
+        $usuarios[] = $row;
+    }
+    echo json_encode(['data' => $usuarios]);
+}
+
+function obtenerRolDeUsuario($mysqli)
+{
+    $usuario_id = intval($_POST['usuario_id'] ?? 0);
+    if (!$usuario_id) {
+        echo json_encode(['rol_id' => null, 'rol' => null]);
+        return;
+    }
+    $res = $mysqli->query("
+        SELECT r.id, r.nombre
+        FROM usuarios u
+        LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
+        WHERE u.id = $usuario_id
+    ");
+    $row = $res ? $res->fetch_assoc() : null;
+    echo json_encode([
+        'rol_id' => $row && $row['id'] ? intval($row['id']) : null,
+        'rol' => $row['nombre'] ?? null,
+    ]);
+}
+
+function asignarRolAUsuario($mysqli)
+{
+    $usuario_id = intval($_POST['usuario_id'] ?? 0);
+    $rol_id = intval($_POST['rol_id'] ?? 0);
+
+    if (!$usuario_id || !$rol_id) {
+        echo json_encode(['success' => false, 'error' => 'Seleccioná un usuario y un rol']);
+        return;
+    }
+
+    $mysqli->query("UPDATE usuarios SET rol_id = $rol_id WHERE id = $usuario_id");
+    echo json_encode(['success' => true]);
+}
+
+function quitarRolAUsuario($mysqli)
+{
+    $usuario_id = intval($_POST['usuario_id'] ?? 0);
+    if (!$usuario_id) {
+        echo json_encode(['success' => false, 'error' => 'Usuario inválido']);
+        return;
+    }
+    $mysqli->query("UPDATE usuarios SET rol_id = NULL WHERE id = $usuario_id");
+    echo json_encode(['success' => true]);
+}
+
 function listarRolesConPermisos($mysqli)
 {
     $sql = "SELECT r.id, r.nombre AS rol, p.nombre AS permiso
             FROM usuarios_roles r
             LEFT JOIN usuarios_rol_permiso rp ON r.id = rp.rol_id
-            LEFT JOIN usuarios_permisos p ON rp.permiso_id = p.id
+            LEFT JOIN usuarios_permisos p ON rp.permiso_id = p.id AND p.Eliminado = 0
             WHERE r.Eliminado = 0
-            ORDER BY r.id";
+            ORDER BY r.nombre";
 
     $res = $mysqli->query($sql);
     $datos = [];

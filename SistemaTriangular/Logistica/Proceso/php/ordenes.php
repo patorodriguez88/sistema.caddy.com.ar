@@ -649,6 +649,7 @@ if (isset($_POST['alta_orden'])) {
       idUsuarioChofer,
       Cliente,
       TotalRecorrido,
+      PrecioRecorrido,
       Rendicion,
       Costo_rendicion,
       Observaciones_rendicion
@@ -670,6 +671,7 @@ if (isset($_POST['alta_orden'])) {
       '{$IdUsuarioChofer}',
       '{$Cliente}',
       '{$TotalRecorrido}',
+      '{$PrecioVenta}',
       '{$Rendicion}',
       '{$CostoRendicion}',
       '{$ObservacionesRendicion}'

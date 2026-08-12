@@ -9,7 +9,9 @@
   <meta content="Coderthemes" name="author" />
 
   <!-- Caddy favicon -->
-  <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
+  <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
+  <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
+  <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
   <!-- Plugin css -->
   <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">

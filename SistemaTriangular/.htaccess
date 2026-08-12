@@ -1,3 +1,11 @@
+# Buffer de salida más grande: con el default (4096) muchas páginas ya mandan los
+# headers reales antes de llegar al menú (topnav.html), y ahí session_start() falla
+# de verdad (no es solo un warning) — el usuario logueado deja de verse en esa request
+# y el menú de permisos cae siempre en "sin sesión = mostrar todo". Con esto, PHP no
+# manda nada hasta terminar la página (o superar este tamaño), así session_start()
+# funciona en cualquier punto de la ejecución, como espera el resto del sistema.
+php_value output_buffering 65536
+
 # Activar mod_rewrite
 RewriteEngine On
 

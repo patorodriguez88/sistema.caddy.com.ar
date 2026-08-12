@@ -243,34 +243,99 @@ if (isset($_POST['Agregar_empleado'])) {
     $alergico  = isset($_POST['alergico']) ? (int)$_POST['alergico'] : 0;
     $driver_id = $_POST['driver_id'] ?? 0;
 
+    // Nivel de acceso del usuario que se crea junto con el empleado:
+    // 3 = Chofer/Reparto (comportamiento de siempre, cuenta de la app).
+    // 1 o 2 = SuperAdministrador/Administracion (cuenta real para este sistema).
+    $nivel = isset($_POST['nivel']) ? (int)$_POST['nivel'] : 3;
+    if (!in_array($nivel, [1, 2, 3], true)) $nivel = 3;
+    $mail = $post('mail');
+    $esUsuarioSistema = in_array($nivel, [1, 2], true);
+    $passwordTemporalPlano = null;
+
+    // Jerarquía: solo un SuperAdministrador (Nivel 1) puede crear cuentas de sistema
+    // (Nivel 1 o 2). Cualquier otro actor solo puede dar de alta cuentas Chofer/Reparto.
+    // Se valida acá, no solo en el front, porque es lo único que de verdad lo impide.
+    $actorNivel = intval($_SESSION['Nivel'] ?? 0);
+    if ($esUsuarioSistema && $actorNivel !== 1) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => 0,
+            'field'   => 'nivel',
+            'error'   => 'Solo un SuperAdministrador puede crear usuarios de Administracion o SuperAdministrador.'
+        ]);
+        exit;
+    }
+
+    if ($esUsuarioSistema && $mail === '') {
+        http_response_code(422);
+        echo json_encode([
+            'success' => 0,
+            'field'   => 'mail',
+            'error'   => 'El mail es obligatorio para crear un usuario del sistema (SuperAdministrador/Administracion).'
+        ]);
+        exit;
+    }
+
     // Transacción para que Usuario + Empleado queden consistentes
     $mysqli->begin_transaction();
 
     try {
-        // 1) INSERT USUARIO (Usuario provisional = nombre; luego lo actualizás)
-        $sqlUsuario = "INSERT INTO usuarios
-        (Nombre, PASSWORD, NIVEL, ACTIVO, Direccion, Localidad, Ciudad, Telefono, Observaciones, Usuario, FechaPassword, Estado, gid_asana, gid_hubspot)
-        VALUES (?, ?, 3, 1, ?, ?, ?, ?, ?, ?, ?, 'Activo', ?, ?)";
-
-        $stmtU = $mysqli->prepare($sqlUsuario);
-        if (!$stmtU) throw new Exception("Prepare usuarios failed: " . $mysqli->error);
-
         $usuarioTmp = $nombre;
 
-        $stmtU->bind_param(
-            "sssssssssss",   // <-- 11 tipos
-            $nombre,         // 1
-            $dni,            // 2
-            $domicilio,      // 3
-            $city,           // 4
-            $state,          // 5
-            $telefono,       // 6
-            $obs,            // 7
-            $usuarioTmp,     // 8
-            $FechaHoy,       // 9
-            $gid_asana,      // 10
-            $gid_hubspot     // 11
-        );
+        if ($esUsuarioSistema) {
+            // 1) INSERT USUARIO — cuenta real de sistema: password temporal hasheada,
+            // FechaPassword ya vencida a propósito para forzar el cambio en el primer login.
+            $passwordTemporalPlano = bin2hex(random_bytes(5)); // 10 caracteres
+            $passwordHashInicial = password_hash($passwordTemporalPlano, PASSWORD_DEFAULT);
+            $fechaPasswordVencida = '2000-01-01';
+
+            $sqlUsuario = "INSERT INTO usuarios
+            (Nombre, NIVEL, ACTIVO, Direccion, Localidad, Ciudad, Telefono, Observaciones, Mail, Usuario, password_hash, FechaPassword, Estado, gid_asana, gid_hubspot)
+            VALUES (?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Activo', ?, ?)";
+
+            $stmtU = $mysqli->prepare($sqlUsuario);
+            if (!$stmtU) throw new Exception("Prepare usuarios failed: " . $mysqli->error);
+
+            $stmtU->bind_param(
+                "sisssssssssss",
+                $nombre,
+                $nivel,
+                $domicilio,
+                $city,
+                $city,
+                $telefono,
+                $obs,
+                $mail,
+                $usuarioTmp,
+                $passwordHashInicial,
+                $fechaPasswordVencida,
+                $gid_asana,
+                $gid_hubspot
+            );
+        } else {
+            // 1) INSERT USUARIO (Usuario provisional = nombre; luego lo actualizás)
+            $sqlUsuario = "INSERT INTO usuarios
+            (Nombre, PASSWORD, NIVEL, ACTIVO, Direccion, Localidad, Ciudad, Telefono, Observaciones, Usuario, FechaPassword, Estado, gid_asana, gid_hubspot)
+            VALUES (?, ?, 3, 1, ?, ?, ?, ?, ?, ?, ?, 'Activo', ?, ?)";
+
+            $stmtU = $mysqli->prepare($sqlUsuario);
+            if (!$stmtU) throw new Exception("Prepare usuarios failed: " . $mysqli->error);
+
+            $stmtU->bind_param(
+                "sssssssssss",   // <-- 11 tipos
+                $nombre,         // 1
+                $dni,            // 2
+                $domicilio,      // 3
+                $city,           // 4
+                $state,          // 5
+                $telefono,       // 6
+                $obs,            // 7
+                $usuarioTmp,     // 8
+                $FechaHoy,       // 9
+                $gid_asana,      // 10
+                $gid_hubspot     // 11
+            );
+        }
 
         if (!$stmtU->execute()) throw new Exception("Execute usuarios failed: " . $stmtU->error);
 
@@ -319,10 +384,24 @@ if (isset($_POST['Agregar_empleado'])) {
 
         $mysqli->commit();
 
+        if ($esUsuarioSistema) {
+            require_once __DIR__ . '/../../../Funciones/php/enviar_mail.php';
+            $htmlMail = "
+                <p>Hola " . htmlspecialchars($nombre) . ",</p>
+                <p>Se creó tu usuario para el Sistema Caddy.</p>
+                <p><b>Usuario:</b> " . htmlspecialchars($UsuarioFinal) . "<br>
+                <b>Contraseña temporal:</b> " . htmlspecialchars($passwordTemporalPlano) . "</p>
+                <p>Por seguridad, el sistema te va a pedir que la cambies apenas inicies sesión.</p>
+            ";
+            enviarMail($mail, $nombre, 'Tu acceso al Sistema Caddy', $htmlMail);
+        }
+
         // OJO: $aliado y $vehiculo NO existen en tu código actual -> eso te va a generar Notices/Warnings
         echo json_encode([
             'success' => 1,
-            'user_id' => $id_usuario
+            'user_id' => $id_usuario,
+            'es_usuario_sistema' => $esUsuarioSistema,
+            'mail_enviado' => $esUsuarioSistema ? $mail : null
         ]);
     } catch (Throwable $e) {
         $mysqli->rollback();

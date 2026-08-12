@@ -9,7 +9,9 @@
     <meta content="Coderthemes" name="author" />
 
     <!-- Favicon -->
-    <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
+    <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
     <!-- Theme Config -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>

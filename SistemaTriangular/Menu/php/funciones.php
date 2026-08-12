@@ -18,12 +18,33 @@ if (isset($_POST['Empleados'])) {
         $Nivel = isset($_SESSION['Nivel']) ? $_SESSION['Nivel'] : 'Usuario';
         $Sucursal = isset($_SESSION['Sucursal']) ? $_SESSION['Sucursal'] : 'Córdoba';
         $time = $_SESSION['tiempo'] ?? 0;
+
+        // Nombre del rol asignado (Roles y Permisos). Sin rol todavía, se muestra
+        // el nivel en palabras para no dejar el espacio vacío.
+        $RolNombre = null;
+        $idUsuarioSesion = intval($_SESSION['idusuario'] ?? 0);
+        if ($idUsuarioSesion > 0) {
+            $resRol = $mysqli->query("
+                SELECT r.nombre
+                FROM usuarios u
+                LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
+                WHERE u.id = $idUsuarioSesion
+            ");
+            if ($resRol && $resRol->num_rows) {
+                $RolNombre = $resRol->fetch_assoc()['nombre'] ?? null;
+            }
+        }
+        if (!$RolNombre) {
+            $RolNombre = intval($Nivel) === 1 ? 'SuperAdministrador' : (intval($Nivel) === 2 ? 'Administracion' : ('Nivel ' . $Nivel));
+        }
+
         echo json_encode(array(
             'success' => 1,
             'Nombre' => $NombreCompleto,
             'Sucursal' => $Sucursal,
             'Avatar' => $Avatar,
             'Nivel' => $Nivel,
+            'Rol' => $RolNombre,
             'Server' => $Server,
             'Time' => $time,
             'Entorno' => $Entorno

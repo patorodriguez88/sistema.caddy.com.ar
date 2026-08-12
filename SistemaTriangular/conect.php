@@ -80,9 +80,11 @@ if (isset($_SESSION['seluser'])) {
 if (isset($_POST['user']) && isset($_POST['password'])) {
 
     $user = $mysqli->real_escape_string($_POST['user']);
-    $password = $mysqli->real_escape_string($_POST['password']);
+    $passwordIngresada = $_POST['password'];
 
-    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND PASSWORD = '$password' AND Activo='1' AND NIVEL IN(1,2)";
+    // La comparación de contraseña se hace en PHP (no en el WHERE) porque las cuentas
+    // migradas a password_hash no se pueden comparar directo en SQL.
+    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND Activo='1' AND NIVEL IN(1,2)";
 
     $rec = $mysqli->query($sql);
 
@@ -95,8 +97,23 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
     exit(); // Detén la ejecución si los valores no existen
 }
 
-if ($rec->num_rows != 0) {
-    $fila = $rec->fetch_assoc();
+$fila = ($rec->num_rows != 0) ? $rec->fetch_assoc() : null;
+$passwordOk = false;
+
+if ($fila) {
+    if (!empty($fila['password_hash'])) {
+        $passwordOk = password_verify($passwordIngresada, $fila['password_hash']);
+    } elseif ($fila['PASSWORD'] !== null && $fila['PASSWORD'] !== '' && hash_equals((string)$fila['PASSWORD'], (string)$passwordIngresada)) {
+        // Cuenta todavía no migrada: valida en texto plano y de paso guarda el hash,
+        // así la próxima vez ya entra por password_verify.
+        $passwordOk = true;
+        $nuevoHash = password_hash($passwordIngresada, PASSWORD_DEFAULT);
+        $idFila = intval($fila['id']);
+        $mysqli->query("UPDATE usuarios SET password_hash = '" . $mysqli->real_escape_string($nuevoHash) . "' WHERE id = $idFila");
+    }
+}
+
+if ($fila && $passwordOk) {
 
     $_SESSION['userid'] = $fila['id'];
     $_SESSION['ingreso'] = $user;
@@ -114,10 +131,29 @@ if ($rec->num_rows != 0) {
     $_SESSION['Sucursal'] = $fila['Sucursal'];
     $_SESSION['Usuario'] = $fila['Usuario'];
 
+    // Los permisos de menú ya NO se cachean en la sesión: topnav.html los consulta en
+    // vivo (Menu/php/permisos_menu.php) para que un cambio de rol se note al toque,
+    // sin pedirle a la persona que cierre sesión y vuelva a entrar.
+
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
 
     // Log ingreso
     // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
+
+    // Vencimiento de contraseña (cada 3 meses). Sin FechaPassword registrada, se
+    // considera vencida (fuerza a elegir una nueva antes de dejar entrar).
+    $fechaPassword = $fila['FechaPassword'] ?? null;
+    $passwordVencida = true;
+    if (!empty($fechaPassword)) {
+        $limite = date('Y-m-d', strtotime($fechaPassword . ' +3 months'));
+        $passwordVencida = ($limite <= date('Y-m-d'));
+    }
+    $_SESSION['DebeCambiarPassword'] = $passwordVencida;
+
+    if ($passwordVencida) {
+        header('Location: CambiarPasswordObligatorio.php');
+        exit;
+    }
 
     // Perfil
 

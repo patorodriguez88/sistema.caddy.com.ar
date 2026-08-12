@@ -15,7 +15,9 @@ if ($logoPath && file_exists($logoPath)) {
     <meta charset="utf-8" />
     <title>Sistema Caddy | Seguros</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
+    <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
     <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">

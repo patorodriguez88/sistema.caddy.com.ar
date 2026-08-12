@@ -1,3 +1,13 @@
+<?php
+// El asistente de IA (robot en el topbar) es solo para SuperAdministrador. Igual que
+// en topnav.html, la sesión puede no estar cargada todavía a esta altura de la página
+// (headers ya "enviados" según PHP, aunque el buffer real es grande) — session_start()
+// carga los datos igual, solo silenciamos el warning cosmético con @.
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
+$esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
+?>
 <!-- ========== Topbar Start ========== -->
 <div class="navbar-custom">
   <div class="topbar container-fluid">
@@ -41,7 +51,7 @@
         </a>
 
         <!-- Version del sistema: subir en cada push a develop/main -->
-        <span class="text-muted" style="font-size: 10px; white-space: nowrap; position: absolute; left: 152px; bottom: 6px;">v1.0.2</span>
+        <span class="text-muted" style="font-size: 10px; white-space: nowrap; position: absolute; left: 152px; bottom: 6px;">v1.0.3</span>
       </div>
 
       <!-- Sidebar Menu Toggle Button -->
@@ -67,6 +77,7 @@
     </div>
 
     <ul class="topbar-menu d-flex align-items-center gap-3">
+      <?php if ($esSuperAdministrador): ?>
       <li class="d-none d-sm-inline-block">
         <a
           class="nav-link"
@@ -79,6 +90,7 @@
           <i class="ri-robot-2-line font-22"></i>
         </a>
       </li>
+      <?php endif; ?>
 
       <li class="dropdown notification-list">
         <a
@@ -88,9 +100,10 @@
           role="button"
           aria-haspopup="false"
           aria-expanded="false"
+          id="noti_toggle"
         >
           <i class="ri-notification-3-line font-22"></i>
-          <span class="noti-icon-badge"></span>
+          <span class="noti-icon-badge d-none" id="noti_badge"></span>
         </a>
         <div
           class="dropdown-menu dropdown-menu-end dropdown-menu-animated dropdown-lg py-0"
@@ -100,186 +113,20 @@
           >
             <div class="row align-items-center">
               <div class="col">
-                <h6 class="m-0 font-16 fw-semibold">Notification</h6>
+                <h6 class="m-0 font-16 fw-semibold">Notificaciones</h6>
               </div>
               <div class="col-auto">
-                <a
-                  href="javascript: void(0);"
-                  class="text-dark text-decoration-underline"
-                >
-                  <small>Clear All</small>
-                </a>
+                <small class="text-muted">Del sistema</small>
               </div>
             </div>
           </div>
 
-          <div class="px-2" style="max-height: 300px" data-simplebar>
-            <h5 class="text-muted font-12 text-uppercase mt-2">Today</h5>
-            <!-- item-->
-
-            <a
-              href="javascript:void(0);"
-              class="dropdown-item p-0 notify-item card unread-noti shadow-none mb-1"
-            >
-              <div class="card-body">
-                <span class="float-end noti-close-btn text-muted"
-                  ><i class="mdi mdi-close"></i
-                ></span>
-                <div class="d-flex align-items-center">
-                  <div class="flex-shrink-0">
-                    <div class="notify-icon bg-primary">
-                      <i class="ri-chat-quote-line font-18"></i>
-                    </div>
-                  </div>
-                  <div class="flex-grow-1 text-truncate ms-2">
-                    <h5 class="noti-item-title fw-semibold font-14">
-                      Datacorp
-                      <small class="fw-normal text-muted ms-1">1 min ago</small>
-                    </h5>
-                    <small class="noti-item-subtitle text-muted"
-                      >Caleb Flakelar commented on Admin</small
-                    >
-                  </div>
-                </div>
-              </div>
-            </a>
-
-            <!-- item-->
-            <a
-              href="javascript:void(0);"
-              class="dropdown-item p-0 notify-item card read-noti shadow-none mb-2"
-            >
-              <div class="card-body">
-                <span class="float-end noti-close-btn text-muted"
-                  ><i class="mdi mdi-close"></i
-                ></span>
-                <div class="d-flex align-items-center">
-                  <div class="flex-shrink-0">
-                    <div class="notify-icon bg-info">
-                      <i class="ri-user-add-line font-18"></i>
-                    </div>
-                  </div>
-                  <div class="flex-grow-1 text-truncate ms-2">
-                    <h5 class="noti-item-title fw-semibold font-14">
-                      Admin
-                      <small class="fw-normal text-muted ms-1"
-                        >1 hours ago</small
-                      >
-                    </h5>
-                    <small class="noti-item-subtitle text-muted"
-                      >New user registered</small
-                    >
-                  </div>
-                </div>
-              </div>
-            </a>
-
-            <h5 class="text-muted font-12 text-uppercase mt-0">Yesterday</h5>
-
-            <!-- item-->
-            <a
-              href="javascript:void(0);"
-              class="dropdown-item p-0 notify-item card read-noti shadow-none mb-2"
-            >
-              <div class="card-body">
-                <span class="float-end noti-close-btn text-muted"
-                  ><i class="mdi mdi-close"></i
-                ></span>
-                <div class="d-flex align-items-center">
-                  <div class="flex-shrink-0">
-                    <div class="notify-icon">
-                      <img
-                        src="../hyper/dist/assets/images/users/avatar-2.jpg"
-                        class="img-fluid rounded-circle"
-                        alt=""
-                      />
-                    </div>
-                  </div>
-                  <div class="flex-grow-1 text-truncate ms-2">
-                    <h5 class="noti-item-title fw-semibold font-14">
-                      Cristina Pride
-                      <small class="fw-normal text-muted ms-1">1 day ago</small>
-                    </h5>
-                    <small class="noti-item-subtitle text-muted"
-                      >Hi, How are you? What about our next meeting</small
-                    >
-                  </div>
-                </div>
-              </div>
-            </a>
-
-            <h5 class="text-muted font-12 text-uppercase mt-0">02 Jun 2025</h5>
-
-            <!-- item-->
-            <a
-              href="javascript:void(0);"
-              class="dropdown-item p-0 notify-item card read-noti shadow-none mb-1"
-            >
-              <div class="card-body">
-                <span class="float-end noti-close-btn text-muted"
-                  ><i class="mdi mdi-close"></i
-                ></span>
-                <div class="d-flex align-items-center">
-                  <div class="flex-shrink-0">
-                    <div class="notify-icon bg-primary">
-                      <i class="ri-chat-voice-line font-18"></i>
-                    </div>
-                  </div>
-                  <div class="flex-grow-1 text-truncate ms-2">
-                    <h5 class="noti-item-title fw-semibold font-14">
-                      Datacorp
-                    </h5>
-                    <small class="noti-item-subtitle text-muted"
-                      >Caleb Flakelar commented on Admin</small
-                    >
-                  </div>
-                </div>
-              </div>
-            </a>
-
-            <!-- item-->
-            <a
-              href="javascript:void(0);"
-              class="dropdown-item p-0 notify-item card read-noti shadow-none mb-2"
-            >
-              <div class="card-body">
-                <span class="float-end noti-close-btn text-muted"
-                  ><i class="mdi mdi-close"></i
-                ></span>
-                <div class="d-flex align-items-center">
-                  <div class="flex-shrink-0">
-                    <div class="notify-icon">
-                      <img
-                        src="../hyper/dist/assets/images/users/avatar-4.jpg"
-                        class="img-fluid rounded-circle"
-                        alt=""
-                      />
-                    </div>
-                  </div>
-                  <div class="flex-grow-1 text-truncate ms-2">
-                    <h5 class="noti-item-title fw-semibold font-14">
-                      Karen Robinson
-                    </h5>
-                    <small class="noti-item-subtitle text-muted"
-                      >Wow ! this admin looks good and awesome design</small
-                    >
-                  </div>
-                </div>
-              </div>
-            </a>
-
-            <div class="text-center">
-              <i class="mdi mdi-dots-circle mdi-spin text-muted h3 mt-0"></i>
+          <div class="px-2" style="max-height: 340px; overflow-y: auto;" id="noti_lista">
+            <div class="text-center text-muted py-4" id="noti_cargando">
+              <i class="mdi mdi-dots-circle mdi-spin h3 mt-0 d-block"></i>
+              <small>Buscando novedades...</small>
             </div>
           </div>
-
-          <!-- All-->
-          <a
-            href="javascript:void(0);"
-            class="dropdown-item text-center text-primary notify-item border-top py-2"
-          >
-            View All
-          </a>
         </div>
       </li>
 
@@ -382,6 +229,7 @@
   </div>
 </div>
 <!-- ========== Topbar End ========== -->
+<?php if ($esSuperAdministrador): ?>
 <div
   class="offcanvas offcanvas-end"
   tabindex="-1"
@@ -454,3 +302,4 @@
     </div>
   </div>
 </div>
+<?php endif; ?>

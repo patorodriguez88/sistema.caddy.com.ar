@@ -50,6 +50,7 @@ $(document).ready(function () {
   // El header y el topnav ahora se renderizan server-side (PHP include) en cada
   // página, así que este código corre directo, sin esperar un .load() aparte.
   cargarConsultasFrecuentesIA();
+  cargarNotificaciones();
   // Cambio de tema claro/oscuro
   $("#light-dark-mode").on("click", function () {
     const html = $("html");
@@ -121,7 +122,7 @@ $(document).ready(function () {
           $("#user_name").html(jsonData.Nombre);
           $("#user_sucursal").html(jsonData.Sucursal);
           $("#user_iniciales").html(jsonData.Avatar);
-          $("#user_nivel").html("Nivel " + jsonData.Nivel);
+          $("#user_nivel").html(jsonData.Rol || "Nivel " + jsonData.Nivel);
           window.USUARIO_NIVEL = parseInt(jsonData.Nivel || 0);
           // Entorno (sandbox / produccion)
           var entorno = (jsonData.Entorno || "").toString().toLowerCase();
@@ -350,6 +351,13 @@ $(document).on("click", "#btn_ia_consultar", function () {
     return;
   }
 
+  // Mandamos los últimos intercambios (sin errores) para que el asistente tenga
+  // contexto de la conversación y entienda preguntas de seguimiento ("¿y en junio?").
+  const historial = _iaChat
+    .filter((item) => !item.esError)
+    .slice(-6)
+    .map((item) => ({ pregunta: item.pregunta, respuesta: item.respuesta }));
+
   $("#ia_consulta_texto").val("");
   _iaConsultando = true;
   _iaChatRender();
@@ -358,7 +366,7 @@ $(document).on("click", "#btn_ia_consultar", function () {
     url: "../Menu/php/ia_consultas.php",
     type: "POST",
     dataType: "json",
-    data: { pregunta: pregunta },
+    data: { pregunta: pregunta, historial: JSON.stringify(historial) },
     success: function (resp) {
       _iaConsultando = false;
       if (!resp || resp.success != 1) {
@@ -397,16 +405,6 @@ $(document).on("keydown", "#ia_consulta_texto", function (e) {
   if (e.ctrlKey && e.key === "Enter") {
     $("#btn_ia_consultar").trigger("click");
   }
-});
-
-$(document).on("click", ".ia-cliente-opcion", function () {
-  const cliente = $(this).data("cliente") || "";
-  const preguntaActual = $("#ia_consulta_texto").val().trim();
-
-  if (!cliente) return;
-
-  $("#ia_consulta_texto").val(`${preguntaActual} cliente_exacto:${cliente}`);
-  $("#btn_ia_consultar").trigger("click");
 });
 function cargarConsultasFrecuentesIA() {
   $.ajax({
@@ -458,4 +456,71 @@ function escapeHtml(text) {
   return $("<div>")
     .text(text || "")
     .html();
+}
+
+function cargarNotificaciones() {
+  if (!$("#noti_lista").length) return;
+
+  $.ajax({
+    url: "../Menu/php/notificaciones.php",
+    type: "GET",
+    dataType: "json",
+    success: function (res) {
+      if (!res || res.success != 1) return;
+
+      const $badge = $("#noti_badge");
+      if (res.total > 0) {
+        $badge.removeClass("d-none");
+      } else {
+        $badge.addClass("d-none");
+      }
+
+      const $lista = $("#noti_lista");
+
+      if (!res.notificaciones || !res.notificaciones.length) {
+        $lista.html(
+          `<div class="text-center text-muted py-4">
+            <i class="ri-checkbox-circle-line d-block mb-1" style="font-size:26px;"></i>
+            <small>Sin novedades por ahora</small>
+          </div>`
+        );
+        return;
+      }
+
+      let html = "";
+
+      res.notificaciones.forEach(function (n) {
+        let subitems = "";
+        (n.items || []).forEach(function (item) {
+          subitems += `
+            <div class="d-flex justify-content-between align-items-center py-1 ${item.urgente ? "text-danger fw-semibold" : ""}" style="font-size:12px;">
+              <span>${escapeHtml(item.titulo)}</span>
+              <span class="text-muted">${escapeHtml(item.subtitulo)}</span>
+            </div>`;
+        });
+
+        html += `
+          <a href="${escapeHtml(n.link || "#")}" class="dropdown-item p-0 notify-item card shadow-none mb-2 border">
+            <div class="card-body">
+              <div class="d-flex align-items-center">
+                <div class="flex-shrink-0">
+                  <div class="notify-icon ${n.color}">
+                    <i class="${n.icono} font-18"></i>
+                  </div>
+                </div>
+                <div class="flex-grow-1 ms-2">
+                  <h5 class="noti-item-title fw-semibold font-14 mb-0">
+                    ${escapeHtml(n.titulo)}
+                    <span class="badge bg-secondary ms-1">${n.cantidad}</span>
+                  </h5>
+                </div>
+              </div>
+              ${subitems ? `<div class="mt-2 ps-1 border-top pt-1">${subitems}</div>` : ""}
+            </div>
+          </a>`;
+      });
+
+      $lista.html(html);
+    },
+  });
 }

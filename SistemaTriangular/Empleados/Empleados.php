@@ -1,3 +1,7 @@
+<?php
+require_once __DIR__ . '/../Conexion/Conexioni.php';
+$actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
+?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
 
@@ -9,7 +13,9 @@
     <meta content="Coderthemes" name="author" />
 
     <!-- Caddy favicon -->
-    <link rel="shortcut icon" href="../images/favicon/apple-icon.png">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
+    <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
     <!-- Plugin css -->
     <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
@@ -315,6 +321,32 @@
                                     <div id="alerta" class="alert alert-danger d-none" role="alert">
                                         <strong>Repartidor Inactivo - </strong> Verifique la fecha de caducidad de la Licencia de Conducir
                                     </div>
+
+                                    <!-- ACCESO AL SISTEMA -->
+                                    <div class="row g-3">
+                                        <div class="col-md-4">
+                                            <div class="mb-3">
+                                                <label for="ext_nivel" class="form-label">Tipo de acceso</label>
+                                                <select id="ext_nivel" class="form-select">
+                                                    <option value="3" selected>Chofer / Reparto (app)</option>
+                                                    <?php if ($actorEsSuperAdmin): ?>
+                                                    <option value="2">Administracion (sistema)</option>
+                                                    <option value="1">SuperAdministrador (sistema)</option>
+                                                    <?php endif; ?>
+                                                </select>
+                                                <?php if (!$actorEsSuperAdmin): ?>
+                                                <div class="form-text">Crear usuarios de Administracion o SuperAdministrador requiere ser SuperAdministrador.</div>
+                                                <?php endif; ?>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-8">
+                                            <div class="mb-3">
+                                                <label for="ext_mail" class="form-label">Mail <span id="ext_mail_hint" class="text-muted font-13 d-none">(obligatorio para acceso al sistema — ahí se manda la contraseña temporal)</span></label>
+                                                <input type="email" class="form-control" id="ext_mail" placeholder="mail@caddy.com.ar">
+                                            </div>
+                                        </div>
+                                    </div>
+
                                     <div class="row g-3">
                                         <div class="col-md-3">
 

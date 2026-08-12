@@ -1,6 +1,12 @@
 <?php
 session_start();
 
+// Evita que el navegador guarde en caché (o restaure con el botón "atrás"/bfcache)
+// una pantalla que requiere sesión — si no, después de un logout o de que la sesión
+// venza, "volver" podía mostrar la última vista tal cual quedó, sin volver a validar.
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+
 $BASE_PATH = rtrim(dirname($_SERVER['SCRIPT_NAME']), '/\\');
 if ($BASE_PATH === '' || $BASE_PATH === '.') $BASE_PATH = '';
 
@@ -8,7 +14,10 @@ define('BASE_PATH', $BASE_PATH);
 
 function redirect_login()
 {
-    header('Location: ' . BASE_PATH . '/inicio.php');
+    // Ruta absoluta a propósito: BASE_PATH es relativo a la carpeta de la página actual
+    // (ej. Empleados/), así que "BASE_PATH/inicio.php" apuntaba a un inicio.php que no
+    // existe ahí — inicio.php vive únicamente en la raíz de SistemaTriangular.
+    header('Location: /SistemaTriangular/inicio.php');
     exit;
 }
 class Conexion
@@ -158,5 +167,12 @@ if (!defined('ALLOW_NO_SESSION') || ALLOW_NO_SESSION !== true) {
 
         // Si sigue activo, actualizamos el tiempo
         $_SESSION['tiempo'] = time();
+
+        // Contraseña vencida: no dejar pasar a ninguna otra pantalla hasta que la cambie.
+        $excepcionesCambioPassword = ['CambiarPasswordObligatorio.php', 'cambiar_password_obligatorio.php'];
+        if (!empty($_SESSION['DebeCambiarPassword']) && !in_array($archivoActual, $excepcionesCambioPassword)) {
+            header('Location: /SistemaTriangular/CambiarPasswordObligatorio.php');
+            exit;
+        }
     }
 }

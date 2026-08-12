@@ -47,10 +47,10 @@ if (isset($_POST['MuestroFotos']) && $_POST['MuestroFotos'] == 1) {
 if (isset($_POST['MuestroQuicks'])) {
     $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
     $ruta = "../../../../sandbox.reparto.caddy.com.ar/SistemaReparto/Proceso/php/images/" . $CodigoSeguimiento . "/"; // Indicar la ruta
-    $filehandle = opendir($ruta); // Abrir archivos de la carpeta
+    $filehandle = is_dir($ruta) ? opendir($ruta) : false; // Abrir archivos de la carpeta
     $w = 1;
-    $file = readdir($filehandle);
-    $total_imagenes = count(glob($ruta . '{*.jpg,*.gif,*.png,*.jpeg}', GLOB_BRACE));
+    $file = $filehandle ? readdir($filehandle) : false;
+    $total_imagenes = $filehandle ? count(glob($ruta . '{*.jpg,*.gif,*.png,*.jpeg}', GLOB_BRACE)) : 0;
     echo '<div class="col-12">';
     echo '<div class="card d-block">';
     echo '<div class="card-body">';

@@ -1,4 +1,10 @@
 var filtro = "";
+
+// Muestra el aviso de "mail obligatorio" solo cuando se elige un nivel de sistema (1 o 2)
+$(document).on("change", "#ext_nivel", function () {
+  var esUsuarioSistema = $(this).val() === "1" || $(this).val() === "2";
+  $("#ext_mail_hint").toggleClass("d-none", !esUsuarioSistema);
+});
 // function cargarUsuariosAsana() {
 //   $.ajax({
 //     url: "../Asana/usuarios.php",
@@ -458,7 +464,20 @@ $("#crear_empleado").on("click", function (e) {
     telefono: $("#ext_telefono").val(),
     asana_gid: $("#empleado_id_asana").val(),
     hubspot_gid: $("#empleado_id_hubspot").val(),
+    nivel: $("#ext_nivel").val(),
+    mail: $("#ext_mail").val(),
   };
+
+  var esUsuarioSistema = payload.nivel === "1" || payload.nivel === "2";
+  if (esUsuarioSistema && !payload.mail) {
+    Swal.fire({
+      icon: "warning",
+      title: "Falta el mail",
+      text: "Para crear un usuario de SuperAdministrador/Administracion necesitás cargar un mail (ahí se manda la contraseña temporal).",
+    });
+    $("#ext_mail").focus();
+    return;
+  }
 
   // Loading Swal
   Swal.fire({
@@ -477,10 +496,17 @@ $("#crear_empleado").on("click", function (e) {
     data: payload,
     success: function (jsonData) {
       if (jsonData && jsonData.success == 1) {
+        var texto = "Empleado cargado al sistema";
+        if (jsonData.es_usuario_sistema) {
+          texto =
+            "Empleado cargado. Le mandamos la contraseña temporal a " +
+            jsonData.mail_enviado +
+            " — el sistema le va a pedir cambiarla apenas inicie sesión.";
+        }
         Swal.fire({
           icon: "success",
           title: "¡Éxito!",
-          text: "Empleado cargado al sistema",
+          text: texto,
           confirmButtonText: "Ok",
         }).then(() => {
           // Cerrar modal (Bootstrap 5)
