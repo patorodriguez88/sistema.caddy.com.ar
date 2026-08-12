@@ -3,10 +3,11 @@ SistemaTriangular/Conexion/google_config.php
 SistemaTriangular/Conexion/config
 SistemaTriangular/Conexion/config_local
 SistemaTriangular/Conexion/config_sandbox
-SistemaTriangular/Rutas/backend/config.php
 SistemaTriangular/TiendaNube/webhooks/tn_config.php
 SistemaTriangular/Integraciones/oscommerce/config_oscommerce.php
 SistemaTriangular/Conexion/claude_config.php
+SistemaTriangular/Conexion/twilio_db_config.php
+SistemaTriangular/Conexion/report_db_config.php
 
 # Certificados, claves privadas y tickets de acceso de AFIP (WSAA/WSFE)
 SistemaTriangular/afip.php/src/Afip_res/

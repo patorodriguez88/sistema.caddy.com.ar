@@ -10,11 +10,12 @@ if ($_GET['token'] <> null) {
 
     if (verificarDato($dato_a_verificar, $dato_a_verificar_1)) {
 
-        $host = "localhost";
-        $user = "dinter6_report";
-        $pass = "MacBook@Air2024";
+        require_once __DIR__ . '/../../../Conexion/report_db_config.php';
+        $host = REPORT_DB_HOST;
+        $user = REPORT_DB_USER;
+        $pass = REPORT_DB_PASS;
 
-        $db = "dinter6_triangular";
+        $db = REPORT_DB_NAME;
         $mysqli = new mysqli($host, $user, $pass, $db);
         mysqli_set_charset($mysqli, "utf8");
 
@@ -32,10 +33,11 @@ if ($_GET['token'] <> null) {
 function verificarDato($dato, $dato1)
 {
     // Configuración de la conexión a la base de datos
-    $servername = "localhost";
-    $username = "dinter6_report";
-    $password = "MacBook@Air2024";
-    $dbname = "dinter6_triangular";
+    require_once __DIR__ . '/../../../Conexion/report_db_config.php';
+    $servername = REPORT_DB_HOST;
+    $username = REPORT_DB_USER;
+    $password = REPORT_DB_PASS;
+    $dbname = REPORT_DB_NAME;
 
     // Crear conexión
     $conn = new mysqli($servername, $username, $password, $dbname);
