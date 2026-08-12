@@ -1531,6 +1531,44 @@ $(document).ready(function () {
   });
 });
 
+$("#btn_agregar_vehiculo_ok").on("click", function () {
+  var marca = $("#nv_marca").val().trim();
+  var dominio = $("#nv_dominio").val().trim();
+
+  if (!marca || !dominio) {
+    alerta("warning", "Atención", "Marca y Dominio son obligatorios");
+    return;
+  }
+
+  $.ajax({
+    url: "Proceso/php/vehiculos.php",
+    type: "POST",
+    data: {
+      Agregar_vehiculo: 1,
+      Marca: marca,
+      Modelo: $("#nv_modelo").val().trim(),
+      Dominio: dominio,
+      Ano: $("#nv_ano").val(),
+      Kilometros: $("#nv_km").val(),
+    },
+    success: function (response) {
+      var jsonData = JSON.parse(response);
+      if (jsonData.success == 1) {
+        $("#modal_agregar_vehiculo").modal("hide");
+        $("#form_agregar_vehiculo")[0].reset();
+        $("#flota").DataTable().ajax.reload();
+        toast("success", "Guardado", jsonData.message);
+      } else {
+        alerta("error", "Error", jsonData.message);
+      }
+    },
+    error: function (xhr) {
+      alerta("error", "Error", "Error de conexión al servidor");
+      console.error(xhr.responseText);
+    },
+  });
+});
+
 $("#vehicles-up-modal_sure_ok").on("click", function () {
   let datos = {
     action: "guardar_seguro",

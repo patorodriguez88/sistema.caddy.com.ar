@@ -92,6 +92,45 @@ if (isset($_POST['Update_segmento'])) {
 }
 
 
+// AGREGAR VEHICULO NUEVO (FLOTA PROPIA)
+
+if (isset($_POST['Agregar_vehiculo'])) {
+
+    $marca   = trim($_POST['Marca'] ?? '');
+    $modelo  = trim($_POST['Modelo'] ?? '');
+    $dominio = trim($_POST['Dominio'] ?? '');
+    $ano     = intval($_POST['Ano'] ?? 0);
+    $km      = intval($_POST['Kilometros'] ?? 0);
+
+    if ($marca === '' || $dominio === '') {
+        echo json_encode(['success' => 0, 'message' => 'Marca y Dominio son obligatorios']);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("INSERT INTO Vehiculos (Marca, Modelo, Dominio, Ano, Kilometros, Activo, Estado, VehiculoOperativo, Aliados, gid_projets_asana) VALUES (?, ?, ?, ?, ?, 'Si', 'Disponible', 1, 0, '')");
+
+    if (!$stmt) {
+        echo json_encode(['success' => 0, 'message' => 'Error al preparar consulta', 'error' => $mysqli->error]);
+        exit;
+    }
+
+    $stmt->bind_param("sssii", $marca, $modelo, $dominio, $ano, $km);
+
+    try {
+        $stmt->execute();
+        echo json_encode(['success' => 1, 'message' => 'Vehículo agregado correctamente', 'id' => $mysqli->insert_id]);
+    } catch (mysqli_sql_exception $e) {
+        if ($mysqli->errno == 1062) {
+            echo json_encode(['success' => 0, 'message' => 'Ya existe un vehículo con ese dominio']);
+        } else {
+            echo json_encode(['success' => 0, 'message' => 'Error al guardar el vehículo', 'error' => $e->getMessage()]);
+        }
+    }
+
+    $stmt->close();
+    exit;
+}
+
 // BUSCAR TODA LA FLOTA
 
 if (isset($_POST['Flota'])) {
@@ -793,7 +832,7 @@ if (isset($_POST['Sure'])) {
     }
 }
 
-if ($_POST['accion'] === 'obtener_datos_seguro') {
+if (isset($_POST['accion']) && $_POST['accion'] === 'obtener_datos_seguro') {
     $dominio = $_POST['dominio'];
     $sql = "SELECT FechaVencSeguro, NumeroPoliza, TelefonoSeguro FROM Vehiculos WHERE Dominio = ?";
     $stmt = $mysqli->prepare($sql);
@@ -959,7 +998,7 @@ if (isset($_POST['cuadro_forma_de_pago'])) {
 }
 
 
-if ($_POST['action'] == 'guardar_seguro') {
+if (isset($_POST['action']) && $_POST['action'] == 'guardar_seguro') {
     $dominio = $_POST['dominio'];
     $poliza = $_POST['NumeroPoliza'];
     $telefono = $_POST['TelefonoSeguro'];

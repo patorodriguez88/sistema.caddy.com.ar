@@ -1,6 +1,5 @@
 <?php
-session_start();
-include_once "../Conexion/Conexion.php";
+include_once "../Conexion/Conexioni.php";
 ?>
 <!DOCTYPE html>
     <html lang="es">

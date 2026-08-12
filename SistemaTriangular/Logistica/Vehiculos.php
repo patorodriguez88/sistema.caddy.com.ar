@@ -197,6 +197,46 @@
                             </div><!-- /.modal-dialog -->
                         </div><!-- /.modal -->
 
+                        <!-- AGREGAR VEHICULO -->
+                        <div id="modal_agregar_vehiculo" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="modal_agregar_vehiculo_label" aria-hidden="true">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header modal-colored-header bg-primary">
+                                        <h4 class="modal-title" id="modal_agregar_vehiculo_label">Agregar Vehiculo</h4>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <form id="form_agregar_vehiculo">
+                                            <div class="form-group mb-2">
+                                                <label for="nv_marca">Marca</label>
+                                                <input type="text" id="nv_marca" class="form-control" required>
+                                            </div>
+                                            <div class="form-group mb-2">
+                                                <label for="nv_modelo">Modelo</label>
+                                                <input type="text" id="nv_modelo" class="form-control">
+                                            </div>
+                                            <div class="form-group mb-2">
+                                                <label for="nv_dominio">Dominio</label>
+                                                <input type="text" id="nv_dominio" class="form-control" required>
+                                            </div>
+                                            <div class="form-group mb-2">
+                                                <label for="nv_ano">Año</label>
+                                                <input type="number" id="nv_ano" class="form-control" min="1980" max="2100">
+                                            </div>
+                                            <div class="form-group mb-2">
+                                                <label for="nv_km">Kilometros</label>
+                                                <input type="number" id="nv_km" class="form-control" min="0">
+                                            </div>
+                                        </form>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                        <button id="btn_agregar_vehiculo_ok" type="button" class="btn btn-primary">Guardar</button>
+                                    </div>
+                                </div><!-- /.modal-content -->
+                            </div><!-- /.modal-dialog -->
+                        </div><!-- /.modal -->
+
                         <div id="vehicles-up-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -1003,6 +1043,9 @@
                                             <!-- <a href="" class="btn btn-sm btn-link float-right mb-3">Export
                                         <i class="mdi mdi-download ml-1"></i>
                                     </a> -->
+                                            <button type="button" class="btn btn-primary btn-sm float-right mb-2" data-bs-toggle="modal" data-bs-target="#modal_agregar_vehiculo">
+                                                <i class="mdi mdi-plus"></i> Agregar Vehiculo
+                                            </button>
                                             <h4 class="header-title mt-2">Flota de Vehiculos</h4>
 
                                             <div class="table-responsive">

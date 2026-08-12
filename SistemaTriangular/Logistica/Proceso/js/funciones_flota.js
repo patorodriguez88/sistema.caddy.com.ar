@@ -103,7 +103,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
     paging: false,
     searching: false,
     ajax: {
-         url:"https://www.caddy.com.ar/SistemaTriangular/Inicio/php/tablas.php",
+         url:"../Inicio/php/tablas.php",
          data:{'Empleados':1},
          type:'post'
          },
@@ -120,7 +120,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
     paging: false,
     searching: false,
     ajax: {
-         url:"https://www.caddy.com.ar/SistemaTriangular/Inicio/php/tablas.php",
+         url:"../Inicio/php/tablas.php",
          data:{'Empleados2':1},
          type:'post'
          },
@@ -134,7 +134,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
     paging: false,
     searching: false,
     ajax: {
-         url:"https://www.caddy.com.ar/SistemaTriangular/Inicio/php/tablas.php",
+         url:"../Inicio/php/tablas.php",
          data:{'Servicios':1},
          type:'post'
          },
@@ -166,7 +166,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
   
   var datatable = $('#scroll-vertical-datatable').DataTable({
     ajax: {
-         url:"https://www.caddy.com.ar/SistemaTriangular/Inicio/php/tablas.php",
+         url:"../Inicio/php/tablas.php",
          data:{'Pendientes':1,'Orden':i},
          processing: true,
          type:'post'
@@ -237,7 +237,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
     paging: false,
     searching: false,
     ajax: {
-         url:"https://www.caddy.com.ar/SistemaTriangular/Inicio/php/tablas.php",
+         url:"../Inicio/php/tablas.php",
          data:{'Flota':1},
          type:'post'
          },
@@ -266,7 +266,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
   
   $.ajax({
       data:{'Entregas':1},
-      url:'https://www.caddy.com.ar/SistemaTriangular/Inicio/php/funciones.php',
+      url:'../Inicio/php/funciones.php',
       type:'post',
         beforeSend: function(){
 //           document.getElementById("spinner").style.display="block";
@@ -308,7 +308,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
   
     $.ajax({
       data:{'Clientes':1},
-      url:'https://www.caddy.com.ar/SistemaTriangular/Inicio/php/funciones.php',
+      url:'../Inicio/php/funciones.php',
       type:'post',
         beforeSend: function(){
 //           document.getElementById("spinner").style.display="block";
@@ -335,7 +335,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
   });
     $.ajax({
       data:{'Kilometros':1},
-      url:'https://www.caddy.com.ar/SistemaTriangular/Inicio/php/funciones.php',
+      url:'../Inicio/php/funciones.php',
       type:'post',
         beforeSend: function(){
 //           document.getElementById("spinner").style.display="block";
