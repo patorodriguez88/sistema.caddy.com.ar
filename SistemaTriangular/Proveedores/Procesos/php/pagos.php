@@ -335,6 +335,13 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
 
     $Saldo = $_POST['SaldoFinal'];
 
+    // Esta acción reasigna anticipos ya cargados contra una factura -- no es un pago
+    // nuevo, así que no hay medio de pago/cheque/transferencia real que registrar.
+    $Observaciones = 'PAGO DESDE ANTICIPO A ACREEDORES';
+    $Banco = '';
+    $NumeroCheque = '';
+    $FormaDePago = '000111100'; // caja: reasignación interna, sin medio de pago real
+
     //BUSCO LOS DATOS DEL COMPROBANTE SELECCIONADO PARA PAGAR
 
     $sql_asiento = $mysqli->query("SELECT id,Debe,TipoDeComprobante,NumeroComprobante,CodigoAprobacion,Descripcion FROM TransProveedores WHERE id=" . $idFacturas[0] . " AND Debe<>0 AND Eliminado=0");
@@ -372,6 +379,20 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
     $NAsiento = $row['NumeroAsiento'];
     $Fecha = $row['Fecha'];
 
+    // FechaCheque/FechaTrans/NumeroTrans son NOT NULL en Tesoreria y no hay datos reales
+    // de cheque/transferencia en esta acción (ver nota arriba) -- van con la fecha del
+    // asiento en vez de vacío, mismo criterio que en CargarAnticipo/CargarPago.
+    $FechaCheque = $Fecha;
+    $FechaTrans = $Fecha;
+    $NumeroTrans = 0;
+
+    // Si los anticipos cubren la factura sin resto, no se crea un anticipo nuevo (el
+    // bloque de abajo no corre) y el asiento de reversión queda vinculado directamente
+    // a la factura pagada en vez de a un anticipo inexistente. Tampoco queda disponible
+    // ningún anticipo nuevo en ese caso.
+    $idTransProveedores = (int) $idFacturas[0];
+    $Disponible = 0;
+
     //SI TENGO SALDO SUPERIOR A CERO >0 GENERO UN NUEVO ANTICIPO
     if ($Saldo > 0) {
 
@@ -381,13 +402,14 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
         $TipoDeComprobante = 'ANTICIPO A ACREEDORES';
         $NumeroComprobante = '';
         $Concepto = 'PAGO DESDE ANTICIPO';
-        $FormaDePago = '000111100'; //caja
         $Descripcion = $rowTransProveedores['Descripcion'];
+        // El anticipo nuevo nace con la totalidad del resto como disponible.
+        $Disponible = $Saldo;
 
-        $sql = $mysqli->query("INSERT INTO `TransProveedores`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, 
-    `NumeroComprobante`,  `Haber`, `Concepto`, `FormaDePago`, `idProveedor`,`usuario`, `Disponible`,`Descripcion`) 
+        $sql = $mysqli->query("INSERT INTO `TransProveedores`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`,
+    `NumeroComprobante`, `Debe`, `Haber`, `Eliminado`, `Concepto`, `FormaDePago`, `NoOperativo`, `CodigoAprobacion`, `idProveedor`,`usuario`, `Disponible`,`Descripcion`)
     VALUES ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}',
-        '{$Saldo}','{$Concepto}','{$FormaDePago}','{$idProveedor}','{$Usuario}','{$Disponible}','{$Descripcion}')");
+        0,'{$Saldo}',0,'{$Concepto}','{$FormaDePago}',0,'','{$idProveedor}','{$Usuario}','{$Disponible}','{$Descripcion}')");
 
         $idTransProveedores = $mysqli->insert_id;
 
@@ -398,22 +420,19 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
         $NCuentaHaber = '211400';
 
         $sql1 = "INSERT INTO `Tesoreria`(
-        Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES 
-        ('{$Fecha}','{$CuentaDebe}','{$NCuentaDebe}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaChequeSQL}',
-        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTransSQL}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
+        Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES
+        ('{$Fecha}','{$CuentaDebe}','{$NCuentaDebe}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaCheque}',
+        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
         $mysqli->query($sql1);
 
         $sql2 = "INSERT INTO `Tesoreria`(
         Fecha,
         NombreCuenta,
         Cuenta,
-        Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES 
-        ('{$Fecha}','{$CuentaHaber}','{$NCuentaHaber}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaChequeSQL}',
-        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTransSQL}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
+        Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES
+        ('{$Fecha}','{$CuentaHaber}','{$NCuentaHaber}','{$Saldo}','{$Observaciones}','{$Banco}','{$FechaCheque}',
+        '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
         $mysqli->query($sql2);
-
-        $FechaChequeSQL = $FechaCheque ? "'{$FechaCheque}'" : "NULL";
-        $FechaTransSQL = $FechaTrans ? "'{$FechaTrans}'" : "NULL";
     }
 
     //INSERT ASIENTO CONTABLE REVERSANDO 
