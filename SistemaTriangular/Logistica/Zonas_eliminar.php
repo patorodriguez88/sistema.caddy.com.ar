@@ -252,7 +252,6 @@ include("../ConexionBD.php");
         <script src="../Menu/js/funciones.js"></script>
         <script src="Mapas/js/zonas.js"></script>
         <!-- <script src="Mapas/js/zonas.poly.js"></script> -->
-        <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
 
 
         <script async defer

@@ -6,7 +6,6 @@
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
     <meta charset="utf-8">	
     
-    <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script>
 
     <!-- <link rel="stylesheet" type="text/css" href="style.css" /> -->
     <!-- <script type="" src="index.js"></script> -->

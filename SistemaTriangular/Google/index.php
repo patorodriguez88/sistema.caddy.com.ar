@@ -3,7 +3,6 @@
   <head>
     <title>Recorridos | Caddy</title>
     
-<!--     <script src="https://polyfill.io/v3/polyfill.min.js?features=default"></script> -->
     <meta http-equiv="content-type" content="text/html; charset=UTF-8"/>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.5.1/jquery.min.js"></script>
 
