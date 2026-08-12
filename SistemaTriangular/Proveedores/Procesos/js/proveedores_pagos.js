@@ -78,7 +78,14 @@ $("#cargar_pago_btn_ok_n").click(function () {
     url: "Procesos/php/pagos.php",
     type: "post",
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData;
+      try {
+        jsonData = JSON.parse(response);
+      } catch (e) {
+        console.error("Respuesta inválida de pagos.php:", response);
+        toast("error", "Error !", "No se pudo procesar la respuesta del servidor.");
+        return;
+      }
       if (jsonData.success == "1") {
         var table = $("#basic").DataTable();
         table.ajax.reload();
@@ -89,6 +96,9 @@ $("#cargar_pago_btn_ok_n").click(function () {
       } else {
         toast("error", "Error !", "El cheque ya está cargado.");
       }
+    },
+    error: function () {
+      toast("error", "Error !", "No se pudo conectar con el servidor.");
     },
   });
 });
@@ -440,7 +450,14 @@ $("#cargar_pago_btn_ok").click(function () {
     url: "Procesos/php/pagos.php",
     type: "post",
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData;
+      try {
+        jsonData = JSON.parse(response);
+      } catch (e) {
+        console.error("Respuesta inválida de pagos.php:", response);
+        toast("error", "Error !", "No se pudo procesar la respuesta del servidor.");
+        return;
+      }
       if (jsonData.success == "1") {
         var table = $("#basic").DataTable();
         table.ajax.reload();
@@ -451,6 +468,9 @@ $("#cargar_pago_btn_ok").click(function () {
       } else {
         toast("error", "Error !", "El cheque ya está cargado.");
       }
+    },
+    error: function () {
+      toast("error", "Error !", "No se pudo conectar con el servidor.");
     },
   });
 });

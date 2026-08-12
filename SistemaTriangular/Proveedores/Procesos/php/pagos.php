@@ -87,10 +87,7 @@ INSERT INTO TransProveedores
     idProveedor,
     TimeStamp,
     usuario,
-    Disponible,
-    img,
-    InfoABM,
-    gid_asana
+    Disponible
 )
 VALUES
 (
@@ -111,10 +108,7 @@ VALUES
     '{$idProveedor}',
     NOW(),
     '{$Usuario}',
-    '{$Importe}',
-    0,
-    '',
-    ''
+    '{$Importe}'
 )
 ";
 
@@ -130,74 +124,10 @@ VALUES
     }
 
     $idTransProveedores = $mysqli->insert_id;
-
-
-    //INSERT EN TRANS PROVEEDORES
-    //INSERT EN TRANS PROVEEDORES
-
-    $sql = "
-INSERT INTO TransProveedores
-(
-    Fecha,
-    RazonSocial,
-    Cuit,
-    TipoDeComprobante,
-    NumeroComprobante,
-    CompraMercaderia,
-    Debe,
-    Haber,
-    Eliminado,
-    Concepto,
-    FormaDePago,
-    Descripcion,
-    NoOperativo,
-    CodigoAprobacion,
-    idProveedor,
-    TimeStamp,
-    usuario,
-    Disponible,
-    img,
-    InfoABM,
-    gid_asana
-)
-VALUES
-(
-    '{$Fecha}',
-    '{$RazonSocial}',
-    '{$Cuit}',
-    '{$TipoDeComprobante}',
-    '{$NumeroComprobante}',
-    0,
-    0,
-    '{$Importe}',
-    0,
-    '{$Concepto}',
-    '{$FormaDePago}',
-    '{$Descripcion}',
-    0,
-    '',
-    '{$idProveedor}',
-    NOW(),
-    '{$Usuario}',
-    '{$Importe}',
-    0,
-    '',
-    ''
-)
-";
-
-    if (!$mysqli->query($sql)) {
-
-        echo json_encode(array(
-            'success' => 0,
-            'error' => $mysqli->error,
-            'sql' => $sql
-        ));
-
-        exit;
-    }
-
-    $idTransProveedores = $mysqli->insert_id;
+    // idAnticiposProveedores queda como alias del mismo registro: la tabla
+    // AnticiposProveedores de la que venía esta columna se reemplazó por
+    // TransProveedores en la migración de "Programacion de Pagos".
+    $idAnticiposProveedores = $idTransProveedores;
 
     $BuscaCuenta = $mysqli->query("SELECT NombreCuenta,Cuenta FROM PlanDeCuentas WHERE Cuenta='$FormaDePago'");
     $Cuenta = $BuscaCuenta->fetch_array(MYSQLI_ASSOC);
@@ -208,9 +138,14 @@ VALUES
     $CuentaProveedores = 'ANTICIPO A ACREEDORES';
     $NumeroCuentaProveedores = '112500';
 
-    $FechaTrans = $_POST['fecha_transferencia'];
-    $NumeroTrans = $_POST['num_transferencia'];
-    $BancoTrans = $_POST['banco_transferencia'];
+    // FechaTrans/NumeroTrans son NOT NULL en Tesoreria (date/int): sin transferencia
+    // real (formas de pago que no sean transferencia bancaria) van con un valor válido
+    // en vez de '' -- MySQL en modo estricto rechaza '' para date/int.
+    $FechaTrans = $_POST['fecha_transferencia'] ?? '';
+    $FechaTrans = $FechaTrans !== '' ? $FechaTrans : $Fecha;
+    $NumeroTrans = $_POST['num_transferencia'] ?? '';
+    $NumeroTrans = $NumeroTrans !== '' ? $NumeroTrans : 0;
+    $BancoTrans = $_POST['banco_transferencia'] ?? '';
 
     $Sucursal = $_SESSION['Sucursal'];
     $Usuario = $_SESSION['Usuario'];
@@ -250,19 +185,24 @@ VALUES
         $mysqli->query($sql3);
     }
 
+    // Eliminado/Pendiente/NoOperativo/Conciliado/idCtasctes no son NULL en Tesoreria y
+    // no tienen default -- van en 0. FechaCheque/FechaConciliado tampoco aceptan '' con
+    // el modo estricto de MySQL, así que sin cheque real usan la fecha del movimiento.
+    $FechaCheque_Tesoreria = $FechaCheque !== '' ? $FechaCheque : $Fecha;
+
     $sql1 = "INSERT INTO `Tesoreria`(
-	 Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idAnticiposProveedores,idTransProvee,FormaDePago) VALUES 
-	 ('{$Fecha}','{$CuentaProveedores}','{$NumeroCuentaProveedores}','{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque}',
-	 '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idAnticiposProveedores}','{$idTransProveedores}','{$FormaDePago}')";
+	 Fecha,NombreCuenta,Cuenta,Debe,Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idAnticiposProveedores,idTransProvee,FormaDePago,Eliminado,Pendiente,NoOperativo,Conciliado,FechaConciliado,UsuarioConciliado,idCtasctes) VALUES
+	 ('{$Fecha}','{$CuentaProveedores}','{$NumeroCuentaProveedores}','{$Importe}',0,'{$Observaciones}','{$Banco}','{$FechaCheque_Tesoreria}',
+	 '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idAnticiposProveedores}','{$idTransProveedores}','{$FormaDePago}',0,0,0,0,'{$Fecha}','',0)";
     $mysqli->query($sql1);
 
     $sql2 = "INSERT INTO `Tesoreria`(
 	 Fecha,
 	 NombreCuenta,
 	 Cuenta,
-	 Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idAnticiposProveedores,idTransProvee,FormaDePago) VALUES 
-	 ('{$Fecha}','{$Cuenta1}','{$FormaDePago}','{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque}',
-	 '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idAnticiposProveedores}','{$idTransProveedores}','{$FormaDePago}')";
+	 Debe,Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idAnticiposProveedores,idTransProvee,FormaDePago,Eliminado,Pendiente,NoOperativo,Conciliado,FechaConciliado,UsuarioConciliado,idCtasctes) VALUES
+	 ('{$Fecha}','{$Cuenta1}','{$FormaDePago}',0,'{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque_Tesoreria}',
+	 '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idAnticiposProveedores}','{$idTransProveedores}','{$FormaDePago}',0,0,0,0,'{$Fecha}','',0)";
     $mysqli->query($sql2);
 
     echo json_encode(array('success' => 1));
