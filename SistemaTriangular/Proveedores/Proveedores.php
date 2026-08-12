@@ -428,6 +428,9 @@
                                                 <div class="col-lg-5">
                                                     <div class="form-group">
                                                         <label for="tipodecomprobante_t">Tipo de Comprobante</label>
+                                                        <select name="tipodecomprobante_t" id="tipodecomprobante_t" class="form-control" required>
+                                                            <option value="">Seleccione una opción</option>
+                                                        </select>
                                                     </div>
                                                 </div>
 

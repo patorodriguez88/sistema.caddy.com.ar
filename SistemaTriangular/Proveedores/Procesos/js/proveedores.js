@@ -443,6 +443,28 @@ function solicitadatos() {
   });
 }
 
+function cargarTiposDeComprobante() {
+  var $select = $("#tipodecomprobante_t");
+  if ($select.data("cargado")) return; // ya se cargó una vez, no repetir por cada apertura del modal
+
+  $.ajax({
+    data: { TipoDeComprobante: 1 },
+    url: "Procesos/php/tablas.php",
+    type: "post",
+    success: function (response) {
+      var jsonData = JSON.parse(response);
+      if (jsonData.success == 1 && Array.isArray(jsonData.datos)) {
+        jsonData.datos.forEach(function (tipo) {
+          $select.append(
+            $("<option></option>").val(tipo.Descripcion).text(tipo.Descripcion)
+          );
+        });
+        $select.data("cargado", true);
+      }
+    },
+  });
+}
+
 $("#modal_cargar_factura").on("hidden.bs.modal", function (e) {
   $("#CargarFactura").trigger("reset");
 
@@ -458,6 +480,7 @@ $("#modal_cargar_factura").on("show.bs.modal", function (e) {
   $("#fecha_t").val(new Date().toISOString().split("T")[0]);
 
   solicitadatos();
+  cargarTiposDeComprobante();
 
   if (op === true) {
     //controlo si la cuenta contable requiere autorizacion
