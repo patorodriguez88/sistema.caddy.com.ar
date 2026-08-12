@@ -1,11 +1,16 @@
 <?php
 // Diagnóstico temporal — borrar del servidor después de usarlo.
-if (session_status() === PHP_SESSION_NONE) {
-    session_start();
-}
-require_once __DIR__ . '/Menu/php/permisos_menu.php';
-
 header('Content-Type: text/plain; charset=utf-8');
+
+echo "Cookie PHPSESSID recibida: " . ($_COOKIE['PHPSESSID'] ?? '(NO LLEGO NINGUNA COOKIE)') . "\n";
+
+$resultado = session_start();
+var_dump($resultado);
+echo "session_start() devolvio: " . ($resultado ? 'true' : 'false') . "\n";
+echo "session_id() despues de iniciar: " . session_id() . "\n";
+echo "session_status(): " . session_status() . " (1=disabled, 2=none, 3=active)\n\n";
+
+require_once __DIR__ . '/Menu/php/permisos_menu.php';
 
 echo "Usuario (sesion): " . ($_SESSION['Usuario'] ?? '(vacio)') . "\n";
 echo "idusuario (sesion): " . ($_SESSION['idusuario'] ?? '(vacio)') . "\n";
@@ -21,6 +26,3 @@ if ($permisos === null) {
         echo "  - $p\n";
     }
 }
-
-echo "\ntieneMenuPermiso('Home', 'Panel 1') = " . (tieneMenuPermiso('Home', 'Panel 1') ? 'true' : 'false') . "\n";
-echo "tieneMenuPermiso('Logistica', 'Ordenes de Salida') = " . (tieneMenuPermiso('Logistica', 'Ordenes de Salida') ? 'true' : 'false') . "\n";
