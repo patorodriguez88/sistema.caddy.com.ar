@@ -72,8 +72,8 @@ if (isset($_POST['CargarPago'])) {
     $Sucursal = $_SESSION['Sucursal'];
 
 
-    $NumeroTrans = isset($_POST['NumeroTrans']) && $_POST['NumeroTrans'] !== ''
-        ? (int) $_POST['NumeroTrans']
+    $NumeroTrans = isset($_POST['numerotrans']) && $_POST['numerotrans'] !== ''
+        ? (int) $_POST['numerotrans']
         : 0;
     $NumeroCheque = $_POST['numerocheque'] ?? null;
     $Banco = $_POST['banco'] ?? null;
