@@ -134,6 +134,7 @@ $(document).on("click", "#imprimir", function () {
 var datatable = $("#externos").DataTable({
   dom: "Bfrtip",
   buttons: ["pageLength", "copy", "excel", "pdf"],
+  responsive: true,
   paging: true,
   searching: true,
   lengthMenu: [
@@ -150,54 +151,58 @@ var datatable = $("#externos").DataTable({
     type: "post",
   },
   columns: [
-    { data: "id" },
+    { data: "id", responsivePriority: 6 },
     {
       data: "NombreCompleto",
+      responsivePriority: 1,
       render: function (data, type, row) {
-        return (
-          `<td><b> ${row.NombreCompleto}</b></br></td>` +
-          `<td> ${row.Marca} ${row.Modelo} ${row.Dominio}</td>`
-        );
+        return `<b>${row.NombreCompleto}</b><br><small class="text-muted">${row.Marca || ""} ${row.Modelo || ""} ${row.Dominio || ""}</small>`;
       },
     },
     {
       data: "Dni",
+      responsivePriority: 7,
       render: function (data, type, row) {
-        return `<td>${row.Dni}</td>`;
+        return `${row.Dni}`;
       },
     },
     {
       data: "Telefono",
+      responsivePriority: 3,
       render: function (data, type, row) {
-        return `<td><i class="mdi mdi-18px mdi-phone text-success"></i> <b>${row.Telefono}</b></td>`;
+        return `<i class="mdi mdi-18px mdi-phone text-success"></i> <b>${row.Telefono}</b>`;
       },
     },
     {
       data: "FechaIngreso",
+      responsivePriority: 8,
 
       render: function (data, type, row) {
         var Fecha = row.FechaIngreso.split("-").reverse().join(".");
-        return `<td><b> ${Fecha}</b></br></td>`;
-        // `<td><b> ${row.order_id}</b></br></td>`;
+        return `<b>${Fecha}</b>`;
       },
     },
     {
       data: "VencimientoLicencia",
+      className: "table-action col-xs-3",
+      responsivePriority: 4,
       render: function (data, type, row) {
         var FechaVencimientoLicencia = row.VencimientoLicencia.split("-")
           .reverse()
           .join(".");
-        return `<td class="table-action col-xs-3"><b> ${FechaVencimientoLicencia}</b></td>`;
+        return `<b>${FechaVencimientoLicencia}</b>`;
       },
     },
     {
       data: "Observaciones",
+      responsivePriority: 9,
       render: function (data, type, row) {
-        return `<td><a style="font-size:8px">${row.Observaciones} </a></td>`;
+        return `<a style="font-size:8px">${row.Observaciones} </a>`;
       },
     },
     {
       data: "Inactivo",
+      responsivePriority: 2,
       render: function (data, type, row) {
         switch (row.Inactivo) {
           case "0":
@@ -220,10 +225,12 @@ var datatable = $("#externos").DataTable({
     },
     {
       data: "id",
+      className: "table-action",
+      responsivePriority: 1,
       render: function (data, type, row) {
         return (
-          `<td class="table-action"><a id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-account-edit text-success"></i></a>` +
-          `<td class="table-action"><a id="${row.NombreCompleto}" onclick="desempeno(this.id,${row.Usuario});" class="action-icon"> <i class="mdi mdi-text-box-search-outline text-success"></i></a>`
+          `<a id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-account-edit text-success"></i></a> ` +
+          `<a id="${row.NombreCompleto}" onclick="desempeno(this.id,${row.Usuario});" class="action-icon"> <i class="mdi mdi-text-box-search-outline text-success"></i></a>`
         );
       },
     },
@@ -243,6 +250,9 @@ $("#button_agregar_externo").click(function () {
   $("#NewTaskModalLabel").html("Agregar Nuevo Repartidor Externo");
   $("#button_continuar").css("display", "inline");
   $("#button_guardar").css("display", "none");
+  $("#button_editar_vehiculo").css("display", "none");
+  $("#crear_externo").css("display", "inline");
+  $("#guardar_vehiculo_externo").css("display", "none");
   $("#alerta").css("display", "none");
 });
 
@@ -266,11 +276,31 @@ function modificar(a) {
       }
       $("#button_continuar").css("display", "none");
       $("#button_guardar").css("display", "inline");
+      $("#button_editar_vehiculo").css("display", "inline");
       $("#button_volver").css("display", "none");
+      $("#crear_externo").css("display", "none");
+      $("#guardar_vehiculo_externo").css("display", "inline");
       $("#ext_usuario_app").val(jsonData.data[0].Usuario);
       $("#ext_pass_app").val(jsonData.data[0].PASSWORD);
 
       $("#ext_id").val(a);
+      $("#ext_id_usuario").val(jsonData.data[0].Usuario);
+
+      $("#ext_marca").val(jsonData.data[0].VehiculoMarca);
+      $("#ext_modelo").val(jsonData.data[0].VehiculoModelo);
+      $("#ext_dominio").val(jsonData.data[0].VehiculoDominio);
+      $("#ext_ano").val(jsonData.data[0].VehiculoAno);
+      $("#ext_color").val(jsonData.data[0].VehiculoColor);
+      $("#ext_km").val(jsonData.data[0].VehiculoKilometros);
+      $("#ext_motor").val(jsonData.data[0].VehiculoMotor);
+      $("#ext_chasis").val(jsonData.data[0].VehiculoChasis);
+      $("#ext_seguro").val(jsonData.data[0].VehiculoSeguro);
+      $("#ext_poliza").val(jsonData.data[0].VehiculoPoliza);
+      $("#ext_seguro_vencimiento").val(jsonData.data[0].VehiculoSeguroVencimiento);
+      $("#ext_itv_oblea").val(jsonData.data[0].VehiculoItvOblea);
+      $("#ext_itv_vencimiento").val(jsonData.data[0].VehiculoItvVencimiento);
+      $("#ext_volumen").val(jsonData.data[0].VehiculoVolumen);
+      $("#ext_peso").val(jsonData.data[0].VehiculoPeso);
       $("#ext_name").val(jsonData.data[0].NombreCompleto);
       $("#ext_dni").val(jsonData.data[0].Dni);
       $("#ext_domicilio").val(jsonData.data[0].Domicilio);
@@ -297,6 +327,55 @@ function modificar(a) {
     },
   });
 }
+
+//BOTON PARA ABRIR LA PANTALLA DE VEHICULO DESDE EL MODAL DE EDICION
+$("#button_editar_vehiculo").click(function () {
+  $("#add-new-modal").modal("hide");
+  $("#multiple-two").modal("show");
+});
+
+//BOTON GUARDAR VEHICULO (MODO EDICION DE UN EXTERNO EXISTENTE)
+$("#guardar_vehiculo_externo").click(function () {
+  $.ajax({
+    data: {
+      ModificarVehiculoExterno: 1,
+      id_usuario: $("#ext_id_usuario").val(),
+      marca: $("#ext_marca").val(),
+      modelo: $("#ext_modelo").val(),
+      dominio: $("#ext_dominio").val(),
+      motor: $("#ext_motor").val(),
+      chasis: $("#ext_chasis").val(),
+      ano: $("#ext_ano").val(),
+      color: $("#ext_color").val(),
+      seguro: $("#ext_seguro").val(),
+      seguro_vencimiento: $("#ext_seguro_vencimiento").val(),
+      poliza: $("#ext_poliza").val(),
+      km: $("#ext_km").val(),
+      volumen: $("#ext_volumen").val(),
+      peso: $("#ext_peso").val(),
+      itv_oblea: $("#ext_itv_oblea").val(),
+      itv_vencimiento: $("#ext_itv_vencimiento").val(),
+    },
+    url: "Procesos/php/funciones.php",
+    type: "post",
+    success: function (respuesta) {
+      var jsonData = JSON.parse(respuesta);
+      if (jsonData.success == 1) {
+        toast("success", "Éxito !", jsonData.message);
+        $("#multiple-two").modal("hide");
+        var datatable = $("#externos").DataTable();
+        datatable.ajax.reload();
+      } else {
+        alerta("error", "Error", jsonData.message);
+      }
+    },
+    error: function (xhr) {
+      alerta("error", "Error", "Error de conexión al servidor");
+      console.error(xhr.responseText);
+    },
+  });
+});
+
 //BUTTON GUARDAR
 $("#button_guardar").click(function () {
   var id = $("#ext_id").val();

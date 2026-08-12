@@ -465,7 +465,17 @@ if (isset($_POST['Envios']) && $_POST['Envios'] === '1') {
 if (isset($_POST['VerExterno'])) {
 
     // $SQL=$mysqli->query("SELECT * FROM `Empleados` WHERE id='".$_POST['id']."'");
-    $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD FROM `Empleados` INNER JOIN usuarios ON Empleados.Usuario=usuarios.id WHERE Empleados.id='" . $_POST['id'] . "'");
+    $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD,
+        Vehiculos.Marca as VehiculoMarca, Vehiculos.Modelo as VehiculoModelo, Vehiculos.Dominio as VehiculoDominio,
+        Vehiculos.Ano as VehiculoAno, Vehiculos.Color as VehiculoColor, Vehiculos.Kilometros as VehiculoKilometros,
+        Vehiculos.Motor as VehiculoMotor, Vehiculos.Chasis as VehiculoChasis, Vehiculos.Seguro as VehiculoSeguro,
+        Vehiculos.NumeroPoliza as VehiculoPoliza, Vehiculos.FechaVencSeguro as VehiculoSeguroVencimiento,
+        Vehiculos.ObleaITV as VehiculoItvOblea, Vehiculos.FechaVencITV as VehiculoItvVencimiento,
+        Vehiculos.CapacidadTotalCarga as VehiculoVolumen, Vehiculos.PesoTotalCarga as VehiculoPeso
+        FROM `Empleados`
+        INNER JOIN usuarios ON Empleados.Usuario=usuarios.id
+        LEFT JOIN Vehiculos ON Vehiculos.id_usuario=usuarios.id AND Vehiculos.Aliados=1
+        WHERE Empleados.id='" . $_POST['id'] . "'");
     $ROWS = array();
 
     while ($DATOS_CLIENTES = $SQL->fetch_array(MYSQLI_ASSOC)) {
@@ -500,6 +510,93 @@ if (isset($_POST['ModificarExterno'])) {
 
         echo json_encode(array('success' => 0));
     }
+}
+
+//MODIFICAR (O CREAR) EL VEHICULO DE UN EXTERNO EXISTENTE
+if (isset($_POST['ModificarVehiculoExterno'])) {
+
+    $id_usuario = intval($_POST['id_usuario'] ?? 0);
+    $marca      = trim($_POST['marca'] ?? '');
+    $dominio    = trim($_POST['dominio'] ?? '');
+
+    if ($id_usuario === 0 || $marca === '' || $dominio === '') {
+        echo json_encode(['success' => 0, 'message' => 'Marca y Dominio son obligatorios']);
+        exit;
+    }
+
+    $modelo             = trim($_POST['modelo'] ?? '');
+    $ano                = intval($_POST['ano'] ?? 0);
+    $color              = trim($_POST['color'] ?? '');
+    $km                 = intval($_POST['km'] ?? 0);
+    $motor              = trim($_POST['motor'] ?? '');
+    $chasis             = trim($_POST['chasis'] ?? '');
+    $seguro             = trim($_POST['seguro'] ?? '');
+    $poliza             = trim($_POST['poliza'] ?? '');
+    $seguro_vencimiento = trim($_POST['seguro_vencimiento'] ?? '') ?: null;
+    $itv_oblea          = trim($_POST['itv_oblea'] ?? '');
+    $itv_vencimiento    = trim($_POST['itv_vencimiento'] ?? '') ?: null;
+    $volumen            = trim($_POST['volumen'] ?? '') ?: null;
+    $peso               = trim($_POST['peso'] ?? '') ?: null;
+
+    $existente = $mysqli->query("SELECT id FROM Vehiculos WHERE id_usuario='$id_usuario' AND Aliados=1 LIMIT 1");
+    $fila      = $existente ? $existente->fetch_assoc() : null;
+
+    if ($fila) {
+        $stmt = $mysqli->prepare("UPDATE Vehiculos SET Marca=?, Modelo=?, Dominio=?, Ano=?, Color=?, Kilometros=?, Motor=?, Chasis=?, Seguro=?, NumeroPoliza=?, FechaVencSeguro=?, ObleaITV=?, FechaVencITV=?, CapacidadTotalCarga=?, PesoTotalCarga=? WHERE id=?");
+        $stmt->bind_param(
+            "sssisisssssssddi",
+            $marca,
+            $modelo,
+            $dominio,
+            $ano,
+            $color,
+            $km,
+            $motor,
+            $chasis,
+            $seguro,
+            $poliza,
+            $seguro_vencimiento,
+            $itv_oblea,
+            $itv_vencimiento,
+            $volumen,
+            $peso,
+            $fila['id']
+        );
+    } else {
+        $stmt = $mysqli->prepare("INSERT INTO Vehiculos (Marca, Modelo, Dominio, Ano, Color, Kilometros, Motor, Chasis, Seguro, NumeroPoliza, FechaVencSeguro, ObleaITV, FechaVencITV, CapacidadTotalCarga, PesoTotalCarga, Activo, Estado, VehiculoOperativo, Aliados, id_usuario, gid_projets_asana) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Si', 'Disponible', 1, 1, ?, '')");
+        $stmt->bind_param(
+            "sssisisssssssddi",
+            $marca,
+            $modelo,
+            $dominio,
+            $ano,
+            $color,
+            $km,
+            $motor,
+            $chasis,
+            $seguro,
+            $poliza,
+            $seguro_vencimiento,
+            $itv_oblea,
+            $itv_vencimiento,
+            $volumen,
+            $peso,
+            $id_usuario
+        );
+    }
+
+    try {
+        $stmt->execute();
+        echo json_encode(['success' => 1, 'message' => 'Vehículo actualizado correctamente']);
+    } catch (mysqli_sql_exception $e) {
+        if ($mysqli->errno == 1062) {
+            echo json_encode(['success' => 0, 'message' => 'Ya existe un vehículo con ese dominio']);
+        } else {
+            echo json_encode(['success' => 0, 'message' => 'Error al guardar el vehículo', 'error' => $e->getMessage()]);
+        }
+    }
+    $stmt->close();
+    exit;
 }
 
 //AGREGAR EXTERNO

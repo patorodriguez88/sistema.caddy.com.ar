@@ -346,6 +346,7 @@
                                 <form id="new_externo" class="needs-validation" novalidate>
                                     <!-- <div class="row"> -->
                                     <input type="hidden" id="ext_id">
+                                    <input type="hidden" id="ext_id_usuario">
                                     <div class="row g-3">
                                         <div class="col-md-8">
                                             <div class="form-group has-validation">
@@ -462,6 +463,7 @@
 
                                     <div class="d-flex justify-content-end">
                                         <button id="add-new-modal_cancel" type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancel</button>
+                                        <button id="button_editar_vehiculo" type="button" class="btn btn-secondary me-2" style="display:none">Editar Vehículo</button>
                                         <button id="button_continuar" type="submit" class="btn btn-primary">Continuar</button>
                                         <button id="button_guardar" type="button" class="btn btn-primary ms-2">Guardar</button>
                                     </div>
@@ -590,6 +592,7 @@
                                         <button id="form_multiple-two_cancel" type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
                                         <button id="button_volver" type="button" class="btn btn-primary" data-bs-target="#add-new-modal" data-bs-toggle="modal" data-bs-dismiss="modal">Volver</button>
                                         <button id="crear_externo" type="button" class="btn btn-success">Finalizar</button>
+                                        <button id="guardar_vehiculo_externo" type="button" class="btn btn-success" style="display:none">Guardar Vehículo</button>
                                     </div>
                             </div>
                             </form>
@@ -620,7 +623,7 @@
                                     </div>
 
                                     <div class="table-responsive pt-2">
-                                        <table class="table table-striped table-centered w-100" id="externos" style="font-size:12px">
+                                        <table class="table table-striped table-centered w-100" id="externos" style="font-size:11px">
                                             <thead>
                                                 <tr>
                                                     <th>id</th>
