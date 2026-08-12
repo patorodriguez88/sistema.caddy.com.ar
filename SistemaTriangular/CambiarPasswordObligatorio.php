@@ -16,8 +16,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } else {
         $hash = password_hash($nueva, PASSWORD_DEFAULT);
         $idUsuario = intval($_SESSION['idusuario']);
-        $stmt = $mysqli->prepare("UPDATE usuarios SET password_hash = ?, PASSWORD = NULL, FechaPassword = CURDATE() WHERE id = ? LIMIT 1");
-        $stmt->bind_param('si', $hash, $idUsuario);
+        // PASSWORD (texto plano) se mantiene sincronizada a propósito, no se pone en NULL:
+        // Caddy_produccion (el sistema viejo) todavía compara esa columna directo, sin
+        // saber nada de password_hash. Hasta que ese sistema también migre a hash, este
+        // es el único login que le funciona a un usuario que use ambos sistemas.
+        $stmt = $mysqli->prepare("UPDATE usuarios SET password_hash = ?, PASSWORD = ?, FechaPassword = CURDATE() WHERE id = ? LIMIT 1");
+        $stmt->bind_param('ssi', $hash, $nueva, $idUsuario);
         $stmt->execute();
         $stmt->close();
 

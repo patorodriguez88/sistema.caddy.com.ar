@@ -34,8 +34,10 @@ if ($usuario && $_SERVER['REQUEST_METHOD'] === 'POST') {
         $error = 'Las contraseñas no coinciden.';
     } else {
         $hash = password_hash($nueva, PASSWORD_DEFAULT);
-        $stmt = $mysqli->prepare("UPDATE usuarios SET password_hash = ?, PASSWORD = NULL, FechaPassword = CURDATE(), Token = NULL, TokenExpira = NULL WHERE id = ? LIMIT 1");
-        $stmt->bind_param('si', $hash, $usuario['id']);
+        // PASSWORD (texto plano) se mantiene sincronizada a propósito: Caddy_produccion
+        // todavía compara esa columna directo, sin saber nada de password_hash.
+        $stmt = $mysqli->prepare("UPDATE usuarios SET password_hash = ?, PASSWORD = ?, FechaPassword = CURDATE(), Token = NULL, TokenExpira = NULL WHERE id = ? LIMIT 1");
+        $stmt->bind_param('ssi', $hash, $nueva, $usuario['id']);
         $stmt->execute();
         $stmt->close();
         $exito = true;
