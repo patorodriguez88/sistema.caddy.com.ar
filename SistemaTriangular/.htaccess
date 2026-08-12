@@ -12,7 +12,7 @@ RewriteEngine On
 RewriteBase /SistemaTriangular/
 
 # Redirigir la raíz de /SistemaTriangular a inicio.php
-RewriteRule ^$ inicio.php [R=302,L]
+RewriteRule ^$ /SistemaTriangular/inicio.php [R=302,L]
 
 ########################################
 # 1) Atajo especial:
