@@ -1,4 +1,9 @@
 <?php
+// TEMPORAL: mostrar el error real en pantalla para diagnosticar el 500 del login.
+// Sacar este bloque en cuanto encontremos la causa.
+ini_set('display_errors', 1);
+error_reporting(E_ALL);
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }

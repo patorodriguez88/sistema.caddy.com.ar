@@ -270,7 +270,6 @@
 
     <script src="hyper/dist/assets/js/vendor.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="/SistemaTriangular/Menu/error_swal.js"></script>
     <script src="Funciones/js/alertas.js"></script>
     <!-- App js -->
     <script src="hyper/dist/assets/js/app.js"></script>
