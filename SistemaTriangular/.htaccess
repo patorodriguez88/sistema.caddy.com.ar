@@ -11,6 +11,9 @@ RewriteEngine On
 # porque entrás como: http://localhost:3000/SistemaTriangular/...
 RewriteBase /SistemaTriangular/
 
+# Redirigir la raíz de /SistemaTriangular a inicio.php
+RewriteRule ^$ inicio.php [R=302,L]
+
 ########################################
 # 1) Atajo especial:
 #    /SistemaTriangular/Clientes  -> /SistemaTriangular/Clientes/Clientes.php
