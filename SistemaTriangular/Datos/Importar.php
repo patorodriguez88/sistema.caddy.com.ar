@@ -1,5 +1,5 @@
 <?php
-session_start();
+include_once "../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 /*if ($_SESSION['Nivel']!=1){
@@ -192,13 +192,13 @@ echo "<div id='lateral'>";
 echo "</div>";
 echo  "<div id='principal'>"; 
    
-if($_POST[cargar]=='Aceptar'){
-$dato=explode(',',$_POST[razonsocial],2);
-$_SESSION[imp_razonsocial]=$dato[1];//$RazonSocial='DINTERSA S.A. CBA'  
-$_SESSION[imp_ncliente]=$dato[0];//$NCliente='36';
-}  
-  
-  if($_SESSION[imp_razonsocial]==''){
+if($_POST['cargar']=='Aceptar'){
+$dato=explode(',',$_POST['razonsocial'],2);
+$_SESSION['imp_razonsocial']=$dato[1];//$RazonSocial='DINTERSA S.A. CBA'
+$_SESSION['imp_ncliente']=$dato[0];//$NCliente='36';
+}
+
+  if($_SESSION['imp_razonsocial']==''){
 echo "<form class='Caddy' action='' method='POST' enctype='multipart/form-data' style='width:500px'>";
 echo "<div><titulo>Datos de Importacion</titulo></div>";
 echo "<div><label>Cliente Emisor:</label><select name='razonsocial' />";
@@ -219,8 +219,8 @@ goto a;
 
 <!-- <h1>BigDump: Staggered MySQL Dump Importer ver. <?php echo (VERSION); ?></h1> -->
 
-<?  
-function skin_open() 
+<?php
+function skin_open()
 {
   echo ('<table class="login" style="width:97%;margin-left:20px;">');
 }
@@ -617,7 +617,7 @@ if (!$error && isset($_REQUEST["start"]) && isset($_REQUEST["foffset"]) && preg_
         $dumpline=trim($dumpline);
        
 // Create an SQL query from CSV line
-  $NCliente=$_SESSION[imp_ncliente];
+  $NCliente=$_SESSION['imp_ncliente'];
       
       if (($csv_insert_table != "") && (preg_match("/(\.csv)$/i",$curfilename)))
       {
@@ -733,7 +733,7 @@ if (!$error && isset($_REQUEST["start"]) && isset($_REQUEST["foffset"]) && preg_
 //   //BUSCO LOS CLIENTES QUE ESTEN RELACIONADOS CON LAS ENTREGAS DE DINTER Y QUE NO TENGAN CARGADOS LOS DATOS
 //   $sql=mysql_query("SELECT * FROM PreVenta WHERE Eliminado='0' AND Cargado='0' AND NumeroVenta='0' AND NCliente='$NCliente'");
 //   //DETERMINO LAS VARIABLES FIJAS PARA LA IMPORTACION
-//   $NCliente=$_SESSION[imp_ncliente];
+//   $NCliente=$_SESSION['imp_ncliente'];
 //   $RazonSocial=$_SESSION[imp_razonsocial];
 //   $TipoDeComprobante='SOLICITUD WEB';
 //   $NumeroComprobante='49';
@@ -791,8 +791,8 @@ if (!$error && isset($_REQUEST["start"]) && isset($_REQUEST["foffset"]) && preg_
 //BUSCO LOS CLIENTES QUE ESTEN RELACIONADOS CON LAS ENTREGAS DE DINTER Y QUE NO TENGAN CARGADOS LOS DATOS
 $sql=$mysqli->query("SELECT * FROM PreVenta WHERE Eliminado='0' AND Cargado='0' AND NumeroVenta='0' AND NCliente='$NCliente'");
 //DETERMINO LAS VARIABLES FIJAS PARA LA IMPORTACION
-$NCliente=$_SESSION[imp_ncliente];
-$RazonSocial=$_SESSION[imp_razonsocial];
+$NCliente=$_SESSION['imp_ncliente'];
+$RazonSocial=$_SESSION['imp_razonsocial'];
 $TipoDeComprobante='SOLICITUD WEB';
 $NumeroComprobante='49';
       
@@ -803,12 +803,12 @@ $datoclienteOrigen=$sqlclienteOrigen->fetch_array(MYSQLI_ASSOC);
 $sqlclientes=$mysqli->query("SELECT * FROM Clientes WHERE idProveedor='$row[idProveedor]' AND Relacion='$NCliente'");
 $datosqlclientes=$sqlclientes->fetch_array(MYSQLI_ASSOC);
 
-//QUE PASA SI NO ENCUENTRO DEL CLIENTE?  
-if($datosqlclientes[Recorrido]==''){
+//QUE PASA SI NO ENCUENTRO DEL CLIENTE?
+if($datosqlclientes['Recorrido']==''){
 // Busco el utlimo Recorrido del cliente para cargarlo en Preventas
 $sqlh=$mysqli->query("SELECT Recorrido FROM HojaDeRuta WHERE Eliminado=0 AND id=(SELECT MAX(id)as id FROM HojaDeRuta WHERE idCliente='$datosqlclientes[id]')");
-$datosqlhojaderuta=$sqlh->fetch_array(MYSLI_ASSOC);
-$Recorrido=$datosqlhojaderuta[Recorrido];  
+$datosqlhojaderuta=$sqlh->fetch_array(MYSQLI_ASSOC);
+$Recorrido=$datosqlhojaderuta['Recorrido'];
 $updatepreventa=$mysqli->query("UPDATE PreVenta SET Recorrido='$Recorrido' WHERE id='$row[id]'");  
 }
   
@@ -939,8 +939,8 @@ skin_open();
         window.location.href = "https://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php";
     }, 3000);
   </script>
-    <?
-        
+    <?php
+
      // echo ("<p class=\"centr\">Thank you for using this tool! Please rate <a href=\"http://www.hotscripts.com/listing/bigdump/?RID=403\" target=\"_blank\">Bigdump at Hotscripts.com</a></p>\n");
       //echo ("<p class=\"centr\">You can send me some bucks or euros as appreciation via PayPal. Thank you!</p>\n");
       do_action('script_finished');
