@@ -6,8 +6,17 @@ include_once "../Conexion/Conexioni.php";
 
 // include("../ConexionBD.php");
 if ($_SESSION['NombreUsuario']==''){
-header("location:https://www.caddy.com.ar");
+header("location:/SistemaTriangular/inicio.php");
+exit;
 }
+
+// Sin esto, el navegador puede llegar a mandar los formularios (varios acá son
+// GET, no POST) en una codificación distinta a UTF-8 si no confía en el
+// <meta charset> del HTML — y eso hace que MySQL reemplace en silencio tildes/ñ
+// por "?" al guardar HojaDeRuta.Cliente/Localizacion (bug real, 639 filas afectadas,
+// sigue pasando hoy). Declarar el charset acá saca esa ambigüedad.
+header('Content-Type: text/html; charset=UTF-8');
+
 $Empleado= $_SESSION['NombreUsuario'];
 $password= $_POST['password'];
 $color='#B8C6DE';
@@ -352,7 +361,7 @@ echo "<th>Accion</th>";
   echo "<input id='codigo' name='CodigoProducto' type='hidden' value='$row[CodigoProducto]'>";  
   echo "<input id='edicion' name='Edicion' type='hidden' value='$row[Edicion]'>";  
   echo "<td><input id='fecha' name='fecha_t' type='date' value='$row[Fecha]'></td>";   
-  echo "<td align='center'><a target='_blank' class='img' href='https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/Asignaciones.php?Relacion=$datotitulo[Relacion]&Fecha=$row[Fecha]&CodigoProducto=$row[CodigoProducto]'><img src='../images/botones/document.png' width='15' height='15' border='0' ></a></td>";
+  echo "<td align='center'><a target='_blank' class='img' href='Informes/Asignaciones.php?Relacion=$datotitulo[Relacion]&Fecha=$row[Fecha]&CodigoProducto=$row[CodigoProducto]'><img src='../images/botones/document.png' width='15' height='15' border='0' ></a></td>";
   echo "<td><input type='submit' name='fecha' value='Actualizar'></td>";  
   echo "</form>";  
   echo "</tr>";
@@ -540,7 +549,7 @@ echo "<th>Imprimir</th>";
 		echo "<td>$file[KilometrosRecorridos]</td>";
 // 		echo "<td>$file[Asignado]</td>";
 // 		echo "<td align='center'><a></a></td>";
-		echo "<td align='center'><a target='_blank' class='img' href='https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/HojaDeRutaCerradapdf.php?ON=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' ></a></td>";
+		echo "<td align='center'><a target='_blank' class='img' href='Informes/HojaDeRutaCerradapdf.php?ON=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' ></a></td>";
 		$numfilas++; 
 		}
 // echo "</tr><tr style='background:red; color:white; font-size:16px;'><td align='right' colspan='6' style='font-size:16px'></td><td></td></tr>";
@@ -639,32 +648,52 @@ goto a;
 if($_GET['item']=='Modificar'){
 $Recorrido=$_GET['recorrido_t'];
 $Hora=$_GET['hora_t'];
-$Seguimiento=$_GET[seguimiento_t];  
+$Seguimiento=$_GET[seguimiento_t];
+$id=$_GET['id_t'];
+
+// FIX: $NumerodeOrden es "incorruptible" — no puede quedar indefinido. Antes,
+// si no se cambiaba el Recorrido (el caso normal: editar Hora/Celular/Observaciones/
+// etc.), esta variable nunca se asignaba, y el UPDATE de HojaDeRuta de más abajo
+// la usaba igual, mandando '' -> MySQL la guarda como 0 y se pierde el número de
+// orden real (bug reportado: 3 remitos del mismo pedido, uno quedaba en 0).
+// Ahora siempre arranca con el valor actual de la fila, así el else-branch lo
+// conserva en vez de perderlo.
+$sqlActualHdr = $mysqli->query("SELECT NumerodeOrden, Estado FROM HojaDeRuta WHERE id='" . intval($id) . "' LIMIT 1");
+$DatoActualHdr = $sqlActualHdr ? $sqlActualHdr->fetch_array(MYSQLI_ASSOC) : null;
+$NumerodeOrden = $DatoActualHdr['NumerodeOrden'] ?? 0;
+$EstadoActualHdr = $DatoActualHdr['Estado'] ?? '';
+
 //   SI MODIFICO EL RECORRIDO
-  
-  if($Recorrido<>$_SESSION['Recorrido']){ 
-  $sql=$mysqli->query("SELECT MAX(Posicion)as Posicion FROM HojaDeRuta WHERE Recorrido='".$_GET['recorrido_t']."' AND Estado='Abierto' AND Devuelto='0' AND Eliminado=0 AND Seguimiento<>''");  
-  $Dato=$sql->fetch_array(MYSQLI_ASSOC);	
+
+  if($Recorrido<>$_SESSION['Recorrido']){
+  // El número de orden es incorruptible una vez que el servicio está Cerrado:
+  // no se permite reasignar Recorrido/NumerodeOrden de un servicio ya entregado.
+  if ($EstadoActualHdr === 'Cerrado') {
+  echo "<script>alert('Este servicio ya está Cerrado — no se puede cambiar su Recorrido/Número de Orden.');</script>";
+  } else {
+  $sql=$mysqli->query("SELECT MAX(Posicion)as Posicion FROM HojaDeRuta WHERE Recorrido='".$_GET['recorrido_t']."' AND Estado='Abierto' AND Devuelto='0' AND Eliminado=0 AND Seguimiento<>''");
+  $Dato=$sql->fetch_array(MYSQLI_ASSOC);
   $Orden = trim($Dato[Posicion])+1;
 
-  // MODIFICO EL RECORRIDO EN TRANSCLIENTES  
+  // MODIFICO EL RECORRIDO EN TRANSCLIENTES
   $sqlLogistica=$mysqli->query("SELECT NumerodeOrden,NombreChofer FROM Logistica WHERE Estado IN('Alta','Cargada') AND Recorrido='$Recorrido'");
   $DatoLogistica=$sqlLogistica->fetch_array(MYSQLI_ASSOC);
-  
+
   if($DatoLogistica['NumerodeOrden']<>''){
-   $NumerodeOrden=$DatoLogistica['NumerodeOrden']; 
+   $NumerodeOrden=$DatoLogistica['NumerodeOrden'];
    $Transportista=$DatoLogistica['NombreChofer'];
   }else{
    $NumerodeOrden=0;
    $Transportista='';
   }
-  
+
   $sqlTransClientes=$mysqli->query("UPDATE TransClientes SET Recorrido='$Recorrido',NumerodeOrden='$NumerodeOrden',
   Transportista='$Transportista' WHERE CodigoSeguimiento='$Seguimiento' AND Eliminado='0'");
+  }
 
-  
+
   }else{
-  $Orden=$_GET['orden_t'];  
+  $Orden=$_GET['orden_t'];
 }
 
 $Posicion_retiro=$_GET['orden_retiro_t'];
@@ -764,7 +793,7 @@ echo "<td>Imprimir</td></tr>";
 		echo "<td align='center'><a class='img' href='Logistica.php?id=Cerrar&orden_t=$file[NumerodeOrden]'><img src='../../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 		}elseif($file[Estado]=='Alta'){
 		echo "<td align='center'><a class='img' href='Logistica.php?id=Agregar&orden_t=$file[NumerodeOrden]'><img src='../../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
-		echo "<td align='center'><a target='_blank' class='img' href='https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
+		echo "<td align='center'><a target='_blank' class='img' href='Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 	
 		}	
 		$numfilas++; 
@@ -927,7 +956,7 @@ header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);
         }else{
         $sqlnuevo=$mysqli->query("UPDATE Ctasctes SET Debe=Debe-'$row[Debe]' WHERE NumeroVenta='$row[NumeroComprobante]'");    
         }
-      header('location:https://www.caddy.com.ar/SistemaTriangular/Logistica/HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);  
+      header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);  
 			}	
 	}elseif($_GET['accion']=='Subir'){
   $Recorrido=$_GET['recorrido_t'];	  

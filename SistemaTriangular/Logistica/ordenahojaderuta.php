@@ -63,5 +63,5 @@ $conexion->query($sqlOrdeno);
 
 }
 
-header('location:https://www.caddy.com.ar/SistemaTriangular/Logistica/HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);
+header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);
 ?>  

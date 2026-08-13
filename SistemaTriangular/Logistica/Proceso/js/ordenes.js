@@ -764,12 +764,12 @@ function init_datatable(fechas = "") {
         data: null,
         render: function (data, type, row) {
           if (row.Estado == "Cerrada") {
-            return `<a target="_blank" href="https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ResumenVehiculospdf.php?NO=${row.NumerodeOrden}">
+            return `<a target="_blank" href="Informes/ResumenVehiculospdf.php?NO=${row.NumerodeOrden}">
                       <i class="mdi mdi-18px mdi-file-chart-outline"></i>
                     </a>`;
           } else {
             return `
-              <a target="_blank" href="http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
+              <a target="_blank" href="Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
                 <i class="mdi mdi-18px mdi-file-chart-outline ms-2"></i>
               </a>
               <a href="#" class="btn-cargar-orden" data-no="${row.NumerodeOrden}" title="Cargar Orden">

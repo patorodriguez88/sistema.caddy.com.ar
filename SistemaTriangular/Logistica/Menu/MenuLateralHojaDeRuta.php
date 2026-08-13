@@ -37,10 +37,10 @@ echo "<li><a href='HojaDeRuta.php?id=AsignacionAgregar'><span>Agregar Fechas</sp
 echo "<li><a href='HojaDeRuta.php?id=BuscarAsignacion'><span>Buscar x Fecha</span></a></li>";
 echo "</ul>";
 echo "         </li>";
-echo "<li><a target='t_blank' href='https://www.caddy.com.ar/SistemaTriangular/Logistica/mapa.html'><span>Mapa Completo</span></a></li>";
+echo "<li><a target='t_blank' href='mapa.html'><span>Mapa Completo</span></a></li>";
 echo "<li><a href='HojaDeRuta.php?id=BuscarAnterior'><span>Buscar Anterior</span></a></li>";
 if (($Recorrido<>'')){
-echo "<li><a target='t_blank' href='https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/HojaDeRutapdf.php?HR=".$_SESSION['Recorrido']."'><span>Imprimir</span></a></li>";
+echo "<li><a target='t_blank' href='Informes/HojaDeRutapdf.php?HR=".$_SESSION['Recorrido']."'><span>Imprimir</span></a></li>";
 echo "<li><a href='HojaDeRuta.php?id=EnviarSms'><span>Enviar SMS</span></a></li>";
 echo "<li><a href='HojaDeRuta.php?Pestana=Ruta'><span>Ver Ruta</span></a></li>";
 echo "<li><a target='t_blank' href='mapa.php'><span>Ver Mapa</span></a></li>";
@@ -81,7 +81,7 @@ header('location:HojaDeRuta.php?id=EnviarSms');
 }elseif($_GET['Pestana']=='Agregar Ruta'){
 header('location:HojaDeRuta.php?id=Agregar');  
 }elseif($_GET['Pestana']=='Imprimir'){
-?><script>window.open('http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/HojaDeRutapdf.php?HR=<? echo $_SESSION['Recorrido'];?>');</script><?
+?><script>window.open('Informes/HojaDeRutapdf.php?HR=<? echo $_SESSION['Recorrido'];?>');</script><?
 }elseif($_GET['Pestana']=='Buscar Anterior'){
 header('location:HojaDeRuta.php?id=BuscarAnterior');  
 }elseif($_GET['Pestana']=='Mapa'){

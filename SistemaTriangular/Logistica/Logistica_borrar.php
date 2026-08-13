@@ -417,22 +417,22 @@ echo "<th>Eliminar</th>";
     
 		if ($file[Estado]=='Cerrada'){
 		echo "<td align='center'><a></a></td>";
-        echo "<td align='center'><a target='_blank' class='img' href='https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ResumenVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
+        echo "<td align='center'><a target='_blank' class='img' href='Informes/ResumenVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
   
 // 		echo "<td style='width:8%' align='center'><a></a></td>";
 		}elseif($file[Estado]=='Cargada'){
 		echo "<td style='width:8%' align='center'><a class='img' href='Logistica.php?id=Cerrar&orden_t=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
 // 		echo "<td style='width:8%'></td>";
-        echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
+        echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
 		echo "<td align='center'><a class='img' href='Logistica.php?id=Eliminar&orden_t=$file[NumerodeOrden]&Dominio=$file[Patente]&id_Logistica=$file[id]'><img src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 
     }elseif($file[Estado]=='Alta'){
 		echo "<td style='width:8%' align='center'><a class='img' href='Logistica.php?id=Alta&orden_t=$file[NumerodeOrden]'><img src='../images/botones/lapiz.png' width='15' height='15' border='0' style='float:center;'></a></td>";
-        echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
+        echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
 		echo "<td align='center'><a class='img' href='Logistica.php?id=Eliminar&orden_t=$file[NumerodeOrden]&Dominio=$file[Patente]&id_Logistica=$file[id]'><img src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:left;'></a></td>";
     }elseif($file[Estado]=='Pendiente'){
         echo "<td></td>";
-        echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
+        echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></a></td>";
         echo "<td align='center'><a class='img' href='Logistica.php?id=Eliminar&orden_t=$file[NumerodeOrden]&Dominio=$file[Patente]&id_Logistica=$file[id]'><img src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:center;'></a></td>";
     }
     $TotalAcumulado+=$sqltotal[Total];
@@ -661,11 +661,11 @@ if(!$Resultado){
  ?>
 <script type="text/javascript">
   agregar_calendario();
-  window.open('https://www.caddy.com.ar/SistemaTriangular/Logistica/Logistica');
+  window.open('Logistica');
 
 </script>
 
-<script>window.open('https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=<? echo $Numero;?>');</script>
+<script>window.open('Informes/ControldeVehiculospdf.php?NO=<? echo $Numero;?>');</script>
 
 <? 
 

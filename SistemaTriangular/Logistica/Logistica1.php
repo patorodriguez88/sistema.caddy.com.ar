@@ -334,11 +334,11 @@ echo "<th style='width:8%'>Eliminar</th>";
 		}elseif($file[Estado]=='Cargada'){
 		echo "<td style='width:8%' align='center'><a class='img' href='Logistica.php?id=Cerrar&orden_t=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 // 		echo "<td style='width:8%'></td>";
-    echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
+    echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 
     }elseif($file[Estado]=='Alta'){
 		echo "<td style='width:8%' align='center'><a class='img' href='Logistica.php?id=Alta&orden_t=$file[NumerodeOrden]'><img src='../images/botones/lapiz.png' width='15' height='15' border='0' style='float:left;'></a></td>";
-    echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='http://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
+    echo "<td style='width:8%' align='center'><a target='_blank' class='img' href='Informes/ControldeVehiculospdf.php?NO=$file[NumerodeOrden]'><img src='../images/botones/mas.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 		}	
 	  echo "<td align='center'><a class='img' href='Logistica.php?id=Eliminar&orden_t=$file[NumerodeOrden]&Dominio=$file[Patente]'><img src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:left;'></a></td>";
 
@@ -534,7 +534,7 @@ $Recorrido=$_GET['recorrido_t'];
 // $sql5="UPDATE TransClientes SET Transportista ='$Chofer' WHERE Recorrido='$Recorrido' AND Entregado='0' and Eliminado='0'";
 // mysql_query($sql5);
 	
-?><script>window.open('https://www.caddy.com.ar/SistemaTriangular/Logistica/Informes/ControldeVehiculospdf.php?NO=<? echo $Numero;?>');</script><?
+?><script>window.open('Informes/ControldeVehiculospdf.php?NO=<? echo $Numero;?>');</script><?
 // header("location:Logistica.php");
 }	
 //-------------------------------------------------HASTA ACA ALTA ORDENES DE SALIDA----------------------------------	
