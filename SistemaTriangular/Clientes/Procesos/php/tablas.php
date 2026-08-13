@@ -135,11 +135,11 @@ if (isset($_POST['Facturacion'])) {
 
   if (($_POST['desde'] == '') && ($_POST['hasta'] == '')) {
     $sql = "SELECT CodigoProveedor,ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor FROM TransClientes WHERE Debe>0 
+  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Devuelto FROM TransClientes WHERE Debe>0
   AND Facturado=0 AND Eliminado=0 AND (idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
   } else {
     $sql = "SELECT CodigoProveedor,ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Flex FROM TransClientes WHERE Debe>0 AND Fecha>='$_POST[desde]' 
+  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Flex,Devuelto FROM TransClientes WHERE Debe>0 AND Fecha>='$_POST[desde]'
   AND Fecha<='$_POST[hasta]' AND Facturado=0 AND Eliminado=0 AND (idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
   }
 

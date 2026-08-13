@@ -2891,12 +2891,18 @@ $("#botonfacturacion").click(function () {
               return data;
             }
 
-            return (
+            var fechaHtml =
               '<span style="display: none;">' +
               data +
               "</span>" +
-              data.split("-").reverse().join(".")
-            );
+              data.split("-").reverse().join(".");
+
+            if (row.Devuelto == 1) {
+              fechaHtml +=
+                '<br><span class="badge bg-danger rounded-pill">Devuelto</span>';
+            }
+
+            return fechaHtml;
           },
         },
         {
