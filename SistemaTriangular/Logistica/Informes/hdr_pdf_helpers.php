@@ -377,16 +377,33 @@ abstract class HdrPdfBase extends FPDF
             $ly += 4;
         }
 
-        // Título grande, centrado entre el logo y la card de datos.
-        $this->SetFont('Arial', 'B', 16);
+        // Título grande, centrado entre el logo y la card de datos. Si el título
+        // no entra en el ancho disponible a tamaño 16, FPDF igual lo dibuja
+        // completo (Cell no recorta texto) y la card de datos, que se pinta
+        // después, terminaba tapando la parte que sobresalía — se achica la
+        // fuente hasta que el texto entre.
+        $anchoTitulo = $rightX - ($marginL + 55) - 4;
+        $tituloTexto = pdf_text($titulo);
+        $tamTitulo = 16;
+        $this->SetFont('Arial', 'B', $tamTitulo);
+        while ($tamTitulo > 9 && $this->GetStringWidth($tituloTexto) > $anchoTitulo) {
+            $tamTitulo -= 0.5;
+            $this->SetFont('Arial', 'B', $tamTitulo);
+        }
         $this->SetTextColor(...$p['darkText']);
         $this->SetXY($marginL + 55, 10);
-        $this->Cell($rightX - ($marginL + 55) - 4, 8, pdf_text($titulo), 0, 1, 'C');
+        $this->Cell($anchoTitulo, 8, $tituloTexto, 0, 1, 'C');
         if ($subtitulo !== '') {
-            $this->SetFont('Arial', '', 9);
+            $subtituloTexto = pdf_text($subtitulo);
+            $tamSubtitulo = 9;
+            $this->SetFont('Arial', '', $tamSubtitulo);
+            while ($tamSubtitulo > 6 && $this->GetStringWidth($subtituloTexto) > $anchoTitulo) {
+                $tamSubtitulo -= 0.5;
+                $this->SetFont('Arial', '', $tamSubtitulo);
+            }
             $this->SetTextColor(...$p['mutedC']);
             $this->SetXY($marginL + 55, 18);
-            $this->Cell($rightX - ($marginL + 55) - 4, 5, pdf_text($subtitulo), 0, 1, 'C');
+            $this->Cell($anchoTitulo, 5, $subtituloTexto, 0, 1, 'C');
         }
 
         // Card derecha: datos del documento.
