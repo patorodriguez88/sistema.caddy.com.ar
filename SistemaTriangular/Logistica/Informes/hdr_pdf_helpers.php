@@ -160,6 +160,42 @@ abstract class HdrPdfBase extends FPDF
         $this->SetX($this->lMargin);
     }
 
+    // Altura fija de un bloque campo(): etiqueta (4.5) + valor (5.5).
+    private const CAMPO_ROW_H = 10.0;
+
+    // Par etiqueta/valor apilado (etiqueta arriba, valor abajo) en una celda de
+    // ancho fijo. Al terminar, vuelve al Y de inicio de la fila (para poder
+    // encadenar columnas una al lado de la otra) — por eso SIEMPRE hay que
+    // avanzar a la fila siguiente con filaCampos() y no con Ln(), que dejaría
+    // el cursor apenas debajo del título y pisaría el texto ya impreso.
+    public function campo(float $w, string $label, string $valor): void
+    {
+        $p = hdrPaleta();
+        $x = $this->GetX();
+        $y = $this->GetY();
+        $this->SetFont('Arial', 'B', 8.5);
+        $this->SetTextColor(...$p['mutedC']);
+        $this->Cell($w, 4.5, pdf_text($label), 0, 2);
+        $this->SetFont('Arial', '', 9.5);
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetX($x);
+        $this->Cell($w, 5.5, pdf_text($valor), 0, 2);
+        $this->SetXY($x + $w, $y);
+    }
+
+    // Imprime una fila de pares [label, valor] en columnas de ancho $colW y
+    // deja el cursor correctamente posicionado al margen izquierdo, una fila
+    // completa (10mm) más abajo, listo para la siguiente llamada.
+    public function filaCampos(float $colW, array $pares): void
+    {
+        $y = $this->GetY();
+        $this->SetXY($this->lMargin, $y);
+        foreach ($pares as [$label, $valor]) {
+            $this->campo($colW, $label, $valor);
+        }
+        $this->SetXY($this->lMargin, $y + self::CAMPO_ROW_H);
+    }
+
     // Tarjeta con esquinas redondeadas (idéntica a la de factura_pdf.php).
     public function RoundedRect($x, $y, $w, $h, $r, $style = ''): void
     {

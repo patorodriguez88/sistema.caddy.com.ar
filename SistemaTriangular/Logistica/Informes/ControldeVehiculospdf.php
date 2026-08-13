@@ -40,21 +40,6 @@ class ControlVehiculoPDF extends HdrPdfBase
         $this->Ln(2);
     }
 
-    public function campo(float $w, string $label, string $valor): void
-    {
-        $p = hdrPaleta();
-        $x = $this->GetX();
-        $y = $this->GetY();
-        $this->SetFont('Arial', 'B', 8.5);
-        $this->SetTextColor(...$p['mutedC']);
-        $this->Cell($w, 4.5, pdf_text($label), 0, 2);
-        $this->SetFont('Arial', '', 9.5);
-        $this->SetTextColor(...$p['darkText']);
-        $this->SetX($x);
-        $this->Cell($w, 5.5, pdf_text($valor), 0, 2);
-        $this->SetXY($x + $w, $y);
-    }
-
     // Fila de checklist para completar a mano: etiqueta + casilleros SI/NO + línea de Obs.
     public function checklistRow(string $label, string $valorReferencia = ''): void
     {
@@ -252,17 +237,19 @@ $paleta = hdrPaleta();
 $colW = $pdf->contentWidth() / 2;
 
 $pdf->sectionTitle('Vehiculo y Chofer');
-$pdf->campo($colW, 'Patente', (string)($logistica['Patente'] ?? ''));
-$pdf->campo($colW, 'Chofer', (string)($logistica['NombreChofer'] ?? 'Pendiente de asignar'));
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Kilometros', (string)($logistica['Kilometros'] ?? ''));
-$pdf->campo($colW, 'Acompanante', (string)($logistica['NombreChofer2'] ?? '-'));
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Recorrido', $logistica['Recorrido'] . ' - ' . ($rec['Nombre'] ?? ''));
-$pdf->campo($colW, 'Venc. Registro', $vencRegistroTexto);
-$pdf->Ln(6);
+$pdf->filaCampos($colW, [
+    ['Patente', (string)($logistica['Patente'] ?? '')],
+    ['Chofer', (string)($logistica['NombreChofer'] ?? 'Pendiente de asignar')],
+]);
+$pdf->filaCampos($colW, [
+    ['Kilometros', (string)($logistica['Kilometros'] ?? '')],
+    ['Acompanante', (string)($logistica['NombreChofer2'] ?? '-')],
+]);
+$pdf->filaCampos($colW, [
+    ['Recorrido', $logistica['Recorrido'] . ' - ' . ($rec['Nombre'] ?? '')],
+    ['Venc. Registro', $vencRegistroTexto],
+]);
+$pdf->Ln(4);
 
 $pdf->sectionTitle('Administracion');
 $pdf->checklistRow('Tarjeta Verde/Azul:');
@@ -313,17 +300,15 @@ $pdf->Ln(4);
 
 $pdf->CheckPageBreak(30);
 $pdf->sectionTitle('Retorno del Vehiculo');
-$pdf->campo($colW, 'Hora de retorno', '___ : ___');
-$pdf->campo($colW, 'Km. de retorno', '_____________');
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Combustible de retorno', '_____________');
-$pdf->campo(
-    $colW,
-    'Costo estimado para anticipo',
-    '$ ' . number_format($costoEstimadoAnticipo, 2, ',', '.')
-);
-$pdf->Ln(3);
+$pdf->filaCampos($colW, [
+    ['Hora de retorno', '___ : ___'],
+    ['Km. de retorno', '_____________'],
+]);
+$pdf->filaCampos($colW, [
+    ['Combustible de retorno', '_____________'],
+    ['Costo estimado para anticipo', '$ ' . number_format($costoEstimadoAnticipo, 2, ',', '.')],
+]);
+$pdf->Ln(2);
 $pdf->SetFont('Arial', 'I', 7.5);
 $pdf->SetTextColor(...$paleta['mutedC']);
 $pdf->Cell(

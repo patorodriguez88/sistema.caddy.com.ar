@@ -42,22 +42,6 @@ class ResumenVehiculoPDF extends HdrPdfBase
         $this->Ln(2);
     }
 
-    // Par etiqueta/valor en una celda de ancho fijo, usado para armar grillas de datos.
-    public function campo(float $w, string $label, string $valor): void
-    {
-        $p = hdrPaleta();
-        $x = $this->GetX();
-        $y = $this->GetY();
-        $this->SetFont('Arial', 'B', 8.5);
-        $this->SetTextColor(...$p['mutedC']);
-        $this->Cell($w, 4.5, pdf_text($label), 0, 2);
-        $this->SetFont('Arial', '', 9.5);
-        $this->SetTextColor(...$p['darkText']);
-        $this->SetX($x);
-        $this->Cell($w, 5.5, pdf_text($valor), 0, 2);
-        $this->SetXY($x + $w, $y);
-    }
-
     public function Header(): void
     {
         global $headerDatos;
@@ -214,20 +198,22 @@ $paleta = hdrPaleta();
 $colW = $pdf->contentWidth() / 2;
 
 $pdf->sectionTitle('Vehiculo y Chofer');
-$pdf->campo($colW, 'Patente', (string)($logistica['Patente'] ?? ''));
-$pdf->campo($colW, 'Chofer', (string)($logistica['NombreChofer'] ?? 'Pendiente de asignar'));
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Kilometros', (string)($logistica['Kilometros'] ?? ''));
-$pdf->campo($colW, 'Acompanante', (string)($logistica['NombreChofer2'] ?? '-'));
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Combustible de salida', $nivelCombustibleTexto !== '' ? $nivelCombustibleTexto : '-');
-$pdf->campo($colW, 'Recorrido', $logistica['Recorrido'] . ' - ' . ($rec['Nombre'] ?? ''));
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Venc. Registro', $vencRegistroTexto);
-$pdf->Ln(6);
+$pdf->filaCampos($colW, [
+    ['Patente', (string)($logistica['Patente'] ?? '')],
+    ['Chofer', (string)($logistica['NombreChofer'] ?? 'Pendiente de asignar')],
+]);
+$pdf->filaCampos($colW, [
+    ['Kilometros', (string)($logistica['Kilometros'] ?? '')],
+    ['Acompanante', (string)($logistica['NombreChofer2'] ?? '-')],
+]);
+$pdf->filaCampos($colW, [
+    ['Combustible de salida', $nivelCombustibleTexto !== '' ? $nivelCombustibleTexto : '-'],
+    ['Recorrido', $logistica['Recorrido'] . ' - ' . ($rec['Nombre'] ?? '')],
+]);
+$pdf->filaCampos($colW, [
+    ['Venc. Registro', $vencRegistroTexto],
+]);
+$pdf->Ln(4);
 
 $pdf->sectionTitle('Servicios (' . count($servicios) . ')');
 $pdf->SetWidths([12, 70, 76, 16, 32]);
@@ -276,17 +262,15 @@ if (empty($servicios)) {
 $pdf->Ln(6);
 $pdf->CheckPageBreak(40);
 $pdf->sectionTitle('Retorno del Vehiculo');
-$pdf->campo($colW, 'Hora de retorno', (string)($logistica['HoraRetorno'] ?? '-') ?: '-');
-$pdf->campo($colW, 'Km. recorridos', (string)($logistica['KilometrosRecorridos'] ?? '0'));
-$pdf->Ln(1);
-$pdf->resetX();
-$pdf->campo($colW, 'Combustible de retorno', (string)($logistica['CombustibleRegreso'] ?? '-') ?: '-');
-$pdf->campo(
-    $colW,
-    'Costo estimado para anticipo',
-    '$ ' . number_format($costoEstimadoAnticipo, 2, ',', '.')
-);
-$pdf->Ln(6);
+$pdf->filaCampos($colW, [
+    ['Hora de retorno', (string)($logistica['HoraRetorno'] ?? '-') ?: '-'],
+    ['Km. recorridos', (string)($logistica['KilometrosRecorridos'] ?? '0')],
+]);
+$pdf->filaCampos($colW, [
+    ['Combustible de retorno', (string)($logistica['CombustibleRegreso'] ?? '-') ?: '-'],
+    ['Costo estimado para anticipo', '$ ' . number_format($costoEstimadoAnticipo, 2, ',', '.')],
+]);
+$pdf->Ln(4);
 
 $pdf->sectionTitle('Observaciones');
 $pdf->SetFont('Arial', '', 9.5);
