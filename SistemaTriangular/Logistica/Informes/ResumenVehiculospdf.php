@@ -1,424 +1,297 @@
 <?php
-ob_start();
-session_start();
-require('../../fpdf/fpdf.php');
-require('../../../conexion.php');
 
-class PDF extends FPDF
-{
-var $widths;
-var $aligns;
+declare(strict_types=1);
 
-function SetWidths($w)
-{
-	//Set the array of column widths
-	$this->widths=$w;
+// Reescritura completa: el original usaba mysql_query() (eliminado en PHP7) y
+// requería ../../../conexion.php (ya no existe) — no podía funcionar bajo PHP8,
+// y fue lo que rompió para el usuario. Además leía columnas de Logistica por
+// posición numérica ($row[29] para NivelCombustible, etc.), que quedaron
+// desalineadas tras una migración que insertó columnas en el medio de la tabla
+// (CostoKmSegmentoImputado y otras). Se rehace con columnas nombradas,
+// consultas preparadas, y el mismo estilo visual que Orden de Salida / factura.
+
+require_once __DIR__ . '/hdr_pdf_helpers.php';
+require_once __DIR__ . '/../../Conexion/conexioni.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-function SetAligns($a)
-{
-	//Set the array of column alignments
-	$this->aligns=$a;
-}
-
-function Row($data)
-{
-	//Calculate the height of the row
-	$nb=0;
-	for($i=0;$i<count($data);$i++)
-		$nb=max($nb,$this->NbLines($this->widths[$i],$data[$i]));
-	$h=5*$nb;
-	//Issue a page break first if needed
-	$this->CheckPageBreak($h);
-	//Draw the cells of the row
-	for($i=0;$i<count($data);$i++)
-	{
-		$w=$this->widths[$i];
-		$a=isset($this->aligns[$i]) ? $this->aligns[$i] : 'L';
-		//Save the current position
-		$x=$this->GetX();
-		$y=$this->GetY();
-		//Draw the border
-		
-		$this->Rect($x,$y,$w,$h);
-
-		$this->MultiCell($w,5,$data[$i],0,$a,'true');
-		//Put the position to the right of the cell
-		$this->SetXY($x+$w,$y);
-	}
-	//Go to the next line
-	$this->Ln($h);
-}
-
-function CheckPageBreak($h)
-{
-	//If the height h would cause an overflow, add a new page immediately
-	if($this->GetY()+$h>$this->PageBreakTrigger)
-		$this->AddPage($this->CurOrientation);
-}
-
-function NbLines($w,$txt)
-{
-	//Computes the number of lines a MultiCell of width w will take
-	$cw=&$this->CurrentFont['cw'];
-	if($w==0)
-		$w=$this->w-$this->rMargin-$this->x;
-	$wmax=($w-2*$this->cMargin)*1000/$this->FontSize;
-	$s=str_replace("\r",'',$txt);
-	$nb=strlen($s);
-	if($nb>0 and $s[$nb-1]=="\n")
-		$nb--;
-	$sep=-1;
-	$i=0;
-	$j=0;
-	$l=0;
-	$nl=1;
-	while($i<$nb)
-	{
-		$c=$s[$i];
-		if($c=="\n")
-		{
-			$i++;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-			continue;
-		}
-		if($c==' ')
-			$sep=$i;
-		$l+=$cw[$c];
-		if($l>$wmax)
-		{
-			if($sep==-1)
-			{
-				if($i==$j)
-					$i++;
-			}
-			else
-				$i=$sep+1;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-		}
-		else
-			$i++;
-	}
-	return $nl;
-}
-	
-function Header()
-{
-	$cliente= $_SESSION['ClienteActivo'];
-	$NumeroRepo=$_GET['NR'];
-  $con = new DB;
-	$historial = $con->conectar();	
-	$Id=$_GET['NO'];
-	$strConsulta = "SELECT * FROM Logistica WHERE NumerodeOrden='$Id'";
-	$Dato = mysql_query($strConsulta);
-  
-	while($row=mysql_fetch_row($Dato)){
-  $sqlRecorrido = mysql_query("SELECT * FROM Recorridos WHERE Numero='$row[9]'");
-	$sqlR = mysql_fetch_array($sqlRecorrido);
-  $Estado=$row[25];  
-  $NumeroOrden=$row[1];
-	$Fecha=$row[2];
-	$Hora=$row[3];	
-	$Controla=$row[4];
-	$Dominio=$row[5];
-	$_SESSION['Dominio']=$row[5];	
-	$Kilometros=$row[6];
-  $KilometrosRecorridos=$row[28];   
-	$Chofer=$row[7];
-	$Chofer2=$row[8];	
-	$Recorrido=$row[9];	
-	$_SESSION['Recorrido']=$row[9];	
-	$FechaVencSeguro=$row[13];	
-	$arrayFechaSeguro=explode('-',$FechaVencSeguro,3);
-	$FechaSeguro=$arrayFechaSeguro[2]."/".$arrayFechaSeguro[1]."/".$arrayFechaSeguro[0];
-	$Observaciones=$row[24];
-	$NivelCombustible=$row[29];	
-	$FechaVencLicencia=$row[10];	
-	$arrayFechaVencLicencia=explode('-',$FechaVencLicencia,3);
-	$FechaVencLicencia2=$arrayFechaVencLicencia[2]."/".$arrayFechaVencLicencia[1]."/".$arrayFechaVencLicencia[0];
-	$HoraRetorno=$row[23];
-	$arrayfecha=explode('-',$Fecha,3);
-	$Fecha2=$arrayfecha[2]."/".$arrayfecha[1]."/".$arrayfecha[0];
-  
-	}
-  $_SESSION[namedoc]=date('dMy', strtotime($Fecha));	
-
-  $this->SetFont('Arial','',10);
-	$this->Text(20,14,'Caddy',0,'C', 0);
-	$this->Text(20,19,'Cuit: 30-71534494-3',0,'C', 0);
-	$this->Text(20,24,'Domicilio: Reconquista 4986 ',0,'C', 0);
-	$this->Text(20,29,'www.caddy.com.ar',0,'C', 0);
-  $this->SetFont('Arial','B',15);
-  $this->Text(90,10,''.$_SESSION[namedoc],0,'C', 0);
-  $this->SetFont('Arial','B',15);
-  $this->Text(90,22,''.$Estado,0,'C', 0);
-	
-	//FECHA
-// 	$fecha=date('d/m/Y');
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(150,14,'Orden Num: '.$NumeroOrden,0,'C', 0);
-
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(150,19,'Fecha:'.$Fecha2,0,'C', 0);
-
-	//REMITO NUMERO
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(150,24,'Hora: '.$Hora,0,'C', 0);
-
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(150,29,'Controla: '.$Controla,0,'C', 0);
-
-// 	$this->Ln(20);
-//  	$this->SetFont('Arial','B',14);
-// 	$this->Text(75,40,'CONTROL DE VEHICULOS',0,'C', 0);
-
-	$this->Ln(20);
- 	$this->SetFont('Arial','B',9);
-	$this->Text(40,47,'VEHICULO',0,'C', 0);
-	$this->Text(140,47,'CHOFER',0,'C', 0);
-
-	$this->SetFont('Arial','B',10);
-	$this->Text(20,55,'Patente: '.$Dominio,0,'C', 0);
-	$this->SetFont('Arial','',10);
-	$this->Text(20,60,'Kilometros: '. $Kilometros,0,'C', 0);
-	$this->Text(20,65,'Nivel de Combustible: '. $NivelCombustible,0,'C', 0);
-	
-	$this->Text(80,55,'Nombre: '.$Chofer,0,'C', 0);
-	$this->Text(142,55,'Acomp.: '.$Chofer2,0,'C', 0);
-	
-	$this->Text(80,60,'Recorrido: '.$Recorrido." | ".$sqlR[Nombre],0,'C', 0);
-	$this->Text(80,65,'Fecha de Venc.Registro: '.$FechaVencLicencia2,0,'C', 0);
-
- 	$this->SetFont('Arial','B',12);
-	$this->Text(90,73,'SERVICIOS',0,'C', 0);
-
-  $sqlhdr=mysql_query("SELECT * FROM HojaDeRuta WHERE NumerodeOrden='$NumeroOrden' AND Eliminado='0'");
-//   $a=20;
-  $b=85;
-  $i=mysql_num_rows($sqlhdr);
-  $this->SetFont('Arial','B',10);
-	$this->Text(20,78,'Total de Servicios en esta Orden: '.$i,0,'C', 0);
-
-  while($datosqlhdr=mysql_fetch_array($sqlhdr)){
-  $sqltransacciones=mysql_query("SELECT Entregado FROM TransClientes WHERE CodigoSeguimiento='$datosqlhdr[Seguimiento]'");  
-  $datotransacciones=mysql_fetch_array($sqltransacciones);
-    if($datotransacciones[Entregado]==1){
-    $entregado='Entregado';
-    }else{
-    $entregado='No Entregado';
-  }
-    
-  $this->SetFont('Arial','',8);
-	$this->Text(20,$b,'Servicio: ['.$datosqlhdr[id].'] '.$datosqlhdr[Cliente].' '.$datosqlhdr[Localizacion].' Km. : '.$datosqlhdr[KmO].' Estado: '.$entregado,0,'C', 0);
-  $b=$b+4;  
-  }
-  
-//   $this->Text(80,78,'SI      NO',0,'C', 0);
-// 	$this->Text(100,78,'Obs.:__________________________________________',0,'C', 0);
-
-// 	$this->Text(20,84,'Comprobante de Seguro:',0,'C', 0);
-// 	$this->Text(80,84,'SI      NO',0,'C', 0);
-// 	$this->Text(100,84,'Obs.:__________________________________________',0,'C', 0);
-
-// 	$this->Text(20,90,'Fecha de Vencimiento Seguro:',0,'C', 0);
-// 	$this->Text(80,90,$FechaSeguro,0,'C', 0);
-// 	$this->Text(100,90,'Obs.:__________________________________________',0,'C', 0);
-
-// 	$this->SetFont('Arial','B',12);
-// 	$this->Text(90,98,'ESTADO DEL VEHICULO',0,'C', 0);
-
-// 	$this->SetFont('Arial','',10);
-// 	$this->Text(20,104,'Cubiertas Ok:',0,'C', 0);
-// 	$this->Text(80,104,'SI      NO',0,'C', 0);
-// 	$this->Text(100,104,'Obs.:__________________________________________',0,'C', 0);
-
-// 	$this->SetFont('Arial','',10);
-// 	$this->Text(20,110,'Auxilio ok:',0,'C', 0);
-// 	$this->Text(80,110,'SI      NO',0,'C', 0);
-// 	$this->Text(100,110,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,116,'Chapas patentes en condiciones:',0,'C', 0);
-// 	$this->Text(80,116,'SI      NO',0,'C', 0);
-// 	$this->Text(100,116,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,122,'Luces Posicion:',0,'C', 0);
-// 	$this->Text(80,122,'SI      NO',0,'C', 0);
-// 	$this->Text(100,122,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,128,'Luces Bajas:',0,'C', 0);
-// 	$this->Text(80,128,'SI      NO',0,'C', 0);
-// 	$this->Text(100,128,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,134,'Luces Altas:',0,'C', 0);
-// 	$this->Text(80,134,'SI      NO',0,'C', 0);
-// 	$this->Text(100,134,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,140,'Luces de Freno:',0,'C', 0);
-// 	$this->Text(80,140,'SI      NO',0,'C', 0);
-// 	$this->Text(100,140,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,146,'GNC Funcionando:',0,'C', 0);
-// 	$this->Text(80,146,'SI      NO',0,'C', 0);
-// 	$this->Text(100,146,'Obs.:__________________________________________',0,'C', 0);
-//   $this->SetFont('Arial','',10);
-// 	$this->Text(20,152,'Tarjeta de Combustible:',0,'C', 0);
-// 	$this->Text(80,152,'SI      NO',0,'C', 0);
-// 	$this->Text(100,152,'Obs.:__________________________________________',0,'C', 0);
-
-// 	$this->SetFont('Arial','B',12);
-// 	$this->Text(70,160,'OBSERVACIONES DE CHAPA Y PINTURA',0,'C', 0);
-
-// 	$this->SetFont('Arial','B',9);
-// 	$this->Text(20,168,'MARQUE LAS OBSERVACIONES',0,'C', 0);
-//   $this->Image('../../images/auto.png',30,170,23);
-
-// 	$this->Text(95,168,'ESPECIFIQUE LAS OBSERVACIONES DE CHAPA Y PINTURA',0,'C', 0);
-
-//  	$this->SetY(170);
-// 	$this->SetX(90);
-// 	$this->SetFont('Arial','',10);
-// 	$this->SetFillColor(255,255,255);
-//   $this->SetTextColor(0);
-// 	$this->SetWidths(array(100));
-// 	$this->SetHeights(array(100));
-// 	$this->Row(array($Observaciones));
-	
-	$this->SetFont('Arial','B',12);
-	$this->Text(70,230,'RETORNO DEL VEHICULO',0,'C', 0);
-
-	$this->SetFont('Arial','',10);
-	$this->Text(20,235,'Hora de Retorno:',0,'C', 0);
-	$this->Text(60,235,$HoraRetorno,0,'C', 0);
-
-	$this->SetFont('Arial','',10);
-	$this->Text(85,235,'Km. Recorridos:'.$KilometrosRecorridos,0,'C', 0);
-
-	$this->SetFont('Arial','',10);
-	$this->Text(135,235,'Combustible Retorno:',0,'C', 0);
-
-	
-	$this->SetFont('Arial','B',12);
-	$this->Text(80,242,'OBSERVACIONES',0,'C', 0);
-	$this->SetFont('Arial','B',10);
-// 	$this->Text(20,247,'Costo estimado para anticipo:'.$Resultado,0,'C', 0);
-	
-}
-
-function Footer()
-{
-// 	//FIRMA CLIENTE
- 	$this->SetY(-65);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,100,'Firma Chofer',0,0,'L');
-// 	//ACLARACION CLIENTE
-	$this->SetY(-65);
-	$this->SetX(150);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(300,100,'Firma Administracion',0,0,'L');
-
-	$this->SetY(-15);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'Recibo Triangular S.A.',0,0,'L');
-	
-	$this->SetY(-15);
-	$this->SetX(90);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'www.caddy.com.ar',0,0,'L');
-
-	$this->SetY(-15);
-	$this->SetX(170);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'Usuario:'.$_SESSION['Usuario'],0,0,'L');
-	
-}
-
-}
-$cliente= $_SESSION['ClienteActivo'];
-$NumeroOrden=$_GET['NO'];
-
-	$con = new DB;
-	$historial = $con->conectar();	
-	$Dato="Recibo de Pago";
-	$strConsulta = "SELECT * FROM Logistica WHERE NumerodeOrden='$NumeroOrden' ";
-	$pacientes = mysql_query($strConsulta);
-	$fila = mysql_fetch_array($pacientes);
-
-	$pdf=new PDF('P','mm','Letter');
-	$pdf->Open();
-	$pdf->AddPage();
-	$pdf->SetMargins(20,20,20);
-	
-	$pdf->Ln(-23);
- 	$pdf->Line(20, 35, 190, 35);  //Horizontal CONTROL DE VEHICULOS
-	$pdf->Line(20, 42, 190, 42);  //Horizontal CONTROL DE VEHICULOS
-	$pdf->Line(20, 49, 190, 49);  //Horizontal VEHICULO CHOFER
-  $pdf->Line(20, 69, 190, 69);  //Horizontal ADMINISTRACION
-	$pdf->Line(20, 74, 190, 74);  //Horizontal ADMINISTRACION
-//  $pdf->Line(20, 94, 190, 94);  //Horizontal ESTADO DEL VEHICULO
-// 	$pdf->Line(20, 99, 190, 99);  //Horizontal ESTADO DEL VEHICULO
-// 	$pdf->Line(20, 156, 190, 156);  //Horizontal OBSERVACIONES DE CHAPA Y PINTURA
-// 	$pdf->Line(20, 161, 190, 161);  //Horizontal OBSERVACIONES DE CHAPA Y PINTURA
-	$pdf->Line(20, 226, 190, 226);  //Horizontal RETORNO DEL VEHICULO
-	$pdf->Line(20, 231, 190, 231);  //Horizontal RETORNO DEL VEHICULO
-	$pdf->Line(20, 238, 190, 238);  //Horizontal OBSERVACIONES 
-	$pdf->Line(20, 243, 190, 243);  //Horizontal OBSERVACIONES
-// 	$pdf->Line(20, 262, 50, 262);  //Horizontal OBSERVACIONES
-// 	$pdf->Line(140, 262, 180, 262);  //Horizontal OBSERVACIONES
-
-// 	$pdf->Line(90, 170, 90, 220);  //VERTICAL CUADRO
-// 	$pdf->Line(90, 170, 190, 170);  //Horizontal CUADRO
-// 	$pdf->Line(190, 170, 190, 220);  //VERTICAL CUADRO
-// 	$pdf->Line(90, 220, 190, 220);  //Horizontal CUADRO
-	
-	$strConsulta =mysql_query("SELECT Nombre,Valor FROM Variables");
-  while($fila=mysql_fetch_array($strConsulta)){
-    if($fila[Nombre]=='CostoPeajes'){
-    $CADP = $fila[Valor];// Costo Actual de Peajes
+$NumeroOrden = (string)($_GET['NO'] ?? '');
+if ($NumeroOrden === '') {
+    http_response_code(400);
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=utf-8');
     }
-    if($fila[Nombre]=='PrecioNaftaSuper'){
-	  $PNS = $fila[Valor];      
+    echo 'Falta parametro NO';
+    exit;
+}
+
+class ResumenVehiculoPDF extends HdrPdfBase
+{
+    // Título de sección con línea naranja fina abajo.
+    public function sectionTitle(string $texto): void
+    {
+        $p = hdrPaleta();
+        $this->SetFont('Arial', 'B', 11);
+        $this->SetTextColor(...$p['primaryC']);
+        $this->Cell(0, 7, pdf_text($texto), 0, 1);
+        $this->SetDrawColor(...$p['borderC']);
+        $this->SetLineWidth(0.2);
+        $this->Line($this->lMargin, $this->GetY(), $this->w - $this->rMargin, $this->GetY());
+        $this->Ln(2);
     }
-  }
 
-	$Recorrido=$_SESSION['Recorrido'];	
-	$ConsultaRecorrido ="SELECT Peajes FROM Recorridos WHERE Numero='$Recorrido'";
-	$ConsultaRecorrido1=mysql_query($ConsultaRecorrido);
-	$dato = mysql_fetch_array($ConsultaRecorrido1); // Cantidad de Peajes segun Recorrido
-	$CPR=$dato[Peajes];
-	$Resultado=$CADP*$CPR; // Resultado1 de Peajes
-//---------------VEHICULOS----------------------------------------------------------------------------
-  $Dominio=$_SESSION['Dominio'];	
-	$ConsultaVehiculo ="SELECT NivelCombustible,CapacidadTanque,Marca,Modelo FROM Vehiculos WHERE Dominio='$Dominio'";
-	$ConsultaVehiculo1=mysql_query($ConsultaVehiculo);
-	$fila=mysql_fetch_array($ConsultaVehiculo1);	
-	$CT = $fila[CapacidadTanque]; // Cantidad de Peajes segun Recorrido 
-	$NC = explode("/",$fila[NivelCombustible],2);
-	$Marca=$fila[Marca];
-	$Modelo=$fila[Modelo];
+    // Par etiqueta/valor en una celda de ancho fijo, usado para armar grillas de datos.
+    public function campo(float $w, string $label, string $valor): void
+    {
+        $p = hdrPaleta();
+        $x = $this->GetX();
+        $y = $this->GetY();
+        $this->SetFont('Arial', 'B', 8.5);
+        $this->SetTextColor(...$p['mutedC']);
+        $this->Cell($w, 4.5, pdf_text($label), 0, 2);
+        $this->SetFont('Arial', '', 9.5);
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetX($x);
+        $this->Cell($w, 5.5, pdf_text($valor), 0, 2);
+        $this->SetXY($x + $w, $y);
+    }
 
-	$NC1=$NC[0]; // Nivel de combustible
-	$CT1=$CT/8;
-	$CF=8-$NC1; //Cuanto le falta al tanque para completarse
-	$Resultado1=($CF*$CT1)*$PNS;// Lo que le falta multiplicado el tanque total dividido las 8 medidas * el precio de nafta super
-	$Total=$Resultado+$Resultado1;
+    public function Header(): void
+    {
+        global $headerDatos;
 
-	$pdf->SetFont('Arial','B',12);
-	$pdf->Text(35,40,'CONTROL DE VEHICULO: '.$Marca.' '.$Modelo.' ('.$Dominio.')', 0);
+        if (empty($headerDatos)) {
+            return;
+        }
 
-	$pdf->SetFont('Arial','B',10);
-	$pdf->Text(20,247,'Observaciones: '.$row[Observaciones],0,'C', 0);
+        $this->drawHeaderBase(
+            'CONTROL DE VEHICULO',
+            $headerDatos['marcaModelo'] . ' - ' . $headerDatos['dominio'],
+            [
+                ['N. de Orden:', $headerDatos['numeroOrden']],
+                ['Fecha:', $headerDatos['fecha']],
+                ['Hora:', $headerDatos['hora']],
+                ['Controla:', $headerDatos['controla']],
+                ['Estado:', $headerDatos['estado']],
+            ]
+        );
+    }
 
-$pdf->Output($_SESSION[namedoc].'.pdf','I');
-$pdf->Output();
-ob_end_flush();
-?>
+    public function Footer(): void
+    {
+        $p = hdrPaleta();
+        $this->SetY(-30);
+        $this->SetDrawColor(...$p['darkText']);
+        $this->SetLineWidth(0.2);
+        $this->Line($this->lMargin, $this->GetY(), $this->lMargin + 70, $this->GetY());
+        $this->Line($this->w - $this->rMargin - 70, $this->GetY(), $this->w - $this->rMargin, $this->GetY());
+
+        $this->SetY(-27);
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(...$p['mutedC']);
+        $this->Cell(70, 5, pdf_text('Firma Chofer'), 0, 0, 'L');
+        $this->SetX($this->w - $this->rMargin - 70);
+        $this->Cell(70, 5, pdf_text('Firma Administracion'), 0, 1, 'R');
+
+        parent::Footer();
+    }
+}
+
+// --------------------------------------------------
+// Datos
+// --------------------------------------------------
+$logistica = mysqli_fetch_one(
+    $mysqli,
+    "SELECT NumerodeOrden, Fecha, Hora, Controla, Patente, Kilometros,
+            NombreChofer, NombreChofer2, Recorrido, FechaVencRegistro,
+            Observaciones, Estado, KilometrosRecorridos, HoraRetorno,
+            CombustibleSalida, CombustibleRegreso
+       FROM Logistica
+      WHERE NumerodeOrden = ?
+        AND Eliminado = 0
+      LIMIT 1",
+    's',
+    [$NumeroOrden]
+);
+
+if (!$logistica) {
+    http_response_code(404);
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=utf-8');
+    }
+    echo 'No se encontro la Orden ' . $NumeroOrden;
+    exit;
+}
+
+$rec = mysqli_fetch_one(
+    $mysqli,
+    "SELECT Nombre, Peajes FROM Recorridos WHERE Numero = ? LIMIT 1",
+    's',
+    [$logistica['Recorrido']]
+) ?? [];
+
+$vehiculo = mysqli_fetch_one(
+    $mysqli,
+    "SELECT Marca, Modelo, NivelCombustible, CapacidadTanque FROM Vehiculos WHERE Dominio = ? LIMIT 1",
+    's',
+    [$logistica['Patente']]
+) ?? [];
+
+$variables = db_fetch_all($mysqli, "SELECT Nombre, Valor FROM Variables");
+$costoPeajes = 0.0;
+$precioNafta = 0.0;
+foreach ($variables as $v) {
+    if ($v['Nombre'] === 'CostoPeajes') {
+        $costoPeajes = (float)$v['Valor'];
+    }
+    if ($v['Nombre'] === 'PrecioNaftaSuper') {
+        $precioNafta = (float)$v['Valor'];
+    }
+}
+
+$costoPeajesRecorrido = $costoPeajes * (float)($rec['Peajes'] ?? 0);
+
+$capacidadTanque = (float)($vehiculo['CapacidadTanque'] ?? 0);
+$nivelCombustibleTexto = (string)($vehiculo['NivelCombustible'] ?? '');
+$nivelPartes = explode('/', $nivelCombustibleTexto, 2);
+$nivelActual = (float)($nivelPartes[0] ?? 0);
+$octavoTanque = $capacidadTanque / 8;
+$faltanteOctavos = 8 - $nivelActual;
+$costoCombustibleFaltante = ($faltanteOctavos * $octavoTanque) * $precioNafta;
+
+$costoEstimadoAnticipo = $costoPeajesRecorrido + $costoCombustibleFaltante;
+
+$fechaTexto = '';
+if (!empty($logistica['Fecha'])) {
+    $ts = strtotime((string)$logistica['Fecha']);
+    if ($ts !== false) {
+        $fechaTexto = date('d/m/Y', $ts);
+    }
+}
+
+$vencRegistroTexto = '-';
+if (!empty($logistica['FechaVencRegistro'])) {
+    $ts = strtotime((string)$logistica['FechaVencRegistro']);
+    if ($ts !== false) {
+        $vencRegistroTexto = date('d/m/Y', $ts);
+    }
+}
+
+$servicios = db_fetch_all(
+    $mysqli,
+    "SELECT id, Cliente, Localizacion, KmO, Seguimiento
+       FROM HojaDeRuta
+      WHERE NumerodeOrden = ?
+        AND Eliminado = 0
+      ORDER BY Posicion",
+    's',
+    [$NumeroOrden]
+);
+
+$headerDatos = [
+    'numeroOrden' => $NumeroOrden,
+    'fecha'       => $fechaTexto,
+    'hora'        => (string)($logistica['Hora'] ?? ''),
+    'controla'    => (string)($logistica['Controla'] ?? ''),
+    'estado'      => (string)($logistica['Estado'] ?? ''),
+    'dominio'     => (string)($logistica['Patente'] ?? ''),
+    'marcaModelo' => trim((string)($vehiculo['Marca'] ?? '') . ' ' . (string)($vehiculo['Modelo'] ?? '')),
+];
+
+// --------------------------------------------------
+// Render
+// --------------------------------------------------
+$pdf = new ResumenVehiculoPDF('P', 'mm', 'Letter');
+$pdf->AliasNbPages();
+$pdf->footerLeft = 'Control de Vehiculo - Orden ' . $NumeroOrden;
+$pdf->SetMargins(12, 12, 12);
+$pdf->SetAutoPageBreak(true, 34);
+$pdf->AddPage();
+
+$paleta = hdrPaleta();
+$colW = $pdf->contentWidth() / 2;
+
+$pdf->sectionTitle('Vehiculo y Chofer');
+$pdf->campo($colW, 'Patente', (string)($logistica['Patente'] ?? ''));
+$pdf->campo($colW, 'Chofer', (string)($logistica['NombreChofer'] ?? 'Pendiente de asignar'));
+$pdf->Ln(1);
+$pdf->resetX();
+$pdf->campo($colW, 'Kilometros', (string)($logistica['Kilometros'] ?? ''));
+$pdf->campo($colW, 'Acompanante', (string)($logistica['NombreChofer2'] ?? '-'));
+$pdf->Ln(1);
+$pdf->resetX();
+$pdf->campo($colW, 'Combustible de salida', $nivelCombustibleTexto !== '' ? $nivelCombustibleTexto : '-');
+$pdf->campo($colW, 'Recorrido', $logistica['Recorrido'] . ' - ' . ($rec['Nombre'] ?? ''));
+$pdf->Ln(1);
+$pdf->resetX();
+$pdf->campo($colW, 'Venc. Registro', $vencRegistroTexto);
+$pdf->Ln(6);
+
+$pdf->sectionTitle('Servicios (' . count($servicios) . ')');
+$pdf->SetWidths([12, 70, 76, 16, 32]);
+$pdf->SetAligns(['C', 'L', 'L', 'C', 'C']);
+$pdf->SetFont('Arial', 'B', 7.5);
+$pdf->SetFillColor(...$paleta['primaryC']);
+$pdf->SetTextColor(...$paleta['whiteC']);
+$pdf->SetDrawColor(...$paleta['primaryC']);
+foreach (['#', 'Cliente', 'Localizacion', 'Km', 'Estado'] as $i => $label) {
+    $w = $pdf->widths[$i];
+    $pdf->Cell($w, 6.5, pdf_text($label), 0, 0, $i === 1 || $i === 2 ? 'L' : 'C', true);
+}
+$pdf->Ln();
+$pdf->SetTextColor(...$paleta['darkText']);
+
+$fill = false;
+foreach ($servicios as $s) {
+    $seg = (string)($s['Seguimiento'] ?? '');
+    $entregadoTexto = 'Sin datos';
+    if ($seg !== '') {
+        $trans = mysqli_fetch_one(
+            $mysqli,
+            "SELECT Entregado FROM TransClientes WHERE CodigoSeguimiento = ? AND Eliminado = 0 LIMIT 1",
+            's',
+            [$seg]
+        );
+        $entregadoTexto = ((int)($trans['Entregado'] ?? 0) === 1) ? 'Entregado' : 'No entregado';
+    }
+
+    $pdf->Row([
+        (string)$s['id'],
+        (string)($s['Cliente'] ?? ''),
+        (string)($s['Localizacion'] ?? ''),
+        (string)($s['KmO'] ?? ''),
+        $entregadoTexto,
+    ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
+    $fill = !$fill;
+}
+
+if (empty($servicios)) {
+    $pdf->SetFont('Arial', 'I', 9);
+    $pdf->SetTextColor(...$paleta['mutedC']);
+    $pdf->Cell(0, 7, pdf_text('No hay servicios cargados para esta orden.'), 0, 1);
+}
+
+$pdf->Ln(6);
+$pdf->CheckPageBreak(40);
+$pdf->sectionTitle('Retorno del Vehiculo');
+$pdf->campo($colW, 'Hora de retorno', (string)($logistica['HoraRetorno'] ?? '-') ?: '-');
+$pdf->campo($colW, 'Km. recorridos', (string)($logistica['KilometrosRecorridos'] ?? '0'));
+$pdf->Ln(1);
+$pdf->resetX();
+$pdf->campo($colW, 'Combustible de retorno', (string)($logistica['CombustibleRegreso'] ?? '-') ?: '-');
+$pdf->campo(
+    $colW,
+    'Costo estimado para anticipo',
+    '$ ' . number_format($costoEstimadoAnticipo, 2, ',', '.')
+);
+$pdf->Ln(6);
+
+$pdf->sectionTitle('Observaciones');
+$pdf->SetFont('Arial', '', 9.5);
+$pdf->SetTextColor(...$paleta['darkText']);
+$obs = (string)($logistica['Observaciones'] ?? '');
+$pdf->MultiCell(0, 5, pdf_text($obs !== '' ? $obs : '-'), 0, 'L');
+
+$pdf->Output('I', 'ControlDeVehiculo_' . $NumeroOrden . '.pdf');

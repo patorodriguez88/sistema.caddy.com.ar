@@ -1,254 +1,264 @@
 <?php
-session_start();
-require('../../fpdf/fpdf.php');
-include("../../../conexion.php");
-class PDF extends FPDF
-{
-var $widths;
-var $aligns;
 
-function SetWidths($w)
-{
-	//Set the array of column widths
-	$this->widths=$w;
+declare(strict_types=1);
+
+// Reescritura completa: el original usaba mysql_query() (eliminado en PHP7) y
+// require("../../../conexion.php") inexistente — no podía funcionar bajo PHP8.
+// Se preserva el mismo propósito (planilla de asignación de productos/revistas
+// por recorrido, con reconciliación de sobrante) usando consultas preparadas y
+// el estilo visual de Orden de Salida / factura. También se corrige un bug del
+// original: agregaba una página en blanco extra después del último recorrido
+// antes de mostrar los totales.
+
+require_once __DIR__ . '/hdr_pdf_helpers.php';
+require_once __DIR__ . '/../../Conexion/conexioni.php';
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
 }
 
-function SetAligns($a)
-{
-	//Set the array of column alignments
-	$this->aligns=$a;
+$Relacion = (string)($_GET['Relacion'] ?? '');
+$FechaAsignacion = (string)($_GET['Fecha'] ?? '');
+$CodigoProducto = (string)($_GET['CodigoProducto'] ?? '');
+
+if ($Relacion === '' || $FechaAsignacion === '' || $CodigoProducto === '') {
+    http_response_code(400);
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=utf-8');
+    }
+    echo 'Faltan parametros (Relacion, Fecha, CodigoProducto)';
+    exit;
 }
 
-function Row($data)
-{
-	//Calculate the height of the row
-	$nb=0;
-	for($i=0;$i<count($data);$i++)
-		$nb=max($nb,$this->NbLines($this->widths[$i],$data[$i]));
-	$h=5*$nb;
-	//Issue a page break first if needed
-	$this->CheckPageBreak($h);
-	//Draw the cells of the row
-	for($i=0;$i<count($data);$i++)
-	{
-		$w=$this->widths[$i];
-		$a=isset($this->aligns[$i]) ? $this->aligns[$i] : 'L';
-		//Save the current position
-		$x=$this->GetX();
-		$y=$this->GetY();
-		//Draw the border
-		
-		$this->Rect($x,$y,$w,$h);
+const ASIG_COLS = ['Pos.', 'ID Prov.', 'Cliente Destino', 'Direccion Destino', 'Producto', 'Edicion', 'Cant.'];
+const ASIG_WIDTHS = [12, 18, 62, 92, 40, 20, 18];
+const ASIG_ALIGNS = ['C', 'C', 'L', 'L', 'L', 'C', 'C'];
 
-		$this->MultiCell($w,5,$data[$i],0,$a,'true');
-		//Put the position to the right of the cell
-		$this->SetXY($x+$w,$y);
-	}
-	//Go to the next line
-	$this->Ln($h);
+class AsignacionesPDF extends HdrPdfBase
+{
+    public function drawTableHeader(): void
+    {
+        $p = hdrPaleta();
+        $this->SetWidths(ASIG_WIDTHS);
+        $this->SetAligns(ASIG_ALIGNS);
+        $this->SetFont('Arial', 'B', 7.5);
+        $this->SetFillColor(...$p['primaryC']);
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetDrawColor(...$p['primaryC']);
+        foreach (ASIG_COLS as $i => $label) {
+            $this->Cell(ASIG_WIDTHS[$i], 7, pdf_text($label), 0, 0, ASIG_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
+        }
+        $this->Ln();
+        $this->SetTextColor(...$p['darkText']);
+    }
+
+    public function subtotalRow(string $recorrido, int $cantidad): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(7);
+        $this->SetFont('Arial', 'B', 8);
+        $this->SetFillColor(...$p['grayBg']);
+        $this->SetDrawColor(...$p['borderC']);
+        $this->SetTextColor(...$p['darkText']);
+        $w1 = ASIG_WIDTHS[0] + ASIG_WIDTHS[1] + ASIG_WIDTHS[2] + ASIG_WIDTHS[3] + ASIG_WIDTHS[4];
+        $this->Cell($w1, 6.5, pdf_text('TOTAL RECORRIDO ' . $recorrido), 1, 0, 'R', true);
+        $this->Cell(ASIG_WIDTHS[5], 6.5, '', 1, 0, 'C', true);
+        $this->Cell(ASIG_WIDTHS[6], 6.5, (string)$cantidad, 1, 1, 'C', true);
+        $this->Ln(4);
+    }
+
+    public function Header(): void
+    {
+        global $headerDatos;
+
+        if (empty($headerDatos)) {
+            return;
+        }
+
+        $this->drawHeaderBase(
+            'ASIGNACION DE PRODUCTOS',
+            $headerDatos['producto'],
+            [
+                ['Cliente:', $headerDatos['relacion']],
+                ['Fecha asignacion:', $headerDatos['fecha']],
+                ['Producto:', $headerDatos['producto']],
+                ['Total ingreso:', $headerDatos['totalIngreso']],
+            ]
+        );
+
+        $this->Ln(2);
+        $this->drawTableHeader();
+    }
+
 }
 
-function CheckPageBreak($h)
-{
-	//If the height h would cause an overflow, add a new page immediately
-	if($this->GetY()+$h>$this->PageBreakTrigger)
-		$this->AddPage($this->CurOrientation);
+// --------------------------------------------------
+// Datos
+// --------------------------------------------------
+$totalIngresoRow = mysqli_fetch_one(
+    $mysqli,
+    "SELECT SUM(Cantidad) AS Total FROM Asignaciones WHERE Relacion = ? AND Fecha = ? AND CodigoProducto = ?",
+    'sss',
+    [$Relacion, $FechaAsignacion, $CodigoProducto]
+) ?? [];
+$totalIngreso = (int)($totalIngresoRow['Total'] ?? 0);
+
+$productoRow = mysqli_fetch_one(
+    $mysqli,
+    "SELECT Nombre, CodigoProducto FROM AsignacionesProductos WHERE Relacion = ? AND CodigoProducto = ? LIMIT 1",
+    'ss',
+    [$Relacion, $CodigoProducto]
+) ?? [];
+$nombreProducto = (string)($productoRow['Nombre'] ?? '');
+
+$fechaTexto = $FechaAsignacion;
+$ts = strtotime($FechaAsignacion);
+if ($ts !== false) {
+    $fechaTexto = date('d/m/Y', $ts);
 }
 
-function NbLines($w,$txt)
-{
-	//Computes the number of lines a MultiCell of width w will take
-	$cw=&$this->CurrentFont['cw'];
-	if($w==0)
-		$w=$this->w-$this->rMargin-$this->x;
-	$wmax=($w-2*$this->cMargin)*1000/$this->FontSize;
-	$s=str_replace("\r",'',$txt);
-	$nb=strlen($s);
-	if($nb>0 and $s[$nb-1]=="\n")
-		$nb--;
-	$sep=-1;
-	$i=0;
-	$j=0;
-	$l=0;
-	$nl=1;
-	while($i<$nb)
-	{
-		$c=$s[$i];
-		if($c=="\n")
-		{
-			$i++;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-			continue;
-		}
-		if($c==' ')
-			$sep=$i;
-		$l+=$cw[$c];
-		if($l>$wmax)
-		{
-			if($sep==-1)
-			{
-				if($i==$j)
-					$i++;
-			}
-			else
-				$i=$sep+1;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-		}
-		else
-			$i++;
-	}
-	return $nl;
+$headerDatos = [
+    'relacion'     => $Relacion,
+    'fecha'        => $fechaTexto,
+    'producto'     => '(' . $CodigoProducto . ') ' . $nombreProducto,
+    'totalIngreso' => (string)$totalIngreso,
+];
+
+$recorridos = db_fetch_all(
+    $mysqli,
+    "SELECT Recorrido FROM TransClientes
+      WHERE FechaEntrega = ? AND Eliminado = 0
+      GROUP BY Recorrido
+      ORDER BY Recorrido",
+    's',
+    [$FechaAsignacion]
+);
+
+// --------------------------------------------------
+// Render
+// --------------------------------------------------
+$pdf = new AsignacionesPDF('L', 'mm', 'Letter');
+$pdf->AliasNbPages();
+$pdf->footerLeft = 'Planilla de Asignaciones - Caddy';
+$pdf->SetMargins(12, 12, 12);
+$pdf->SetAutoPageBreak(true, 16);
+$pdf->AddPage();
+
+$paleta = hdrPaleta();
+$totalAsignado = 0;
+$huboRecorridos = false;
+
+foreach ($recorridos as $idx => $rr) {
+    $recorrido = (string)($rr['Recorrido'] ?? '');
+
+    $items = db_fetch_all(
+        $mysqli,
+        "SELECT a.idClienteDestino, b.Posicion
+           FROM TransClientes a
+           INNER JOIN HojaDeRuta b ON a.id = b.idTransClientes
+          WHERE a.FechaEntrega = ?
+            AND a.Recorrido = ?
+            AND a.Eliminado = 0
+          ORDER BY b.Posicion",
+        'ss',
+        [$FechaAsignacion, $recorrido]
+    );
+
+    $cantidadRecorrido = 0;
+    $fill = false;
+
+    foreach ($items as $item) {
+        $cliente = mysqli_fetch_one(
+            $mysqli,
+            "SELECT idProveedor FROM Clientes WHERE id = ? LIMIT 1",
+            'i',
+            [(int)$item['idClienteDestino']]
+        ) ?? [];
+        $idProveedor = (int)($cliente['idProveedor'] ?? 0);
+
+        $asignacion = mysqli_fetch_one(
+            $mysqli,
+            "SELECT idProveedor, Edicion, Cantidad
+               FROM Asignaciones
+              WHERE Relacion = ? AND Fecha = ? AND idProveedor = ? AND CodigoProducto = ?
+              LIMIT 1",
+            'ssis',
+            [$Relacion, $FechaAsignacion, $idProveedor, $CodigoProducto]
+        );
+
+        $cantidad = (int)($asignacion['Cantidad'] ?? 0);
+        if ($cantidad === 0) {
+            continue;
+        }
+
+        $proveedorCliente = mysqli_fetch_one(
+            $mysqli,
+            "SELECT nombrecliente, Direccion FROM Clientes WHERE idProveedor = ? LIMIT 1",
+            'i',
+            [(int)($asignacion['idProveedor'] ?? 0)]
+        ) ?? [];
+
+        $huboRecorridos = true;
+        $pdf->Row([
+            (string)($item['Posicion'] ?? ''),
+            sprintf('%04d', (int)($asignacion['idProveedor'] ?? 0)),
+            (string)($proveedorCliente['nombrecliente'] ?? ''),
+            (string)($proveedorCliente['Direccion'] ?? ''),
+            $nombreProducto,
+            (string)($asignacion['Edicion'] ?? ''),
+            (string)$cantidad,
+        ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
+        $fill = !$fill;
+
+        $cantidadRecorrido += $cantidad;
+        $totalAsignado += $cantidad;
+    }
+
+    if ($cantidadRecorrido > 0) {
+        $pdf->subtotalRow($recorrido, $cantidadRecorrido);
+    }
+
+    if ($idx < count($recorridos) - 1) {
+        $pdf->AddPage();
+    }
 }
 
-	function Header()
-{
-  $con = new DB;
-	$historial = $con->conectar();	
-
-  $Relacion=$_GET[Relacion];
-  $FechaAsignacion=$_GET[Fecha];
-  $CodigoProducto=$_GET[CodigoProducto];
-//   $historial = $con->conectar();	
-  
-  $sqltotal=mysql_query("SELECT SUM(Cantidad)as Total FROM Asignaciones WHERE Relacion='$Relacion' AND Fecha='$FechaAsignacion' AND CodigoProducto='$CodigoProducto'");
-  $rowtotal=mysql_fetch_array($sqltotal);
-  $_SESSION[datorowtotal]=$rowtotal[Total];  
-//BUSCO EL PRODUCTO
-  $sqlAsignaciones_productos=mysql_query("SELECT * FROM AsignacionesProductos WHERE Relacion='$Relacion' AND CodigoProducto='$CodigoProducto'");
-  $fila_asignaciones_productos = mysql_fetch_array($sqlAsignaciones_productos);
-  $_SESSION[NombreProducto]=$fila_asignaciones_productos[Nombre];
-  $_SESSION[CodigoProducto]=$fila_asignaciones_productos[CodigoProducto];
-
-	$this->SetFont('Arial','',10);
-    $this->Image('../../images/LogoCaddyNoAlfa.png',110 ,8, 40 , 16,'png','');  
-	$this->Text(20,14,'Caddy Yo lo llevo!',0,'C', 0);
-	$this->Text(20,19,'Cuit: 30-71534494-3',0,'C', 0);
-	$this->Text(20,24,'Reconquista 4986',0,'C', 0);
-	$this->Text(20,29,'www.caddy.com.ar',0,'C', 0);
-	$Fecha=date('d/m/Y');
-	//FECHA
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(190,14,'Cordoba '.$Fecha,0,'C', 0);
-    $this->Text(190,19,'Cliente: '.$_GET[Relacion],0,1);
-	$this->Text(190,24,'Fecha Asignacion Salida:'.$_GET[Fecha],0,'C', 0);
-	$this->Text(190,29,'Total Ingreso: '.$cantidad.' '.$rowtotal[Total],0,'C', 0);
-    $this->Text(190,34,'Producto: ('.$_SESSION[CodigoProducto].') '.$_SESSION[NombreProducto],0,'C', 0);
-
-  //TITULO
-	$this->SetMargins(20,20,20);
- 	$this->Line(20, 38, 258, 38);  //Horizontal
-	$this->Line(20, 44, 258, 45);  //Horizontal
-
- 	$this->SetFont('Arial','',16);
-    $FechaBD=explode("-",$_GET[Fecha],3);
-    $FechaBD0=$FechaBD[2].'/'.$FechaBD[1].'/'.$FechaBD[0];
-	$this->Text(85,43,'Asignacion de '.$_SESSION[NombreProducto].' Fecha '.$FechaBD0,0,'C', 0);
-  if($this->PageNo() == 1){
-  $this->Ln(15);
-  }else{
-  $this->Ln(5);
-  }
-  
-	$this->SetWidths(array(15,15, 70 ,101, 17, 18, 18));
-	$this->SetFont('Arial','B',6);
-	$this->SetFillColor(119,136,153);
-  $this->SetTextColor(255);
-  $this->Row(array('POSICION','ID.PROV.','NOMBRE CLIENTE DESTINO', 'DIRECCION DESTINO', 'NOMBRE','EDICION', 'CANTIDAD'));
-
-}
-	
-function Footer()
-{
-
-	$this->SetY(-15);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'Planillas de Asignacioens Caddy',0,0,'L');
-	
-	$this->SetY(-15);
-	$this->SetX(115);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'www.caddy.com.ar',0,0,'L');
-
-	$this->SetY(-15);
-	$this->SetX(220);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'Usuario:'.$_SESSION['Usuario'],0,0,'L');
-
- }
+if (!$huboRecorridos) {
+    $pdf->SetFont('Arial', 'I', 10);
+    $pdf->SetTextColor(...$paleta['mutedC']);
+    $pdf->Cell(0, 8, pdf_text('No hay asignaciones cargadas para esta fecha y producto.'), 0, 1);
 }
 
-  $Relacion=$_GET[Relacion];
-  $FechaAsignacion=$_GET[Fecha];
+$sobrante = $totalIngreso - $totalAsignado;
 
-  $con = new DB;
-  $pdf=new PDF('L','mm','Letter');
-  $pdf->Open();
-  $pdf->AddPage();
-  $cantidad0=0;
-  $cantidad=0;
-  $Relacion=$_GET[Relacion];
-  $FechaAsignacion=$_GET[Fecha];
-  $CodigoProducto=$_GET[CodigoProducto];
-  $historial = $con->conectar();	
+$pdf->AddPage();
+$pdf->SetY(90);
+$pdf->SetFont('Arial', 'B', 12);
+$pdf->SetTextColor(...$paleta['primaryC']);
+$pdf->Cell(0, 8, pdf_text('RESUMEN DE ASIGNACION'), 0, 1, 'C');
+$pdf->Ln(4);
 
-  $sqlrecorrido=mysql_query("SELECT Recorrido FROM TransClientes WHERE FechaEntrega='$FechaAsignacion' AND Eliminado=0  GROUP BY Recorrido ORDER BY Recorrido");
-  
-  while($rowrecorrido = mysql_fetch_array($sqlrecorrido)){
-  $cantidad0=0;
-  $recorridoactual=$rowrecorrido[Recorrido];
-    $strConsulta=mysql_query("SELECT idClienteDestino,a.id,Posicion FROM TransClientes a INNER JOIN HojaDeRuta b ON a.id=b.idTransClientes 
-    WHERE a.FechaEntrega='$FechaAsignacion' AND a.Recorrido='$rowrecorrido[Recorrido]' AND a.Eliminado=0 ORDER BY Posicion");
-    
-    while($historial = mysql_fetch_array($strConsulta)){
-      $sqlclientes0=mysql_query("SELECT idProveedor FROM Clientes WHERE id='$historial[idClienteDestino]'");      
-      $rowclientes0 = mysql_fetch_array($sqlclientes0);
-      
-      //OBTENGO LA POSICION
-    //   $sqlclientes1=mysql_query("SELECT Posicion FROM HojaDeRuta WHERE HojaDeRuta.idTransClientes='$historial[id]'");
-    //   $rowclientes1 = mysql_fetch_array($sqlclientes1);
+$cardW = 140;
+$cardX = ($pdf->pageWidth() - $cardW) / 2;
+$cardH = 34;
+$pdf->SetFillColor(...$paleta['grayBg']);
+$pdf->SetDrawColor(...$paleta['borderC']);
+$pdf->RoundedRect($cardX, $pdf->GetY(), $cardW, $cardH, 3, 'FD');
 
-      $sqlAsignaciones=mysql_query("SELECT * FROM Asignaciones WHERE Relacion='$Relacion' AND Fecha='$FechaAsignacion' AND idProveedor='$rowclientes0[idProveedor]' AND CodigoProducto='$CodigoProducto'");
-      $fila = mysql_fetch_array($sqlAsignaciones);
-      $nproveedor=sprintf("%04d",$fila['idProveedor']);  
-      setlocale(LC_ALL,'es_AR');
-      $TotalRepo1='';	
-      $pdf->SetFont('Arial','',6);
-			if($fila[Cantidad] <> 0)
-			{
-            //SACO EL ID DE CLIENTE SEGUN LA RELACION
-            $sqlclientes=mysql_query("SELECT id,nombrecliente,Direccion FROM Clientes WHERE idProveedor='$fila[idProveedor]'");
-            $rowclientes = mysql_fetch_array($sqlclientes);
-            $pdf->SetFillColor(255,255,255);
-            $pdf->SetTextColor(0);
-            
-            $pdf->Row(array($historial['Posicion'],$nproveedor,$rowclientes[nombrecliente], $rowclientes[Direccion], $_SESSION[NombreProducto],$fila['Edicion'], $fila['Cantidad']));
-            $cantidad0=$cantidad0+$fila[Cantidad];
-            $cantidad=$cantidad+$fila[Cantidad];
-            }
-        
-        }	
-            $pdf->SetFont('Arial','B',7);
-            $pdf->Row(array('','','','','','TOTAL '.$rowrecorrido[Recorrido].':',$cantidad0));
-            $pdf->AddPage();
-        }    
-        // if($rowrecorrido[Recorrido]<>''){
-        // $pdf->AddPage();
-        // }
-    
-     	$pdf->SetFont('Arial','',16);
-	    $pdf->Text(105,100,'TOTAL RECIBIDO: '.$_SESSION[datorowtotal],0,'C', 0);
-	    $pdf->Text(105,120,'TOTAL ASIGNADO: '.$cantidad,0,'C', 0);
-      $SOBRANTE=$_SESSION[datorowtotal]-$cantidad;
-      $pdf->Text(105,140,'VERIFICAR SOBRANTE DE: '.$SOBRANTE.' EJEMPLARES',0,'C', 0);
-      
-    
+$yBase = $pdf->GetY() + 6;
+$filas = [
+    ['Total recibido:', (string)$totalIngreso],
+    ['Total asignado:', (string)$totalAsignado],
+    ['Sobrante a verificar:', (string)$sobrante . ' ejemplares'],
+];
+foreach ($filas as $i => [$label, $valor]) {
+    $pdf->SetXY($cardX + 8, $yBase + $i * 8);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetTextColor(...$paleta['mutedC']);
+    $pdf->Cell(70, 6, pdf_text($label), 0, 0);
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->SetTextColor($sobrante !== 0 && $i === 2 ? $paleta['redC'][0] : $paleta['darkText'][0], $sobrante !== 0 && $i === 2 ? $paleta['redC'][1] : $paleta['darkText'][1], $sobrante !== 0 && $i === 2 ? $paleta['redC'][2] : $paleta['darkText'][2]);
+    $pdf->Cell($cardW - 78, 6, pdf_text($valor), 0, 1);
+}
 
-$pdf->Output();
-?>
+$pdf->Output('I', 'Asignaciones_' . $Relacion . '_' . $FechaAsignacion . '.pdf');

@@ -136,6 +136,30 @@ abstract class HdrPdfBase extends FPDF
         $this->aligns = $a;
     }
 
+    // $w/$lMargin/$rMargin son protected en FPDF — esto evita repetir la misma
+    // cuenta en cada documento que arma su layout fuera de la clase.
+    public function contentWidth(): float
+    {
+        return $this->w - $this->lMargin - $this->rMargin;
+    }
+
+    public function pageWidth(): float
+    {
+        return $this->w;
+    }
+
+    public function leftMargin(): float
+    {
+        return $this->lMargin;
+    }
+
+    // Vuelve al margen izquierdo en la posición Y actual — reemplaza el patrón
+    // repetido SetX($pdf->lMargin), que no compila porque lMargin es protected.
+    public function resetX(): void
+    {
+        $this->SetX($this->lMargin);
+    }
+
     // Tarjeta con esquinas redondeadas (idéntica a la de factura_pdf.php).
     public function RoundedRect($x, $y, $w, $h, $r, $style = ''): void
     {
