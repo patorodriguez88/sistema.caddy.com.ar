@@ -30,10 +30,12 @@ if (isset($_POST['VerEmpleado'])) {
 
     // $SQL=$mysqli->query("SELECT * FROM `Empleados` WHERE id='".$_POST['id']."'");
     // $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD FROM `Empleados` INNER JOIN usuarios ON Empleados.Usuario=usuarios.id WHERE Empleados.id='" . $_POST['id'] . "'");
-    $SQL = $mysqli->query("SELECT 
+    $SQL = $mysqli->query("SELECT
     Empleados.*,
     usuarios.Usuario,
     usuarios.PASSWORD,
+    usuarios.Mail,
+    usuarios.NIVEL,
     usuarios.gid_asana,
     usuarios.gid_hubspot
       FROM Empleados
@@ -78,15 +80,59 @@ if (isset($_POST['ModificarEmpleado'])) {
         $FechaLicencia = $dateOrNull($_POST['licencia'] ?? '');  // ojo: vos mandás "lic" desde JS
 
         // Licencia/Grupo Sanguineo solo son obligatorios para Chofer/Reparto (Nivel 3).
-        // Para Administracion/Operaciones/SuperAdministrador no aplican.
+        // Para Administracion/Operaciones/SuperAdministrador no aplican. De paso traigo
+        // el id de usuarios ya, para no repetir el JOIN mas abajo.
         $sqlNivel = $mysqli->prepare(
-            "SELECT u.NIVEL FROM Empleados e INNER JOIN usuarios u ON e.Usuario = u.id WHERE e.id = ? LIMIT 1"
+            "SELECT u.id AS idUsuario, u.NIVEL FROM Empleados e INNER JOIN usuarios u ON e.Usuario = u.id WHERE e.id = ? LIMIT 1"
         );
         $sqlNivel->bind_param("i", $idExterno);
         $sqlNivel->execute();
         $filaNivel = $sqlNivel->get_result()->fetch_assoc();
         $sqlNivel->close();
         $esChofer = !$filaNivel || intval($filaNivel['NIVEL']) === 3;
+        $idUsuario = (int)($filaNivel['idUsuario'] ?? 0);
+
+        // El mail es tambien el Usuario de login para cuentas de sistema, asi que
+        // cambiarlo requiere las mismas validaciones que en el alta. Solo un
+        // SuperAdministrador puede tocarlo (mismo criterio que crear cuentas de sistema).
+        $mailNuevo = trim((string)($_POST['mail'] ?? ''));
+        $usuarioNuevo = null;
+
+        if (!$esChofer && $idUsuario > 0 && $mailNuevo !== '') {
+            $actorNivel = intval($_SESSION['Nivel'] ?? 0);
+            if ($actorNivel !== 1) {
+                echo json_encode([
+                    'success' => 0,
+                    'field'   => 'mail',
+                    'message' => 'Solo un SuperAdministrador puede modificar el mail de una cuenta de sistema.'
+                ]);
+                exit;
+            }
+
+            if (!filter_var($mailNuevo, FILTER_VALIDATE_EMAIL)) {
+                echo json_encode(['success' => 0, 'field' => 'mail', 'message' => 'El mail no es válido.']);
+                exit;
+            }
+
+            if (strlen($mailNuevo) > 50) {
+                echo json_encode(['success' => 0, 'field' => 'mail', 'message' => 'El mail es demasiado largo (máximo 50 caracteres).']);
+                exit;
+            }
+
+            $stmtDup = $mysqli->prepare("SELECT id FROM usuarios WHERE LOWER(Usuario) = LOWER(?) AND id <> ? LIMIT 1");
+            $stmtDup->bind_param("si", $mailNuevo, $idUsuario);
+            $stmtDup->execute();
+            $existente = $stmtDup->get_result()->fetch_assoc();
+            $stmtDup->close();
+
+            if ($existente) {
+                echo json_encode(['success' => 0, 'field' => 'mail', 'message' => 'Ya existe un usuario con ese mail.']);
+                exit;
+            }
+
+            // Usuario (login) queda igual al mail, como en el alta.
+            $usuarioNuevo = $mailNuevo;
+        }
 
         // ⛔ Validaciones obligatorias
         if (!$FechaNacimiento) {
@@ -159,20 +205,7 @@ if (isset($_POST['ModificarEmpleado'])) {
         }
         $stmt->close();
 
-        // 2) Buscar el usuario asociado (Empleados.Usuario)
-        $sqlUsrId = "SELECT Usuario FROM Empleados WHERE id = ? LIMIT 1";
-        $stmt2 = $mysqli->prepare($sqlUsrId);
-        if (!$stmt2) throw new RuntimeException("Prepare Usuario failed: " . $mysqli->error);
-
-        $stmt2->bind_param("i", $idExterno);
-        $stmt2->execute();
-        $res = $stmt2->get_result();
-        $row = $res->fetch_assoc();
-        $stmt2->close();
-
-        $idUsuario = (int)($row['Usuario'] ?? 0);
-
-        // 3) UPDATE usuarios.gid_asana / gid_hubspot
+        // 2) UPDATE usuarios.gid_asana / gid_hubspot (y Mail/Usuario si corresponde)
         // Normalizo: si viene '' => NULL
         $asanaGid   = $_POST['asana_gid']   ?? 0;
         $hubspotGid = $_POST['hubspot_gid'] ?? 0;
@@ -183,11 +216,17 @@ if (isset($_POST['ModificarEmpleado'])) {
 
         // Actualizo
         if ($idUsuario > 0) {
-            $sqlUsr = "UPDATE usuarios SET gid_asana = ?, gid_hubspot = ? WHERE id = ? LIMIT 1";
-            $stmt3 = $mysqli->prepare($sqlUsr);
-            if (!$stmt3) throw new RuntimeException("Prepare usuarios failed: " . $mysqli->error);
-
-            $stmt3->bind_param("ssi", $asanaGid, $hubspotGid, $idUsuario);
+            if ($usuarioNuevo !== null) {
+                $sqlUsr = "UPDATE usuarios SET gid_asana = ?, gid_hubspot = ?, Mail = ?, Usuario = ? WHERE id = ? LIMIT 1";
+                $stmt3 = $mysqli->prepare($sqlUsr);
+                if (!$stmt3) throw new RuntimeException("Prepare usuarios failed: " . $mysqli->error);
+                $stmt3->bind_param("ssssi", $asanaGid, $hubspotGid, $mailNuevo, $usuarioNuevo, $idUsuario);
+            } else {
+                $sqlUsr = "UPDATE usuarios SET gid_asana = ?, gid_hubspot = ? WHERE id = ? LIMIT 1";
+                $stmt3 = $mysqli->prepare($sqlUsr);
+                if (!$stmt3) throw new RuntimeException("Prepare usuarios failed: " . $mysqli->error);
+                $stmt3->bind_param("ssi", $asanaGid, $hubspotGid, $idUsuario);
+            }
 
             if (!$stmt3->execute()) {
                 throw new RuntimeException("Execute usuarios failed: " . $stmt3->error);
@@ -406,17 +445,22 @@ if (isset($_POST['Agregar_empleado'])) {
         ];
         $puesto = $puestoPorNivel[$nivel] ?? 'Transportista';
 
+        // Las cuentas de sistema arrancan Pendiente (Inactivo=1) hasta que la persona
+        // entra por primera vez con la contraseña temporal — recién ahí conect.php la
+        // pasa a Activo. Choferes siguen activos de entrada, como siempre.
+        $inactivoInicial = $esUsuarioSistema ? '1' : '0';
+
         $sqlEmp = "INSERT INTO Empleados
             (NombreCompleto, Domicilio, Localidad, Provincia, CodigoPostal, Telefono, FechaNacimiento, FechaIngreso, Dni, VencimientoLicencia, Puesto, Observaciones, CuentaAnticipos, GrupoSanguineo, TelefonoEmergencia, Inactivo, Aliados, Usuario, Alergico, driver_id)
             VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '112500', ?, ?, '0', '0', ?, ?, ?)";
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '112500', ?, ?, ?, '0', ?, ?, ?)";
 
         $stmtE = $mysqli->prepare($sqlEmp);
         if (!$stmtE) throw new Exception("Prepare empleados failed: " . $mysqli->error);
 
         // s = string, i = int; para fechas uso string o null (MySQLi lo manda bien si el campo acepta NULL)
         $stmtE->bind_param(
-            "ssssssssssssssiis",
+            "sssssssssssssssiis",
             $nombre,
             $domicilio,
             $city,
@@ -431,6 +475,7 @@ if (isset($_POST['Agregar_empleado'])) {
             $obs,
             $gruposanguineo,
             $phone_emergency,
+            $inactivoInicial,
             $id_usuario,
             $alergico,
             $driver_id

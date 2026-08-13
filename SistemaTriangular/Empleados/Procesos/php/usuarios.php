@@ -286,6 +286,10 @@ function reenviarAccesoUsuario($mysqli)
     $stmt->execute();
     $stmt->close();
 
+    // Nueva contraseña temporal = nuevo ciclo de "primer ingreso": vuelve a Pendiente
+    // hasta que la persona entre de nuevo (conect.php la reactiva ahí).
+    $mysqli->query("UPDATE Empleados SET Inactivo = 1 WHERE Usuario = " . intval($id) . " LIMIT 1");
+
     require_once __DIR__ . '/../../../Funciones/php/notificar_acceso.php';
     $resultado = notificarAccesoSistema($mysqli, $id, $mail, $usuario['Nombre'], $usuario['Usuario'], $passwordTemporalPlano);
 

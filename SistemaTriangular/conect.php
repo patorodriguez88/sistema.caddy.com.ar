@@ -147,6 +147,10 @@ if ($fila && $passwordOk) {
     // mail de acceso y usó las credenciales, no solo que el SMTP lo aceptó).
     $mysqli->query("UPDATE usuarios SET UltimoAcceso = NOW() WHERE id = " . intval($fila['id']) . " LIMIT 1");
 
+    // El empleado quedaba "Pendiente" (Inactivo=1) hasta entrar por primera vez con la
+    // contraseña temporal — recién ahora, con el login confirmado, pasa a Activo.
+    $mysqli->query("UPDATE Empleados SET Inactivo = 0 WHERE Usuario = " . intval($fila['id']) . " AND Inactivo = 1 LIMIT 1");
+
     // Log ingreso
     // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 

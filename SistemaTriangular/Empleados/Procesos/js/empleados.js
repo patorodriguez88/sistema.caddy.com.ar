@@ -250,6 +250,7 @@ $("#button_agregar_empleado").on("click", function () {
   $("#alerta").hide();
   $("#button_guardar").hide();
   $("#crear_empleado").show();
+  $("#ext_nivel").prop("disabled", false);
   const modalEl = document.getElementById("add-new-modal");
   const modal = new bootstrap.Modal(modalEl);
   modal.show();
@@ -309,6 +310,11 @@ function modificar(a) {
       $("#ext_cp").val(jsonData.data[0].CodigoPostal);
       $("#ext_telefono").val(jsonData.data[0].Telefono);
 
+      // El Nivel no se puede cambiar desde acá (es otra decisión aparte), pero lo
+      // dejamos seleccionado para que se vean/oculten bien los campos correctos.
+      $("#ext_nivel").val(jsonData.data[0].NIVEL).prop("disabled", true).trigger("change");
+      $("#ext_mail").val(jsonData.data[0].Mail);
+
       const gidAsana = jsonData.data?.[0]?.gid_asana ?? 0;
       const idHub = jsonData.data?.[0]?.gid_hubspot ?? 0;
 
@@ -334,6 +340,7 @@ $("#button_guardar").click(function () {
   var obs = $("#ext_obs").val();
   var codigopostal = $("#ext_cp").val();
   var telefono = $("#ext_telefono").val();
+  var mail = $("#ext_mail").val();
   var asana_gid = $("#empleado_id_asana").val();
   var hubspot_gid = $("#empleado_id_hubspot").val();
 
@@ -357,6 +364,7 @@ $("#button_guardar").click(function () {
       codigopostal,
       obs,
       telefono,
+      mail,
       asana_gid,
       hubspot_gid,
     },
