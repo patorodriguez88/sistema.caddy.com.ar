@@ -148,6 +148,22 @@ abstract class HdrPdfBase extends FPDF
         return $this->w;
     }
 
+    // Escala un array de anchos "a ojo" (en mm, pensados a mano por columna)
+    // para que sumen exactamente el ancho de contenido disponible. Los anchos
+    // fijos de cada tabla se definieron sin volver a sumarlos contra el ancho
+    // real de la página (a veces daban varios mm de más), y una tabla más
+    // ancha que el margen se corta o queda desalineada con el resto del
+    // documento — con esto alcanza con mantener las proporciones relativas.
+    public function anchosEscalados(array $pesos): array
+    {
+        $suma = array_sum($pesos);
+        if ($suma <= 0) {
+            return $pesos;
+        }
+        $disponible = $this->contentWidth();
+        return array_map(static fn($p) => $p / $suma * $disponible, $pesos);
+    }
+
     public function leftMargin(): float
     {
         return $this->lMargin;

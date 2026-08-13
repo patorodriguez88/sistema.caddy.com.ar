@@ -39,19 +39,22 @@ class AsignacionesPDF extends HdrPdfBase
     public function drawTableHeader(): void
     {
         $p = hdrPaleta();
-        $this->SetWidths(ASIG_WIDTHS);
+        $anchos = $this->anchosEscalados(ASIG_WIDTHS);
+        $this->SetWidths($anchos);
         $this->SetAligns(ASIG_ALIGNS);
         $this->SetFont('Arial', 'B', 7.5);
         $this->SetFillColor(...$p['primaryC']);
         $this->SetTextColor(...$p['whiteC']);
         $this->SetDrawColor(...$p['primaryC']);
         foreach (ASIG_COLS as $i => $label) {
-            $this->Cell(ASIG_WIDTHS[$i], 7, pdf_text($label), 0, 0, ASIG_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
+            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, ASIG_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
         }
         $this->Ln();
         $this->SetTextColor(...$p['darkText']);
     }
 
+    // Usa $this->widths (ya escalado por drawTableHeader) para que el total
+    // quede exactamente alineado con las columnas de la tabla de arriba.
     public function subtotalRow(string $recorrido, int $cantidad): void
     {
         $p = hdrPaleta();
@@ -60,10 +63,10 @@ class AsignacionesPDF extends HdrPdfBase
         $this->SetFillColor(...$p['grayBg']);
         $this->SetDrawColor(...$p['borderC']);
         $this->SetTextColor(...$p['darkText']);
-        $w1 = ASIG_WIDTHS[0] + ASIG_WIDTHS[1] + ASIG_WIDTHS[2] + ASIG_WIDTHS[3] + ASIG_WIDTHS[4];
+        $w1 = $this->widths[0] + $this->widths[1] + $this->widths[2] + $this->widths[3] + $this->widths[4];
         $this->Cell($w1, 6.5, pdf_text('TOTAL RECORRIDO ' . $recorrido), 1, 0, 'R', true);
-        $this->Cell(ASIG_WIDTHS[5], 6.5, '', 1, 0, 'C', true);
-        $this->Cell(ASIG_WIDTHS[6], 6.5, (string)$cantidad, 1, 1, 'C', true);
+        $this->Cell($this->widths[5], 6.5, '', 1, 0, 'C', true);
+        $this->Cell($this->widths[6], 6.5, (string)$cantidad, 1, 1, 'C', true);
         $this->Ln(4);
     }
 

@@ -216,7 +216,7 @@ $pdf->filaCampos($colW, [
 $pdf->Ln(4);
 
 $pdf->sectionTitle('Servicios (' . count($servicios) . ')');
-$pdf->SetWidths([12, 70, 76, 16, 32]);
+$pdf->SetWidths($pdf->anchosEscalados([12, 70, 76, 16, 32]));
 $pdf->SetAligns(['C', 'L', 'L', 'C', 'C']);
 $pdf->SetFont('Arial', 'B', 7.5);
 $pdf->SetFillColor(...$paleta['primaryC']);

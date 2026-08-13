@@ -62,14 +62,15 @@ class HojaDeRutaPDF extends HdrPdfBase
     public function drawTableHeader(): void
     {
         $p = hdrPaleta();
-        $this->SetWidths(HDR_WIDTHS);
+        $anchos = $this->anchosEscalados(HDR_WIDTHS);
+        $this->SetWidths($anchos);
         $this->SetAligns(HDR_ALIGNS);
         $this->SetFont('Arial', 'B', 7.5);
         $this->SetFillColor(...$p['primaryC']);
         $this->SetTextColor(...$p['whiteC']);
         $this->SetDrawColor(...$p['primaryC']);
         foreach (HDR_COLS as $i => $label) {
-            $this->Cell(HDR_WIDTHS[$i], 7, pdf_text($label), 0, 0, HDR_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
+            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, HDR_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
         }
         $this->Ln();
         $this->SetTextColor(...$p['darkText']);

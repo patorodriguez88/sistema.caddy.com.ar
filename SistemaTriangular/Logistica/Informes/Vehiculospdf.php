@@ -21,14 +21,15 @@ class VehiculosPDF extends HdrPdfBase
     public function drawTableHeader(): void
     {
         $p = hdrPaleta();
-        $this->SetWidths(VEH_WIDTHS);
+        $anchos = $this->anchosEscalados(VEH_WIDTHS);
+        $this->SetWidths($anchos);
         $this->SetAligns(VEH_ALIGNS);
         $this->SetFont('Arial', 'B', 8);
         $this->SetFillColor(...$p['primaryC']);
         $this->SetTextColor(...$p['whiteC']);
         $this->SetDrawColor(...$p['primaryC']);
         foreach (VEH_COLS as $i => $label) {
-            $this->Cell(VEH_WIDTHS[$i], 7, pdf_text($label), 0, 0, VEH_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
+            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, VEH_ALIGNS[$i] === 'C' ? 'C' : 'L', true);
         }
         $this->Ln();
         $this->SetTextColor(...$p['darkText']);
