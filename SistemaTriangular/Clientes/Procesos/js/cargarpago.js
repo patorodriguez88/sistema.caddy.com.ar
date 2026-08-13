@@ -25,9 +25,15 @@ function resetFormularioPago() {
   $("#fecha_transferencia_mp").val("");
   $("#fecha_cheque").val("");
 
+  $("#efectivo").hide();
+  $("#transferencia").hide();
+  $("#cheques").hide();
+  $("#mercadopago").hide();
   $("#mercadopago_api").hide();
   $("#status_mp").html("");
   $("#confirmarpago_botton").prop("disabled", true);
+
+  $("#formadepago").val("").trigger("change");
 }
 
 function noComa(e) {
@@ -78,20 +84,37 @@ $("#search_mp").click(function () {
       },
       url: "Procesos/php/buscar_pago_mp.php",
       type: "post",
+      beforeSend: function () {
+        $("#search_mp").prop("disabled", true);
+      },
+      complete: function () {
+        $("#search_mp").prop("disabled", false);
+      },
       success: function (respuesta) {
-        var jsonData = JSON.parse(respuesta);
+        var jsonData;
+        try {
+          jsonData = JSON.parse(respuesta);
+        } catch (e) {
+          alerta("error", "Error!", "Respuesta inválida del servidor.");
+          return;
+        }
 
         if (jsonData.success === undefined) {
-          if (jsonData.data.collector_id != undefined) {
+          if (jsonData.data && jsonData.data.collector_id != undefined) {
             $("#mercadopago_api").css("display", "flex");
 
-            $("#fee_transferencia_mp").val(jsonData.data.fee_details[0].amount);
+            var fee =
+              jsonData.data.fee_details && jsonData.data.fee_details[0]
+                ? jsonData.data.fee_details[0].amount
+                : 0;
+
+            $("#fee_transferencia_mp").val(fee);
             $("#numero_transferencia_mp").val(jsonData.data.collector_id);
             $("#importe_transferencia_mp").val(
               jsonData.data.transaction_amount,
             );
 
-            var fecha = jsonData.data.date_approved;
+            var fecha = jsonData.data.date_approved || "";
             let fecha_transferencia = fecha.substr(0, 10);
 
             $("#fecha_transferencia_mp").val(fecha_transferencia);
@@ -99,8 +122,18 @@ $("#search_mp").click(function () {
             $("#descripcion_transferencia_mp").val(jsonData.data.description);
             $("#confirmarpago_botton").prop("disabled", false);
           } else {
-            alerta("error", "Error!", jsonData.data.message);
+            var mensaje =
+              (jsonData.data && jsonData.data.message) ||
+              "No se encontró la operación en Mercado Pago.";
+            alerta("error", "Error!", mensaje);
           }
+        }
+      },
+      error: function (xhr) {
+        if (xhr.status === 401) {
+          alerta("error", "Sesión vencida", "Volvé a iniciar sesión e intentá de nuevo.");
+        } else {
+          alerta("error", "Error del servidor", xhr.responseText || "No se pudo consultar Mercado Pago.");
         }
       },
     });

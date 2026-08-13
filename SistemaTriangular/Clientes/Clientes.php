@@ -22,6 +22,7 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="../assets/css/dripicons.min.css" rel="stylesheet" type="text/css" />
 </head>
 
 <body>

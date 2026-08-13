@@ -1673,16 +1673,11 @@ $(document).on("change", 'select[name="formadepago"]', function (e) {
 
     document.getElementById("mercadopago").style.display = "flex";
   }
-  if (this.value == "000111200") {
-    $("#mercadopago").hide();
-    $("#mercadopago_api").hide();
-    $("#efectivo").hide();
-    $("#cheques").hide();
-    document.getElementById("transferencia").style.display = "flex";
-    $("#confirmarpago_botton").prop("disabled", false);
-  }
-
-  if (this.value == "000111210") {
+  if (
+    this.value == "000111200" ||
+    this.value == "000111210" ||
+    this.value == "000111600"
+  ) {
     $("#mercadopago").hide();
     $("#mercadopago_api").hide();
     $("#efectivo").hide();
@@ -3824,7 +3819,11 @@ $("#cargarpago_botton").click(function () {
     url: "../Funciones/php/tablas.php",
 
     success: function (response) {
-      $(".selector-formadepago select").html(response).fadeIn();
+      $(".selector-formadepago select")
+        .html(response)
+        .val("")
+        .trigger("change")
+        .fadeIn();
     },
   });
 });

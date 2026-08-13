@@ -1,5 +1,4 @@
 <?
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 
 if($_POST[CargarPago_mp]==1){
