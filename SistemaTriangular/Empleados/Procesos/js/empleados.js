@@ -1,10 +1,10 @@
 var filtro = "";
 
-// Muestra el aviso de "mail obligatorio" cuando se elige un nivel de sistema (1, 2 o 5),
+// Muestra el aviso de "mail obligatorio" cuando se elige un nivel de sistema (1, 2 o 7),
 // y oculta los campos que solo aplican a Chofer/Reparto (nivel 3).
 $(document).on("change", "#ext_nivel", function () {
   var nivel = $(this).val();
-  var esUsuarioSistema = nivel === "1" || nivel === "2" || nivel === "5";
+  var esUsuarioSistema = nivel === "1" || nivel === "2" || nivel === "7";
   $("#ext_mail_hint").toggleClass("d-none", !esUsuarioSistema);
 
   var esChofer = nivel === "3";
@@ -208,12 +208,6 @@ var datatable = $("#empleados").DataTable({
           ? row.VencimientoLicencia.split("-").reverse().join(".")
           : "-";
         return `<td class="table-action col-xs-3"><b> ${FechaVencimientoLicencia}</b></td>`;
-      },
-    },
-    {
-      data: "Observaciones",
-      render: function (data, type, row) {
-        return `<td><a style="font-size:8px">${row.Observaciones} </a></td>`;
       },
     },
     {
@@ -478,7 +472,7 @@ $("#crear_empleado").on("click", function (e) {
   };
 
   var esUsuarioSistema =
-    payload.nivel === "1" || payload.nivel === "2" || payload.nivel === "5";
+    payload.nivel === "1" || payload.nivel === "2" || payload.nivel === "7";
   if (esUsuarioSistema && !payload.mail) {
     Swal.fire({
       icon: "warning",

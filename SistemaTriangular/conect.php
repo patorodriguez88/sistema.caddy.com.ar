@@ -84,7 +84,7 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
 
     // La comparación de contraseña se hace en PHP (no en el WHERE) porque las cuentas
     // migradas a password_hash no se pueden comparar directo en SQL.
-    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND Activo='1' AND NIVEL IN(1,2,5)";
+    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND Activo='1' AND NIVEL IN(1,2,7)";
 
     $rec = $mysqli->query($sql);
 
@@ -143,6 +143,10 @@ if ($fila && $passwordOk) {
 
     $_SESSION['NumeroRepo'] = '0000'; // ahora sí bien
 
+    // Confirma que el usuario efectivamente entró (sirve para saber si le llegó el
+    // mail de acceso y usó las credenciales, no solo que el SMTP lo aceptó).
+    $mysqli->query("UPDATE usuarios SET UltimoAcceso = NOW() WHERE id = " . intval($fila['id']) . " LIMIT 1");
+
     // Log ingreso
     // $mysqli->query("INSERT INTO `Ingresos`(`idUsuario`, `Nombre`, `Fecha`, `Hora`, `ip`,`UserAgent`) VALUES ('{$fila['id']}','{$fila['Usuario']}','{$Fecha}','{$Hora}','{$ipCliente}','{$userAgent}')");
 
@@ -170,6 +174,10 @@ if ($fila && $passwordOk) {
             exit;
         case 2:
             $_SESSION['Perfil'] = "Empleado";
+            header("location:Inicio/Cpanel.php");
+            exit;
+        case 7:
+            $_SESSION['Perfil'] = "Operaciones";
             header("location:Inicio/Cpanel.php");
             exit;
         case 3:

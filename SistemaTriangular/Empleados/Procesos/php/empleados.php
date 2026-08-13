@@ -256,18 +256,20 @@ if (isset($_POST['Agregar_empleado'])) {
 
     // Nivel de acceso del usuario que se crea junto con el empleado:
     // 3 = Chofer/Reparto (comportamiento de siempre, cuenta de la app, usuario generado).
-    // 1, 2 o 5 = SuperAdministrador/Administracion/Operaciones (cuenta real para este
+    // 1, 2 o 7 = SuperAdministrador/Administracion/Operaciones (cuenta real para este
     // sistema: el Usuario de login pasa a ser directamente el mail).
     // OJO: 4 y 6 ya están tomados por otros tipos de cuenta (portal de clientes y un
-    // proveedor externo) — no reusar esos números acá.
+    // proveedor externo). Y OJO especialmente con el 5: en Caddy_produccion (el sistema
+    // viejo, misma base de datos) Nivel==5 está hardcodeado como acceso Administrador
+    // completo (ver PrimerPaso.php ahí) — nunca usar 5 para nada nuevo acá.
     $nivel = isset($_POST['nivel']) ? (int)$_POST['nivel'] : 3;
-    if (!in_array($nivel, [1, 2, 3, 5], true)) $nivel = 3;
+    if (!in_array($nivel, [1, 2, 3, 7], true)) $nivel = 3;
     $mail = $post('mail');
-    $esUsuarioSistema = in_array($nivel, [1, 2, 5], true);
+    $esUsuarioSistema = in_array($nivel, [1, 2, 7], true);
     $passwordTemporalPlano = null;
 
     // Jerarquía: solo un SuperAdministrador (Nivel 1) puede crear cuentas de sistema
-    // (Nivel 1, 2 o 5). Cualquier otro actor solo puede dar de alta cuentas Chofer/Reparto.
+    // (Nivel 1, 2 o 7). Cualquier otro actor solo puede dar de alta cuentas Chofer/Reparto.
     // Se valida acá, no solo en el front, porque es lo único que de verdad lo impide.
     $actorNivel = intval($_SESSION['Nivel'] ?? 0);
     if ($esUsuarioSistema && $actorNivel !== 1) {
@@ -400,7 +402,7 @@ if (isset($_POST['Agregar_empleado'])) {
         $puestoPorNivel = [
             1 => 'SuperAdministrador',
             2 => 'Administracion',
-            5 => 'Operaciones',
+            7 => 'Operaciones',
         ];
         $puesto = $puestoPorNivel[$nivel] ?? 'Transportista';
 

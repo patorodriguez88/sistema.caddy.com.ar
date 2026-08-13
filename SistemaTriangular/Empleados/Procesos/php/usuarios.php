@@ -232,15 +232,15 @@ function asignarPermisoARol($mysqli)
 function listarUsuarios($mysqli)
 {
     $sql = "SELECT u.id, u.Nombre AS nombre, u.Apellido AS apellido, u.Usuario, u.NIVEL,
-                   u.NotificacionAccesoEnviada, u.NotificacionAccesoFecha,
+                   u.NotificacionAccesoEnviada, u.NotificacionAccesoFecha, u.UltimoAcceso,
                    r.id AS rol_id, r.nombre AS rol
             FROM usuarios u
             LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
-            WHERE u.Activo = 1 AND u.NIVEL IN (1, 2, 5)
+            WHERE u.Activo = 1 AND u.NIVEL IN (1, 2, 7)
             ORDER BY u.NIVEL, u.Nombre, u.Apellido";
     $res = $mysqli->query($sql);
     $usuarios = [];
-    $nombresNivel = [1 => 'SuperAdministrador', 2 => 'Administracion', 5 => 'Operaciones'];
+    $nombresNivel = [1 => 'SuperAdministrador', 2 => 'Administracion', 7 => 'Operaciones'];
     while ($row = $res->fetch_assoc()) {
         $row['nivel_nombre'] = $nombresNivel[intval($row['NIVEL'])] ?? 'Administracion';
         $usuarios[] = $row;
@@ -266,7 +266,7 @@ function reenviarAccesoUsuario($mysqli)
         return;
     }
 
-    if (!in_array(intval($usuario['NIVEL']), [1, 2, 5], true)) {
+    if (!in_array(intval($usuario['NIVEL']), [1, 2, 7], true)) {
         echo json_encode(['success' => false, 'error' => 'Este usuario no es una cuenta de sistema.']);
         return;
     }

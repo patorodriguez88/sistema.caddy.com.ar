@@ -267,6 +267,12 @@ function listarUsuarios() {
           ? `<span class="badge bg-success">Enviada</span>`
           : `<span class="badge bg-warning text-dark">Pendiente</span>`;
 
+      // Se confirma que la persona entró de verdad (no solo que el mail se mandó)
+      // cuando UltimoAcceso queda seteado en el primer login exitoso.
+      const accesoHtml = user.UltimoAcceso
+        ? `<span class="badge bg-success" title="${user.UltimoAcceso}">Confirmado</span><br><small class="text-muted">${user.UltimoAcceso.substring(0, 10).split("-").reverse().join("/")}</small>`
+        : `<span class="badge bg-warning text-dark">Pendiente</span>`;
+
       tabla.append(
         `<tr>
           <td>${user.Usuario}</td>
@@ -274,6 +280,7 @@ function listarUsuarios() {
           <td>${user.nivel_nombre}</td>
           <td>${rolHtml}</td>
           <td>${notifHtml}</td>
+          <td>${accesoHtml}</td>
           <td>
             <button type="button" class="btn btn-caddy btn-sm btn-reenviar-acceso" data-id="${user.id}" data-mail="${user.Usuario}">
               Reenviar acceso

@@ -326,7 +326,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 <select id="ext_nivel" class="form-select">
                                                     <option value="3" selected>Chofer / Reparto (app)</option>
                                                     <?php if ($actorEsSuperAdmin): ?>
-                                                    <option value="5">Operaciones (sistema)</option>
+                                                    <option value="7">Operaciones (sistema)</option>
                                                     <option value="2">Administracion (sistema)</option>
                                                     <option value="1">SuperAdministrador (sistema)</option>
                                                     <?php endif; ?>
@@ -421,7 +421,6 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                     <th>Telefono</th>
                                                     <th>Alta</th>
                                                     <th>Venc.Licencia</th>
-                                                    <th>Observaciones</th>
                                                     <th>Estado</th>
                                                     <th>Accion</th>
                                                 </tr>
