@@ -84,7 +84,7 @@ if (isset($_POST['user']) && isset($_POST['password'])) {
 
     // La comparación de contraseña se hace en PHP (no en el WHERE) porque las cuentas
     // migradas a password_hash no se pueden comparar directo en SQL.
-    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND Activo='1' AND NIVEL IN(1,2)";
+    $sql = "SELECT * FROM usuarios WHERE Usuario = '$user' AND Activo='1' AND NIVEL IN(1,2,5)";
 
     $rec = $mysqli->query($sql);
 

@@ -1,9 +1,15 @@
 var filtro = "";
 
-// Muestra el aviso de "mail obligatorio" solo cuando se elige un nivel de sistema (1 o 2)
+// Muestra el aviso de "mail obligatorio" cuando se elige un nivel de sistema (1, 2 o 5),
+// y oculta los campos que solo aplican a Chofer/Reparto (nivel 3).
 $(document).on("change", "#ext_nivel", function () {
-  var esUsuarioSistema = $(this).val() === "1" || $(this).val() === "2";
+  var nivel = $(this).val();
+  var esUsuarioSistema = nivel === "1" || nivel === "2" || nivel === "5";
   $("#ext_mail_hint").toggleClass("d-none", !esUsuarioSistema);
+
+  var esChofer = nivel === "3";
+  $(".campo-chofer").toggleClass("d-none", !esChofer);
+  $("#ext_gruposanguineo, #ext_licencia").prop("required", esChofer);
 });
 // function cargarUsuariosAsana() {
 //   $.ajax({
@@ -117,6 +123,7 @@ function actualizarTabla() {
 
 $("#add-new-modal_cancel").click(function () {
   $("#new_externo")[0].reset();
+  $("#ext_nivel").trigger("change");
 });
 
 $(document).on("click", "#imprimir", function () {
@@ -468,12 +475,13 @@ $("#crear_empleado").on("click", function (e) {
     mail: $("#ext_mail").val(),
   };
 
-  var esUsuarioSistema = payload.nivel === "1" || payload.nivel === "2";
+  var esUsuarioSistema =
+    payload.nivel === "1" || payload.nivel === "2" || payload.nivel === "5";
   if (esUsuarioSistema && !payload.mail) {
     Swal.fire({
       icon: "warning",
       title: "Falta el mail",
-      text: "Para crear un usuario de SuperAdministrador/Administracion necesitás cargar un mail (ahí se manda la contraseña temporal).",
+      text: "Para crear un usuario de SuperAdministrador/Administracion/Operaciones necesitás cargar un mail (ese mail va a ser su usuario de acceso, y ahí se manda la contraseña temporal).",
     });
     $("#ext_mail").focus();
     return;
@@ -518,9 +526,21 @@ $("#crear_empleado").on("click", function (e) {
             modal.hide();
           }
 
+          // El backdrop de Bootstrap a veces queda pegado (pantalla oscurecida/borrosa
+          // que no responde) cuando el modal se cierra justo después de un SweetAlert
+          // superpuesto — se fuerza la limpieza para no depender de esa carrera.
+          $(".modal-backdrop").remove();
+          $("body").removeClass("modal-open").css("padding-right", "");
+
           // Reset form
           $("#new_externo")[0].reset();
+          $("#ext_nivel").trigger("change");
           form.classList.remove("was-validated");
+
+          // Recargar la tabla para que aparezca el empleado recién creado
+          if ($.fn.DataTable.isDataTable("#empleados")) {
+            $("#empleados").DataTable().ajax.reload(null, false);
+          }
         });
       } else {
         Swal.fire({

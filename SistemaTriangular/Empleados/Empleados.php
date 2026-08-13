@@ -271,7 +271,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-3 campo-chofer">
                                             <div class="mb-3">
                                                 <label for="ext_gruposanguineo" class="form-label">Grupo Sanguineo</label>
                                                 <input type="text" class="form-control" id="ext_gruposanguineo" placeholder="Grupo Sanguineo" required>
@@ -306,7 +306,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 <input type="date" class="form-control" id="ext_ing" required>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-4 campo-chofer">
                                             <div class="form-group">
                                                 <label for="task-title" class="form-label">Vencimiento de Licencia</label>
                                                 <input type="date" class="form-control" id="ext_licencia" required>
@@ -330,12 +330,13 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 <select id="ext_nivel" class="form-select">
                                                     <option value="3" selected>Chofer / Reparto (app)</option>
                                                     <?php if ($actorEsSuperAdmin): ?>
+                                                    <option value="5">Operaciones (sistema)</option>
                                                     <option value="2">Administracion (sistema)</option>
                                                     <option value="1">SuperAdministrador (sistema)</option>
                                                     <?php endif; ?>
                                                 </select>
                                                 <?php if (!$actorEsSuperAdmin): ?>
-                                                <div class="form-text">Crear usuarios de Administracion o SuperAdministrador requiere ser SuperAdministrador.</div>
+                                                <div class="form-text">Crear usuarios de Administracion, Operaciones o SuperAdministrador requiere ser SuperAdministrador.</div>
                                                 <?php endif; ?>
                                             </div>
                                         </div>

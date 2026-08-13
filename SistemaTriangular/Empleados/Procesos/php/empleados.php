@@ -244,16 +244,19 @@ if (isset($_POST['Agregar_empleado'])) {
     $driver_id = $_POST['driver_id'] ?? 0;
 
     // Nivel de acceso del usuario que se crea junto con el empleado:
-    // 3 = Chofer/Reparto (comportamiento de siempre, cuenta de la app).
-    // 1 o 2 = SuperAdministrador/Administracion (cuenta real para este sistema).
+    // 3 = Chofer/Reparto (comportamiento de siempre, cuenta de la app, usuario generado).
+    // 1, 2 o 5 = SuperAdministrador/Administracion/Operaciones (cuenta real para este
+    // sistema: el Usuario de login pasa a ser directamente el mail).
+    // OJO: 4 y 6 ya están tomados por otros tipos de cuenta (portal de clientes y un
+    // proveedor externo) — no reusar esos números acá.
     $nivel = isset($_POST['nivel']) ? (int)$_POST['nivel'] : 3;
-    if (!in_array($nivel, [1, 2, 3], true)) $nivel = 3;
+    if (!in_array($nivel, [1, 2, 3, 5], true)) $nivel = 3;
     $mail = $post('mail');
-    $esUsuarioSistema = in_array($nivel, [1, 2], true);
+    $esUsuarioSistema = in_array($nivel, [1, 2, 5], true);
     $passwordTemporalPlano = null;
 
     // Jerarquía: solo un SuperAdministrador (Nivel 1) puede crear cuentas de sistema
-    // (Nivel 1 o 2). Cualquier otro actor solo puede dar de alta cuentas Chofer/Reparto.
+    // (Nivel 1, 2 o 5). Cualquier otro actor solo puede dar de alta cuentas Chofer/Reparto.
     // Se valida acá, no solo en el front, porque es lo único que de verdad lo impide.
     $actorNivel = intval($_SESSION['Nivel'] ?? 0);
     if ($esUsuarioSistema && $actorNivel !== 1) {
@@ -261,19 +264,58 @@ if (isset($_POST['Agregar_empleado'])) {
         echo json_encode([
             'success' => 0,
             'field'   => 'nivel',
-            'error'   => 'Solo un SuperAdministrador puede crear usuarios de Administracion o SuperAdministrador.'
+            'error'   => 'Solo un SuperAdministrador puede crear usuarios de Administracion, Operaciones o SuperAdministrador.'
         ]);
         exit;
     }
 
-    if ($esUsuarioSistema && $mail === '') {
-        http_response_code(422);
-        echo json_encode([
-            'success' => 0,
-            'field'   => 'mail',
-            'error'   => 'El mail es obligatorio para crear un usuario del sistema (SuperAdministrador/Administracion).'
-        ]);
-        exit;
+    if ($esUsuarioSistema) {
+        if ($mail === '') {
+            http_response_code(422);
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'mail',
+                'error'   => 'El mail es obligatorio para crear un usuario del sistema (SuperAdministrador/Administracion/Operaciones).'
+            ]);
+            exit;
+        }
+
+        if (!filter_var($mail, FILTER_VALIDATE_EMAIL)) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'mail',
+                'error'   => 'El mail no es válido.'
+            ]);
+            exit;
+        }
+
+        if (strlen($mail) > 50) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'mail',
+                'error'   => 'El mail es demasiado largo (máximo 50 caracteres).'
+            ]);
+            exit;
+        }
+
+        // El mail va a ser el Usuario de login: no puede repetirse.
+        $stmtDup = $mysqli->prepare("SELECT id FROM usuarios WHERE LOWER(Usuario) = LOWER(?) LIMIT 1");
+        $stmtDup->bind_param("s", $mail);
+        $stmtDup->execute();
+        $existente = $stmtDup->get_result()->fetch_array(MYSQLI_ASSOC);
+        $stmtDup->close();
+
+        if ($existente) {
+            http_response_code(422);
+            echo json_encode([
+                'success' => 0,
+                'field'   => 'mail',
+                'error'   => 'Ya existe un usuario con ese mail.'
+            ]);
+            exit;
+        }
     }
 
     // Transacción para que Usuario + Empleado queden consistentes
@@ -342,17 +384,26 @@ if (isset($_POST['Agregar_empleado'])) {
         $id_usuario = $mysqli->insert_id;
 
         // 2) INSERT EMPLEADO
+        // Puesto según el nivel de acceso elegido — antes quedaba 'Transportista'
+        // hardcodeado para cualquier empleado, incluidos Administracion/Operaciones.
+        $puestoPorNivel = [
+            1 => 'SuperAdministrador',
+            2 => 'Administracion',
+            5 => 'Operaciones',
+        ];
+        $puesto = $puestoPorNivel[$nivel] ?? 'Transportista';
+
         $sqlEmp = "INSERT INTO Empleados
             (NombreCompleto, Domicilio, Localidad, Provincia, CodigoPostal, Telefono, FechaNacimiento, FechaIngreso, Dni, VencimientoLicencia, Puesto, Observaciones, CuentaAnticipos, GrupoSanguineo, TelefonoEmergencia, Inactivo, Aliados, Usuario, Alergico, driver_id)
             VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Transportista', ?, '112500', ?, ?, '0', '1', ?, ?, ?)";
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '112500', ?, ?, '0', '1', ?, ?, ?)";
 
         $stmtE = $mysqli->prepare($sqlEmp);
         if (!$stmtE) throw new Exception("Prepare empleados failed: " . $mysqli->error);
 
         // s = string, i = int; para fechas uso string o null (MySQLi lo manda bien si el campo acepta NULL)
         $stmtE->bind_param(
-            "sssssssssssssiis",
+            "ssssssssssssssiis",
             $nombre,
             $domicilio,
             $city,
@@ -363,6 +414,7 @@ if (isset($_POST['Agregar_empleado'])) {
             $ing,
             $dni,
             $lic,
+            $puesto,
             $obs,
             $gruposanguineo,
             $phone_emergency,
@@ -373,8 +425,9 @@ if (isset($_POST['Agregar_empleado'])) {
 
         if (!$stmtE->execute()) throw new Exception("Execute empleados failed: " . $stmtE->error);
 
-        // 3) UPDATE username final
-        $UsuarioFinal = strtok($nombre, " ") . "_" . $id_usuario;
+        // 3) UPDATE username final — para cuentas de sistema el usuario de login es el mail;
+        // para Chofer/Reparto se sigue generando (nombre_id), como siempre.
+        $UsuarioFinal = $esUsuarioSistema ? $mail : (strtok($nombre, " ") . "_" . $id_usuario);
 
         $stmtUp = $mysqli->prepare("UPDATE usuarios SET Usuario=? WHERE id=? LIMIT 1");
         if (!$stmtUp) throw new Exception("Prepare update usuarios failed: " . $mysqli->error);
