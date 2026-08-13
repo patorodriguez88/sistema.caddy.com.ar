@@ -77,6 +77,17 @@ if (isset($_POST['ModificarEmpleado'])) {
         $FechaIngreso = $dateOrNull($_POST['ing'] ?? '');
         $FechaLicencia = $dateOrNull($_POST['licencia'] ?? '');  // ojo: vos mandás "lic" desde JS
 
+        // Licencia/Grupo Sanguineo solo son obligatorios para Chofer/Reparto (Nivel 3).
+        // Para Administracion/Operaciones/SuperAdministrador no aplican.
+        $sqlNivel = $mysqli->prepare(
+            "SELECT u.NIVEL FROM Empleados e INNER JOIN usuarios u ON e.Usuario = u.id WHERE e.id = ? LIMIT 1"
+        );
+        $sqlNivel->bind_param("i", $idExterno);
+        $sqlNivel->execute();
+        $filaNivel = $sqlNivel->get_result()->fetch_assoc();
+        $sqlNivel->close();
+        $esChofer = !$filaNivel || intval($filaNivel['NIVEL']) === 3;
+
         // ⛔ Validaciones obligatorias
         if (!$FechaNacimiento) {
             echo json_encode([
@@ -96,7 +107,7 @@ if (isset($_POST['ModificarEmpleado'])) {
             exit;
         }
 
-        if (!$FechaLicencia) {
+        if ($esChofer && !$FechaLicencia) {
             echo json_encode([
                 'success' => 0,
                 'field'   => 'VencimientoLicencia',

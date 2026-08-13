@@ -253,7 +253,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
 
                                     </div>
                                     <div class="row g-3">
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <div class="mb-3">
                                                 <label for="ext_cp" class="form-label">Codigo Postal</label>
                                                 <input type="text" class="form-control" id="ext_cp" placeholder="Codigo Postal" required>
@@ -262,7 +262,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <div class="mb-3">
                                                 <label for="ext_telefono" class="form-label">Telefono</label>
                                                 <input type="text" class="form-control" id="ext_telefono" placeholder="Telefono" required>
@@ -271,17 +271,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 </div>
                                             </div>
                                         </div>
-                                        <div class="col-md-3 campo-chofer">
-                                            <div class="mb-3">
-                                                <label for="ext_gruposanguineo" class="form-label">Grupo Sanguineo</label>
-                                                <input type="text" class="form-control" id="ext_gruposanguineo" placeholder="Grupo Sanguineo" required>
-                                                <div class="invalid-feedback">
-                                                    Por favor, ingrese un grupo sanguineo.
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div class="col-md-3">
+                                        <div class="col-md-4">
                                             <div class="mb-3">
                                                 <label for="ext_phone_emergency" class="form-label">Telefono Emergencia</label>
                                                 <input type="text" class="form-control" id="ext_phone_emergency" placeholder="Telefono Emergencia" required>
@@ -290,32 +280,38 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 </div>
                                             </div>
                                         </div>
-
                                     </div>
-                                    <div class="row mb-3">
-                                        <div class="col-md-4">
+                                    <div class="row g-3">
+                                        <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="task-priority2" class="form-label">Fecha de Nacimiento</label>
                                                 <input type="date" class="form-control" id="ext_nac" name="nac" required>
                                                 <div class="invalid-feedback">Ingresá la fecha de nacimiento.</div>
                                             </div>
                                         </div>
-                                        <div class="col-md-4">
+                                        <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="task-priority2" class="form-label">Fecha de Ingreso</label>
                                                 <input type="date" class="form-control" id="ext_ing" required>
                                             </div>
                                         </div>
-                                        <div class="col-md-4 campo-chofer">
+                                    </div>
+                                    <div class="row g-3 campo-chofer">
+                                        <div class="col-md-6">
+                                            <div class="mb-3">
+                                                <label for="ext_gruposanguineo" class="form-label">Grupo Sanguineo</label>
+                                                <input type="text" class="form-control" id="ext_gruposanguineo" placeholder="Grupo Sanguineo" required>
+                                                <div class="invalid-feedback">
+                                                    Por favor, ingrese un grupo sanguineo.
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
                                             <div class="form-group">
                                                 <label for="task-title" class="form-label">Vencimiento de Licencia</label>
                                                 <input type="date" class="form-control" id="ext_licencia" required>
                                             </div>
                                         </div>
-                                    </div>
-                                    <div class="form-group mb-3">
-                                        <label for="task-description" class="form-label">Observaciones</label>
-                                        <textarea class="form-control" id="ext_obs" rows="3"></textarea>
                                     </div>
                                     <!-- ALERTA -->
                                     <div id="alerta" class="alert alert-danger d-none" role="alert">
@@ -380,6 +376,10 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
                                                 <input type="text" class="form-control" id="ext_pass_app" placeholder="Pass App" readonly>
                                             </div>
                                         </div>
+                                    </div>
+                                    <div class="form-group mb-3">
+                                        <label for="task-description" class="form-label">Observaciones</label>
+                                        <textarea class="form-control" id="ext_obs" rows="2"></textarea>
                                     </div>
                                     <div class="d-flex justify-content-end">
                                         <button id="add-new-modal_cancel" type="button" class="btn btn-light me-2" data-bs-dismiss="modal">Cancelar</button>
