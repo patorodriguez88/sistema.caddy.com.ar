@@ -49,13 +49,14 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
         .caddy-rol-badge {
             display: inline-flex;
             align-items: center;
-            gap: .35rem;
-            padding: .3rem .65rem;
+            gap: .3rem;
+            padding: .2rem .55rem;
             border-radius: 6px;
             background: rgba(226, 79, 48, .1);
             color: #E24F30;
             font-weight: 600;
-            font-size: .8rem;
+            font-size: .72rem;
+            white-space: nowrap;
         }
 
         .caddy-rol-badge.sin-rol {
@@ -173,10 +174,10 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
         .caddy-btn-reenviar {
             display: inline-flex;
             align-items: center;
-            gap: .4rem;
-            padding: .35rem .9rem;
+            gap: .3rem;
+            padding: .22rem .6rem;
             border-radius: 20px;
-            font-size: .78rem;
+            font-size: .7rem;
             font-weight: 600;
             line-height: 1.2;
             border: 1px solid rgba(226, 79, 48, .3);
@@ -188,7 +189,7 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
         }
 
         .caddy-btn-reenviar i {
-            font-size: 1rem;
+            font-size: .82rem;
             line-height: 1;
         }
 
