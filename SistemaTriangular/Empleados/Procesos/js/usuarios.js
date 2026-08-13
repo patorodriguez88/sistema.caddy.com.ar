@@ -253,49 +253,77 @@ $(document).on("click", ".quitar-rol", function () {
 
 function listarUsuarios() {
   if (!$("#tablaUsuarios").length) return;
-  post("listar_usuarios").then((r) => {
-    const usuarios = r.data || [];
-    const tabla = $("#tablaUsuarios tbody");
-    tabla.empty();
-    usuarios.forEach((user) => {
-      const rolHtml = user.rol
-        ? `<span class="caddy-rol-badge">${user.rol}</span>`
-        : '<span class="caddy-rol-badge sin-rol">Sin rol</span>';
+  const tabla = $("#tablaUsuarios tbody");
 
-      const notifHtml =
-        Number(user.NotificacionAccesoEnviada) === 1
-          ? `<span class="badge bg-success">Enviada</span>`
-          : `<span class="badge bg-warning text-dark">Pendiente</span>`;
+  post("listar_usuarios")
+    .then((r) => {
+      const usuarios = r.data || [];
+      tabla.empty();
 
-      // Se confirma que la persona entró de verdad (no solo que el mail se mandó)
-      // cuando UltimoAcceso queda seteado en el primer login exitoso.
-      const accesoHtml = user.UltimoAcceso
-        ? `<span class="badge bg-success" title="${user.UltimoAcceso}">Confirmado</span><br><small class="text-muted">${user.UltimoAcceso.substring(0, 10).split("-").reverse().join("/")}</small>`
-        : `<span class="badge bg-warning text-dark">Pendiente</span>`;
+      if (usuarios.length === 0) {
+        tabla.append(
+          `<tr><td colspan="7" class="caddy-tabla-vacia">
+            <i class="uil-users-alt"></i>
+            No hay usuarios de sistema para mostrar.
+          </td></tr>`
+        );
+        return;
+      }
 
+      usuarios.forEach((user) => {
+        const rolHtml = user.rol
+          ? `<span class="caddy-rol-badge">${user.rol}</span>`
+          : '<span class="caddy-rol-badge sin-rol">Sin rol</span>';
+
+        const notifHtml =
+          Number(user.NotificacionAccesoEnviada) === 1
+            ? `<span class="badge bg-success">Enviada</span>`
+            : `<span class="badge bg-warning text-dark">Pendiente</span>`;
+
+        // Se confirma que la persona entró de verdad (no solo que el mail se mandó)
+        // cuando UltimoAcceso queda seteado en el primer login exitoso.
+        const pendiente = !user.UltimoAcceso;
+        const accesoHtml = pendiente
+          ? `<span class="badge bg-warning text-dark">Pendiente</span>`
+          : `<span class="badge bg-success" title="${user.UltimoAcceso}">Confirmado</span><br><small class="text-muted">${user.UltimoAcceso.substring(0, 10).split("-").reverse().join("/")}</small>`;
+
+        const btnClass = pendiente
+          ? "caddy-btn-reenviar is-pendiente btn-reenviar-acceso"
+          : "caddy-btn-reenviar btn-reenviar-acceso";
+
+        tabla.append(
+          `<tr>
+            <td>${user.Usuario}</td>
+            <td>${user.nombre} ${user.apellido}</td>
+            <td>${user.nivel_nombre}</td>
+            <td>${rolHtml}</td>
+            <td>${notifHtml}</td>
+            <td>${accesoHtml}</td>
+            <td>
+              <button type="button" class="${btnClass}" data-id="${user.id}" data-mail="${user.Usuario}" title="Genera una contraseña temporal nueva y la manda por mail">
+                <i class="uil-repeat"></i> Reenviar acceso
+              </button>
+            </td>
+          </tr>`
+        );
+      });
+    })
+    .catch(() => {
+      tabla.empty();
       tabla.append(
-        `<tr>
-          <td>${user.Usuario}</td>
-          <td>${user.nombre} ${user.apellido}</td>
-          <td>${user.nivel_nombre}</td>
-          <td>${rolHtml}</td>
-          <td>${notifHtml}</td>
-          <td>${accesoHtml}</td>
-          <td>
-            <button type="button" class="btn btn-caddy btn-sm btn-reenviar-acceso" data-id="${user.id}" data-mail="${user.Usuario}">
-              Reenviar acceso
-            </button>
-          </td>
-        </tr>`
+        `<tr><td colspan="7" class="caddy-tabla-vacia">
+          <i class="uil-exclamation-triangle"></i>
+          No se pudo cargar la lista de usuarios. Puede faltar una migración de base de datos — avisá a sistemas.
+        </td></tr>`
       );
     });
-  });
 }
 
 // 📧 Reenviar mail de acceso (genera contraseña temporal nueva)
 $(document).on("click", ".btn-reenviar-acceso", function () {
-  const id = $(this).data("id");
-  const mail = $(this).data("mail");
+  const $btn = $(this);
+  const id = $btn.data("id");
+  const mail = $btn.data("mail");
 
   Swal.fire({
     title: "¿Reenviar acceso?",
@@ -304,23 +332,29 @@ $(document).on("click", ".btn-reenviar-acceso", function () {
     showCancelButton: true,
     confirmButtonText: "Sí, reenviar",
     cancelButtonText: "Cancelar",
+    confirmButtonColor: "#E24F30",
   }).then((result) => {
     if (!result.isConfirmed) return;
 
-    Swal.fire({
-      title: "Enviando...",
-      allowOutsideClick: false,
-      didOpen: () => Swal.showLoading(),
-    });
+    const htmlOriginal = $btn.html();
+    $btn
+      .prop("disabled", true)
+      .html('<i class="uil-sync caddy-spin"></i> Enviando...');
 
-    post("reenviar_acceso", { usuario_id: id }).then((r) => {
-      if (r.success) {
-        Swal.fire("Listo", "Se envió el mail con la contraseña temporal nueva.", "success");
-      } else {
-        Swal.fire("No se pudo enviar", r.error || "Revisá la configuración de mail.", "error");
-      }
-      listarUsuarios();
-    });
+    post("reenviar_acceso", { usuario_id: id })
+      .then((r) => {
+        if (r.success) {
+          Swal.fire("Listo", "Se envió el mail con la contraseña temporal nueva.", "success");
+        } else {
+          Swal.fire("No se pudo enviar", r.error || "Revisá la configuración de mail.", "error");
+          $btn.prop("disabled", false).html(htmlOriginal);
+        }
+        listarUsuarios();
+      })
+      .catch(() => {
+        Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
+        $btn.prop("disabled", false).html(htmlOriginal);
+      });
   });
 });
 

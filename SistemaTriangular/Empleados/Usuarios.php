@@ -167,6 +167,87 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
             color: #98a6ad;
             margin: 1rem 0 .4rem;
         }
+
+        /* Botón "Reenviar acceso" — cápsula sutil, se vuelve el color principal
+           (call to action) cuando la persona todavía no confirmó el primer ingreso. */
+        .caddy-btn-reenviar {
+            display: inline-flex;
+            align-items: center;
+            gap: .4rem;
+            padding: .35rem .9rem;
+            border-radius: 20px;
+            font-size: .78rem;
+            font-weight: 600;
+            line-height: 1.2;
+            border: 1px solid rgba(226, 79, 48, .3);
+            background: rgba(226, 79, 48, .06);
+            color: #E24F30;
+            white-space: nowrap;
+            transition: background-color .15s ease, color .15s ease, border-color .15s ease,
+                box-shadow .15s ease, transform .1s ease;
+        }
+
+        .caddy-btn-reenviar i {
+            font-size: 1rem;
+            line-height: 1;
+        }
+
+        .caddy-btn-reenviar:hover:not(:disabled) {
+            background: #E24F30;
+            border-color: #E24F30;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(226, 79, 48, .25);
+        }
+
+        .caddy-btn-reenviar:active:not(:disabled) {
+            transform: scale(.96);
+        }
+
+        .caddy-btn-reenviar:disabled {
+            opacity: .65;
+            cursor: not-allowed;
+        }
+
+        .caddy-btn-reenviar.is-pendiente {
+            background: #E24F30;
+            border-color: #E24F30;
+            color: #fff;
+            box-shadow: 0 2px 6px rgba(226, 79, 48, .3);
+        }
+
+        .caddy-btn-reenviar.is-pendiente:hover:not(:disabled) {
+            background: #c9432a;
+            border-color: #c9432a;
+            box-shadow: 0 4px 10px rgba(226, 79, 48, .35);
+        }
+
+        .caddy-btn-reenviar i.caddy-spin {
+            animation: caddy-spin .7s linear infinite;
+        }
+
+        @keyframes caddy-spin {
+            from {
+                transform: rotate(0deg);
+            }
+
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .caddy-tabla-vacia {
+            text-align: center;
+            color: #98a6ad;
+            font-size: .85rem;
+            padding: 1.5rem .5rem;
+        }
+
+        .caddy-tabla-vacia i {
+            display: block;
+            font-size: 1.4rem;
+            margin-bottom: .35rem;
+            color: #ced4da;
+        }
     </style>
 </head>
 
