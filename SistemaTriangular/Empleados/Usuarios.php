@@ -264,7 +264,7 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
                                     <?php endif; ?>
 
                                     <div class="card">
-                                        <div class="card-header py-2"><strong>Usuarios (Nivel 1 y 2)</strong></div>
+                                        <div class="card-header py-2"><strong>Usuarios (Nivel 1, 2 y 5)</strong></div>
                                         <div class="card-body">
                                             <div class="table-responsive">
                                                 <table class="table table-sm table-centered mb-0" id="tablaUsuarios">
@@ -274,6 +274,8 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
                                                             <th>Nombre</th>
                                                             <th>Nivel</th>
                                                             <th>Rol</th>
+                                                            <th>Notificación</th>
+                                                            <th></th>
                                                         </tr>
                                                     </thead>
                                                     <tbody></tbody>

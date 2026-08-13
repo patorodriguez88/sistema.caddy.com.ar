@@ -261,17 +261,61 @@ function listarUsuarios() {
       const rolHtml = user.rol
         ? `<span class="caddy-rol-badge">${user.rol}</span>`
         : '<span class="caddy-rol-badge sin-rol">Sin rol</span>';
+
+      const notifHtml =
+        Number(user.NotificacionAccesoEnviada) === 1
+          ? `<span class="badge bg-success">Enviada</span>`
+          : `<span class="badge bg-warning text-dark">Pendiente</span>`;
+
       tabla.append(
         `<tr>
           <td>${user.Usuario}</td>
           <td>${user.nombre} ${user.apellido}</td>
           <td>${user.nivel_nombre}</td>
           <td>${rolHtml}</td>
+          <td>${notifHtml}</td>
+          <td>
+            <button type="button" class="btn btn-caddy btn-sm btn-reenviar-acceso" data-id="${user.id}" data-mail="${user.Usuario}">
+              Reenviar acceso
+            </button>
+          </td>
         </tr>`
       );
     });
   });
 }
+
+// 📧 Reenviar mail de acceso (genera contraseña temporal nueva)
+$(document).on("click", ".btn-reenviar-acceso", function () {
+  const id = $(this).data("id");
+  const mail = $(this).data("mail");
+
+  Swal.fire({
+    title: "¿Reenviar acceso?",
+    html: `Se va a generar una <b>contraseña temporal nueva</b> y se le va a mandar un mail a <b>${mail}</b>.`,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Sí, reenviar",
+    cancelButtonText: "Cancelar",
+  }).then((result) => {
+    if (!result.isConfirmed) return;
+
+    Swal.fire({
+      title: "Enviando...",
+      allowOutsideClick: false,
+      didOpen: () => Swal.showLoading(),
+    });
+
+    post("reenviar_acceso", { usuario_id: id }).then((r) => {
+      if (r.success) {
+        Swal.fire("Listo", "Se envió el mail con la contraseña temporal nueva.", "success");
+      } else {
+        Swal.fire("No se pudo enviar", r.error || "Revisá la configuración de mail.", "error");
+      }
+      listarUsuarios();
+    });
+  });
+});
 
 // 🗑️ Eliminar rol
 $(document).on("click", ".eliminar-rol", function () {

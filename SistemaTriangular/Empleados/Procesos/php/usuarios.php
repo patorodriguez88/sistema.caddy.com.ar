@@ -52,6 +52,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'listar_usuarios':
             listarUsuarios($mysqli);
             break;
+        case 'reenviar_acceso':
+            requiereGestionRoles($mysqli);
+            reenviarAccesoUsuario($mysqli);
+            break;
         case 'obtener_rol_usuario':
             obtenerRolDeUsuario($mysqli);
             break;
@@ -228,18 +232,68 @@ function asignarPermisoARol($mysqli)
 function listarUsuarios($mysqli)
 {
     $sql = "SELECT u.id, u.Nombre AS nombre, u.Apellido AS apellido, u.Usuario, u.NIVEL,
+                   u.NotificacionAccesoEnviada, u.NotificacionAccesoFecha,
                    r.id AS rol_id, r.nombre AS rol
             FROM usuarios u
             LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
-            WHERE u.Activo = 1 AND u.NIVEL IN (1, 2)
+            WHERE u.Activo = 1 AND u.NIVEL IN (1, 2, 5)
             ORDER BY u.NIVEL, u.Nombre, u.Apellido";
     $res = $mysqli->query($sql);
     $usuarios = [];
+    $nombresNivel = [1 => 'SuperAdministrador', 2 => 'Administracion', 5 => 'Operaciones'];
     while ($row = $res->fetch_assoc()) {
-        $row['nivel_nombre'] = intval($row['NIVEL']) === 1 ? 'SuperAdministrador' : 'Administracion';
+        $row['nivel_nombre'] = $nombresNivel[intval($row['NIVEL'])] ?? 'Administracion';
         $usuarios[] = $row;
     }
     echo json_encode(['data' => $usuarios]);
+}
+
+// Reenvía el mail de acceso al sistema con una contraseña temporal NUEVA — la
+// original no se puede recuperar porque solo se guarda hasheada.
+function reenviarAccesoUsuario($mysqli)
+{
+    $id = intval($_POST['usuario_id'] ?? 0);
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Usuario inválido.']);
+        return;
+    }
+
+    $res = $mysqli->query("SELECT id, Nombre, Mail, Usuario, NIVEL FROM usuarios WHERE id = $id LIMIT 1");
+    $usuario = $res ? $res->fetch_assoc() : null;
+
+    if (!$usuario) {
+        echo json_encode(['success' => false, 'error' => 'Usuario no encontrado.']);
+        return;
+    }
+
+    if (!in_array(intval($usuario['NIVEL']), [1, 2, 5], true)) {
+        echo json_encode(['success' => false, 'error' => 'Este usuario no es una cuenta de sistema.']);
+        return;
+    }
+
+    $mail = trim((string)($usuario['Mail'] ?: $usuario['Usuario']));
+    if (!filter_var($mail, FILTER_VALIDATE_EMAIL)) {
+        echo json_encode(['success' => false, 'error' => 'El usuario no tiene un mail válido cargado.']);
+        return;
+    }
+
+    $passwordTemporalPlano = bin2hex(random_bytes(5));
+    $passwordHash = password_hash($passwordTemporalPlano, PASSWORD_DEFAULT);
+    $fechaVencida = '2000-01-01';
+
+    $stmt = $mysqli->prepare("UPDATE usuarios SET password_hash=?, FechaPassword=? WHERE id=? LIMIT 1");
+    $stmt->bind_param("ssi", $passwordHash, $fechaVencida, $id);
+    $stmt->execute();
+    $stmt->close();
+
+    require_once __DIR__ . '/../../../Funciones/php/notificar_acceso.php';
+    $resultado = notificarAccesoSistema($mysqli, $id, $mail, $usuario['Nombre'], $usuario['Usuario'], $passwordTemporalPlano);
+
+    $enviado = (isset($resultado['success']) && $resultado['success'] == 1);
+    echo json_encode([
+        'success' => $enviado,
+        'error' => $enviado ? null : ($resultado['msg'] ?? 'No se pudo enviar el mail.'),
+    ]);
 }
 
 function obtenerRolDeUsuario($mysqli)

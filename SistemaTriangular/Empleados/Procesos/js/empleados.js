@@ -194,7 +194,9 @@ var datatable = $("#empleados").DataTable({
       data: "FechaIngreso",
 
       render: function (data, type, row) {
-        var Fecha = row.FechaIngreso.split("-").reverse().join(".");
+        var Fecha = row.FechaIngreso
+          ? row.FechaIngreso.split("-").reverse().join(".")
+          : "";
         return `<td><b> ${Fecha}</b></br></td>`;
         // `<td><b> ${row.order_id}</b></br></td>`;
       },
@@ -202,9 +204,9 @@ var datatable = $("#empleados").DataTable({
     {
       data: "VencimientoLicencia",
       render: function (data, type, row) {
-        var FechaVencimientoLicencia = row.VencimientoLicencia.split("-")
-          .reverse()
-          .join(".");
+        var FechaVencimientoLicencia = row.VencimientoLicencia
+          ? row.VencimientoLicencia.split("-").reverse().join(".")
+          : "-";
         return `<td class="table-action col-xs-3"><b> ${FechaVencimientoLicencia}</b></td>`;
       },
     },
@@ -505,14 +507,24 @@ $("#crear_empleado").on("click", function (e) {
     success: function (jsonData) {
       if (jsonData && jsonData.success == 1) {
         var texto = "Empleado cargado al sistema";
+        var icono = "success";
+
         if (jsonData.es_usuario_sistema) {
-          texto =
-            "Empleado cargado. Le mandamos la contraseña temporal a " +
-            jsonData.mail_enviado +
-            " — el sistema le va a pedir cambiarla apenas inicie sesión.";
+          if (jsonData.mail_enviado) {
+            texto =
+              "Empleado cargado. Le mandamos la contraseña temporal a " +
+              jsonData.mail_destino +
+              " — el sistema le va a pedir cambiarla apenas inicie sesión.";
+          } else {
+            texto =
+              "Empleado cargado, pero no pudimos mandarle el mail con la contraseña temporal a " +
+              jsonData.mail_destino +
+              ". Quedó pendiente de notificación — podés reenviarlo desde Usuarios.";
+            icono = "warning";
+          }
         }
         Swal.fire({
-          icon: "success",
+          icon: icono,
           title: "¡Éxito!",
           text: texto,
           confirmButtonText: "Ok",

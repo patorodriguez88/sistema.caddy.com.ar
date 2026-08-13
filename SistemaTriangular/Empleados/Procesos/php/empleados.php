@@ -396,7 +396,7 @@ if (isset($_POST['Agregar_empleado'])) {
         $sqlEmp = "INSERT INTO Empleados
             (NombreCompleto, Domicilio, Localidad, Provincia, CodigoPostal, Telefono, FechaNacimiento, FechaIngreso, Dni, VencimientoLicencia, Puesto, Observaciones, CuentaAnticipos, GrupoSanguineo, TelefonoEmergencia, Inactivo, Aliados, Usuario, Alergico, driver_id)
             VALUES
-            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '112500', ?, ?, '0', '1', ?, ?, ?)";
+            (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, '112500', ?, ?, '0', '0', ?, ?, ?)";
 
         $stmtE = $mysqli->prepare($sqlEmp);
         if (!$stmtE) throw new Exception("Prepare empleados failed: " . $mysqli->error);
@@ -437,30 +437,12 @@ if (isset($_POST['Agregar_empleado'])) {
 
         $mysqli->commit();
 
+        $mailEnviadoOk = false;
+
         if ($esUsuarioSistema) {
-            require_once __DIR__ . '/../../../Funciones/php/enviar_mail.php';
-            require_once __DIR__ . '/../../../Funciones/php/plantilla_mail.php';
-
-            $cuerpoMail = '
-                <p style="color:#333333; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; margin:0 0 16px 0;">
-                    Ya podés ingresar al Sistema Caddy con estos datos:
-                </p>
-                <p style="color:#333333; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.6; margin:0 0 16px 0;">
-                    <b>Usuario:</b> ' . htmlspecialchars($UsuarioFinal, ENT_QUOTES, 'UTF-8') . '<br>
-                    <b>Contraseña temporal:</b> ' . htmlspecialchars($passwordTemporalPlano, ENT_QUOTES, 'UTF-8') . '
-                </p>
-                <p style="color:#333333; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; margin:0;">
-                    Por seguridad, el sistema te va a pedir que la cambies apenas inicies sesión.
-                </p>
-            ';
-
-            $htmlMail = plantillaMailCaddy(
-                '¡Hola ' . htmlspecialchars($nombre, ENT_QUOTES, 'UTF-8') . '!',
-                'Se creó tu acceso al Sistema Caddy',
-                $cuerpoMail
-            );
-
-            enviarMail($mail, $nombre, 'Tu acceso al Sistema Caddy', $htmlMail);
+            require_once __DIR__ . '/../../../Funciones/php/notificar_acceso.php';
+            $resultadoMail = notificarAccesoSistema($mysqli, $id_usuario, $mail, $nombre, $UsuarioFinal, $passwordTemporalPlano);
+            $mailEnviadoOk = (isset($resultadoMail['success']) && $resultadoMail['success'] == 1);
         }
 
         // OJO: $aliado y $vehiculo NO existen en tu código actual -> eso te va a generar Notices/Warnings
@@ -468,7 +450,8 @@ if (isset($_POST['Agregar_empleado'])) {
             'success' => 1,
             'user_id' => $id_usuario,
             'es_usuario_sistema' => $esUsuarioSistema,
-            'mail_enviado' => $esUsuarioSistema ? $mail : null
+            'mail_destino' => $esUsuarioSistema ? $mail : null,
+            'mail_enviado' => $esUsuarioSistema ? $mailEnviadoOk : null
         ]);
     } catch (Throwable $e) {
         $mysqli->rollback();
