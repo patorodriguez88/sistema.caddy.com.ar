@@ -24,6 +24,14 @@ function renderizar_datos(recorrido) {
     success: function (response) {
       $("#info-alert-modal").modal("hide");
     },
+    // Antes no habia manejo de error aca: si esta llamada fallaba (network,
+    // 500, timeout), el modal "Renderizando Tabla Roadmap" quedaba abierto
+    // para siempre, sin ningun aviso.
+    error: function (jqXHR, textStatus, errorThrown) {
+      $("#info-alert-modal").modal("hide");
+      console.error("Error en renderizar_datos:", textStatus, errorThrown);
+      toast("error", "Error", "No se pudo actualizar el orden del recorrido. Reintentá de nuevo.");
+    },
   });
 }
 
@@ -40,6 +48,10 @@ function color(c, r) {
     success: function (response) {
       var jsonData = JSON.parse(response);
       $("#info-alert-modal").modal("hide");
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      $("#info-alert-modal").modal("hide");
+      console.error("Error en color():", textStatus, errorThrown);
     },
   });
 }
@@ -58,6 +70,11 @@ function paneles() {
     success: function (response) {
       $("#info-alert-modal").modal("hide");
       $("#hdractivas").html(response).fadeIn();
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      $("#info-alert-modal").modal("hide");
+      console.error("Error en paneles():", textStatus, errorThrown);
+      toast("error", "Error", "No se pudieron cargar las Hojas de Ruta. Recargá la página.");
     },
   });
 }
@@ -107,6 +124,11 @@ function veo(i) {
       type: "POST",
       url: "Mapas/php/datos_hojaderuta.php",
       success: function (response) {
+        // Cierre defensivo: renderizar_datos() ya debería haber cerrado el
+        // modal en su propio success, pero si por algun motivo (timing,
+        // varios clicks seguidos) quedo abierto, esto lo garantiza apenas
+        // llegan los datos del mapa.
+        $("#info-alert-modal").modal("hide");
         var jsonData = JSON.parse(response);
         $("#recorrido").html(jsonData.Recorrido);
         $("#hdractivas").hide();
@@ -180,6 +202,14 @@ function veo(i) {
           });
         var datatable = $("#seguimiento").DataTable();
         datatable.ajax.reload();
+      },
+      // Sin esto, un fallo aca (network, 500, JSON invalido) no mostraba
+      // nada - la pantalla se quedaba en el estado anterior sin ningun
+      // aviso de que algo salio mal.
+      error: function (jqXHR, textStatus, errorThrown) {
+        $("#info-alert-modal").modal("hide");
+        console.error("Error en datos_hojaderuta.php (Mapa):", textStatus, errorThrown);
+        toast("error", "Error", "No se pudo cargar el mapa del recorrido. Reintentá de nuevo.");
       },
     });
   });
