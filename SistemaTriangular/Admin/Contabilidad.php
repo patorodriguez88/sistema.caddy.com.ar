@@ -40,6 +40,69 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Menu lateral con el mismo estilo de "pills" + icono que Empleados/Usuarios.php -->
+    <style>
+        .caddy-nav-card .card-body {
+            padding: .6rem;
+        }
+
+        .caddy-nav-pills .nav-link {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            text-align: left;
+            border-radius: 8px;
+            padding: .6rem .7rem;
+            margin-bottom: 2px;
+            color: #6c757d;
+            font-weight: 500;
+            font-size: .875rem;
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: background-color .15s ease, color .15s ease;
+        }
+
+        .caddy-nav-pills .nav-link:last-child {
+            margin-bottom: 0;
+        }
+
+        .caddy-nav-pills .caddy-nav-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            width: 30px;
+            height: 30px;
+            border-radius: 7px;
+            background: rgba(152, 166, 173, .14);
+            color: #98a6ad;
+            font-size: 1rem;
+            transition: background-color .15s ease, color .15s ease;
+        }
+
+        .caddy-nav-pills .nav-link:hover {
+            background-color: rgba(226, 79, 48, .06);
+            color: #E24F30;
+        }
+
+        .caddy-nav-pills .nav-link:hover .caddy-nav-icon {
+            background: rgba(226, 79, 48, .14);
+            color: #E24F30;
+        }
+
+        .caddy-nav-pills .nav-link.active {
+            background-color: rgba(226, 79, 48, .1);
+            color: #E24F30;
+            border-left-color: #E24F30;
+            font-weight: 700;
+        }
+
+        .caddy-nav-pills .nav-link.active .caddy-nav-icon {
+            background: #E24F30;
+            color: #fff;
+        }
+    </style>
 </head>
 
 <body>
@@ -56,41 +119,47 @@
                     <div class="row">
                         <div class="col-xl-3 col-lg-6 order-lg-1 order-xl-1">
                             <!-- start profile info -->
-                            <div class="card">
+                            <div class="card caddy-nav-card">
                                 <div class="card-body">
-                                    <!-- <div class="dropdown float-right">
-                                        <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="mdi mdi-dots-horizontal"></i>
-                                        </a>
-                                </div> -->
-
                                     <div class="media">
                                         <div class="media-body">
                                             <p class="mb-1 mt-1 text-muted">Menu Asientos Contables</p>
                                         </div>
                                     </div>
 
-                                    <div class="list-group list-group-flush mt-2">
-                                        <a class="list-group-item list-group-item-action text-primary border-0" id="btn_nuevo_asiento" style="cursor: pointer;"><i class="uil uil-images mr-1"></i> Crear Asiento Contable</a>
-                                        <a class="list-group-item list-group-item-action border-0" id="btn_modificar_asiento" style="cursor: pointer;"><i class="uil uil-comment-alt-message mr-1"></i> Modificar Asiento Contable</a>
-                                        <a class="list-group-item list-group-item-action border-0" style="cursor: pointer;" id="btn_consulta_asiento"><i class="uil uil-calendar-alt mr-1"></i> Consulta Asiento Contable</a>
+                                    <div class="caddy-nav-pills nav flex-column mt-2">
+                                        <a class="nav-link active" id="btn_nuevo_asiento">
+                                            <span class="caddy-nav-icon"><i class="uil uil-images"></i></span> Crear Asiento Contable
+                                        </a>
+                                        <a class="nav-link" id="btn_modificar_asiento">
+                                            <span class="caddy-nav-icon"><i class="uil uil-comment-alt-message"></i></span> Modificar Asiento Contable
+                                        </a>
+                                        <a class="nav-link" id="btn_consulta_asiento">
+                                            <span class="caddy-nav-icon"><i class="uil uil-calendar-alt"></i></span> Consulta Asiento Contable
+                                        </a>
                                     </div>
                                 </div>
                             </div>
                             <!-- end profile info -->
 
                             <!-- event info -->
-                            <div class="card">
-                                <div class="card-body p-2">
+                            <div class="card caddy-nav-card">
+                                <div class="card-body">
                                     <div class="media">
                                         <div class="media-body">
                                             <p class="mb-1 mt-1 text-muted">Menu Informes</p>
                                         </div>
                                     </div>
-                                    <div class="list-group list-group-flush my-2">
-                                        <a class="list-group-item list-group-item-action border-0" id="btn_libro_diario" style="cursor: pointer;"><i class="uil uil-calendar-alt mr-1"></i> Libro Diario</a>
-                                        <a class="list-group-item list-group-item-action border-0" id="btn_sumas_y_saldos" style="cursor: pointer;"><i class="uil uil-calender mr-1"></i> Sumas y Saldos</a>
-                                        <a class="list-group-item list-group-item-action border-0" id="btn_libros_contables" style="cursor: pointer;"><i class="uil uil-bookmark mr-1"></i> Mayores</a>
+                                    <div class="caddy-nav-pills nav flex-column mt-2">
+                                        <a class="nav-link" id="btn_libro_diario">
+                                            <span class="caddy-nav-icon"><i class="uil uil-calendar-alt"></i></span> Libro Diario
+                                        </a>
+                                        <a class="nav-link" id="btn_sumas_y_saldos">
+                                            <span class="caddy-nav-icon"><i class="uil uil-calender"></i></span> Sumas y Saldos
+                                        </a>
+                                        <a class="nav-link" id="btn_libros_contables">
+                                            <span class="caddy-nav-icon"><i class="uil uil-bookmark"></i></span> Mayores
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -170,6 +239,9 @@
                                                     <textarea id="observaciones" name="observaciones" rows="4" class="form-control border-0 resize-none" placeholder="Observaciones...."></textarea>
                                                 </div>
                                                 <div class="d-flex justify-content-end mt-3">
+                                                    <button id="btnImprimirAsiento" type="button" class="btn btn-outline-secondary mr-2" style="display:none" onclick="imprimirAsiento()">
+                                                        <i class="uil uil-print mr-1"></i>Imprimir Asiento
+                                                    </button>
                                                     <button id="btnAceptar" type="button" class="btn btn-success" onclick="confirmarAsiento()">
                                                         <i class="uil uil-message mr-1"></i>Confirmar Asiento
                                                     </button>

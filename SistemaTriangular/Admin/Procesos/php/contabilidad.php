@@ -55,6 +55,38 @@ function guardarAsiento($conexion) {
         $nasiento = $_POST['n_asiento'];
         $infoABM = "Actualizado por $usuario el " . date('d-m-Y H:i');
 
+        // 0. Validar ANTES de tocar la base: hace falta al menos una fila
+        // con cuenta seleccionada y el asiento tiene que estar balanceado
+        // (Debe == Haber). Sin esto se podia "guardar" un asiento sin
+        // ninguna cuenta (la fila que trae el formulario por defecto tiene
+        // Debe=Haber=0.00, que ya viene balanceado) y el frontend mostraba
+        // igual el cartel de éxito aunque no se hubiera insertado ninguna
+        // fila real. Se valida antes del paso 1/2 para no marcar como
+        // Eliminado las filas de un asiento existente si la edición vino
+        // vacía o desbalanceada por error.
+        $totalDebe = 0.0;
+        $totalHaber = 0.0;
+        $filasValidas = 0;
+        foreach (($_POST['nombreCuenta'] ?? []) as $index => $nombreCuenta) {
+            $cuenta = $_POST['cuenta'][$index] ?? null;
+            if (!$cuenta || trim($cuenta) === '') {
+                continue;
+            }
+            $filasValidas++;
+            $totalDebe += floatval($_POST['debe'][$index] ?? 0);
+            $totalHaber += floatval($_POST['haber'][$index] ?? 0);
+        }
+
+        if ($filasValidas === 0) {
+            echo json_encode(["success" => false, "mensaje" => "No se cargó ninguna cuenta. El asiento no fue guardado."]);
+            exit();
+        }
+
+        if (abs($totalDebe - $totalHaber) > 0.005) {
+            echo json_encode(["success" => false, "mensaje" => "El asiento no está balanceado (Debe ≠ Haber). No fue guardado."]);
+            exit();
+        }
+
         // 1. Traer IDs existentes del asiento actual
         $asientoActual = [];
         $sqlExistentes = "SELECT id FROM Tesoreria WHERE NumeroAsiento = '$nasiento' AND Eliminado != 1";
@@ -80,19 +112,19 @@ function guardarAsiento($conexion) {
             $haber = floatval($_POST['haber'][$index] ?? 0);
             $observaciones = $_POST['observaciones'] ?? '';
             $idFila = $_POST['id'][$index] ?? null;
-        
+
             // 🚨 Validaciones clave
             if (!$cuenta || trim($cuenta) === '') {
                 continue; // Salta esta fila si no hay cuenta
             }
-        
+
             $nombreCuenta = $conexion->real_escape_string($nombreCuenta ?? '');
             $cuenta = $conexion->real_escape_string($cuenta);
             $observaciones = $conexion->real_escape_string($observaciones);
-        
+
             if ($idFila && trim($idFila) !== '') {
                 // UPDATE
-                $sql = "UPDATE Tesoreria SET 
+                $sql = "UPDATE Tesoreria SET
                             Fecha = '$fecha',
                             NombreCuenta = '$nombreCuenta',
                             Cuenta = '$cuenta',
@@ -105,23 +137,27 @@ function guardarAsiento($conexion) {
             } else {
                 // INSERT
                 $infoABM = "Insertado por $usuario el " . date('d-m-Y H:i');
-                $sql = "INSERT INTO Tesoreria 
-                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, Caja, Dominio) 
-                        VALUES 
-                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', 0, 0)";
+                // Eliminado se pone explicito en 0: sin esto quedaba NULL
+                // (la columna no tiene default) y el asiento recien creado
+                // no aparecia nunca en Buscar Asiento / Libro Diario / el
+                // PDF, que filtran por Eliminado = 0.
+                $sql = "INSERT INTO Tesoreria
+                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, Caja, Dominio, Eliminado)
+                        VALUES
+                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', 0, 0, 0)";
             }
-        
+
             if (!$conexion->query($sql)) {
-                echo json_encode(["mensaje" => "Error al guardar: " . $conexion->error]);
+                echo json_encode(["success" => false, "mensaje" => "Error al guardar: " . $conexion->error]);
                 exit();
             }
         }
 
 
-        echo json_encode(["mensaje" => "Asiento contable actualizado correctamente."]);
+        echo json_encode(["success" => true, "mensaje" => "Asiento contable guardado correctamente."]);
 
     } catch (Exception $e) {
-        echo json_encode(["mensaje" => "Excepción: " . $e->getMessage()]);
+        echo json_encode(["success" => false, "mensaje" => "Excepción: " . $e->getMessage()]);
         exit();
     }
 }

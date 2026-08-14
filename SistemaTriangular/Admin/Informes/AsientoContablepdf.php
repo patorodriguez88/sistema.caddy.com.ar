@@ -1,242 +1,229 @@
 <?php
-session_start();
-require('../../fpdf/fpdf.php');
-require('../../../conexion.php');
 
-class PDF extends FPDF
+declare(strict_types=1);
+
+// Reescrito de cero: la version anterior usaba mysql_query() (extension
+// removida de PHP), require('../../../conexion.php') (ruta que no existe en
+// esta estructura) y new DB() (clase que tampoco existe aca) - nunca
+// funciono en este sistema, siempre tiraba fatal error. Ahora usa el mismo
+// patron que Logistica/Informes/HojaDeRutapdf.php (HdrPdfBase: header con
+// logo/datos de la empresa, footer con paginado).
+
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+ini_set('display_startup_errors', '1');
+ini_set('log_errors', '1');
+
+$DEBUG = (isset($_GET['debug']) && $_GET['debug'] === '1');
+
+set_exception_handler(static function (Throwable $e) use ($DEBUG): void {
+    error_log('UNCAUGHT EXCEPTION: ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+    if ($DEBUG) {
+        if (!headers_sent()) {
+            header('Content-Type: text/plain; charset=utf-8');
+        }
+        echo "UNCAUGHT EXCEPTION\n";
+        echo $e->getMessage() . "\n\n";
+        echo $e->getTraceAsString();
+    }
+    exit;
+});
+
+register_shutdown_function(static function () use ($DEBUG): void {
+    $err = error_get_last();
+    if (!$err) {
+        return;
+    }
+    error_log('SHUTDOWN ERROR: ' . print_r($err, true));
+    if ($DEBUG) {
+        if (!headers_sent()) {
+            header('Content-Type: text/plain; charset=utf-8');
+        }
+        echo "FATAL/SHUTDOWN ERROR\n";
+        echo ($err['message'] ?? '') . "\n";
+        echo 'File: ' . ($err['file'] ?? '') . "\n";
+        echo 'Line: ' . ($err['line'] ?? '') . "\n";
+    }
+});
+
+if ($DEBUG && !headers_sent()) {
+    header('Content-Type: text/plain; charset=utf-8');
+}
+
+require_once __DIR__ . '/../../Logistica/Informes/hdr_pdf_helpers.php';
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
+
+// --------------------------------------------------
+// Columnas de la tabla de movimientos (compartidas entre header y filas)
+// --------------------------------------------------
+const AC_COLS = ['Cuenta', 'Nombre de Cuenta', 'Debe', 'Haber'];
+const AC_WIDTHS = [22, 98, 30, 30];
+const AC_ALIGNS = ['C', 'L', 'R', 'R'];
+
+class AsientoContablePDF extends HdrPdfBase
 {
-    var $widths;
-    var $aligns;
-
-    function SetWidths($w)
+    public function drawTableHeader(): void
     {
-        $this->widths = $w;
+        $p = hdrPaleta();
+        $anchos = $this->anchosEscalados(AC_WIDTHS);
+        $this->SetWidths($anchos);
+        $this->SetAligns(AC_ALIGNS);
+        $this->SetFont('Arial', 'B', 8.5);
+        $this->SetFillColor(...$p['primaryC']);
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetDrawColor(...$p['primaryC']);
+        foreach (AC_COLS as $i => $label) {
+            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, AC_ALIGNS[$i] === 'L' ? 'L' : 'C', true);
+        }
+        $this->Ln();
+        $this->SetTextColor(...$p['darkText']);
     }
 
-    function SetAligns($a)
+    public function Header(): void
     {
-        $this->aligns = $a;
+        global $headerDatos;
+
+        if (empty($headerDatos)) {
+            return;
+        }
+
+        $this->drawHeaderBase(
+            'ASIENTO CONTABLE',
+            'N° ' . $headerDatos['numeroAsiento'],
+            [
+                ['Fecha:', $headerDatos['fecha']],
+                ['Usuario:', $headerDatos['usuario']],
+                ['Total Debe:', $headerDatos['totalDebe']],
+                ['Total Haber:', $headerDatos['totalHaber']],
+            ]
+        );
+
+        $this->Ln(2);
+        $this->drawTableHeader();
     }
 
-    function Row($data)
+    public function Footer(): void
     {
-        $nb = 0;
-        for ($i = 0; $i < count($data); $i++) {
-            $nb = max($nb, $this->NbLines($this->widths[$i], $data[$i]));
-        }
-        $h = 5 * $nb;
-        $this->CheckPageBreak($h);
-        for ($i = 0; $i < count($data); $i++) {
-            $w = $this->widths[$i];
-            $a = isset($this->aligns[$i]) ? $this->aligns[$i] : 'L';
-            $x = $this->GetX();
-            $y = $this->GetY();
-            $this->Rect($x, $y, $w, $h);
-            $this->MultiCell($w, 5, $data[$i], 0, $a, 'true');
-            $this->SetXY($x + $w, $y);
-        }
-        $this->Ln($h);
-    }
+        $p = hdrPaleta();
 
-    function CheckPageBreak($h)
-    {
-        if ($this->GetY() + $h > $this->PageBreakTrigger) {
-            $this->AddPage($this->CurOrientation);
-        }
-    }
+        // Renglon de firma, arriba del footer estandar de HdrPdfBase.
+        $this->SetY(-30);
+        $this->SetDrawColor(...$p['borderC']);
+        $this->SetLineWidth(0.2);
+        $anchoFirma = ($this->w - $this->lMargin - $this->rMargin) / 3;
 
-    function NbLines($w, $txt)
-    {
-        $cw = &$this->CurrentFont['cw'];
-        if ($w == 0) {
-            $w = $this->w - $this->rMargin - $this->x;
-        }
-        $wmax = ($w - 2 * $this->cMargin) * 1000 / $this->FontSize;
-        $s = str_replace("\r", '', $txt);
-        $nb = strlen($s);
-        if ($nb > 0 and $s[$nb - 1] == "\n") {
-            $nb--;
-        }
-        $sep = -1;
-        $i = 0;
-        $j = 0;
-        $l = 0;
-        $nl = 1;
-        while ($i < $nb) {
-            $c = $s[$i];
-            if ($c == "\n") {
-                $i++;
-                $sep = -1;
-                $j = $i;
-                $l = 0;
-                $nl++;
-                continue;
-            }
-            if ($c == ' ') {
-                $sep = $i;
-            }
-            $l += $cw[$c];
-            if ($l > $wmax) {
-                if ($sep == -1) {
-                    if ($i == $j) {
-                        $i++;
-                    }
-                } else {
-                    $i = $sep + 1;
-                }
-                $sep = -1;
-                $j = $i;
-                $l = 0;
-                $nl++;
-            } else {
-                $i++;
-            }
-        }
-        return $nl;
-    }
+        $this->SetX($this->lMargin);
+        $this->Line($this->lMargin, $this->GetY(), $this->lMargin + $anchoFirma - 6, $this->GetY());
+        $this->SetX($this->lMargin + $anchoFirma);
+        $this->Line($this->lMargin + $anchoFirma, $this->GetY(), $this->lMargin + 2 * $anchoFirma - 6, $this->GetY());
+        $this->SetX($this->lMargin + 2 * $anchoFirma);
+        $this->Line($this->lMargin + 2 * $anchoFirma, $this->GetY(), $this->w - $this->rMargin, $this->GetY());
 
-    function Header()
-    {
-        $cliente = $_SESSION['ClienteActivo'];
-        $NumeroRepo = $_GET['NR'];
-        $con = new DB;
-        $historial = $con->conectar();    
-        $Id = $_GET['NR'];
-        $strConsulta = "SELECT * FROM Tesoreria WHERE NumeroAsiento='$Id' AND Eliminado=0";
-        $Dato = mysql_query($strConsulta);
-        while ($row = mysql_fetch_row($Dato)) {
-            $Codigo = $row[0];
-            $Fecha = $row[1];
-            $Id = $row[11];    
-            $arrayfecha = explode('-', $Fecha, 3);
-            $Fecha2 = $arrayfecha[2] . "/" . $arrayfecha[1] . "/" . $arrayfecha[0];
-        }
+        $this->SetY(-27);
+        $this->SetFont('Arial', '', 7.5);
+        $this->SetTextColor(...$p['mutedC']);
+        $this->Cell($anchoFirma, 5, pdf_text('Firma Recibido'), 0, 0, 'L');
+        $this->Cell($anchoFirma, 5, pdf_text('Aclaracion / Nombre'), 0, 0, 'L');
+        $this->Cell($anchoFirma, 5, 'D.N.I.', 0, 0, 'L');
 
-        $this->SetFont('Arial', 'B', 10);
-        $this->Text(20, 14, 'Triangular S.A.', 0, 'C', 0);
-        $this->SetFont('Arial', '', 10);
-        $this->Text(20, 19, 'Cuit: 30-71534494-3', 0, 'C', 0);
-        $this->Text(20, 24, utf8_decode('Domicilio: Av. Simón LaPlace 5442'), 0, 'C', 0);
-        $this->Text(20, 29, 'www.caddy.com.ar', 0, 'C', 0);
-        $this->Text(150, 14, utf8_decode('Córdoba ' . $Fecha2), 0, 'C', 0);
-
-        $NAsiento = $_GET['NR'];
-        $SumaAsiento = "SELECT SUM(Debe-Haber) AS TotalAsiento FROM Tesoreria WHERE NumeroAsiento=$NAsiento AND Eliminado=0";
-        $SumaAsientoConsulta = mysql_query($SumaAsiento);
-        $row = mysql_fetch_array($SumaAsientoConsulta);
-        setlocale(LC_ALL, 'es_AR');
-        $Total = money_format('%i', $row[TotalAsiento]);
-
-        $this->Ln(20);
-        $this->SetFont('Arial', '', 10);
-        $this->Text(150, 24, 'Id: ' . $_GET['NR'], 0, 'C', 0);
-        $this->SetFont('Arial', 'B', 10);
-        $this->Text(150, 30, 'Saldo Control: ' . $Total, 0, 'C', 0);
-
-        $this->Ln(20);
-        $this->SetFont('Arial', 'B', 16);
-        $this->Text(70, 44, 'ASIENTO CONTABLE '.$NAsiento, 0, 'C', 0);
-        $this->Line(20, 38, 190, 38);
-        $this->Line(20, 45, 190, 45);
-        $this->Ln(0);
-        
-        $this->SetFont('Arial', 'B', 10);
-        $this->Cell(5, 7, '', 0, 0); // Celda vacía para el desplazamiento
-        $this->SetX($this->GetX() + 5); // Desplazamiento de 20 unidades hacia la derecha
-        $this->Cell(130, 7,utf8_decode('Descripción'), 1, 0, 'C');
-        $this->Cell(20, 7, 'Debe', 1, 0, 'C');
-        $this->Cell(20, 7, 'Haber', 1, 1, 'C');
-    }
-
-    function Footer()
-    {
-        $this->SetY(-45);
-        $this->SetFont('Arial', 'B', 8);
-        $this->Cell(100, 10, 'Firma Recibido', 0, 0, 'L');
-        $this->SetX(90);
-        $this->Cell(100, 10, utf8_decode('Aclaración Nombre'), 0, 0, 'L');
-        $this->SetX(150);
-        $this->Cell(100, 10, 'D.N.I.', 0, 0, 'L');
-
-        $this->SetY(-35);
-        $this->Cell(100, 10, utf8_decode('Asiento contable emitido por el sistema de gestión de Triangular S.A., '), 0, 0, 'L');
-
-        $this->SetY(-15);
-        $this->Cell(100, 10, 'Recibo Triangular S.A.', 0, 0, 'L');
-        $this->SetX(90);
-        $this->Cell(100, 10, 'www.caddy.com.ar', 0, 0, 'L');
-        $this->SetX(170);
-        $this->Cell(100, 10, 'Usuario:' . $_SESSION['Usuario'], 0, 0, 'L');
+        parent::Footer();
     }
 }
 
-$cliente = $_SESSION['ClienteActivo'];
-$NumeroRepo = $_GET['NR'];
+// --------------------------------------------------
+// Datos
+// --------------------------------------------------
+$NumeroAsiento = (string)($_GET['NR'] ?? '');
+if ($NumeroAsiento === '' || !ctype_digit($NumeroAsiento)) {
+    http_response_code(400);
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=utf-8');
+    }
+    echo 'Falta parametro NR (numero de asiento)';
+    exit;
+}
 
-$con = new DB;
-$historial = $con->conectar();    
-$Id = $_GET['NR'];
-$strConsulta = "SELECT * FROM Tesoreria WHERE NumeroAsiento='$Id' AND Eliminado=0 ORDER BY id";
-$pacientes = mysql_query($strConsulta);
-$NumerodeRegistros = mysql_num_rows($pacientes);
+$items = db_fetch_all(
+    $mysqli,
+    "SELECT Cuenta, NombreCuenta, Debe, Haber, Observaciones, Fecha, Usuario
+       FROM Tesoreria
+      WHERE NumeroAsiento = ? AND Eliminado = 0
+      ORDER BY id",
+    's',
+    [$NumeroAsiento]
+);
 
-$pdf = new PDF('P', 'mm', 'Letter');
-$pdf->Open();
+if (count($items) === 0) {
+    http_response_code(404);
+    if (!headers_sent()) {
+        header('Content-Type: text/plain; charset=utf-8');
+    }
+    echo 'No se encontro el Asiento Contable ' . $NumeroAsiento;
+    exit;
+}
+
+$totalDebe = 0.0;
+$totalHaber = 0.0;
+$observaciones = [];
+foreach ($items as $fila) {
+    $totalDebe += (float)$fila['Debe'];
+    $totalHaber += (float)$fila['Haber'];
+    $obs = trim((string)($fila['Observaciones'] ?? ''));
+    if ($obs !== '' && !in_array($obs, $observaciones, true)) {
+        $observaciones[] = $obs;
+    }
+}
+
+$headerDatos = [
+    'numeroAsiento' => $NumeroAsiento,
+    'fecha'         => date('d/m/Y', strtotime((string)$items[0]['Fecha'])),
+    'usuario'       => (string)($items[0]['Usuario'] ?? ''),
+    'totalDebe'     => number_format($totalDebe, 2, ',', '.'),
+    'totalHaber'    => number_format($totalHaber, 2, ',', '.'),
+];
+
+// --------------------------------------------------
+// Render
+// --------------------------------------------------
+$pdf = new AsientoContablePDF('P', 'mm', 'Letter');
+$pdf->AliasNbPages();
+$pdf->footerLeft = 'Asiento Contable Caddy - N° ' . $NumeroAsiento;
+$pdf->SetMargins(12, 12, 12);
+$pdf->SetAutoPageBreak(true, 34);
 $pdf->AddPage();
-$pdf->SetMargins(20, 20, 20);
-$pdf->Ln(0);
 
-$observaciones=array();
-$observacionesTexto = '';
+$paleta = hdrPaleta();
+$fill = false;
 
-while ($fila = mysql_fetch_array($pacientes)) {
-    $SQL_TESORERIA = "SELECT * FROM AnticiposProveedores WHERE id='" . $fila['idAnticiposProveedores'] . "' AND Eliminado=0";
-    $DATO_ANTICIPO = mysql_query($SQL_TESORERIA);
-    $DATO = mysql_fetch_array($DATO_ANTICIPO);
-    
-    $SQL_FORMADEPAGO = "SELECT * FROM FormaDePago WHERE CuentaContable='".$fila['FormaDePago']."'";
-    $DATO_SQL_FORMADEPAGO = mysql_query($SQL_FORMADEPAGO);
-    $DATO_FORMADEPAGO = mysql_fetch_array($DATO_SQL_FORMADEPAGO);
-    
-    if($DATO_FORMADEPAGO['FormaDePago']){
-        $FormaDePago= ' [F.P.]: '.$DATO_FORMADEPAGO['FormaDePago'];    
-    }else{
-        $FormaDePago= '';
-    }    
-
-    if (!in_array($fila['Observaciones'], $observaciones)) {
-        $observaciones[] = $fila['Observaciones'];
-        $observacionesTexto .= $fila['Observaciones'] . "\n"; // Agregar observaciones al texto
-    }
-
-    if($DATO['id']){
-        $Descripcion = utf8_decode($fila['Cuenta'].' '.$fila['NombreCuenta'] .$FormaDePago.' [R.S.]: ' . $DATO['RazonSocial']);
-    }else{
-        $Descripcion = utf8_decode($fila['Cuenta'].' '.$fila['NombreCuenta'] .$FormaDePago);        
-    }
-
-    $Debe = number_format($fila['Debe'], 2, ',', '.');
-    $Haber = number_format($fila['Haber'], 2, ',', '.');
-    $pdf->SetFont('Arial', '', 6);
-    $pdf->Cell(130, 7, $Descripcion, 1,0);
-    $pdf->SetFont('Arial', '', 6);
-    $pdf->Cell(20, 7, $Debe, 1, 0, 'R');
-    $pdf->Cell(20, 7, $Haber, 1, 1, 'R');
+foreach ($items as $fila) {
+    $pdf->Row([
+        (string)$fila['Cuenta'],
+        (string)$fila['NombreCuenta'],
+        number_format((float)$fila['Debe'], 2, ',', '.'),
+        number_format((float)$fila['Haber'], 2, ',', '.'),
+    ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
+    $fill = !$fill;
 }
 
-$strConsulta = "SELECT SUM(Debe) AS TotalDebe, SUM(Haber) AS TotalHaber FROM Tesoreria WHERE NumeroAsiento='$Id' AND Eliminado=0";
-$pacientes = mysql_query($strConsulta);
-$fila = mysql_fetch_array($pacientes);
-$TotalDebe = number_format($fila['TotalDebe'], 2, ',', '.');
-$TotalHaber = number_format($fila['TotalHaber'], 2, ',', '.');
+// Fila de totales, remarcada.
+$pdf->SetFont('Arial', 'B', 9);
+$pdf->Row([
+    '',
+    'TOTAL',
+    $headerDatos['totalDebe'],
+    $headerDatos['totalHaber'],
+], $paleta['grayBg']);
 
-$pdf->SetFont('Arial', 'B', 8);
-$pdf->Cell(130, 7, 'Total:', 1);
-$pdf->Cell(20, 7, $TotalDebe, 1, 0, 'R');
-$pdf->Cell(20, 7, $TotalHaber, 1, 1, 'R');
+if (count($observaciones) > 0) {
+    $pdf->Ln(3);
+    $pdf->SetFont('Arial', 'B', 8.5);
+    $pdf->SetTextColor(...$paleta['darkText']);
+    $pdf->resetX();
+    $pdf->Cell(0, 5, pdf_text('Observaciones'), 0, 1);
+    $pdf->SetFont('Arial', '', 8.5);
+    $pdf->SetTextColor(...$paleta['mutedC']);
+    $pdf->resetX();
+    $pdf->MultiCell($pdf->contentWidth(), 4.6, pdf_text(implode(' | ', $observaciones)), 0, 'L');
+}
 
-$pdf->SetFont('Arial', '', 8);
-$pdf->MultiCell(170, 7, utf8_decode('Observaciones: ' . $observacionesTexto), 1); // Imprimir las observaciones con MultiCell
-
-$pdf->Output();
-?>
+$pdf->Output('I', 'AsientoContable_' . $NumeroAsiento . '.pdf');

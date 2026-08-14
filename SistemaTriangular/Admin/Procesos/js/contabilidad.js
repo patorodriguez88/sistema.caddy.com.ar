@@ -24,6 +24,19 @@ document.addEventListener("DOMContentLoaded", function () {
   );
   //Botones Menu
 
+  // Resalta el item del menu lateral (nav-pills) que se clickeo, mismo
+  // estilo que usa Empleados/Usuarios.php - como acá las secciones no son
+  // pestañas reales de Bootstrap (cada botón muestra/oculta cards a mano),
+  // el estado "active" tampoco se maneja solo y hay que togglearlo manual.
+  document.querySelectorAll(".caddy-nav-pills .nav-link").forEach((link) => {
+    link.addEventListener("click", function () {
+      document
+        .querySelectorAll(".caddy-nav-pills .nav-link")
+        .forEach((otro) => otro.classList.remove("active"));
+      this.classList.add("active");
+    });
+  });
+
   document
     .getElementById("btn_modificar_asiento")
     .addEventListener("click", function () {
@@ -42,6 +55,10 @@ document.addEventListener("DOMContentLoaded", function () {
       obtenerCuentas();
       obtener_asiento();
       agregarCampo();
+      // El numero que trae obtener_asiento() es solo una propuesta (el
+      // proximo disponible) - todavia no existe en Tesoreria, asi que no
+      // hay nada que imprimir hasta que se confirme.
+      $("#btnImprimirAsiento").hide();
       // calcularTotalAsiento();
       // ✅ Opcional: poner un valor inicial para evitar la alerta
       setTimeout(() => {
@@ -168,31 +185,48 @@ document.addEventListener("DOMContentLoaded", function () {
 
     let totalDebe = 0;
     let totalHaber = 0;
-    let hayValores = false;
+    // "Fila valida" = tiene cuenta seleccionada Y un importe distinto de
+    // cero en Debe o Haber. Antes alcanzaba con que los inputs no
+    // estuvieran vacíos ("0.00" cuenta como no-vacío), por eso la fila que
+    // agrega btn_nuevo_asiento con Debe=Haber=0.00 y sin cuenta ya
+    // "habilitaba" el botón de confirmar sin ningún dato real cargado.
+    let hayFilaValida = false;
 
-    $("input[name='debe[]']").each(function () {
-      let val = $(this).val();
-      if (val !== "") hayValores = true;
-      totalDebe += parseFloat(val.replace(",", ".")) || 0;
-    });
-
-    $("input[name='haber[]']").each(function () {
-      let val = $(this).val();
-      if (val !== "") hayValores = true;
-      totalHaber += parseFloat(val.replace(",", ".")) || 0;
+    $("#campos-container .row").each(function () {
+      const cuenta = $(this).find("select[name='cuenta[]']").val() || "";
+      const debe =
+        parseFloat(
+          ($(this).find("input[name='debe[]']").val() || "").replace(
+            ",",
+            "."
+          )
+        ) || 0;
+      const haber =
+        parseFloat(
+          ($(this).find("input[name='haber[]']").val() || "").replace(
+            ",",
+            "."
+          )
+        ) || 0;
+      totalDebe += debe;
+      totalHaber += haber;
+      if (cuenta !== "" && (debe !== 0 || haber !== 0)) {
+        hayFilaValida = true;
+      }
     });
 
     let total = totalDebe - totalHaber;
     $("#total_asiento").val(total.toFixed(2));
 
-    if (total !== 0 || !hayValores) {
+    if (total !== 0 || !hayFilaValida) {
       $("#total_asiento").addClass("is-invalid").removeClass("is-valid");
       $("#btnAceptar").prop("disabled", true);
+      const motivo = !hayFilaValida
+        ? "Cargá al menos una cuenta con un importe en Debe o Haber."
+        : "El asiento no está balanceado (Debe ≠ Haber).";
       $("#mensaje")
         .show()
-        .html(
-          `<div class="alert alert-danger"> El asiento no está balanceado (Debe ≠ Haber)</div>`
-        );
+        .html(`<div class="alert alert-danger">${motivo}</div>`);
     } else {
       $("#total_asiento").addClass("is-valid").removeClass("is-invalid");
       $("#btnAceptar").prop("disabled", false);
@@ -313,12 +347,62 @@ document.addEventListener("DOMContentLoaded", function () {
     calcularTotalAsiento();
   };
 
+  // Numero del ultimo asiento realmente guardado en la base (para
+  // Imprimir Asiento) - no se puede leer #nasiento en ese momento porque
+  // confirmarAsiento() ya lo pisa con el proximo numero propuesto al
+  // limpiar el formulario.
+  let ultimoAsientoGuardado = null;
+
+  // Imprime el asiento ya guardado (PDF con el diseño del sistema nuevo,
+  // mismo contenido que el AsientoContablepdf.php viejo de Caddy_produccion:
+  // cuenta, nombre de cuenta, debe, haber, totales y observaciones).
+  window.imprimirAsiento = function () {
+    if (!ultimoAsientoGuardado) return;
+    window.open(
+      "../Admin/Informes/AsientoContablepdf.php?NR=" +
+        encodeURIComponent(ultimoAsientoGuardado),
+      "_blank"
+    );
+  };
+
   window.eliminarCampo = function (element) {
     element.parentElement.parentElement.remove();
     calcularTotalAsiento();
   };
 
   window.confirmarAsiento = function () {
+    // Validacion previa: hace falta al menos una fila con cuenta
+    // seleccionada y un importe real (Debe o Haber distinto de cero).
+    // Antes se podia confirmar un asiento vacio: la fila que agrega
+    // btn_nuevo_asiento ya trae Debe=Haber="0.00" para "pasar" el chequeo
+    // de balance (Total=0), pero eso no es un asiento real - el backend
+    // terminaba sin guardar ninguna fila (sin cuenta seleccionada) e
+    // igual mostraba el cartel de éxito.
+    let filasValidas = 0;
+    document.querySelectorAll("#campos-container .row").forEach((fila) => {
+      const cuenta =
+        fila.querySelector("select[name='cuenta[]']")?.value || "";
+      const debe =
+        parseFloat(fila.querySelector("input[name='debe[]']")?.value || "0") ||
+        0;
+      const haber =
+        parseFloat(
+          fila.querySelector("input[name='haber[]']")?.value || "0"
+        ) || 0;
+      if (cuenta !== "" && (debe !== 0 || haber !== 0)) {
+        filasValidas++;
+      }
+    });
+
+    if (filasValidas === 0) {
+      $("#mensaje")
+        .show()
+        .html(
+          `<div class="alert alert-danger">Cargá al menos una cuenta con un importe en Debe o Haber antes de confirmar.</div>`
+        );
+      return;
+    }
+
     // ✅ Crear inputs ocultos de nombreCuenta
     document.querySelectorAll("select[name='cuenta[]']").forEach((select) => {
       const nombre = select.options[select.selectedIndex].text.split(" (")[0];
@@ -342,10 +426,23 @@ document.addEventListener("DOMContentLoaded", function () {
     })
       .then((response) => response.json())
       .then((data) => {
+        if (!data.success) {
+          $("#mensaje")
+            .show()
+            .html(`<div class="alert alert-danger">${data.mensaje}</div>`);
+          return;
+        }
+
         // ✅ Mostramos el cartel de éxito
         $("#mensaje")
           .show()
           .html(`<div class="alert alert-success">${data.mensaje}</div>`);
+
+        // Guardamos el numero recien confirmado para poder imprimirlo -
+        // el reset de mas abajo pisa #nasiento con el proximo numero
+        // propuesto, asi que hay que leerlo antes de que eso pase.
+        ultimoAsientoGuardado = $("#nasiento").val();
+        $("#btnImprimirAsiento").show();
 
         desactivarValidacion = true; // 🛑 Pausar validación temporalmente
 
@@ -399,6 +496,10 @@ document.addEventListener("DOMContentLoaded", function () {
 
     modificarCard.style.display = "none";
     nuevoCard.style.display = "block";
+    // Se resetea acá y se vuelve a mostrar solo si la búsqueda encuentra el
+    // asiento - si no, no debe quedar apuntando al último asiento cargado.
+    $("#btnImprimirAsiento").hide();
+    ultimoAsientoGuardado = null;
 
     $.ajax({
       url: "../Admin/Procesos/php/contabilidad.php",
@@ -420,8 +521,22 @@ document.addEventListener("DOMContentLoaded", function () {
           agregarCampoDesdeDatos(item);
         });
 
-        $("#n_asiento").html(numero);
+        $("#n_asiento").val(numero);
         $("#nasiento").val(numero);
+
+        // Si en el array viene la fecha, por ejemplo asiento[0].Fecha - esto
+        // antes estaba fuera de este callback (usando una variable "asiento"
+        // que todavia no existia ahi, un ReferenceError silencioso) y nunca
+        // llegaba a setear la fecha.
+        const fechaOriginal = asiento[0].Fecha; // por ejemplo "2025-03-26"
+        if (fechaOriginal) {
+          $("#example-date").val(fechaOriginal); // debe estar en formato yyyy-mm-dd
+        }
+
+        // Este asiento ya existe en la base (se acaba de traer de
+        // Tesoreria), asi que se puede imprimir.
+        ultimoAsientoGuardado = numero;
+        $("#btnImprimirAsiento").show();
       },
       error: function (xhr, status, error) {
         console.error("Error al buscar el asiento:", status, error);
@@ -430,15 +545,6 @@ document.addEventListener("DOMContentLoaded", function () {
         );
       },
     });
-
-    $("#n_asiento").val(numero); // Número de asiento
-    $("#nasiento").val(numero); // hidden
-
-    // Si en el array viene la fecha, por ejemplo asiento[0].Fecha
-    const fechaOriginal = asiento[0].Fecha; // por ejemplo "2025-03-26"
-    if (fechaOriginal) {
-      $("#example-date").val(fechaOriginal); // debe estar en formato yyyy-mm-dd
-    }
   };
 
   function agregarCampoDesdeDatos(data) {
