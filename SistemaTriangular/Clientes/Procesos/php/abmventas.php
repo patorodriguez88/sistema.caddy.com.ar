@@ -7,12 +7,12 @@ if($_POST['Actualiza']==1){
 
     $Entregado=$_POST['entregado'];  
     $Observaciones='CMS: '.$_POST['Observaciones'];
-    if($_POST[Fecha]==''){
-    $Fecha= date("Y-m-d");	  
+    if($_POST['Fecha']==''){
+    $Fecha= date("Y-m-d");
     }else{
-    $Fecha= date("Y-m-d", strtotime($_POST['Fecha']));  
+    $Fecha= date("Y-m-d", strtotime($_POST['Fecha']));
     }
-    if($_POST[Hora]==''){
+    if($_POST['Hora']==''){
     $Hora=date("H:i");   
     }else{
     $Hora=date('H:i',strtotime($_POST['Hora']));  
@@ -24,9 +24,9 @@ if($_POST['Actualiza']==1){
     $sql=$mysqli->query("UPDATE `TransClientes` SET Retirado='1',Entregado='$Entregado' WHERE id='$_POST[id]' LIMIT 1");    
       
     $sqlseguimiento=$mysqli->query("INSERT INTO `Seguimiento`(`Fecha`, `Hora`, `Usuario`, `Sucursal`, `CodigoSeguimiento`, `Observaciones`, `Entregado`, `Estado`,
-                                  `idCliente`, `Retirado`,`idTransClientes`,`Destino`,`Recorrido`,`NumerodeOrden`)VALUES('{$Fecha}','{$Hora}','{$_SESSION[Usuario]}',
-                                  '{$_SESSION[Sucursal]}','{$sqldato[CodigoSeguimiento]}','{$Observaciones}','{$Entregado}','Entregado al Cliente',
-                                  '{$sqldato[idClienteDestino]}','1','{$sqldato[id]}','{$sqldato[ClienteDestino]}','{$sqldato[Recorrido]}','{$sqldato[NumerodeOrden]}')");
+                                  `idCliente`, `Retirado`,`idTransClientes`,`Destino`,`Recorrido`,`NumerodeOrden`)VALUES('{$Fecha}','{$Hora}','{$_SESSION['Usuario']}',
+                                  '{$_SESSION['Sucursal']}','{$sqldato['CodigoSeguimiento']}','{$Observaciones}','{$Entregado}','Entregado al Cliente',
+                                  '{$sqldato['idClienteDestino']}','1','{$sqldato['id']}','{$sqldato['ClienteDestino']}','{$sqldato['Recorrido']}','{$sqldato['NumerodeOrden']}')");
       
     $sql=$mysqli->query("UPDATE `HojaDeRuta` SET Estado='Cerrado' WHERE Seguimiento='$sqldato[CodigoSeguimiento]' LIMIT 1");
     
