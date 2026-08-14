@@ -79,8 +79,11 @@ if($Rec=='Todos'){
         }
         $queryr="SELECT Color, UltimoOrdenUsuario, UltimoOrdenFecha, UltimoOrdenMetodo FROM Recorridos WHERE Numero='$Rec'";
         $resultR = $mysqli->query($queryr);
-        $rowR = $resultR->fetch_array(MYSQLI_ASSOC);
-        $color = $rowR['Color'];
+        // Si el Recorrido no tiene fila maestra en Recorridos (dato
+        // inconsistente, o recien creado), fetch_array() da null - antes esto
+        // tiraba un warning por cada campo leido de $rowR mas abajo.
+        $rowR = $resultR->fetch_array(MYSQLI_ASSOC) ?: [];
+        $color = $rowR['Color'] ?? null;
 
         $SQL_LOGISTICA="SELECT MAX(id),Estado,NombreChofer FROM Logistica WHERE Recorrido='$Rec' AND Eliminado='0'";
         $DATOS_LOGISTICA = $mysqli->query($SQL_LOGISTICA);        
@@ -103,7 +106,7 @@ if($Rec=='Todos'){
         $total_tabla = $sql_tabla->fetch_array(MYSQLI_ASSOC);
         $Errores=$result_entregas+$result_retiros;
 
-        echo json_encode(array('data'=>$rowss,'Recorrido'=>$Rec,'Color'=>$color,'Tabla'=>$total_tabla['Total'],'Estado'=>$ROW_LOGISTICA['Estado'],'NombreChofer'=>$Chofer,'Total_entregas'=>$result_entregas,'Total_retiros'=>$result_retiros,'Errores'=>$Errores,'UltimoOrdenUsuario'=>$rowR['UltimoOrdenUsuario'],'UltimoOrdenFecha'=>$rowR['UltimoOrdenFecha'],'UltimoOrdenMetodo'=>$rowR['UltimoOrdenMetodo']));
+        echo json_encode(array('data'=>$rowss,'Recorrido'=>$Rec,'Color'=>$color,'Tabla'=>$total_tabla['Total'],'Estado'=>$ROW_LOGISTICA['Estado'] ?? null,'NombreChofer'=>$Chofer,'Total_entregas'=>$result_entregas,'Total_retiros'=>$result_retiros,'Errores'=>$Errores,'UltimoOrdenUsuario'=>$rowR['UltimoOrdenUsuario'] ?? null,'UltimoOrdenFecha'=>$rowR['UltimoOrdenFecha'] ?? null,'UltimoOrdenMetodo'=>$rowR['UltimoOrdenMetodo'] ?? null));
 }
 
 ?>
