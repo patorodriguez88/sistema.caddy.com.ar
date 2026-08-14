@@ -133,21 +133,149 @@ if (isset($_POST['Saldos'])) {
 
 if (isset($_POST['Facturacion'])) {
 
-  if (($_POST['desde'] == '') && ($_POST['hasta'] == '')) {
-    $sql = "SELECT CodigoProveedor,ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Devuelto FROM TransClientes WHERE Debe>0
-  AND Facturado=0 AND Eliminado=0 AND (idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
+  $id    = $mysqli->real_escape_string($_POST['id']);
+  $desde = isset($_POST['desde']) ? $_POST['desde'] : '';
+  $hasta = isset($_POST['hasta']) ? $_POST['hasta'] : '';
+
+  if ($desde === '' && $hasta === '') {
+    // SIN filtro de fechas: visitas calculadas sobre todo Seguimiento (Eliminado=0)
+    $sql = "SELECT
+    t.CodigoProveedor,
+    t.ClienteDestino,
+    t.DomicilioDestino,
+    t.CodigoSeguimiento,
+    t.Fecha,
+    t.TipoDeComprobante,
+    t.NumeroComprobante,
+    t.Observaciones,
+    t.Debe,
+    t.Haber,
+    t.ComprobanteF,
+    t.NumeroF,
+    t.id,
+    IF(t.FormaDePago='Origen', t.idClienteOrigen, t.idClienteDestino) AS idCliente,
+    t.FormaDePago,
+    t.Entregado,
+    t.Devuelto,
+    t.Control_facturacion,
+    COALESCE(t.Visitas, 0) AS CantidadVisitas,
+    c.CodigoPostal AS CodigoPostal,
+    COALESCE(vv.CantServicios, 0) AS CantServicios,
+    CASE
+      WHEN COALESCE(t.Visitas,0) > 1 AND COALESCE(vv.CantServicios,0) = 1 THEN 1
+      ELSE 0
+    END AS AlertaActualizar
+    FROM TransClientes t
+    LEFT JOIN Clientes c ON c.id = t.idClienteDestino
+    LEFT JOIN (
+      SELECT
+        NumPedido,
+        SUM(CASE
+              WHEN CobrarEnvio = 0
+                   AND Eliminado = 0
+                   AND not_invoice = 0
+              THEN Cantidad
+              ELSE 0
+            END) AS CantServicios
+      FROM Ventas
+      GROUP BY NumPedido
+    ) vv ON vv.NumPedido = t.CodigoSeguimiento
+    WHERE
+      t.Debe > 0
+      AND t.Facturado = 0
+      AND t.Eliminado = 0
+      AND (t.idClienteOrigen = '$id' OR t.idClienteDestino = '$id')";
   } else {
-    $sql = "SELECT CodigoProveedor,ClienteDestino,DomicilioDestino,CodigoSeguimiento,Fecha,TipoDeComprobante,NumeroComprobante,Observaciones,Debe,Haber,ComprobanteF,NumeroF,id,
-  IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,FormaDePago,Entregado,CodigoProveedor,Flex,Devuelto FROM TransClientes WHERE Debe>0 AND Fecha>='$_POST[desde]'
-  AND Fecha<='$_POST[hasta]' AND Facturado=0 AND Eliminado=0 AND (idClienteOrigen='$_POST[id]' OR idClienteDestino='$_POST[id]')";
+
+    // base mínima y rango opcional
+    $whereFechaTC = "";
+    if ($desde !== '' && $hasta !== '') {
+      $desde_sql = $mysqli->real_escape_string($desde);
+      $hasta_sql = $mysqli->real_escape_string($hasta);
+      $whereFechaTC .= " AND t.Fecha >= '$desde_sql' AND t.Fecha <= '$hasta_sql' ";
+    }
+
+    // ACTUALIZA t.Visitas con tope 2, usando Estados válidos
+    $sqlUpdVisitas = "UPDATE TransClientes t
+    JOIN (
+    SELECT
+      s.CodigoSeguimiento,
+      LEAST(COUNT(*), 2) AS VisitasCalc
+    FROM Seguimiento s
+    JOIN TransClientes t2
+      ON t2.CodigoSeguimiento = s.CodigoSeguimiento
+      AND t2.Eliminado = 0
+      AND t2.Facturado = 0
+      " . str_replace('t.', 't2.', $whereFechaTC) . "
+      AND (t2.idClienteOrigen = '$id' OR t2.idClienteDestino = '$id')
+      WHERE
+      s.Eliminado = 0
+      AND TRIM(s.Estado) IN ('Entregado al Cliente','No se pudo entregar')
+      GROUP BY s.CodigoSeguimiento
+      ) x ON x.CodigoSeguimiento = t.CodigoSeguimiento SET t.Visitas = x.VisitasCalc
+      WHERE
+      t.Eliminado = 0
+      AND t.Facturado = 0
+      $whereFechaTC
+      AND (t.idClienteOrigen = '$id' OR t.idClienteDestino = '$id')
+    ";
+    $mysqli->query($sqlUpdVisitas);
+
+    $sql = "SELECT
+    t.CodigoProveedor,
+    t.ClienteDestino,
+    t.DomicilioDestino,
+    t.CodigoSeguimiento,
+    t.Fecha,
+    t.TipoDeComprobante,
+    t.NumeroComprobante,
+    t.Observaciones,
+    t.Debe,
+    t.Haber,
+    t.ComprobanteF,
+    t.NumeroF,
+    t.id,
+    IF(t.FormaDePago='Origen', t.idClienteOrigen, t.idClienteDestino) AS idCliente,
+    t.FormaDePago,
+    t.Entregado,
+    t.Flex,
+    t.Devuelto,
+    t.Control_facturacion,
+    COALESCE(t.Visitas, 0) AS CantidadVisitas,
+    c.CodigoPostal AS CodigoPostal,
+    COALESCE(vv.CantServicios, 0) AS CantServicios,
+    CASE
+      WHEN COALESCE(t.Visitas,0) > 1 AND COALESCE(vv.CantServicios,0) = 1 THEN 1
+      ELSE 0
+    END AS AlertaActualizar
+    FROM TransClientes t
+    LEFT JOIN Clientes c ON c.id = t.idClienteDestino
+    LEFT JOIN (
+      SELECT
+        NumPedido,
+        SUM(CASE
+              WHEN CobrarEnvio = 0
+                   AND Eliminado = 0
+                   AND not_invoice = 0
+              THEN Cantidad
+              ELSE 0
+            END) AS CantServicios
+      FROM Ventas
+      GROUP BY NumPedido
+    ) vv ON vv.NumPedido = t.CodigoSeguimiento
+    WHERE
+      t.Debe > 0
+      $whereFechaTC
+      AND t.Facturado = 0
+      AND t.Eliminado = 0
+      AND (t.idClienteOrigen = '$id' OR t.idClienteDestino = '$id')";
   }
 
   $Resultado = $mysqli->query($sql);
   $rows = array();
   while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-    if ($row['idCliente'] == $_POST['id']) {
-      $rows[] = $row;
+    if ($row['idCliente'] == $id) {
+      $rows[] = $row; // cada fila incluye 'CantidadVisitas' (0, 1 o 2) y 'AlertaActualizar'
     }
   }
   echo json_encode(array('data' => $rows));

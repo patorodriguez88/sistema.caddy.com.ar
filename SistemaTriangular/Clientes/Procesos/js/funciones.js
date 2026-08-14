@@ -2,6 +2,20 @@ function hoyISO() {
   const d = new Date();
   return d.toISOString().split("T")[0]; // YYYY-MM-DD (ideal para <input type="date">)
 }
+// Extrae los últimos 4 dígitos de un CP tipo "X5028" y los convierte a número.
+function getCPnum(cp) {
+  if (cp === null || cp === undefined) return null;
+  var str = String(cp).trim();
+  var m = str.match(/(\d{4})$/);
+  return m ? parseInt(m[1], 10) : null;
+}
+// Devuelve true si el CP NO está entre 5000 y 5023 (interior, fuera de Capital)
+function isOutOfCapitalRange(cp) {
+  var n = getCPnum(cp);
+  if (n === null) return false; // sin CP no alertamos
+  return !(n >= 5000 && n <= 5023);
+}
+
 function currencyFormat(num) {
   return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 }
@@ -2979,7 +2993,7 @@ $("#botonfacturacion").click(function () {
             //   if(getParameterByName('token')===null){
             return (
               '<td class="table-action">' +
-              '<a style="cursor:pointer"  data-toggle="modal" data-target="#standard-modal-codcliente" data-id="' +
+              '<a style="cursor:pointer"  data-bs-toggle="modal" data-bs-target="#standard-modal-codcliente" data-id="' +
               row.CodigoSeguimiento +
               '"' +
               'data-title="' +
@@ -3010,9 +3024,18 @@ $("#botonfacturacion").click(function () {
                 row.id +
                 ')" class="badge bg-warning text-white">Simple</span>';
             }
+            // Cantidad de visitas (0, 1 o 2 - tope 2) calculada en el
+            // backend sobre el historial de Seguimiento para este remito.
+            if (row.CantidadVisitas > 1) {
+              var visitas = "2 Visitas";
+            } else if (row.CantidadVisitas == 1) {
+              visitas = "1 Visita";
+            } else {
+              visitas = "";
+            }
             return (
               '<td class="table-action">' +
-              '<a style="cursor:pointer"  data-toggle="modal" data-target="#modal_seguimiento" data-id="' +
+              '<a style="cursor:pointer"  data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="' +
               row.CodigoSeguimiento +
               '"' +
               'data-title="' +
@@ -3023,13 +3046,43 @@ $("#botonfacturacion").click(function () {
               row.CodigoSeguimiento +
               "</b></a><br>" +
               servicio +
+              (visitas
+                ? '<br><span class="badge bg-dark">' + visitas + "</span>"
+                : "") +
               "</td>"
             );
           },
         },
         {
           data: "Debe",
-          render: $.fn.dataTable.render.number(".", ",", 2, "$ "),
+          render: function (data, type, row) {
+            var formatted = $.fn.dataTable.render
+              .number(".", ",", 2, "$ ")
+              .display(data);
+            if (type !== "display" && type !== "filter") {
+              return formatted;
+            }
+            // Alerta: 2 visitas pero solo 1 servicio facturable en Ventas
+            // (calculado en el backend), y el cliente esta fuera de Capital
+            // (CP 5000-5023) - suele indicar que falta cargar la segunda
+            // visita antes de facturar.
+            if (
+              Number(row.AlertaActualizar) === 1 &&
+              isOutOfCapitalRange(row.CodigoPostal)
+            ) {
+              var cpnum = getCPnum(row.CodigoPostal);
+              var title = "Revisar: 2 visitas y 1 servicio en Ventas";
+              if (cpnum !== null) title += " · CP " + cpnum + " fuera de 5000–5023";
+              return (
+                '<span class="text-danger fw-bold" title="' +
+                title +
+                '">' +
+                formatted +
+                "</span>"
+              );
+            }
+            return formatted;
+          },
         },
         {
           data: "id",
@@ -3038,13 +3091,13 @@ $("#botonfacturacion").click(function () {
               '<td class="table-action">' +
               '<a data-id="' +
               row.id +
-              '" data-toggle="modal" data-target="#standard-modal-modificar" class="action-icon">' +
+              '" data-bs-toggle="modal" data-bs-target="#standard-modal-modificar" class="action-icon">' +
               '<i class="mdi mdi-pencil text-success"></i></a>' +
               '<a data-id="' +
               row.id +
               '" data-tabla="trans" data-title="' +
               row.CodigoSeguimiento +
-              '" data-toggle="modal" data-target="#warning-modal" class="action-icon">' +
+              '" data-bs-toggle="modal" data-bs-target="#warning-modal" class="action-icon">' +
               '<i class="mdi mdi-delete text-danger"></i></a>' +
               '<a href="javascript:void(0)" onclick="control_facturacion(' +
               row.id +
@@ -3148,6 +3201,60 @@ $("#modificarcodigocliente_ok").click(function () {
       },
     });
   }
+});
+
+// Modal "MODIFICAR #" del lapiz en Guias a Facturar - el botón nunca hacía
+// nada porque este handler no existía (el modal se copió de la pantalla de
+// Hoja de Ruta pero se quedó sin conectar). Mismo criterio que usa esa
+// pantalla (Logistica/Proceso/js/pendientes.js): marca el remito como
+// Entregado con fecha/hora/observaciones del receptor.
+$("#standard-modal-modificar").on("show.bs.modal", function (e) {
+  var triggerLink = $(e.relatedTarget);
+  var id = triggerLink.data("id");
+  $("#id_trans").val(id);
+  $("#myCenterModalLabel_modificar").html("MODIFICAR # " + id);
+  $("#form")[0].reset();
+});
+
+$("#modificardireccion_ok").click(function () {
+  var entregado = $("#entregado").is(":checked") ? 1 : 0;
+  var fecha = $("#fecha_receptor").val();
+  var hora = $("#hora_receptor").val();
+  var obs = $("#observaciones_receptor").val();
+  var id = $("#id_trans").val();
+
+  if (entregado != 1) {
+    toast("warning", "Presione Entregado !", "No se realizaron cambios.");
+    return;
+  }
+
+  $.ajax({
+    data: {
+      ActualizarTrans: 1,
+      id: id,
+      entregado: entregado,
+      Fecha: fecha,
+      Hora: hora,
+      Observaciones: obs,
+    },
+    url: "Procesos/php/funciones.php",
+    type: "post",
+    success: function (response) {
+      var jsonData = JSON.parse(response);
+      if (jsonData.success == 1) {
+        toast("success", "Registro Actualizado !", "Se ha actualizado el registro correctamente.");
+        var table = $("#facturacion_tabla").DataTable();
+        table.ajax.reload();
+        $("#standard-modal-modificar").modal("hide");
+        $("#form")[0].reset();
+      } else {
+        toast("error", "Error", "No se pudo actualizar el registro.");
+      }
+    },
+    error: function () {
+      toast("error", "Error", "No se pudo conectar con el servidor.");
+    },
+  });
 });
 
 //FACTURACION RECORRIDOS
@@ -3442,7 +3549,7 @@ $("#guias_recibidas_boton").click(function () {
         render: function (data, type, row) {
           return (
             '<td class="table-action">' +
-            '<a style="cursor:pointer"  data-toggle="modal" data-target="#modal_seguimiento" data-id="' +
+            '<a style="cursor:pointer"  data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="' +
             row.CodigoSeguimiento +
             '"' +
             'data-title="' +
@@ -3595,7 +3702,7 @@ $("#guias_enviadas_boton").click(function () {
         render: function (data, type, row) {
           return (
             '<td class="table-action">' +
-            '<a style="cursor:pointer" class="text-primary" data-toggle="modal" data-target="#modal_seguimiento" data-id="' +
+            '<a style="cursor:pointer" class="text-primary" data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="' +
             row.CodigoSeguimiento +
             '"' +
             'data-title="' +
