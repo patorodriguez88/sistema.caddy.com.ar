@@ -3203,60 +3203,6 @@ $("#modificarcodigocliente_ok").click(function () {
   }
 });
 
-// Modal "MODIFICAR #" del lapiz en Guias a Facturar - el botón nunca hacía
-// nada porque este handler no existía (el modal se copió de la pantalla de
-// Hoja de Ruta pero se quedó sin conectar). Mismo criterio que usa esa
-// pantalla (Logistica/Proceso/js/pendientes.js): marca el remito como
-// Entregado con fecha/hora/observaciones del receptor.
-$("#standard-modal-modificar").on("show.bs.modal", function (e) {
-  var triggerLink = $(e.relatedTarget);
-  var id = triggerLink.data("id");
-  $("#id_trans").val(id);
-  $("#myCenterModalLabel_modificar").html("MODIFICAR # " + id);
-  $("#form")[0].reset();
-});
-
-$("#modificardireccion_ok").click(function () {
-  var entregado = $("#entregado").is(":checked") ? 1 : 0;
-  var fecha = $("#fecha_receptor").val();
-  var hora = $("#hora_receptor").val();
-  var obs = $("#observaciones_receptor").val();
-  var id = $("#id_trans").val();
-
-  if (entregado != 1) {
-    toast("warning", "Presione Entregado !", "No se realizaron cambios.");
-    return;
-  }
-
-  $.ajax({
-    data: {
-      ActualizarTrans: 1,
-      id: id,
-      entregado: entregado,
-      Fecha: fecha,
-      Hora: hora,
-      Observaciones: obs,
-    },
-    url: "Procesos/php/funciones.php",
-    type: "post",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-      if (jsonData.success == 1) {
-        toast("success", "Registro Actualizado !", "Se ha actualizado el registro correctamente.");
-        var table = $("#facturacion_tabla").DataTable();
-        table.ajax.reload();
-        $("#standard-modal-modificar").modal("hide");
-        $("#form")[0].reset();
-      } else {
-        toast("error", "Error", "No se pudo actualizar el registro.");
-      }
-    },
-    error: function () {
-      toast("error", "Error", "No se pudo conectar con el servidor.");
-    },
-  });
-});
-
 //FACTURACION RECORRIDOS
 
 $("#recorridos_boton").click(function () {

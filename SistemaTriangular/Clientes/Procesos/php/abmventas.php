@@ -1,9 +1,11 @@
 <?php
-session_start();
+// Conexioni.php ya hace su propio session_start() - este de aca duplicaba
+// la llamada y el Notice de PHP ("Ignoring session_start()...") se colaba
+// como HTML antes del JSON, rompiendo el JSON.parse() del lado del cliente.
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Buenos_Aires');
 
-if($_POST['Actualiza']==1){
+if(isset($_POST['Actualiza']) && $_POST['Actualiza']==1){
 
     $Entregado=$_POST['entregado'];  
     $Observaciones='CMS: '.$_POST['Observaciones'];
@@ -38,17 +40,17 @@ if($_POST['Actualiza']==1){
     echo json_encode(array('success'=>1));
     }
 
+// Antes había acá un `if ($_SESSION['Nivel'] <> 1) echo json_encode(['success' => 401]);`
+// suelto, fuera de cualquier bloque de accion - se ejecutaba en TODAS las
+// requests a este archivo (sin importar que accion se pidiera) y para
+// cualquier usuario que no fuera Nivel 1 (SuperAdministrador) agregaba un
+// segundo JSON pegado al de la accion real, rompiendo el JSON.parse() del
+// lado del cliente. El control de Nivel que hace falta ya esta bien scopeado
+// mas abajo, adentro del bloque 'BuscarDatos'.
 
-
-
-if($_SESSION['Nivel']<>1){
-
-    echo json_encode(array('success'=>401));  
-}
-
-if($_POST['BuscarDatosVentas']==1){
+if(isset($_POST['BuscarDatosVentas']) && $_POST['BuscarDatosVentas']==1){
   
-    if($_POST['idPedido']<>''){
+    if(isset($_POST['idPedido']) && $_POST['idPedido']<>''){
     
         $id=$_POST['idPedido'];  
         $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Cantidad,Precio,Comentario FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
@@ -74,7 +76,7 @@ if($_POST['BuscarDatosVentas']==1){
 }
 
 //AGREGAR DATOS VENTAS
-if($_POST['AgregarDatosVentas']==1){
+if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
   
   $_POST['codigoventa'];  
   $sql=$mysqli->query("SELECT * FROM Productos WHERE Codigo='$_POST[codigoventa]'");
@@ -130,7 +132,7 @@ if($_POST['AgregarDatosVentas']==1){
 }
 
 //MODIFICAR VENTAS
-if($_POST['ModificarDatosVentas']==1){
+if(isset($_POST['ModificarDatosVentas']) && $_POST['ModificarDatosVentas']==1){
 $info="M: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)');
     $sql="SELECT Fecha,IF(FormaDePago='Origen',RazonSocial,ClienteDestino)as RazonSocial,
                        IF(FormaDePago='Origen',Cuit,idClienteDestino)as Cuit,TipoDeComprobante,NumeroComprobante,Debe,
@@ -231,7 +233,7 @@ $info="M: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)');
 //ELIMINAR DATOS VENTAS 
 
 // Verificar si se debe eliminar datos de ventas
-if ($_POST['EliminarDatosVentas'] == 1) {
+if (isset($_POST['EliminarDatosVentas']) && $_POST['EliminarDatosVentas'] == 1) {
 
     // Verificar nivel de sesión
     if ($_SESSION['Nivel'] == 1) {
@@ -301,7 +303,7 @@ if ($_POST['EliminarDatosVentas'] == 1) {
 
 
 //SERVICIOS
-if($_POST['id_servicio']<>''){
+if(isset($_POST['id_servicio']) && $_POST['id_servicio']<>''){
   $id=$_POST['id_servicio'];
   $sqlservicios=$mysqli->query("SELECT id,PrecioVenta,Titulo FROM Productos WHERE id='$id'");
   $datoservicios=$sqlservicios->fetch_array(MYSQLI_ASSOC);
@@ -311,7 +313,7 @@ if($_POST['id_servicio']<>''){
 }
 
 //BUSCAR DATOS
-if($_POST['BuscarDatos']==1){
+if(isset($_POST['BuscarDatos']) && $_POST['BuscarDatos']==1){
 
   if($_POST['Nivel']<>1){
   
@@ -335,7 +337,7 @@ if($_POST['BuscarDatos']==1){
 }
 
 //ELIMINAR GUIA DE CARGA
-if($_POST['EliminarRegistro']==1){
+if(isset($_POST['EliminarRegistro']) && $_POST['EliminarRegistro']==1){
   $info="B: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)').' clientes.procesos.php.abmventas';
   //ACTURALIZO HOJA DE RUTA
   if($sql=$mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1")){

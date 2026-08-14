@@ -41,9 +41,15 @@ $('#standard-modal-modificar').on('show.bs.modal', function (e) {
 
 var table = $('#ventas_tabla').DataTable();
 table.destroy();
-$('#id_modificar').val(i);   
-$('#standard-modal-modificar').modal('show');
-$('#id_trans').val(i);  
+$('#id_modificar').val(i);
+// Sin este $('#standard-modal-modificar').modal('show') manual: Bootstrap ya
+// esta mostrando el modal (por eso se disparo este mismo show.bs.modal), asi
+// que llamarlo de nuevo acá lo reentraba - en Bootstrap 5 esa segunda llamada
+// vuelve a disparar show.bs.modal pero sin relatedTarget (se llama por
+// código, no por click), y el "var i = triggerLink[0].dataset['id']" de mas
+// arriba explotaba con "Cannot read properties of undefined". Por eso el
+// lápiz no abria nunca el modal.
+$('#id_trans').val(i);
 $('#myCenterModalLabel_modificar').html('Modificar id # '+i); 
 
 var id= $('#id_modificar').val();  
@@ -68,7 +74,7 @@ var id= $('#id_modificar').val();
            render: function (data, type, row) {
             return '<td class="table-action">'+
             '<a id="'+row.idPedido+'" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>'+
-            '<a id="'+row.idPedido+'" data-id="'+row.idPedido+'" data-tabla="ventas" data-toggle="modal" data-target="#warning-modal" class="action-icon"> <i class="mdi mdi-delete text-warning"></i></a>'+
+            '<a id="'+row.idPedido+'" data-id="'+row.idPedido+'" data-tabla="ventas" data-bs-toggle="modal" data-bs-target="#warning-modal" class="action-icon"> <i class="mdi mdi-delete text-warning"></i></a>'+
             '<a id="'+row.NumPedido+'" onclick="agregarVentas(this.id);" class="action-icon"> <i class="mdi mdi-plus-circle text-success"></i></a>'+  
             '</td>';
             }
