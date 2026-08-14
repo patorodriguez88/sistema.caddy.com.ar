@@ -348,11 +348,30 @@ $(document).ready(function () {
         render: function (data, type, row) {
           //    console.log([0].Latitud);
           var Fecha = row.Fecha.split("-").reverse().join(".");
+          // Hora estimada del paso pendiente (calculada al Ordenar segun
+          // Reparto / desde el Planificador) y, si el operador lo cargo,
+          // el horario de entrega solicitado por el cliente - se muestran
+          // abajo de la fecha en vez de sumar columnas nuevas.
+          var horaEstimada = row.Retirado == 1 ? row.Hora : row.Hora_retiro;
+          var lineas = "";
+          if (horaEstimada) {
+            lineas +=
+              '<br><small class="text-muted"><i class="mdi mdi-clock-outline"></i> ' +
+              horaEstimada.substring(0, 5) +
+              "</small>";
+          }
+          if (row.HorarioEntregaSolicitado) {
+            lineas +=
+              '<br><small class="text-info"><i class="mdi mdi-clock-alert-outline"></i> Solicitado ' +
+              row.HorarioEntregaSolicitado.substring(0, 5) +
+              "</small>";
+          }
           return (
             '<td><span style="display: none;">' +
             row.Fecha +
             "</span>" +
             Fecha +
+            lineas +
             "</td>"
           );
         },

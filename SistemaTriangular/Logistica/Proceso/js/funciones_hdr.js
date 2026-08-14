@@ -11,24 +11,17 @@ $(document).ready(function () {
 // empresa en cada carga de pantalla, aunque despues solo se lee filtrada
 // por un Recorrido a la vez - devuelve el jqXHR para poder encadenar
 // (.then) la lectura del mapa despues de que termine de refrescarse.
+//
+// Sin modal de carga a proposito: el modal "Renderizando Tabla Roadmap"
+// quedaba pegado con demasiada frecuencia (timing de Bootstrap con varias
+// llamadas encadenadas) y molestaba mas de lo que ayudaba - la llamada es
+// rapida, no hace falta avisar que esta en curso.
 function renderizar_datos(recorrido) {
   return $.ajax({
     data: { Renderizar: 1, Recorrido: recorrido },
     type: "POST",
     url: "Proceso/php/roadmap_end.php",
-    beforeSend: function () {
-      // setting a timeout
-      $("#info-alert-modal").modal("show");
-      $("#info-alert-modal-title").html("Renderizando Tabla Roadmap");
-    },
-    success: function (response) {
-      $("#info-alert-modal").modal("hide");
-    },
-    // Antes no habia manejo de error aca: si esta llamada fallaba (network,
-    // 500, timeout), el modal "Renderizando Tabla Roadmap" quedaba abierto
-    // para siempre, sin ningun aviso.
     error: function (jqXHR, textStatus, errorThrown) {
-      $("#info-alert-modal").modal("hide");
       console.error("Error en renderizar_datos:", textStatus, errorThrown);
       toast("error", "Error", "No se pudo actualizar el orden del recorrido. Reintentá de nuevo.");
     },
@@ -56,23 +49,17 @@ function color(c, r) {
   });
 }
 
-//FUNCION PARA MOSTRAR LOS PANELES
+// FUNCION PARA MOSTRAR LOS PANELES - sin modal de carga a proposito (ver
+// nota en renderizar_datos), la tarjetas simplemente aparecen cuando llegan.
 function paneles() {
   $.ajax({
     data: { FormaDePago: 1 },
     type: "POST",
     url: "Proceso/php/funciones_hdr.php",
-    beforeSend: function () {
-      // setting a timeout
-      $("#info-alert-modal").modal("show");
-      $("#info-alert-modal-title").html("Cargando Hojas de Ruta");
-    },
     success: function (response) {
-      $("#info-alert-modal").modal("hide");
       $("#hdractivas").html(response).fadeIn();
     },
     error: function (jqXHR, textStatus, errorThrown) {
-      $("#info-alert-modal").modal("hide");
       console.error("Error en paneles():", textStatus, errorThrown);
       toast("error", "Error", "No se pudieron cargar las Hojas de Ruta. Recargá la página.");
     },
@@ -124,11 +111,6 @@ function veo(i) {
       type: "POST",
       url: "Mapas/php/datos_hojaderuta.php",
       success: function (response) {
-        // Cierre defensivo: renderizar_datos() ya debería haber cerrado el
-        // modal en su propio success, pero si por algun motivo (timing,
-        // varios clicks seguidos) quedo abierto, esto lo garantiza apenas
-        // llegan los datos del mapa.
-        $("#info-alert-modal").modal("hide");
         var jsonData = JSON.parse(response);
         $("#recorrido").html(jsonData.Recorrido);
         $("#hdractivas").hide();
@@ -207,7 +189,6 @@ function veo(i) {
       // nada - la pantalla se quedaba en el estado anterior sin ningun
       // aviso de que algo salio mal.
       error: function (jqXHR, textStatus, errorThrown) {
-        $("#info-alert-modal").modal("hide");
         console.error("Error en datos_hojaderuta.php (Mapa):", textStatus, errorThrown);
         toast("error", "Error", "No se pudo cargar el mapa del recorrido. Reintentá de nuevo.");
       },

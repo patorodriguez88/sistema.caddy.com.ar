@@ -526,6 +526,10 @@
                                                     </div>
                                                 </div>
                                             </div>
+                                            <div class="col-lg-2 mt-3">
+                                                <label>Horario de Entrega Solicitado</label>
+                                                <input id="horario_entrega_t" name="horario_entrega_t" type="time" class="form-control" title="Opcional: horario en el que el cliente pide la entrega. Ayuda a priorizar la parada en el Planificador, aunque no siempre se pueda cumplir.">
+                                            </div>
                                         </div>
                                         <div class="row">
                                             <div class="col-lg-12 mt-3">

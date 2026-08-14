@@ -17,6 +17,7 @@ document
       redespacho_nc: document.getElementById("redespacho_nc").value,
       formadepago_t: document.getElementById("formadepago_t").value,
       entregaen_t: document.getElementById("entregaen_t").value,
+      horario_entrega_t: document.getElementById("horario_entrega_t").value,
       codigocliente: document.getElementById("codigocliente").value,
       observaciones: document.getElementById("observaciones").value,
       cobranzadelenvio_t: document.getElementById("cobranzadelenvio_t").value,

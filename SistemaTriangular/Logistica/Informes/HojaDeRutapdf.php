@@ -184,7 +184,8 @@ foreach ($items as $fila) {
     $trans = mysqli_fetch_one(
         $mysqli,
         "SELECT CodigoSeguimiento, RazonSocial, DomicilioOrigen, Retirado,
-                NumeroComprobante, TelefonoOrigen, TelefonoDestino, CodigoProveedor
+                NumeroComprobante, TelefonoOrigen, TelefonoDestino, CodigoProveedor,
+                HorarioEntregaSolicitado
            FROM TransClientes
           WHERE CodigoSeguimiento = ?
             AND Eliminado = 0
@@ -209,7 +210,9 @@ foreach ($items as $fila) {
     $numeroComprobante = (string)($trans['NumeroComprobante'] ?? '');
     $codigoProveedor = (string)($trans['CodigoProveedor'] ?? '');
 
-    $servicio = trim($accion . "\n" . (string)($fila['Hora'] ?? ''));
+    $horarioSolicitado = substr((string)($trans['HorarioEntregaSolicitado'] ?? ''), 0, 5);
+    $servicio = trim($accion . "\n" . (string)($fila['Hora'] ?? '')
+        . ($horarioSolicitado !== '' ? "\nSolicitado: " . $horarioSolicitado : ''));
 
     $remito = 'Venta ' . $numeroComprobante
         . ($codigoProveedor !== '' ? "\nId. Prov.: " . $codigoProveedor : '')

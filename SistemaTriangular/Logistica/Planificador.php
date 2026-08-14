@@ -1,6 +1,17 @@
 <?php
 require_once __DIR__ . '/../Conexion/Conexioni.php';
 require_once __DIR__ . '/../Conexion/google_config.php';
+
+// Minutos por parada por defecto (Variables.TiempoPorParada), convertido a
+// segundos para el input - el operador lo puede seguir ajustando manualmente
+// aca antes de calcular la ruta.
+$stopTimeSegDefault = 300;
+$stmtStopTime = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
+$stmtStopTime->execute();
+$rowStopTime = $stmtStopTime->get_result()->fetch_assoc();
+if ($rowStopTime && is_numeric($rowStopTime['Valor'])) {
+    $stopTimeSegDefault = (int)round(((float)$rowStopTime['Valor']) * 60);
+}
 ?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
@@ -106,7 +117,7 @@ require_once __DIR__ . '/../Conexion/google_config.php';
                                             <div class="col-lg-2 col-md-4">
                                                 <label class="form-label fw-semibold">Tiempo/parada</label>
                                                 <div class="input-group">
-                                                    <input type="number" id="stopTimes" class="form-control" value="600" />
+                                                    <input type="number" id="stopTimes" class="form-control" value="<?php echo $stopTimeSegDefault; ?>" />
                                                     <span class="input-group-text">seg</span>
                                                 </div>
                                             </div>

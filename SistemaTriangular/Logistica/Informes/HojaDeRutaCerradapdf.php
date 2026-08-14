@@ -153,7 +153,8 @@ foreach ($items as $fila) {
 
     $trans = mysqli_fetch_one(
         $mysqli,
-        "SELECT RazonSocial, DomicilioOrigen, Retirado, NumeroComprobante, TelefonoOrigen
+        "SELECT RazonSocial, DomicilioOrigen, Retirado, NumeroComprobante, TelefonoOrigen,
+                HorarioEntregaSolicitado
            FROM TransClientes
           WHERE CodigoSeguimiento = ?
             AND Eliminado = 0
@@ -179,10 +180,14 @@ foreach ($items as $fila) {
     $destino = (string)($fila['Cliente'] ?? '') . "\n"
         . 'Dir.: ' . (string)($fila['Localizacion'] ?? '') . '  Tel.: ' . (string)($fila['Celular'] ?? '');
 
+    $horarioSolicitado = substr((string)($trans['HorarioEntregaSolicitado'] ?? ''), 0, 5);
+    $horaCelda = trim((string)($fila['Hora'] ?? '')
+        . ($horarioSolicitado !== '' ? "\nSolicitado: " . $horarioSolicitado : ''));
+
     $pdf->Row([
         $N,
         $accion,
-        (string)($fila['Hora'] ?? ''),
+        $horaCelda,
         (string)($trans['NumeroComprobante'] ?? ''),
         $origen,
         $destino,

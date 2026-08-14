@@ -31,25 +31,54 @@ function haversineDistance($lat1, $lon1, $lat2, $lon2)
     return $earthRadius * $c;
 }
 
-function ordenarPorCercania(array $puntos, array $origen): array
+// Velocidad promedio asumida para estimar a que hora se llegaria a cada
+// parada mientras se arma el orden (todavia no llamamos a la Routes API,
+// asi que no tenemos tiempos reales por tramo). Es solo para decidir
+// prioridad entre paradas cercanas, no para el calculo final de horas.
+const VELOCIDAD_PROMEDIO_KMH = 25;
+
+// Nearest-neighbor por cercania, pero las paradas con HorarioEntregaSolicitado
+// que ya se cumplio (o esta por cumplirse en menos de 60 min, segun la hora
+// estimada de llegada) se priorizan por sobre la mas cercana, para que no
+// queden muy desacomodadas en la ruta - igual que pidio el cliente: no hace
+// falta cumplirlo siempre, pero ayuda a acomodar el recorrido.
+function ordenarPorCercania(array $puntos, array $origen, float $horaSalidaMinutos, float $timeDelivered): array
 {
     $ordenado = [];
     $actual = $origen;
     $restante = $puntos;
+    $tiempoAcumuladoMin = 0.0;
 
     while (count($restante) > 0) {
-        $menorDist = INF;
+        $mejorScore = INF;
         $siguienteIndex = 0;
+        $mejorDist = 0.0;
         foreach ($restante as $i => $p) {
             $d = haversineDistance($actual['lat'], $actual['lng'], $p['lat'], $p['lng']);
-            if ($d < $menorDist) {
-                $menorDist = $d;
+            $llegadaEstimadaMin = $tiempoAcumuladoMin + ($d / VELOCIDAD_PROMEDIO_KMH * 60);
+
+            $bonus = 0.0;
+            if ($p['horarioSolicitadoMin'] !== null) {
+                $urgenciaMin = $p['horarioSolicitadoMin'] - ($horaSalidaMinutos + $llegadaEstimadaMin);
+                if ($urgenciaMin <= 60) {
+                    // Ya vencido o vence dentro de la hora: mas prioridad cuanto
+                    // mas atrasado/proximo, en km "equivalentes" para pesar
+                    // contra la distancia real.
+                    $bonus = (60 - $urgenciaMin) / 2;
+                }
+            }
+
+            $score = $d - $bonus;
+            if ($score < $mejorScore) {
+                $mejorScore = $score;
                 $siguienteIndex = $i;
+                $mejorDist = $d;
             }
         }
         $siguiente = $restante[$siguienteIndex];
         $ordenado[] = $siguiente;
         $actual = $siguiente;
+        $tiempoAcumuladoMin += ($mejorDist / VELOCIDAD_PROMEDIO_KMH * 60) + $timeDelivered;
         unset($restante[$siguienteIndex]);
         $restante = array_values($restante);
     }
@@ -83,11 +112,16 @@ if ($_POST['Orden_Automatic'] == 1) {
     }
     $HoraSalida = $row_inicio['Hora'] ?? '08:00:00';
 
-    // PARADAS ABIERTAS DEL RECORRIDO, CON COORDENADAS VALIDAS
+    // PARADAS ABIERTAS DEL RECORRIDO, CON COORDENADAS VALIDAS. Se suma el
+    // HorarioEntregaSolicitado (TransClientes) de cada parada, si lo cargo
+    // el operador al confirmar la venta, para usarlo como prioridad al
+    // ordenar (ver ordenarPorCercania).
     $stmt = $mysqli->prepare(
-        "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, Clientes.Latitud, Clientes.Longitud
+        "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, Clientes.Latitud, Clientes.Longitud,
+                TransClientes.HorarioEntregaSolicitado
            FROM HojaDeRuta
           INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
+          LEFT JOIN TransClientes ON TransClientes.id = HojaDeRuta.idTransClientes
           WHERE HojaDeRuta.Recorrido = ? AND HojaDeRuta.Eliminado = 0 AND HojaDeRuta.Estado = 'Abierto'"
     );
     $stmt->bind_param('s', $Recorrido);
@@ -105,7 +139,12 @@ if ($_POST['Orden_Automatic'] == 1) {
         $lat = floatval($row['Latitud']);
         $lng = floatval($row['Longitud']);
         if ($lat !== 0.0 && $lng !== 0.0 && $isValidCoord($lat, $lng)) {
-            $paradas[] = ['id' => $row['id'], 'lat' => $lat, 'lng' => $lng];
+            $horarioSolicitadoMin = null;
+            if (!empty($row['HorarioEntregaSolicitado'])) {
+                sscanf($row['HorarioEntregaSolicitado'], '%d:%d', $hs, $ms);
+                $horarioSolicitadoMin = $hs * 60 + $ms;
+            }
+            $paradas[] = ['id' => $row['id'], 'lat' => $lat, 'lng' => $lng, 'horarioSolicitadoMin' => $horarioSolicitadoMin];
         } else {
             $sinCoordenadas++;
         }
@@ -121,9 +160,23 @@ if ($_POST['Orden_Automatic'] == 1) {
         exit;
     }
 
+    // Minutos estimados por parada, configurable en Variables (Nombre =
+    // 'TiempoPorParada') - mismo criterio que CostoPeajes/PrecioNaftaSuper.
+    // Se calcula aca (antes de ordenar) porque tambien lo necesita
+    // ordenarPorCercania para estimar a que hora se llegaria a cada parada.
+    $timeDelivered = 5;
+    $stmtVar = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
+    $stmtVar->execute();
+    $rowVar = $stmtVar->get_result()->fetch_assoc();
+    if ($rowVar && is_numeric($rowVar['Valor'])) {
+        $timeDelivered = (float)$rowVar['Valor'];
+    }
+
     // Origen fijo de la empresa (mismo punto que usa el Planificador).
     $origen = ['lat' => -31.444994776141503, 'lng' => -64.1779408896999];
-    $ordenadas = ordenarPorCercania($paradas, $origen);
+    sscanf($HoraSalida, '%d:%d', $hSalidaH, $hSalidaM);
+    $horaSalidaMinutos = $hSalidaH * 60 + $hSalidaM;
+    $ordenadas = ordenarPorCercania($paradas, $origen, $horaSalidaMinutos, $timeDelivered);
 
     // UNA sola llamada a la Routes API con todas las paradas ya ordenadas como
     // intermedios - antes esto eran hasta N² llamadas a la Distance Matrix API.
@@ -176,7 +229,6 @@ if ($_POST['Orden_Automatic'] == 1) {
     $legs = $data['routes'][0]['legs'];
     $paradasFinal = array_merge($ordenadas, [$destino]); // reconstruyo el orden completo (los intermedios + el destino que se sacó antes)
 
-    $timeDelivered = 5; // TIEMPO ADICIONAL POR ENTREGA DEL PAQUETE, igual que antes
     $horaActual = new DateTime($fechaSalida . ' ' . $HoraSalida);
 
     $stmtUpdate = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = ?, KmO = ?, Tiempo = ?, Hora = ? WHERE id = ? LIMIT 1");

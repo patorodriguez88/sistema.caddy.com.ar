@@ -90,8 +90,8 @@ $TransClientesQuery = "INSERT INTO TransClientes(Fecha, RazonSocial, Cuit, TipoD
     CodigoSeguimiento, NumeroVenta, Cantidad, DomicilioOrigen, SituacionFiscalOrigen, LocalidadOrigen, IngBrutosOrigen, TelefonoOrigen,
     FormaDePago, EntregaEn, Usuario, CodigoProveedor, Observaciones, Transportista, Recorrido, ProvinciaDestino, ProvinciaOrigen, Retirado,
     idClienteDestino, CobrarEnvio, CobrarCaddy, ValorDeclarado, PisoDeptoDestino, FechaEntrega, idClienteFacturacion, Kilometros, google_km,
-    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden,idClienteOrigen)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?)";
+    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden,idClienteOrigen,HorarioEntregaSolicitado)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)";
 
 $stmt = $mysqli->prepare($TransClientesQuery);
 
@@ -116,6 +116,7 @@ $idClienteOrigen = $row['id'];
 $telefonoOrigen = "{$row['Telefono']} - {$row['Celular']}";
 $formadepago = $_POST['formadepago_t'];
 $entregaEn = $_POST['entregaen_t'];
+$horarioEntregaSolicitado = !empty($_POST['horario_entrega_t']) ? $_POST['horario_entrega_t'] : null;
 $codigoProveedor = $_POST['codigocliente'];
 $observaciones = isset($_POST['observaciones']) ? $_POST['observaciones'] : '';
 $recorrido = $_POST['recorrido_t'];
@@ -144,7 +145,7 @@ if (!$stmt) {
 
 // Enlace de parámetros
 if (!$stmt->bind_param(
-    "sssssdddsssssssssdsssssssssdssssddsddssssiisisddiii",
+    "sssssdddsssssssssdsssssssssdssssddsddssssiisisddiiis",
     $FechaActual,
     $razonSocial,
     $cuit,
@@ -195,7 +196,8 @@ if (!$stmt->bind_param(
     $idPago,
     $Avisado,
     $NumeroDeOrden,
-    $idClienteOrigen
+    $idClienteOrigen,
+    $horarioEntregaSolicitado
 )) {
     // Error en el enlace de parámetros
     die("Error en bind_param: " . $stmt->error);
