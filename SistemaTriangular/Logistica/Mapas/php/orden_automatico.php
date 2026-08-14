@@ -154,7 +154,7 @@ if ($_POST['Orden_Automatic'] == 1) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
         'X-Goog-Api-Key: ' . GOOGLE_API_KEY_SERVER,
-        'X-Goog-FieldMask: routes.legs.distanceMeters,routes.legs.duration',
+        'X-Goog-FieldMask: routes.legs.distanceMeters,routes.legs.duration,routes.polyline.encodedPolyline',
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
     $respuesta = curl_exec($ch);
@@ -199,9 +199,12 @@ if ($_POST['Orden_Automatic'] == 1) {
     }
     $stmtUpdate->close();
 
-    // TRAZABILIDAD: quien/cuando/con que metodo se ordeno este recorrido.
-    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico' WHERE Numero = ?");
-    $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+    // TRAZABILIDAD: quien/cuando/con que metodo se ordeno este recorrido, y
+    // el trazo real de la ruta (para dibujar la linea en el mapa de Hoja de
+    // Ruta, igual que ya se hace en el Planificador).
+    $polyline = $data['routes'][0]['polyline']['encodedPolyline'] ?? '';
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico', Polyline = ? WHERE Numero = ?");
+    $stmtTraza->bind_param('sss', $Usuario, $polyline, $Recorrido);
     $stmtTraza->execute();
 
     echo json_encode(['resultado' => 1, 'ordenadas' => count($paradasFinal), 'sinCoordenadas' => $sinCoordenadas]);

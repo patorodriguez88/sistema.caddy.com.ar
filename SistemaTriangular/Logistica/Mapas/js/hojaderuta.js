@@ -20,6 +20,40 @@ function verentabla(a) {
 }
 const pato = 22;
 
+// Decodifica un polyline encodeado de Google (mismo algoritmo que usa
+// Planificador/js/planificador.js) para poder dibujar la traza real de la
+// ruta en el mapa, no solo los puntos sueltos.
+function decodePolyline(encoded) {
+  let points = [],
+    index = 0,
+    lat = 0,
+    lng = 0;
+  while (index < encoded.length) {
+    let b,
+      shift = 0,
+      result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    lat += result & 1 ? ~(result >> 1) : result >> 1;
+    shift = result = 0;
+    do {
+      b = encoded.charCodeAt(index++) - 63;
+      result |= (b & 0x1f) << shift;
+      shift += 5;
+    } while (b >= 0x20);
+    lng += result & 1 ? ~(result >> 1) : result >> 1;
+    points.push({ lat: lat / 1e5, lng: lng / 1e5 });
+  }
+  return points;
+}
+
+// Traza dibujada actualmente en el mapa de Hoja de Ruta (se limpia y se
+// vuelve a dibujar cada vez que se abre un recorrido).
+var hdrRoutePolyline = null;
+
 function initMap(c) {
   var divMapa = document.getElementById("map");
   var xhttp;
@@ -203,6 +237,27 @@ function initMap(c) {
             infowindowActivo.open(map, this);
           }
         });
+      }
+
+      // Traza real de la ruta (si el recorrido tiene un Polyline guardado -
+      // desde el Planificador, o desde "Ordenar segun Reparto") - antes el
+      // mapa solo mostraba los puntos sueltos, sin la traza real entre ellos.
+      if (hdrRoutePolyline) {
+        hdrRoutePolyline.setMap(null);
+        hdrRoutePolyline = null;
+      }
+      if (objeto_json.Polyline) {
+        var path = decodePolyline(objeto_json.Polyline);
+        if (path.length > 0) {
+          hdrRoutePolyline = new google.maps.Polyline({
+            path: path,
+            geodesic: true,
+            strokeColor: "#E24F30",
+            strokeOpacity: 1.0,
+            strokeWeight: 4,
+          });
+          hdrRoutePolyline.setMap(map);
+        }
       }
     }
   };
