@@ -1,12 +1,19 @@
 $(document).ready(function () {
   $("#card_tabla").hide();
   paneles();
-  renderizar_datos();
+  // renderizar_datos() ya no se llama aca: necesita saber para que Recorrido
+  // refrescar Roadmap_end, y a esta altura todavia no se eligio ninguno (se
+  // dispara desde veo() apenas se abre un recorrido puntual).
 });
 
-function renderizar_datos() {
-  $.ajax({
-    data: { Renderizar: 1 },
+// Refresca Roadmap_end (tabla de apoyo para el mapa/orden) para UN Recorrido
+// puntual. Antes truncaba y reconstruia la tabla entera para TODA la
+// empresa en cada carga de pantalla, aunque despues solo se lee filtrada
+// por un Recorrido a la vez - devuelve el jqXHR para poder encadenar
+// (.then) la lectura del mapa despues de que termine de refrescarse.
+function renderizar_datos(recorrido) {
+  return $.ajax({
+    data: { Renderizar: 1, Recorrido: recorrido },
     type: "POST",
     url: "Proceso/php/roadmap_end.php",
     beforeSend: function () {
@@ -90,61 +97,67 @@ $("#todos_recorrido").click(function () {
 });
 
 function veo(i) {
-  $.ajax({
-    data: { Mapa: 1, Rec: i },
-    type: "POST",
-    url: "Mapas/php/datos_hojaderuta.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-      $("#recorrido").html(jsonData.Recorrido);
-      $("#hdractivas").hide();
-      $("#card_mapa").show();
-      $("#header-title2").html(jsonData.Color);
-      if (jsonData.NombreChofer == "") {
-        if (jsonData.Estado == "Alta") {
-          var color = "warning";
-        }
-        if (jsonData.Estado == "Cargada") {
-          var color = "success";
-        }
-        if (jsonData.Estado == "Cerrada") {
-          var color = "danger";
-        }
+  // Refresca Roadmap_end para ESTE recorrido antes de pedir los datos del
+  // mapa, que leen de esa misma tabla - si no se espera, se puede leer una
+  // version vieja (o vacia, si justo se estaba truncando la version global
+  // de antes) de los datos.
+  renderizar_datos(i).then(function () {
+    $.ajax({
+      data: { Mapa: 1, Rec: i },
+      type: "POST",
+      url: "Mapas/php/datos_hojaderuta.php",
+      success: function (response) {
+        var jsonData = JSON.parse(response);
+        $("#recorrido").html(jsonData.Recorrido);
+        $("#hdractivas").hide();
+        $("#card_mapa").show();
+        $("#header-title2").html(jsonData.Color);
+        if (jsonData.NombreChofer == "") {
+          if (jsonData.Estado == "Alta") {
+            var color = "warning";
+          }
+          if (jsonData.Estado == "Cargada") {
+            var color = "success";
+          }
+          if (jsonData.Estado == "Cerrada") {
+            var color = "danger";
+          }
 
-        $("#header-title").html(
-          "Servicios Pendientes Recorrido " +
-            jsonData.Recorrido +
-            ' Estado <a class="text-' +
-            color +
-            '"> ' +
-            jsonData.Estado +
-            "</a>",
-        );
-      } else {
-        $("#header-title").html(
-          "Servicios Pendientes Recorrido " +
-            jsonData.Recorrido +
-            ' Estado <a class="text-' +
-            color +
-            '"> ' +
-            jsonData.Estado +
-            "</a> Chofer: " +
-            jsonData.NombreChofer,
-        );
-      }
-      $("#card_tabla").show();
-      $("#ordenar_recorrido").css("display", "block");
-      // initMap(jsonData.Color);
-      ensureGoogleMapsLoaded("initMap_order")
-        .then(() => {
-          initMap(jsonData.Color);
-        })
-        .catch((e) => {
-          console.error(e);
-        });
-      var datatable = $("#seguimiento").DataTable();
-      datatable.ajax.reload();
-    },
+          $("#header-title").html(
+            "Servicios Pendientes Recorrido " +
+              jsonData.Recorrido +
+              ' Estado <a class="text-' +
+              color +
+              '"> ' +
+              jsonData.Estado +
+              "</a>",
+          );
+        } else {
+          $("#header-title").html(
+            "Servicios Pendientes Recorrido " +
+              jsonData.Recorrido +
+              ' Estado <a class="text-' +
+              color +
+              '"> ' +
+              jsonData.Estado +
+              "</a> Chofer: " +
+              jsonData.NombreChofer,
+          );
+        }
+        $("#card_tabla").show();
+        $("#ordenar_recorrido").css("display", "block");
+        // initMap(jsonData.Color);
+        ensureGoogleMapsLoaded("initMap_order")
+          .then(() => {
+            initMap(jsonData.Color);
+          })
+          .catch((e) => {
+            console.error(e);
+          });
+        var datatable = $("#seguimiento").DataTable();
+        datatable.ajax.reload();
+      },
+    });
   });
 }
 

@@ -224,15 +224,17 @@ $("#ok_servicio_modal").click(function () {
     success: function (response) {
       var jsonData = JSON.parse(response);
       if (jsonData.success == 1) {
-        renderizar_datos();
-        // initMap();
-        ensureGoogleMapsLoaded("initMap_order")
-          .then(() => {
-            initMap();
-          })
-          .catch((e) => {
-            console.error(e);
-          });
+        // initMap() lee de Roadmap_end - hay que esperar a que termine de
+        // refrescarse para este recorrido antes de recargar el mapa.
+        renderizar_datos($("#recorrido").html()).then(function () {
+          ensureGoogleMapsLoaded("initMap_order")
+            .then(() => {
+              initMap();
+            })
+            .catch((e) => {
+              console.error(e);
+            });
+        });
         var datatable = $("#seguimiento").DataTable();
         datatable.ajax.reload(null, false);
 

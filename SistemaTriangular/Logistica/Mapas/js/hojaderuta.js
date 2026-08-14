@@ -292,8 +292,10 @@ $("#restaurar_orden").click(function () {
         var jsonData = JSON.parse(response);
 
         if (jsonData.resultado == "1") {
+          // veo() ya refresca Roadmap_end para este Recorrido antes de leer
+          // el mapa (ver funciones_hdr.js) - llamar renderizar_datos() aca
+          // aparte era trabajo duplicado.
           veo(Recorrido);
-          renderizar_datos();
 
           $("#info-alert-modal").modal("hide");
           $("#next_number").html(1);

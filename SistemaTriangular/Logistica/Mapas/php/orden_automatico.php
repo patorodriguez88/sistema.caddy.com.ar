@@ -1,12 +1,11 @@
 <?
-session_start();
-global $host,$user,$password,$database;
-$host='localhost';
-$user='dinter6_prodrig';
-$pass='pato@4986';
-$database='dinter6_triangular';
-$conexion=mysqli_connect($host,$user,$pass,$database);
- 
+// Antes esto abria su propia conexion con host/usuario/password hardcodeados
+// en el archivo (bypaseando Conexion/Conexioni.php y el switch local/
+// sandbox/produccion que usa el resto del sistema) - se reemplaza por la
+// conexion estandar, como todos los demas endpoints de Logistica.
+require_once('../../../Conexion/Conexioni.php');
+$conexion = $mysqli;
+
 //VARIABLES GOOGLE
 $Key = 'AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8';//APY KEY GOOGLE
 $Origenpost = "Reconquista 4986 Córdoba Argentina"; // ORIGEN
@@ -19,13 +18,22 @@ if($_POST['Orden_Automatic']==1){
 $Recorrido=$_POST['Recorrido']; 
 
     //BUSCO LA HORA DE SALIDA DEL RECORRIDO
-    $sql=$conexion->query("SELECT Hora FROM Logistica WHERE Recorrido='$Rec' AND Estado<>'Cerrada' AND Eliminado=0");    
-    if($row_inicio=$sql->fetch_array()!=NULL){
-    $Hora=$row_inicio['Hora'];    
-    }else{
-    $sql=$conexion->query("SELECT Hora FROM Logistica WHERE Recorrido='5' AND Eliminado=0 ORDER BY Fecha DESC limit 0,1");    
+    // Antes decia "WHERE Recorrido='$Rec'" con $Rec sin definir en ningun
+    // lado (el valor real esta en $Recorrido) - la condicion nunca matcheaba
+    // nada y esto siempre terminaba usando la Hora del Recorrido 5 hardcodeado
+    // de la rama "else", sin importar que recorrido se estuviera ordenando.
+    // Ademas "$row_inicio=$sql->fetch_array()!=NULL" evaluaba primero el
+    // "!=" y asignaba un booleano a $row_inicio en vez de la fila (por
+    // precedencia de operadores en PHP), asi que aunque hubiese matcheado
+    // nunca se llegaba a leer $Hora de esa fila.
+    $sql=$conexion->query("SELECT Hora FROM Logistica WHERE Recorrido='$Recorrido' AND Estado<>'Cerrada' AND Eliminado=0");
     $row_inicio=$sql->fetch_array();
-    $Hora=$row_inicio['Hora'];    
+    if($row_inicio!=NULL){
+    $Hora=$row_inicio['Hora'];
+    }else{
+    $sql=$conexion->query("SELECT Hora FROM Logistica WHERE Recorrido='5' AND Eliminado=0 ORDER BY Fecha DESC limit 0,1");
+    $row_inicio=$sql->fetch_array();
+    $Hora=$row_inicio['Hora'];
     }
 
 $query="SELECT * FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Eliminado='0' AND Estado='Abierto'";
