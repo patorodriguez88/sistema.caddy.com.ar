@@ -620,6 +620,12 @@ if (isset($_POST['Actualizar'])) {
       $__stmt->close();
     }
   }
+  // HORARIO DE ENTREGA PREFERIDO (columna TIME, nullable) - '' se guarda
+  // como NULL, no como '00:00:00'. mysqli manda NULL real cuando la
+  // variable bindeada vale null en PHP, aunque el tipo declarado sea 's'.
+  $__horario = $__post('horario');
+  $__horario = $__horario !== '' ? $__horario : null;
+
   //RETIRO
   $__retiro = 0;
   if (isset($_POST['retiro'])) {
@@ -644,6 +650,7 @@ if (isset($_POST['Actualizar'])) {
     'Mail'                 => $__post('email'),
     'PaginaWeb'            => $__post('web'),
     'Observaciones'        => $__post('obs'),
+    'HorarioEntregaSolicitado' => $__horario,
     'Retiro'               => $__retiro,
     'SituacionFiscal'      => $descAFIP,
     'RazonSocial_f'        => $__post('razonsocial_f'),
@@ -854,6 +861,7 @@ if (isset($_POST['Datos'])) {
     'RelacionAsignada' => $row['Relacion'],
     'RelacionAsignada_label' => $RelacionAsignada_label,
     'Observaciones' => $row['Observaciones'],
+    'HorarioEntregaSolicitado' => $row['HorarioEntregaSolicitado'],
     'IngresosBrutos' => $row['id'],
     'Retira' => $row['Retiro'],
     'SolicitaVehiculo' => $row['id'],

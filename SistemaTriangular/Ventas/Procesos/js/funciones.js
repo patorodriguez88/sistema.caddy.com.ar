@@ -550,6 +550,21 @@ function subir() {
   }
 }
 
+// Horario de entrega preferido de cada cliente (Clientes.HorarioEntregaSolicitado),
+// guardado aca al elegir origen/destino para poder aplicar el que corresponda
+// segun retiro_t (mismo criterio que robot(id): Retiro y Entrega -> origen,
+// Solo Entrega -> destino) sin tener que volver a pedirlo al servidor.
+var _horarioOrigenSugerido = "";
+var _horarioDestinoSugerido = "";
+
+function aplicarHorarioSugerido() {
+  var r = document.getElementById("retiro_t").value; // 0 = Retiro y Entrega, 1 = Solo Entrega
+  var sugerido = r == "1" ? _horarioDestinoSugerido : _horarioOrigenSugerido;
+  if (sugerido) {
+    $("#horario_entrega_t").val(sugerido.substring(0, 5));
+  }
+}
+
 function oculto_origen(id) {
   // console.log('ver',id);
   //   var id=document.getElementById('id_origen').value;
@@ -573,6 +588,8 @@ function oculto_origen(id) {
           "Direccion: " + jsonData.Direccion;
         $("#spinner").css("display", "none");
         $("#retiro_t").val(jsonData.Retiro);
+        _horarioOrigenSugerido = jsonData.HorarioEntregaSolicitado || "";
+        aplicarHorarioSugerido();
 
         //SELECT RECORRIDO
         robot(id);
@@ -644,6 +661,8 @@ function oculto_destino(id) {
         document.getElementById("destino_ok").style.display = "block";
         document.getElementById("destino_ok").innerHTML =
           "Direccion: " + jsonData.Direccion;
+        _horarioDestinoSugerido = jsonData.HorarioEntregaSolicitado || "";
+        aplicarHorarioSugerido();
       }
     },
   });
@@ -661,6 +680,7 @@ $("#retiro_t").change(function (e) {
     var id = document.getElementById("id_destino").value;
   }
   robot(id);
+  aplicarHorarioSugerido();
 });
 
 function oculto_tercero(id) {

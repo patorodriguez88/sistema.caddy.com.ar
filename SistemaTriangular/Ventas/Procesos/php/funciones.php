@@ -96,7 +96,7 @@ if (isset($_POST['id_servicio'])) {
 
 if (isset($_POST['id_origen'])) {
   $id = $_POST['id_origen'];
-  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,Retiro,Direccion1 FROM Clientes WHERE id='$id' AND Eliminado=0");
+  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,Retiro,Direccion1,HorarioEntregaSolicitado FROM Clientes WHERE id='$id' AND Eliminado=0");
   $datoclientes = $sqlclientes->fetch_array(MYSQLI_ASSOC);
 
 
@@ -104,6 +104,7 @@ if (isset($_POST['id_origen'])) {
   $Direccion = $datoclientes['Direccion'];
   $Direccion1 = $datoclientes['Direccion1'];
   $Retiro = $datoclientes['Retiro'];
+  $HorarioEntregaSolicitado = $datoclientes['HorarioEntregaSolicitado'];
   $_SESSION['idOrigen'] = $id;
   $_SESSION['NombreClienteA'] = $Nombre;
 
@@ -136,17 +137,18 @@ if (isset($_POST['id_origen'])) {
 
 
 
-  echo json_encode(array('success' => 1, 'Nombre' => $Nombre, 'Direccion' => $Direccion, 'Retiro' => $Retiro, 'NumeroPedido' => $NumeroPedido, 'NumeroRepo' => $NumeroRepo, 'Direccion1' => $Direccion1));
+  echo json_encode(array('success' => 1, 'Nombre' => $Nombre, 'Direccion' => $Direccion, 'Retiro' => $Retiro, 'NumeroPedido' => $NumeroPedido, 'NumeroRepo' => $NumeroRepo, 'Direccion1' => $Direccion1, 'HorarioEntregaSolicitado' => $HorarioEntregaSolicitado));
 }
 
 if (isset($_POST['id_destino'])) {
   $id = $_POST['id_destino'];
-  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion FROM Clientes WHERE id='$id'");
+  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,HorarioEntregaSolicitado FROM Clientes WHERE id='$id'");
   $datoclientes = $sqlclientes->fetch_array(MYSQLI_ASSOC);
   $_SESSION['idDestino'] = $id;
   $Nombre = $datoclientes['nombrecliente'];
   $Direccion = $datoclientes['Direccion'];
-  echo json_encode(array('success' => 1, 'Nombre' => $Nombre, 'Direccion' => $Direccion));
+  $HorarioEntregaSolicitado = $datoclientes['HorarioEntregaSolicitado'];
+  echo json_encode(array('success' => 1, 'Nombre' => $Nombre, 'Direccion' => $Direccion, 'HorarioEntregaSolicitado' => $HorarioEntregaSolicitado));
 }
 
 

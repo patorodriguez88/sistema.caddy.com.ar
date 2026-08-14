@@ -1960,6 +1960,7 @@ $("#buscarcliente").change(function () {
         $("#email").val(jsonData.Mail);
         $("#web").val(jsonData.Web);
         $("#observaciones").val(jsonData.Observaciones);
+        $("#horario_entrega_cliente").val(jsonData.HorarioEntregaSolicitado);
         $("#ingresosbrutos").val(jsonData.IngresosBrutos);
         $("#relacionasignada").val(jsonData.RelacionAsignada);
         $("#relacionasignada_label").val(jsonData.RelacionAsignada_label);
@@ -2648,6 +2649,7 @@ $("#guardar_botton").click(function () {
   var email = document.getElementById("email").value;
   var web = document.getElementById("web").value;
   var obs = document.getElementById("observaciones").value;
+  var horario = document.getElementById("horario_entrega_cliente").value;
   var retiro = document.getElementById("retira").value;
   //FACTURACION
   var razonsocial_f = document.getElementById("razonsocial_facturacion").value;
@@ -2688,6 +2690,7 @@ $("#guardar_botton").click(function () {
     email: email,
     web: web,
     obs: obs,
+    horario: horario,
     retiro: retiro,
     razonsocial_f: razonsocial_f,
     direccion_f: direccion_f,
