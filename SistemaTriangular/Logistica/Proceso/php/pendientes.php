@@ -134,7 +134,11 @@ if (isset($_POST['Pendientes'])) {
               AND TransClientes.Devuelto=0";
   } else {
 
-    $recorrido = $mysqli->real_escape_string($_SESSION['Recorrido']);
+    // En una sesion nueva (recien se abrio la pantalla, todavia no se eligio
+    // ningun recorrido con veo()) $_SESSION['Recorrido'] no existe - antes
+    // esto tiraba un warning al leerlo directo, mezclado con el JSON de la
+    // tabla de pendientes que se auto-inicializa al cargar la pagina.
+    $recorrido = $mysqli->real_escape_string($_SESSION['Recorrido'] ?? '');
     $sql = "SELECT Clientes.Latitud, 
                    Clientes.Longitud, 
                    TransClientes.*, 
