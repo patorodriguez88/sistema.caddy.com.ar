@@ -583,7 +583,6 @@ if (isset($_POST['alta_orden'])) {
     $Total_transclientes = $datos_transclientes['Total'] ?? 0;
   } else {
 
-
     $SQL = $mysqli->query("SELECT MAX(Numero) as Numero FROM Recorridos");
     $Recorrido_sql = $SQL->fetch_array();
     $Recorrido = trim($Recorrido_sql['Numero'] + 1);
@@ -591,47 +590,55 @@ if (isset($_POST['alta_orden'])) {
 
     $SQL = "INSERT INTO Recorridos (Numero, Nombre, Kilometros, Peajes, Activo,Tarifa_externos,Fijo,Servicios) VALUES ('{$Recorrido}', '{$Recorrido_nombre}', '500', '0', '1','0','{$Fijo}','0')";
 
+    if (!$mysqli->query($SQL)) {
+      echo json_encode(array('success' => 0, 'error' => $mysqli->error));
+      exit;
+    }
+  }
 
-    if ($mysqli->query($SQL)) {
+  // A PARTIR DE ACA es comun a los dos casos (recorrido existente o recien
+  // creado) - antes esta parte vivia SOLO adentro del "else" (recorrido
+  // nuevo), asi que dar de alta una orden sobre un recorrido ya existente
+  // no creaba nada en Logistica y el endpoint no respondia nada.
 
-      //CALCULO EL TOTAL DEL RECORRIDO SI EXISITA Y TENIA VALOR ASIGNADO Y SI HAY REGISTROS CARGADOS PARA ESTE RECORRIDO VA ESO
-      // SINO EL TOTAL DEL RECORRIDO ES 0
-      $TotalRecorrido = $Total_transclientes + $PrecioVenta;
+  //CALCULO EL TOTAL DEL RECORRIDO SI EXISITA Y TENIA VALOR ASIGNADO Y SI HAY REGISTROS CARGADOS PARA ESTE RECORRIDO VA ESO
+  // SINO EL TOTAL DEL RECORRIDO ES 0
+  $TotalRecorrido = $Total_transclientes + $PrecioVenta;
 
-      // 🚗 Vehículo
-      $sql_vehiculo = $mysqli->query("SELECT * FROM Vehiculos WHERE id='$Vehiculo'");
-      $datos_vehiculo = $sql_vehiculo->fetch_array();
-      $Patente = $datos_vehiculo['Dominio'];
+  // 🚗 Vehículo
+  $sql_vehiculo = $mysqli->query("SELECT * FROM Vehiculos WHERE id='$Vehiculo'");
+  $datos_vehiculo = $sql_vehiculo->fetch_array();
+  $Patente = $datos_vehiculo['Dominio'];
 
-      // ⛽ Control de uso del vehículo
-      $sqlcontrolo = $mysqli->query("SELECT id FROM Logistica WHERE Patente='$Patente' AND Eliminado=0 AND Estado IN ('Alta','Cargada')");
+  // ⛽ Control de uso del vehículo
+  $sqlcontrolo = $mysqli->query("SELECT id FROM Logistica WHERE Patente='$Patente' AND Eliminado=0 AND Estado IN ('Alta','Cargada')");
 
-      if ($sqlcontrolo->num_rows != 0) {
-        $Kilometros = "0";
-        $Observaciones = "";
-        $CombustibleSalida = "";
-        $Estado = 'Pendiente';
-      } else {
-        $Kilometros = $datos_vehiculo['Kilometros'];
-        $Observaciones = $datos_vehiculo['Observaciones'];
-        $CombustibleSalida = $datos_vehiculo['NivelCombustible'];
-      }
+  if ($sqlcontrolo->num_rows != 0) {
+    $Kilometros = "0";
+    $Observaciones = "";
+    $CombustibleSalida = "";
+    $Estado = 'Pendiente';
+  } else {
+    $Kilometros = $datos_vehiculo['Kilometros'];
+    $Observaciones = $datos_vehiculo['Observaciones'];
+    $CombustibleSalida = $datos_vehiculo['NivelCombustible'];
+  }
 
-      $FechaVencSeguro = $datos_vehiculo['FechaVencSeguro'];
+  $FechaVencSeguro = $datos_vehiculo['FechaVencSeguro'];
 
-      // 👤 Chofer
-      $sql_chofer = $mysqli->query("SELECT VencimientoLicencia, Usuario, NombreCompleto FROM Empleados WHERE id='$Chofer'");
-      $datos_chofer = $sql_chofer->fetch_array();
-      $FechaVencRegistro = $datos_chofer['VencimientoLicencia'];
-      $IdUsuarioChofer = $datos_chofer['Usuario'];
-      $NombreChofer = $datos_chofer['NombreCompleto'];
+  // 👤 Chofer
+  $sql_chofer = $mysqli->query("SELECT VencimientoLicencia, Usuario, NombreCompleto FROM Empleados WHERE id='$Chofer'");
+  $datos_chofer = $sql_chofer->fetch_array();
+  $FechaVencRegistro = $datos_chofer['VencimientoLicencia'];
+  $IdUsuarioChofer = $datos_chofer['Usuario'];
+  $NombreChofer = $datos_chofer['NombreCompleto'];
 
-      // 🆕 Busco nuevo número de orden
-      $sqlMax = $mysqli->query("SELECT MAX(NumerodeOrden) AS maxOrden FROM Logistica");
-      $rowMax = $sqlMax->fetch_array();
-      $Numero = $rowMax['maxOrden'] + 1;
+  // 🆕 Busco nuevo número de orden
+  $sqlMax = $mysqli->query("SELECT MAX(NumerodeOrden) AS maxOrden FROM Logistica");
+  $rowMax = $sqlMax->fetch_array();
+  $Numero = $rowMax['maxOrden'] + 1;
 
-      $sqlInsert = "INSERT INTO Logistica (
+  $sqlInsert = "INSERT INTO Logistica (
       NumerodeOrden,
       Fecha,
       Hora,
@@ -677,19 +684,10 @@ if (isset($_POST['alta_orden'])) {
       '{$ObservacionesRendicion}'
     )";
 
-      if ($mysqli->query($sqlInsert)) {
-        echo json_encode(['success' => true, 'numero' => $Numero]);
-      } else {
-        echo json_encode(['success' => false, 'mensaje' => $mysqli->error]);
-      }
-
-      // FIN DE INSERCIÓN DE NUEVO RECORRIDO 
-    } else {
-
-      echo json_encode(array('success' => 0, 'error' => $mysqli->error));
-
-      exit;
-    }
+  if ($mysqli->query($sqlInsert)) {
+    echo json_encode(['success' => true, 'numero' => $Numero]);
+  } else {
+    echo json_encode(['success' => false, 'mensaje' => $mysqli->error]);
   }
 }
 
