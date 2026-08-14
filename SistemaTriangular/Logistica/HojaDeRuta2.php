@@ -514,6 +514,7 @@
                                     </div>
 
                                     <h4 id="header-title" class="header-title mb-2">Servicios Pendientes</h4>
+                                    <p id="orden_trazabilidad" class="text-muted mb-2" style="display:none"></p>
 
                                     <div id="route_header" style="display:none">
                                         <h4>

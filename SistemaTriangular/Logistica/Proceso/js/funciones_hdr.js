@@ -144,6 +144,30 @@ function veo(i) {
               jsonData.NombreChofer,
           );
         }
+        // Trazabilidad: quien ordeno este recorrido, cuando, y con que metodo
+        // (Manual / Automatico / Gestya).
+        if (jsonData.UltimoOrdenUsuario) {
+          var fechaOrden = "";
+          if (jsonData.UltimoOrdenFecha) {
+            var partes = jsonData.UltimoOrdenFecha.split(" ");
+            var dia = partes[0].split("-").reverse().slice(0, 2).join("/");
+            fechaOrden = " el " + dia + " " + (partes[1] || "").substring(0, 5);
+          }
+          $("#orden_trazabilidad")
+            .html(
+              '<i class="mdi mdi-map-marker-path"></i> Ordenado por <b>' +
+                jsonData.UltimoOrdenUsuario +
+                "</b>" +
+                fechaOrden +
+                (jsonData.UltimoOrdenMetodo
+                  ? ' <span class="badge bg-light text-dark">' + jsonData.UltimoOrdenMetodo + "</span>"
+                  : ""),
+            )
+            .show();
+        } else {
+          $("#orden_trazabilidad").hide();
+        }
+
         $("#card_tabla").show();
         $("#ordenar_recorrido").css("display", "block");
         // initMap(jsonData.Color);

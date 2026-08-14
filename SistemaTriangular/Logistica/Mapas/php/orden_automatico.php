@@ -1,120 +1,208 @@
-<?
-// Antes esto abria su propia conexion con host/usuario/password hardcodeados
-// en el archivo (bypaseando Conexion/Conexioni.php y el switch local/
-// sandbox/produccion que usa el resto del sistema) - se reemplaza por la
-// conexion estandar, como todos los demas endpoints de Logistica.
+<?php
+// "Ordenar según Reparto" (orden automático de un Recorrido ya asignado).
+//
+// Reescrito para usar el mismo patrón que Logistica/Planificador/php/getRoute.php:
+// 1) orden por cercanía con distancia recta (haversine, gratis, sin llamar a Google)
+// 2) UNA sola llamada a la Routes API de Google (con tráfico en tiempo real) para
+//    sacar distancia/tiempo reales de cada tramo ya ordenado.
+//
+// Antes hacía hasta N² llamadas individuales a la Distance Matrix API (una por cada
+// par de paradas, recalculando el "más cercano" a mano en un loop), usaba una conexión
+// a la base con host/usuario/password hardcodeados en el archivo (bypaseando
+// Conexion/Conexioni.php), y una variable $Rec sin definir hacía que la hora de
+// salida siempre se tomara de un Recorrido 5 hardcodeado. Además usaba la key de
+// Google de BROWSER en vez de la de SERVER (Conexion/google_config.php), que puede
+// estar restringida para llamadas server-side.
+
 require_once('../../../Conexion/Conexioni.php');
-$conexion = $mysqli;
+require_once('../../../Conexion/google_config.php');
 
-//VARIABLES GOOGLE
-$Key = 'AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8';//APY KEY GOOGLE
-$Origenpost = "Reconquista 4986 Córdoba Argentina"; // ORIGEN
-$Origen = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Origenpost);
-$Modo="driving";
-$Lenguaje="es";
+header('Content-Type: application/json');
 
-if($_POST['Orden_Automatic']==1){
-//RECORRIDO
-$Recorrido=$_POST['Recorrido']; 
-
-    //BUSCO LA HORA DE SALIDA DEL RECORRIDO
-    // Antes decia "WHERE Recorrido='$Rec'" con $Rec sin definir en ningun
-    // lado (el valor real esta en $Recorrido) - la condicion nunca matcheaba
-    // nada y esto siempre terminaba usando la Hora del Recorrido 5 hardcodeado
-    // de la rama "else", sin importar que recorrido se estuviera ordenando.
-    // Ademas "$row_inicio=$sql->fetch_array()!=NULL" evaluaba primero el
-    // "!=" y asignaba un booleano a $row_inicio en vez de la fila (por
-    // precedencia de operadores en PHP), asi que aunque hubiese matcheado
-    // nunca se llegaba a leer $Hora de esa fila.
-    $sql=$conexion->query("SELECT Hora FROM Logistica WHERE Recorrido='$Recorrido' AND Estado<>'Cerrada' AND Eliminado=0");
-    $row_inicio=$sql->fetch_array();
-    if($row_inicio!=NULL){
-    $Hora=$row_inicio['Hora'];
-    }else{
-    $sql=$conexion->query("SELECT Hora FROM Logistica WHERE Recorrido='5' AND Eliminado=0 ORDER BY Fecha DESC limit 0,1");
-    $row_inicio=$sql->fetch_array();
-    $Hora=$row_inicio['Hora'];
-    }
-
-$query="SELECT * FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Eliminado='0' AND Estado='Abierto'";
-$resultado=$conexion->query($query);
-$total=$resultado->num_rows;
-
-    
-    while($row=$resultado->fetch_array()){ 
-
-    //  $Destinopost= utf8_encode($row[Localizacion]);
-    //  $Destino= preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Destinopost);
-     $sql_Clientes="SELECT Latitud,Longitud FROM Clientes WHERE id='$row[idCliente]'";
-     $Resultado_clientes=$conexion->query($sql_Clientes);
-     $dato_clientes=$Resultado_clientes->fetch_array();
-     $Destino=$dato_clientes['Latitud'].','.$dato_clientes['Longitud'];   
-     
-     $urlPush = "https://maps.googleapis.com/maps/api/distancematrix/json?departure_time=now&origins=".$Origen."&destinations=".$Destino."&mode=".$Modo."&language=".$Lenguaje."&key=".$Key;
-     $json=file_get_contents($urlPush);
-    
-      if($obj=json_decode($json,true)){
-      $result=$obj['rows'][0]['elements'][0]['distance']['value'];
-      $duration=$obj['rows'][0]['elements'][0]['duration']['value'];
-      $sql="UPDATE HojaDeRuta SET Hora='$Hora',KmO='$result',Tiempo='$duration',Posicion='' WHERE id='$row[id]' LIMIT 1";
-      $conexion->query($sql);    
-      }  
-     }
-    
-    
-//AGREGO NUMERO DE ORDEN SEGUN LA DISTANCIA
-//BUSCO EL CLIENTE MAS CERCA
-
-for($i=1;$i<=$total;$i++){
-//PRIMERO MARCO EL CLIENTE MAS CERCANO A CADDY
-$queryOrden="SELECT id,Localizacion,idCliente FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Eliminado='0' AND Estado='Abierto' AND KmO<>'0' AND Posicion='0' ORDER BY KmO ASC LIMIT 1";
-$resultadoOrden=$conexion->query($queryOrden);
-$rowOrden=$resultadoOrden->fetch_array();
-if($sqlOrdeno="UPDATE HojaDeRuta SET Posicion='$i' WHERE id='$rowOrden[id]' LIMIT 1"){  
-$conexion->query($sqlOrdeno);
-}  
-  
-  $sql_Clientes_0="SELECT Latitud,Longitud FROM Clientes WHERE id='$rowOrden[idCliente]'";
-  $Resultado_clientes_0=$conexion->query($sql_Clientes_0);
-  $dato_clientes_0=$Resultado_clientes_0->fetch_array();
-  $Origen=$dato_clientes_0['Latitud'].','.$dato_clientes_0['Longitud'];   
-
-  
- // AHORA VUELVO A CALCULAR DISTANCIAS ENTRE LOS OTROS PUNTOS HASTA EL MAS CERCANO AL ANTERIOR
-  $query2="SELECT id,Localizacion,idCliente,Hora FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Eliminado='0' AND Estado='Abierto' AND KmO<>'0' AND Posicion='0'";
-  $resultado2=$conexion->query($query2);
-  while($row2=$resultado2->fetch_array()){
-
-    $sql_Clientes_1="SELECT Latitud,Longitud FROM Clientes WHERE id='$row2[idCliente]'";
-    $Resultado_clientes_1=$conexion->query($sql_Clientes_1);
-    $dato_clientes_1=$Resultado_clientes_1->fetch_array();
-    $Destino=$dato_clientes_1['Latitud'].','.$dato_clientes_1['Longitud'];   
-
-    $urlPush = "https://maps.googleapis.com/maps/api/distancematrix/json?departure_time=now&origins=".$Origen."&destinations=".$Destino."&mode=".$Modo."&language=".$Lenguaje."&key=".$Key;
-    $json=file_get_contents($urlPush);
-
-    if($obj=json_decode($json,true)){
-    $result=$obj['rows'][0]['elements'][0]['distance']['value'];
-    $duration=$obj['rows'][0]['elements'][0]['duration']['value'];
-    
-    $time_delivered=5;//TIEMPO ADICIONAL POR ENTREGA DEL PAQUETE
-    
-    $minutos=number_format($duration/60,0)+$time_delivered;
-    $segundos= $duration % 60;
-    $newHora = new DateTime($row2['Hora']); 
-    $newHora->modify('+0 hours'); 
-    $newHora->modify('+'.$minutos.' minute'); 
-    $newHora->modify('+'.$segundos.' second'); 
-    $Hora_actual= $newHora->format('H:i:s');
-
-    $sql2="UPDATE HojaDeRuta SET KmO='$result',Tiempo='$duration',Hora='$Hora_actual' WHERE id='$row2[id]'";
-    $conexion->query($sql2);
-    }
-   }
+function haversineDistance($lat1, $lon1, $lat2, $lon2)
+{
+    $earthRadius = 6371;
+    $dLat = deg2rad($lat2 - $lat1);
+    $dLon = deg2rad($lon2 - $lon1);
+    $a = sin($dLat / 2) * sin($dLat / 2) +
+        cos(deg2rad($lat1)) * cos(deg2rad($lat2)) *
+        sin($dLon / 2) * sin($dLon / 2);
+    $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+    return $earthRadius * $c;
 }
 
+function ordenarPorCercania(array $puntos, array $origen): array
+{
+    $ordenado = [];
+    $actual = $origen;
+    $restante = $puntos;
 
-echo json_encode(array('resultado'=>1));
+    while (count($restante) > 0) {
+        $menorDist = INF;
+        $siguienteIndex = 0;
+        foreach ($restante as $i => $p) {
+            $d = haversineDistance($actual['lat'], $actual['lng'], $p['lat'], $p['lng']);
+            if ($d < $menorDist) {
+                $menorDist = $d;
+                $siguienteIndex = $i;
+            }
+        }
+        $siguiente = $restante[$siguienteIndex];
+        $ordenado[] = $siguiente;
+        $actual = $siguiente;
+        unset($restante[$siguienteIndex]);
+        $restante = array_values($restante);
+    }
+
+    return $ordenado;
 }
 
-?>  
+if ($_POST['Orden_Automatic'] == 1) {
+    $Recorrido = $_POST['Recorrido'] ?? '';
+    $Usuario = $_SESSION['Usuario'] ?? 'sistema';
+
+    if ($Recorrido === '') {
+        echo json_encode(['resultado' => 0, 'message' => 'Falta el Recorrido.']);
+        exit;
+    }
+
+    if (!defined('GOOGLE_API_KEY_SERVER')) {
+        echo json_encode(['resultado' => 0, 'message' => 'No está configurada GOOGLE_API_KEY_SERVER.']);
+        exit;
+    }
+
+    // BUSCO LA HORA DE SALIDA DEL RECORRIDO
+    $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = ? AND Estado <> 'Cerrada' AND Eliminado = 0");
+    $stmt->bind_param('s', $Recorrido);
+    $stmt->execute();
+    $row_inicio = $stmt->get_result()->fetch_assoc();
+    if (!$row_inicio) {
+        $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = '5' AND Eliminado = 0 ORDER BY Fecha DESC LIMIT 1");
+        $stmt->execute();
+        $row_inicio = $stmt->get_result()->fetch_assoc();
+    }
+    $HoraSalida = $row_inicio['Hora'] ?? '08:00:00';
+
+    // PARADAS ABIERTAS DEL RECORRIDO, CON COORDENADAS VALIDAS
+    $stmt = $mysqli->prepare(
+        "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, Clientes.Latitud, Clientes.Longitud
+           FROM HojaDeRuta
+          INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
+          WHERE HojaDeRuta.Recorrido = ? AND HojaDeRuta.Eliminado = 0 AND HojaDeRuta.Estado = 'Abierto'"
+    );
+    $stmt->bind_param('s', $Recorrido);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $isValidCoord = function ($lat, $lng) {
+        // Bounding box de Argentina, mismo criterio que usa el Planificador.
+        return $lat <= -21.0 && $lat >= -55.0 && $lng <= -53.0 && $lng >= -75.0;
+    };
+
+    $paradas = [];
+    $sinCoordenadas = 0;
+    while ($row = $res->fetch_assoc()) {
+        $lat = floatval($row['Latitud']);
+        $lng = floatval($row['Longitud']);
+        if ($lat !== 0.0 && $lng !== 0.0 && $isValidCoord($lat, $lng)) {
+            $paradas[] = ['id' => $row['id'], 'lat' => $lat, 'lng' => $lng];
+        } else {
+            $sinCoordenadas++;
+        }
+    }
+
+    if (count($paradas) === 0) {
+        echo json_encode([
+            'resultado' => 0,
+            'message' => $sinCoordenadas > 0
+                ? "Ninguna de las $sinCoordenadas paradas de este recorrido tiene coordenadas válidas."
+                : 'El recorrido no tiene paradas abiertas.',
+        ]);
+        exit;
+    }
+
+    // Origen fijo de la empresa (mismo punto que usa el Planificador).
+    $origen = ['lat' => -31.444994776141503, 'lng' => -64.1779408896999];
+    $ordenadas = ordenarPorCercania($paradas, $origen);
+
+    // UNA sola llamada a la Routes API con todas las paradas ya ordenadas como
+    // intermedios - antes esto eran hasta N² llamadas a la Distance Matrix API.
+    $destino = array_pop($ordenadas);
+    $intermedios = array_map(function ($p) {
+        return ['location' => ['latLng' => ['latitude' => $p['lat'], 'longitude' => $p['lng']]]];
+    }, $ordenadas);
+
+    $fechaSalida = date('Y-m-d');
+    $departureTimestamp = strtotime("$fechaSalida $HoraSalida");
+    if ($departureTimestamp === false || $departureTimestamp < time()) {
+        $departureTimestamp = time();
+    }
+
+    $body = [
+        'origin' => ['location' => ['latLng' => ['latitude' => $origen['lat'], 'longitude' => $origen['lng']]]],
+        'destination' => ['location' => ['latLng' => ['latitude' => $destino['lat'], 'longitude' => $destino['lng']]]],
+        'intermediates' => $intermedios,
+        'travelMode' => 'DRIVE',
+        'routingPreference' => 'TRAFFIC_AWARE_OPTIMAL',
+        'departureTime' => gmdate('Y-m-d\TH:i:s\Z', $departureTimestamp),
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://routes.googleapis.com/directions/v2:computeRoutes');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'X-Goog-Api-Key: ' . GOOGLE_API_KEY_SERVER,
+        'X-Goog-FieldMask: routes.legs.distanceMeters,routes.legs.duration',
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    $respuesta = curl_exec($ch);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        echo json_encode(['resultado' => 0, 'message' => 'Error de conexión con Google: ' . $curlError]);
+        exit;
+    }
+
+    $data = json_decode($respuesta, true);
+    if (!isset($data['routes'][0]['legs'])) {
+        $motivo = $data['error']['message'] ?? 'la Routes API no devolvió una ruta válida';
+        echo json_encode(['resultado' => 0, 'message' => $motivo]);
+        exit;
+    }
+
+    $legs = $data['routes'][0]['legs'];
+    $paradasFinal = array_merge($ordenadas, [$destino]); // reconstruyo el orden completo (los intermedios + el destino que se sacó antes)
+
+    $timeDelivered = 5; // TIEMPO ADICIONAL POR ENTREGA DEL PAQUETE, igual que antes
+    $horaActual = new DateTime($fechaSalida . ' ' . $HoraSalida);
+
+    $stmtUpdate = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = ?, KmO = ?, Tiempo = ?, Hora = ? WHERE id = ? LIMIT 1");
+
+    foreach ($paradasFinal as $i => $parada) {
+        $leg = $legs[$i] ?? null;
+        $distanciaM = $leg['distanceMeters'] ?? 0;
+        $duracionSeg = 0;
+        if ($leg && isset($leg['duration']) && preg_match('/(\d+)s/', $leg['duration'], $m)) {
+            $duracionSeg = intval($m[1]);
+        }
+
+        $minutos = round($duracionSeg / 60) + $timeDelivered;
+        $horaActual->modify('+' . $minutos . ' minute');
+        $horaTexto = $horaActual->format('H:i:s');
+
+        $posicion = $i + 1;
+        $stmtUpdate->bind_param('iiisi', $posicion, $distanciaM, $duracionSeg, $horaTexto, $parada['id']);
+        $stmtUpdate->execute();
+    }
+    $stmtUpdate->close();
+
+    // TRAZABILIDAD: quien/cuando/con que metodo se ordeno este recorrido.
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico' WHERE Numero = ?");
+    $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+    $stmtTraza->execute();
+
+    echo json_encode(['resultado' => 1, 'ordenadas' => count($paradasFinal), 'sinCoordenadas' => $sinCoordenadas]);
+}

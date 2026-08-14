@@ -25,6 +25,8 @@ if($_POST['NewOrder']==1){
 $Posicion=$_POST['Posicion'];
 $Retirado=$_POST['valor_retirado'];
 $idhdr = $_POST['idhdr'] ?? '';
+$Recorrido = $_POST['Recorrido'] ?? '';
+$Usuario = $_SESSION['Usuario'] ?? 'sistema';
 
 if($Retirado==1){
 $stmt = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = ? WHERE id=? LIMIT 1");
@@ -34,6 +36,16 @@ $stmt = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion_retiro = ? WHERE id=? L
 $stmt->bind_param('ss', $Posicion, $idhdr);
 $stmt->execute();
 $new_p=$Posicion+1;
+
+// TRAZABILIDAD: cada click de "Ordenar Manual" cuenta como parte de la
+// misma sesion de orden manual - se actualiza en cada click para que el
+// timestamp siempre refleje el ultimo movimiento real.
+if ($Recorrido !== '') {
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Manual' WHERE Numero = ?");
+    $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+    $stmtTraza->execute();
+}
+
 echo json_encode(array('resultado'=>1,'newPosicion'=>$Posicion,'retirado'=>$Retirado,'new_p'=>$new_p));
 }
 
@@ -52,6 +64,8 @@ if($_POST['RestartOrder']==1){
 
 if($_POST['Posiciones_order']==1){
     $id=$_POST['id'];
+    $Recorrido = $_POST['Recorrido'] ?? '';
+    $Usuario = $_SESSION['Usuario'] ?? 'sistema';
     $stmt = $mysqli->prepare(
         "SELECT Clientes.id FROM Clientes
         INNER JOIN HojaDeRuta ON Clientes.id = HojaDeRuta.idCliente
@@ -77,6 +91,12 @@ if($_POST['Posiciones_order']==1){
 
         $posicion=$posicion+1;
 
+    }
+
+    if ($Recorrido !== '') {
+        $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Gestya' WHERE Numero = ?");
+        $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+        $stmtTraza->execute();
     }
 
     echo json_encode(array('resultado'=>1,'modificadas'=>$modificadas));

@@ -32,6 +32,11 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     $datorecorrido = $sqlrecorrido->fetch_array(MYSQLI_ASSOC);
 
 
+    // $color/$Nombre solo se definian dentro de este if/elseif - si el
+    // Recorrido no tenia ninguna orden de Logistica en estado Cerrada/
+    // Cargada/Alta (por ejemplo, paradas abiertas sobre un Recorrido sin
+    // orden asignada todavia), quedaban indefinidas y tiraban warnings mas
+    // abajo. Se agrega un valor por defecto para ese caso.
     if (isset($datologistica['Estado']) && $datologistica['Estado'] == 'Cerrada') {
 
       $color = 'danger';
@@ -44,6 +49,10 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
 
       $color = 'warning';
       $Nombre = ucwords($datologistica['NombreChofer']);
+    } else {
+
+      $color = 'secondary';
+      $Nombre = '<a class="text-muted">Sin Orden Asignada</a>';
     }
 
     echo '<div class="col-xl-3 col-lg-6">';
@@ -74,7 +83,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     } else {
       echo '<h6 class="text-muted mt-0 mr-3" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '</h6>';
     }
-    echo '<h6 class="text-muted mt-0 mb-1">' . $datorecorrido['Nombre'] . '</h6>';
+    echo '<h6 class="text-muted mt-0 mb-1">' . ($datorecorrido['Nombre'] ?? '') . '</h6>';
     echo '<h5 class="mt-3 mb-2">' . $Nombre . '</h5>';
     echo '<p class="mb-0 text-muted">';
     echo '<span class="text-nowrap"><i class="mdi mdi-18px mdi-map-marker text-success"></i>' . $datohdr['id'] . ' Servicios </span>';

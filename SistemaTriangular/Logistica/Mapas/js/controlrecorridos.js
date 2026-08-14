@@ -103,28 +103,32 @@ function initMap_order(id) {
 window.initMap_order = initMap_order;
 
 $('#full-width-modal_order_button').click(function(){
-    
+
     var id=$('#id_logistica').val();
-    console.log('id',id);    
-    $.ajax({        
-        data:{'Posiciones_order':1,'id':id},
+    var Recorrido = $("#recorrido").html();
+    console.log('id',id);
+    $.ajax({
+        data:{'Posiciones_order':1,'id':id,'Recorrido':Recorrido},
         url:'Mapas/php/cambiar_posicion.php',
         type:'post',
         success: function (respuesta) {
           var jsonData = JSON.parse(respuesta);
           if(jsonData.resultado==1){
               if(jsonData.modificadas!=0){
-            toast("success", "Exito !", "Se reasingaron " +jsonData.modificadas+ " posiciones para el recorrido.!");                     
+            toast("success", "Exito !", "Se reasingaron " +jsonData.modificadas+ " posiciones para el recorrido.!");
             $('#full-width-modal_order').modal('hide');
+            // Refresca Roadmap_end para este recorrido y recarga mapa + tabla -
+            // antes solo se recargaba la tabla, el mapa quedaba con el orden viejo.
+            veo(Recorrido);
             var datatable = $('#seguimiento').DataTable();
             datatable.ajax.reload();
 
             }else{
-                toast("error", "Error !", "No se reasingaron posiciones para el recorrido.");                           
-              }             
+                toast("error", "Error !", "No se reasingaron posiciones para el recorrido.");
+              }
           }
         }
-        });    
+        });
 });
 
 

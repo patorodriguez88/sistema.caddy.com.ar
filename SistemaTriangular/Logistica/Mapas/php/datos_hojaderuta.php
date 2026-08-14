@@ -46,9 +46,15 @@ if($Rec=='Todos'){
         // $row_entrega[]=$rowr['Entrega'];
         }    
         
-        $exito= json_encode($rowsr); 
+        $exito= json_encode($rowsr);
         $exito = trim($exito,'[]');
-  
+        // Si Roadmap_end todavia no tiene filas para este recorrido (recien
+        // creado, o no se llego a renderizar), "IN ()" es SQL invalido -
+        // se pone un valor que no matchea ningun id real en vez de romper.
+        if ($exito === '') {
+            $exito = '0';
+        }
+
         $count_entregas=$mysqli->query("SELECT id FROM `Roadmap_end` where Entrega=1 AND Recorrido='$Rec'");
         $result_entregas=$count_entregas->num_rows;
 
@@ -71,7 +77,7 @@ if($Rec=='Todos'){
         while($row = $result->fetch_array(MYSQLI_ASSOC)){
         $rowss[]=$row;
         }
-        $queryr="SELECT Color FROM Recorridos WHERE Numero='$Rec'";
+        $queryr="SELECT Color, UltimoOrdenUsuario, UltimoOrdenFecha, UltimoOrdenMetodo FROM Recorridos WHERE Numero='$Rec'";
         $resultR = $mysqli->query($queryr);
         $rowR = $resultR->fetch_array(MYSQLI_ASSOC);
         $color = $rowR['Color'];
@@ -97,7 +103,7 @@ if($Rec=='Todos'){
         $total_tabla = $sql_tabla->fetch_array(MYSQLI_ASSOC);
         $Errores=$result_entregas+$result_retiros;
 
-        echo json_encode(array('data'=>$rowss,'Recorrido'=>$Rec,'Color'=>$color,'Tabla'=>$total_tabla['Total'],'Estado'=>$ROW_LOGISTICA['Estado'],'NombreChofer'=>$Chofer,'Total_entregas'=>$result_entregas,'Total_retiros'=>$result_retiros,'Errores'=>$Errores));
+        echo json_encode(array('data'=>$rowss,'Recorrido'=>$Rec,'Color'=>$color,'Tabla'=>$total_tabla['Total'],'Estado'=>$ROW_LOGISTICA['Estado'],'NombreChofer'=>$Chofer,'Total_entregas'=>$result_entregas,'Total_retiros'=>$result_retiros,'Errores'=>$Errores,'UltimoOrdenUsuario'=>$rowR['UltimoOrdenUsuario'],'UltimoOrdenFecha'=>$rowR['UltimoOrdenFecha'],'UltimoOrdenMetodo'=>$rowR['UltimoOrdenMetodo']));
 }
 
 ?>
