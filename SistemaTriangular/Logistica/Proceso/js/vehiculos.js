@@ -727,7 +727,7 @@ function access_breafing() {
             render: function (data, type, row) {
               const editar = row.gid_task
                 ? `<a onclick='open_mantenimiento_asana(${row.gid_task})' class='action-icon'>
-                   <i class='mdi mdi-14px mdi-square-edit-outline text-warning'></i>
+                   <i class='mdi mdi-14px mdi-pencil text-warning'></i>
                  </a>`
                 : "";
 
@@ -1007,9 +1007,9 @@ $("#access_tax").click(function () {
         data: null,
         render: function (data, type, row) {
           return `<td>
-                    <a href='javascript:void(0);' class='action-icon'> <i onclick='tax_modify(${row.id})' class='mdi mdi-square-edit-outline text-warning'></i></a>
+                    <a href='javascript:void(0);' class='action-icon'> <i onclick='tax_modify(${row.id})' class='mdi mdi-pencil text-warning'></i></a>
                     <a class='action-icon'> <i onclick='tax_pay(${row.id})' class='mdi mdi-cash text-success'></i></a>
-                    <a class='action-icon'> <i onclick='tax_delete(${row.id})' class='mdi mdi-delete text-danger'></i></a>                    
+                    <a class='action-icon'> <i onclick='tax_delete(${row.id})' class='mdi mdi-trash-can text-danger'></i></a>
                     </td>`;
         },
       },
@@ -1524,7 +1524,7 @@ $(document).ready(function () {
         data: "Estado",
         render: function (data, type, row) {
           var v = '"' + row.Dominio + '"';
-          return `<td><a style='cursor:pointer' onclick='open_vehicle(${v})' class='action-icon'> <i class='mdi mdi-square-edit-outline text-success'></i></a></td>`;
+          return `<td><a style='cursor:pointer' onclick='open_vehicle(${v})' class='action-icon'> <i class='mdi mdi-pencil text-warning'></i></a></td>`;
         },
       },
     ],

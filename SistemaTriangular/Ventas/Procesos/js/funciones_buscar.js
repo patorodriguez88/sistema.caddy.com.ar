@@ -69,7 +69,7 @@ var datatable = $('#basic').DataTable({
             {data:"idPedido",
             render: function (data, type, row) {
                   return "<td>"+
-                         "<a class='action-icon' onclick='eliminar("+ row.idPedido +")'><i class='uil-trash-alt'></i></a>"+
+                         "<a class='action-icon' onclick='eliminar("+ row.idPedido +")'><i class='mdi mdi-trash-can text-danger'></i></a>"+
                          "</td>"
                          }
                   }

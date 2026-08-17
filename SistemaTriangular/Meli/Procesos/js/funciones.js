@@ -338,7 +338,7 @@ $(document).ready(function() {
               {data:"id",
              render: function (data, type, row) {
                   return `<td class="table-action"><a id="${row.id}" onclick="cargar(this.id,${row.id});" class="action-icon"> <i class="mdi mdi-truck-check-outline text-success"></i></a>`+
-                         `<td class="table-action"><a onclick="showmodal(${row.id});" class="action-icon"> <i class="mdi mdi-trash-can-outline text-danger"></i></a></td>`;
+                         `<td class="table-action"><a onclick="showmodal(${row.id});" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
                 }
               },
              

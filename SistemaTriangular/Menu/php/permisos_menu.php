@@ -12,7 +12,7 @@
 // salteamos el session_start(): si lo hacíamos, $_SESSION quedaba vacío en esas páginas
 // y el menú terminaba mostrando todo sin importar el rol de quien esté logueado.
 if (session_status() === PHP_SESSION_NONE) {
-    session_start(); echo "<!-- SESSION_START CALLED -->";
+    @session_start();
 }
 
 function menuSlug(string $seccion, string $texto): string

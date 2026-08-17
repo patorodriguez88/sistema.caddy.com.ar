@@ -33,7 +33,7 @@ const table = $("#preventa").DataTable({
     {
       data: "id",
       render: (d, t, r) =>
-        `<a class='action-icon' onclick='eliminar(${r.id})'><i class='uil-trash-alt'></i></a>`,
+        `<a class='action-icon' onclick='eliminar(${r.id})'><i class='mdi mdi-trash-can text-danger'></i></a>`,
     },
     {
       data: "id",

@@ -145,7 +145,7 @@ var datatable = $("#recorridos").DataTable({
         return `
           <div class="table-action">
             <a id="${r.id}" onclick="modificar(this.id, ${r.Activo});" class="action-icon"><i class="mdi ${icon}"></i></a>
-            <a onclick="showmodal(${r.id});" class="action-icon"><i class="mdi mdi-border-color text-warning"></i></a>
+            <a onclick="showmodal(${r.id});" class="action-icon"><i class="mdi mdi-pencil text-warning"></i></a>
           </div>`;
       },
     },
@@ -178,7 +178,7 @@ function ver_fijos(i) {
         data: "id",
 
         render: function (data, type, row) {
-          return `<td class="table-action col-xs-3"><a style="cursor:pointer" id="${row.id}" onclick="eliminar_fijo(this.id);" ><i class="mdi mdi-18px mdi-trash-can-outline"></i>`;
+          return `<td class="table-action col-xs-3"><a style="cursor:pointer" id="${row.id}" onclick="eliminar_fijo(this.id);" ><i class="mdi mdi-18px mdi-trash-can text-danger"></i>`;
         },
       },
     ],

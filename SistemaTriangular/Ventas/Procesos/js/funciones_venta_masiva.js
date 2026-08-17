@@ -260,7 +260,7 @@ $('#crearorigen').click(function(){
                 render: function (data, type, row) {
                 if(row.Codigo!=187){
                     return "<td>"+
-                       "<a class='action-icon' onclick='eliminar("+ row.idPedido +")'><i class='uil-trash-alt'></i></a>"+
+                       "<a class='action-icon' onclick='eliminar("+ row.idPedido +")'><i class='mdi mdi-trash-can text-danger'></i></a>"+
                        "</td>"
                     }else{
                         return "<td></td>"                  

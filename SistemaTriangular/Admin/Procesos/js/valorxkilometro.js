@@ -136,13 +136,10 @@
           data: null,
           orderable: false,
           render: function (data, type, row) {
+            const activoIcon = parseInt(row.Activo) === 1 ? "mdi-eye text-success" : "mdi-eye-off text-danger";
             return `
-              <button class="btn btn-sm btn-outline-primary btn-editar" data-id="${row.id}">
-                <i class="mdi mdi-pencil"></i>
-              </button>
-              <button class="btn btn-sm btn-outline-danger btn-toggle" data-id="${row.id}" data-activo="${row.Activo}">
-                <i class="mdi ${parseInt(row.Activo) === 1 ? "mdi-close" : "mdi-check"}"></i>
-              </button>
+              <i class="mdi mdi-pencil text-warning btn-editar" data-id="${row.id}" style="cursor: pointer;" title="Editar"></i>
+              <i class="mdi ${activoIcon} btn-toggle ms-2" data-id="${row.id}" data-activo="${row.Activo}" style="cursor: pointer;" title="${parseInt(row.Activo) === 1 ? "Desactivar" : "Activar"}"></i>
             `;
           },
         },

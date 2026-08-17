@@ -394,7 +394,7 @@ function cpanel() {
             row.NumerodeOrden +
             '" id="' +
             row.NumerodeOrden +
-            '" onclick="modificar(this.id);" class="action-icon"><i class="mdi mdi-24px mdi-menu"></i>' +
+            '" onclick="modificar(this.id);" class="action-icon"><i class="mdi mdi-24px mdi-pencil text-warning"></i>' +
             "</td>"
           );
         },

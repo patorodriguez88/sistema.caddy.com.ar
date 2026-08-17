@@ -132,7 +132,7 @@ var datatable = $("#servicios").DataTable({
         }
         return (
           `<td class="table-action"><a id="${row.id}" onclick="modificar(this.id,${row.Inactivo});" class="action-icon"> <i class="mdi ${activo}"></i></a>` +
-          `<td class="table-action"><a onclick="showmodal(${row.id});" class="action-icon"> <i class="mdi mdi-border-color text-warning"></i></a></td>`
+          `<td class="table-action"><a onclick="showmodal(${row.id});" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a></td>`
         );
       },
     },

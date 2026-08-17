@@ -235,7 +235,7 @@ var datatable = $("#empleados").DataTable({
     {
       data: "id",
       render: function (data, type, row) {
-        return `<td class="table-action"><a id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-account-edit text-success"></i></a>`;
+        return `<td class="table-action"><a id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a>`;
       },
     },
   ],

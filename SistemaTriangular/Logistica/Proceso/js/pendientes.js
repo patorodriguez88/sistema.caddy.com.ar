@@ -472,7 +472,7 @@ $(document).ready(function () {
         render: function (data, type, row) {
           let myLatLng = row.Latitud + "," + row.Longitud;
 
-          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-primary"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a></td>`;
+          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
           // return `<td class="table-action d-print-none mt-4"><a data-id="${row.DomicilioDestino}" id="${row.DomicilioDestino}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-primary"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a></td>`;
         },
       },

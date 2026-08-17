@@ -609,7 +609,7 @@ function bindPendientesRecorridoModal() {
           data: "Notas",
           render: function (data, type, row) {
             return `
-              <i class="text-info mdi mdi-18px mdi-pencil" onclick="notas(${row.id})"></i>
+              <i class="text-warning mdi mdi-18px mdi-pencil" onclick="notas(${row.id})"></i>
               <small class="text-info">${row.Notas || ""}</small>
             `;
           },

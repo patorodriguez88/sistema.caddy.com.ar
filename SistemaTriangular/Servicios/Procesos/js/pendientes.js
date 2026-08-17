@@ -238,12 +238,12 @@ var datatable = $("#seguimiento").DataTable({
           row.id +
           '" id="' +
           row.id +
-          '" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>' +
+          '" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a>' +
           '<a data-id="' +
           row.id +
           '" id="' +
           row.id +
-          '" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a>' +
+          '" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a>' +
           "</td>"
         );
       },
@@ -443,10 +443,10 @@ $("#standard-modal").on("show.bs.modal", function (e) {
             '<td class="table-action">' +
             '<a id="' +
             row.idPedido +
-            '" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>' +
+            '" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a>' +
             '<a id="' +
             row.idPedido +
-            '" onclick="eliminarVentas(this.id);" class="action-icon"> <i class="mdi mdi-delete text-warning"></i></a>' +
+            '" onclick="eliminarVentas(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a>' +
             '<a id="' +
             row.NumPedido +
             '" onclick="agregarVentas(this.id);" class="action-icon"> <i class="mdi mdi-plus-circle text-success"></i></a>' +

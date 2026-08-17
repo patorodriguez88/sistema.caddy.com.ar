@@ -66,9 +66,9 @@ $(document).ready(function () {
                 searchable: false,
                 render: function (data, type, row) {
                     return `
-                        <i class="mdi mdi-pencil editar-cuenta" 
-                           style="color: #ffc107; cursor: pointer;" 
-                           title="Editar" 
+                        <i class="mdi mdi-pencil editar-cuenta text-warning"
+                           style="cursor: pointer;"
+                           title="Editar"
                            data-id="${data}"></i>
                     `;
                 }

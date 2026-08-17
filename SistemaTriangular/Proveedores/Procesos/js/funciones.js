@@ -587,14 +587,14 @@ $(document).ready(function () {
                         row.id +
                         '" type="checkbox" onclick="abrir_factura()" class="form-check-input dt-checkboxes">' +
                         '<label class="form-check-label">&nbsp;</label>' +
-                        '<i class="ml-2 mdi-18px mdi mdi-trash-can-outline text-danger" onclick="borrar(' +
+                        '<i class="ml-2 mdi-18px mdi mdi-trash-can text-danger" onclick="borrar(' +
                         row.id +
                         ')"/></div></td>'
                       );
                     }
                   } else {
                     return (
-                      '<td><div class="form-check"></div><i class="ml-2 mdi-18px mdi mdi-trash-can-outline text-danger" onclick="borrar_pago(' +
+                      '<td><div class="form-check"></div><i class="ml-2 mdi-18px mdi mdi-trash-can text-danger" onclick="borrar_pago(' +
                       row.id +
                       ')"/></div></td>'
                     );

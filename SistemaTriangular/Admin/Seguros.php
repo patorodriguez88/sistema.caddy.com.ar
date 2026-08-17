@@ -1,12 +1,5 @@
 <?php
 session_start();
-$usuario = htmlspecialchars($_SESSION['Usuario'] ?? 'Sistema', ENT_QUOTES);
-
-$logoPath = realpath(__DIR__ . '/../images/LogoCaddyNoAlfa.png');
-$logoBase64 = '';
-if ($logoPath && file_exists($logoPath)) {
-    $logoBase64 = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
-}
 ?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
@@ -190,7 +183,7 @@ if ($logoPath && file_exists($logoPath)) {
                         <div class="col-md-4 d-flex align-items-center justify-content-end">
                             <button id="btn_pdf_general" class="btn btn-danger btn-lg shadow-sm">
                                 <i class="mdi mdi-file-pdf-box me-1 fs-4"></i>
-                                Informe PDF General
+                                Ver / Imprimir Informe PDF
                             </button>
                         </div>
                     </div>
@@ -354,12 +347,6 @@ if ($logoPath && file_exists($logoPath)) {
     <!-- SweetAlert2 -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <!-- Variables PHP → JS -->
-    <script>
-        var LOGO_BASE64   = '<?= $logoBase64 ?>';
-        var USUARIO_LOGADO = '<?= $usuario ?>';
-    </script>
 
     <!-- Seguros JS -->
     <script src="Procesos/js/seguros.js"></script>

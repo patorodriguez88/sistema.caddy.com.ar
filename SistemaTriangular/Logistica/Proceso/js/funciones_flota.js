@@ -157,7 +157,7 @@ $('#desempeno2').html('PAQUETES ENTREGADOS X REPARTIDOR MES DE '+mes);
           render: function (data, type, row) {
             
             return '<td class="table-action">'+
-                   '<a data-id="' + row.NumerodeOrden + '" id="'+row.NumerodeOrden+'" onclick="modificar(this.id);" class="action-icon"><i class="mdi mdi-24px mdi-menu"></i>'+
+                   '<a data-id="' + row.NumerodeOrden + '" id="'+row.NumerodeOrden+'" onclick="modificar(this.id);" class="action-icon"><i class="mdi mdi-24px mdi-pencil text-warning"></i>'+
                    '</td>';
             }
           }

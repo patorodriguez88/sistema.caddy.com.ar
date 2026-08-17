@@ -141,10 +141,14 @@ function guardarAsiento($conexion) {
                 // (la columna no tiene default) y el asiento recien creado
                 // no aparecia nunca en Buscar Asiento / Libro Diario / el
                 // PDF, que filtran por Eliminado = 0.
+                // Pendiente y NoOperativo tambien se ponen en 0 explicito por el
+                // mismo motivo que Eliminado: sin default en la columna, quedaban
+                // NULL y los informes de Sumas y Saldos / Mayor (que filtran
+                // Pendiente=0) no encontraban nunca los asientos nuevos.
                 $sql = "INSERT INTO Tesoreria
-                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, Caja, Dominio, Eliminado)
+                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, Caja, Dominio, Eliminado, Pendiente, NoOperativo)
                         VALUES
-                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', 0, 0, 0)";
+                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', 0, 0, 0, 0, 0)";
             }
 
             if (!$conexion->query($sql)) {
@@ -218,9 +222,25 @@ function obtenerCuentas($conexion) {
 
 function libroDiario($conexion) {
 
-    $Fecha = $_POST['fecha'];
-    $sql = "SELECT NumeroAsiento, Fecha, Cuenta, NombreCuenta, Debe, Haber FROM Tesoreria WHERE Fecha='$Fecha' AND Eliminado=0";
-    $resultado = $conexion->query($sql);
+    // Antes filtraba por un solo dia exacto (Fecha='$Fecha', aunque la
+    // etiqueta en pantalla decia "Desde") y concatenaba el POST directo al
+    // SQL sin escapar - ahora es un rango real con prepared statement.
+    $desde = $_POST['fecha_desde'] ?? '';
+    $hasta = $_POST['fecha_hasta'] ?? '';
+    if ($desde === '' || $hasta === '') {
+        echo json_encode(['data' => []]);
+        return;
+    }
+
+    $sql = "SELECT NumeroAsiento, Fecha, Cuenta, NombreCuenta, Debe, Haber
+              FROM Tesoreria
+             WHERE Fecha BETWEEN ? AND ?
+               AND Eliminado = 0
+             ORDER BY Fecha, NumeroAsiento";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param('ss', $desde, $hasta);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
     $rows = [];
 
     if ($resultado) {
@@ -235,16 +255,34 @@ function libroDiario($conexion) {
 
 function consultaAsiento($conexion){
 
-    $desde = $_POST['fecha_desde'];
-    $hasta = $_POST['fecha_hasta'];
-    $cuentaDesde = $_POST['cuenta_desde'];
-    $cuentaHasta = $_POST['cuenta_hasta'];
+    $desde = $_POST['fecha_desde'] ?? '';
+    $hasta = $_POST['fecha_hasta'] ?? '';
+    // Cuenta Desde/Hasta son filtros opcionales (selects que arrancan
+    // vacios) - sin esto, dejarlos sin tocar armaba "Cuenta BETWEEN '' AND
+    // ''" que en una columna numerica solo matchea Cuenta=0 y la búsqueda
+    // no encontraba nada aunque hubiera asientos en el rango de fechas.
+    $cuentaDesde = !empty($_POST['cuenta_desde']) ? $_POST['cuenta_desde'] : '000000000';
+    $cuentaHasta = !empty($_POST['cuenta_hasta']) ? $_POST['cuenta_hasta'] : '999999999';
 
-    $query = "SELECT * FROM Tesoreria 
-            WHERE Fecha BETWEEN ? AND ?
-            AND Cuenta BETWEEN ? AND ?
-            AND Eliminado = 0
-            ORDER BY Fecha, NumeroAsiento";
+    // Un asiento contable balanceado son varios renglones (uno por cuenta)
+    // que siempre suman lo mismo en Debe y Haber - se agrupa por
+    // NumeroAsiento para mostrar un solo registro por asiento en la
+    // consulta, en vez de un renglón por cuenta. GROUP_CONCAT(DISTINCT...)
+    // porque las Observaciones pueden repetirse igual en todos los
+    // renglones (lo normal, si se cargó desde este mismo formulario) o
+    // venir distintas en cada uno (asientos mas viejos/de otro origen).
+    $query = "SELECT
+                NumeroAsiento,
+                MIN(Fecha) AS Fecha,
+                SUM(Debe) AS Debe,
+                SUM(Haber) AS Haber,
+                GROUP_CONCAT(DISTINCT NULLIF(TRIM(Observaciones), '') SEPARATOR ' | ') AS Observaciones
+              FROM Tesoreria
+             WHERE Fecha BETWEEN ? AND ?
+               AND Cuenta BETWEEN ? AND ?
+               AND Eliminado = 0
+             GROUP BY NumeroAsiento
+             ORDER BY Fecha, NumeroAsiento";
 
     $stmt = $conexion->prepare($query);
     $stmt->bind_param("ssss", $desde, $hasta, $cuentaDesde, $cuentaHasta);

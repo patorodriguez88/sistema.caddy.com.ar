@@ -160,7 +160,7 @@ $(document).ready(function () {
         render: function (data) {
           return `
                 <i class="mdi mdi-18px mdi-pencil editar-multa text-warning ml-2" data-id="${data.id}" style="cursor: pointer;"></i>
-                <i class="mdi mdi-18px mdi-delete eliminar-multa text-danger ms-2 ml-2" data-id="${data.id}" style="cursor: pointer;"></i>
+                <i class="mdi mdi-18px mdi-trash-can eliminar-multa text-danger ms-2 ml-2" data-id="${data.id}" style="cursor: pointer;"></i>
               `;
         },
       },

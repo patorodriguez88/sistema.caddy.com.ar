@@ -222,7 +222,7 @@ ajax: {
                 return '<td class="table-action">'+
                 // '<a id="'+row.idPedido+'" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>'+
                 '<a id="'+dato+'" onclick="agregarVentas(this.id);" class="action-icon"> <i class="mdi mdi-plus-circle text-success"></i></a>'+  
-                '<a id="'+row.id+'" onclick="eliminarSales(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a>'+
+                '<a id="'+row.id+'" onclick="eliminarSales(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a>'+
                 '</td>';
                 }
               }

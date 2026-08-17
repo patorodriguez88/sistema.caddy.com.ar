@@ -95,8 +95,8 @@ function cargarRoles() {
         <tr>
           <td>${rol.nombre}</td>
           <td class="text-end">
-            <i class="mdi mdi-pencil text-muted mdi-18px editar-rol me-2" style="cursor:pointer;" data-id="${rol.id}" data-nombre="${rol.nombre}"></i>
-            <i class="mdi mdi-delete text-danger mdi-18px eliminar-rol" style="cursor:pointer;" data-id="${rol.id}"></i>
+            <i class="mdi mdi-pencil text-warning mdi-18px editar-rol me-2" style="cursor:pointer;" data-id="${rol.id}" data-nombre="${rol.nombre}"></i>
+            <i class="mdi mdi-trash-can text-danger mdi-18px eliminar-rol" style="cursor:pointer;" data-id="${rol.id}"></i>
           </td>
         </tr>`);
     });
@@ -112,7 +112,7 @@ function verPermisos() {
       const accion =
         Number(permiso.es_sistema) === 1
           ? '<span class="badge bg-soft-secondary text-secondary">Sistema</span>'
-          : `<i class="mdi mdi-delete text-danger mdi-18px eliminar-permiso" data-id="${permiso.id}" style="cursor:pointer;"></i>`;
+          : `<i class="mdi mdi-trash-can text-danger mdi-18px eliminar-permiso" data-id="${permiso.id}" style="cursor:pointer;"></i>`;
       tabla.append(`
         <tr>
           <td>${permiso.nombre}</td>

@@ -3,14 +3,49 @@
   /* app.min.css abre los submenús del topnav con :hover además del click de Bootstrap
      (data-bs-toggle="dropdown"). Los dos mecanismos a la vez hacen que un menú clickeado
      quede abierto (por la clase .show) y que al pasar el mouse por otro también se abra
-     por el :hover, mostrando varios a la vez. Dejamos solo el click. */
-  .topnav .dropdown:hover > .dropdown-menu,
-  .topnav .dropdown:hover > .dropdown-menu > .dropdown:hover > .dropdown-menu {
+     por el :hover, mostrando varios a la vez. Dejamos solo el click.
+     :not(.show) es clave: sin ese guard, esta regla (más específica que la
+     de .show de más abajo) le ganaba a la del click y apagaba el submenú
+     anidado apenas el mouse lo tocaba - que es justo lo que hace falta para
+     poder clickearlo. Con el guard, el hover solo apaga lo que NO está
+     abierto por click; lo que está en .show queda intacto. */
+  .topnav .dropdown:hover > .dropdown-menu:not(.show),
+  .topnav .dropdown-menu .dropdown:hover > .dropdown-menu:not(.show) {
     display: none !important;
   }
 
-  .topnav .dropdown > .dropdown-menu.show {
+  .topnav .dropdown-menu.show {
     display: block !important;
+  }
+
+  /* Submenús anidados (Admin > Contabilidad > ...): estos triggers de segundo
+     nivel llevan data-bs-display="static" para que Bootstrap/Popper NO les
+     calcule la posición solo - sin eso Popper los ubicaba en cualquier lado
+     (a veces fuera de la vista), y recién se veían/se podían clickear
+     cuando el mouse pasaba por ahí de casualidad. Con position:static la
+     posición la fija este CSS: pegado a la derecha del item que lo abre. */
+  .topnav .dropdown-menu .dropdown {
+    position: relative;
+  }
+
+  .topnav .dropdown-menu .dropdown > .dropdown-menu {
+    top: 0;
+    left: 100%;
+    margin-top: -0.35rem;
+  }
+
+  .topnav .dropdown-menu .dropdown-toggle {
+    cursor: pointer;
+  }
+
+  /* Flechita a la derecha (icono uil-angle-right-b puesto en el HTML) para
+     indicar que el item abre un submenú, en vez de la flechita hacia abajo
+     que trae Bootstrap por defecto (quitada con arrow-none, ya que acá el
+     submenú se abre hacia la derecha, no hacia abajo). */
+  .topnav .dropdown-menu .dropdown-submenu-arrow {
+    float: right;
+    margin-left: 8px;
+    opacity: 0.6;
   }
 </style>
 <div class="topnav">
@@ -278,152 +313,192 @@
               <div class="arrow-down"></div>
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-admin">
+              <!-- Contabilidad: asientos/libros + lo que alimenta al contador -->
               <div class="dropdown">
-                <!-- <a
-                  class="dropdown-item dropdown-toggle arrow-none"
-                  href="#"
-                  id="topnav-auth"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-haspopup="true"
-                  aria-expanded="false"
-                > -->
-                  <!-- Contabilidad -->
-                  <!-- <div class="arrow-down"></div> -->
-                </a>
-                <!-- <div class="dropdown-menu" aria-labelledby="topnav-auth">
-                  <a
-                    href="/SistemaTriangular/Admin/Contabilidad.php"
-                    class="dropdown-item"
-                    >Asientos Contables</a
-                  >
-                </div> -->
-              </div>
-              <div class="dropdown">
-                <?php if (tieneMenuPermiso('Admin', 'Informes')): ?>
                 <a
                   class="dropdown-item dropdown-toggle arrow-none px-1"
                   href="#"
-                  id="topnav-informes"
+                  id="topnav-admin-contabilidad"
                   role="button"
                   data-bs-toggle="dropdown"
+                  data-bs-display="static"
                   aria-haspopup="true"
                   aria-expanded="false"
                 >
-                  Informes
-                  <!-- <div class="arrow-down"></div> -->
+                  Contabilidad
+                  <i class="uil uil-angle-right-b dropdown-submenu-arrow"></i>
                 </a>
-                <?php endif; ?>
+                <div class="dropdown-menu" aria-labelledby="topnav-admin-contabilidad">
+                  <?php if (tieneMenuPermiso('Admin', 'Asientos Contables')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Contabilidad"
+                    class="dropdown-item"
+                    >Asientos Contables</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Plan de Cuentas')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/PlanDeCuentas.php"
+                    class="dropdown-item text-danger"
+                    >Plan de Cuentas</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Libros Iva')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/LibrosIva.php"
+                    class="dropdown-item"
+                    >Libros Iva</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Resultados')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Resultados.php"
+                    class="dropdown-item"
+                    >Resultados</a
+                  >
+                  <?php endif; ?>
+                </div>
               </div>
-              <?php if (tieneMenuPermiso('Admin', 'Contabilidad')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Contabilidad"
-                class="dropdown-item"
-                >Contabilidad</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Control Facturación')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Sales_control.php"
-                class="dropdown-item"
-                >Control Facturación</a
-              >
-              <?php endif; ?>
 
-              <?php if (tieneMenuPermiso('Admin', 'Bancos')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Bancos.php"
-                class="dropdown-item"
-                >Bancos</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Cobranza')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Cobranzas.php"
-                class="dropdown-item"
-                >Cobranza</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Cobranza Integrada')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Cobranza_integrada"
-                class="dropdown-item"
-                >Cobranza Integrada</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Caja')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Caja"
-                class="dropdown-item"
-                >Caja</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Plan de Cuentas')): ?>
-              <a
-                href="/SistemaTriangular/Admin/PlanDeCuentas.php"
-                class="dropdown-item text-danger"
-                >Plan de Cuentas</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Libros Iva')): ?>
-              <a
-                href="/SistemaTriangular/Admin/LibrosIva.php"
-                class="dropdown-item"
-                >Libros Iva</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Resultados')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Resultados.php"
-                class="dropdown-item"
-                >Resultados</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Valor por Kilómetro')): ?>
-              <a
-                href="/SistemaTriangular/Admin/ValorxKilometro.php"
-                class="dropdown-item"
-                >Valor por Kilómetro</a
-              >
-              <?php endif; ?>
+              <!-- Tesoreria: bancos, caja, cheques, cobranzas -->
+              <div class="dropdown">
+                <a
+                  class="dropdown-item dropdown-toggle arrow-none px-1"
+                  href="#"
+                  id="topnav-admin-tesoreria"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-display="static"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  Tesorería
+                  <i class="uil uil-angle-right-b dropdown-submenu-arrow"></i>
+                </a>
+                <div class="dropdown-menu" aria-labelledby="topnav-admin-tesoreria">
+                  <?php if (tieneMenuPermiso('Admin', 'Bancos')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Bancos.php"
+                    class="dropdown-item"
+                    >Bancos</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Caja')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Caja"
+                    class="dropdown-item"
+                    >Caja</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Cheques')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Cheques.php"
+                    class="dropdown-item"
+                    >Cheques</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Cobranza')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Cobranzas.php"
+                    class="dropdown-item"
+                    >Cobranza</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Cobranza Integrada')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Cobranza_integrada"
+                    class="dropdown-item"
+                    >Cobranza Integrada</a
+                  >
+                  <?php endif; ?>
+                </div>
+              </div>
+
+              <!-- Facturacion: control y seguimiento de lo facturado -->
+              <div class="dropdown">
+                <a
+                  class="dropdown-item dropdown-toggle arrow-none px-1"
+                  href="#"
+                  id="topnav-admin-facturacion"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-display="static"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  Facturación
+                  <i class="uil uil-angle-right-b dropdown-submenu-arrow"></i>
+                </a>
+                <div class="dropdown-menu" aria-labelledby="topnav-admin-facturacion">
+                  <?php if (tieneMenuPermiso('Admin', 'Control Facturación')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Sales_control.php"
+                    class="dropdown-item"
+                    >Control Facturación</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Ventas a Facturar')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/ControlFacturacion.php"
+                    class="dropdown-item"
+                    >Ventas a Facturar</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Control Mensual')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Facturacion"
+                    class="dropdown-item"
+                    >Control Mensual</a
+                  >
+                  <?php endif; ?>
+                </div>
+              </div>
+
+              <!-- Flota / Varios: no es contable, pero vive en Admin -->
+              <div class="dropdown">
+                <a
+                  class="dropdown-item dropdown-toggle arrow-none px-1"
+                  href="#"
+                  id="topnav-admin-flota"
+                  role="button"
+                  data-bs-toggle="dropdown"
+                  data-bs-display="static"
+                  aria-haspopup="true"
+                  aria-expanded="false"
+                >
+                  Flota / Varios
+                  <i class="uil uil-angle-right-b dropdown-submenu-arrow"></i>
+                </a>
+                <div class="dropdown-menu" aria-labelledby="topnav-admin-flota">
+                  <?php if (tieneMenuPermiso('Admin', 'Multas')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Multas.php"
+                    class="dropdown-item"
+                    >Multas</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Seguros')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/Seguros.php"
+                    class="dropdown-item"
+                    >Seguros</a
+                  >
+                  <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Valor por Kilómetro')): ?>
+                  <a
+                    href="/SistemaTriangular/Admin/ValorxKilometro.php"
+                    class="dropdown-item"
+                    >Valor por Kilómetro</a
+                  >
+                  <?php endif; ?>
+                </div>
+              </div>
+
               <?php if (tieneMenuPermiso('Admin', 'Refrescar Sandbox')): ?>
               <a
                 href="/SistemaTriangular/Admin/RefrescarSandbox.php"
                 class="dropdown-item"
                 >Refrescar Sandbox</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Cheques')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Cobranza_integrada"
-                class="dropdown-item"
-                >Cheques</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Multas')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Multas.php"
-                class="dropdown-item"
-                >Multas</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Seguros')): ?>
-              <a
-                href="/SistemaTriangular/Admin/Seguros.php"
-                class="dropdown-item"
-                >Seguros</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Admin', 'Ventas a Facturar')): ?>
-              <a
-                href="/SistemaTriangular/Admin/ControlFacturacion.php"
-                class="dropdown-item"
-                >Ventas a Facturar</a
-              >
-              <?php endif; ?><?php if (tieneMenuPermiso('Admin', 'Control Mensual')): ?><a
-                href="/SistemaTriangular/Admin/Facturacion"
-                class="dropdown-item"
-                >Control Mensual</a
               >
               <?php endif; ?>
             </div>

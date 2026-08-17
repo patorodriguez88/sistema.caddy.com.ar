@@ -9,6 +9,14 @@ declare(strict_types=1);
 
 require_once __DIR__ . '/../../fpdf/fpdf.php';
 
+// El servidor corre con date.timezone=UTC en php.ini y ningun PDF lo
+// pisaba - el pie de pagina "Generado dd/mm/yyyy HH:mm" (Footer(), mas
+// abajo) salia en hora UTC en vez de la hora real de Córdoba (UTC-3). Se
+// setea una sola vez acá porque todos los PDF con el diseño nuevo
+// (Hoja de Ruta, Asiento Contable, Libro Diario, Sumas y Saldos, Libro
+// Mayor, Vehiculos, Asignaciones, etc.) incluyen este archivo.
+date_default_timezone_set('America/Argentina/Cordoba');
+
 // FPDF no entiende UTF-8: sus fuentes estándar son ISO-8859-1. Sin esto, tildes
 // y ñ salen como caracteres rotos.
 function pdf_text($texto): string

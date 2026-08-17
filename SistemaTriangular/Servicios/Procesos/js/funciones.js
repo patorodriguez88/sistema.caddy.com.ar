@@ -156,8 +156,8 @@ var datatable = $('#seguimiento').DataTable({
           {data:"id",
            render: function (data, type, row) {
                 return '<td class="table-action">'+
-                '<a data-id="' + row.id + '" id="'+row.id+'" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>'+
-                '<a data-id="' + row.id + '" id="'+row.id+'" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a>'+
+                '<a data-id="' + row.id + '" id="'+row.id+'" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a>'+
+                '<a data-id="' + row.id + '" id="'+row.id+'" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a>'+
                 '</td>';
             }
           }

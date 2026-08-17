@@ -45,6 +45,8 @@ document.addEventListener("DOMContentLoaded", function () {
       cardvisorpdf.style.display = "none";
       cardbusquedaasientos.style.display = "none";
       $("#card_informes").css("display", "none");
+      $("#card_resultado_asientos").hide();
+      $("#card_informes_mayor").hide();
       cargarCuentasParaBusqueda();
     });
 
@@ -68,13 +70,15 @@ document.addEventListener("DOMContentLoaded", function () {
         if (haberInput) haberInput.value = "0.00";
         calcularTotalAsiento();
       }, 50);
+
+      $("#titulo_asiento").html("Nuevo Asiento Contable");
       nuevoCard.style.display = "block";
       modificarCard.style.display = "none";
       cardvisorpdf.style.display = "none";
-      cardvisorpdf.style.display = "none";
       cardbusquedaasientos.style.display = "none";
-
-      $("#titulo_asiento").html("Nuevo Asiento Contable");
+      $("#card_informes").css("display", "none");
+      $("#card_resultado_asientos").hide();
+      $("#card_informes_mayor").hide();
     });
 
   document
@@ -87,6 +91,8 @@ document.addEventListener("DOMContentLoaded", function () {
       cardsumasysaldos.style.display = "none";
 
       $("#card_informes").css("display", "none");
+      $("#card_resultado_asientos").hide();
+      $("#card_informes_mayor").hide();
       cargarCuentasParaBusqueda();
     });
 
@@ -103,6 +109,8 @@ document.addEventListener("DOMContentLoaded", function () {
       $("#titulo_informes").html("Libro Diario");
       $("#card_informes").css("display", "block");
       cardbusquedaasientos.style.display = "none";
+      $("#card_resultado_asientos").hide();
+      $("#card_informes_mayor").hide();
       tablaInformes();
     });
 
@@ -115,6 +123,8 @@ document.addEventListener("DOMContentLoaded", function () {
       cardsumasysaldos.style.display = "none";
       cardvisorpdf.style.display = "none";
       cardbusquedaasientos.style.display = "none";
+      $("#card_resultado_asientos").hide();
+      $("#card_informes_mayor").hide();
       $("#titulo_informes").html("Sumas y Saldos");
       $("#card_informes").css("display", "block");
 
@@ -130,6 +140,8 @@ document.addEventListener("DOMContentLoaded", function () {
       cardvisorpdf.style.display = "none";
       cardbusquedaasientos.style.display = "none";
       $("#card_informes").css("display", "none");
+      $("#card_resultado_asientos").hide();
+      $("#card_informes_mayor").hide();
 
       mayoresContables();
     });
@@ -155,6 +167,14 @@ document.addEventListener("DOMContentLoaded", function () {
     if (!fechaISO) return "";
     const [a, m, d] = fechaISO.split("-");
     return `${d}/${m}/${a}`;
+  }
+
+  function formatearMonto(valor) {
+    const num = parseFloat(valor) || 0;
+    return num.toLocaleString("es-AR", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    });
   }
 
   function bloquearCajaSiFechaEsHoy() {
@@ -215,23 +235,40 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
 
-    let total = totalDebe - totalHaber;
-    $("#total_asiento").val(total.toFixed(2));
+    // Totales de Debe y Haber por separado (no un solo campo con el signo
+    // +/-, que confunde) + un indicador tipo "semáforo" de balanceado/no
+    // balanceado - mismo criterio que usan los sistemas contables serios
+    // (ej. SAP FB50): se ve el total de cada lado y una luz verde/roja que
+    // avisa si coinciden, en vez de un campo que se pinta de rojo aunque
+    // el asiento esté perfecto.
+    $("#total_debe_asiento").val(formatearMonto(totalDebe));
+    $("#total_haber_asiento").val(formatearMonto(totalHaber));
 
-    if (total !== 0 || !hayFilaValida) {
-      $("#total_asiento").addClass("is-invalid").removeClass("is-valid");
+    const diferencia = totalDebe - totalHaber;
+    // Epsilon en vez de "!== 0": comparar floats con igualdad exacta puede
+    // dar falsos "no balanceado" por errores de redondeo (0.1 + 0.2 no da
+    // 0.3 exacto en punto flotante).
+    const estaBalanceado = Math.abs(diferencia) < 0.005;
+
+    if (!hayFilaValida) {
+      $("#estado_balance_asiento").html(
+        '<small class="text-muted"><i class="mdi mdi-information-outline"></i> Cargá al menos una cuenta con un importe en Debe o Haber.</small>'
+      );
       $("#btnAceptar").prop("disabled", true);
-      const motivo = !hayFilaValida
-        ? "Cargá al menos una cuenta con un importe en Debe o Haber."
-        : "El asiento no está balanceado (Debe ≠ Haber).";
-      $("#mensaje")
-        .show()
-        .html(`<div class="alert alert-danger">${motivo}</div>`);
+    } else if (!estaBalanceado) {
+      $("#estado_balance_asiento").html(
+        '<span class="badge bg-danger p-2"><i class="mdi mdi-close-circle"></i> No balanceado — diferencia ' +
+          formatearMonto(Math.abs(diferencia)) +
+          "</span>"
+      );
+      $("#btnAceptar").prop("disabled", true);
     } else {
-      $("#total_asiento").addClass("is-valid").removeClass("is-invalid");
+      $("#estado_balance_asiento").html(
+        '<span class="badge bg-success p-2"><i class="mdi mdi-check-circle"></i> Asiento balanceado</span>'
+      );
       $("#btnAceptar").prop("disabled", false);
-      $("#mensaje").hide();
     }
+    $("#mensaje").hide();
   }
 
   function obtener_asiento() {
@@ -365,6 +402,80 @@ document.addEventListener("DOMContentLoaded", function () {
     );
   };
 
+  // Imprime un asiento puntual desde la tabla de Consulta - no depende de
+  // ultimoAsientoGuardado (eso es solo para el flujo de "recién confirmado").
+  window.imprimirAsientoNumero = function (numero) {
+    if (!numero) return;
+    window.open(
+      "../Admin/Informes/AsientoContablepdf.php?NR=" +
+        encodeURIComponent(numero),
+      "_blank"
+    );
+  };
+
+  // Abre un asiento desde la tabla de Consulta en un modal de SOLO LECTURA
+  // (no reusa el formulario de Crear/Modificar a propósito: acá el
+  // objetivo es ver el asiento sin tapar la tabla de resultados de la
+  // búsqueda de atrás, no editarlo).
+  window.abrirAsientoDesdeConsulta = function (numero) {
+    if (!numero) return;
+
+    $.ajax({
+      url: "../Admin/Procesos/php/contabilidad.php",
+      method: "POST",
+      data: { accion: "buscar_asiento", numeroAsiento: numero },
+      dataType: "json",
+      success: function (asiento) {
+        if (!asiento || asiento.length === 0) {
+          toast("warning", "No encontrado", "No se encontró el asiento " + numero + ".");
+          return;
+        }
+
+        $("#titulo_ver_asiento").html("Asiento Contable N° " + numero);
+        $("#fecha_ver_asiento").html(
+          "<strong>Fecha:</strong> " + formatearFecha(asiento[0].Fecha)
+        );
+        document.getElementById("modalVerAsiento").dataset.numero = numero;
+
+        const tbody = $("#tbody_ver_asiento");
+        tbody.empty();
+        let totalDebe = 0;
+        let totalHaber = 0;
+        const observaciones = [];
+
+        asiento.forEach((item) => {
+          totalDebe += parseFloat(item.Debe) || 0;
+          totalHaber += parseFloat(item.Haber) || 0;
+          const obs = (item.Observaciones || "").trim();
+          if (obs && observaciones.indexOf(obs) === -1) {
+            observaciones.push(obs);
+          }
+          tbody.append(`
+            <tr>
+              <td>${escapeHtml(item.Cuenta)}</td>
+              <td>${escapeHtml(item.NombreCuenta)}</td>
+              <td class="text-end">${formatearMonto(item.Debe)}</td>
+              <td class="text-end">${formatearMonto(item.Haber)}</td>
+            </tr>
+          `);
+        });
+
+        $("#total_debe_ver_asiento").html(formatearMonto(totalDebe));
+        $("#total_haber_ver_asiento").html(formatearMonto(totalHaber));
+        $("#observaciones_ver_asiento").html(
+          observaciones.length
+            ? "<strong>Observaciones:</strong> " + escapeHtml(observaciones.join(" | "))
+            : ""
+        );
+
+        $("#modalVerAsiento").modal("show");
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo abrir el asiento.");
+      },
+    });
+  };
+
   window.eliminarCampo = function (element) {
     element.parentElement.parentElement.remove();
     calcularTotalAsiento();
@@ -451,8 +562,11 @@ document.addEventListener("DOMContentLoaded", function () {
           agregarCampo();
 
           $("#observaciones").val("");
-          $("#total_asiento").val("").removeClass("is-invalid is-valid");
+          $("#total_debe_asiento").val("");
+          $("#total_haber_asiento").val("");
+          $("#estado_balance_asiento").html("");
           $("#btnAceptar").prop("disabled", true);
+          $("#titulo_asiento").html("Nuevo Asiento Contable");
 
           obtener_asiento();
           activarEventosInput();
@@ -494,8 +608,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     if (!numero) return;
 
-    modificarCard.style.display = "none";
-    nuevoCard.style.display = "block";
     // Se resetea acá y se vuelve a mostrar solo si la búsqueda encuentra el
     // asiento - si no, no debe quedar apuntando al último asiento cargado.
     $("#btnImprimirAsiento").hide();
@@ -508,11 +620,12 @@ document.addEventListener("DOMContentLoaded", function () {
       dataType: "json",
       success: function (asiento) {
         if (!asiento || asiento.length === 0) {
-          $("#mensaje").html(
-            `<div class="alert alert-warning">No se encontró el asiento</div>`
-          );
+          toast("warning", "No encontrado", "No se encontró el asiento " + numero + ".");
           return;
         }
+
+        modificarCard.style.display = "none";
+        nuevoCard.style.display = "block";
 
         // Limpiar los campos existentes
         $("#campos-container").empty();
@@ -523,6 +636,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
         $("#n_asiento").val(numero);
         $("#nasiento").val(numero);
+        $("#titulo_asiento").html("Asiento Contable N° " + numero);
 
         // Si en el array viene la fecha, por ejemplo asiento[0].Fecha - esto
         // antes estaba fuera de este callback (usando una variable "asiento"
@@ -537,12 +651,20 @@ document.addEventListener("DOMContentLoaded", function () {
         // Tesoreria), asi que se puede imprimir.
         ultimoAsientoGuardado = numero;
         $("#btnImprimirAsiento").show();
+
+        // agregarCampoDesdeDatos() asigna el valor de cada <select> dentro
+        // de un setTimeout(10ms) (para esperar a que se le carguen las
+        // opciones) - sin este delay, calcularTotalAsiento() se ejecutaba
+        // antes de que los selects tuvieran cuenta seleccionada y el
+        // asiento quedaba marcado como "sin cuenta cargada" (borde rojo)
+        // aunque estuviera perfectamente balanceado.
+        setTimeout(() => {
+          calcularTotalAsiento();
+        }, 100);
       },
       error: function (xhr, status, error) {
         console.error("Error al buscar el asiento:", status, error);
-        $("#mensaje").html(
-          `<div class="alert alert-danger">Error al buscar el asiento</div>`
-        );
+        toast("error", "Error", "No se pudo buscar el asiento.");
       },
     });
   };
@@ -611,9 +733,29 @@ document.addEventListener("DOMContentLoaded", function () {
     $("#card_informes").css("display", "block");
 
     document.getElementById("date-informes").value = fechaFormateada;
-    $("#date-informes").on("change", function () {
-      $("#tabla-informes").DataTable().ajax.reload();
-    });
+    document.getElementById("date-informes-hasta-diario").value =
+      fechaFormateada;
+    // Antes esto era un solo día exacto (aunque la etiqueta decía "Desde") -
+    // ahora es un rango real, igual que Sumas y Saldos y Consulta de Asientos.
+    $("#date-informes, #date-informes-hasta-diario")
+      .off("change")
+      .on("change", function () {
+        $("#tabla-informes").DataTable().ajax.reload();
+      });
+
+    $("#btn_imprimir_libro_diario")
+      .off("click")
+      .on("click", function () {
+        const desde = $("#date-informes").val();
+        const hasta = $("#date-informes-hasta-diario").val();
+        window.open(
+          "../Admin/Informes/LibroDiariopdf.php?Desde=" +
+            encodeURIComponent(desde) +
+            "&Hasta=" +
+            encodeURIComponent(hasta),
+          "_blank"
+        );
+      });
 
     $("#tabla-informes").DataTable({
       destroy: true,
@@ -626,19 +768,14 @@ document.addEventListener("DOMContentLoaded", function () {
           text: '<i class="mdi mdi-file-excel"></i> Exportar a Excel',
           className: "btn btn-success btn-sm",
         },
-        {
-          extend: "print",
-          text: '<i class="mdi mdi-printer"></i> Imprimir',
-          titleAttr: "Imprimir reporte",
-          title: "Libro Diario - Triangular S.A.",
-        },
       ],
       ajax: {
         url: "../Admin/Procesos/php/contabilidad.php",
         method: "POST",
         data: function (d) {
           d.accion = "obtener_datos_libro_diario";
-          d.fecha = $("#date-informes").val(); // asegurate de tener un input con ese id
+          d.fecha_desde = $("#date-informes").val();
+          d.fecha_hasta = $("#date-informes-hasta-diario").val();
         },
         dataSrc: "data",
       },
@@ -705,26 +842,85 @@ document.addEventListener("DOMContentLoaded", function () {
     document.getElementById("date-informes-desde").value = fechaFormateada;
     document.getElementById("date-informes-hasta").value = fechaFormateada;
 
-    document
-      .getElementById("btn_sumas_y_saldos_buscar")
-      .addEventListener("click", function () {
+    // .off()+.on() en vez de addEventListener: sumasySaldos() se vuelve a
+    // llamar cada vez que se hace click en "Sumas y Saldos" del menú - sin
+    // esto se apilaba un listener nuevo por cada visita a la pantalla y el
+    // iframe terminaba recargándose N veces por cada click en Buscar.
+    $("#btn_sumas_y_saldos_buscar")
+      .off("click")
+      .on("click", function () {
         var desde = document.getElementById("date-informes-desde").value;
         var hasta = document.getElementById("date-informes-hasta").value;
+        var noOperativo = document.getElementById("chk_no_operativo").checked
+          ? 1
+          : 0;
         $("#titulo_informes").html("Sumas y Saldos");
         document.getElementById("visor_pdf").style.display = "block";
+        // Antes esto apuntaba hardcodeado a www.caddy.com.ar (producción)
+        // incluso probando en localhost - con ruta relativa apunta siempre
+        // al mismo servidor donde corre la pantalla, sea cual sea.
         document.getElementById("iframe_pdf").src =
-          "https://www.caddy.com.ar/SistemaTriangular/Admin/Informes/SumasySaldospdf.php?Desde=" +
-          desde +
+          "../Admin/Informes/SumasySaldospdf.php?Desde=" +
+          encodeURIComponent(desde) +
           "&Hasta=" +
-          hasta;
+          encodeURIComponent(hasta) +
+          "&NoOperativo=" +
+          noOperativo;
       });
   }
 
   function mayoresContables() {
-    $("#titulo_informes").html("Mayores Contables");
-    document.getElementById("visor_pdf").style.display = "block";
-    document.getElementById("iframe_pdf").src =
-      "https://www.caddy.com.ar/SistemaTriangular/Admin/Informes/MayoresContablespdf.php";
+    $("#titulo_mayor").html("Libro Mayor");
+    $("#card_informes_mayor").css("display", "block");
+    $("#card_informes").css("display", "none");
+    $("#card_informes_sumas_y_saldos").css("display", "none");
+    document.getElementById("visor_pdf").style.display = "none";
+
+    document.getElementById("date-mayor-desde").value = fechaFormateada;
+    document.getElementById("date-mayor-hasta").value = fechaFormateada;
+
+    // obtenerCuentas() es async y no soporta callback (el parametro existe
+    // pero la función nunca lo invoca) - llenar el select ahí mismo justo
+    // después dejaba la primera apertura de esta pantalla sin opciones,
+    // porque el AJAX todavía no había terminado. Se carga acá directo.
+    if (cuentasDisponibles.length) {
+      llenarSelect(document.getElementById("cuenta_mayor"), cuentasDisponibles);
+    } else {
+      $.ajax({
+        url: "../Admin/Procesos/php/contabilidad.php",
+        method: "POST",
+        data: { accion: "obtener_cuentas" },
+        dataType: "json",
+        success: function (response) {
+          cuentasDisponibles = response;
+          llenarSelect(document.getElementById("cuenta_mayor"), cuentasDisponibles);
+        },
+        error: function () {
+          toast("error", "Error", "No se pudieron cargar las cuentas.");
+        },
+      });
+    }
+
+    $("#btn_mayor_buscar")
+      .off("click")
+      .on("click", function () {
+        var cuenta = document.getElementById("cuenta_mayor").value;
+        var desde = document.getElementById("date-mayor-desde").value;
+        var hasta = document.getElementById("date-mayor-hasta").value;
+        if (!cuenta) {
+          toast("warning", "Falta la cuenta", "Elegí una cuenta para ver su Mayor.");
+          return;
+        }
+        $("#titulo_informes").html("Libro Mayor");
+        document.getElementById("visor_pdf").style.display = "block";
+        document.getElementById("iframe_pdf").src =
+          "../Admin/Informes/LibroMayorpdf.php?Cuenta=" +
+          encodeURIComponent(cuenta) +
+          "&Desde=" +
+          encodeURIComponent(desde) +
+          "&Hasta=" +
+          encodeURIComponent(hasta);
+      });
   }
 
   $("#form_busqueda_asientos").on("submit", function (e) {
@@ -746,6 +942,13 @@ document.addEventListener("DOMContentLoaded", function () {
       data: $(this).serialize() + "&accion=consultar_asiento",
       dataType: "json",
       success: function (response) {
+        // Hay que destruir la instancia anterior de DataTable antes de
+        // tocar el tbody a mano - si no, DataTable sigue "pensando" que
+        // tiene las filas viejas y la paginación queda rota.
+        if ($.fn.DataTable.isDataTable("#tabla_resultado_asientos")) {
+          $("#tabla_resultado_asientos").DataTable().destroy();
+        }
+
         const tbody = $("#tabla_resultado_asientos tbody");
         tbody.empty();
 
@@ -753,23 +956,58 @@ document.addEventListener("DOMContentLoaded", function () {
           response.forEach((asiento) => {
             tbody.append(`
               <tr>
-                <td>${asiento.Fecha}</td>
+                <td>${formatearFecha(asiento.Fecha)}</td>
                 <td>${asiento.NumeroAsiento}</td>
-                <td>${asiento.Cuenta}</td>
-                <td>${asiento.NombreCuenta}</td>
-                <td>${asiento.Debe}</td>
-                <td>${asiento.Haber}</td>
-                <td>${asiento.Observaciones}</td>
+                <td class="text-end">${formatearMonto(asiento.Debe)}</td>
+                <td class="text-end">${formatearMonto(asiento.Haber)}</td>
+                <td>${escapeHtml(asiento.Observaciones)}</td>
+                <td class="text-center">
+                  <i class="mdi mdi-eye-outline caddy-accion-icon me-2" title="Abrir asiento" onclick="abrirAsientoDesdeConsulta('${asiento.NumeroAsiento}')"></i>
+                  <i class="mdi mdi-printer-outline caddy-accion-icon" title="Imprimir asiento" onclick="imprimirAsientoNumero('${asiento.NumeroAsiento}')"></i>
+                </td>
               </tr>
             `);
           });
-          $("#resultado_asientos").show();
+
+          // 50 asientos por hoja en vez de todos juntos en una sola tabla
+          // larga - solo se inicializa con datos reales (6 celdas por
+          // fila): la fila de "Sin resultados" de abajo tiene una sola
+          // celda con colspan, y si DataTable la llega a encontrar tira
+          // "Requested unknown parameter '1' for row 0, column 1" al
+          // intentar leer celdas que no existen.
+          $("#tabla_resultado_asientos").DataTable({
+            destroy: true,
+            pageLength: 50,
+            lengthChange: false,
+            searching: false,
+            info: true,
+            order: [],
+            columnDefs: [{ orderable: false, targets: -1 }],
+            language: {
+              paginate: { previous: "Anterior", next: "Siguiente" },
+              info: "Mostrando _START_ a _END_ de _TOTAL_ asientos",
+              infoEmpty: "Sin asientos para mostrar",
+              zeroRecords: "Sin resultados",
+            },
+          });
         } else {
           tbody.append(
-            '<tr><td colspan="7" class="text-center">Sin resultados</td></tr>'
+            '<tr><td colspan="6" class="text-center">Sin resultados</td></tr>'
           );
-          $("#resultado_asientos").show();
         }
+        // La tarjeta que envuelve #resultado_asientos tenia
+        // style="display:none" fijo y nada la volvia a mostrar - el botón
+        // Buscar en la práctica no hacía nada visible aunque la búsqueda
+        // funcionara bien.
+        $("#card_resultado_asientos").show();
+        $("#resultado_asientos").show();
+      },
+      error: function () {
+        $("#mensaje")
+          .show()
+          .html(
+            `<div class="alert alert-danger">Error al consultar los asientos.</div>`
+          );
       },
     });
   });

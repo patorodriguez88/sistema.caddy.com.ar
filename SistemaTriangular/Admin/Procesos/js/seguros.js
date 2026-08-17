@@ -335,241 +335,29 @@ $('#btn_consultar').on('click', function () {
     });
 });
 
-// ── Generador de PDF General ──────────────────────────────────────────────────
+// ── Informe PDF General: abre SegurosPdf.php en una pestaña nueva ─────────────
+// (mismo patrón que "Ver / Imprimir Mayor" en Contabilidad: el PDF se genera
+// en el servidor con Output('I', ...), así el navegador lo muestra online
+// antes de descargarlo, en vez de forzar la descarga directa como hacía
+// pdfMake acá antes.)
 $('#btn_pdf_general').on('click', function () {
     if (!lastData) {
         Swal.fire({ icon: 'info', title: 'Sin datos', text: 'Primero realizá una consulta.' });
         return;
     }
-    generatePDF();
-});
 
-function buildPdfRows(rows, tipo) {
-    if (rows.length === 0) {
-        return [{ text: 'Sin registros para el período seleccionado.', italics: true, color: '#888', margin: [0, 4, 0, 8], fontSize: 8 }];
-    }
-
-    var cols = {
-        con: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Real', '%', 'Val. Efectivo', 'Mínimo', 'A Asegurar'],
-        sin: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Declarado', 'Mín. Global', 'A Asegurar'],
-        exc: ['Fecha', 'Comprobante', 'Cód. Seguimiento', 'Cliente', 'Val. Declarado', 'Tipo']
-    };
-    var widths = {
-        con: [45, 55, 65, '*', 65, 25, 65, 55, 65],
-        sin: [45, 55, 70, '*', 70, 65, 70],
-        exc: [45, 55, 75, '*', 70, 55]
-    };
-
-    var headerRow = cols[tipo].map(function (h) {
-        return { text: h, bold: true, fillColor: '#e8e8e8', fontSize: 7, margin: [2, 3, 2, 3] };
-    });
-
-    var body = [headerRow];
-    rows.forEach(function (r, i) {
-        var bg = i % 2 === 0 ? null : '#f9f9f9';
-        var cellStyle = function(txt, align) {
-            return { text: String(txt || ''), fontSize: 7, fillColor: bg, alignment: align || 'left', margin: [2, 2, 2, 2] };
-        };
-        var row = [];
-        if (tipo === 'con') {
-            row = [
-                cellStyle(fmtFecha(r.Fecha)),
-                cellStyle(r.NumeroComprobante || '—'),
-                cellStyle(r.CodigoSeguimiento || '—'),
-                cellStyle(r.RazonSocial),
-                cellStyle(fmtNum(r.valor_real), 'right'),
-                cellStyle(r.perc_aplicado + '%', 'center'),
-                cellStyle(fmtNum(r.valor_efectivo), 'right'),
-                cellStyle(fmtNum(r.monto_minimo), 'right'),
-                { text: fmtNum(r.valor_a_asegurar), fontSize: 7, bold: true, fillColor: bg, alignment: 'right', color: '#0acf97', margin: [2,2,2,2] }
-            ];
-        } else if (tipo === 'sin') {
-            row = [
-                cellStyle(fmtFecha(r.Fecha)),
-                cellStyle(r.NumeroComprobante || '—'),
-                cellStyle(r.CodigoSeguimiento || '—'),
-                cellStyle(r.RazonSocial),
-                cellStyle(fmtNum(r.ValorDeclarado), 'right'),
-                cellStyle(fmtNum(r.monto_minimo), 'right'),
-                { text: fmtNum(r.valor_a_asegurar), fontSize: 7, bold: true, fillColor: bg, alignment: 'right', color: '#e0a800', margin: [2,2,2,2] }
-            ];
-        } else {
-            row = [
-                cellStyle(fmtFecha(r.Fecha)),
-                cellStyle(r.NumeroComprobante || '—'),
-                cellStyle(r.CodigoSeguimiento || '—'),
-                cellStyle(r.RazonSocial),
-                cellStyle(fmtNum(r.ValorDeclarado), 'right'),
-                cellStyle(r.sure == 1 ? 'Con Seguro' : 'Sin Seguro', 'center')
-            ];
-        }
-        body.push(row);
-    });
-
-    // Fila de totales
-    if (tipo === 'con') {
-        body.push([
-            { text: 'TOTALES', bold: true, fontSize: 7, colSpan: 4, fillColor: '#e8e8e8', margin: [2,3,2,3] }, {}, {}, {},
-            { text: fmtNum(sumar(rows, 'valor_real')),        bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', margin: [2,3,2,3] },
-            { text: '', fillColor: '#e8e8e8' },
-            { text: fmtNum(sumar(rows, 'valor_efectivo')),   bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', margin: [2,3,2,3] },
-            { text: '', fillColor: '#e8e8e8' },
-            { text: fmtNum(sumar(rows, 'valor_a_asegurar')), bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', color: '#0acf97', margin: [2,3,2,3] }
-        ]);
-    } else if (tipo === 'sin') {
-        body.push([
-            { text: 'TOTALES', bold: true, fontSize: 7, colSpan: 4, fillColor: '#e8e8e8', margin: [2,3,2,3] }, {}, {}, {},
-            { text: fmtNum(sumar(rows, 'ValorDeclarado')),   bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', margin: [2,3,2,3] },
-            { text: '', fillColor: '#e8e8e8' },
-            { text: fmtNum(sumar(rows, 'valor_a_asegurar')), bold: true, fontSize: 7, alignment: 'right', fillColor: '#e8e8e8', color: '#e0a800', margin: [2,3,2,3] }
-        ]);
-    }
-
-    return [{
-        table: { headerRows: 1, widths: widths[tipo], body: body },
-        layout: { hLineWidth: function() { return 0.3; }, vLineWidth: function() { return 0.3; }, hLineColor: function() { return '#ccc'; }, vLineColor: function() { return '#ccc'; } },
-        margin: [0, 4, 0, 12]
-    }];
-}
-
-function generatePDF() {
-    var perc     = parseFloat($('#filtro_perc').val()) || 1;
     var desde    = $('#filtro_desde').val();
     var hasta    = $('#filtro_hasta').val();
-    var now      = new Date();
-    var fechaHora = now.toLocaleDateString('es-AR') + ' ' + now.toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit' });
+    var perc     = parseFloat($('#filtro_perc').val()) || 1;
+    var cliente  = $('#filtro_cliente').val() || '';
+    var excluidos = $('#filtro_excluir').val() || [];
 
-    var totConAseg = sumar(lastData.con_seguro, 'valor_a_asegurar');
-    var totSinAseg = sumar(lastData.sin_seguro, 'valor_a_asegurar');
-    var totExcDecl = sumar(lastData.excluidos,  'ValorDeclarado');
-    var totalGlobal = totConAseg + totSinAseg;
-    var montoSeguro = totalGlobal * (perc / 100);
+    var params = new URLSearchParams({ Desde: desde, Hasta: hasta, Perc: perc });
+    if (cliente) { params.set('Cliente', cliente); }
+    if (excluidos.length) { params.set('Excluidos', excluidos.join(',')); }
 
-    var headerDef = function(currentPage, pageCount) {
-        var columns = [];
-        if (LOGO_BASE64) {
-            columns.push({ image: LOGO_BASE64, width: 55, margin: [20, 6, 0, 0] });
-        }
-        columns.push({
-            stack: [
-                { text: 'Caddy Triangular S.A.', bold: true, fontSize: 12, color: '#2c3e50' },
-                { text: 'INFORME DE CÁLCULO DE SEGUROS', fontSize: 10, color: '#555' },
-                { text: 'Período: ' + fmtFecha(desde) + ' al ' + fmtFecha(hasta), fontSize: 8, color: '#777' }
-            ],
-            alignment: 'center',
-            margin: [0, 6, 0, 0]
-        });
-        columns.push({
-            text: 'Pág. ' + currentPage + ' / ' + pageCount,
-            alignment: 'right',
-            fontSize: 7,
-            color: '#999',
-            margin: [0, 12, 20, 0]
-        });
-        return {
-            columns: columns,
-            margin: [0, 0, 0, 5]
-        };
-    };
-
-    var footerDef = function() {
-        return {
-            columns: [
-                { text: 'sistema.caddy.com.ar', fontSize: 7, color: '#aaa', margin: [20, 5, 0, 0] },
-                { text: 'Usuario: ' + USUARIO_LOGADO + '   |   Generado: ' + fechaHora, alignment: 'center', fontSize: 7, color: '#888' },
-                { text: '', margin: [0, 0, 20, 0] }
-            ]
-        };
-    };
-
-    var sectionTitle = function(txt, color) {
-        return {
-            text: txt,
-            fontSize: 10,
-            bold: true,
-            color: color || '#333',
-            margin: [0, 10, 0, 2],
-            decoration: 'underline'
-        };
-    };
-
-    var summaryTable = {
-        table: {
-            widths: ['*', 120],
-            body: [
-                [
-                    { text: 'RESUMEN DEL INFORME', bold: true, fontSize: 9, fillColor: '#2c3e50', color: '#fff', colSpan: 2, alignment: 'center', margin: [4,6,4,6] },
-                    {}
-                ],
-                [
-                    { text: 'Período', fontSize: 8, fillColor: '#ecf0f1' },
-                    { text: fmtFecha(desde) + ' al ' + fmtFecha(hasta), fontSize: 8, fillColor: '#ecf0f1', alignment: 'right' }
-                ],
-                [
-                    { text: 'Con Seguro Propio (' + lastData.con_seguro.length + ' registros)', fontSize: 8 },
-                    { text: fmt(totConAseg), fontSize: 8, alignment: 'right', bold: true, color: '#0acf97' }
-                ],
-                [
-                    { text: 'Sin Seguro Propio (' + lastData.sin_seguro.length + ' registros)', fontSize: 8, fillColor: '#ecf0f1' },
-                    { text: fmt(totSinAseg), fontSize: 8, alignment: 'right', bold: true, color: '#e0a800', fillColor: '#ecf0f1' }
-                ],
-                [
-                    { text: 'Excluidos (' + lastData.excluidos.length + ' registros)', fontSize: 8 },
-                    { text: fmt(totExcDecl), fontSize: 8, alignment: 'right', color: '#6c757d' }
-                ],
-                [
-                    { text: 'TOTAL A ASEGURAR (con + sin seguro)', fontSize: 9, bold: true, fillColor: '#d6eaf8' },
-                    { text: fmt(totalGlobal), fontSize: 9, bold: true, alignment: 'right', fillColor: '#d6eaf8', color: '#1a5276' }
-                ],
-                [
-                    { text: '% Aplicado para el Seguro', fontSize: 8, fillColor: '#ecf0f1' },
-                    { text: perc + '%', fontSize: 8, bold: true, alignment: 'right', fillColor: '#ecf0f1', color: '#c0392b' }
-                ],
-                [
-                    { text: 'MONTO DEL SEGURO (' + fmt(totalGlobal) + ' × ' + perc + '%)', fontSize: 9, bold: true, fillColor: '#fde8e8' },
-                    { text: fmt(montoSeguro), fontSize: 11, bold: true, alignment: 'right', fillColor: '#fde8e8', color: '#c0392b' }
-                ]
-            ]
-        },
-        layout: { hLineWidth: function() { return 0.5; }, vLineWidth: function() { return 0.5; }, hLineColor: function() { return '#bbb'; }, vLineColor: function() { return '#bbb'; } },
-        margin: [0, 8, 0, 0],
-        alignment: 'center'
-    };
-
-    var content = [
-        sectionTitle('Con Seguro Propio (' + lastData.con_seguro.length + ' registros)', '#0acf97')
-    ].concat(
-        buildPdfRows(lastData.con_seguro, 'con'),
-        [sectionTitle('Sin Seguro Propio (' + lastData.sin_seguro.length + ' registros)', '#e0a800')],
-        buildPdfRows(lastData.sin_seguro, 'sin')
-    );
-
-    if (lastData.excluidos.length > 0) {
-        content = content.concat(
-            [sectionTitle('Excluidos del Cálculo (' + lastData.excluidos.length + ' registros)', '#6c757d')],
-            buildPdfRows(lastData.excluidos, 'exc')
-        );
-    }
-
-    content.push({ text: '', pageBreak: 'before' });
-    content.push(summaryTable);
-
-    var docDef = {
-        pageSize:        'A4',
-        pageOrientation: 'landscape',
-        pageMargins:     [20, 65, 20, 40],
-        header:          headerDef,
-        footer:          footerDef,
-        content:         content,
-        defaultStyle: {
-            font: 'Roboto'
-        }
-    };
-
-    pdfMake.createPdf(docDef).download(
-        'seguros_' + desde + '_a_' + hasta + '_' + perc + 'pct.pdf'
-    );
-}
+    window.open('Informes/SegurosPdf.php?' + params.toString(), '_blank');
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 $(document).ready(function () {

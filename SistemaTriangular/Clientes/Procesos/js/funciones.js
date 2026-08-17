@@ -2133,7 +2133,7 @@ $("#buscarcliente").change(function () {
                 if (row.TipoDeComprobante == "MOVIMIENTO INTERNO") {
                   return `${comprobante}<br><small class="mr-2 text-muted">${row.Comentario || ""}</small>`;
                 } else {
-                  return `${comprobante}<br><small class="mr-2 text-muted"><a id="${row.id}" onclick="obs_modify(this.id)"><i class='mdi mdi-14px mdi-pencil-outline text-muted'> ${row.Comentario || ""} </i></a></small>`;
+                  return `${comprobante}<br><small class="mr-2 text-muted"><a id="${row.id}" onclick="obs_modify(this.id)"><i class='mdi mdi-14px mdi-pencil text-warning'></i> ${row.Comentario || ""}</a></small>`;
                 }
               },
             },
@@ -3092,13 +3092,13 @@ $("#botonfacturacion").click(function () {
               '<a data-id="' +
               row.id +
               '" data-bs-toggle="modal" data-bs-target="#standard-modal-modificar" class="action-icon">' +
-              '<i class="mdi mdi-pencil text-success"></i></a>' +
+              '<i class="mdi mdi-pencil text-warning"></i></a>' +
               '<a data-id="' +
               row.id +
               '" data-tabla="trans" data-title="' +
               row.CodigoSeguimiento +
               '" data-bs-toggle="modal" data-bs-target="#warning-modal" class="action-icon">' +
-              '<i class="mdi mdi-delete text-danger"></i></a>' +
+              '<i class="mdi mdi-trash-can text-danger"></i></a>' +
               '<a href="javascript:void(0)" onclick="control_facturacion(' +
               row.id +
               ', this, event)" class="action-icon" title="Control de facturación">' +
@@ -3280,7 +3280,7 @@ $("#recorridos_boton").click(function () {
       {
         data: "id",
         render: function (data, type, row) {
-          return `<td><a onclick='eliminar_elemento_rec(${row.id})' class='action-icon'><i class='mdi mdi-18px mdi-trash-can-outline'></i></a></td>`;
+          return `<td><a onclick='eliminar_elemento_rec(${row.id})' class='action-icon'><i class='mdi mdi-18px mdi-trash-can text-danger'></i></a></td>`;
         },
       },
 

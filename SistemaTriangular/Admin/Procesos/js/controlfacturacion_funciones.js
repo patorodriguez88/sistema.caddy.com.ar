@@ -486,7 +486,7 @@ $(document).ready(function () {
               row.id +
               '" id="' +
               row.id +
-              '" onclick="ver(this.id);" class="action-icon" style="cursor:pointer"> <i class="mdi mdi-18px mdi-trash-can-outline text-danger"></i></a>' +
+              '" onclick="ver(this.id);" class="action-icon" style="cursor:pointer"> <i class="mdi mdi-18px mdi-trash-can text-danger"></i></a>' +
               "</td>"
             );
           },

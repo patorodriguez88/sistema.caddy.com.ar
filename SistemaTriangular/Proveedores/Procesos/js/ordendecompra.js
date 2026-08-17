@@ -692,12 +692,12 @@ $(document).ready(function(){
                 
                 if (row.Estado == 'Cargada') {
 
-                    return '<i onclick="edit_oc('+row.id+')" class="mdi mdi-18px mdi-pencil-outline text-warning"></i><i  onclick="delete_oc('+row.id+')" class="ml-2 mdi mdi-18px mdi-trash-can-outline text-danger"></i>';
+                    return '<i onclick="edit_oc('+row.id+')" class="mdi mdi-18px mdi-pencil text-warning"></i><i  onclick="delete_oc('+row.id+')" class="ml-2 mdi mdi-18px mdi-trash-can text-danger"></i>';
                 
                 } else if(row.Estado == 'Aceptada') {
 
                     return '<tr><i onclick="add_pres('+row.id+')" class="mdi mdi-18px mdi-file-powerpoint text-success"></i>'+
-                           '<i onclick="delete_oc('+row.id+')" class="ml-2 mdi mdi-18px mdi-trash-can-outline text-danger"></i></tr>';
+                           '<i onclick="delete_oc('+row.id+')" class="ml-2 mdi mdi-18px mdi-trash-can text-danger"></i></tr>';
                 
                 } else{
 

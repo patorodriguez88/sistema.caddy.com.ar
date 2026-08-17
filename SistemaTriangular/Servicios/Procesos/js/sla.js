@@ -168,8 +168,8 @@ ajax: {
         {data:"idPedido",
          render: function (data, type, row) {
           return '<td class="table-action">'+
-          '<a id="'+row.idPedido+'" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-success"></i></a>'+
-          '<a id="'+row.idPedido+'" onclick="eliminarVentas(this.id);" class="action-icon"> <i class="mdi mdi-delete text-warning"></i></a>'+
+          '<a id="'+row.idPedido+'" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a>'+
+          '<a id="'+row.idPedido+'" onclick="eliminarVentas(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a>'+
           '<a id="'+row.NumPedido+'" onclick="agregarVentas(this.id);" class="action-icon"> <i class="mdi mdi-plus-circle text-success"></i></a>'+  
           '</td>';
           }

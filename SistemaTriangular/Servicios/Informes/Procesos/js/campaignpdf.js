@@ -85,7 +85,7 @@ var datatable = $('#seguimiento').DataTable({
         {data:"CodigoSeguimiento"},
         {data:"Observaciones",
         render: function (data, type, row) {
-            return `<td>${row.Observaciones}  <i id="${row.CodigoSeguimiento}" onclick="ver(this.id)" style="cursor:pointer;text-align: right" class="d-print-none mdi mdi-14px mdi-pencil text-muted alnright"></i></td>`;
+            return `<td>${row.Observaciones}  <i id="${row.CodigoSeguimiento}" onclick="ver(this.id)" style="cursor:pointer;text-align: right" class="d-print-none mdi mdi-14px mdi-pencil text-warning alnright"></i></td>`;
             }
         }, 
         {data:"Entregado",

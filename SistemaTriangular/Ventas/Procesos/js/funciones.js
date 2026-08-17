@@ -35,7 +35,7 @@ function ver_tabla_servicios() {
               "<td>" +
               "<a class='action-icon' onclick='eliminar(" +
               row.idPedido +
-              ")'><i class='uil-trash-alt'></i></a>" +
+              ")'><i class='mdi mdi-trash-can text-danger'></i></a>" +
               "</td>"
             );
           } else {

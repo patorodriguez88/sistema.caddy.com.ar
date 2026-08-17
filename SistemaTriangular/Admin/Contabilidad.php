@@ -102,6 +102,42 @@
             background: #E24F30;
             color: #fff;
         }
+
+        /* Tabla de Consulta de Asientos Contables - más compacta y prolija */
+        .caddy-tabla-consulta {
+            font-size: .8rem;
+        }
+
+        .caddy-tabla-consulta thead th {
+            background-color: #f8f9fa;
+            color: #6c757d;
+            font-size: .72rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+            border-bottom: 2px solid #e3eaef;
+            white-space: nowrap;
+            vertical-align: middle;
+        }
+
+        .caddy-tabla-consulta td {
+            vertical-align: middle;
+        }
+
+        .caddy-tabla-consulta td.text-end {
+            font-variant-numeric: tabular-nums;
+        }
+
+        .caddy-tabla-consulta .caddy-accion-icon {
+            color: #98a6ad;
+            cursor: pointer;
+            font-size: 1.05rem;
+            transition: color .15s ease;
+        }
+
+        .caddy-tabla-consulta .caddy-accion-icon:hover {
+            color: #E24F30;
+        }
     </style>
 </head>
 
@@ -116,7 +152,7 @@
 
                 <!-- Start Content-->
                 <div class="container-fluid">
-                    <div class="row">
+                    <div class="row mt-3">
                         <div class="col-xl-3 col-lg-6 order-lg-1 order-xl-1">
                             <!-- start profile info -->
                             <div class="card caddy-nav-card">
@@ -186,14 +222,16 @@
                                     </div>
                                 </div>
                             </div>
+                            <!-- Asiento Contable: se usa para Crear y para Modificar (buscando por
+                                 numero). Incrustado en la pantalla como siempre - el modal quedo
+                                 reservado solo para "Abrir" un asiento desde la Consulta, para no
+                                 tapar la tabla de resultados de esa pantalla. -->
                             <div id="card_nuevo_asiento" class="card">
                                 <div class="card-body p-0">
                                     <div class="tab-content">
                                         <div class="tab-pane show active p-3" id="newpost">
                                             <h5 id="titulo_asiento" class="mb-3">Nuevo Asiento Contable</h5>
-                                            <!-- comment box -->
                                             <form id="asientoForm">
-                                                <!-- <div id="campos-container"> -->
                                                 <div id="cabecera-asiento" class="row mb-2 align-items-end">
                                                     <div class="col-auto">
                                                         <label for="n_asiento">Número de Asiento</label>
@@ -206,12 +244,7 @@
                                                     </div>
                                                 </div>
                                                 <div id="campos-container">
-                                                    <!-- </div> -->
                                                     <div class="row mb-2">
-                                                        <!-- <div class="col-3"> -->
-                                                        <!-- <input type="hidden" name="id[]" value=""> -->
-                                                        <!-- <input type="text" class="form-control" name="nombreCuenta[]" hidden> -->
-                                                        <!-- </div> -->
                                                         <div class="col-7">
                                                             <select class="form-control" name="cuenta[]">
                                                                 <option value="">Seleccione una cuenta</option>
@@ -228,12 +261,23 @@
 
                                                     </div>
                                                 </div>
-                                                <div class="row justify-content-end mt-3">
+
+                                                <!-- Resumen de balance estilo "semaforo" (mismo criterio que
+                                                     usan sistemas contables como SAP FB50: totales de Debe y
+                                                     Haber a la vista + un indicador claro de balanceado/no
+                                                     balanceado, en vez de un solo campo con signo +/- que
+                                                     confunde). -->
+                                                <div class="row justify-content-end mt-3 g-2">
                                                     <div class="col-auto text-right">
-                                                        <label for="total_asiento">Total del Asiento (Debe - Haber)</label>
-                                                        <input type="text" id="total_asiento" class="form-control text-right" readonly>
+                                                        <label for="total_debe_asiento" class="form-label mb-1">Total Debe</label>
+                                                        <input type="text" id="total_debe_asiento" class="form-control text-right" readonly>
+                                                    </div>
+                                                    <div class="col-auto text-right">
+                                                        <label for="total_haber_asiento" class="form-label mb-1">Total Haber</label>
+                                                        <input type="text" id="total_haber_asiento" class="form-control text-right" readonly>
                                                     </div>
                                                 </div>
+                                                <div id="estado_balance_asiento" class="mt-2 text-right"></div>
 
                                                 <div class="comment-area-box mt-3 border rounded">
                                                     <textarea id="observaciones" name="observaciones" rows="4" class="form-control border-0 resize-none" placeholder="Observaciones...."></textarea>
@@ -247,22 +291,29 @@
                                                     </button>
                                                 </div>
                                                 <div id="mensaje" class="mt-3"></div>
-
                                             </form>
-                                        </div> <!-- end .border-->
-                                        <!-- end comment box -->
-                                    </div> <!-- end preview-->
-                                </div> <!-- end tab-content-->
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                             <div id="card_informes" class="card" style="display:none;">
                                 <div class="card-body p-0">
                                     <div class="tab-content">
                                         <div class="tab-pane show active p-3">
                                             <h5 class="mb-3">Libro Diario</h5>
-                                            <div class="row">
+                                            <div class="row align-items-end">
                                                 <div class="col-md-3 mb-2">
                                                     <label for="date-informes" class="form-label">Desde</label>
                                                     <input class="form-control" id="date-informes" type="date" name="date">
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <label for="date-informes-hasta-diario" class="form-label">Hasta</label>
+                                                    <input class="form-control" id="date-informes-hasta-diario" type="date" name="date">
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <button id="btn_imprimir_libro_diario" type="button" class="btn btn-outline-secondary">
+                                                        <i class="uil uil-print mr-1"></i>Imprimir Libro Diario
+                                                    </button>
                                                 </div>
                                             </div>
                                             <div id="div_tabla_informes">
@@ -307,11 +358,52 @@
                                                     <label for="date-informes-hasta" class="form-label">Hasta</label>
                                                     <input class="form-control" id="date-informes-hasta" type="date" name="date">
                                                 </div>
+                                                <div class="col-12 mb-2">
+                                                    <div class="custom-control custom-checkbox">
+                                                        <input type="checkbox" class="custom-control-input" id="chk_no_operativo">
+                                                        <label class="custom-control-label" for="chk_no_operativo">Incluir movimientos no operativos</label>
+                                                    </div>
+                                                </div>
                                                 <div class="col-md-3 offset-md-9 mb-2">
                                                     <button id="btn_sumas_y_saldos_buscar" class="btn btn-primary btn-block">Buscar</button>
                                                 </div>
                                             </div>
 
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- LIBRO MAYOR: detalle cronologico de movimientos de UNA cuenta, con
+                                 saldo corrido - antes el boton "Mayores" abria directo un PDF con
+                                 el acumulado historico de TODAS las cuentas sin fechas ni detalle,
+                                 que conceptualmente no es un Libro Mayor. -->
+                            <div id="card_informes_mayor" class="card" style="display:none;">
+                                <div class="card-body p-0">
+                                    <div class="tab-content">
+                                        <div class="tab-pane show active p-3">
+                                            <h5 id="titulo_mayor" class="mb-3">Libro Mayor</h5>
+                                            <div class="row align-items-end">
+                                                <div class="col-md-6 mb-2">
+                                                    <label for="cuenta_mayor" class="form-label">Cuenta</label>
+                                                    <select id="cuenta_mayor" class="form-control">
+                                                        <option value="">Seleccione una cuenta</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <label for="date-mayor-desde" class="form-label">Desde</label>
+                                                    <input class="form-control" id="date-mayor-desde" type="date" name="date">
+                                                </div>
+                                                <div class="col-md-3 mb-2">
+                                                    <label for="date-mayor-hasta" class="form-label">Hasta</label>
+                                                    <input class="form-control" id="date-mayor-hasta" type="date" name="date">
+                                                </div>
+                                                <div class="col-12 d-flex justify-content-end">
+                                                    <button id="btn_mayor_buscar" class="btn btn-primary">
+                                                        <i class="uil uil-print mr-1"></i>Ver / Imprimir Mayor
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -351,7 +443,7 @@
                                                 </select>
                                             </div>
                                         </div>
-                                        <div class="col-md-3 offset-md-9 mb-2">
+                                        <div class="d-flex justify-content-end mb-2">
                                             <button type="submit" id="btn_buscar_asientos" class="btn btn-primary">Buscar</button>
                                         </div>
                                     </form>
@@ -359,25 +451,68 @@
                             </div>
 
                             <!-- Resultado -->
-                            <div class="card" style="display:none;">
+                            <div class="card" id="card_resultado_asientos" style="display:none;">
                                 <div class="card-body">
                                     <div id="resultado_asientos" class="mt-4">
                                         <h5 id="titulo_resultado_asientos">Resultados</h5>
                                         <div class="table-responsive">
-                                            <table class="table table-bordered" id="tabla_resultado_asientos">
+                                            <table class="table table-hover table-sm caddy-tabla-consulta" id="tabla_resultado_asientos">
                                                 <thead>
                                                     <tr>
                                                         <th>Fecha</th>
-                                                        <th>Número Asiento</th>
-                                                        <th>Cuenta</th>
-                                                        <th>Nombre Cuenta</th>
-                                                        <th>Debe</th>
-                                                        <th>Haber</th>
+                                                        <th>N° Asiento</th>
+                                                        <th class="text-end">Debe</th>
+                                                        <th class="text-end">Haber</th>
                                                         <th>Observaciones</th>
+                                                        <th class="text-center">Acción</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody></tbody>
                                             </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Modal de solo lectura para "Abrir" un asiento desde la Consulta -
+                                 a proposito NO reusa el formulario de Crear/Modificar: acá el
+                                 objetivo es ver el asiento sin tapar/perder la tabla de resultados
+                                 de la búsqueda de atrás, no editarlo. -->
+                            <div class="modal fade" id="modalVerAsiento" tabindex="-1" aria-hidden="true">
+                                <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 id="titulo_ver_asiento" class="modal-title mb-0">Asiento Contable</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <p class="mb-3" id="fecha_ver_asiento"></p>
+                                            <div class="table-responsive">
+                                                <table class="table table-sm table-bordered caddy-tabla-consulta">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Cuenta</th>
+                                                            <th>Nombre Cuenta</th>
+                                                            <th class="text-end">Debe</th>
+                                                            <th class="text-end">Haber</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody id="tbody_ver_asiento"></tbody>
+                                                    <tfoot>
+                                                        <tr class="fw-bold">
+                                                            <td colspan="2" class="text-end">Total</td>
+                                                            <td class="text-end" id="total_debe_ver_asiento"></td>
+                                                            <td class="text-end" id="total_haber_ver_asiento"></td>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
+                                            <div id="observaciones_ver_asiento" class="text-muted small"></div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-outline-secondary" onclick="imprimirAsientoNumero(document.getElementById('modalVerAsiento').dataset.numero)">
+                                                <i class="uil uil-print mr-1"></i>Imprimir Asiento
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
