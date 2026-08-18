@@ -358,7 +358,12 @@ $("#confirmarfactura_AFIP_boton").click(function() {
                     document.getElementById('factura_proforma').style.display = "none";
                     
                 } else if (jsonData1.success == 0) {
-                    toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'El comprobante quedó a medio guardar',
+                        text: jsonData1.msg || 'AFIP ya autorizó el comprobante (CAE ya emitido) pero no se pudo guardar en el sistema. Avisá a sistemas.',
+                        confirmButtonText: 'Entendido'
+                    });
                 } else if (jsonData1.success == 3) {
                     toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
                 }
@@ -547,10 +552,15 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
               
               } else if (jsonData1.success == 0) {
 
-                toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
-              
+                Swal.fire({
+                    icon: 'error',
+                    title: 'El comprobante quedó a medio guardar',
+                    text: jsonData1.msg || 'AFIP ya autorizó el comprobante (CAE ya emitido) pero no se pudo guardar en el sistema. Avisá a sistemas.',
+                    confirmButtonText: 'Entendido'
+                });
+
               } else if (jsonData1.success == 3) {
-            
+
                 toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
               }
             }

@@ -173,7 +173,16 @@ if (isset($_POST['Facturar'])) {
       $sql4 = "INSERT INTO IvaVentas(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,ImporteNeto,Iva1,Iva2,Iva3,Exento,Total,
   CompraMercaderia,Saldo,NumeroAsiento,CAE,FechaVencimientoCAE,idCliente)VALUES('{$Fecha}','{$RazonSocial_f}','{$Cuit_f}','{$Comprobante}','{$NumeroComprobante}',
   '{$ImporteNeto}','{$Iva1}','{$Iva2}','{$Iva3}','{$Exento}','{$Total}','{$Compra}','{$Total}','{$NAsiento}','{$CAE}','{$FechaVencimientoCAE}','{$id}')";
-      $mysqli->query($sql4);
+      // El AFIP ya autorizó este comprobante (ya tiene CAE) antes de llegar
+      // acá - si este INSERT falla, la factura queda "perdida" para el
+      // sistema aunque siga existiendo en AFIP, y sin este chequeo el
+      // script no devolvía nada (respuesta vacía), el JS del frontend
+      // fallaba en silencio al parsear el JSON y el operador no se
+      // enteraba de que algo salió mal.
+      if (!$mysqli->query($sql4)) {
+        echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en IVA Ventas: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
+        exit;
+      }
       $id_iva = $mysqli->insert_id;
 
       $SQL = "UPDATE `AfipTipoDeComprobante` SET `NumeroComprobante`='$NumeroComprobante' WHERE Descripcion='$Comprobante'";
@@ -200,7 +209,7 @@ if (isset($_POST['Facturar'])) {
 
       for ($i = 0; $i < count($OrdenN); $i++) {
 
-        // ACTUALIZO FACTURADO 
+        // ACTUALIZO FACTURADO
         $sql = $mysqli->query("UPDATE `TransClientes` SET Facturado=1, `ComprobanteF`='$Comprobante',`NumeroF`='$NumeroComprobante'
     WHERE id='$OrdenN[$i]' AND Eliminado='0'");
 
@@ -226,6 +235,11 @@ if (isset($_POST['Facturar'])) {
       Create_task($Projects, $name, $notes, $due_on, $assignee, $Workspaces);
 
       echo json_encode(array('success' => 1, 'idFacturado' => $idFacturado));
+    } else {
+      // Mismo caso que arriba: el CAE ya salió de AFIP, esto solo graba la
+      // parte local (Cuenta Corriente) - si falla, no puede quedar en
+      // silencio.
+      echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en Cuenta Corriente: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
     }
   }
 }
@@ -379,7 +393,12 @@ if ($_POST['Facturar'] == 2) {
       $sql4 = "INSERT INTO IvaVentas(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,ImporteNeto,Iva1,Iva2,Iva3,Exento,Total,
         CompraMercaderia,Saldo,NumeroAsiento,CAE,FechaVencimientoCAE,idCliente)VALUES('{$Fecha}','{$RazonSocial_f}','{$Cuit_f}','{$Comprobante}','{$NumeroComprobante}',
         '{$ImporteNeto}','{$Iva1}','{$Iva2}','{$Iva3}','{$Exento}','{$Total}','{$Compra}','{$Total}','{$NAsiento}','{$CAE}','{$FechaVencimientoCAE}','{$id}')";
-      $mysqli->query($sql4);
+      // Mismo motivo que en Facturar=1: el CAE ya salió de AFIP, si esto
+      // falla la factura queda perdida para el sistema sin que nadie se entere.
+      if (!$mysqli->query($sql4)) {
+        echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en IVA Ventas: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
+        exit;
+      }
       $id_iva = $mysqli->insert_id;
     }
 
@@ -433,7 +452,11 @@ if ($_POST['Facturar'] == 2) {
 
       if ($cuento <> 0) {
         echo json_encode(array('success' => 1, 'cuento' => $cuento, 'idFacturado' => $idFacturado));
+      } else {
+        echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero ningún recorrido pudo vincularse en Cuenta Corriente. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
       }
+    } else {
+      echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en Cuenta Corriente: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
     }
   }
 }
@@ -597,7 +620,12 @@ if ($_POST['Facturar'] == 3) {
       $sql4 = "INSERT INTO IvaVentas(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,ImporteNeto,Iva1,Iva2,Iva3,Exento,Total,
   CompraMercaderia,Saldo,NumeroAsiento,CAE,FechaVencimientoCAE)VALUES('{$Fecha}','{$RazonSocial_f}','{$Cuit_f}','{$Comprobante}','{$NumeroComprobante}',
   '{$ImporteNeto}','{$Iva1}','{$Iva2}','{$Iva3}','{$Exento}','{$Total}','{$Compra}','{$Total}','{$NAsiento}','{$CAE}','{$FechaVencimientoCAE}')";
-      $mysqli->query($sql4);
+      // Mismo motivo que en Facturar=1/2: el CAE ya salió de AFIP, si esto
+      // falla el comprobante queda perdido para el sistema sin aviso.
+      if (!$mysqli->query($sql4)) {
+        echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en IVA Ventas: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
+        exit;
+      }
       $id_iva = $mysqli->insert_id;
 
       $SQL = "UPDATE `AfipTipoDeComprobante` SET `NumeroComprobante`='$NumeroComprobante' WHERE Descripcion='$Comprobante' LIMIT 1";
@@ -629,9 +657,11 @@ if ($_POST['Facturar'] == 3) {
   ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$Comprobante}','{$NumeroComprobante}','{$Total}','{$Usuario}','{$NumeroComprobante}','{$ObservacionesFinal}',
   '{$id}','1','{$id_iva}',{$idFacturadoNcNd},'Clientes/Procesos/php/facturar.php (Facturar=3)')";
 
-    $mysqli->query($sqlCtasctes);
-
-    echo json_encode(array('success' => 1));
+    if ($mysqli->query($sqlCtasctes)) {
+      echo json_encode(array('success' => 1));
+    } else {
+      echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en Cuenta Corriente: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
+    }
   }
 }
 
