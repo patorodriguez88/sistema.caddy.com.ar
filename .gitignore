@@ -18,4 +18,5 @@ Thumbs.db
 
 # Logs y temporales
 *.log
+error_log
 /tmp/

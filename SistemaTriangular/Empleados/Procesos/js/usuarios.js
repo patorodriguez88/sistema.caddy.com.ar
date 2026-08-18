@@ -300,8 +300,8 @@ function listarUsuarios() {
             <td>${notifHtml}</td>
             <td>${accesoHtml}</td>
             <td>
-              <button type="button" class="${btnClass}" data-id="${user.id}" data-mail="${user.Usuario}" title="Genera una contraseña temporal nueva y la manda por mail">
-                <i class="uil-repeat"></i> Reenviar acceso
+              <button type="button" class="${btnClass}" data-id="${user.id}" data-mail="${user.Usuario}" title="Reenviar acceso: genera una contraseña temporal nueva y la manda por mail">
+                <i class="uil-repeat"></i>
               </button>
               <i class="mdi mdi-trash-can text-danger mdi-18px btn-eliminar-usuario ms-2" style="cursor:pointer;" data-id="${user.id}" data-nombre="${user.nombre} ${user.apellido}" title="Eliminar usuario"></i>
             </td>
