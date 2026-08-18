@@ -128,7 +128,15 @@
       "Bash(node --check Logistica/Proceso/js/recorridos.js)",
       "Bash(node --check Logistica/Proceso/js/funciones_localidades.js)",
       "Bash(node --check Logistica/Proceso/js/funciones_logistica.js)",
-      "Bash(node --check Admin/Procesos/js/valorxkilometro.js)"
+      "Bash(node --check Admin/Procesos/js/valorxkilometro.js)",
+      "Bash(qlmanage -t -s 1600 -o /tmp mayor_todas.pdf)",
+      "Bash(qlmanage -t -s 1600 -o /tmp mayor_una.pdf)",
+      "Bash(qlmanage -t -s 1600 -o /tmp /tmp/mayor_todas.pdf)",
+      "Bash(qlmanage -t -s 1600 -o /tmp mayor_todas_last.pdf)",
+      "Bash(node --check Clientes/Procesos/js/descuento.js)",
+      "Bash(node --check Empleados/Procesos/js/usuarios.js)",
+      "Bash(node --check SistemaTriangular/Empleados/Procesos/js/usuarios.js)",
+      "Bash(node --check Clientes/Procesos/js/factura_afip.js)"
     ]
   }
 }
