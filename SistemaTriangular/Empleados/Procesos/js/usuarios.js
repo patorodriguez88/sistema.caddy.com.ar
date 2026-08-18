@@ -303,6 +303,7 @@ function listarUsuarios() {
               <button type="button" class="${btnClass}" data-id="${user.id}" data-mail="${user.Usuario}" title="Genera una contraseña temporal nueva y la manda por mail">
                 <i class="uil-repeat"></i> Reenviar acceso
               </button>
+              <i class="mdi mdi-trash-can text-danger mdi-18px btn-eliminar-usuario ms-2" style="cursor:pointer;" data-id="${user.id}" data-nombre="${user.nombre} ${user.apellido}" title="Eliminar usuario"></i>
             </td>
           </tr>`
         );
@@ -355,6 +356,33 @@ $(document).on("click", ".btn-reenviar-acceso", function () {
         Swal.fire("Error", "No se pudo conectar con el servidor.", "error");
         $btn.prop("disabled", false).html(htmlOriginal);
       });
+  });
+});
+
+// 🗑️ Eliminar usuario (baja lógica - Activo=0, no se borra la fila)
+$(document).on("click", ".btn-eliminar-usuario", function () {
+  const usuario_id = $(this).data("id");
+  const nombre = $(this).data("nombre");
+
+  Swal.fire({
+    title: "¿Eliminar usuario?",
+    html: `<b>${nombre}</b> no va a poder loguearse más. Queda desactivado, no se borra su historial.`,
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#dc3545",
+  }).then((result) => {
+    if (!result.isConfirmed) return;
+
+    post("desactivar_usuario", { usuario_id }).then((r) => {
+      if (r.success) {
+        Swal.fire("Eliminado", "El usuario fue eliminado.", "success");
+        listarUsuarios();
+      } else {
+        Swal.fire("No se pudo eliminar", r.error || "Error desconocido.", "error");
+      }
+    });
   });
 });
 

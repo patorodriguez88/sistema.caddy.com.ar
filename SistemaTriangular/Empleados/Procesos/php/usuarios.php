@@ -56,6 +56,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             requiereGestionRoles($mysqli);
             reenviarAccesoUsuario($mysqli);
             break;
+        case 'desactivar_usuario':
+            requiereGestionRoles($mysqli);
+            desactivarUsuario($mysqli);
+            break;
         case 'obtener_rol_usuario':
             obtenerRolDeUsuario($mysqli);
             break;
@@ -246,6 +250,52 @@ function listarUsuarios($mysqli)
         $usuarios[] = $row;
     }
     echo json_encode(['data' => $usuarios]);
+}
+
+// Baja logica (Activo=0), nunca DELETE fisico - el id de usuario queda
+// referenciado como texto en un monton de tablas historicas (Tesoreria.Usuario,
+// Ctasctes.Usuario, etc.), borrar la fila de verdad dejaria esos registros
+// sin ese dato. Con Activo=0 el usuario deja de aparecer en listarUsuarios()
+// (ya filtra WHERE Activo=1) y no puede loguearse mas, pero la fila y su
+// historial quedan intactos - mismo criterio que ValorxKilometro/Servicios
+// usan para "eliminar" sin perder trazabilidad.
+function desactivarUsuario($mysqli)
+{
+    $id = intval($_POST['usuario_id'] ?? 0);
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Usuario inválido.']);
+        return;
+    }
+
+    $idPropio = intval($_SESSION['idusuario'] ?? 0);
+    if ($id === $idPropio) {
+        echo json_encode(['success' => false, 'error' => 'No podés eliminar tu propio usuario.']);
+        return;
+    }
+
+    $res = $mysqli->query("SELECT id, NIVEL, Activo FROM usuarios WHERE id = $id LIMIT 1");
+    $usuario = $res ? $res->fetch_assoc() : null;
+    if (!$usuario) {
+        echo json_encode(['success' => false, 'error' => 'Usuario no encontrado.']);
+        return;
+    }
+    if (intval($usuario['Activo']) === 0) {
+        echo json_encode(['success' => false, 'error' => 'Ese usuario ya está eliminado.']);
+        return;
+    }
+
+    // No dejar el sistema sin ningún SuperAdministrador activo.
+    if (intval($usuario['NIVEL']) === 1) {
+        $resCount = $mysqli->query("SELECT COUNT(*) AS c FROM usuarios WHERE NIVEL = 1 AND Activo = 1");
+        $cantidad = $resCount ? intval($resCount->fetch_assoc()['c']) : 0;
+        if ($cantidad <= 1) {
+            echo json_encode(['success' => false, 'error' => 'No se puede eliminar: es el único SuperAdministrador activo.']);
+            return;
+        }
+    }
+
+    $mysqli->query("UPDATE usuarios SET Activo = 0 WHERE id = $id LIMIT 1");
+    echo json_encode(['success' => true]);
 }
 
 // Reenvía el mail de acceso al sistema con una contraseña temporal NUEVA — la
