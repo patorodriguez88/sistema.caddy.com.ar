@@ -352,7 +352,6 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
                                                 <table class="table table-sm table-centered mb-0" id="tablaUsuarios">
                                                     <thead>
                                                         <tr>
-                                                            <th>Usuario</th>
                                                             <th>Nombre</th>
                                                             <th>Nivel</th>
                                                             <th>Rol</th>

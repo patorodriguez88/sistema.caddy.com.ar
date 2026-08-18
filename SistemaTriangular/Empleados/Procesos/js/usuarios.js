@@ -262,7 +262,7 @@ function listarUsuarios() {
 
       if (usuarios.length === 0) {
         tabla.append(
-          `<tr><td colspan="7" class="caddy-tabla-vacia">
+          `<tr><td colspan="6" class="caddy-tabla-vacia">
             <i class="uil-users-alt"></i>
             No hay usuarios de sistema para mostrar.
           </td></tr>`
@@ -293,8 +293,7 @@ function listarUsuarios() {
 
         tabla.append(
           `<tr>
-            <td>${user.Usuario}</td>
-            <td>${user.nombre} ${user.apellido}</td>
+            <td>${user.nombre} ${user.apellido}<br><small class="text-muted">Usuario: ${user.Usuario}</small></td>
             <td>${user.nivel_nombre}</td>
             <td>${rolHtml}</td>
             <td>${notifHtml}</td>
@@ -312,7 +311,7 @@ function listarUsuarios() {
     .catch(() => {
       tabla.empty();
       tabla.append(
-        `<tr><td colspan="7" class="caddy-tabla-vacia">
+        `<tr><td colspan="6" class="caddy-tabla-vacia">
           <i class="uil-exclamation-triangle"></i>
           No se pudo cargar la lista de usuarios. Puede faltar una migración de base de datos — avisá a sistemas.
         </td></tr>`
