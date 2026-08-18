@@ -94,13 +94,19 @@ if (isset($_POST['Facturar'])) {
     $Iva3 = $_POST['ImpIva'] * $Valor;
     $Exento = $_POST['exento_t'] * $Valor;
     $Total = $_POST['ImpTotal'] * $Valor;
-    $Cantidad = $_POST['cantidad_t'];
     $Usuario = $_SESSION['NombreUsuario'];
     $Sucursal = $_SESSION['Sucursal'];
     $Terminado = '1';
     $Observaciones = $_POST['observaciones_t'];
     $Observaciones_ctasctes = $_POST['Observaciones_ctasctes'];
-    $Precio = $ImporteNeto / $Cantidad;
+    // OJO: este flujo (facturar por Remito) no manda cantidad_t desde el
+    // frontend. Antes acá se calculaba un $Precio = $ImporteNeto/$Cantidad
+    // que nunca se usaba en ningún lado - con $Cantidad en NULL, eso tiraba
+    // DivisionByZeroError (fatal en PHP 8+) y mataba el script ANTES de
+    // llegar a grabar nada (Tesoreria/Facturacion/IvaVentas/Ctasctes),
+    // dejando comprobantes ya autorizados en AFIP sin ningún rastro local
+    // ni ningún error visible. No reintroducir ese cálculo sin mandar
+    // cantidad_t desde el JS.
 
     // DESDE ACA INGRESA LOS MOVIMIENTOS EN TESORERIA
     $Cuenta1 = '112200';
@@ -327,12 +333,14 @@ if ($_POST['Facturar'] == 2) {
     $Iva3 = $_POST['ImpIva'] * $Valor;
     $Exento = $_POST['exento_t'] * $Valor;
     $Total = $_POST['ImpTotal'] * $Valor;
-    $Cantidad = $_POST['cantidad_t'];
     $Usuario = $_SESSION['NombreUsuario'];
     $Sucursal = $_SESSION['Sucursal'];
     $Terminado = '1';
     $Observaciones = $_POST['observaciones_t'];
-    $Precio = $ImporteNeto / $Cantidad;
+    // Mismo motivo que en Facturar=1: este flujo tampoco manda cantidad_t
+    // desde el frontend, y el $Precio calculado ahí nunca se usaba - con
+    // $Cantidad en NULL tiraba DivisionByZeroError (fatal) y mataba el
+    // script antes de grabar nada, sin ningún error visible.
 
     // DESDE ACA INGRESA LOS MOVIMIENTOS EN TESORERIA
     $Cuenta1 = '112200';
