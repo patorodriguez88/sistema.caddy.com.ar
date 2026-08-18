@@ -310,11 +310,6 @@
                                                     <label for="date-informes-hasta-diario" class="form-label">Hasta</label>
                                                     <input class="form-control" id="date-informes-hasta-diario" type="date" name="date">
                                                 </div>
-                                                <div class="col-md-3 mb-2">
-                                                    <button id="btn_imprimir_libro_diario" type="button" class="btn btn-outline-secondary">
-                                                        <i class="uil uil-print mr-1"></i>Imprimir Libro Diario
-                                                    </button>
-                                                </div>
                                             </div>
                                             <div id="div_tabla_informes">
                                                 <table id="tabla-informes" class="table table-sm dt-responsive nowrap w-100">
@@ -349,7 +344,7 @@
                                     <div class="tab-content">
                                         <div class="tab-pane show active p-3">
                                             <h5 class="mb-3">Sumas y Saldos</h5>
-                                            <div class="row">
+                                            <div class="row align-items-end">
                                                 <div class="col-md-6 mb-2">
                                                     <label for="date-informes-desde" class="form-label">Desde</label>
                                                     <input class="form-control" id="date-informes-desde" type="date" name="date">
@@ -364,11 +359,33 @@
                                                         <label class="custom-control-label" for="chk_no_operativo">Incluir movimientos no operativos</label>
                                                     </div>
                                                 </div>
-                                                <div class="col-md-3 offset-md-9 mb-2">
-                                                    <button id="btn_sumas_y_saldos_buscar" class="btn btn-primary btn-block">Buscar</button>
-                                                </div>
                                             </div>
-
+                                            <div id="div_tabla_sumas_y_saldos">
+                                                <table id="tabla-sumas-y-saldos" class="table table-sm dt-responsive nowrap w-100">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Tipo</th>
+                                                            <th>Cuenta</th>
+                                                            <th>Nombre Cuenta</th>
+                                                            <th>Sumas Debe</th>
+                                                            <th>Sumas Haber</th>
+                                                            <th>Saldo Deudor</th>
+                                                            <th>Saldo Acreedor</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr>
+                                                            <th colspan="3" class="text-right">Totales:</th>
+                                                            <th id="total-debe-syc"></th>
+                                                            <th id="total-haber-syc"></th>
+                                                            <th id="total-saldo-deudor-syc"></th>
+                                                            <th id="total-saldo-acreedor-syc"></th>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -398,11 +415,38 @@
                                                     <label for="date-mayor-hasta" class="form-label">Hasta</label>
                                                     <input class="form-control" id="date-mayor-hasta" type="date" name="date">
                                                 </div>
-                                                <div class="col-12 d-flex justify-content-end">
-                                                    <button id="btn_mayor_buscar" class="btn btn-primary">
-                                                        <i class="uil uil-print mr-1"></i>Ver / Imprimir Mayor
-                                                    </button>
+                                                <div class="col-12 mb-2">
+                                                    <div class="custom-control custom-checkbox">
+                                                        <input type="checkbox" class="custom-control-input" id="chk_mayor_todas_cuentas">
+                                                        <label class="custom-control-label" for="chk_mayor_todas_cuentas">Todas las cuentas (ignora el filtro de Cuenta)</label>
+                                                    </div>
                                                 </div>
+                                            </div>
+                                            <div id="div_tabla_mayor" class="mt-3">
+                                                <table id="tabla-mayor" class="table table-sm dt-responsive nowrap w-100">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Cuenta</th>
+                                                            <th>Nombre Cuenta</th>
+                                                            <th>Fecha</th>
+                                                            <th>N° Asiento</th>
+                                                            <th>Concepto</th>
+                                                            <th>Debe</th>
+                                                            <th>Haber</th>
+                                                            <th>Saldo</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    </tbody>
+                                                    <tfoot>
+                                                        <tr>
+                                                            <th colspan="5" class="text-right">Totales:</th>
+                                                            <th id="total-debe-mayor"></th>
+                                                            <th id="total-haber-mayor"></th>
+                                                            <th></th>
+                                                        </tr>
+                                                    </tfoot>
+                                                </table>
                                             </div>
                                         </div>
                                     </div>

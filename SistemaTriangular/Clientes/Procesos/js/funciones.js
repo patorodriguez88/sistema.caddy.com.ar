@@ -4180,7 +4180,10 @@ $("#facturar_detalle_boton").click(function () {
   // Utilizamos console.log para ver comprobar que en realidad contiene algo el arreglo
 
   if (checked != 0) {
-    document.getElementById("descuento_botton").style.display = "none";
+    // Antes se ocultaba al entrar al Detalle - Administración pedía
+    // aplicar el descuento revisando el detalle línea por línea y el botón
+    // desaparecía justo ahí, así que ahora se mantiene visible.
+    document.getElementById("descuento_botton").style.display = "flex";
     var dato = {
       Datos: 1,
       id: id,

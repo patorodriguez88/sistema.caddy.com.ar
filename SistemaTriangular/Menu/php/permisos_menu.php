@@ -179,6 +179,34 @@ function tieneMenuPermiso(string $seccion, string $texto): bool
     return in_array(menuSlug($seccion, $texto), $permisos, true);
 }
 
+// Gate del <li> contenedor de cada seccion del topnav (Home, Admin, Ventas,
+// etc). tieneMenuPermiso() solo tapa los links de adentro uno por uno - sin
+// esto, un rol sin NINGUN permiso dentro de una seccion igual veia el
+// titulo de esa seccion en el menu (con el dropdown vacio al abrirlo), que
+// es justo lo que reporto el rol "Operaciones" viendo "Admin" en el menu
+// sin tener nada tildado en Asignacion de Roles y Permisos. Todos los
+// slugs de una seccion arrancan con menuSlug($seccion, '') + '_' (ver
+// menuSlug: $seccion.'__'.$texto colapsa el doble guion bajo a uno solo),
+// asi que alcanza con un prefix-match sobre los permisos ya cacheados de
+// obtenerPermisosDelUsuario(), sin otra consulta a la base.
+function tieneAlgunPermisoSeccion(string $seccion): bool
+{
+    $permisos = obtenerPermisosDelUsuario();
+    if ($permisos === null) {
+        return true;
+    }
+    if (in_array('__gestionar_roles__', $permisos, true)) {
+        return true;
+    }
+    $prefijo = menuSlug($seccion, '') . '_';
+    foreach ($permisos as $slug) {
+        if (str_starts_with($slug, $prefijo)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 // Doble candado para crear/editar/borrar roles, permisos y qué contiene cada rol:
 // Nivel 1 (SuperAdministrador) + tener asignado el permiso reservado "Gestionar Roles y Permisos".
 // Se valida siempre contra la base (no contra la sesión cacheada) porque es una acción sensible.

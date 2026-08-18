@@ -54,6 +54,7 @@
       <div class="collapse navbar-collapse" id="topnav-menu-content">
         <ul class="navbar-nav">
           <!-- Home -->
+          <?php if (tieneAlgunPermisoSeccion('Home')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -85,7 +86,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- Servicios -->
+          <?php if (tieneAlgunPermisoSeccion('Servicios')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -157,7 +160,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- Clientes -->
+          <?php if (tieneAlgunPermisoSeccion('Clientes')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -188,7 +193,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- Proveedores -->
+          <?php if (tieneAlgunPermisoSeccion('Proveedores')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -233,7 +240,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- Ventas -->
+          <?php if (tieneAlgunPermisoSeccion('Ventas')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -298,7 +307,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
 
+          <?php if (tieneAlgunPermisoSeccion('Admin')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -503,8 +514,10 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- RRHH -->
 
+          <?php if (tieneAlgunPermisoSeccion('Rec.Humanos')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -547,7 +560,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- Logística -->
+          <?php if (tieneAlgunPermisoSeccion('Logistica')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -635,7 +650,9 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
           <!-- Datos -->
+          <?php if (tieneAlgunPermisoSeccion('Datos')): ?>
           <li class="nav-item dropdown">
             <a
               class="nav-link dropdown-toggle arrow-none px-1"
@@ -685,6 +702,7 @@
               <?php endif; ?>
             </div>
           </li>
+          <?php endif; ?>
         </ul>
       </div>
     </nav>

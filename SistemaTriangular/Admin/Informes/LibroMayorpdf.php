@@ -2,14 +2,23 @@
 
 declare(strict_types=1);
 
-// Libro Mayor real: detalle cronologico de movimientos de UNA cuenta, con
-// saldo corrido (formato estandar: Fecha, Concepto, Debe, Haber, Saldo).
-// Antes el boton "Mayores" abria MayoresContablespdf.php, que ademas de
-// estar roto (mysql_query(), clase DB inexistente) ni siquiera era
-// conceptualmente un Libro Mayor: traia el acumulado historico de TODAS
-// las cuentas sin fechas ni detalle de movimientos, mas parecido a un
-// segundo Sumas y Saldos. Este archivo es nuevo, con el mismo patron que
+// Libro Mayor real: detalle cronologico de movimientos, con saldo corrido
+// (formato estandar: Fecha, Concepto, Debe, Haber, Saldo). Antes el boton
+// "Mayores" abria MayoresContablespdf.php, que ademas de estar roto
+// (mysql_query(), clase DB inexistente) ni siquiera era conceptualmente un
+// Libro Mayor: traia el acumulado historico de TODAS las cuentas sin
+// fechas ni detalle de movimientos, mas parecido a un segundo Sumas y
+// Saldos. Este archivo es nuevo, con el mismo patron que
 // Logistica/Informes/HojaDeRutapdf.php (HdrPdfBase).
+//
+// Soporta dos modos: una cuenta (parametro Cuenta) o todas las cuentas con
+// movimientos en el periodo (Cuenta vacio/ausente) - en ese caso imprime
+// una seccion por cuenta, una detras de otra, igual que Sumas y Saldos
+// agrupa por tipo de cuenta. Todos los datos se calculan ANTES de armar la
+// primera pagina, porque el header (Saldo anterior/Saldo final en modo
+// una-cuenta) se pinta desde adentro de Header() - que FPDF dispara solo
+// con AddPage(), antes de que exista chance de ir completando esos valores
+// sobre la marcha.
 
 error_reporting(E_ALL);
 ini_set('display_errors', '1');
@@ -81,6 +90,20 @@ class LibroMayorPDF extends HdrPdfBase
         $this->SetTextColor(...$p['darkText']);
     }
 
+    // Banda con el numero/nombre de cuenta, para separar cada cuenta en el
+    // modo "todas las cuentas" (mismo patron que SumasySaldospdf::grupoRow).
+    public function cuentaBand(string $cuenta, string $nombreCuenta): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(7);
+        $this->SetFillColor(...$p['primaryC']);
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetFont('Arial', 'B', 8.5);
+        $this->resetX();
+        $this->Cell($this->contentWidth(), 6.5, pdf_text('Cuenta ' . $cuenta . ' - ' . $nombreCuenta), 0, 1, 'L', true);
+        $this->SetTextColor(...$p['darkText']);
+    }
+
     public function Header(): void
     {
         global $headerDatos;
@@ -91,12 +114,8 @@ class LibroMayorPDF extends HdrPdfBase
 
         $this->drawHeaderBase(
             'LIBRO MAYOR',
-            $headerDatos['cuenta'] . ' - ' . $headerDatos['nombreCuenta'],
-            [
-                ['Periodo:', $headerDatos['fechaDesde'] . ' al ' . $headerDatos['fechaHasta']],
-                ['Saldo anterior:', $headerDatos['saldoAnteriorTexto']],
-                ['Saldo final:', $headerDatos['saldoFinalTexto']],
-            ]
+            $headerDatos['subtitulo'],
+            $headerDatos['filas']
         );
 
         $this->Ln(2);
@@ -105,144 +124,235 @@ class LibroMayorPDF extends HdrPdfBase
 }
 
 // --------------------------------------------------
-// Datos
+// Parametros
 // --------------------------------------------------
-$cuenta = (string)($_GET['Cuenta'] ?? '');
+$cuentaFiltro = (string)($_GET['Cuenta'] ?? '');
 $fechaDesde = (string)($_GET['Desde'] ?? '');
 $fechaHasta = (string)($_GET['Hasta'] ?? '');
+$modoTodas = ($cuentaFiltro === '');
 
-if ($cuenta === '' || $fechaDesde === '' || $fechaHasta === '') {
+if ($fechaDesde === '' || $fechaHasta === '') {
     http_response_code(400);
     if (!headers_sent()) {
         header('Content-Type: text/plain; charset=utf-8');
     }
-    echo 'Faltan parametros Cuenta/Desde/Hasta';
+    echo 'Faltan parametros Desde/Hasta';
     exit;
 }
 
-// Nombre de cuenta: PlanDeCuentas es la fuente canonica; si no aparece ahi
-// (cuenta vieja/dada de baja), se usa el nombre que ya viene copiado en
-// Tesoreria para no dejar la cabecera en blanco.
-$cuentaInfo = mysqli_fetch_one(
-    $mysqli,
-    "SELECT NombreCuenta FROM PlanDeCuentas WHERE CAST(Cuenta AS UNSIGNED) = CAST(? AS UNSIGNED) LIMIT 1",
-    's',
-    [$cuenta]
-);
-$nombreCuenta = $cuentaInfo['NombreCuenta'] ?? null;
-if ($nombreCuenta === null) {
-    $fallback = mysqli_fetch_one(
+function lm_nombreCuenta(mysqli $mysqli, string $cuenta): string
+{
+    $cuentaInfo = mysqli_fetch_one(
         $mysqli,
-        "SELECT NombreCuenta FROM Tesoreria WHERE Cuenta = ? AND NombreCuenta <> '' LIMIT 1",
+        "SELECT NombreCuenta FROM PlanDeCuentas WHERE CAST(Cuenta AS UNSIGNED) = CAST(? AS UNSIGNED) LIMIT 1",
         's',
         [$cuenta]
     );
-    $nombreCuenta = $fallback['NombreCuenta'] ?? '(sin nombre)';
+    $nombreCuenta = $cuentaInfo['NombreCuenta'] ?? null;
+    if ($nombreCuenta === null) {
+        $fallback = mysqli_fetch_one(
+            $mysqli,
+            "SELECT NombreCuenta FROM Tesoreria WHERE Cuenta = ? AND NombreCuenta <> '' LIMIT 1",
+            's',
+            [$cuenta]
+        );
+        $nombreCuenta = $fallback['NombreCuenta'] ?? '(sin nombre)';
+    }
+    return $nombreCuenta;
 }
 
-// Saldo anterior: acumulado de todos los movimientos ANTES del periodo.
-$saldoAnteriorRow = mysqli_fetch_one(
-    $mysqli,
-    "SELECT COALESCE(SUM(Debe - Haber), 0) AS Saldo
-       FROM Tesoreria
-      WHERE Cuenta = ?
-        AND Fecha < ?
-        AND Eliminado = 0
-        AND COALESCE(Pendiente, 0) = 0",
-    'ss',
-    [$cuenta, $fechaDesde]
-);
-$saldoAnterior = (float)($saldoAnteriorRow['Saldo'] ?? 0);
-
-$items = db_fetch_all(
-    $mysqli,
-    "SELECT Fecha, NumeroAsiento, Observaciones, Debe, Haber
-       FROM Tesoreria
-      WHERE Cuenta = ?
-        AND Fecha BETWEEN ? AND ?
-        AND Eliminado = 0
-        AND COALESCE(Pendiente, 0) = 0
-      ORDER BY Fecha, NumeroAsiento, id",
-    'sss',
-    [$cuenta, $fechaDesde, $fechaHasta]
-);
-
-$totalDebe = 0.0;
-$totalHaber = 0.0;
-$saldoCorrido = $saldoAnterior;
-foreach ($items as &$fila) {
-    $debe = (float)$fila['Debe'];
-    $haber = (float)$fila['Haber'];
-    $totalDebe += $debe;
-    $totalHaber += $haber;
-    $saldoCorrido += $debe - $haber;
-    $fila['SaldoCorrido'] = $saldoCorrido;
+// --------------------------------------------------
+// Datos: se calcula TODO antes de la primera pagina (ver nota arriba).
+// --------------------------------------------------
+if ($modoTodas) {
+    $cuentas = array_column(
+        db_fetch_all(
+            $mysqli,
+            "SELECT DISTINCT Cuenta FROM Tesoreria
+              WHERE Eliminado = 0 AND COALESCE(Pendiente, 0) = 0
+                AND Fecha BETWEEN ? AND ?
+              ORDER BY CAST(Cuenta AS UNSIGNED)",
+            'ss',
+            [$fechaDesde, $fechaHasta]
+        ),
+        'Cuenta'
+    );
+} else {
+    $cuentas = [$cuentaFiltro];
 }
-unset($fila);
 
-$headerDatos = [
-    'cuenta'              => $cuenta,
-    'nombreCuenta'        => $nombreCuenta,
-    'fechaDesde'          => date('d/m/Y', strtotime($fechaDesde)),
-    'fechaHasta'          => date('d/m/Y', strtotime($fechaHasta)),
-    'saldoAnteriorTexto'  => number_format($saldoAnterior, 2, ',', '.'),
-    'saldoFinalTexto'     => number_format($saldoCorrido, 2, ',', '.'),
-];
+$datosPorCuenta = [];
+$totalDebeGeneral = 0.0;
+$totalHaberGeneral = 0.0;
+
+foreach ($cuentas as $cuenta) {
+    $nombreCuenta = lm_nombreCuenta($mysqli, $cuenta);
+
+    $saldoAnteriorRow = mysqli_fetch_one(
+        $mysqli,
+        "SELECT COALESCE(SUM(Debe - Haber), 0) AS Saldo
+           FROM Tesoreria
+          WHERE Cuenta = ? AND Fecha < ? AND Eliminado = 0 AND COALESCE(Pendiente, 0) = 0",
+        'ss',
+        [$cuenta, $fechaDesde]
+    );
+    $saldoAnterior = (float)($saldoAnteriorRow['Saldo'] ?? 0);
+
+    $items = db_fetch_all(
+        $mysqli,
+        "SELECT Fecha, NumeroAsiento, Observaciones, Debe, Haber
+           FROM Tesoreria
+          WHERE Cuenta = ? AND Fecha BETWEEN ? AND ? AND Eliminado = 0 AND COALESCE(Pendiente, 0) = 0
+          ORDER BY Fecha, NumeroAsiento, id",
+        'sss',
+        [$cuenta, $fechaDesde, $fechaHasta]
+    );
+
+    $totalDebe = 0.0;
+    $totalHaber = 0.0;
+    $saldoCorrido = $saldoAnterior;
+    foreach ($items as &$fila) {
+        $debe = (float)$fila['Debe'];
+        $haber = (float)$fila['Haber'];
+        $totalDebe += $debe;
+        $totalHaber += $haber;
+        $saldoCorrido += $debe - $haber;
+        $fila['SaldoCorrido'] = $saldoCorrido;
+    }
+    unset($fila);
+
+    // En modo "todas las cuentas" una cuenta sin movimientos en el periodo
+    // no aporta nada (ver su firma hoja tras hoja no le sirve a nadie) - se
+    // salta. En modo una-cuenta se muestra igual (el usuario la pidio a
+    // proposito), aunque este vacia.
+    if ($modoTodas && count($items) === 0) {
+        continue;
+    }
+
+    $totalDebeGeneral += $totalDebe;
+    $totalHaberGeneral += $totalHaber;
+
+    $datosPorCuenta[] = [
+        'cuenta' => $cuenta,
+        'nombreCuenta' => $nombreCuenta,
+        'saldoAnterior' => $saldoAnterior,
+        'items' => $items,
+        'totalDebe' => $totalDebe,
+        'totalHaber' => $totalHaber,
+        'saldoFinal' => $saldoCorrido,
+    ];
+}
+
+$fechaDesdeTexto = date('d/m/Y', strtotime($fechaDesde));
+$fechaHastaTexto = date('d/m/Y', strtotime($fechaHasta));
+
+global $headerDatos;
+
+if ($modoTodas) {
+    $headerDatos = [
+        'subtitulo' => 'Todas las cuentas',
+        'filas' => [
+            ['Periodo:', $fechaDesdeTexto . ' al ' . $fechaHastaTexto],
+            ['Cuentas:', (string)count($datosPorCuenta)],
+            ['Total Debe:', number_format($totalDebeGeneral, 2, ',', '.')],
+            ['Total Haber:', number_format($totalHaberGeneral, 2, ',', '.')],
+        ],
+    ];
+} else {
+    $unaCuenta = $datosPorCuenta[0] ?? null;
+    $saldoAnteriorTexto = $unaCuenta ? number_format($unaCuenta['saldoAnterior'], 2, ',', '.') : '0,00';
+    $saldoFinalTexto = $unaCuenta ? number_format($unaCuenta['saldoFinal'], 2, ',', '.') : '0,00';
+    $headerDatos = [
+        'subtitulo' => $cuentaFiltro . ' - ' . lm_nombreCuenta($mysqli, $cuentaFiltro),
+        'filas' => [
+            ['Periodo:', $fechaDesdeTexto . ' al ' . $fechaHastaTexto],
+            ['Saldo anterior:', $saldoAnteriorTexto],
+            ['Saldo final:', $saldoFinalTexto],
+        ],
+    ];
+}
 
 // --------------------------------------------------
 // Render
 // --------------------------------------------------
 $pdf = new LibroMayorPDF('P', 'mm', 'Letter');
 $pdf->AliasNbPages();
-$pdf->footerLeft = 'Libro Mayor Triangular S.A. - Cuenta ' . $cuenta;
+$pdf->footerLeft = 'Libro Mayor Triangular S.A. - ' . ($modoTodas ? 'Todas las cuentas' : 'Cuenta ' . $cuentaFiltro);
 $pdf->SetMargins(12, 12, 12);
 $pdf->SetAutoPageBreak(true, 24);
 $pdf->AddPage();
 
 $paleta = hdrPaleta();
 
-// Fila de apertura con el saldo anterior, para que la columna Saldo del
-// primer movimiento real ya arranque acumulando desde ahi (igual que un
-// mayor en papel: la primera linea de la hoja es "Saldo anterior").
-$pdf->SetFont('Arial', 'I', 8.5);
-$pdf->Row([
-    '', '', 'SALDO ANTERIOR', '', '',
-    number_format($saldoAnterior, 2, ',', '.'),
-], $paleta['grayBg']);
+$nombreArchivo = $modoTodas
+    ? 'LibroMayor_Todas_' . $fechaDesde . '_' . $fechaHasta . '.pdf'
+    : 'LibroMayor_' . $cuentaFiltro . '_' . $fechaDesde . '_' . $fechaHasta . '.pdf';
 
-if (count($items) === 0) {
+if (count($datosPorCuenta) === 0) {
     $pdf->SetFont('Arial', 'I', 10);
     $pdf->Cell(0, 10, pdf_text('No hay movimientos registrados en el periodo seleccionado.'), 0, 1);
-} else {
-    $fill = false;
-    foreach ($items as $fila) {
-        $pdf->Row([
-            date('d/m/Y', strtotime((string)$fila['Fecha'])),
-            (string)$fila['NumeroAsiento'],
-            (string)($fila['Observaciones'] ?? ''),
-            number_format((float)$fila['Debe'], 2, ',', '.'),
-            number_format((float)$fila['Haber'], 2, ',', '.'),
-            number_format((float)$fila['SaldoCorrido'], 2, ',', '.'),
-        ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
-        $fill = !$fill;
+    $pdf->Output('I', $nombreArchivo);
+    exit;
+}
+
+foreach ($datosPorCuenta as $indice => $datos) {
+    if ($modoTodas) {
+        $pdf->cuentaBand($datos['cuenta'], $datos['nombreCuenta']);
+    }
+
+    $pdf->SetFont('Arial', 'I', 8.5);
+    $pdf->Row([
+        '', '', 'SALDO ANTERIOR', '', '',
+        number_format($datos['saldoAnterior'], 2, ',', '.'),
+    ], $paleta['grayBg']);
+
+    if (count($datos['items']) === 0) {
+        $pdf->SetFont('Arial', 'I', 9);
+        $pdf->resetX();
+        $pdf->Cell($pdf->contentWidth(), 8, pdf_text('Sin movimientos en el periodo.'), 0, 1);
+    } else {
+        $fill = false;
+        foreach ($datos['items'] as $fila) {
+            $pdf->Row([
+                date('d/m/Y', strtotime((string)$fila['Fecha'])),
+                (string)$fila['NumeroAsiento'],
+                (string)($fila['Observaciones'] ?? ''),
+                number_format((float)$fila['Debe'], 2, ',', '.'),
+                number_format((float)$fila['Haber'], 2, ',', '.'),
+                number_format((float)$fila['SaldoCorrido'], 2, ',', '.'),
+            ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
+            $fill = !$fill;
+        }
+    }
+
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Row([
+        '', '', 'TOTALES / SALDO FINAL',
+        number_format($datos['totalDebe'], 2, ',', '.'),
+        number_format($datos['totalHaber'], 2, ',', '.'),
+        number_format($datos['saldoFinal'], 2, ',', '.'),
+    ], $paleta['grayBg']);
+
+    if (!$modoTodas) {
+        $pdf->Ln(3);
+        $pdf->resetX();
+        $pdf->SetFont('Arial', '', 8);
+        $pdf->SetTextColor(...$paleta['mutedC']);
+        $naturaleza = $datos['saldoFinal'] >= 0 ? 'DEUDOR' : 'ACREEDOR';
+        $pdf->Cell(0, 5, pdf_text('Saldo final: ' . $naturaleza . ' por ' . number_format(abs($datos['saldoFinal']), 2, ',', '.')), 0, 1);
+        $pdf->SetTextColor(...$paleta['darkText']);
+    } elseif ($indice < count($datosPorCuenta) - 1) {
+        $pdf->Ln(2);
     }
 }
 
-// Fila de totales del periodo + saldo final, remarcada.
-$pdf->SetFont('Arial', 'B', 9);
-$pdf->Row([
-    '', '', 'TOTALES DEL PERIODO / SALDO FINAL',
-    number_format($totalDebe, 2, ',', '.'),
-    number_format($totalHaber, 2, ',', '.'),
-    number_format($saldoCorrido, 2, ',', '.'),
-], $paleta['grayBg']);
+if ($modoTodas) {
+    $pdf->Ln(3);
+    $pdf->resetX();
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetTextColor(...$paleta['primaryC']);
+    $pdf->Cell(0, 6, pdf_text('TOTAL GENERAL - Debe: ' . number_format($totalDebeGeneral, 2, ',', '.') . '   Haber: ' . number_format($totalHaberGeneral, 2, ',', '.')), 0, 1);
+    $pdf->SetTextColor(...$paleta['darkText']);
+}
 
-$pdf->Ln(3);
-$pdf->resetX();
-$pdf->SetFont('Arial', '', 8);
-$pdf->SetTextColor(...$paleta['mutedC']);
-$naturaleza = $saldoCorrido >= 0 ? 'DEUDOR' : 'ACREEDOR';
-$pdf->Cell(0, 5, pdf_text('Saldo final: ' . $naturaleza . ' por ' . number_format(abs($saldoCorrido), 2, ',', '.')), 0, 1);
-$pdf->SetTextColor(...$paleta['darkText']);
-
-$pdf->Output('I', 'LibroMayor_' . $cuenta . '_' . $fechaDesde . '_' . $fechaHasta . '.pdf');
+$pdf->Output('I', $nombreArchivo);

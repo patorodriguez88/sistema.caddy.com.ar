@@ -26,7 +26,11 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     }elseif ($accion === 'obtener_datos_libro_diario'){
         libroDiario($conexion);
     }elseif ($accion === 'consultar_asiento'){
-        consultaAsiento($conexion);   
+        consultaAsiento($conexion);
+    }elseif ($accion === 'obtener_datos_libro_mayor'){
+        libroMayor($conexion);
+    }elseif ($accion === 'obtener_datos_sumas_y_saldos'){
+        sumasYSaldos($conexion);
     }
 }
 
@@ -251,6 +255,214 @@ function libroDiario($conexion) {
     } else {
         echo json_encode(['data' => []]);
     }
+}
+
+// Alimenta la tabla en pantalla (y su exportacion a Excel) del Libro Mayor.
+// Misma logica de saldo corrido que Admin/Informes/LibroMayorpdf.php, pero
+// devuelta como JSON en vez de dibujada en PDF - si $cuenta viene vacio,
+// arma el Mayor de TODAS las cuentas con movimientos en el periodo (una
+// detras de otra), no solo de una.
+function libroMayor($conexion) {
+    $desde = $_POST['fecha_desde'] ?? '';
+    $hasta = $_POST['fecha_hasta'] ?? '';
+    $cuentaFiltro = trim($_POST['cuenta'] ?? '');
+    if ($desde === '' || $hasta === '') {
+        echo json_encode(['data' => []]);
+        return;
+    }
+
+    if ($cuentaFiltro !== '') {
+        $cuentas = [$cuentaFiltro];
+    } else {
+        $stmt = $conexion->prepare(
+            "SELECT DISTINCT Cuenta FROM Tesoreria
+              WHERE Eliminado = 0 AND COALESCE(Pendiente, 0) = 0
+                AND Fecha BETWEEN ? AND ?
+              ORDER BY CAST(Cuenta AS UNSIGNED)"
+        );
+        $stmt->bind_param('ss', $desde, $hasta);
+        $stmt->execute();
+        $res = $stmt->get_result();
+        $cuentas = [];
+        while ($row = $res->fetch_assoc()) {
+            $cuentas[] = $row['Cuenta'];
+        }
+    }
+
+    $filas = [];
+
+    foreach ($cuentas as $cuenta) {
+        $stmtNombre = $conexion->prepare(
+            "SELECT NombreCuenta FROM PlanDeCuentas WHERE CAST(Cuenta AS UNSIGNED) = CAST(? AS UNSIGNED) LIMIT 1"
+        );
+        $stmtNombre->bind_param('s', $cuenta);
+        $stmtNombre->execute();
+        $nombreRow = $stmtNombre->get_result()->fetch_assoc();
+        $nombreCuenta = $nombreRow['NombreCuenta'] ?? null;
+        if ($nombreCuenta === null) {
+            $stmtFallback = $conexion->prepare(
+                "SELECT NombreCuenta FROM Tesoreria WHERE Cuenta = ? AND NombreCuenta <> '' LIMIT 1"
+            );
+            $stmtFallback->bind_param('s', $cuenta);
+            $stmtFallback->execute();
+            $fallbackRow = $stmtFallback->get_result()->fetch_assoc();
+            $nombreCuenta = $fallbackRow['NombreCuenta'] ?? '(sin nombre)';
+        }
+
+        $stmtAnterior = $conexion->prepare(
+            "SELECT COALESCE(SUM(Debe - Haber), 0) AS Saldo FROM Tesoreria
+              WHERE Cuenta = ? AND Fecha < ? AND Eliminado = 0 AND COALESCE(Pendiente, 0) = 0"
+        );
+        $stmtAnterior->bind_param('ss', $cuenta, $desde);
+        $stmtAnterior->execute();
+        $saldoAnterior = (float)($stmtAnterior->get_result()->fetch_assoc()['Saldo'] ?? 0);
+
+        $stmtItems = $conexion->prepare(
+            "SELECT Fecha, NumeroAsiento, Observaciones, Debe, Haber FROM Tesoreria
+              WHERE Cuenta = ? AND Fecha BETWEEN ? AND ? AND Eliminado = 0 AND COALESCE(Pendiente, 0) = 0
+              ORDER BY Fecha, NumeroAsiento, id"
+        );
+        $stmtItems->bind_param('sss', $cuenta, $desde, $hasta);
+        $stmtItems->execute();
+        $items = $stmtItems->get_result()->fetch_all(MYSQLI_ASSOC);
+
+        // Cuenta sin ningun movimiento en el periodo: no aporta nada a un
+        // Mayor de "todas las cuentas" (ver la firma de una cuenta inactiva
+        // hoja tras hoja no le sirve a nadie), se salta.
+        if ($cuentaFiltro === '' && count($items) === 0) {
+            continue;
+        }
+
+        $filas[] = [
+            'Cuenta' => $cuenta,
+            'NombreCuenta' => $nombreCuenta,
+            'Fecha' => $desde,
+            'NumeroAsiento' => '',
+            'Observaciones' => 'SALDO ANTERIOR',
+            'Debe' => null,
+            'Haber' => null,
+            'SaldoCorrido' => $saldoAnterior,
+        ];
+
+        $saldoCorrido = $saldoAnterior;
+        foreach ($items as $item) {
+            $debe = (float)$item['Debe'];
+            $haber = (float)$item['Haber'];
+            $saldoCorrido += $debe - $haber;
+            $filas[] = [
+                'Cuenta' => $cuenta,
+                'NombreCuenta' => $nombreCuenta,
+                'Fecha' => $item['Fecha'],
+                'NumeroAsiento' => $item['NumeroAsiento'],
+                'Observaciones' => $item['Observaciones'],
+                'Debe' => $debe,
+                'Haber' => $haber,
+                'SaldoCorrido' => $saldoCorrido,
+            ];
+        }
+    }
+
+    echo json_encode(['data' => $filas]);
+}
+
+// Mismo criterio de agrupacion que Admin/Informes/SumasySaldospdf.php (ver
+// ssTipoCuentaLabel/ssTipoCuentaOrden ahi) - se duplica aca en vez de
+// compartir un include porque este archivo y el PDF nunca corren en el
+// mismo request, y es el mismo patron que ya usan libroDiario()/libroMayor()
+// con sus PDF hermanos.
+function ssTipoCuentaLabel(?string $tipo): string
+{
+    $t = strtoupper(trim((string)$tipo));
+    $t = str_replace(' ', '', $t);
+    switch ($t) {
+        case 'ACTIVO':
+            return 'ACTIVO';
+        case 'PASIVO':
+            return 'PASIVO';
+        case 'P.NETO':
+            return 'PATRIMONIO NETO';
+        case 'R+':
+            return 'RESULTADOS POSITIVOS';
+        case 'R-':
+            return 'RESULTADOS NEGATIVOS';
+        default:
+            return 'SIN CLASIFICAR';
+    }
+}
+
+function ssTipoCuentaOrden(string $label): int
+{
+    static $orden = [
+        'ACTIVO' => 1,
+        'PASIVO' => 2,
+        'PATRIMONIO NETO' => 3,
+        'RESULTADOS POSITIVOS' => 4,
+        'RESULTADOS NEGATIVOS' => 5,
+        'SIN CLASIFICAR' => 6,
+    ];
+    return $orden[$label] ?? 6;
+}
+
+// Alimenta la tabla en pantalla (y su exportacion a Excel) de Sumas y
+// Saldos. Misma logica que Admin/Informes/SumasySaldospdf.php.
+function sumasYSaldos($conexion) {
+    $desde = $_POST['fecha_desde'] ?? '';
+    $hasta = $_POST['fecha_hasta'] ?? '';
+    $incluyeNoOperativo = ($_POST['no_operativo'] ?? '0') === '1';
+    if ($desde === '' || $hasta === '') {
+        echo json_encode(['data' => []]);
+        return;
+    }
+
+    $sqlNoOperativo = $incluyeNoOperativo ? '' : ' AND COALESCE(t.NoOperativo, 0) = 0 ';
+
+    $sql = "SELECT
+                t.Cuenta,
+                t.NombreCuenta,
+                SUM(t.Debe) AS SumaDebe,
+                SUM(t.Haber) AS SumaHaber,
+                pc.TipoCuenta AS TipoCuenta
+              FROM Tesoreria t
+              LEFT JOIN PlanDeCuentas pc
+                ON CAST(t.Cuenta AS UNSIGNED) = CAST(pc.Cuenta AS UNSIGNED)
+               AND pc.Nivel >= 4
+             WHERE t.Eliminado = 0
+               AND COALESCE(t.Pendiente, 0) = 0
+               $sqlNoOperativo
+               AND t.Fecha BETWEEN ? AND ?
+             GROUP BY t.Cuenta, t.NombreCuenta, pc.TipoCuenta
+             ORDER BY t.Cuenta";
+    $stmt = $conexion->prepare($sql);
+    $stmt->bind_param('ss', $desde, $hasta);
+    $stmt->execute();
+    $resultado = $stmt->get_result();
+
+    $filas = [];
+    while ($row = $resultado->fetch_assoc()) {
+        $debe = (float)$row['SumaDebe'];
+        $haber = (float)$row['SumaHaber'];
+        $tipoLabel = ssTipoCuentaLabel($row['TipoCuenta'] ?? null);
+        $filas[] = [
+            'TipoCuenta' => $tipoLabel,
+            'Cuenta' => $row['Cuenta'],
+            'NombreCuenta' => $row['NombreCuenta'],
+            'SumaDebe' => $debe,
+            'SumaHaber' => $haber,
+            'SaldoDeudor' => $debe > $haber ? $debe - $haber : 0,
+            'SaldoAcreedor' => $haber > $debe ? $haber - $debe : 0,
+            '_orden' => ssTipoCuentaOrden($tipoLabel),
+        ];
+    }
+
+    usort($filas, function ($a, $b) {
+        return $a['_orden'] <=> $b['_orden'] ?: strcmp($a['Cuenta'], $b['Cuenta']);
+    });
+    foreach ($filas as &$fila) {
+        unset($fila['_orden']);
+    }
+    unset($fila);
+
+    echo json_encode(['data' => $filas]);
 }
 
 function consultaAsiento($conexion){

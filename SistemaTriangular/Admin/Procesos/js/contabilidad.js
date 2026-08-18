@@ -743,26 +743,27 @@ document.addEventListener("DOMContentLoaded", function () {
         $("#tabla-informes").DataTable().ajax.reload();
       });
 
-    $("#btn_imprimir_libro_diario")
-      .off("click")
-      .on("click", function () {
-        const desde = $("#date-informes").val();
-        const hasta = $("#date-informes-hasta-diario").val();
-        window.open(
-          "../Admin/Informes/LibroDiariopdf.php?Desde=" +
-            encodeURIComponent(desde) +
-            "&Hasta=" +
-            encodeURIComponent(hasta),
-          "_blank"
-        );
-      });
-
     $("#tabla-informes").DataTable({
       destroy: true,
       lengthChange: false,
       dom: "Bfrtip", // 👈 muestra los botones arriba de la tabla
       paging: false,
       buttons: [
+        {
+          text: '<i class="mdi mdi-file-pdf-box"></i> Ver / Imprimir',
+          className: "btn btn-danger btn-sm me-2",
+          action: function () {
+            const desde = $("#date-informes").val();
+            const hasta = $("#date-informes-hasta-diario").val();
+            window.open(
+              "../Admin/Informes/LibroDiariopdf.php?Desde=" +
+                encodeURIComponent(desde) +
+                "&Hasta=" +
+                encodeURIComponent(hasta),
+              "_blank"
+            );
+          },
+        },
         {
           extend: "excelHtml5",
           text: '<i class="mdi mdi-file-excel"></i> Exportar a Excel',
@@ -838,36 +839,112 @@ document.addEventListener("DOMContentLoaded", function () {
   function sumasySaldos() {
     $("#card_informes_sumas_y_saldos").css("display", "block");
     $("#card_informes").css("display", "none");
+    $("#card_informes_mayor").css("display", "none");
+    document.getElementById("visor_pdf").style.display = "none";
 
     document.getElementById("date-informes-desde").value = fechaFormateada;
     document.getElementById("date-informes-hasta").value = fechaFormateada;
 
     // .off()+.on() en vez de addEventListener: sumasySaldos() se vuelve a
     // llamar cada vez que se hace click en "Sumas y Saldos" del menú - sin
-    // esto se apilaba un listener nuevo por cada visita a la pantalla y el
-    // iframe terminaba recargándose N veces por cada click en Buscar.
-    $("#btn_sumas_y_saldos_buscar")
-      .off("click")
-      .on("click", function () {
-        var desde = document.getElementById("date-informes-desde").value;
-        var hasta = document.getElementById("date-informes-hasta").value;
-        var noOperativo = document.getElementById("chk_no_operativo").checked
-          ? 1
-          : 0;
-        $("#titulo_informes").html("Sumas y Saldos");
-        document.getElementById("visor_pdf").style.display = "block";
-        // Antes esto apuntaba hardcodeado a www.caddy.com.ar (producción)
-        // incluso probando en localhost - con ruta relativa apunta siempre
-        // al mismo servidor donde corre la pantalla, sea cual sea.
-        document.getElementById("iframe_pdf").src =
-          "../Admin/Informes/SumasySaldospdf.php?Desde=" +
-          encodeURIComponent(desde) +
-          "&Hasta=" +
-          encodeURIComponent(hasta) +
-          "&NoOperativo=" +
-          noOperativo;
+    // esto se apilaba un listener nuevo por cada visita a la pantalla.
+    $("#date-informes-desde, #date-informes-hasta, #chk_no_operativo")
+      .off("change")
+      .on("change", function () {
+        $("#tabla-sumas-y-saldos").DataTable().ajax.reload();
       });
+
+    if ($.fn.DataTable.isDataTable("#tabla-sumas-y-saldos")) {
+      $("#tabla-sumas-y-saldos").DataTable().destroy();
+      $("#tabla-sumas-y-saldos tbody").empty();
+    }
+
+    $("#tabla-sumas-y-saldos").DataTable({
+      lengthChange: false,
+      dom: "Bfrtip",
+      paging: false,
+      buttons: [
+        {
+          text: '<i class="mdi mdi-file-pdf-box"></i> Ver / Imprimir',
+          className: "btn btn-danger btn-sm me-2",
+          action: function () {
+            var desde = document.getElementById("date-informes-desde").value;
+            var hasta = document.getElementById("date-informes-hasta").value;
+            var noOperativo = document.getElementById("chk_no_operativo")
+              .checked
+              ? 1
+              : 0;
+            $("#titulo_informes").html("Sumas y Saldos");
+            document.getElementById("visor_pdf").style.display = "block";
+            // Antes esto apuntaba hardcodeado a www.caddy.com.ar
+            // (producción) incluso probando en localhost - con ruta
+            // relativa apunta siempre al mismo servidor donde corre la
+            // pantalla, sea cual sea.
+            document.getElementById("iframe_pdf").src =
+              "../Admin/Informes/SumasySaldospdf.php?Desde=" +
+              encodeURIComponent(desde) +
+              "&Hasta=" +
+              encodeURIComponent(hasta) +
+              "&NoOperativo=" +
+              noOperativo;
+          },
+        },
+        {
+          extend: "excelHtml5",
+          text: '<i class="mdi mdi-file-excel"></i> Exportar a Excel',
+          className: "btn btn-success btn-sm",
+        },
+      ],
+      ajax: {
+        url: "../Admin/Procesos/php/contabilidad.php",
+        method: "POST",
+        data: function (d) {
+          d.accion = "obtener_datos_sumas_y_saldos";
+          d.fecha_desde = $("#date-informes-desde").val();
+          d.fecha_hasta = $("#date-informes-hasta").val();
+          d.no_operativo = $("#chk_no_operativo").is(":checked") ? 1 : 0;
+        },
+        dataSrc: "data",
+      },
+      columns: [
+        { data: "TipoCuenta" },
+        { data: "Cuenta" },
+        { data: "NombreCuenta" },
+        { data: "SumaDebe" },
+        { data: "SumaHaber" },
+        {
+          data: "SaldoDeudor",
+          render: function (data) {
+            return parseFloat(data) > 0 ? data : "";
+          },
+        },
+        {
+          data: "SaldoAcreedor",
+          render: function (data) {
+            return parseFloat(data) > 0 ? data : "";
+          },
+        },
+      ],
+      footerCallback: function (row, data) {
+        let totalDebe = 0;
+        let totalHaber = 0;
+        let totalSaldoDeudor = 0;
+        let totalSaldoAcreedor = 0;
+        data.forEach(function (row) {
+          totalDebe += parseFloat(row.SumaDebe) || 0;
+          totalHaber += parseFloat(row.SumaHaber) || 0;
+          totalSaldoDeudor += parseFloat(row.SaldoDeudor) || 0;
+          totalSaldoAcreedor += parseFloat(row.SaldoAcreedor) || 0;
+        });
+        $("#total-debe-syc").html(totalDebe.toFixed(2));
+        $("#total-haber-syc").html(totalHaber.toFixed(2));
+        $("#total-saldo-deudor-syc").html(totalSaldoDeudor.toFixed(2));
+        $("#total-saldo-acreedor-syc").html(totalSaldoAcreedor.toFixed(2));
+      },
+    });
   }
+
+  var dtMayor = null;
 
   function mayoresContables() {
     $("#titulo_mayor").html("Libro Mayor");
@@ -878,6 +955,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.getElementById("date-mayor-desde").value = fechaFormateada;
     document.getElementById("date-mayor-hasta").value = fechaFormateada;
+    document.getElementById("chk_mayor_todas_cuentas").checked = false;
 
     // obtenerCuentas() es async y no soporta callback (el parametro existe
     // pero la función nunca lo invoca) - llenar el select ahí mismo justo
@@ -901,26 +979,117 @@ document.addEventListener("DOMContentLoaded", function () {
       });
     }
 
-    $("#btn_mayor_buscar")
-      .off("click")
-      .on("click", function () {
-        var cuenta = document.getElementById("cuenta_mayor").value;
-        var desde = document.getElementById("date-mayor-desde").value;
-        var hasta = document.getElementById("date-mayor-hasta").value;
-        if (!cuenta) {
-          toast("warning", "Falta la cuenta", "Elegí una cuenta para ver su Mayor.");
-          return;
-        }
-        $("#titulo_informes").html("Libro Mayor");
-        document.getElementById("visor_pdf").style.display = "block";
-        document.getElementById("iframe_pdf").src =
-          "../Admin/Informes/LibroMayorpdf.php?Cuenta=" +
-          encodeURIComponent(cuenta) +
-          "&Desde=" +
-          encodeURIComponent(desde) +
-          "&Hasta=" +
-          encodeURIComponent(hasta);
+    // "Todas las cuentas" desactiva el select para que quede claro que ese
+    // filtro no se está usando mientras el checkbox esté tildado.
+    $("#chk_mayor_todas_cuentas")
+      .off("change")
+      .on("change", function () {
+        $("#cuenta_mayor").prop("disabled", this.checked);
+        $("#tabla-mayor").DataTable().ajax.reload();
       });
+
+    $("#cuenta_mayor, #date-mayor-desde, #date-mayor-hasta")
+      .off("change")
+      .on("change", function () {
+        $("#tabla-mayor").DataTable().ajax.reload();
+      });
+
+    if ($.fn.DataTable.isDataTable("#tabla-mayor")) {
+      $("#tabla-mayor").DataTable().destroy();
+      $("#tabla-mayor tbody").empty();
+    }
+
+    dtMayor = $("#tabla-mayor").DataTable({
+      lengthChange: false,
+      dom: "Bfrtip",
+      paging: false,
+      buttons: [
+        {
+          text: '<i class="mdi mdi-file-pdf-box"></i> Ver / Imprimir',
+          className: "btn btn-danger btn-sm me-2",
+          action: function () {
+            var todas = $("#chk_mayor_todas_cuentas").is(":checked");
+            var cuenta = document.getElementById("cuenta_mayor").value;
+            var desde = document.getElementById("date-mayor-desde").value;
+            var hasta = document.getElementById("date-mayor-hasta").value;
+            if (!todas && !cuenta) {
+              toast(
+                "warning",
+                "Falta la cuenta",
+                'Elegí una cuenta para ver su Mayor, o tildá "Todas las cuentas".'
+              );
+              return;
+            }
+            $("#titulo_informes").html(
+              todas ? "Libro Mayor - Todas las cuentas" : "Libro Mayor"
+            );
+            document.getElementById("visor_pdf").style.display = "block";
+            document.getElementById("iframe_pdf").src =
+              "../Admin/Informes/LibroMayorpdf.php?" +
+              (todas ? "" : "Cuenta=" + encodeURIComponent(cuenta) + "&") +
+              "Desde=" +
+              encodeURIComponent(desde) +
+              "&Hasta=" +
+              encodeURIComponent(hasta);
+          },
+        },
+        {
+          extend: "excelHtml5",
+          text: '<i class="mdi mdi-file-excel"></i> Exportar a Excel',
+          className: "btn btn-success btn-sm",
+        },
+      ],
+      ajax: {
+        url: "../Admin/Procesos/php/contabilidad.php",
+        method: "POST",
+        data: function (d) {
+          d.accion = "obtener_datos_libro_mayor";
+          d.fecha_desde = $("#date-mayor-desde").val();
+          d.fecha_hasta = $("#date-mayor-hasta").val();
+          d.cuenta = $("#chk_mayor_todas_cuentas").is(":checked") ? "" : $("#cuenta_mayor").val();
+        },
+        dataSrc: "data",
+      },
+      columns: [
+        { data: "Cuenta" },
+        { data: "NombreCuenta" },
+        {
+          data: "Fecha",
+          render: function (data) {
+            const fecha = new Date(data);
+            const dia = String(fecha.getDate()).padStart(2, "0");
+            const mes = String(fecha.getMonth() + 1).padStart(2, "0");
+            const anio = fecha.getFullYear();
+            return `${dia}/${mes}/${anio}`;
+          },
+        },
+        { data: "NumeroAsiento" },
+        { data: "Observaciones" },
+        {
+          data: "Debe",
+          render: function (data) {
+            return data === null ? "" : data;
+          },
+        },
+        {
+          data: "Haber",
+          render: function (data) {
+            return data === null ? "" : data;
+          },
+        },
+        { data: "SaldoCorrido" },
+      ],
+      footerCallback: function (row, data) {
+        let totalDebe = 0;
+        let totalHaber = 0;
+        data.forEach(function (row) {
+          totalDebe += parseFloat(row.Debe) || 0;
+          totalHaber += parseFloat(row.Haber) || 0;
+        });
+        $("#total-debe-mayor").html(totalDebe.toFixed(2));
+        $("#total-haber-mayor").html(totalHaber.toFixed(2));
+      },
+    });
   }
 
   $("#form_busqueda_asientos").on("submit", function (e) {

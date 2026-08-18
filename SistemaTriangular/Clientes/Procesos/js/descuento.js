@@ -45,6 +45,13 @@ $('#confirmardescuento_botton').click(function(){
         var tabla_facturacion_proforma = $('#tabla_facturacion_proforma').DataTable();
         tabla_facturacion_proforma.ajax.reload();
 
+        // El botón ahora también queda visible en la pantalla de Detalle
+        // (antes se ocultaba ahí) - si el descuento se aplicó desde esa
+        // pantalla, hay que refrescar SU tabla, no la del resumen.
+        if ($.fn.DataTable.isDataTable('#tabla_facturacion_proforma_detalle')) {
+          $('#tabla_facturacion_proforma_detalle').DataTable().ajax.reload();
+        }
+
         if ($.fn.DataTable.isDataTable('#facturacion_tabla')) {
           $('#facturacion_tabla').DataTable().ajax.reload();
         }
