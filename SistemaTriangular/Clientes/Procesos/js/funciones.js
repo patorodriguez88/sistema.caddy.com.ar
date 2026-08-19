@@ -868,12 +868,16 @@ function ver_recibo_modal(id) {
   reciboActualId = id;
   console.log("ID del recibo a mostrar:", id);
 
-  const url = "Informes/recibo.php?id=" + id + "&modal=1";
+  // Antes esto apuntaba a Informes/recibo.php, un HTML viejo con su propio
+  // diseño (reciclado de una plantilla de factura, con bugs propios) - ahora
+  // muestra el mismo PDF con la impronta de HdrPdfBase que ya usa el resto
+  // de los informes (recibo_pdf.php), igual que la vista previa de facturas.
+  const url = "Informes/ver_recibo_pdf.php?id=" + id;
 
   $("#iframe_recibo").attr("src", url);
   $("#btn_abrir_recibo_nueva_pestana").attr(
     "href",
-    "Informes/recibo.php?id=" + id,
+    "Informes/ver_recibo_pdf.php?id=" + id,
   );
 
   const modal = new bootstrap.Modal(
