@@ -2163,9 +2163,9 @@ $("#buscarcliente").change(function () {
                 } else if (data === "PARCIAL") {
                   badgeClass = "bg-warning text-dark";
                   texto = "Parcial";
-                } else if (data === "CANCELADA") {
+                } else if (data === "IMPUTADA") {
                   badgeClass = "bg-success";
-                  texto = "Cancelada";
+                  texto = "Imputada";
                 } else if (data === "DISPONIBLE") {
                   badgeClass = "bg-info";
                   texto = "Disponible";

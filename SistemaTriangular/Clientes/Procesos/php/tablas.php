@@ -3,6 +3,7 @@
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 include_once "../../../Conexion/Conexioni.php";
+require_once __DIR__ . "/estado_aplicacion.php";
 
 //TAREAS ASANA
 if (isset($_POST['Asignar_tareas_asana'])) {
@@ -432,16 +433,7 @@ if (isset($_POST['CtaCte'])) {
     $row['Aplicado'] = round($aplicado, 2);
     $row['SaldoMovimiento'] = round($saldo, 2);
 
-    if ($saldo <= 0.01) {
-      // OJO: el JS (funciones.js) solo reconoce el string "CANCELADA" para
-      // pintar el badge - con "CANCELADO" no matcheaba y caía al default
-      // "S/D", aunque el movimiento sí tuviera saldo cero.
-      $row['EstadoAplicacion'] = "CANCELADA";
-    } elseif ($aplicado > 0) {
-      $row['EstadoAplicacion'] = "PARCIAL";
-    } else {
-      $row['EstadoAplicacion'] = "PENDIENTE";
-    }
+    $row['EstadoAplicacion'] = estadoAplicacionDesdeSaldo($debe, $haber, floatval($row['AplicadoDebe']), floatval($row['AplicadoHaber']));
 
     $rows[] = $row;
   }

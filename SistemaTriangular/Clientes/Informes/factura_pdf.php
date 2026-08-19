@@ -2,6 +2,7 @@
 require_once __DIR__ . '/../../fpdf/fpdf.php';
 require_once __DIR__ . '/../../Conexion/Conexioni.php';
 require_once __DIR__ . '/../../phpqrcode/qrlib.php';
+require_once __DIR__ . '/../Procesos/php/estado_aplicacion.php';
 
 // El servidor corre con date.timezone=UTC y este archivo no pasa por
 // hdr_pdf_helpers.php (que ya seteaba esto para el resto de los informes)
@@ -295,6 +296,8 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $mutedC   = [108, 117, 125];
     $primaryC = [99,  102, 241];
     $greenC   = [25,  135, 84];
+    $warningC = [255, 193, 7];
+    $dangerC  = [220, 53,  69];
     $whiteC   = [255, 255, 255];
 
     // ─── HEADER ────────────────────────────────────────────────
@@ -403,17 +406,39 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
         $ly += 6.5;
     }
 
-    // Badge "Pendiente"
+    // Badge de estado - antes decia "Pendiente" fijo para cualquier
+    // comprobante; ahora calcula el estado real (mismo criterio que la
+    // Cuenta Corriente, via estadoAplicacionDesdeSaldo) contra las
+    // imputaciones de este comprobante puntual.
+    $sqlImp = $mysqli->query("
+        SELECT
+            COALESCE((SELECT SUM(Importe) FROM Ctasctes_Imputaciones WHERE idMovimientoOrigen = '" . intval($row['id']) . "' AND Eliminado = 0), 0) AS AplicadoDebe,
+            COALESCE((SELECT SUM(Importe) FROM Ctasctes_Imputaciones WHERE idMovimientoDestino = '" . intval($row['id']) . "' AND Eliminado = 0), 0) AS AplicadoHaber
+    ");
+    $filaImp = $sqlImp ? $sqlImp->fetch_assoc() : ['AplicadoDebe' => 0, 'AplicadoHaber' => 0];
+    $estado = estadoAplicacionDesdeSaldo((float)$row['Debe'], (float)$row['Haber'], (float)$filaImp['AplicadoDebe'], (float)$filaImp['AplicadoHaber']);
+
+    $estadoLabels = ['IMPUTADA' => 'Imputada', 'PARCIAL' => 'Parcial', 'PENDIENTE' => 'Pendiente'];
+    $estadoTexto  = $estadoLabels[$estado] ?? 'Pendiente';
+
+    if ($estado === 'IMPUTADA') {
+        $estadoFill = $greenC; $estadoText = $whiteC;
+    } elseif ($estado === 'PARCIAL') {
+        $estadoFill = $warningC; $estadoText = $darkText;
+    } else {
+        $estadoFill = $dangerC; $estadoText = $whiteC;
+    }
+
     $pdf->SetFont('Arial', 'B', 9);
     $pdf->SetTextColor(...$mutedC);
     $pdf->SetXY(118, $ly);
     $pdf->Cell(32, 6, 'Estado:', 0, 0, 'L');
-    $pdf->SetFillColor(...$greenC);
-    $pdf->SetTextColor(...$whiteC);
+    $pdf->SetFillColor(...$estadoFill);
+    $pdf->SetTextColor(...$estadoText);
     $pdf->SetFont('Arial', 'B', 7.5);
     $pdf->RoundedRect(150, $ly + 1, 18, 4, 2, 'F');
     $pdf->SetXY(150, $ly + 0.9);
-    $pdf->Cell(18, 4.2, 'Pendiente', 0, 1, 'C');
+    $pdf->Cell(18, 4.2, pdf_text($estadoTexto), 0, 1, 'C');
 
     // ─── CARDS ROW 2 ───────────────────────────────────────────
     $row2Y = $cardY + $cardH + 5; $row2H = 30;
