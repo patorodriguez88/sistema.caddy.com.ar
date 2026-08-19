@@ -1,12 +1,65 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', 1);
 
-require_once __DIR__ . '/../../fpdf/fpdf.php';
+declare(strict_types=1);
+
+// Recibo de Pago - mismo patron visual (HdrPdfBase) que el resto de los
+// informes del sistema (Asiento Contable, Libro Diario, Sumas y Saldos,
+// Libro Mayor, Seguros). Antes era un FPDF suelto con su propio layout
+// improvisado y sin la zona horaria seteada (el pie salia en UTC).
+//
+// generarReciboPDF() se llama solo para adjuntar el PDF a un mail (ver
+// enviar_recibo_mail.php) - guarda a archivo ('F'), no se muestra directo
+// en el navegador. Se mantiene la misma firma para no romper ese llamado.
+
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
+
+require_once __DIR__ . '/../../Logistica/Informes/hdr_pdf_helpers.php';
 require_once __DIR__ . '/../../Conexion/Conexioni.php';
-function pdf_text($texto)
+
+const RC_COLS = ['Concepto', 'Importe'];
+const RC_WIDTHS = [140, 40];
+const RC_ALIGNS = ['L', 'R'];
+
+class ReciboPagoPDF extends HdrPdfBase
 {
-    return mb_convert_encoding((string)$texto, 'ISO-8859-1', 'UTF-8');
+    public function drawTableHeader(): void
+    {
+        $p = hdrPaleta();
+        $anchos = $this->anchosEscalados(RC_WIDTHS);
+        $this->SetWidths($anchos);
+        $this->SetAligns(RC_ALIGNS);
+        $this->SetFont('Arial', 'B', 8);
+        $this->SetFillColor(...$p['primaryC']);
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetDrawColor(...$p['primaryC']);
+        foreach (RC_COLS as $i => $label) {
+            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, RC_ALIGNS[$i] === 'L' ? 'L' : 'C', true);
+        }
+        $this->Ln();
+        $this->SetTextColor(...$p['darkText']);
+    }
+
+    public function Header(): void
+    {
+        global $headerDatos;
+
+        if (empty($headerDatos)) {
+            return;
+        }
+
+        $this->drawHeaderBase(
+            'RECIBO DE PAGO',
+            'N° ' . $headerDatos['numeroVenta'],
+            [
+                ['Fecha:', $headerDatos['fechaTexto']],
+                ['Cliente:', $headerDatos['nombreCliente']],
+                ['CUIT:', $headerDatos['cuit']],
+            ]
+        );
+
+        $this->Ln(2);
+    }
 }
 
 function generarReciboPDF($idCtasctes, $rutaSalida)
@@ -16,24 +69,14 @@ function generarReciboPDF($idCtasctes, $rutaSalida)
     $idCtasctes = intval($idCtasctes);
 
     $sql = $mysqli->query("
-    SELECT 
-        CT.id,
-        CT.Fecha,
-        CT.NumeroVenta,
-        CT.RazonSocial,
-        CT.Cuit,
-        CT.Haber,
-        CT.Comentario,
-        C.id AS idCliente,
-        C.nombrecliente,
-        C.Direccion,
-        C.Celular,
-        C.Mail
-    FROM Ctasctes CT
-    LEFT JOIN Clientes C ON C.id = CT.idCliente
-    WHERE CT.id = '{$idCtasctes}'
-    LIMIT 1
-");
+        SELECT
+            CT.id, CT.Fecha, CT.NumeroVenta, CT.RazonSocial, CT.Cuit, CT.Haber, CT.Comentario,
+            C.id AS idCliente, C.nombrecliente, C.Direccion, C.Celular, C.Mail
+        FROM Ctasctes CT
+        LEFT JOIN Clientes C ON C.id = CT.idCliente
+        WHERE CT.id = '{$idCtasctes}'
+        LIMIT 1
+    ");
 
     if (!$sql) {
         throw new Exception('Error SQL: ' . $mysqli->error);
@@ -45,69 +88,64 @@ function generarReciboPDF($idCtasctes, $rutaSalida)
         throw new Exception('No se encontró el recibo');
     }
 
-    $pdf = new FPDF('P', 'mm', 'A4');
+    global $headerDatos;
+    $headerDatos = [
+        'numeroVenta'   => $row['NumeroVenta'],
+        'fechaTexto'    => date('d/m/Y', strtotime((string)$row['Fecha'])),
+        'nombreCliente' => $row['nombrecliente'] ?? $row['RazonSocial'],
+        'cuit'          => $row['Cuit'],
+    ];
+
+    $pdf = new ReciboPagoPDF('P', 'mm', 'A4');
+    $pdf->AliasNbPages();
+    $pdf->footerLeft = 'Recibo de Pago Triangular S.A. - N° ' . $row['NumeroVenta'];
+    $pdf->SetMargins(12, 12, 12);
+    $pdf->SetAutoPageBreak(true, 24);
     $pdf->AddPage();
 
-    // Logo
-    $logo = __DIR__ . '/../../images/LogoCaddy.png';
-    if (file_exists($logo)) {
-        $pdf->Image($logo, 10, 10, 40);
-    }
+    $paleta = hdrPaleta();
 
-    // Título
-    $pdf->SetFont('Arial', 'B', 18);
-    $pdf->Cell(0, 10, 'RECIBO DE PAGO', 0, 1, 'R');
+    // ── Recibimos de: ──────────────────────────────────────
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->SetTextColor(...$paleta['darkText']);
+    $pdf->Cell(0, 6, pdf_text('Recibimos de:'), 0, 1);
 
-    $pdf->Ln(8);
-
-    // Datos empresa
     $pdf->SetFont('Arial', 'B', 11);
-    $pdf->Cell(100, 6, 'Caddy Logistica', 0, 0, 'L');
-    $pdf->Cell(90, 6, 'N: ' . $row['NumeroVenta'], 0, 1, 'R');
-
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(100, 6, 'Fecha pago: ' . date('d/m/Y', strtotime($row['Fecha'])), 0, 1, 'L');
-
-    $pdf->Ln(5);
-
-    // Cliente
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 8, 'Recibimos de:', 0, 1);
-
-    $pdf->SetFont('Arial', '', 10);
     $pdf->Cell(0, 6, pdf_text($row['RazonSocial']), 0, 1);
-    $pdf->Cell(0, 6, 'CUIT: ' . $row['Cuit'], 0, 1);
 
-    $pdf->Cell(0, 6, pdf_text('Dirección: ' . $row['Direccion']), 0, 1);
-    $pdf->Cell(0, 6, 'Telefono: ' . $row['Celular'], 0, 1);
-    $pdf->Cell(0, 6, 'Mail: ' . $row['Mail'], 0, 1);
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetTextColor(...$paleta['mutedC']);
+    $pdf->Cell(0, 5, pdf_text('CUIT: ' . $row['Cuit']), 0, 1);
+    if (!empty($row['Direccion'])) {
+        $pdf->Cell(0, 5, pdf_text('Dirección: ' . $row['Direccion']), 0, 1);
+    }
+    if (!empty($row['Celular'])) {
+        $pdf->Cell(0, 5, pdf_text('Teléfono: ' . $row['Celular']), 0, 1);
+    }
+    if (!empty($row['Mail'])) {
+        $pdf->Cell(0, 5, pdf_text('Mail: ' . $row['Mail']), 0, 1);
+    }
+    $pdf->SetTextColor(...$paleta['darkText']);
 
-    $pdf->Ln(8);
+    $pdf->Ln(4);
 
-    // Importe
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 8, 'Detalle del comprobante', 0, 1);
+    // ── Detalle ──────────────────────────────────────────────
+    $pdf->drawTableHeader();
+    $pdf->Row(['Recibo de Pago', number_format((float)$row['Haber'], 2, ',', '.')], $paleta['whiteC']);
 
-    $pdf->SetFont('Arial', '', 10);
-    $pdf->Cell(120, 8, pdf_text('Concepto: Recibo de Pago'), 1, 0, 'L');
-    $pdf->Cell(70, 8, '$ ' . number_format((float)$row['Haber'], 2, ',', '.'), 1, 1, 'R');
-
-    $pdf->Ln(6);
-
-    $pdf->SetFont('Arial', 'B', 14);
-    $pdf->Cell(0, 10, 'Total: $ ' . number_format((float)$row['Haber'], 2, ',', '.'), 0, 1, 'R');
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Row(['TOTAL', number_format((float)$row['Haber'], 2, ',', '.')], $paleta['grayBg']);
 
     if (!empty($row['Comentario'])) {
-        $pdf->Ln(8);
-        $pdf->SetFont('Arial', 'B', 11);
-        $pdf->Cell(0, 8, 'Observaciones:', 0, 1);
-        $pdf->SetFont('Arial', '', 10);
-        $pdf->MultiCell(0, 6, pdf_text($row['Comentario']));
+        $pdf->Ln(4);
+        $pdf->resetX();
+        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->Cell(0, 5, pdf_text('Observaciones:'), 0, 1);
+        $pdf->SetFont('Arial', '', 9);
+        $pdf->SetTextColor(...$paleta['mutedC']);
+        $pdf->MultiCell(0, 5, pdf_text($row['Comentario']));
+        $pdf->SetTextColor(...$paleta['darkText']);
     }
-
-    $pdf->Ln(12);
-    $pdf->SetFont('Arial', '', 8);
-    $pdf->Cell(0, 6, 'Generado el ' . date('d/m/Y H:i:s'), 0, 1, 'L');
 
     $pdf->Output('F', $rutaSalida);
 

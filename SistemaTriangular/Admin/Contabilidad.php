@@ -423,7 +423,7 @@
                                                 </div>
                                             </div>
                                             <div id="div_tabla_mayor" class="mt-3">
-                                                <table id="tabla-mayor" class="table table-sm dt-responsive nowrap w-100">
+                                                <table id="tabla-mayor" class="table table-sm dt-responsive nowrap w-100 caddy-tabla-consulta">
                                                     <thead>
                                                         <tr>
                                                             <th>Cuenta</th>
@@ -557,6 +557,25 @@
                                             <button type="button" class="btn btn-outline-secondary" onclick="imprimirAsientoNumero(document.getElementById('modalVerAsiento').dataset.numero)">
                                                 <i class="uil uil-print mr-1"></i>Imprimir Asiento
                                             </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Ver/Imprimir Libro Mayor en modal (antes se mostraba en un iframe
+                                 debajo de la tabla, quedaba improlijo) -->
+                            <div class="modal fade" id="modal_libro_mayor_pdf" tabindex="-1" aria-labelledby="modalLibroMayorPdfLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-primary text-white">
+                                            <h5 class="modal-title" id="modalLibroMayorPdfLabel">Libro Mayor</h5>
+                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                        </div>
+                                        <div class="modal-body p-0" style="height: 80vh;">
+                                            <iframe id="iframe_libro_mayor_pdf" src="" style="width:100%; height:100%; border:0;"></iframe>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                         </div>
                                     </div>
                                 </div>

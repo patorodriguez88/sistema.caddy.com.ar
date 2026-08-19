@@ -138,7 +138,9 @@ $("#confirmar_ncnd_boton").click(function() {
                 'CAE': jsonData.CAE,
                 'FechaVencimientoCAE': jsonData.VencimientoCAE,
                 'Observaciones_ctasctes': observaciones_ctasctes,
-                'idComprobanteAsociado': idComprobanteAsociado
+                'idComprobanteAsociado': idComprobanteAsociado,
+                'alcance_nc': obtenerAlcanceNc(),
+                'servicios_liberar': obtenerServiciosALiberar()
             };
 
             $.ajax({
@@ -148,7 +150,11 @@ $("#confirmar_ncnd_boton").click(function() {
                 success: function(respuesta) {
                 var jsonData1 = JSON.parse(respuesta);
                 if (jsonData1.success == 1) {
-                    toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
+                    if (jsonData1.msg) {
+                        toast("warning", "Comprobante Generado, con un aviso", jsonData1.msg);
+                    } else {
+                        toast("success", "Comprobante Generado con Exito !", "Se han realizado cambios.");
+                    }
 
                     //ACTUALIZO LA TABLA CTA CTE
                     var tabla_ctacte = $('#basic').DataTable();

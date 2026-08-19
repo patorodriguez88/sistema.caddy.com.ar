@@ -1,4 +1,8 @@
 <?php
+// El servidor corre con date.timezone=UTC - sin esto la fecha impresa
+// como "Córdoba ..." salía calculada en UTC (podía mostrar el día
+// siguiente a la tarde/noche, hora Argentina).
+date_default_timezone_set('America/Argentina/Cordoba');
 require('../../fpdf/fpdf.php');
 include_once('../../Conexion/Conexioni.php');
 header("Content-Type: text/html; charset=iso-8859-1 ");

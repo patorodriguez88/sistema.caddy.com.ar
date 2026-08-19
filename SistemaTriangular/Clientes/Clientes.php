@@ -1360,6 +1360,45 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <div class="row" id="ncnd_alcance_row" style="display:none;">
+                                        <div class="col-lg-12 mt-1">
+                                            <div class="form-group">
+                                                <label>Alcance de la Nota de Crédito</label>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="ncnd_alcance" id="ncnd_alcance_completa" value="completa" checked>
+                                                    <label class="form-check-label" for="ncnd_alcance_completa">Factura completa (libera todos los servicios)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="ncnd_alcance" id="ncnd_alcance_parcial" value="parcial">
+                                                    <label class="form-check-label" for="ncnd_alcance_parcial">Servicios específicos (libera solo los elegidos)</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="ncnd_alcance" id="ncnd_alcance_manual" value="ninguno">
+                                                    <label class="form-check-label" for="ncnd_alcance_manual">Ajuste manual (no libera servicios)</label>
+                                                </div>
+                                                <div id="ncnd_alcance_aviso" class="font-13 text-warning mt-1" style="display:none;"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="row" id="ncnd_servicios_row" style="display:none;">
+                                        <div class="col-lg-12 mt-1">
+                                            <div class="form-group">
+                                                <label>Servicios de la factura</label>
+                                                <table id="tabla_ncnd_servicios" class="table table-sm table-hover table-centered dt-responsive nowrap w-100" style="font-size:11px">
+                                                    <thead>
+                                                        <tr>
+                                                            <th style="width:30px;"><input type="checkbox" id="ncnd_servicios_check_all" title="Marcar todos"></th>
+                                                            <th>Fecha</th>
+                                                            <th>Código Seguimiento</th>
+                                                            <th>Cliente Destino</th>
+                                                            <th class="text-end">Importe</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody></tbody>
+                                                </table>
+                                            </div>
+                                        </div>
+                                    </div>
                                     <div class="row">
                                         <div class="col-lg-4 mt-2">
                                             <div class="form-group">

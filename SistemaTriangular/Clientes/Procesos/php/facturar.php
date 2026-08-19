@@ -2,7 +2,14 @@
 include_once "../../../Conexion/Conexioni.php";
 
 //FACTURACION X REMITO
-if (isset($_POST['Facturar'])) {
+// OJO: este bloque estaba gateado con isset($_POST['Facturar']) en vez de
+// == 1, así que CUALQUIER valor de Facturar (2, 3, 4) entraba acá primero
+// (además de entrar también a su propio bloque más abajo) - para NC/ND y
+// Transformar Proforma, que no mandan 'Remitos', esto cortaba en el exit
+// de la línea ~200 con "No hay remitos seleccionados" ANTES de llegar a
+// grabar nada en el bloque real, dejando el comprobante (ya con CAE de
+// AFIP) sin registrar en el sistema.
+if ($_POST['Facturar'] == 1) {
 
   //DATOS CLIENTE
   $id = $_POST['id'];
@@ -666,7 +673,61 @@ if ($_POST['Facturar'] == 3) {
   '{$id}','1','{$id_iva}',{$idFacturadoNcNd},'Clientes/Procesos/php/facturar.php (Facturar=3)')";
 
     if ($mysqli->query($sqlCtasctes)) {
-      echo json_encode(array('success' => 1));
+
+      $idNcGenerada = $mysqli->insert_id;
+
+      // Nota de Crédito "factura completa" o "servicios específicos": los
+      // servicios que se liberan vuelven a quedar disponibles para
+      // re-facturar (TransClientes.Facturado=0) y se desvincula su fila de
+      // Ctasctes de la factura original. No se toca Debe (queda el importe
+      // histórico del servicio) ni TipoDeComprobante.
+      $alcanceNc = isset($_POST['alcance_nc']) ? $_POST['alcance_nc'] : 'ninguno';
+      $avisoLiberacion = '';
+
+      if ($idComprobanteAsociado > 0 && ($alcanceNc === 'completa' || $alcanceNc === 'parcial')) {
+
+        $idsTransClientes = array();
+
+        if ($alcanceNc === 'completa') {
+          $resServicios = $mysqli->query("SELECT idTransClientes FROM Ctasctes WHERE Eliminado=0 AND idFacturado={$idComprobanteAsociado} AND Haber=0 AND idTransClientes IS NOT NULL");
+          if ($resServicios) {
+            while ($fila = $resServicios->fetch_assoc()) {
+              $idsTransClientes[] = intval($fila['idTransClientes']);
+            }
+          }
+        } else { // parcial
+          $idsPedidos = isset($_POST['servicios_liberar']) ? (array) $_POST['servicios_liberar'] : array();
+          $idsPedidos = array_filter(array_map('intval', $idsPedidos));
+
+          if (!empty($idsPedidos)) {
+            // Nunca confiar en los ids que manda el navegador: re-validar
+            // que realmente pertenezcan a la factura que se está corrigiendo.
+            $idsEscapados = implode(',', $idsPedidos);
+            $resValidos = $mysqli->query("SELECT idTransClientes FROM Ctasctes WHERE Eliminado=0 AND idFacturado={$idComprobanteAsociado} AND Haber=0 AND idTransClientes IN ({$idsEscapados})");
+            if ($resValidos) {
+              while ($fila = $resValidos->fetch_assoc()) {
+                $idsTransClientes[] = intval($fila['idTransClientes']);
+              }
+            }
+          }
+        }
+
+        $idsNoLiberados = array();
+
+        foreach ($idsTransClientes as $idTC) {
+          $mysqli->query("UPDATE TransClientes SET Facturado=0, ComprobanteF=NULL, NumeroF=NULL WHERE id={$idTC} AND Eliminado=0");
+          $mysqli->query("UPDATE Ctasctes SET idFacturado=NULL, Facturado=0, NumeroFactura=NULL, Update_info='Clientes/Procesos/php/facturar.php (Facturar=3, liberado por NC id={$idNcGenerada})' WHERE idTransClientes={$idTC} AND Haber=0 AND Eliminado=0 AND idFacturado={$idComprobanteAsociado}");
+          if ($mysqli->affected_rows <= 0) {
+            $idsNoLiberados[] = $idTC;
+          }
+        }
+
+        if (!empty($idsNoLiberados)) {
+          $avisoLiberacion = ' Aviso: no se pudieron liberar los servicios ' . implode(',', $idsNoLiberados) . ' - revisar a mano.';
+        }
+      }
+
+      echo json_encode(array('success' => 1, 'msg' => trim($avisoLiberacion)));
     } else {
       echo json_encode(array('success' => 0, 'msg' => 'AFIP autorizó el comprobante (CAE ya emitido) pero no se pudo grabar en Cuenta Corriente: ' . $mysqli->error . '. Avisar a sistemas para completarlo a mano - no reintentar la factura.'));
     }

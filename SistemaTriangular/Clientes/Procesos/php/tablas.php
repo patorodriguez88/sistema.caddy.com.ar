@@ -625,3 +625,41 @@ if (isset($_POST['FacturasCliente'])) {
 
   echo json_encode(array('data' => $rows));
 }
+
+// SERVICIOS (REMITOS) TODAVIA VINCULADOS A UNA FACTURA, PARA EL PICKER DE
+// "SERVICIOS ESPECIFICOS" AL EMITIR UNA NOTA DE CREDITO. Si ya se liberó
+// alguno con una NC previa, no aparece más acá (idFacturado ya quedó NULL).
+if (isset($_POST['ServiciosFactura'])) {
+  $idFacturado = intval($_POST['idFacturado']);
+
+  $rows = array();
+  $esRecorrido = false;
+
+  if ($idFacturado > 0) {
+    $stmtTipo = $mysqli->prepare("SELECT FacturacionxRecorrido FROM Ctasctes WHERE id = ? AND Eliminado = 0 LIMIT 1");
+    $stmtTipo->bind_param("i", $idFacturado);
+    $stmtTipo->execute();
+    $filaTipo = $stmtTipo->get_result()->fetch_assoc();
+    $stmtTipo->close();
+    $esRecorrido = $filaTipo && intval($filaTipo['FacturacionxRecorrido']) === 1;
+
+    if (!$esRecorrido) {
+      $stmt = $mysqli->prepare(
+        "SELECT TC.id, TC.Fecha, TC.CodigoSeguimiento, TC.ClienteDestino, CT.Debe
+         FROM Ctasctes CT
+         JOIN TransClientes TC ON TC.id = CT.idTransClientes
+         WHERE CT.Eliminado = 0 AND CT.idFacturado = ? AND CT.Haber = 0 AND CT.Debe > 0
+         ORDER BY TC.Fecha, TC.id"
+      );
+      $stmt->bind_param("i", $idFacturado);
+      $stmt->execute();
+      $result = $stmt->get_result();
+      while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+      }
+      $stmt->close();
+    }
+  }
+
+  echo json_encode(array('data' => $rows, 'esRecorrido' => $esRecorrido));
+}

@@ -19,6 +19,11 @@ document.addEventListener("DOMContentLoaded", function () {
     "card_informes_sumas_y_saldos"
   );
   const cardvisorpdf = document.getElementById("visor_pdf");
+
+  // Libera el iframe al cerrar el modal del Libro Mayor para no dejar el PDF cargado de fondo.
+  $("#modal_libro_mayor_pdf").on("hidden.bs.modal", function () {
+    document.getElementById("iframe_libro_mayor_pdf").src = "";
+  });
   const cardbusquedaasientos = document.getElementById(
     "card_busqueda_asientos"
   );
@@ -1020,17 +1025,19 @@ document.addEventListener("DOMContentLoaded", function () {
               );
               return;
             }
-            $("#titulo_informes").html(
+            $("#modalLibroMayorPdfLabel").html(
               todas ? "Libro Mayor - Todas las cuentas" : "Libro Mayor"
             );
-            document.getElementById("visor_pdf").style.display = "block";
-            document.getElementById("iframe_pdf").src =
+            document.getElementById("iframe_libro_mayor_pdf").src =
               "../Admin/Informes/LibroMayorpdf.php?" +
               (todas ? "" : "Cuenta=" + encodeURIComponent(cuenta) + "&") +
               "Desde=" +
               encodeURIComponent(desde) +
               "&Hasta=" +
               encodeURIComponent(hasta);
+            bootstrap.Modal.getOrCreateInstance(
+              document.getElementById("modal_libro_mayor_pdf")
+            ).show();
           },
         },
         {

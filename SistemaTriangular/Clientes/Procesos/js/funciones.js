@@ -17,6 +17,7 @@ function isOutOfCapitalRange(cp) {
 }
 
 function currencyFormat(num) {
+  num = Number(num || 0);
   return "$" + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, "$1,");
 }
 function formatoMonedaAplicacion(valor) {
@@ -3767,6 +3768,223 @@ function renderTipoNcNd(esFacturaA) {
   }
 }
 
+// Servicios de la factura elegida en "Comprobante a Corregir", para el picker
+// de "Servicios específicos" de la NC. Se recarga cada vez que cambia el
+// comprobante o el tipo, así siempre refleja lo que sigue vinculado hoy
+// (si ya se liberó algo con una NC previa, no vuelve a aparecer).
+var ncndServiciosDisponibles = [];
+// Ids tildados (como string) - aparte del array de arriba porque la tabla
+// pagina, y el checkbox de una fila que no está en la página actual no
+// existe en el DOM (DataTables solo renderiza la página visible).
+var ncndServiciosSeleccionados = new Set();
+
+function esNotaDeCredito() {
+  var v = $("#ncnd_comprobante_tipo").val();
+  return v === "3" || v === "8";
+}
+
+// Alcance elegido en el modal, o "ninguno" (Ajuste manual) si no aplica -
+// factura_afip.js usa esto para armar el payload que se manda a facturar.php.
+function obtenerAlcanceNc() {
+  if (!esNotaDeCredito()) return "ninguno";
+  return $('input[name="ncnd_alcance"]:checked').val() || "ninguno";
+}
+
+// Ids de TransClientes a liberar segun el alcance elegido - factura_afip.js
+// los manda como 'servicios_liberar[]' cuando el alcance es "parcial".
+function obtenerServiciosALiberar() {
+  var alcance = obtenerAlcanceNc();
+  if (alcance === "completa") {
+    return ncndServiciosDisponibles.map(function (s) {
+      return s.id;
+    });
+  }
+  if (alcance === "parcial") {
+    return Array.from(ncndServiciosSeleccionados);
+  }
+  return [];
+}
+
+function aplicarImporteNc(importe) {
+  importe = Number(importe) || 0;
+  var neto = importe / 1.21;
+  var iva = importe - neto;
+  $("#ncnd_neto").val(neto.toFixed(2));
+  $("#ncnd_iva").val(iva.toFixed(2));
+  $("#ncnd_total").val(importe.toFixed(2));
+}
+
+function recalcularImporteNcPorServiciosTildados() {
+  var total = 0;
+  ncndServiciosDisponibles.forEach(function (s) {
+    if (ncndServiciosSeleccionados.has(String(s.id))) {
+      total += Number(s.Debe);
+    }
+  });
+  aplicarImporteNc(total);
+}
+
+// Pinta el picker de servicios (si corresponde) y recalcula Neto/IVA/Total
+// segun el alcance elegido (completa = todos, parcial = los tildados).
+function renderServiciosNcYRecalcular() {
+  var alcance = $('input[name="ncnd_alcance"]:checked').val();
+
+  if (alcance === "parcial") {
+    $("#ncnd_servicios_row").show();
+
+    if ($.fn.DataTable.isDataTable("#tabla_ncnd_servicios")) {
+      $("#tabla_ncnd_servicios").DataTable().destroy();
+      $("#tabla_ncnd_servicios tbody").empty();
+    }
+
+    $("#ncnd_servicios_check_all").prop("checked", false);
+
+    $("#tabla_ncnd_servicios").DataTable({
+      data: ncndServiciosDisponibles,
+      pageLength: 10,
+      lengthChange: false,
+      language: { emptyTable: "No hay servicios disponibles para liberar." },
+      columns: [
+        {
+          data: "id",
+          orderable: false,
+          className: "text-center",
+          render: function (id) {
+            var marcado = ncndServiciosSeleccionados.has(String(id)) ? "checked" : "";
+            return '<input type="checkbox" class="ncnd-servicio-check" value="' + id + '" ' + marcado + ">";
+          },
+        },
+        {
+          data: "Fecha",
+          render: function (data) {
+            return data ? data.split("-").reverse().join("/") : "";
+          },
+        },
+        { data: "CodigoSeguimiento", defaultContent: "" },
+        { data: "ClienteDestino", defaultContent: "" },
+        {
+          data: "Debe",
+          className: "text-end",
+          render: function (data) {
+            return currencyFormat(data);
+          },
+        },
+      ],
+    });
+
+    $("#ncnd_neto, #ncnd_iva, #ncnd_total").prop("readonly", true);
+    recalcularImporteNcPorServiciosTildados();
+  } else if (alcance === "completa") {
+    $("#ncnd_servicios_row").hide();
+    $("#ncnd_neto, #ncnd_iva, #ncnd_total").prop("readonly", true);
+    var total = ncndServiciosDisponibles.reduce(function (acc, s) {
+      return acc + Number(s.Debe);
+    }, 0);
+    aplicarImporteNc(total);
+  } else {
+    $("#ncnd_servicios_row").hide();
+    $("#ncnd_neto, #ncnd_iva, #ncnd_total").prop("readonly", false);
+  }
+}
+
+// Muestra/oculta el bloque de alcance (solo tiene sentido para Notas de
+// Crédito, con un comprobante ya elegido).
+function actualizarAlcanceNcVisibilidad() {
+  var idFacturado = $("#ncnd_comprobante_asociado").val();
+  if (esNotaDeCredito() && idFacturado) {
+    $("#ncnd_alcance_row").show();
+  } else {
+    $("#ncnd_alcance_row, #ncnd_servicios_row").hide();
+    $("#ncnd_neto, #ncnd_iva, #ncnd_total").prop("readonly", false);
+  }
+}
+
+// Trae los servicios todavia vinculados a la factura elegida y habilita o
+// no las opciones de liberacion segun corresponda (facturas x Recorrido, o
+// sin servicios individuales, fuerzan Ajuste manual).
+function cargarServiciosNcFactura(idFacturado) {
+  ncndServiciosDisponibles = [];
+  ncndServiciosSeleccionados = new Set();
+
+  $.ajax({
+    data: { ServiciosFactura: 1, idFacturado: idFacturado },
+    url: "Procesos/php/tablas.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      ncndServiciosDisponibles = jsonData.data || [];
+      var esRecorrido = !!jsonData.esRecorrido;
+
+      if (esRecorrido || !ncndServiciosDisponibles.length) {
+        $("#ncnd_alcance_completa, #ncnd_alcance_parcial").prop("disabled", true);
+        $("#ncnd_alcance_manual").prop("checked", true).prop("disabled", false);
+        $("#ncnd_alcance_aviso")
+          .text(
+            esRecorrido
+              ? "Esta factura fue generada por Recorrido - la liberación automática de servicios no está soportada, use Ajuste Manual."
+              : "Esta factura no tiene servicios individuales vinculados - use Ajuste Manual.",
+          )
+          .show();
+      } else {
+        $("#ncnd_alcance_completa, #ncnd_alcance_parcial").prop("disabled", false);
+        $("#ncnd_alcance_aviso").hide();
+      }
+
+      renderServiciosNcYRecalcular();
+    },
+    error: function () {
+      toast("error", "Error", "No se pudo cargar la lista de servicios.");
+    },
+  });
+}
+
+$('input[name="ncnd_alcance"]').on("change", function () {
+  renderServiciosNcYRecalcular();
+});
+
+// Delegado porque DataTables regenera las filas al cambiar de página - el
+// checkbox de una fila puntual no existe en el DOM hasta que se dibuja.
+$("#tabla_ncnd_servicios").on("change", ".ncnd-servicio-check", function () {
+  var id = String($(this).val());
+  if (this.checked) {
+    ncndServiciosSeleccionados.add(id);
+  } else {
+    ncndServiciosSeleccionados.delete(id);
+  }
+  recalcularImporteNcPorServiciosTildados();
+});
+
+// "Marcar todos" tilda/destilda los servicios de TODAS las páginas, no solo
+// la visible - por eso actualiza el Set directo y fuerza un redraw.
+$("#ncnd_servicios_check_all").on("change", function () {
+  var marcar = this.checked;
+  ncndServiciosDisponibles.forEach(function (s) {
+    if (marcar) {
+      ncndServiciosSeleccionados.add(String(s.id));
+    } else {
+      ncndServiciosSeleccionados.delete(String(s.id));
+    }
+  });
+  if ($.fn.DataTable.isDataTable("#tabla_ncnd_servicios")) {
+    $("#tabla_ncnd_servicios").DataTable().rows().invalidate().draw(false);
+  }
+  recalcularImporteNcPorServiciosTildados();
+});
+
+$("#ncnd_comprobante_tipo").on("change", function () {
+  actualizarAlcanceNcVisibilidad();
+
+  var idFacturado = $("#ncnd_comprobante_asociado").val();
+  if (esNotaDeCredito() && idFacturado) {
+    cargarServiciosNcFactura(idFacturado);
+  } else if (!esNotaDeCredito()) {
+    var importe = Number($("#ncnd_comprobante_asociado").find(":selected").attr("data-importe"));
+    if (importe) {
+      aplicarImporteNc(importe);
+    }
+  }
+});
+
 // El modal #ncnd-modal se abre solo (data-bs-toggle/data-bs-target en el boton).
 // Al abrirse, reseteamos el formulario y cargamos los comprobantes fiscales
 // del cliente para elegir contra cual se emite la Nota de Crédito/Débito.
@@ -3790,10 +4008,20 @@ $("#ncnd-modal").on("show.bs.modal", function () {
   renderTipoNcNd(esFacturaA);
 
   $("#ncnd_fecha").val(new Date().toISOString().slice(0, 10));
-  $("#ncnd_neto").val("");
-  $("#ncnd_iva").val("");
-  $("#ncnd_total").val("");
+  $("#ncnd_neto, #ncnd_iva, #ncnd_total").val("").prop("readonly", false);
   $("#ncnd_observaciones").val("");
+
+  ncndServiciosDisponibles = [];
+  ncndServiciosSeleccionados = new Set();
+  $("#ncnd_alcance_completa").prop("checked", true);
+  $("#ncnd_alcance_completa, #ncnd_alcance_parcial").prop("disabled", false);
+  $("#ncnd_servicios_check_all").prop("checked", false);
+  $("#ncnd_alcance_aviso").hide();
+  $("#ncnd_alcance_row, #ncnd_servicios_row").hide();
+  if ($.fn.DataTable.isDataTable("#tabla_ncnd_servicios")) {
+    $("#tabla_ncnd_servicios").DataTable().destroy();
+    $("#tabla_ncnd_servicios tbody").empty();
+  }
 
   var $select = $("#ncnd_comprobante_asociado");
   $select.empty().append('<option value="">Cargando comprobantes...</option>');
@@ -3860,13 +4088,19 @@ $("#ncnd_comprobante_asociado").on("change", function () {
     renderTipoNcNd(tipoN == "1");
   }
 
+  actualizarAlcanceNcVisibilidad();
+
+  var idFacturado = $(this).val();
+  if (esNotaDeCredito() && idFacturado) {
+    cargarServiciosNcFactura(idFacturado);
+    return;
+  }
+
+  // Nota de Débito (o nada elegido todavia): importe fijo de la factura, como antes.
+  ncndServiciosDisponibles = [];
   var importe = Number($selected.attr("data-importe"));
   if (!importe) return;
-  var neto = importe / 1.21;
-  var iva = importe - neto;
-  $("#ncnd_neto").val(neto.toFixed(2));
-  $("#ncnd_iva").val(iva.toFixed(2));
-  $("#ncnd_total").val(importe.toFixed(2));
+  aplicarImporteNc(importe);
 });
 
 //CARGAR PAGO

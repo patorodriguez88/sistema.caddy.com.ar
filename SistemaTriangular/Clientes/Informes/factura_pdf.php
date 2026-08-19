@@ -3,6 +3,11 @@ require_once __DIR__ . '/../../fpdf/fpdf.php';
 require_once __DIR__ . '/../../Conexion/Conexioni.php';
 require_once __DIR__ . '/../../phpqrcode/qrlib.php';
 
+// El servidor corre con date.timezone=UTC y este archivo no pasa por
+// hdr_pdf_helpers.php (que ya seteaba esto para el resto de los informes)
+// - sin esto el pie "Generado el ..." salia en hora UTC en vez de Córdoba.
+date_default_timezone_set('America/Argentina/Cordoba');
+
 function pdf_text($texto)
 {
     return mb_convert_encoding((string)$texto, 'ISO-8859-1', 'UTF-8');
