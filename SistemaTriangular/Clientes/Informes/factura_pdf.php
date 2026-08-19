@@ -144,6 +144,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
             CT.Haber,
             CT.idCliente,
             CT.idFacturado,
+            CT.Observaciones,
             C.Direccion,
             C.Ciudad,
             C.Provincia,
@@ -344,7 +345,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->Line(10, 38, 200, 38);
 
     // ─── CARD IZQUIERDA: Datos del emisor ──────────────────────
-    $cardY = 43; $cardH = 52;
+    $cardY = 43; $cardH = 42;
     $pdf->SetFillColor(...$grayBg);
     $pdf->SetDrawColor(...$borderC);
     $pdf->RoundedRect(10, $cardY, 100, $cardH, 3, 'FD');
@@ -441,7 +442,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->Cell(18, 4.2, pdf_text($estadoTexto), 0, 1, 'C');
 
     // ─── CARDS ROW 2 ───────────────────────────────────────────
-    $row2Y = $cardY + $cardH + 5; $row2H = 30;
+    $row2Y = $cardY + $cardH + 5; $row2H = 24;
     $pdf->SetFillColor(...$grayBg);
     $pdf->SetDrawColor(...$borderC);
 
@@ -490,7 +491,23 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->Cell(0, 4, 'Cuenta corriente', 0, 1);
 
     // ─── DATOS DEL CLIENTE ─────────────────────────────────────
-    $clientY = $row2Y + $row2H + 6;
+    // Observaciones (nota automatica de "Corrige FACTURAS A ..." en una NC, o
+    // la nota manual cargada en el modal de Facturacion) - antes no se veian
+    // en el PDF, solo quedaban guardadas en la base.
+    $obsY = $row2Y + $row2H + 5;
+    if (trim((string)($row['Observaciones'] ?? '')) !== '') {
+        $pdf->SetXY(10, $obsY);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetTextColor(...$mutedC);
+        $pdf->Cell(0, 4, 'OBSERVACIONES', 0, 1);
+        $pdf->SetXY(10, $pdf->GetY() + 1);
+        $pdf->SetFont('Arial', '', 8.5);
+        $pdf->SetTextColor(...$darkText);
+        $pdf->MultiCell(190, 4.5, pdf_text($row['Observaciones']), 0, 'L');
+        $clientY = $pdf->GetY() + 4;
+    } else {
+        $clientY = $obsY;
+    }
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetTextColor(...$darkText);
     $pdf->SetXY(10, $clientY);
