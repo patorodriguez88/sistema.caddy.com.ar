@@ -165,21 +165,44 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $total     = 0;
     $esRecorrido = false;
 
-    $sqlDetalle = $mysqli->query("
-        SELECT Fecha, TipoDeComprobante, NumeroComprobante,
-               ClienteDestino, CodigoSeguimiento, CodigoProveedor, Debe
-        FROM TransClientes
-        WHERE id IN (
-            SELECT idTransClientes FROM Ctasctes
-            WHERE Eliminado = 0 AND idFacturado = '" . intval($row['id']) . "'
-        )
-        AND Eliminado = 0 AND Debe > 0
+    // Detalle grabado como foto fija al momento de facturar (Facturacion_detalle) -
+    // no se pierde aunque despues se libere algun servicio con una Nota de Credito.
+    // Fallback a las queries en vivo de abajo solo para facturas viejas, emitidas
+    // antes de que esta tabla existiera (no tienen filas acá).
+    $sqlFoto = $mysqli->query("
+        SELECT Fecha, TipoDeComprobante, NumeroComprobante, NumeroVenta,
+               ClienteDestino, CodigoSeguimiento, CodigoProveedor, Observaciones, Debe, Tipo
+        FROM Facturacion_detalle
+        WHERE idFacturado = '" . intval($row['id']) . "'
+        ORDER BY Fecha, id
     ");
 
-    if ($sqlDetalle) {
-        while ($r = $sqlDetalle->fetch_assoc()) {
+    if ($sqlFoto) {
+        while ($r = $sqlFoto->fetch_assoc()) {
+            if ($r['Tipo'] === 'recorrido') $esRecorrido = true;
+            unset($r['Tipo']);
             $detalle[] = $r;
             $total    += (float)$r['Debe'];
+        }
+    }
+
+    if (empty($detalle)) {
+        $sqlDetalle = $mysqli->query("
+            SELECT Fecha, TipoDeComprobante, NumeroComprobante,
+                   ClienteDestino, CodigoSeguimiento, CodigoProveedor, Debe
+            FROM TransClientes
+            WHERE id IN (
+                SELECT idTransClientes FROM Ctasctes
+                WHERE Eliminado = 0 AND idFacturado = '" . intval($row['id']) . "'
+            )
+            AND Eliminado = 0 AND Debe > 0
+        ");
+
+        if ($sqlDetalle) {
+            while ($r = $sqlDetalle->fetch_assoc()) {
+                $detalle[] = $r;
+                $total    += (float)$r['Debe'];
+            }
         }
     }
 

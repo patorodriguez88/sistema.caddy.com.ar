@@ -226,13 +226,27 @@ if ($_POST['Facturar'] == 1) {
         $sql = $mysqli->query("UPDATE `TransClientes` SET Facturado=1, `ComprobanteF`='$Comprobante',`NumeroF`='$NumeroComprobante'
     WHERE id='$OrdenN[$i]' AND Eliminado='0'");
 
-        $sql = $mysqli->query("SELECT NumeroComprobante FROM TransClientes WHERE id='$OrdenN[$i]' AND Eliminado='0'");
+        $sql = $mysqli->query("SELECT NumeroComprobante, Fecha, TipoDeComprobante, ClienteDestino, CodigoSeguimiento, CodigoProveedor, Debe FROM TransClientes WHERE id='$OrdenN[$i]' AND Eliminado='0'");
         $Dato = $sql->fetch_array(MYSQLI_ASSOC);
 
         $Observ = $Observ . ' | ' . $Dato['NumeroComprobante'];
 
         $sqlCtasctesE = "UPDATE Ctasctes SET idFacturado='$idFacturado',Facturado=1, NumeroFactura='$NumeroComprobante' WHERE Haber=0 AND NumeroVenta='$Dato[NumeroComprobante]' AND idCliente='$id' AND Eliminado=0 LIMIT 1";
         $mysqli->query($sqlCtasctesE); // ACTUALIZO LOS REMITOS X EL TIPO DE COMPROBANTE
+
+        // Foto fija del detalle - no depende de idFacturado en vivo, asi que
+        // sigue mostrando este servicio en la factura original aunque despues
+        // se libere con una Nota de Credito y se re-facture en otro lado.
+        $idTC = intval($OrdenN[$i]);
+        $DetFecha = $mysqli->real_escape_string($Dato['Fecha']);
+        $DetTipoComprobante = $mysqli->real_escape_string($Dato['TipoDeComprobante']);
+        $DetClienteDestino = $mysqli->real_escape_string($Dato['ClienteDestino']);
+        $DetCodigoSeguimiento = $mysqli->real_escape_string($Dato['CodigoSeguimiento']);
+        $DetCodigoProveedor = $mysqli->real_escape_string($Dato['CodigoProveedor']);
+        $DetNumeroComprobante = $mysqli->real_escape_string($Dato['NumeroComprobante']);
+        $DetDebe = floatval($Dato['Debe']);
+        $mysqli->query("INSERT INTO Facturacion_detalle(idFacturado, idCliente, Tipo, idTransClientes, Fecha, TipoDeComprobante, NumeroComprobante, ClienteDestino, CodigoSeguimiento, CodigoProveedor, Debe)
+          VALUES ('$idFacturado','$id','remito','$idTC','$DetFecha','$DetTipoComprobante','$DetNumeroComprobante','$DetClienteDestino','$DetCodigoSeguimiento','$DetCodigoProveedor','$DetDebe')");
       }
 
       //CREAR TAREA ASANA
@@ -457,6 +471,23 @@ if ($_POST['Facturar'] == 2) {
       WHERE Eliminado=0 AND NumerodeOrden='$datosOrden[NumerodeOrden]' AND Facturado=0");
         }
 
+        // Foto fija del detalle - se toma ANTES del UPDATE de abajo porque
+        // ese UPDATE pisa TipoDeComprobante/NumeroFactura con los de la
+        // factura nueva (perderíamos el dato original si la leyéramos después).
+        $sqlServicio = $mysqli->query("SELECT Fecha, Observaciones, Debe, NumeroVenta, TipoDeComprobante FROM Ctasctes WHERE id='$OrdenN[$i]' LIMIT 1");
+        $datoServicio = $sqlServicio ? $sqlServicio->fetch_array(MYSQLI_ASSOC) : null;
+
+        if ($datoServicio) {
+          $idCtC = intval($OrdenN[$i]);
+          $DetFecha = $mysqli->real_escape_string($datoServicio['Fecha']);
+          $DetTipoComprobante = $mysqli->real_escape_string($datoServicio['TipoDeComprobante']);
+          $DetNumeroVenta = $mysqli->real_escape_string($datoServicio['NumeroVenta']);
+          $DetObservaciones = $mysqli->real_escape_string($datoServicio['Observaciones']);
+          $DetDebe = floatval($datoServicio['Debe']);
+          $mysqli->query("INSERT INTO Facturacion_detalle(idFacturado, idCliente, Tipo, idCtasctesServicio, Fecha, TipoDeComprobante, NumeroVenta, Observaciones, Debe)
+            VALUES ('$idFacturado','$id','recorrido','$idCtC','$DetFecha','$DetTipoComprobante','$DetNumeroVenta','$DetObservaciones','$DetDebe')");
+        }
+
         $sqlCtasctesE = "UPDATE Ctasctes SET FacturacionxRecorrido=1,idFacturado='$idFacturado',Facturado=1,TipoDeComprobante='$Comprobante',NumeroFactura='$NumeroComprobante' WHERE id='$OrdenN[$i]' LIMIT 1";
 
         if ($mysqli->query($sqlCtasctesE)) {
@@ -650,10 +681,20 @@ if ($_POST['Facturar'] == 3) {
     //HASTA ACA INGRESA LOS MOVIMIENTOS EN TESORERIA
     $OrdenN = $_POST['Remitos'];
 
-    // Si esta Nota de Crédito/Débito corrige un comprobante puntual, lo vinculamos
-    // (idFacturado) y dejamos trazabilidad legible en Observaciones/Update_info.
+    // Si esta Nota de Crédito/Débito corrige un comprobante puntual, dejamos
+    // trazabilidad legible en Observaciones. OJO: NO usamos idFacturado para
+    // esto (aunque antes se hacía) - ese campo lo usa la Cuenta Corriente
+    // (tablas.php, acción CtaCte: "WHERE ... AND idFacturado='0'") para
+    // ocultar filas de servicios ya sumados dentro de una factura. La NC es
+    // un comprobante propio, standalone, que tiene que verse en la Cta Cte -
+    // si le ponemos idFacturado igual que un servicio facturado, queda
+    // invisible ahí aunque esté bien grabada.
+    // OJO 2: tiene que ser '0', no NULL - la comparación idFacturado='0' de
+    // esa consulta no matchea NULL (verificado: las facturas normales, que
+    // tampoco setean esta columna en su INSERT, quedan igual en 0 en la
+    // práctica, no en NULL).
     $idComprobanteAsociado = isset($_POST['idComprobanteAsociado']) ? intval($_POST['idComprobanteAsociado']) : 0;
-    $idFacturadoNcNd = 'NULL';
+    $idFacturadoNcNd = '0';
     $ObservacionesFinal = $Observaciones_ctasctes;
 
     if ($idComprobanteAsociado > 0) {
@@ -661,7 +702,6 @@ if ($_POST['Facturar'] == 3) {
       $datoAsociado = $sqlAsociado ? $sqlAsociado->fetch_array(MYSQLI_ASSOC) : null;
 
       if ($datoAsociado) {
-        $idFacturadoNcNd = $idComprobanteAsociado;
         $notaTrazabilidad = "Corrige {$datoAsociado['TipoDeComprobante']} {$datoAsociado['NumeroFactura']}.";
         $ObservacionesFinal = trim($notaTrazabilidad . ' ' . $Observaciones_ctasctes);
       }
