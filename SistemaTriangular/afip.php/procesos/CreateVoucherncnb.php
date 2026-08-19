@@ -9,14 +9,18 @@ $CondicionIva = $_POST['condiva_f']; //1
 $TipoDeDocumento = $_POST['tipodocumento_f']; //80
 
 //FECHA DESDE
-$Fecha_desde = explode("/", $_POST['fecha_desde']);
-$Fecha_desde_0 = $Fecha_desde[2] . "" . $Fecha_desde[1] . "" . $Fecha_desde[0];
-$Fecha_desde = intval($Fecha_desde_0);
+// OJO: fecha_desde/fecha_hasta acá vienen de #ncnd_fecha (<input type="date">),
+// que siempre entrega formato ISO yyyy-mm-dd - NO dd/mm/yyyy. Con explode("/")
+// esto daba solo el año (ej. intval("2026-08-19") = 2026), AFIP lo tomaba como
+// FchServDesde inválido/vacío y rechazaba el comprobante con el error 10031
+// "El campo FchServDesde es obligatorio si se informa FchServHasta y/o
+// FchVtoPago" (que sí salía bien calculado, por eso el rechazo puntual).
+$Fecha_desde_0 = explode("-", $_POST['fecha_desde']);
+$Fecha_desde = intval($Fecha_desde_0[0] . $Fecha_desde_0[1] . $Fecha_desde_0[2]);
 
 //FECHA HASTA
-$Fecha_hasta = explode("/", $_POST['fecha_hasta']);
-$Fecha_hasta_0 = $Fecha_hasta[2] . "" . $Fecha_hasta[1] . "" . $Fecha_hasta[0];
-$Fecha_hasta = intval($Fecha_hasta_0);
+$Fecha_hasta_0 = explode("-", $_POST['fecha_hasta']);
+$Fecha_hasta = intval($Fecha_hasta_0[0] . $Fecha_hasta_0[1] . $Fecha_hasta_0[2]);
 
 //FECHA DEL COMPROBANTE
 $Fecha_0 = explode("-", $_POST['Fecha']);
