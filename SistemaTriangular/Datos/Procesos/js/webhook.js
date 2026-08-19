@@ -15,10 +15,9 @@ $(document).ready(function(){
 window.setInterval(function () {
     var datatable = $('#webhook_tabla').DataTable();
     datatable.destroy();
-  
+
     trackWebhooks();
-    updateWebhooks();
-    
+
 }, 1800000);//1800000 (media hora)
 
 //RASTREO SERVICIOS PENDIENTES DE ENVIO EN LA TABLA SEGUIMIENTO QUE NO ESTEN EN NOTIFICACIONES WEBHOOK
@@ -39,34 +38,6 @@ $.ajax({
 
 }
 
-
-function updateWebhooks() {
-var hoy = new Date();    
-var fecha = `${hoy.getDate()}-${hoy.getMonth() + 1}-${hoy.getFullYear()}`;
-var hora = addZero(hoy.getHours()) + ':' + addZero(hoy.getMinutes()) + ':' + addZero(hoy.getSeconds());
-
-          $.ajax({
-              data: {
-                'SendWebhooks': 1
-              },
-              url: "https://www.caddy.com.ar/SistemaTriangular/Datos/Procesos/php/webhook.php",
-              type: 'post',
-              //         beforeSend: function(){
-              //         $("#buscando").html("Buscando...");
-              //         },
-              success: function(response) {
-                // var jsonData = JSON.parse(response);
-                // if (jsonData.success == "1") {
-                  toast("warning", "Actualizando Webhooks !", "");
-                  $('#myCenterModalLabel2').html('Actualizado '+fecha+' H: '+hora);
-                // } else {
-                //   toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
-                // }
-              }
-            });
-            var datatable = $('#webhook_tabla').DataTable();
-            datatable.ajax.reload();
-        }
 
         //TABLA WEBHOOKS NOTIFICATIONS
         var datatable_webhooks = $('#webhook_tabla').DataTable({
