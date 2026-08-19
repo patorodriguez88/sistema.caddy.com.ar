@@ -433,7 +433,10 @@ if (isset($_POST['CtaCte'])) {
     $row['SaldoMovimiento'] = round($saldo, 2);
 
     if ($saldo <= 0.01) {
-      $row['EstadoAplicacion'] = "CANCELADO";
+      // OJO: el JS (funciones.js) solo reconoce el string "CANCELADA" para
+      // pintar el badge - con "CANCELADO" no matcheaba y caía al default
+      // "S/D", aunque el movimiento sí tuviera saldo cero.
+      $row['EstadoAplicacion'] = "CANCELADA";
     } elseif ($aplicado > 0) {
       $row['EstadoAplicacion'] = "PARCIAL";
     } else {
