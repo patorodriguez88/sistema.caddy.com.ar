@@ -136,7 +136,28 @@
       "Bash(node --check Clientes/Procesos/js/descuento.js)",
       "Bash(node --check Empleados/Procesos/js/usuarios.js)",
       "Bash(node --check SistemaTriangular/Empleados/Procesos/js/usuarios.js)",
-      "Bash(node --check Clientes/Procesos/js/factura_afip.js)"
+      "Bash(node --check Clientes/Procesos/js/factura_afip.js)",
+      "Bash(cp Clientes/Informes/recibo_pdf.php /tmp/recibo_pdf_test.php)",
+      "Bash(sed -i.bak 's/CT.Comentario,//' /tmp/recibo_pdf_test.php)",
+      "Bash(sed -i.bak 's/$row\\\\['\\\\''Comentario'\\\\''\\\\]/null/g' /tmp/recibo_pdf_test.php)",
+      "Bash(cp Clientes/Informes/recibo_pdf.php Clientes/Informes/recibo_pdf_TEST_LOCAL.php)",
+      "Bash(sed -i.bak 's/CT.Comentario,//' Clientes/Informes/recibo_pdf_TEST_LOCAL.php)",
+      "Bash(sed -i.bak 's/$row\\\\['\\\\''Comentario'\\\\''\\\\]/null/g' Clientes/Informes/recibo_pdf_TEST_LOCAL.php)",
+      "Bash(sed -i.bak \"s/generarReciboPDF/generarReciboPDF_TEST/g\" Clientes/Informes/recibo_pdf_TEST_LOCAL.php)",
+      "Bash(rm -f Clientes/Informes/recibo_pdf_TEST_LOCAL.php.bak)",
+      "Bash(qlmanage -t -s 1600 -o /tmp /tmp/recibo_test.pdf)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SELECT id, Nombre FROM Clientes WHERE Nombre LIKE '%Distribuidora General de Publicaciones%' OR Nombre LIKE '%DGP%';\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SHOW COLUMNS FROM Clientes;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SELECT id, nombrecliente, RazonSocial_f FROM Clientes WHERE nombrecliente LIKE '%Distribuidora%' OR RazonSocial_f LIKE '%Distribuidora%';\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SELECT id, Fecha, TipoDeComprobante, NumeroFactura, Debe, Eliminado, idCliente FROM Ctasctes WHERE idCliente=35 ORDER BY id DESC LIMIT 20;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SELECT id, Fecha, TipoDeComprobante, NumeroFactura, Debe FROM Ctasctes WHERE idCliente = 35 AND Eliminado = 0 AND TipoDeComprobante IN \\('FACTURAS A','FACTURAS B'\\) ORDER BY Fecha DESC, id DESC;\")",
+      "Bash(node -c Admin/Procesos/js/contabilidad.js)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e ' *)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SHOW COLUMNS FROM Ctasctes;\")",
+      "Bash(curl -s -X POST https://app.asana.com/api/1.0/sections/1202052366128757/addTask -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"data\": {\"task\": \"__TRACKED_VAR__\"}}')",
+      "Bash(curl -s -X POST https://app.asana.com/api/1.0/tasks/__TRACKED_VAR__/addFollowers -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"data\": {\"followers\": [\"1212926275397398\",\"1208274310146479\"]}}')",
+      "Bash(curl -s -X PUT https://app.asana.com/api/1.0/tasks/__TRACKED_VAR__ -H 'Authorization: Bearer __CMDSUB_OUTPUT__' -H 'Content-Type: application/json' -d '{\"data\": {\"completed\": true}}')",
+      "Bash(python3 -c \"import json; json.load\\(open\\('.claude/settings.json'\\)\\)\")"
     ]
   }
 }
