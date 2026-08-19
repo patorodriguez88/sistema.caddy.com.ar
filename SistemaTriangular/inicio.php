@@ -178,6 +178,15 @@
             font-size: 1.05rem;
         }
 
+        .caddy-brand-version {
+            position: fixed;
+            bottom: 16px;
+            right: 24px;
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.5);
+            z-index: 3;
+        }
+
         @media (max-width: 991.98px) {
             .caddy-login-brand-col {
                 display: none;
@@ -240,8 +249,6 @@
                 <script>
                     document.write(new Date().getFullYear())
                 </script> © Sistema de Gestión Logística - Caddy
-                <!-- Version del sistema: subir en cada push a develop/main (mismo numero que Menu/head.html) -->
-                <div><small class="text-muted">v1.0.40</small></div>
             </div>
 
         </div>
@@ -263,6 +270,9 @@
                     <li><i class="uil uil-directions"></i> Optimización de hojas de ruta y recorridos</li>
                     <li><i class="uil uil-invoice"></i> Facturación y cuenta corriente integradas</li>
                 </ul>
+
+                <!-- Version del sistema: subir en cada push a develop/main -->
+                <div class="caddy-brand-version">v1.0.40</div>
             </div>
         </div>
         <!-- end caddy-login-brand-col -->

@@ -1,10 +1,9 @@
 <?php
-session_start();
-include_once "../../../Conexion/Conexioni.php";
+include_once __DIR__ . "/../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 //RASTREO CODIGOS DE CLIENTES QUE TENGAN ACTIVO EL WEBHOOK Y NO SE ENVIARON
-if($_POST['Webhook_track']==1){
+if(isset($_POST['Webhook_track']) && $_POST['Webhook_track']==1){
     $sql="SELECT TransClientes.id,RazonSocial FROM TransClientes INNER JOIN Clientes ON RazonSocial=Clientes.nombrecliente WHERE 
     Clientes.Webhook=1 AND TransClientes.Fecha=CURRENT_DATE() AND TransClientes.Eliminado=0";
     $Resultado=$mysqli->query($sql);
@@ -50,7 +49,7 @@ if($_POST['Webhook_track']==1){
 
 }
 //DATOS PARA LA TABLA
-if($_POST['Webhook']==1){
+if(isset($_POST['Webhook']) && $_POST['Webhook']==1){
    $idCliente=$_POST['idCliente']; 
    $sql="SELECT * FROM Webhook_notifications"; 
    $Resultado=$mysqli->query($sql);
