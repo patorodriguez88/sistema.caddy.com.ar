@@ -240,6 +240,8 @@
                 <script>
                     document.write(new Date().getFullYear())
                 </script> © Sistema de Gestión Logística - Caddy
+                <!-- Version del sistema: subir en cada push a develop/main (mismo numero que Menu/head.html) -->
+                <div><small class="text-muted">v1.0.39</small></div>
             </div>
 
         </div>
