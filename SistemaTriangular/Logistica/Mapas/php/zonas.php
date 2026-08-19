@@ -1,5 +1,6 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
+include_once __DIR__ . "/../../../Funciones/Funciones.php";
 header('Content-Type: application/json; charset=utf-8');
 
 if (isset($_POST['listarZonas'])) {
@@ -230,14 +231,14 @@ if (isset($_POST['CambiarRecorridos'])) {
 
   while ($row = $result->fetch_array(MYSQLI_ASSOC)) {
 
-    $query = $mysqli->query("SELECT NumerodeOrden,NombreChofer FROM Logistica WHERE Eliminado='0' AND Estado IN('Alta','Cargada') AND Recorrido='$NuevoRecorrido'");
-    $DatoLogistica = $query->fetch_array(MYSQLI_ASSOC);
-
-    $mysqli->query("UPDATE HojaDeRuta SET Recorrido='$NuevoRecorrido',NumerodeOrden='$DatoLogistica[NumerodeOrden]' WHERE id='$row[id]' LIMIT 1");
-
     if ($row['Seguimiento'] <> '') {
-      $mysqli->query("UPDATE TransClientes SET Recorrido='$NuevoRecorrido',NumerodeOrden='$DatoLogistica[NumerodeOrden]',Transportista='$DatoLogistica[NombreChofer]' 
-        WHERE CodigoSeguimiento='$row[Seguimiento]' LIMIT 1");
+      // Paquete real: TransClientes + HojaDeRuta + Seguimiento + webhook, todo vía la función unificada.
+      cambiarRecorrido($mysqli, $row['Seguimiento'], $NuevoRecorrido);
+    } else {
+      // Parada de HojaDeRuta sin paquete asociado todavía: no hay nada que cambiarRecorrido() pueda tocar.
+      $query = $mysqli->query("SELECT NumerodeOrden FROM Logistica WHERE Eliminado='0' AND Estado IN('Alta','Cargada') AND Recorrido='$NuevoRecorrido'");
+      $DatoLogistica = $query->fetch_array(MYSQLI_ASSOC);
+      $mysqli->query("UPDATE HojaDeRuta SET Recorrido='$NuevoRecorrido',NumerodeOrden='$DatoLogistica[NumerodeOrden]' WHERE id='$row[id]' LIMIT 1");
     }
 
     $cuento = $cuento + 1;

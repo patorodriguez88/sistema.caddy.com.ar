@@ -3,6 +3,7 @@ ob_start();
 
 session_start();
 include_once "../Conexion/Conexioni.php";
+include_once __DIR__ . "/../Funciones/Funciones.php";
 
 // include("../ConexionBD.php");
 if ($_SESSION['NombreUsuario']==''){
@@ -675,20 +676,11 @@ $EstadoActualHdr = $DatoActualHdr['Estado'] ?? '';
   $Dato=$sql->fetch_array(MYSQLI_ASSOC);
   $Orden = trim($Dato[Posicion])+1;
 
-  // MODIFICO EL RECORRIDO EN TRANSCLIENTES
-  $sqlLogistica=$mysqli->query("SELECT NumerodeOrden,NombreChofer FROM Logistica WHERE Estado IN('Alta','Cargada') AND Recorrido='$Recorrido'");
-  $DatoLogistica=$sqlLogistica->fetch_array(MYSQLI_ASSOC);
-
-  if($DatoLogistica['NumerodeOrden']<>''){
-   $NumerodeOrden=$DatoLogistica['NumerodeOrden'];
-   $Transportista=$DatoLogistica['NombreChofer'];
-  }else{
-   $NumerodeOrden=0;
-   $Transportista='';
-  }
-
-  $sqlTransClientes=$mysqli->query("UPDATE TransClientes SET Recorrido='$Recorrido',NumerodeOrden='$NumerodeOrden',
-  Transportista='$Transportista' WHERE CodigoSeguimiento='$Seguimiento' AND Eliminado='0'");
+  // MODIFICO EL RECORRIDO: TransClientes + HojaDeRuta.Recorrido + Seguimiento + webhook,
+  // vía la función unificada. El UPDATE de HojaDeRuta más abajo (Posicion, Hora, Celular,
+  // etc.) sigue siendo propio de este formulario y se ejecuta igual después.
+  $resultadoRecorrido = cambiarRecorrido($mysqli, $Seguimiento, $Recorrido);
+  $NumerodeOrden = $resultadoRecorrido['numerodeorden'] ?? 0;
   }
 
 

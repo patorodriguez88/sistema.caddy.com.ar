@@ -1,5 +1,5 @@
 <?php
-include_once "../Conexion/Conexioni.php";
+include_once __DIR__ . "/../Conexion/Conexioni.php";
 // HELPERS
 function normalizarImporte($valor)
 {
@@ -56,7 +56,7 @@ function recalcularResumenOrdenLogistica(mysqli $mysqli, $numeroOrden)
     $cantidadServicios = 0;
     $totalRecorrido = 0.0;
 
-    $sql = "SELECT 
+    $sql = "SELECT
                 COUNT(*) AS CantidadServicios,
                 COALESCE(SUM(Debe),0) AS TotalRecorrido
             FROM TransClientes
@@ -100,23 +100,116 @@ function recalcularResumenOrdenLogistica(mysqli $mysqli, $numeroOrden)
 
     $stmt->close();
 }
-//CAMBIO DE RECORRIDO
-// ---- Entrada universal (JSON o x-www-form-urlencoded) ----
-$raw = file_get_contents('php://input');
-$in  = json_decode($raw, true);
 
-if (isset($in['ActualizaRecorrido'])) {
-
-    header('Content-Type: application/json; charset=utf-8');
-
-    // ---- Inputs ----
-    $cs = isset($in['cs']) ? trim($in['cs']) : '';
-    $r  = isset($in['r'])  ? trim($in['r'])  : '';
-
-    if ($cs === '' || $r === '') {
-        echo json_encode(['success' => 0, 'message' => 'Faltan parámetros: cs y/o r.']);
-        exit;
+function resolverWebhookCliente(mysqli $mysqli, $idCliente)
+{
+    if ((int)$idCliente <= 0) {
+        return null;
     }
+
+    $endpoint = null;
+    $token = null;
+
+    if ($stmt = $mysqli->prepare("SELECT EndPoint, Token FROM Webhook WHERE idCliente = ? AND Activo = 1 LIMIT 1")) {
+        $stmt->bind_param('i', $idCliente);
+        $stmt->execute();
+        $stmt->bind_result($endpoint, $token);
+        $found = $stmt->fetch();
+        $stmt->close();
+
+        if (!$found || $endpoint === null || $endpoint === '') {
+            return null;
+        }
+
+        return ['endpoint' => $endpoint, 'token' => (string)$token];
+    }
+
+    return null;
+}
+
+// Encola en Webhook_notifications el evento "recorrido_cambio", si Estados.Webhook=1 para el motivo dado.
+// Best-effort: se ejecuta después de haber confirmado el cambio de recorrido, y una falla acá nunca revierte el cambio.
+function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recorridoNuevo, $estadoNombre, $notifOrigen, $notifDestino, $usuario)
+{
+    $encolados = [];
+
+    if (!$notifOrigen && !$notifDestino) {
+        return $encolados;
+    }
+
+    $idClienteOrigen = 0;
+    $idClienteDestino = 0;
+
+    if ($stmt = $mysqli->prepare("SELECT idClienteOrigen, idClienteDestino FROM TransClientes WHERE CodigoSeguimiento = ? LIMIT 1")) {
+        $stmt->bind_param('s', $cs);
+        $stmt->execute();
+        $stmt->bind_result($idClienteOrigen, $idClienteDestino);
+        $stmt->fetch();
+        $stmt->close();
+    }
+
+    $destinatarios = [];
+    if ($notifOrigen)  { $destinatarios['origen']  = (int)$idClienteOrigen; }
+    if ($notifDestino) { $destinatarios['destino'] = (int)$idClienteDestino; }
+
+    $Fecha = date('Y-m-d');
+    $Hora  = date('H:i');
+
+    $payload = json_encode([
+        'evento'              => 'recorrido_cambio',
+        'codigo_seguimiento'  => $cs,
+        'recorrido_anterior'  => $recorridoAnterior,
+        'recorrido_nuevo'     => $recorridoNuevo,
+        'estado'              => $estadoNombre,
+        'fecha'                => $Fecha . 'T' . $Hora,
+    ], JSON_UNESCAPED_UNICODE);
+
+    foreach ($destinatarios as $rol => $idCliente) {
+        if ($idCliente <= 0) {
+            continue;
+        }
+
+        $webhook = resolverWebhookCliente($mysqli, $idCliente);
+        if ($webhook === null) {
+            continue;
+        }
+
+        if ($stmt = $mysqli->prepare("
+            INSERT INTO Webhook_notifications
+                (idCliente, idCaddy, idProveedor, Servidor, State, Estado, Fecha, Hora, User, Response, Send, Stop)
+            VALUES (?, ?, '', ?, ?, ?, ?, ?, ?, 0, 0, 0)
+        ")) {
+            $stmt->bind_param(
+                'isssssss',
+                $idCliente,
+                $cs,
+                $webhook['endpoint'],
+                $payload,
+                $estadoNombre,
+                $Fecha,
+                $Hora,
+                $usuario
+            );
+            $stmt->execute();
+            $stmt->close();
+            $encolados[] = $rol;
+        }
+    }
+
+    return $encolados;
+}
+
+// CAMBIO DE RECORRIDO — punto único: valida, mueve TransClientes+HojaDeRuta+Logistica en
+// transacción, registra Seguimiento con el motivo (estadoIdIn, FK a Estados) y, si ese Estado
+// tiene Webhook=1, encola el aviso a quien corresponda (origen/destino) vía encolarWebhookRecorrido().
+// Devuelve el mismo array que antes se echoeaba directo — cualquier llamador (HTTP o server-side)
+// recibe la misma forma de respuesta.
+function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn = 10): array
+{
+    if ($cs === '' || $r === '') {
+        return ['success' => 0, 'message' => 'Faltan parámetros: cs y/o r.'];
+    }
+
     //Verificar en TransClientes que el cs no esté entregado, devuelto, eliminado o en haber
     $transOk = false;
     if ($stmt = $mysqli->prepare("SELECT 1 FROM TransClientes WHERE CodigoSeguimiento = ? AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0 LIMIT 1")) {
@@ -127,9 +220,9 @@ if (isset($in['ActualizaRecorrido'])) {
         $stmt->close();
     }
     if (!$transOk) {
-        echo json_encode(['success' => 0, 'message' => 'El Código de Seguimiento no es válido para cambio de recorrido.']);
-        exit;
+        return ['success' => 0, 'message' => 'El Código de Seguimiento no es válido para cambio de recorrido.'];
     }
+
     // ---- 0) Traer orden anterior e importe del servicio ----
     $ordenAnterior = '';
     $importeServicio = 0.0;
@@ -174,11 +267,9 @@ if (isset($in['ActualizaRecorrido'])) {
         $stmt->close();
     }
     if (!$recOk) {
-        echo json_encode(['success' => 0, 'message' => 'El recorrido no existe o no está activo.']);
-        exit;
+        return ['success' => 0, 'message' => 'El recorrido no existe o no está activo.'];
     }
 
-    // ---- 2) Buscar hoja abierta en Logistica para tomar NumerodeOrden y NombreChofer (si hay) ----
     // ---- 2) Buscar orden operativa en Logistica para ese recorrido (si existe) ----
     $NO = 0;
     $NombreChofer = '';
@@ -204,9 +295,10 @@ if (isset($in['ActualizaRecorrido'])) {
 
         $stmt->close();
     }
+
     // ---- 2.1) Si el servicio ya está en el mismo recorrido, no hacer nada ----
     if ((string)$recorridoAnterior === (string)$r) {
-        echo json_encode([
+        return [
             'success' => 0,
             'message' => 'El servicio ya pertenece al recorrido ' . $r . '. No se realizaron cambios.',
             'ya_estaba' => 1,
@@ -214,28 +306,21 @@ if (isset($in['ActualizaRecorrido'])) {
             'orden_anterior' => $ordenAnterior,
             'recorrido_anterior' => $recorridoAnterior,
             'recorrido_nuevo' => $r
-        ]);
-        exit;
+        ];
     }
+
     // ---- 3) Validación administrativa sobre órdenes afectadas ----
     // Solo validar destino si efectivamente existe una orden destino
     if ($NO != 0 && !ordenNoFacturada($mysqli, $NO)) {
-        echo json_encode([
-            'success' => 0,
-            'message' => 'La orden destino no está disponible para asignación.'
-        ]);
-        exit;
+        return ['success' => 0, 'message' => 'La orden destino no está disponible para asignación.'];
     }
 
     if ($ordenAnterior !== '' && $ordenAnterior !== '0' && $ordenAnterior != $NO) {
         if (!ordenNoFacturada($mysqli, $ordenAnterior)) {
-            echo json_encode([
-                'success' => 0,
-                'message' => 'La orden origen no puede modificarse por consistencia administrativa.'
-            ]);
-            exit;
+            return ['success' => 0, 'message' => 'La orden origen no puede modificarse por consistencia administrativa.'];
         }
     }
+
     // ---- 4) Traer último Seguimiento para completar campos heredados ----
     $seguimiento = null;
 
@@ -289,6 +374,7 @@ if (isset($in['ActualizaRecorrido'])) {
         } else {
             throw new Exception('No se pudo preparar UPDATE TransClientes');
         }
+
         // 5.a.1) Recalcular resumen de Logistica
         // Primero la orden anterior (si era distinta)
         if ($ordenAnterior !== '' && $ordenAnterior !== '0' && $ordenAnterior != $NO) {
@@ -299,6 +385,7 @@ if (isset($in['ActualizaRecorrido'])) {
         if ($NO != 0) {
             recalcularResumenOrdenLogistica($mysqli, $NO);
         }
+
         // 5.b) HojaDeRuta
         $sqlHdr = "UPDATE HojaDeRuta
             SET Recorrido = ?, NumerodeOrden = ?
@@ -317,39 +404,42 @@ if (isset($in['ActualizaRecorrido'])) {
             throw new Exception('No se pudo preparar UPDATE HojaDeRuta');
         }
 
-        // 5.c) Seguimiento (Movimiento Interno)
+        // 5.c) Seguimiento
         $Observaciones = 'CMS: Cambio a Recorrido ' . $r;
-        // $EstadoSeg     = 'Movimiento Interno';
         $Entregado     = 0;
         $Devuelto      = 0;
-        $Estado_id        = 10; // Estado "Movimiento Interno"
-        $estadoNombre = '';        // (no lo usás, pero lo leo por claridad)
-        $estadoSlug = '';
-        $visitasDummy = 0;
+        $Estado_id     = $estadoIdIn;
+        $visitasDummy  = 0;
 
-        // Traer state_id y status desde Estados
-        $sql_status = "SELECT Estado,slug,Visitas FROM Estados WHERE id=?";
+        // Traer state_id, status y flags de webhook desde Estados
+        $sql_status = "SELECT Estado, slug, Visitas, Webhook, Notificacion_origen, Notificacion_destino FROM Estados WHERE id=?";
         $state_id = 0;
         $status = 0;
+        $estadoWebhook = 0;
+        $notifOrigen = 0;
+        $notifDestino = 0;
 
         if ($stmt = $mysqli->prepare($sql_status)) {
             $stmt->bind_param('i', $Estado_id);
             $stmt->execute();
-            $stmt->bind_result($EstadoSeg, $slug, $visitasDummy);
+            $stmt->bind_result($EstadoSeg, $slug, $visitasDummy, $estadoWebhook, $notifOrigen, $notifDestino);
             if ($stmt->fetch()) {
                 $state_id = $Estado_id;
                 $status = $slug;
+            } else {
+                // estado_id inválido: no rompemos el cambio de recorrido, pero no hay Estado con qué documentarlo.
+                $EstadoSeg = 'Movimiento Interno';
+                $state_id = $Estado_id;
+                $status = '';
             }
             $stmt->close();
         }
-
 
         if ($stmt = $mysqli->prepare("INSERT INTO Seguimiento
             (Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,idCliente,
              Retirado,Visitas,idTransClientes,Recorrido,Devuelto,NumerodeOrden,Destino,Estado_id,state_id,status)
             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ")) {
-            // tipos: s s s s s s i s i i i i s i i s (16)
             $stmt->bind_param(
                 'ssssssisiiiisiisiis',
                 $Fecha,
@@ -383,7 +473,31 @@ if (isset($in['ActualizaRecorrido'])) {
         }
 
         $mysqli->commit();
-        echo json_encode([
+
+        // Webhook: best-effort, fuera de la transacción del cambio de recorrido en sí.
+        // El cambio de recorrido ya está commiteado en este punto: una falla acá nunca debe
+        // reportarse como que el cambio de recorrido falló.
+        $webhookEncolado = [];
+        $webhookError = null;
+        if ((int)$estadoWebhook === 1) {
+            try {
+                $webhookEncolado = encolarWebhookRecorrido(
+                    $mysqli,
+                    $cs,
+                    $recorridoAnterior,
+                    $r,
+                    $EstadoSeg,
+                    (int)$notifOrigen === 1,
+                    (int)$notifDestino === 1,
+                    $Usuario
+                );
+            } catch (Throwable $eWebhook) {
+                $webhookError = $eWebhook->getMessage();
+                error_log('encolarWebhookRecorrido failed for ' . $cs . ': ' . $webhookError);
+            }
+        }
+
+        return [
             'success'        => 1,
             'message'        => 'OK',
             'numerodeorden'  => $NO,
@@ -393,15 +507,31 @@ if (isset($in['ActualizaRecorrido'])) {
             'importe'        => $importeServicio,
             'tc_updated'     => $ok_tc,
             'hdr_updated'    => $ok_hdr,
-            'seg_inserted'   => $ok_seg
-        ]);
-        exit;
+            'seg_inserted'   => $ok_seg,
+            'webhook_encolado' => $webhookEncolado,
+            'webhook_error'  => $webhookError
+        ];
     } catch (Exception $e) {
         $mysqli->rollback();
-        echo json_encode([
+        return [
             'success' => 0,
             'message' => $e->getMessage(),
-        ]);
-        exit;
+        ];
     }
+}
+
+//CAMBIO DE RECORRIDO — entrada HTTP (JSON o x-www-form-urlencoded), usada por el front-end directo
+$raw = file_get_contents('php://input');
+$in  = json_decode($raw, true);
+
+if (isset($in['ActualizaRecorrido'])) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $cs = isset($in['cs']) ? trim($in['cs']) : '';
+    $r  = isset($in['r'])  ? trim($in['r'])  : '';
+    // Motivo del cambio (FK a Estados). Si no se envía, se mantiene el comportamiento actual: Movimiento Interno.
+    $estadoIdIn = isset($in['estado_id']) ? (int)$in['estado_id'] : 10;
+
+    echo json_encode(cambiarRecorrido($mysqli, $cs, $r, $estadoIdIn));
+    exit;
 }

@@ -4,6 +4,7 @@
 // recorrido nuevo. Portado y saneado desde Caddy_produccion/Rutas/Procesos/php/rutas.php.
 
 require_once __DIR__ . "/../../../Conexion/Conexioni.php";
+require_once __DIR__ . "/../../../Funciones/Funciones.php";
 date_default_timezone_set('America/Argentina/Cordoba');
 
 header('Content-Type: application/json; charset=UTF-8');
@@ -194,8 +195,7 @@ if (isset($_POST['AsignarRecorrido'])) {
 
     $errores = [];
     $stmtCheck = $mysqli->prepare("SELECT id FROM HojaDeRuta WHERE Seguimiento = ? AND Eliminado = 0 AND Recorrido = ? LIMIT 1");
-    $stmtTrans = $mysqli->prepare("UPDATE TransClientes SET Recorrido = ? WHERE CodigoSeguimiento = ? AND Eliminado = 0 AND Recorrido = ?");
-    $stmtHoja = $mysqli->prepare("UPDATE HojaDeRuta SET Recorrido = ?, Posicion = ? WHERE Seguimiento = ? AND Eliminado = 0 LIMIT 1");
+    $stmtPosicion = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = ? WHERE Seguimiento = ? AND Eliminado = 0 LIMIT 1");
 
     foreach ($datos as $dato) {
         $codigo = (string)($dato['codigo'] ?? '');
@@ -204,6 +204,8 @@ if (isset($_POST['AsignarRecorrido'])) {
             continue;
         }
 
+        // Confirma que el pedido siga en recorrido_actual antes de moverlo (guarda contra
+        // que otro operador ya lo haya movido desde que se armó este lote).
         $stmtCheck->bind_param("si", $codigo, $recorrido_actual);
         $stmtCheck->execute();
         $existe = $stmtCheck->get_result();
@@ -213,17 +215,22 @@ if (isset($_POST['AsignarRecorrido'])) {
             continue;
         }
 
-        $stmtTrans->bind_param("isi", $recorrido_destino, $codigo, $recorrido_actual);
-        $stmtTrans->execute();
+        // TransClientes + HojaDeRuta.Recorrido + Seguimiento + webhook, vía la función unificada.
+        $resultado = cambiarRecorrido($mysqli, $codigo, (string)$recorrido_destino);
+        if (empty($resultado['success']) && empty($resultado['ya_estaba'])) {
+            $errores[] = $codigo;
+            continue;
+        }
 
-        $stmtHoja->bind_param("iis", $recorrido_destino, $orden, $codigo);
-        if (!$stmtHoja->execute()) {
+        // Posicion (orden de la parada dentro del recorrido nuevo) es propio de este flujo de
+        // planificación, cambiarRecorrido() no lo maneja.
+        $stmtPosicion->bind_param("is", $orden, $codigo);
+        if (!$stmtPosicion->execute()) {
             $errores[] = $codigo;
         }
     }
     $stmtCheck->close();
-    $stmtTrans->close();
-    $stmtHoja->close();
+    $stmtPosicion->close();
 
     if (count($errores) > 0) {
         echo json_encode(['status' => 'error', 'message' => 'Error al actualizar algunos pedidos.', 'fallidos' => $errores]);

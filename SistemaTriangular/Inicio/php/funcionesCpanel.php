@@ -1,6 +1,7 @@
 <?php
 
 include_once "../../Conexion/Conexioni.php";
+include_once __DIR__ . "/../../Funciones/Funciones.php";
 
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=utf-8');
@@ -70,13 +71,7 @@ if (isset($_POST['VaciarRecorrido'])) {
     exit;
   }
 
-  $sql = "SELECT 
-                Retirado,
-                id,
-                CodigoSeguimiento,
-                IF(Retirado=1,ClienteDestino,RazonSocial) AS Nombre,
-                IF(Retirado=1,DomicilioDestino,DomicilioOrigen) AS Domicilio,
-                IF(Retirado=1,idClienteOrigen,idClienteDestino) AS idCliente
+  $sql = "SELECT CodigoSeguimiento
             FROM TransClientes
             WHERE Recorrido=? AND Eliminado=0 AND Entregado=0";
 
@@ -90,49 +85,12 @@ if (isset($_POST['VaciarRecorrido'])) {
   $stmt->execute();
   $Respuesta = $stmt->get_result();
 
-  $FechaHoy = date('Y-m-d');
-  $Hora     = date("H:i");
-  $Usuario  = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : '';
-  $Estado   = 'Cargado en Hoja De Ruta';
-
   while ($row = $Respuesta->fetch_array(MYSQLI_ASSOC)) {
-
-    $Nombre     = isset($row['Nombre']) ? $row['Nombre'] : '';
-    $Domicilio  = isset($row['Domicilio']) ? $row['Domicilio'] : '';
-    $idTrans    = isset($row['id']) ? $row['id'] : 0;
-    $idCliente  = isset($row['idCliente']) ? $row['idCliente'] : 0;
-    $Retirado   = isset($row['Retirado']) ? $row['Retirado'] : 0;
-    $codigoSeg  = isset($row['CodigoSeguimiento']) ? $row['CodigoSeguimiento'] : '';
+    $codigoSeg = isset($row['CodigoSeguimiento']) ? $row['CodigoSeguimiento'] : '';
 
     if ($codigoSeg !== '') {
-
-      $mysqli->query("UPDATE HojaDeRuta SET Recorrido='80', Estado='Abierto' WHERE Seguimiento='" . $mysqli->real_escape_string($codigoSeg) . "'");
-      $mysqli->query("UPDATE TransClientes SET Recorrido='80' WHERE CodigoSeguimiento='" . $mysqli->real_escape_string($codigoSeg) . "'");
-
-      $sqlvisitas = $mysqli->query("SELECT Visitas FROM Seguimiento WHERE id=(SELECT MAX(id) FROM Seguimiento WHERE CodigoSeguimiento='" . $mysqli->real_escape_string($codigoSeg) . "')");
-      $Visitas = $sqlvisitas ? $sqlvisitas->fetch_array(MYSQLI_ASSOC) : array('Visitas' => 0);
-
-      $Observaciones = '';
-
-      $mysqli->query("INSERT INTO Seguimiento
-                (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones, Estado, NombreCompleto, Destino, idCliente, Retirado, Visitas, idTransClientes, Recorrido)
-                VALUES
-                (
-                    '{$FechaHoy}',
-                    '{$Hora}',
-                    '" . $mysqli->real_escape_string($Usuario) . "',
-                    'Córdoba',
-                    '" . $mysqli->real_escape_string($codigoSeg) . "',
-                    '" . $mysqli->real_escape_string($Observaciones) . "',
-                    '{$Estado}',
-                    '" . $mysqli->real_escape_string($Nombre) . "',
-                    '" . $mysqli->real_escape_string($Domicilio) . "',
-                    '" . $mysqli->real_escape_string($idCliente) . "',
-                    '" . $mysqli->real_escape_string($Retirado) . "',
-                    '" . $mysqli->real_escape_string(isset($Visitas['Visitas']) ? $Visitas['Visitas'] : 0) . "',
-                    '" . $mysqli->real_escape_string($idTrans) . "',
-                    '80'
-                )");
+      // Estado_id 6 = "Cargado en Hoja de Ruta" (mismo motivo que este bloque registraba a mano antes).
+      cambiarRecorrido($mysqli, $codigoSeg, '80', 6);
     }
   }
 

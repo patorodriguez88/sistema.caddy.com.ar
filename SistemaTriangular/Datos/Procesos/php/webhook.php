@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
@@ -72,19 +72,19 @@ $Resultado=$mysqli->query($sql);
     $state=$row['Estado'];
     $Fecha=$row['Fecha'];
     $Hora=$row['Hora'];
-    
-    $newstatedate = $Fecha.'T'.$Hora;
+    $payload=$row['State']; // el productor (cambiarRecorrido, etc.) guarda acá el JSON real a enviar
+    $Response=0; // reset por fila: si esta fila no tiene Webhook configurado, no debe heredar el Response de la fila anterior
 
     //BUSCO EL LOS DATOS DE CONEXION AL WEBHOOK
      $sql=$mysqli->query("SELECT * FROM Webhook WHERE idCliente='$idCliente'");
      if($sql_webhook=$sql->fetch_array(MYSQLI_ASSOC)){
        $Servidor=$sql_webhook['Endpoint'];
-       $Token=$sql_webhook['Token'];  
-       $newstatedate = $Fecha.'T'.$Hora;
+       $Token=$sql_webhook['Token'];
        $Send=$row['Send']+1;
+       $Response=0;
 
      $curl = curl_init();
- 
+
      curl_setopt_array($curl, array(
      CURLOPT_URL => $Servidor,
      CURLOPT_RETURNTRANSFER => true,
@@ -94,23 +94,19 @@ $Resultado=$mysqli->query($sql);
      CURLOPT_FOLLOWLOCATION => true,
      CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
      CURLOPT_CUSTOMREQUEST => 'POST',
-     CURLOPT_POSTFIELDS =>'{
-     "new_state": "'.$state.'", 
-     "new_state_date": "'.$newstatedate.'", 
-     "package_code": "'.$codigo.'" 
-     }',
+     CURLOPT_POSTFIELDS => $payload,
      CURLOPT_HTTPHEADER => array(
-     'x-clicoh-token: '.$Token.'',
+     'x-caddy-webhook-token: '.$Token.'',
      'Content-Type: application/json'
      ),
      ));
- 
+
      $response = curl_exec($curl);
- 
+
      // Comprueba el código de estado HTTP
      if (!curl_errno($curl)) {
      switch ($http_code = curl_getinfo($curl, CURLINFO_HTTP_CODE)) {
-     case 200: 
+     case 200:
      $Response=200; # OK
      // break;
      default:
@@ -118,19 +114,17 @@ $Resultado=$mysqli->query($sql);
      // echo 'Unexpected HTTP code: ', $http_code, "\n";
      }
      }
- 
+
      curl_close($curl);
- 
-     $postfields=$state.' '.$newstatedate.' '.$idProveedor;
-     
-     $sql=$mysqli->query("INSERT INTO `Webhook_notifications`(`idCliente`, `idCaddy`, `idProveedor`, `Servidor`, `State`, `Estado`, `Fecha`, `Hora`, `User`, `Response`, `Send`) VALUES 
-     ('{$idCliente}','{$idCaddy}','{$idProveedor}','{$Servidor}','{$postfields}','{$state}','{$Fecha}','{$Hora}','{$_SESSION['Usuario']}','{$Response}','{$Send}')");
-     
-    
+
+     $sql=$mysqli->query("INSERT INTO `Webhook_notifications`(`idCliente`, `idCaddy`, `idProveedor`, `Servidor`, `State`, `Estado`, `Fecha`, `Hora`, `User`, `Response`, `Send`, `Stop`) VALUES
+     ('{$idCliente}','{$idCaddy}','{$idProveedor}','{$Servidor}','{$payload}','{$state}','{$Fecha}','{$Hora}','{$_SESSION['Usuario']}','{$Response}','{$Send}','0')");
+
+
      }
     if($Response==200){
         $sql=$mysqli->query("UPDATE `Webhook_notifications` SET `Stop`='1' WHERE id='$row[id]'");
     }
- }    
+ }
 }
 ?>
