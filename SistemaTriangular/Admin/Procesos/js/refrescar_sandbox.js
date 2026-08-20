@@ -27,6 +27,49 @@
     `;
   }
 
+  function post(data) {
+    return new Promise(function (resolve, reject) {
+      $.post(URL, data, resolve, "json").fail(reject);
+    });
+  }
+
+  // Copia las tablas UNA POR UNA (en vez de un solo request gigante) para
+  // que ningun request individual se acerque al timeout del gateway/proxy
+  // delante de PHP - eso fue lo que paso antes: el refresco completo corria
+  // sincronico y con suficientes datos en produccion tardaba mas que ese
+  // limite, cortando la conexion (504) sin terminar de copiar todo y sin
+  // avisar que tablas quedaron a mitad de camino.
+  async function refrescarSecuencial(periodo) {
+    const listado = await post({ action: "listar_tablas" });
+    if (!listado || !listado.ok) {
+      throw new Error((listado && listado.error) || "No se pudo listar las tablas.");
+    }
+
+    const tablas = listado.tablas;
+    const resultado = [];
+
+    for (let i = 0; i < tablas.length; i++) {
+      const tabla = tablas[i];
+
+      Swal.update({
+        html: `Tabla ${i + 1} de ${tablas.length}: <strong>${tabla}</strong>`,
+      });
+
+      try {
+        const r = await post({ action: "refrescar_tabla", tabla: tabla, periodo: periodo });
+        resultado.push(
+          r && typeof r === "object"
+            ? r
+            : { tabla: tabla, ok: false, error: "Respuesta inválida del servidor." },
+        );
+      } catch (e) {
+        resultado.push({ tabla: tabla, ok: false, error: "Falló la solicitud al servidor." });
+      }
+    }
+
+    return resultado;
+  }
+
   $("#btnRefrescarSandbox").on("click", function () {
     const periodo = $("#periodoRefrescoSandbox").val();
     const periodoTexto = $("#periodoRefrescoSandbox option:selected").text();
@@ -44,7 +87,7 @@
 
       Swal.fire({
         title: "Refrescando...",
-        html: "Puede tardar unos segundos, no cierres esta pantalla.",
+        html: "Preparando...",
         allowOutsideClick: false,
         allowEscapeKey: false,
         didOpen: function () {
@@ -52,29 +95,22 @@
         },
       });
 
-      $.post(URL, { action: "refrescar", periodo: periodo }, function (json) {
-        if (!json || !json.ok) {
-          Swal.fire(
-            "Error",
-            (json && json.error) || "No se pudo refrescar sandbox.",
-            "error",
-          );
-          return;
-        }
+      refrescarSecuencial(periodo)
+        .then(function (resultado) {
+          const conError = resultado.filter(function (r) {
+            return !r.ok;
+          }).length;
 
-        const conError = json.resultado.filter(function (r) {
-          return !r.ok;
-        }).length;
-
-        Swal.fire({
-          title: conError > 0 ? "Terminado con errores" : "Sandbox actualizado",
-          icon: conError > 0 ? "warning" : "success",
-          html: renderResultado(json.resultado),
-          width: 700,
+          Swal.fire({
+            title: conError > 0 ? "Terminado con errores" : "Sandbox actualizado",
+            icon: conError > 0 ? "warning" : "success",
+            html: renderResultado(resultado),
+            width: 700,
+          });
+        })
+        .catch(function (e) {
+          Swal.fire("Error", (e && e.message) || "Falló la solicitud al servidor.", "error");
         });
-      }, "json").fail(function () {
-        Swal.fire("Error", "Falló la solicitud al servidor.", "error");
-      });
     });
   });
 })();
