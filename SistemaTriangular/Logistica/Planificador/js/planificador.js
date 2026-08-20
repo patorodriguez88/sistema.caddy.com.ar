@@ -1,7 +1,36 @@
 let map;
 let markers = [];
 let routePaths = [];
+let markerCoordCounts = new Map();
 const routeColors = ["#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#20c997"];
+
+// Cuando dos o mas paradas comparten coordenadas exactas (o casi), sus
+// markers quedan tapados unos con otros. Este offset los reparte en un
+// abanico chico alrededor del punto real (el primero de cada coordenada
+// queda sin tocar) para que todos sean visibles y clickeables.
+const COINCIDENT_PRECISION = 5; // ~1.1 m de precision para considerar "mismo punto"
+const COINCIDENT_OFFSET_METERS = 3; // separacion entre pines coincidentes, por anillo
+
+function offsetCoincidentMarker(lat, lng) {
+  const key = lat.toFixed(COINCIDENT_PRECISION) + "," + lng.toFixed(COINCIDENT_PRECISION);
+  const count = markerCoordCounts.get(key) || 0;
+  markerCoordCounts.set(key, count + 1);
+  if (count === 0) return { lat, lng };
+
+  // Anillo de 8 posiciones (45° cada una); si hay mas de 8 coincidentes en
+  // el mismo punto (ej. un deposito con varios clientes geocodeados igual),
+  // pasa a un segundo anillo de radio doble, y asi sucesivamente.
+  const ring = Math.floor((count - 1) / 8) + 1;
+  const angle = (((count - 1) % 8) * 45 * Math.PI) / 180;
+  const radiusM = COINCIDENT_OFFSET_METERS * ring;
+
+  const metersPerDegLat = 111320;
+  const metersPerDegLng = 111320 * Math.cos((lat * Math.PI) / 180);
+  return {
+    lat: lat + (radiusM * Math.sin(angle)) / metersPerDegLat,
+    lng: lng + (radiusM * Math.cos(angle)) / metersPerDegLng,
+  };
+}
 
 $(document).ready(function () {
   $.ajax({
@@ -296,6 +325,7 @@ function clearMap() {
   markers = [];
   routePaths.forEach((path) => path.setMap(null));
   routePaths = [];
+  markerCoordCounts.clear();
 }
 
 function parseMultipleLatLng(value) {
@@ -372,8 +402,13 @@ function drawRoute(route, index, bounds) {
       content: `<em>N° Orden: ${i + 1}</em><br><strong>${cliente}</strong><br>Código: ${seguimiento}<br>`,
     });
 
+    // Si esta parada comparte coordenadas con otra ya dibujada (misma o
+    // distinta ruta), se separa visualmente en un abanico - la polyline
+    // sigue la geometria real, solo se offsetea el pin.
+    const pos = offsetCoincidentMarker(lat, lng);
+
     const marker = new google.maps.Marker({
-      position: { lat, lng },
+      position: pos,
       label: `${i + 1}`,
       map,
       icon: {

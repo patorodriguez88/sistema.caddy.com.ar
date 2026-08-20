@@ -13,6 +13,12 @@
 // salida siempre se tomara de un Recorrido 5 hardcodeado. Además usaba la key de
 // Google de BROWSER en vez de la de SERVER (Conexion/google_config.php), que puede
 // estar restringida para llamadas server-side.
+//
+// Preview + confirmación: este endpoint ya NO graba nada en Orden_Automatic (modo
+// preview) - calcula el orden y lo devuelve para dibujar en el mapa (Mapas/js/datos.js,
+// dropdown "Ver Ruta"), guardando el resultado en $_SESSION['PreviewOrden'][$Recorrido].
+// Recién Orden_Automatic_Confirmar (click en "Aceptar Ruta") graba, y solo si el
+// conjunto de paradas abiertas no cambió desde el cálculo (ver chequeo de staleness).
 
 require_once('../../../Conexion/Conexioni.php');
 require_once('../../../Conexion/google_config.php');
@@ -228,10 +234,12 @@ if ($_POST['Orden_Automatic'] == 1) {
 
     $legs = $data['routes'][0]['legs'];
     $paradasFinal = array_merge($ordenadas, [$destino]); // reconstruyo el orden completo (los intermedios + el destino que se sacó antes)
+    $polyline = $data['routes'][0]['polyline']['encodedPolyline'] ?? '';
 
     $horaActual = new DateTime($fechaSalida . ' ' . $HoraSalida);
-
-    $stmtUpdate = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = ?, KmO = ?, Tiempo = ?, Hora = ? WHERE id = ? LIMIT 1");
+    $kmTotal = 0;
+    $duracionTotalSeg = 0;
+    $paradasConDatos = [];
 
     foreach ($paradasFinal as $i => $parada) {
         $leg = $legs[$i] ?? null;
@@ -245,8 +253,83 @@ if ($_POST['Orden_Automatic'] == 1) {
         $horaActual->modify('+' . $minutos . ' minute');
         $horaTexto = $horaActual->format('H:i:s');
 
-        $posicion = $i + 1;
-        $stmtUpdate->bind_param('iiisi', $posicion, $distanciaM, $duracionSeg, $horaTexto, $parada['id']);
+        $kmTotal += $distanciaM / 1000;
+        $duracionTotalSeg += $duracionSeg + ($timeDelivered * 60);
+
+        $paradasConDatos[] = [
+            'id' => $parada['id'],
+            'lat' => $parada['lat'],
+            'lng' => $parada['lng'],
+            'posicion' => $i + 1,
+            'distanciaM' => $distanciaM,
+            'duracionSeg' => $duracionSeg,
+            'horaEstimada' => $horaTexto,
+        ];
+    }
+
+    // No se toca la base todavia: se guarda el resultado calculado en sesion
+    // (indexado por Recorrido, no pisa otros recorridos que el mismo usuario
+    // pueda tener en otra pestaña) para que el operador lo vea en el mapa y
+    // recien grabe si aprieta "Aceptar Ruta" (ver Orden_Automatic_Confirmar
+    // mas abajo).
+    $_SESSION['PreviewOrden'][$Recorrido] = [
+        'paradas' => $paradasConDatos,
+        'idsParadas' => array_column($paradasConDatos, 'id'),
+        'polyline' => $polyline,
+        'Usuario' => $Usuario,
+    ];
+    sort($_SESSION['PreviewOrden'][$Recorrido]['idsParadas']);
+
+    echo json_encode([
+        'resultado' => 1,
+        'polyline' => $polyline,
+        'paradas' => $paradasConDatos,
+        'kmTotal' => round($kmTotal, 2),
+        'duracionTotalMin' => round($duracionTotalSeg / 60),
+        'sinCoordenadas' => $sinCoordenadas,
+    ]);
+}
+
+if (($_POST['Orden_Automatic_Confirmar'] ?? null) == 1) {
+    $Recorrido = $_POST['Recorrido'] ?? '';
+
+    $preview = $_SESSION['PreviewOrden'][$Recorrido] ?? null;
+    if (!$preview) {
+        echo json_encode(['resultado' => 0, 'message' => 'No hay una ruta calculada para confirmar. Volvé a "Ver Ruta".']);
+        exit;
+    }
+
+    // Chequeo de staleness: si entre el calculo (Ver Ruta) y esta
+    // confirmacion se agrego, cerro o elimino una parada del recorrido, el
+    // orden calculado ya no es valido - se pide recalcular en vez de grabar
+    // posiciones que no corresponden al recorrido actual.
+    $stmtActual = $mysqli->prepare(
+        "SELECT id FROM HojaDeRuta WHERE Recorrido = ? AND Eliminado = 0 AND Estado = 'Abierto'"
+    );
+    $stmtActual->bind_param('s', $Recorrido);
+    $stmtActual->execute();
+    $resActual = $stmtActual->get_result();
+    $idsActuales = [];
+    while ($row = $resActual->fetch_assoc()) {
+        $idsActuales[] = (int)$row['id'];
+    }
+    sort($idsActuales);
+
+    if ($idsActuales !== $preview['idsParadas']) {
+        echo json_encode(['resultado' => 0, 'message' => 'El recorrido cambió desde que se calculó la ruta. Volvé a "Ver Ruta" para recalcular.']);
+        exit;
+    }
+
+    $stmtUpdate = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = ?, KmO = ?, Tiempo = ?, Hora = ? WHERE id = ? LIMIT 1");
+    foreach ($preview['paradas'] as $parada) {
+        $stmtUpdate->bind_param(
+            'iiisi',
+            $parada['posicion'],
+            $parada['distanciaM'],
+            $parada['duracionSeg'],
+            $parada['horaEstimada'],
+            $parada['id']
+        );
         $stmtUpdate->execute();
     }
     $stmtUpdate->close();
@@ -254,10 +337,11 @@ if ($_POST['Orden_Automatic'] == 1) {
     // TRAZABILIDAD: quien/cuando/con que metodo se ordeno este recorrido, y
     // el trazo real de la ruta (para dibujar la linea en el mapa de Hoja de
     // Ruta, igual que ya se hace en el Planificador).
-    $polyline = $data['routes'][0]['polyline']['encodedPolyline'] ?? '';
     $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico', Polyline = ? WHERE Numero = ?");
-    $stmtTraza->bind_param('sss', $Usuario, $polyline, $Recorrido);
+    $stmtTraza->bind_param('sss', $preview['Usuario'], $preview['polyline'], $Recorrido);
     $stmtTraza->execute();
 
-    echo json_encode(['resultado' => 1, 'ordenadas' => count($paradasFinal), 'sinCoordenadas' => $sinCoordenadas]);
+    unset($_SESSION['PreviewOrden'][$Recorrido]);
+
+    echo json_encode(['resultado' => 1, 'ordenadas' => count($preview['paradas'])]);
 }

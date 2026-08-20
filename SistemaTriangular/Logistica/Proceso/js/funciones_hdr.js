@@ -115,8 +115,14 @@ function veo(i) {
   // mapa, que leen de esa misma tabla - si no se espera, se puede leer una
   // version vieja (o vacia, si justo se estaba truncando la version global
   // de antes) de los datos.
-  renderizar_datos(i).then(function () {
-    $.ajax({
+  // Devuelve la promesa de la cadena completa para que quien llame pueda
+  // encadenar algo despues (ej. abrir un recorrido y despues mostrar un
+  // preview de ruta). OJO: se resuelve cuando termina el fetch de
+  // datos_hojaderuta.php, NO cuando initMap() termina de dibujar el mapa -
+  // esa llamada va detras de ensureGoogleMapsLoaded(...).then(...) sin
+  // encadenar el retorno, asi que el mapa puede no estar listo todavia.
+  return renderizar_datos(i).then(function () {
+    return $.ajax({
       data: { Mapa: 1, Rec: i },
       type: "POST",
       url: "Mapas/php/datos_hojaderuta.php",

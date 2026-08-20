@@ -554,16 +554,11 @@
                                             <span id="route_time" class="d-inline badge bg-primary"></span>
                                         </h4>
 
-                                        <div class="d-inline form-check form-switch">
-                                            <input class="form-check-input" type="checkbox" role="switch" id="optimizar">
-                                            <label class="form-check-label" for="optimizar">Optimizar Ruta</label>
-
-                                            <button id="optimizar_ok" type="button"
-                                                class="btn btn-success btn-sm mb-2 ms-2"
-                                                style="display:none">
-                                                Aceptar Orden
-                                            </button>
-                                        </div>
+                                        <button id="optimizar_ok" type="button"
+                                            class="btn btn-success btn-sm mb-2"
+                                            style="display:none">
+                                            Aceptar Ruta
+                                        </button>
                                     </div>
 
                                     <div id="alert_route"
