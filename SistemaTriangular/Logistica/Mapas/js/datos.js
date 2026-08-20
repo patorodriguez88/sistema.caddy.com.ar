@@ -6,7 +6,7 @@
 // grabar nada, y recien graba si el operador aprieta "Aceptar Ruta".
 
 $("#routes").click(function () {
-  verRutaOptimizada();
+  pedirFechaHoraYVerRuta();
 });
 
 $("#points").click(function () {
@@ -18,13 +18,60 @@ $("#points").click(function () {
   $("#optimizar_ok").css("display", "none");
 });
 
-function verRutaOptimizada() {
+// Antes de calcular, se le pregunta al operador a que fecha/hora sale el
+// recorrido (por defecto ahora mismo) - no siempre es hoy mismo/ahora, y
+// depender en silencio de Logistica.Hora podia quedar desactualizado o en
+// el pasado (ver fix de "Timestamp must be set to a future time").
+function pedirFechaHoraYVerRuta() {
+  var ahora = new Date();
+  var fechaDefault =
+    ahora.getFullYear() +
+    "-" +
+    String(ahora.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(ahora.getDate()).padStart(2, "0");
+  var horaDefault = String(ahora.getHours()).padStart(2, "0") + ":" + String(ahora.getMinutes()).padStart(2, "0");
+
+  Swal.fire({
+    title: "¿A qué fecha y hora sale el recorrido?",
+    html:
+      '<input type="date" id="swal-fecha-salida" class="swal2-input" value="' +
+      fechaDefault +
+      '">' +
+      '<input type="time" id="swal-hora-salida" class="swal2-input" value="' +
+      horaDefault +
+      '">',
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: "Calcular ruta",
+    cancelButtonText: "Cancelar",
+    preConfirm: function () {
+      var fecha = document.getElementById("swal-fecha-salida").value;
+      var hora = document.getElementById("swal-hora-salida").value;
+      if (!fecha || !hora) {
+        Swal.showValidationMessage("Completá fecha y hora de salida.");
+        return false;
+      }
+      return { fecha: fecha, hora: hora };
+    },
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+    verRutaOptimizada(result.value.fecha, result.value.hora);
+  });
+}
+
+function verRutaOptimizada(fechaSalida, horaSalida) {
   var Recorrido = $("#recorrido").html();
 
   $.ajax({
-    data: { Orden_Automatic: 1, Recorrido: Recorrido },
+    data: { Orden_Automatic: 1, Recorrido: Recorrido, FechaSalida: fechaSalida, HoraSalida: horaSalida },
     type: "POST",
     url: "Mapas/php/orden_automatico.php",
+    // orden_automatico.php manda Content-Type: application/json - sin esto,
+    // jQuery auto-detecta y parsea la respuesta solo, y el JSON.parse(response)
+    // de mas abajo (pensado para un string) rompe con "Unexpected token o"
+    // porque response ya llega como objeto.
+    dataType: "text",
     beforeSend: function () {
       $("#info-alert-modal-title").html("Calculando la mejor ruta...");
       $("#info-alert-modal").modal("show");
@@ -110,6 +157,7 @@ $("#optimizar_ok").click(function () {
     data: { Orden_Automatic_Confirmar: 1, Recorrido: Recorrido },
     type: "POST",
     url: "Mapas/php/orden_automatico.php",
+    dataType: "text", // ver nota de mas arriba en verRutaOptimizada()
     beforeSend: function () {
       $("#info-alert-modal-title").html("Guardando el nuevo orden...");
       $("#info-alert-modal").modal("show");

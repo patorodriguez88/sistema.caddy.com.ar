@@ -106,17 +106,31 @@ if ($_POST['Orden_Automatic'] == 1) {
         exit;
     }
 
-    // BUSCO LA HORA DE SALIDA DEL RECORRIDO
-    $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = ? AND Estado <> 'Cerrada' AND Eliminado = 0");
-    $stmt->bind_param('s', $Recorrido);
-    $stmt->execute();
-    $row_inicio = $stmt->get_result()->fetch_assoc();
-    if (!$row_inicio) {
-        $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = '5' AND Eliminado = 0 ORDER BY Fecha DESC LIMIT 1");
+    // FECHA/HORA DE SALIDA: el operador la elige al pedir "Ver Ruta" (por si
+    // el recorrido sale otro dia, no necesariamente hoy) - FechaSalida/
+    // HoraSalida llegan por POST. Si no vienen (u vienen invalidas), se cae
+    // al criterio viejo: Logistica.Hora de este Recorrido + fecha de hoy.
+    $fechaSalidaPost = trim($_POST['FechaSalida'] ?? '');
+    $horaSalidaPost = trim($_POST['HoraSalida'] ?? '');
+    $fechaValida = $fechaSalidaPost !== '' && DateTime::createFromFormat('Y-m-d', $fechaSalidaPost) !== false;
+    $horaValida = (bool)preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $horaSalidaPost);
+
+    if ($fechaValida && $horaValida) {
+        $fechaSalida = $fechaSalidaPost;
+        $HoraSalida = strlen($horaSalidaPost) === 5 ? $horaSalidaPost . ':00' : $horaSalidaPost;
+    } else {
+        $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = ? AND Estado <> 'Cerrada' AND Eliminado = 0");
+        $stmt->bind_param('s', $Recorrido);
         $stmt->execute();
         $row_inicio = $stmt->get_result()->fetch_assoc();
+        if (!$row_inicio) {
+            $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = '5' AND Eliminado = 0 ORDER BY Fecha DESC LIMIT 1");
+            $stmt->execute();
+            $row_inicio = $stmt->get_result()->fetch_assoc();
+        }
+        $HoraSalida = $row_inicio['Hora'] ?? '08:00:00';
+        $fechaSalida = date('Y-m-d');
     }
-    $HoraSalida = $row_inicio['Hora'] ?? '08:00:00';
 
     // PARADAS ABIERTAS DEL RECORRIDO, CON COORDENADAS VALIDAS. Se suma el
     // HorarioEntregaSolicitado (TransClientes) de cada parada, si lo cargo
@@ -191,7 +205,6 @@ if ($_POST['Orden_Automatic'] == 1) {
         return ['location' => ['latLng' => ['latitude' => $p['lat'], 'longitude' => $p['lng']]]];
     }, $ordenadas);
 
-    $fechaSalida = date('Y-m-d');
     $departureTimestamp = strtotime("$fechaSalida $HoraSalida");
     // Routes API rechaza un departureTime que no sea estrictamente futuro. Si
     // la hora de salida configurada ya pasó, usar exactamente time() no
