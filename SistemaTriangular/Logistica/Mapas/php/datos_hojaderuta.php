@@ -1,5 +1,21 @@
 <?php
 
+// Diagnostico temporal: la Response de este endpoint viene 500 y vacia
+// (display_errors apagado en produccion) y ya se descarto que sea alguna
+// query() devolviendo false (todas estan guardadas mas abajo) - asi que el
+// fatal es de otro tipo (memoria, funcion/clase inexistente, etc). Este
+// shutdown handler captura CUALQUIER error fatal, sea cual sea, y lo
+// devuelve en el body en vez de dejar una respuesta 500 muda.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode(['fatal' => $err]);
+    }
+});
+
 require_once('../../../Conexion/Conexioni.php');
 
 // Antes, si CUALQUIER query() de este archivo fallaba (columna/tabla que no
