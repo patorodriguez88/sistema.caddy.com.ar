@@ -108,17 +108,23 @@ $rec = mysqli_fetch_one(
     [$logistica['Recorrido']]
 ) ?? [];
 
+// UNION con HojaDeRuta_Historico: si un servicio salió con este chofer/orden y
+// después se reasignó a otro recorrido, la fila viva de HojaDeRuta ya no lo tiene
+// (se sobreescribe in-place) — el snapshot guardado por cambiarRecorrido() sí.
 $items = db_fetch_all(
     $mysqli,
-    "SELECT HojaDeRuta.id, HojaDeRuta.Cliente, HojaDeRuta.Seguimiento, HojaDeRuta.Localizacion,
-            HojaDeRuta.Celular, HojaDeRuta.Hora, HojaDeRuta.Observaciones, HojaDeRuta.Posicion
+    "SELECT id, Cliente, Seguimiento, Localizacion, Celular, Hora, Observaciones, Posicion
        FROM HojaDeRuta
-      WHERE HojaDeRuta.NumerodeOrden = ?
-        AND HojaDeRuta.Estado = 'Cerrado'
-        AND HojaDeRuta.Eliminado = 0
-      ORDER BY HojaDeRuta.Posicion",
-    's',
-    [$NumeroOrden]
+      WHERE NumerodeOrden = ?
+        AND Estado = 'Cerrado'
+        AND Eliminado = 0
+     UNION ALL
+     SELECT idHojaDeRuta AS id, Cliente, Seguimiento, Localizacion, Celular, Hora, Observaciones, Posicion
+       FROM HojaDeRuta_Historico
+      WHERE NumerodeOrden = ?
+      ORDER BY Posicion",
+    'ss',
+    [$NumeroOrden, $NumeroOrden]
 );
 
 $headerDatos = [

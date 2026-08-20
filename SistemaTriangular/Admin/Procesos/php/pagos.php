@@ -104,24 +104,21 @@ if(isset($_POST['BuscarRecorridos'])){
 //SELECT RECORRIDOS
 if(isset($_POST['ActualizaRecorrido'])){
   if($_POST['cs']<>''){
-    $sql=$mysqli->query("SELECT NumerodeOrden FROM `Logistica` WHERE Recorrido='$_POST[r]' AND Eliminado=0 AND Estado ='Cargada'");
-    $NOrden=$sql->fetch_array(MYSQLI_ASSOC);
 
-    if(($sql->num_rows) == 0) {
-    $NO=0;  
-    }else{
-    $NO=$NOrden['NumerodeOrden'];    
-    }
-    
-    $ActualizarTransClientes=$mysqli->query("UPDATE TransClientes SET Recorrido='$_POST[r]',NumerodeOrden='$NO' WHERE CodigoSeguimiento='$_POST[cs]'");
-    $ActualizarHojaDeRuta=$mysqli->query("UPDATE HojaDeRuta SET Recorrido='$_POST[r]',NumerodeOrden='$NO' WHERE Seguimiento='$_POST[cs]'");
-  
-    echo json_encode(array('success'=>1,'Recorrido'=>$_POST['r'],'CodigoSeguimiento'=>$_POST['cs']));  
-  
+    require_once __DIR__ . '/../../../Funciones/Funciones.php';
+    $resultado = cambiarRecorrido($mysqli, (string)$_POST['cs'], (string)$_POST['r']);
+
+    echo json_encode([
+        'success' => $resultado['success'],
+        'message' => $resultado['message'] ?? '',
+        'Recorrido' => $_POST['r'],
+        'CodigoSeguimiento' => $_POST['cs'],
+    ]);
+
   }else{
   echo json_encode(array('success'=>0));
   }
-  
+
 }
 //HASTA ACA SELET RECORRIDOS
 $mysqli->close();

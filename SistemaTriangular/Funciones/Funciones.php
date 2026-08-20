@@ -47,6 +47,101 @@ function ordenNoFacturada(mysqli $mysqli, $numeroOrden)
     return in_array($estado, ['Alta', 'Cargada', 'Pendiente'], true);
 }
 
+// Solo se llama cuando ordenNoFacturada() ya dio false y hace falta explicarle al usuario
+// por qué, en vez del mensaje genérico "consistencia administrativa".
+function motivoOrdenBloqueada(mysqli $mysqli, $numeroOrden): string
+{
+    if ($stmt = $mysqli->prepare("SELECT Facturado, Estado FROM Logistica WHERE NumerodeOrden = ? AND Eliminado = 0 LIMIT 1")) {
+        $stmt->bind_param('s', $numeroOrden);
+        $stmt->execute();
+        $stmt->bind_result($facturadoDB, $estadoDB);
+        if ($stmt->fetch()) {
+            $stmt->close();
+            if ((int)$facturadoDB !== 0) {
+                return "La orden {$numeroOrden} ya fue facturada, no se puede modificar.";
+            }
+            return "La orden {$numeroOrden} está '{$estadoDB}' (recorrido ya cerrado), no se puede modificar.";
+        }
+        $stmt->close();
+    }
+
+    return "La orden {$numeroOrden} no puede modificarse por consistencia administrativa.";
+}
+
+// Copia la fila viva de HojaDeRuta a HojaDeRuta_Historico antes de que cambiarRecorrido()
+// la sobreescriba, para que el manifiesto de una orden ya cerrada (HojaDeRutaCerradapdf.php)
+// no pierda servicios que salieron con un chofer y después se reasignaron a otro recorrido.
+function snapshotHojaDeRutaHistorico(
+    mysqli $mysqli,
+    array $filaHdr,
+    string $r,
+    int $NO,
+    string $Fecha,
+    string $Hora,
+    string $Usuario,
+    string $motivo
+): void {
+    $sql = "INSERT INTO HojaDeRuta_Historico
+        (idHojaDeRuta, Fecha, Hora, Recorrido, Localizacion, Ciudad, Provincia, Pais, Cliente, Titulo,
+         Observaciones, Usuario, Asignado, Estado, NumerodeOrden, Posicion, Seguimiento, idCliente, Celular,
+         TramoMapa, Eliminado, Avisado, ImporteCobranza, NumeroRepo, KmO, Tiempo, idTransClientes, Devuelto,
+         Servicio, Posicion_retiro, Hora_retiro, RecorridoNuevo, NumerodeOrdenNuevo, FechaCambio, HoraCambio,
+         UsuarioCambio, MotivoCambio)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)";
+
+    if (!$stmt = $mysqli->prepare($sql)) {
+        throw new Exception('No se pudo preparar INSERT HojaDeRuta_Historico');
+    }
+
+    $stmt->bind_param(
+        'issdssssssssssiisisiiididdiisisdissss',
+        $filaHdr['id'],
+        $filaHdr['Fecha'],
+        $filaHdr['Hora'],
+        $filaHdr['Recorrido'],
+        $filaHdr['Localizacion'],
+        $filaHdr['Ciudad'],
+        $filaHdr['Provincia'],
+        $filaHdr['Pais'],
+        $filaHdr['Cliente'],
+        $filaHdr['Titulo'],
+        $filaHdr['Observaciones'],
+        $filaHdr['Usuario'],
+        $filaHdr['Asignado'],
+        $filaHdr['Estado'],
+        $filaHdr['NumerodeOrden'],
+        $filaHdr['Posicion'],
+        $filaHdr['Seguimiento'],
+        $filaHdr['idCliente'],
+        $filaHdr['Celular'],
+        $filaHdr['TramoMapa'],
+        $filaHdr['Eliminado'],
+        $filaHdr['Avisado'],
+        $filaHdr['ImporteCobranza'],
+        $filaHdr['NumeroRepo'],
+        $filaHdr['KmO'],
+        $filaHdr['Tiempo'],
+        $filaHdr['idTransClientes'],
+        $filaHdr['Devuelto'],
+        $filaHdr['Servicio'],
+        $filaHdr['Posicion_retiro'],
+        $filaHdr['Hora_retiro'],
+        $r,
+        $NO,
+        $Fecha,
+        $Hora,
+        $Usuario,
+        $motivo
+    );
+    $stmt->execute();
+
+    if ($stmt->errno !== 0) {
+        throw new Exception('Error al insertar HojaDeRuta_Historico: ' . $stmt->error);
+    }
+
+    $stmt->close();
+}
+
 function recalcularResumenOrdenLogistica(mysqli $mysqli, $numeroOrden)
 {
     if ($numeroOrden === '' || $numeroOrden === '0' || $numeroOrden === 0 || $numeroOrden === null) {
@@ -312,12 +407,12 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
     // ---- 3) Validación administrativa sobre órdenes afectadas ----
     // Solo validar destino si efectivamente existe una orden destino
     if ($NO != 0 && !ordenNoFacturada($mysqli, $NO)) {
-        return ['success' => 0, 'message' => 'La orden destino no está disponible para asignación.'];
+        return ['success' => 0, 'message' => 'La orden destino no está disponible para asignación: ' . motivoOrdenBloqueada($mysqli, $NO)];
     }
 
     if ($ordenAnterior !== '' && $ordenAnterior !== '0' && $ordenAnterior != $NO) {
         if (!ordenNoFacturada($mysqli, $ordenAnterior)) {
-            return ['success' => 0, 'message' => 'La orden origen no puede modificarse por consistencia administrativa.'];
+            return ['success' => 0, 'message' => motivoOrdenBloqueada($mysqli, $ordenAnterior)];
         }
     }
 
@@ -384,6 +479,23 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
         // Después la nueva orden
         if ($NO != 0) {
             recalcularResumenOrdenLogistica($mysqli, $NO);
+        }
+
+        // 5.b.0) Snapshot histórico: preservar la fila de HojaDeRuta tal como está
+        // antes de sobreescribirla, para que el manifiesto de una orden ya cerrada
+        // (HojaDeRutaCerradapdf.php) no pierda el rastro de qué chofer llevó qué.
+        if ($stmt = $mysqli->prepare("SELECT * FROM HojaDeRuta WHERE Seguimiento = ? AND Eliminado = 0 LIMIT 1")) {
+            $stmt->bind_param('s', $cs);
+            $stmt->execute();
+            $filaHdr = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+
+            if ($filaHdr) {
+                $motivoSnapshot = 'Cambio de recorrido: ' . $filaHdr['Recorrido'] . ' -> ' . $r;
+                snapshotHojaDeRutaHistorico($mysqli, $filaHdr, $r, $NO, $Fecha, $Hora, $Usuario, $motivoSnapshot);
+            }
+        } else {
+            throw new Exception('No se pudo preparar SELECT HojaDeRuta para snapshot histórico');
         }
 
         // 5.b) HojaDeRuta
