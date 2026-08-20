@@ -186,21 +186,20 @@ $("#confirmarpago_botton").click(function () {
     var fechacheque = "";
     var banco = "";
 
-    if (formadepago == "000111200" || formadepago == "000111210") {
-      importe = $("#importe_transferencia").val();
-      numerotrans = $("#numero_transferencia").val();
-      fechatrans = $("#fecha_transferencia").val();
-    }
-
     if (formadepago == "000111100") {
       importe = $("#importe_efectivo").val();
-    }
-
-    if (formadepago == "000112400") {
+    } else if (formadepago == "000112400") {
       importe = $("#importe_cheque").val();
       numerocheque = $("#numero_cheque").val();
       fechacheque = $("#fecha_cheque").val();
       banco = $("#banco_cheque").val();
+    } else if (formadepago != "" && formadepago != "000111400") {
+      // Cualquier forma de pago que no sea Efectivo, Cheques de Terceros o Mercado
+      // Pago se trata como cuenta bancaria/transferencia (evita tener que listar acá
+      // cada cuenta bancaria nueva que se de de alta en FormaDePago).
+      importe = $("#importe_transferencia").val();
+      numerotrans = $("#numero_transferencia").val();
+      fechatrans = $("#fecha_transferencia").val();
     }
 
     if (formadepago != "") {

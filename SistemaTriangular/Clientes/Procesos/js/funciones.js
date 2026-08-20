@@ -1691,34 +1691,28 @@ $(document).on("change", 'select[name="formadepago"]', function (e) {
     $("#transferencia").hide();
 
     document.getElementById("mercadopago").style.display = "flex";
-  }
-  if (
-    this.value == "000111200" ||
-    this.value == "000111210" ||
-    this.value == "000111600"
-  ) {
-    $("#mercadopago").hide();
-    $("#mercadopago_api").hide();
-    $("#efectivo").hide();
-    $("#cheques").hide();
-    document.getElementById("transferencia").style.display = "flex";
-    $("#confirmarpago_botton").prop("disabled", false);
-  }
-
-  if (this.value == "000111100") {
+  } else if (this.value == "000111100") {
     $("#mercadopago").hide();
     $("#mercadopago_api").hide();
     $("#transferencia").hide();
     $("#cheques").hide();
     document.getElementById("efectivo").style.display = "flex";
     $("#confirmarpago_botton").prop("disabled", false);
-  }
-  if (this.value == "000112400") {
+  } else if (this.value == "000112400") {
     $("#mercadopago").hide();
     $("#mercadopago_api").hide();
     $("#efectivo").hide();
     $("#transferencia").hide();
     document.getElementById("cheques").style.display = "flex";
+    $("#confirmarpago_botton").prop("disabled", false);
+  } else if (this.value != "") {
+    // Cualquier otra forma de pago (cuentas bancarias) se trata como transferencia,
+    // así no hay que tocar este JS cada vez que se da de alta un banco nuevo.
+    $("#mercadopago").hide();
+    $("#mercadopago_api").hide();
+    $("#efectivo").hide();
+    $("#cheques").hide();
+    document.getElementById("transferencia").style.display = "flex";
     $("#confirmarpago_botton").prop("disabled", false);
   }
 });

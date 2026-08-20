@@ -183,7 +183,7 @@ VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroCom
 
     if ($NumeroCheque <> '') {
         $sql = $mysqli->query("INSERT INTO Cheques(`Banco`, `NumeroCheque`, `Asiento`, `Proveedor`, `Importe`, `FechaCobro`, `Usuario`, `Terceros`) 
-    VALUES ('{$Banco}','{$NumeroCheque}','{$NAsiento}','{$CuentaEncontrada}',{$Importe},'{$FechaCheque}','{$Usuario}','1')");
+    VALUES ('{$Banco}','{$NumeroCheque}','{$NAsiento}','{$RazonSocial}',{$Importe},'{$FechaCheque}','{$Usuario}','1')");
     }
 
     //SI LA CUENTA ES BANCO CARGO IMPUESTOS AL DEBITO Y CREDITO
