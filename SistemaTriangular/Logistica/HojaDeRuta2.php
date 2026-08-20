@@ -48,20 +48,20 @@
          por defecto del navegador. -->
     <style>
         input.color-dot {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             padding: 0;
             border: 1px solid rgba(0, 0, 0, .15);
             border-radius: 50%;
-            overflow: hidden;
             cursor: pointer;
             vertical-align: middle;
-            -webkit-appearance: none;
-            appearance: none;
+            display: inline-block;
         }
 
         input.color-dot::-webkit-color-swatch-wrapper {
             padding: 0;
+            border-radius: 50%;
+            overflow: hidden;
         }
 
         input.color-dot::-webkit-color-swatch {

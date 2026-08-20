@@ -49,18 +49,28 @@ function color(c, r) {
   });
 }
 
-// FUNCION PARA MOSTRAR LOS PANELES - sin modal de carga a proposito (ver
-// nota en renderizar_datos), la tarjetas simplemente aparecen cuando llegan.
+// FUNCION PARA MOSTRAR LOS PANELES - las cards de "Hojas de Ruta Activas"
+// pueden tardar unos segundos (recorre uno por uno todos los recorridos
+// abiertos), y sin ningun aviso la pantalla parecia colgada. Se reusa el
+// modal generico "#info-alert-modal" (ya usado en color()/orden_automatico),
+// y se cierra tanto en success como en error para no repetir el bug viejo
+// del modal "Renderizando Tabla Roadmap" que quedaba pegado para siempre.
 function paneles() {
   $.ajax({
     data: { FormaDePago: 1 },
     type: "POST",
     url: "Proceso/php/funciones_hdr.php",
+    beforeSend: function () {
+      $("#info-alert-modal-title").html("Cargando Hojas de Ruta...");
+      $("#info-alert-modal").modal("show");
+    },
     success: function (response) {
       $("#hdractivas").html(response).fadeIn();
+      $("#info-alert-modal").modal("hide");
     },
     error: function (jqXHR, textStatus, errorThrown) {
       console.error("Error en paneles():", textStatus, errorThrown);
+      $("#info-alert-modal").modal("hide");
       toast("error", "Error", "No se pudieron cargar las Hojas de Ruta. Recargá la página.");
     },
   });

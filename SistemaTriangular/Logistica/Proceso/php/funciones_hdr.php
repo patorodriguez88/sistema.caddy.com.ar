@@ -128,16 +128,18 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     echo '</div>';
     echo '<div class="float-end">';
     echo '<i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i></div>';
+    // Punto de color del Recorrido: circulo chico al lado del nombre, en la
+    // misma linea del titulo (antes quedaba como bloque aparte debajo). Se usa
+    // onchange (se dispara al cerrar la paleta nativa con un color elegido) en
+    // vez de onblur (poco confiable para inputs type=color en varios navegadores).
+    $colorDot = isset($datorecorrido['Color'])
+      ? ' <input type="color" class="color-dot" value="#' . ltrim($datorecorrido['Color'], '#') . '" onchange="color(this.value,' . $fila['Recorrido'] . ')" title="Cambiar color del recorrido">'
+      : '';
     if (isset($datorecorrido['Color']) && isset($datologistica['Fecha'])) {
       $colorHex = ltrim($datorecorrido['Color'], '#');
-      echo '<h6 class="font-weight-normal mt-0 mr-3" style="color:#' . $colorHex . '" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '    #' . $datologistica['Fecha'] . '</h6>';
+      echo '<h6 class="font-weight-normal mt-0 mr-3" style="color:#' . $colorHex . '" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '    #' . $datologistica['Fecha'] . $colorDot . '</h6>';
     } else {
-      echo '<h6 class="text-muted mt-0 mr-3" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '</h6>';
-    }
-    // Punto de color del Recorrido: circulo chico al lado del nombre en vez
-    // del cuadrado grande que quedaba abajo, junto al badge de Orden.
-    if (isset($datorecorrido['Color'])) {
-      echo '<input type="color" class="color-dot" value="#' . ltrim($datorecorrido['Color'], '#') . '" onblur="color(this.value,' . $fila['Recorrido'] . ')" title="Color del recorrido">';
+      echo '<h6 class="text-muted mt-0 mr-3" title="Revenue">   Recorrido ' . $fila['Recorrido'] . $colorDot . '</h6>';
     }
     echo '<h6 class="text-muted mt-0 mb-1">' . ($datorecorrido['Nombre'] ?? '') . '</h6>';
     echo '<h5 class="mt-3 mb-2">' . $Nombre . '</h5>';
