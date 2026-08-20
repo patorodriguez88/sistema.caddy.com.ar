@@ -1,4 +1,18 @@
 <?php
+// Diagnostico temporal: la pagina esta dando 500 en sandbox (probablemente
+// por el refresco de datos prod->sandbox que se cortó a mitad de camino por
+// timeout del gateway) y sin esto no hay forma de ver el error real. Sacar
+// despues de identificar la causa.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        if (!headers_sent()) {
+            header('Content-Type: text/plain; charset=UTF-8');
+        }
+        echo "FATAL: " . $err['message'] . "\nen " . $err['file'] . ":" . $err['line'];
+    }
+});
+
 require_once __DIR__ . '/../Conexion/Conexioni.php';
 require_once __DIR__ . '/../Conexion/google_config.php';
 
