@@ -1,5 +1,18 @@
 <?php
 
+// Diagnostico temporal: "No se pudo actualizar el orden del recorrido" en
+// sandbox al abrir una Hoja de Ruta - sin esto no hay forma de ver el error
+// real. Sacar despues de identificar la causa.
+register_shutdown_function(function () {
+    $err = error_get_last();
+    if ($err && in_array($err['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR, E_USER_ERROR], true)) {
+        if (!headers_sent()) {
+            header('Content-Type: application/json');
+        }
+        echo json_encode(['fatal' => $err]);
+    }
+});
+
 require_once('../../../Conexion/Conexioni.php');
 
 if (isset($_POST['Renderizar'])) {
