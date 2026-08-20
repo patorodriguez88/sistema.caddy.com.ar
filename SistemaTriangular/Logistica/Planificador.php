@@ -218,7 +218,12 @@ if ($rowStopTime && is_numeric($rowStopTime['Valor'])) {
 
     <!-- Funciones -->
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Planificador/js/planificador.js"></script>
+    <?php
+    // Cache-busting por fecha de modificacion (ver misma nota en HojaDeRuta2.php).
+    $rutaPlanificadorJs = __DIR__ . '/Planificador/js/planificador.js';
+    $vPlanificadorJs = file_exists($rutaPlanificadorJs) ? filemtime($rutaPlanificadorJs) : time();
+    ?>
+    <script src="Planificador/js/planificador.js?v=<?php echo $vPlanificadorJs; ?>"></script>
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

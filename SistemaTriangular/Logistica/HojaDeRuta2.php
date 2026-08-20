@@ -655,12 +655,23 @@
     <!-- Funciones -->
     <script src="../Menu/js/funciones.js"></script>
 
-    <script src="Proceso/js/funciones_hdr.js"></script>
-    <script src="Mapas/js/hojaderuta.js"></script>
+    <?php
+    // Cache-busting por fecha de modificacion: estos archivos se estan
+    // iterando seguido (features de Ver Ruta / cards) y el navegador los
+    // cacheaba entre cambios, haciendo parecer que un fix ya deployado no
+    // andaba (era el JS viejo en cache) - filemtime cambia el query string
+    // solo, sin tocar el HTML nunca mas.
+    $verJs = function ($ruta) {
+        $abs = __DIR__ . '/' . $ruta;
+        return $ruta . '?v=' . (file_exists($abs) ? filemtime($abs) : time());
+    };
+    ?>
+    <script src="<?php echo $verJs('Proceso/js/funciones_hdr.js'); ?>"></script>
+    <script src="<?php echo $verJs('Mapas/js/hojaderuta.js'); ?>"></script>
     <script src="Proceso/js/pendientes.js"></script>
     <script src="Mapas/js/controlrecorridos.js"></script>
     <script src="Proceso/js/funciones_controlrecorridos.js"></script>
-    <script src="Mapas/js/datos.js"></script>
+    <script src="<?php echo $verJs('Mapas/js/datos.js'); ?>"></script>
 
 
     <!-- SweetAlert2 CSS -->
