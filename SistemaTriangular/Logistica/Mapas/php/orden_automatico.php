@@ -25,6 +25,74 @@ require_once('../../../Conexion/google_config.php');
 
 header('Content-Type: application/json');
 
+// Decodifica/codifica el polyline de Google (mismo algoritmo que
+// decodePolyline() en el JS del frontend) - hacen falta ambas direcciones
+// porque cuando un recorrido supera el limite de waypoints intermedios de
+// la Routes API (25) hay que partir el calculo en varias llamadas y despues
+// unir los polylines de cada tramo en uno solo, para que el resto del
+// sistema (que espera UN string en Recorridos.Polyline) no tenga que
+// enterarse de que se partio en lotes.
+function decodePolylinePoints(string $encoded): array
+{
+    $points = [];
+    $index = 0;
+    $lat = 0;
+    $lng = 0;
+    $len = strlen($encoded);
+    while ($index < $len) {
+        $shift = 0;
+        $result = 0;
+        do {
+            $b = ord($encoded[$index++]) - 63;
+            $result |= ($b & 0x1f) << $shift;
+            $shift += 5;
+        } while ($b >= 0x20);
+        $lat += ($result & 1) ? ~($result >> 1) : ($result >> 1);
+
+        $shift = 0;
+        $result = 0;
+        do {
+            $b = ord($encoded[$index++]) - 63;
+            $result |= ($b & 0x1f) << $shift;
+            $shift += 5;
+        } while ($b >= 0x20);
+        $lng += ($result & 1) ? ~($result >> 1) : ($result >> 1);
+
+        $points[] = ['lat' => $lat / 1e5, 'lng' => $lng / 1e5];
+    }
+    return $points;
+}
+
+function encodePolylineNumber(int $num): string
+{
+    $encoded = '';
+    while ($num >= 0x20) {
+        $encoded .= chr((0x20 | ($num & 0x1f)) + 63);
+        $num >>= 5;
+    }
+    return $encoded . chr($num + 63);
+}
+
+function encodePolylinePoints(array $points): string
+{
+    $encoded = '';
+    $prevLat = 0;
+    $prevLng = 0;
+    foreach ($points as $p) {
+        $lat = (int) round($p['lat'] * 1e5);
+        $lng = (int) round($p['lng'] * 1e5);
+
+        $dLat = $lat - $prevLat;
+        $dLng = $lng - $prevLng;
+        $encoded .= encodePolylineNumber($dLat << 1 < 0 ? ~($dLat << 1) : $dLat << 1);
+        $encoded .= encodePolylineNumber($dLng << 1 < 0 ? ~($dLng << 1) : $dLng << 1);
+
+        $prevLat = $lat;
+        $prevLng = $lng;
+    }
+    return $encoded;
+}
+
 function haversineDistance($lat1, $lon1, $lat2, $lon2)
 {
     $earthRadius = 6371;
@@ -198,12 +266,17 @@ if ($_POST['Orden_Automatic'] == 1) {
     $horaSalidaMinutos = $hSalidaH * 60 + $hSalidaM;
     $ordenadas = ordenarPorCercania($paradas, $origen, $horaSalidaMinutos, $timeDelivered);
 
-    // UNA sola llamada a la Routes API con todas las paradas ya ordenadas como
-    // intermedios - antes esto eran hasta N² llamadas a la Distance Matrix API.
+    // Llamada(s) a la Routes API con todas las paradas ya ordenadas como
+    // intermedios - antes esto eran hasta N² llamadas a la Distance Matrix
+    // API. La Routes API rechaza mas de 25 waypoints intermedios por
+    // llamada ("Too many intermediate waypoints"), asi que un recorrido con
+    // mas de 26 paradas se parte en varios tramos de hasta 25 intermedios +
+    // 1 destino cada uno, encadenados (el destino de un tramo es el origen
+    // del siguiente), y se unen los resultados (legs, polyline) en uno solo
+    // al final - el resto del codigo de aca para abajo no se entera de que
+    // se partio en lotes.
     $destino = array_pop($ordenadas);
-    $intermedios = array_map(function ($p) {
-        return ['location' => ['latLng' => ['latitude' => $p['lat'], 'longitude' => $p['lng']]]];
-    }, $ordenadas);
+    $paradasFinal = array_merge($ordenadas, [$destino]); // orden completo (los intermedios + el destino que se saco antes)
 
     $departureTimestamp = strtotime("$fechaSalida $HoraSalida");
     // Routes API rechaza un departureTime que no sea estrictamente futuro. Si
@@ -215,44 +288,83 @@ if ($_POST['Orden_Automatic'] == 1) {
         $departureTimestamp = time() + 120;
     }
 
-    $body = [
-        'origin' => ['location' => ['latLng' => ['latitude' => $origen['lat'], 'longitude' => $origen['lng']]]],
-        'destination' => ['location' => ['latLng' => ['latitude' => $destino['lat'], 'longitude' => $destino['lng']]]],
-        'intermediates' => $intermedios,
-        'travelMode' => 'DRIVE',
-        'routingPreference' => 'TRAFFIC_AWARE_OPTIMAL',
-        'departureTime' => gmdate('Y-m-d\TH:i:s\Z', $departureTimestamp),
-    ];
+    $maxIntermediosPorLlamada = 25;
 
-    $ch = curl_init();
-    curl_setopt($ch, CURLOPT_URL, 'https://routes.googleapis.com/directions/v2:computeRoutes');
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, [
-        'Content-Type: application/json',
-        'X-Goog-Api-Key: ' . GOOGLE_API_KEY_SERVER,
-        'X-Goog-FieldMask: routes.legs.distanceMeters,routes.legs.duration,routes.polyline.encodedPolyline',
-    ]);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-    $respuesta = curl_exec($ch);
-    $curlError = curl_error($ch);
-    curl_close($ch);
+    $legs = [];
+    $pathCompleto = [];
+    $origenTramo = $origen;
+    $departureTramo = $departureTimestamp;
+    $idx = 0;
+    $totalPuntos = count($paradasFinal);
 
-    if ($curlError) {
-        echo json_encode(['resultado' => 0, 'message' => 'Error de conexión con Google: ' . $curlError]);
-        exit;
+    while ($idx < $totalPuntos) {
+        $tamanioTramo = min($maxIntermediosPorLlamada + 1, $totalPuntos - $idx);
+        $puntosTramo = array_slice($paradasFinal, $idx, $tamanioTramo);
+        $destinoTramo = array_pop($puntosTramo); // ultimo del tramo = destination de esta llamada
+
+        $intermediosTramo = array_map(function ($p) {
+            return ['location' => ['latLng' => ['latitude' => $p['lat'], 'longitude' => $p['lng']]]];
+        }, $puntosTramo);
+
+        $body = [
+            'origin' => ['location' => ['latLng' => ['latitude' => $origenTramo['lat'], 'longitude' => $origenTramo['lng']]]],
+            'destination' => ['location' => ['latLng' => ['latitude' => $destinoTramo['lat'], 'longitude' => $destinoTramo['lng']]]],
+            'intermediates' => $intermediosTramo,
+            'travelMode' => 'DRIVE',
+            'routingPreference' => 'TRAFFIC_AWARE_OPTIMAL',
+            'departureTime' => gmdate('Y-m-d\TH:i:s\Z', $departureTramo),
+        ];
+
+        $ch = curl_init();
+        curl_setopt($ch, CURLOPT_URL, 'https://routes.googleapis.com/directions/v2:computeRoutes');
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'X-Goog-Api-Key: ' . GOOGLE_API_KEY_SERVER,
+            'X-Goog-FieldMask: routes.legs.distanceMeters,routes.legs.duration,routes.polyline.encodedPolyline',
+        ]);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+        $respuesta = curl_exec($ch);
+        $curlError = curl_error($ch);
+        curl_close($ch);
+
+        if ($curlError) {
+            echo json_encode(['resultado' => 0, 'message' => 'Error de conexión con Google: ' . $curlError]);
+            exit;
+        }
+
+        $data = json_decode($respuesta, true);
+        if (!isset($data['routes'][0]['legs'])) {
+            $motivo = $data['error']['message'] ?? 'la Routes API no devolvió una ruta válida';
+            echo json_encode(['resultado' => 0, 'message' => $motivo]);
+            exit;
+        }
+
+        $legsTramo = $data['routes'][0]['legs'];
+        $legs = array_merge($legs, $legsTramo);
+
+        $polylineTramo = $data['routes'][0]['polyline']['encodedPolyline'] ?? '';
+        if ($polylineTramo) {
+            $pathCompleto = array_merge($pathCompleto, decodePolylinePoints($polylineTramo));
+        }
+
+        // El siguiente tramo arranca donde termino este, y su departureTime
+        // se corre por la duracion real de este tramo (para que el trafico
+        // estimado del tramo siguiente sea coherente con la hora real de
+        // llegada, no siempre la hora de salida original).
+        $duracionTramoSeg = 0;
+        foreach ($legsTramo as $leg) {
+            if (isset($leg['duration']) && preg_match('/(\d+)s/', $leg['duration'], $m)) {
+                $duracionTramoSeg += intval($m[1]);
+            }
+        }
+        $departureTramo += $duracionTramoSeg;
+        $origenTramo = $destinoTramo;
+        $idx += $tamanioTramo;
     }
 
-    $data = json_decode($respuesta, true);
-    if (!isset($data['routes'][0]['legs'])) {
-        $motivo = $data['error']['message'] ?? 'la Routes API no devolvió una ruta válida';
-        echo json_encode(['resultado' => 0, 'message' => $motivo]);
-        exit;
-    }
-
-    $legs = $data['routes'][0]['legs'];
-    $paradasFinal = array_merge($ordenadas, [$destino]); // reconstruyo el orden completo (los intermedios + el destino que se sacó antes)
-    $polyline = $data['routes'][0]['polyline']['encodedPolyline'] ?? '';
+    $polyline = encodePolylinePoints($pathCompleto);
 
     $horaActual = new DateTime($fechaSalida . ' ' . $HoraSalida);
     $kmTotal = 0;
