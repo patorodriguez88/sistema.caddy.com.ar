@@ -61,7 +61,9 @@ if($Rec=='Todos'){
     $queryr="SELECT Color FROM Recorridos WHERE Numero='$row[Recorrido]'";
         $resultR = query_or_json_error($mysqli, $queryr);
         $rowR = $resultR->fetch_array(MYSQLI_ASSOC);
-        $co[] = $rowR[Color];        
+        // $rowR[Color] (sin comillas) es "Undefined constant Color" -> Fatal
+        // Error en PHP8, no un simple warning como en PHP7.
+        $co[] = $rowR['Color'] ?? null;
         $rowss[]=$row;
     }
     echo json_encode(array('data'=>$rowss,$co));
