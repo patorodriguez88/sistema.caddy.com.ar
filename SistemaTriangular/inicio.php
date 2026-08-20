@@ -272,7 +272,7 @@
                 </ul>
 
                 <!-- Version del sistema: mismo numero que Menu/head.html, subir los dos en cada push a develop/main -->
-                <div class="caddy-brand-version">v.26.08.41</div>
+                <div class="caddy-brand-version">v.26.08.42</div>
             </div>
         </div>
         <!-- end caddy-login-brand-col -->

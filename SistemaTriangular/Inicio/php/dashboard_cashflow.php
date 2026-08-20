@@ -1,13 +1,18 @@
 <?php
 include_once "../../Conexion/Conexioni.php";
 
-$año = isset($_POST['anio']) ? intval($_POST['anio']) : date('Y');
-// $año = 2025;
-// 1. SALDO INICIAL
+// La tabla muestra los ultimos 12 meses corridos (igual que el resto de los
+// endpoints de este dashboard), no un año calendario -- si se filtraba por
+// YEAR(Fecha) = año actual, los meses del año anterior que entran en la
+// ventana de 12 meses (ej. sep-dic si estamos en agosto) nunca aparecian.
+$fechaDesde = date('Y-m-01', strtotime('-11 months'));
+$fechaHasta = date('Y-m-t');
+
+// 1. SALDO INICIAL (todo lo anterior al inicio de la ventana de 12 meses)
 $query1 = "
     SELECT SUM(Debe) - SUM(Haber) AS saldo_inicial
     FROM TransClientes
-    WHERE Eliminado=0 AND YEAR(Fecha) < $año
+    WHERE Eliminado=0 AND Fecha < '$fechaDesde'
 ";
 $result1 = $mysqli->query($query1);
 $row1 = $result1->fetch_assoc();
@@ -17,7 +22,7 @@ $saldoInicial = floatval($row1['saldo_inicial'] ?? 0);
 $querySimples = "
     SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
     FROM TransClientes
-    WHERE  Eliminado=0 AND YEAR(Fecha) = $año AND Flex = 0
+    WHERE  Eliminado=0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta' AND Flex = 0
     GROUP BY periodo
 ";
 $ventasSimples = [];
@@ -30,7 +35,7 @@ while ($row = $result->fetch_assoc()) {
 $queryFlex = "
     SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
     FROM TransClientes
-    WHERE  Eliminado=0 AND YEAR(Fecha) = $año AND Flex = 1
+    WHERE  Eliminado=0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta' AND Flex = 1
     GROUP BY periodo
 ";
 $ventasFlex = [];
@@ -44,7 +49,7 @@ $queryRecorridos = "
     SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo,
            SUM(IF(ImporteF=0, TotalFacturado, ImporteF)) AS total
     FROM Logistica
-    WHERE YEAR(Fecha) = $año AND Eliminado = 0
+    WHERE Fecha BETWEEN '$fechaDesde' AND '$fechaHasta' AND Eliminado = 0
     GROUP BY periodo
 ";
 $ventasRecorridos = [];
@@ -53,12 +58,49 @@ while ($row = $result->fetch_assoc()) {
     $ventasRecorridos[$row['periodo']] = floatval($row['total']);
 }
 
-// 5. Salida JSON
+// 5. VENTAS COBRANZA (5% del CobrarEnvio) -- misma query que dashboard_cashflow_graficos.php
+$queryCobranza = "
+    SELECT DATE_FORMAT(FechaPedido, '%Y-%m') AS periodo,
+           SUM(CobrarEnvio) * 0.05 AS total
+    FROM Ventas
+    WHERE FechaPedido BETWEEN '$fechaDesde' AND '$fechaHasta'
+      AND Eliminado = 0
+      AND surrender_number <> 0
+      AND CobrarEnvio > 0
+    GROUP BY periodo
+";
+$ventasCobranza = [];
+$result = $mysqli->query($queryCobranza);
+while ($row = $result->fetch_assoc()) {
+    $ventasCobranza[$row['periodo']] = floatval($row['total']);
+}
+
+// 6. GASTOS -- misma query que dashboard_cashflow_graficos.php
+$queryGastos = "
+    SELECT DATE_FORMAT(Tesoreria.Fecha, '%Y-%m') AS periodo,
+           SUM(Tesoreria.Debe) AS total
+    FROM Tesoreria
+    JOIN PlanDeCuentas ON PlanDeCuentas.Cuenta = Tesoreria.Cuenta
+    WHERE Tesoreria.NoOperativo = 0
+      AND PlanDeCuentas.MuestraGastos = 1
+      AND Tesoreria.Eliminado = 0
+      AND Tesoreria.Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
+    GROUP BY periodo
+";
+$gastos = [];
+$result = $mysqli->query($queryGastos);
+while ($row = $result->fetch_assoc()) {
+    $gastos[$row['periodo']] = floatval($row['total']);
+}
+
+// 7. Salida JSON
 header('Content-Type: application/json');
 echo json_encode([
     'saldo_inicial' => $saldoInicial,
     'ventas_simples' => $ventasSimples,
     'ventas_flex' => $ventasFlex,
-    'ventas_recorridos' => $ventasRecorridos
+    'ventas_recorridos' => $ventasRecorridos,
+    'ventas_cobranza' => $ventasCobranza,
+    'gastos' => $gastos
 ]);
 exit;
