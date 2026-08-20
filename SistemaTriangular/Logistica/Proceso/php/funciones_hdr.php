@@ -14,10 +14,16 @@ if (isset($_POST['Color'])) {
 if (isset($_POST['FormaDePago'])) {
   $BuscarRecorridos = $mysqli->query("SELECT Recorrido FROM HojaDeRuta WHERE Estado='Abierto' AND Recorrido<>0 AND Eliminado='0' AND Devuelto='0' AND Seguimiento<>'' GROUP BY Recorrido");
 
+  // Se junta primero toda la info de cada card (en vez de imprimir en el
+  // loop) para poder ordenarlas antes de mostrarlas: los recorridos "En
+  // Ruta" (Logistica.Estado='Cargada') van primero, y el resto despues,
+  // ordenado por Logistica.NumerodeOrden.
+  $cards = [];
+
   while (($fila = $BuscarRecorridos->fetch_array(MYSQLI_ASSOC)) != NULL) {
 
     // BUSCO TODOS LOS SERVICIOS EN TRANS CLIENTES RELACIONADOS EN HOJA DE RUTA
-    $sqlhdr = $mysqli->query("SELECT COUNT(HojaDeRuta.id)as id FROM HojaDeRuta INNER JOIN TransClientes ON TransClientes.id=HojaDeRuta.idTransClientes 
+    $sqlhdr = $mysqli->query("SELECT COUNT(HojaDeRuta.id)as id FROM HojaDeRuta INNER JOIN TransClientes ON TransClientes.id=HojaDeRuta.idTransClientes
 WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND TransClientes.Eliminado=0 AND TransClientes.Entregado=0 AND TransClientes.Devuelto=0 AND HojaDeRuta.Devuelto=0 AND HojaDeRuta.Seguimiento<>''");
     $datohdr = $sqlhdr->fetch_array(MYSQLI_ASSOC);
     //BUSCO SOLO ABIERTOS
@@ -37,11 +43,13 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     // Cargada/Alta (por ejemplo, paradas abiertas sobre un Recorrido sin
     // orden asignada todavia), quedaban indefinidas y tiraban warnings mas
     // abajo. Se agrega un valor por defecto para ese caso.
+    $enRuta = isset($datologistica['Estado']) && $datologistica['Estado'] == 'Cargada';
+
     if (isset($datologistica['Estado']) && $datologistica['Estado'] == 'Cerrada') {
 
       $color = 'danger';
       $Nombre = '<a class="text-danger">Sin Transporte</a>';
-    } else if (isset($datologistica['Estado']) && $datologistica['Estado'] == 'Cargada') {
+    } else if ($enRuta) {
 
       $color = 'success';
       $Nombre = ucwords($datologistica['NombreChofer']);
@@ -53,6 +61,49 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
 
       $color = 'secondary';
       $Nombre = '<a class="text-muted">Sin Orden Asignada</a>';
+    }
+
+    $cards[] = [
+      'enRuta' => $enRuta,
+      // Sin orden asignada (NumerodeOrden 0/null) queda al final del grupo.
+      'numerodeOrden' => !empty($datologistica['NumerodeOrden']) ? (int)$datologistica['NumerodeOrden'] : PHP_INT_MAX,
+      'fila' => $fila,
+      'datohdr' => $datohdr,
+      'difhdr' => $difhdr,
+      'datologistica' => $datologistica,
+      'datorecorrido' => $datorecorrido,
+      'color' => $color,
+      'Nombre' => $Nombre,
+    ];
+  }
+  // Liberar resultados
+  mysqli_free_result($BuscarRecorridos);
+
+  usort($cards, function ($a, $b) {
+    if ($a['enRuta'] !== $b['enRuta']) {
+      return $a['enRuta'] ? -1 : 1;
+    }
+    return $a['numerodeOrden'] <=> $b['numerodeOrden'];
+  });
+
+  $huboEnRuta = false;
+  $mostroSeparador = false;
+
+  foreach ($cards as $c) {
+    $fila = $c['fila'];
+    $datohdr = $c['datohdr'];
+    $difhdr = $c['difhdr'];
+    $datologistica = $c['datologistica'];
+    $datorecorrido = $c['datorecorrido'];
+    $color = $c['color'];
+    $Nombre = $c['Nombre'];
+
+    if ($c['enRuta']) {
+      $huboEnRuta = true;
+    } elseif ($huboEnRuta && !$mostroSeparador) {
+      // Separador visual entre los recorridos "En Ruta" y el resto.
+      echo '<div class="col-12"><hr class="my-2"></div>';
+      $mostroSeparador = true;
     }
 
     echo '<div class="col-xl-3 col-lg-6">';
@@ -83,6 +134,11 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     } else {
       echo '<h6 class="text-muted mt-0 mr-3" title="Revenue">   Recorrido ' . $fila['Recorrido'] . '</h6>';
     }
+    // Punto de color del Recorrido: circulo chico al lado del nombre en vez
+    // del cuadrado grande que quedaba abajo, junto al badge de Orden.
+    if (isset($datorecorrido['Color'])) {
+      echo '<input type="color" class="color-dot" value="#' . ltrim($datorecorrido['Color'], '#') . '" onblur="color(this.value,' . $fila['Recorrido'] . ')" title="Color del recorrido">';
+    }
     echo '<h6 class="text-muted mt-0 mb-1">' . ($datorecorrido['Nombre'] ?? '') . '</h6>';
     echo '<h5 class="mt-3 mb-2">' . $Nombre . '</h5>';
     echo '<p class="mb-0 text-muted">';
@@ -94,7 +150,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     echo '<p class="mb-0 text-muted">';
     echo  '<span class="badge badge-' . $color . ' mr-1">';
     if (isset($datorecorrido['Color']) && isset($datologistica['Estado'])) {
-      echo '<i> Orden ' . $datologistica['Estado'] . '</i> </span> <input type="color" id="color" value="#' . ltrim($datorecorrido['Color'], '#') . '" onblur="color(this.value,' . $fila['Recorrido'] . ')" ></p>';
+      echo '<i> Orden ' . $datologistica['Estado'] . '</i> </span></p>';
     } else {
       echo '</span>';
     }
@@ -108,6 +164,4 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     echo '</div>';
     echo '</div>';
   }
-  // Liberar resultados
-  mysqli_free_result($BuscarRecorridos);
 }

@@ -79,10 +79,16 @@ if($Rec=='Todos'){
         }
         $queryr="SELECT Color, UltimoOrdenUsuario, UltimoOrdenFecha, UltimoOrdenMetodo, Polyline FROM Recorridos WHERE Numero='$Rec'";
         $resultR = $mysqli->query($queryr);
+        // Si $mysqli->query() devuelve false (ej. alguna de las columnas
+        // UltimoOrden*/Polyline no existe todavia en este entorno porque la
+        // migracion de esa feature no se corrio ahi), ->fetch_array() sobre
+        // un bool es Fatal Error en PHP8 y tira 500 - rompiendo TODA la
+        // pantalla de Hoja de Ruta para TODOS los recorridos. Se degrada sin
+        // esos datos en vez de crashear.
         // Si el Recorrido no tiene fila maestra en Recorridos (dato
         // inconsistente, o recien creado), fetch_array() da null - antes esto
         // tiraba un warning por cada campo leido de $rowR mas abajo.
-        $rowR = $resultR->fetch_array(MYSQLI_ASSOC) ?: [];
+        $rowR = $resultR ? ($resultR->fetch_array(MYSQLI_ASSOC) ?: []) : [];
         $color = $rowR['Color'] ?? null;
 
         $SQL_LOGISTICA="SELECT MAX(id),Estado,NombreChofer FROM Logistica WHERE Recorrido='$Rec' AND Eliminado='0'";

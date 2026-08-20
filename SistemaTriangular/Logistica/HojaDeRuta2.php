@@ -42,6 +42,38 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Punto de color del Recorrido (cards de "Hojas de Ruta Activas"): un input
+         type=color nativo pero mostrado como circulo chico en vez del cuadrado
+         por defecto del navegador. -->
+    <style>
+        input.color-dot {
+            width: 16px;
+            height: 16px;
+            padding: 0;
+            border: 1px solid rgba(0, 0, 0, .15);
+            border-radius: 50%;
+            overflow: hidden;
+            cursor: pointer;
+            vertical-align: middle;
+            -webkit-appearance: none;
+            appearance: none;
+        }
+
+        input.color-dot::-webkit-color-swatch-wrapper {
+            padding: 0;
+        }
+
+        input.color-dot::-webkit-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+
+        input.color-dot::-moz-color-swatch {
+            border: none;
+            border-radius: 50%;
+        }
+    </style>
 </head>
 
 <body>
