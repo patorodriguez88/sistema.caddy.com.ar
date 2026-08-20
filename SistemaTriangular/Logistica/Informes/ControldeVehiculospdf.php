@@ -10,7 +10,7 @@ declare(strict_types=1);
 // estimado) con el estilo visual de Orden de Salida / factura.
 
 require_once __DIR__ . '/hdr_pdf_helpers.php';
-require_once __DIR__ . '/../../Conexion/conexioni.php';
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

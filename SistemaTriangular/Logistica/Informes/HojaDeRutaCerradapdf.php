@@ -14,7 +14,7 @@ ini_set('display_errors', '1');
 $DEBUG = (isset($_GET['debug']) && $_GET['debug'] === '1');
 
 require_once __DIR__ . '/hdr_pdf_helpers.php';
-require_once __DIR__ . '/../../Conexion/conexioni.php';
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

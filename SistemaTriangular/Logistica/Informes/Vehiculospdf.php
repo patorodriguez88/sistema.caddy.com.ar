@@ -6,7 +6,7 @@ declare(strict_types=1);
 // ../../../conexion.php (ya no existe) — no podía funcionar bajo PHP8.
 
 require_once __DIR__ . '/hdr_pdf_helpers.php';
-require_once __DIR__ . '/../../Conexion/conexioni.php';
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();

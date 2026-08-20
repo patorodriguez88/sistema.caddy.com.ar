@@ -44,7 +44,7 @@ if ($DEBUG && !headers_sent()) {
 }
 
 require_once __DIR__ . '/hdr_pdf_helpers.php';
-require_once __DIR__ . '/../../Conexion/conexioni.php';
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
