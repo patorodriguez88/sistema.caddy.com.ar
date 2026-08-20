@@ -9,7 +9,7 @@ const routeColors = ["#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#20
 // abanico chico alrededor del punto real (el primero de cada coordenada
 // queda sin tocar) para que todos sean visibles y clickeables.
 const COINCIDENT_PRECISION = 5; // ~1.1 m de precision para considerar "mismo punto"
-const COINCIDENT_OFFSET_METERS = 3; // separacion entre pines coincidentes, por anillo
+const COINCIDENT_OFFSET_METERS = 6; // separacion entre pines coincidentes, por anillo
 
 function offsetCoincidentMarker(lat, lng) {
   const key = lat.toFixed(COINCIDENT_PRECISION) + "," + lng.toFixed(COINCIDENT_PRECISION);
