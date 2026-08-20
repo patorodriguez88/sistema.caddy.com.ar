@@ -193,8 +193,13 @@ if ($_POST['Orden_Automatic'] == 1) {
 
     $fechaSalida = date('Y-m-d');
     $departureTimestamp = strtotime("$fechaSalida $HoraSalida");
-    if ($departureTimestamp === false || $departureTimestamp < time()) {
-        $departureTimestamp = time();
+    // Routes API rechaza un departureTime que no sea estrictamente futuro. Si
+    // la hora de salida configurada ya pasó, usar exactamente time() no
+    // alcanza: para cuando la request llega a Google (latencia de red) ese
+    // "ahora" ya quedó en el pasado y responde "Timestamp must be set to a
+    // future time" - se suma un margen de 2 minutos.
+    if ($departureTimestamp === false || $departureTimestamp < time() + 120) {
+        $departureTimestamp = time() + 120;
     }
 
     $body = [
