@@ -668,7 +668,7 @@
     ?>
     <script src="<?php echo $verJs('Proceso/js/funciones_hdr.js'); ?>"></script>
     <script src="<?php echo $verJs('Mapas/js/hojaderuta.js'); ?>"></script>
-    <script src="Proceso/js/pendientes.js"></script>
+    <script src="<?php echo $verJs('Proceso/js/pendientes.js'); ?>"></script>
     <script src="Mapas/js/controlrecorridos.js"></script>
     <script src="Proceso/js/funciones_controlrecorridos.js"></script>
     <script src="<?php echo $verJs('Mapas/js/datos.js'); ?>"></script>

@@ -400,22 +400,37 @@ $(document).ready(function () {
       {
         data: "DomicilioDestino",
         render: function (data, type, row) {
-          if (row.Latitud) {
-            if (
-              row.Latitud == "-31.41972520387455" &&
-              row.Longitud == "-64.18901825595384"
-            ) {
-              var color1 = "danger";
-            } else {
-              if (row.Retirado == 1) {
-                color1 = "success";
-              } else {
-                color1 = "muted";
-              }
-            }
-          } else {
+          // Antes solo se marcaba en rojo si faltaba la Latitud, o si
+          // coincidia con este par exacto hardcodeado (fallback conocido:
+          // geocoding que no encontro la direccion y cayo al centro de
+          // Cordoba) - no cubria lat/lng en 0,0 ni coordenadas fuera de
+          // Argentina, que tampoco se van a poder usar para armar la ruta
+          // (mismo criterio de validez que usan Planificador/orden_automatico.php).
+          var lat = parseFloat(row.Latitud);
+          var lng = parseFloat(row.Longitud);
+          var esFallbackConocido =
+            row.Latitud == "-31.41972520387455" &&
+            row.Longitud == "-64.18901825595384";
+          var coordenadaValida =
+            !esFallbackConocido &&
+            !!lat &&
+            !!lng &&
+            lat <= -21 &&
+            lat >= -55 &&
+            lng <= -53 &&
+            lng >= -75;
+
+          var color1;
+          var titulo1 = "";
+          if (!coordenadaValida) {
             color1 = "danger";
+            titulo1 = "Sin coordenadas válidas - hacé click para corregir la dirección";
+          } else if (row.Retirado == 1) {
+            color1 = "success";
+          } else {
+            color1 = "muted";
           }
+
           return (
             "<td><b>" +
             row.ClienteDestino +
@@ -424,7 +439,9 @@ $(document).ready(function () {
             row.id +
             '" id="' +
             row.id +
-            '" onclick="modificardir(this.id);"class="action-icon">' +
+            '" onclick="modificardir(this.id);"class="action-icon" title="' +
+            titulo1 +
+            '">' +
             '<i class="mdi mdi-18px mdi-map-marker text-' +
             color1 +
             '"></i><a class="text-muted">' +
