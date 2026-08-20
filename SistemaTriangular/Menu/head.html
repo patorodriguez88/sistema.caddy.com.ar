@@ -51,6 +51,15 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
         </a>
       </div>
 
+      <!-- Version del sistema: mismo numero que inicio.php, subir los dos en cada push a develop/main.
+           En el flujo normal del flex (no position:absolute) para que no quede mal posicionada
+           al cambiar entre logo grande/chico o claro/oscuro. -->
+      <span
+        class="text-muted d-none d-sm-inline-block"
+        style="font-size: 10px; white-space: nowrap; align-self: flex-end; margin-bottom: 8px;"
+        >v1.0.40</span
+      >
+
       <!-- Sidebar Menu Toggle Button -->
       <button class="button-toggle-menu">
         <i class="ri-menu-5-line"></i>

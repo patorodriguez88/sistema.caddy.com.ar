@@ -271,7 +271,7 @@
                     <li><i class="uil uil-invoice"></i> Facturación y cuenta corriente integradas</li>
                 </ul>
 
-                <!-- Version del sistema: subir en cada push a develop/main -->
+                <!-- Version del sistema: mismo numero que Menu/head.html, subir los dos en cada push a develop/main -->
                 <div class="caddy-brand-version">v1.0.40</div>
             </div>
         </div>
