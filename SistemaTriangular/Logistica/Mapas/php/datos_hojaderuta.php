@@ -1,6 +1,23 @@
-<?php 
+<?php
 
 require_once('../../../Conexion/Conexioni.php');
+
+// Antes, si CUALQUIER query() de este archivo fallaba (columna/tabla que no
+// existe en este entorno, sintaxis SQL rota por datos raros, etc.), devolvia
+// false y el ->num_rows / ->fetch_array() siguiente era Fatal Error en PHP8
+// -> 500 con el body vacio (display_errors apagado en produccion), sin
+// ninguna pista de que fallo ni por que. Con esto, cualquier query rota
+// devuelve el error real de MySQL en el JSON en vez de un 500 mudo.
+function query_or_json_error($mysqli, $sql)
+{
+    $result = $mysqli->query($sql);
+    if ($result === false) {
+        header('Content-Type: application/json');
+        echo json_encode(['error' => $mysqli->error, 'sql' => $sql]);
+        exit;
+    }
+    return $result;
+}
 
 if(isset($_POST['Todos'])){
 
@@ -19,14 +36,14 @@ $Rec=$_SESSION['Recorrido'];
 if($Rec=='Todos'){
     $query = "SELECT nombrecliente,Direccion,CONCAT(Latitud, ',', Longitud)as coordenadas,HojaDeRuta.Recorrido,HojaDeRuta.Seguimiento,Clientes.Telefono,Clientes.Celular,Clientes.Celular2 from Clientes INNER JOIN HojaDeRuta 
     ON Clientes.id = HojaDeRuta.idCliente WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND Clientes.Latitud<>''"; 
-    $result = $mysqli->query($query);   
+    $result = query_or_json_error($mysqli, $query);
     $i = 0;
     $rows = $result->num_rows;
     $rowss=array();
     $co=array();
     while($row = $result->fetch_array(MYSQLI_ASSOC)){
     $queryr="SELECT Color FROM Recorridos WHERE Numero='$row[Recorrido]'";
-        $resultR = $mysqli->query($queryr);
+        $resultR = query_or_json_error($mysqli, $queryr);
         $rowR = $resultR->fetch_array(MYSQLI_ASSOC);
         $co[] = $rowR[Color];        
         $rowss[]=$row;
@@ -37,7 +54,7 @@ if($Rec=='Todos'){
         
         $query= "SELECT idDestino AS idCliente FROM Roadmap_end WHERE Recorrido='$Rec'";
         
-        $resultado=$mysqli->query($query);
+        $resultado=query_or_json_error($mysqli, $query);
         $rowsr=array();
         $row_entrega=array();
 
@@ -55,10 +72,10 @@ if($Rec=='Todos'){
             $exito = '0';
         }
 
-        $count_entregas=$mysqli->query("SELECT id FROM `Roadmap_end` where Entrega=1 AND Recorrido='$Rec'");
+        $count_entregas=query_or_json_error($mysqli, "SELECT id FROM `Roadmap_end` where Entrega=1 AND Recorrido='$Rec'");
         $result_entregas=$count_entregas->num_rows;
 
-        $count_retiros=$mysqli->query("SELECT id FROM `Roadmap_end` where Retirado=0 and Entrega=0 And Recorrido='$Rec'");
+        $count_retiros=query_or_json_error($mysqli, "SELECT id FROM `Roadmap_end` where Retirado=0 and Entrega=0 And Recorrido='$Rec'");
         $result_retiros=$count_retiros->num_rows;
 
 
@@ -69,7 +86,7 @@ if($Rec=='Todos'){
         INNER JOIN HojaDeRuta ON Roadmap_end.idHojaderuta= HojaDeRuta.id
         WHERE Clientes.id IN ($exito) AND HojaDeRuta.Seguimiento<>'' AND Clientes.Latitud<>'' AND Roadmap_end.Recorrido='$Rec'";
 
-        $result = $mysqli->query($query);   
+        $result = query_or_json_error($mysqli, $query);
         $i = 0;
         $rows = $result->num_rows;
         $rowss=array();
@@ -92,7 +109,7 @@ if($Rec=='Todos'){
         $color = $rowR['Color'] ?? null;
 
         $SQL_LOGISTICA="SELECT MAX(id),Estado,NombreChofer FROM Logistica WHERE Recorrido='$Rec' AND Eliminado='0'";
-        $DATOS_LOGISTICA = $mysqli->query($SQL_LOGISTICA);        
+        $DATOS_LOGISTICA = query_or_json_error($mysqli, $SQL_LOGISTICA);
         $ROW_LOGISTICA = $DATOS_LOGISTICA->fetch_array(MYSQLI_ASSOC);
 
         if(($ROW_LOGISTICA['Estado']=='Alta')||($ROW_LOGISTICA['Estado']=='Cargada')){
@@ -105,8 +122,8 @@ if($Rec=='Todos'){
         
         }
         
-        $sql_tabla=$mysqli->query("SELECT COUNT(TransClientes.id)as Total FROM TransClientes 
-        INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes 
+        $sql_tabla=query_or_json_error($mysqli, "SELECT COUNT(TransClientes.id)as Total FROM TransClientes
+        INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes
         WHERE TransClientes.Entregado=0 AND TransClientes.Eliminado=0 AND TransClientes.Haber=0 AND TransClientes.CodigoSeguimiento<>'' AND TransClientes.Devuelto=0 AND TransClientes.Recorrido='$Rec'");
         
         $total_tabla = $sql_tabla->fetch_array(MYSQLI_ASSOC);
