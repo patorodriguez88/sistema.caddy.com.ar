@@ -220,7 +220,10 @@
       "Bash(/Applications/XAMPP/xamppfiles/bin/php -l /Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar/SistemaTriangular/inicio.php)",
       "Bash(git -C /Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar add SistemaTriangular/Menu/head.html SistemaTriangular/inicio.php)",
       "Bash(git -C /Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar diff -- .claude/settings.json)",
-      "Bash(git -C /Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar add .claude/settings.json)"
+      "Bash(git -C /Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar add .claude/settings.json)",
+      "Bash(node -c SistemaTriangular/Logistica/Planificador/js/planificador.js)",
+      "Bash(node -c SistemaTriangular/Logistica/Mapas/js/datos.js)",
+      "Bash(node -c SistemaTriangular/Logistica/Proceso/js/funciones_hdr.js)"
     ]
   }
 }
