@@ -234,6 +234,10 @@ var datatable = $("#seguimiento").DataTable({
       render: function (data, type, row) {
         return (
           '<td class="table-action">' +
+          // Guia de Carga (remito) - version modernizada de Servicios/Informes/Remitopdf.php
+          '<a href="Informes/Remitopdf.php?CS=' +
+          row.CodigoSeguimiento +
+          '" target="_blank" class="action-icon" title="Abrir guía"> <i class="mdi mdi-file-document text-info"></i></a>' +
           '<a data-id="' +
           row.id +
           '" id="' +
