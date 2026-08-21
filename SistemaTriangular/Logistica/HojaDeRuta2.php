@@ -201,28 +201,6 @@
                 </div><!-- /.modal -->
 
 
-                <!--    ASIGNACIONES -->
-                <div class="modal fade" id="asignaciones" tabindex="-1" role="dialog" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header modal-colored-header bg-primary">
-                                <h4 class="modal-title" id="asignaciones_header_rec">ASIGNACIONES #</h4>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                            </div>
-                            <div class="col-lg-12 mt-3">
-                                <label>Seleccionar Recorrido</label>
-                                <input id="asignacion_t" name="asignacion_t" class="form-control" data-toggle="select2" required />
-                            </div>
-                            <div class="modal-footer mt-3">
-                                <!--   <input type="hidden" id="cs_modificar_REC"> -->
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
-                                <button id="asignaciones_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-
                 <!-- //MODIFICAR DIRECCION -->
                 <div class="modal fade" id="standard-modal-dir" tabindex="-1" role="dialog" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -537,7 +515,6 @@
                                         <div class="dropdown-menu dropdown-menu-end">
                                             <a id="cambiar_recorrido" role="button" class="dropdown-item">Cambiar Recorrido</a>
                                             <a id="todos_recorrido" role="button" class="dropdown-item">Ver Todos</a>
-                                            <a id="asignacion_recorrido" role="button" class="dropdown-item">Asignar</a>
                                             <a id="ordenar_recorrido" role="button" class="dropdown-item">Ordenar Manual</a>
                                             <a id="ordenar_recorrido_automatic" role="button" class="dropdown-item">Ordenar segun Reparto</a>
                                             <a id="routes" role="button" class="dropdown-item">Ver Ruta</a>

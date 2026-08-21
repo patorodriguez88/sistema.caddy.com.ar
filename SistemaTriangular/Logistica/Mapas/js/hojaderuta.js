@@ -25,10 +25,6 @@ var clustererRenderer = {
 };
 
 // TODO: migrate to AdvancedMarkerElement
-function asignacion_recorrido() {
-  $("#asignaciones").show();
-}
-
 function abrir_todos(i) {
   console.log("todos", i);
 
