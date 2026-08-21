@@ -269,16 +269,24 @@ if ($_POST['Orden_Automatic'] == 1) {
         exit;
     }
 
-    // Minutos estimados por parada, configurable en Variables (Nombre =
-    // 'TiempoPorParada') - mismo criterio que CostoPeajes/PrecioNaftaSuper.
-    // Se calcula aca (antes de ordenar) porque tambien lo necesita
-    // ordenarPorCercania para estimar a que hora se llegaria a cada parada.
-    $timeDelivered = 5;
-    $stmtVar = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
-    $stmtVar->execute();
-    $rowVar = $stmtVar->get_result()->fetch_assoc();
-    if ($rowVar && is_numeric($rowVar['Valor'])) {
-        $timeDelivered = (float)$rowVar['Valor'];
+    // Minutos estimados por parada: el operador lo elige al pedir "Ver Ruta"
+    // (mismo prompt que fecha/hora, default 5) - si no viene un valor valido
+    // por POST, cae al criterio viejo: Variables (Nombre = 'TiempoPorParada',
+    // mismo criterio que CostoPeajes/PrecioNaftaSuper), o 5 si tampoco existe
+    // esa Variable. Se calcula aca (antes de ordenar) porque tambien lo
+    // necesita ordenarPorCercania para estimar a que hora se llegaria a cada
+    // parada.
+    $timeDeliveredPost = $_POST['TiempoPorParada'] ?? null;
+    if (is_numeric($timeDeliveredPost) && (float)$timeDeliveredPost >= 0) {
+        $timeDelivered = (float)$timeDeliveredPost;
+    } else {
+        $timeDelivered = 5;
+        $stmtVar = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
+        $stmtVar->execute();
+        $rowVar = $stmtVar->get_result()->fetch_assoc();
+        if ($rowVar && is_numeric($rowVar['Valor'])) {
+            $timeDelivered = (float)$rowVar['Valor'];
+        }
     }
 
     // Origen fijo de la empresa (mismo punto que usa el Planificador).

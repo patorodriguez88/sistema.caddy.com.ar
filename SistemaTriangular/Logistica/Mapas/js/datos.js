@@ -40,7 +40,9 @@ function pedirFechaHoraYVerRuta() {
       '">' +
       '<input type="time" id="swal-hora-salida" class="swal2-input" value="' +
       horaDefault +
-      '">',
+      '">' +
+      '<label for="swal-tiempo-parada" style="display:block;font-size:13px;color:#666;margin-top:8px;">Tiempo de espera por parada (minutos)</label>' +
+      '<input type="number" id="swal-tiempo-parada" class="swal2-input" min="0" step="1" value="5">',
     focusConfirm: false,
     showCancelButton: true,
     confirmButtonText: "Calcular ruta",
@@ -48,23 +50,35 @@ function pedirFechaHoraYVerRuta() {
     preConfirm: function () {
       var fecha = document.getElementById("swal-fecha-salida").value;
       var hora = document.getElementById("swal-hora-salida").value;
+      var tiempoParadaVal = document.getElementById("swal-tiempo-parada").value;
+      var tiempoParada = tiempoParadaVal === "" ? 5 : parseInt(tiempoParadaVal, 10);
       if (!fecha || !hora) {
         Swal.showValidationMessage("Completá fecha y hora de salida.");
         return false;
       }
-      return { fecha: fecha, hora: hora };
+      if (isNaN(tiempoParada) || tiempoParada < 0) {
+        Swal.showValidationMessage("El tiempo de espera por parada tiene que ser un número mayor o igual a 0.");
+        return false;
+      }
+      return { fecha: fecha, hora: hora, tiempoParada: tiempoParada };
     },
   }).then(function (result) {
     if (!result.isConfirmed) return;
-    verRutaOptimizada(result.value.fecha, result.value.hora);
+    verRutaOptimizada(result.value.fecha, result.value.hora, result.value.tiempoParada);
   });
 }
 
-function verRutaOptimizada(fechaSalida, horaSalida) {
+function verRutaOptimizada(fechaSalida, horaSalida, tiempoPorParada) {
   var Recorrido = $("#recorrido").html();
 
   $.ajax({
-    data: { Orden_Automatic: 1, Recorrido: Recorrido, FechaSalida: fechaSalida, HoraSalida: horaSalida },
+    data: {
+      Orden_Automatic: 1,
+      Recorrido: Recorrido,
+      FechaSalida: fechaSalida,
+      HoraSalida: horaSalida,
+      TiempoPorParada: tiempoPorParada,
+    },
     type: "POST",
     url: "Mapas/php/orden_automatico.php",
     // orden_automatico.php manda Content-Type: application/json - sin esto,
