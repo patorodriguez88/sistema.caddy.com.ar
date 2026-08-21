@@ -188,9 +188,13 @@ function construirInfoWindowServicio(datos) {
       "')\">Ver en tabla</a>"
     : "";
 
+  // OJO: un margin-top negativo grande ac aca corta el nombre (empuja el
+  // texto por arriba del borde de la burbuja de InfoWindow, que recorta lo
+  // que se sale) - se dejo un valor chico a proposito, no agrandar sin
+  // probar que no vuelva a cortar el titulo.
   return (
-    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:0 4px;margin-top:-10px;">' +
-    '<div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:4px;">' +
+    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:0 4px;margin-top:-2px;">' +
+    '<div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:4px;line-height:1.3;">' +
     (datos.cliente || "") +
     "</div>" +
     etiquetaHtml +
