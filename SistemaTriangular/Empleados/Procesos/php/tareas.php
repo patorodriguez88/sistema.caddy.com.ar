@@ -265,7 +265,7 @@ function list_files_in_folder_NA($folder_path)
                     echo    '<a onclick="eliminar_archivo(\'' . $file . '\')" class="btn btn-link btn-lg text-muted">';
                     echo    '<i class="dripicons-trash"></i>';
                     echo    '</a>';
-                    echo    '<a href="https:www.sistemacaddy.com.ar/SistemaTriangular/' . $folder_path . '/' . $file . '" class="btn btn-link btn-lg text-muted">';
+                    echo    '<a href="https://www.sistema.caddy.com.ar/SistemaTriangular/' . $folder_path . '/' . $file . '" class="btn btn-link btn-lg text-muted">';
                     echo    '<i class="dripicons-download"></i>';
                     echo    '</a>';
                     echo '</div>';

@@ -132,9 +132,9 @@ $arrayfecha=explode('-',$fecha,3);
 	echo "<input type='hidden' name='id' value='$u'>";
  	echo "<input type='hidden' name='CodigoSeguimiento' value='".$fila[CodigoSeguimiento]."'>";
  
-	echo "<td align='center'><a target='_blank' href='https://www.sistemacaddy.com.ar/SistemaTriangular/Ventas/Informes/Remitopdf2.php?CS=".$fila[CodigoSeguimiento]."'><input type='image' src='../images/botones/Factura.png' width='15' height='15' border='0' style='float:center;'></td>";
-	echo "<td align='center'><a target='_blank' href='https://www.sistemacaddy.com.ar/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=".$fila[CodigoSeguimiento]."'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td>";
-	echo "<td align='center'><a target='_blank' href='https://www.sistemacaddy.com.ar/SistemaTriangular/Servicios/Seguimiento.php?codigoseguimiento_t=".$fila[CodigoSeguimiento]."&Continuar=Buscar'><input type='image' src='../images/botones/zoom.png' width='15' height='15' border='0' style='float:center;'></td>";
+	echo "<td align='center'><a target='_blank' href='https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Informes/Remitopdf2.php?CS=".$fila[CodigoSeguimiento]."'><input type='image' src='../images/botones/Factura.png' width='15' height='15' border='0' style='float:center;'></td>";
+	echo "<td align='center'><a target='_blank' href='https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=".$fila[CodigoSeguimiento]."'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td>";
+	echo "<td align='center'><a target='_blank' href='https://www.sistema.caddy.com.ar/SistemaTriangular/Servicios/Seguimiento.php?codigoseguimiento_t=".$fila[CodigoSeguimiento]."&Continuar=Buscar'><input type='image' src='../images/botones/zoom.png' width='15' height='15' border='0' style='float:center;'></td>";
   echo "<td align='center'><a href='Cpanel_Original.php?Eliminar=Si&CS=$fila[CodigoSeguimiento]'><input type='image' src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:center;'></td>";
   echo "</form>";
  	$numfilas++; 

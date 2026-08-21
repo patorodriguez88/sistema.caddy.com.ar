@@ -7,7 +7,7 @@ date_default_timezone_set("America/Argentina/Cordoba");
 //     $curl = curl_init();
     
 //     curl_setopt_array($curl, array(
-//       CURLOPT_URL => 'https://www.sistemacaddy.com.ar/Api/shipping.php?pending=1&token=asldfkasldfkjaldsk23jfleijf3lijfl444aijLKJALIFJLkjlaLKJLAKJSDLF2323',
+//       CURLOPT_URL => 'https://www.sistema.caddy.com.ar/Api/shipping.php?pending=1&token=asldfkasldfkjaldsk23jfleijf3lijfl444aijLKJALIFJLkjlaLKJLAKJSDLF2323',
 //       CURLOPT_RETURNTRANSFER => true,
 //       CURLOPT_ENCODING => '',
 //       CURLOPT_MAXREDIRS => 10,
@@ -41,7 +41,7 @@ date_default_timezone_set("America/Argentina/Cordoba");
 //     $curl = curl_init();
     
 //     curl_setopt_array($curl, array(
-//       CURLOPT_URL => 'https://www.sistemacaddy.com.ar/Api/shipping.php',
+//       CURLOPT_URL => 'https://www.sistema.caddy.com.ar/Api/shipping.php',
 //       CURLOPT_RETURNTRANSFER => true,
 //       CURLOPT_ENCODING => '',
 //       CURLOPT_MAXREDIRS => 10,
