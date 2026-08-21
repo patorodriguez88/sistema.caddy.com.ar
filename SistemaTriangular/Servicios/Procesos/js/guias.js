@@ -125,7 +125,7 @@ $("#button_date_blocked").click(function () {
 function verguia() {
   let id = $("#inputcodigo").val();
   window.open(
-    "https://www.sistemacaddy.com.ar/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" +
+    "https://www.sistema.caddy.com.ar/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" +
       id,
     "_blank",
   );
@@ -133,7 +133,7 @@ function verguia() {
 function verrotulo() {
   let id = $("#inputcodigo").val();
   window.open(
-    "https://www.sistemacaddy.com.ar/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=" +
+    "https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=" +
       id,
     "_blank",
   );
