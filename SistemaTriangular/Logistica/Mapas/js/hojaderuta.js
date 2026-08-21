@@ -268,12 +268,69 @@ function decodePolyline(encoded) {
 // vuelve a dibujar cada vez que se abre un recorrido).
 var hdrRoutePolyline = null;
 
-// Traza "en progreso" de Ordenar Manual: se va armando punto por punto a
-// medida que el operador clickea cada parada (antes no habia ningun
-// feedback visual de la ruta mientras se ordenaba a mano, solo el numero y
-// el color del pin). Se resetea al entrar a modo Ordenar Manual.
+// Traza "en progreso" de Ordenar Manual: se va armando tramo por tramo (por
+// calles reales, via Routes API - no linea recta) a medida que el operador
+// clickea cada parada. Se resetea al entrar a modo Ordenar Manual, arranca
+// desde el origen fijo de la empresa (mismo punto que usa
+// orden_automatico.php/Planificador).
+var ORIGEN_EMPRESA = { lat: -31.444994776141503, lng: -64.1779408896999 };
 var manualOrderPath = [];
 var manualOrderPolyline = null;
+var manualOrderUltimoPunto = null;
+
+function redibujarManualOrderPolyline() {
+  if (manualOrderPolyline) {
+    manualOrderPolyline.setMap(null);
+  }
+  manualOrderPolyline = new google.maps.Polyline({
+    path: manualOrderPath,
+    geodesic: true,
+    strokeColor: "#" + CADDY_PURPLE,
+    strokeOpacity: 0.85,
+    strokeWeight: 4,
+  });
+  manualOrderPolyline.setMap(map);
+}
+
+// Pide a Google el tramo real (siguiendo calles) desde el ultimo punto
+// agregado hasta "destino", y lo concatena a manualOrderPath - en vez de
+// recalcular TODA la ruta con cada click nuevo (mas lento y mas caro), solo
+// se pide el tramo nuevo cada vez.
+function agregarTramoManual(destino) {
+  var origen = manualOrderUltimoPunto || ORIGEN_EMPRESA;
+
+  $.ajax({
+    data: {
+      SegmentoRuta: 1,
+      origenLat: origen.lat,
+      origenLng: origen.lng,
+      destinoLat: destino.lat,
+      destinoLng: destino.lng,
+    },
+    url: "Mapas/php/cambiar_posicion.php",
+    type: "post",
+    success: function (response) {
+      var jsonData = JSON.parse(response);
+      if (jsonData.resultado == 1 && jsonData.polyline) {
+        manualOrderPath = manualOrderPath.concat(decodePolyline(jsonData.polyline));
+      } else {
+        // Si Google no pudo calcular este tramo puntual, se dibuja igual
+        // con una linea recta para ese segmento en vez de dejar la traza
+        // cortada - no bloquea el resto del ordenamiento manual.
+        console.error("No se pudo calcular el tramo real:", jsonData.message);
+        manualOrderPath.push(destino);
+      }
+      redibujarManualOrderPolyline();
+    },
+    error: function (jqXHR, textStatus, errorThrown) {
+      console.error("Error en SegmentoRuta:", textStatus, errorThrown);
+      manualOrderPath.push(destino);
+      redibujarManualOrderPolyline();
+    },
+  });
+
+  manualOrderUltimoPunto = destino;
+}
 
 function initMap(c) {
   var divMapa = document.getElementById("map");
@@ -375,32 +432,25 @@ function initMap(c) {
 
                 if (jsonData.resultado == "1") {
                   $("#next_number").html(jsonData.new_p);
-                  valorpato.icon = pinSymbol("#CCCCCC");
+                  // pinSymbol() ya le agrega el "#" al color - pasarle
+                  // "#CCCCCC" (con #) daba "##CCCCCC", un color CSS
+                  // invalido que el navegador termina pintando negro.
+                  valorpato.icon = pinSymbol("CCCCCC");
                   valorpato.setMap(null);
                   valorpato.setMap(map);
                   valorpato.setAnimation(google.maps.Animation.DROP);
                   valorpato.label = {
-                    color: "gray",
+                    color: "white",
                     fontWeight: "bold",
                     text: jsonData.newPosicion,
                   };
 
                   // Va armando la ruta en pantalla a medida que se clickea
-                  // cada parada, en el orden en que se van eligiendo (linea
-                  // recta punto a punto, no la ruta real de Google - eso
-                  // recien se calcula al cerrar el orden).
-                  manualOrderPath.push(valorpato.getPosition());
-                  if (manualOrderPolyline) {
-                    manualOrderPolyline.setMap(null);
-                  }
-                  manualOrderPolyline = new google.maps.Polyline({
-                    path: manualOrderPath,
-                    geodesic: true,
-                    strokeColor: "#" + CADDY_PURPLE,
-                    strokeOpacity: 0.85,
-                    strokeWeight: 3,
-                  });
-                  manualOrderPolyline.setMap(map);
+                  // cada parada, en el orden en que se van eligiendo - pide
+                  // el tramo real (siguiendo calles) desde el ultimo punto
+                  // hasta este, no una linea recta.
+                  var destino = valorpato.getPosition();
+                  agregarTramoManual({ lat: destino.lat(), lng: destino.lng() });
                 }
               },
             });
@@ -540,6 +590,7 @@ $("#ordenar_recorrido").click(function () {
   $("#ordenar_recorrido").html("Cerrar Orden");
 
   manualOrderPath = [];
+  manualOrderUltimoPunto = null;
   if (manualOrderPolyline) {
     manualOrderPolyline.setMap(null);
     manualOrderPolyline = null;

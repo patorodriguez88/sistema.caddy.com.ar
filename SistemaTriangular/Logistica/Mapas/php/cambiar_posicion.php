@@ -5,6 +5,62 @@ require_once('../../../Conexion/Conexioni.php');
 // directa de $_POST (sin prepare/bind_param) - se pasan a consultas
 // preparadas, mismo comportamiento, sin la superficie de inyeccion SQL.
 
+// Tramo real (siguiendo calles, no linea recta) entre dos puntos - usado
+// por el dibujado "en progreso" de Ordenar Manual: en vez de recalcular
+// TODA la ruta con cada click nuevo (waypoints crecientes = mas lento y mas
+// caro), se pide solo el tramo nuevo (ultimo punto -> el que se acaba de
+// clickear) y el frontend lo va concatenando.
+if(($_POST['SegmentoRuta'] ?? null) == 1){
+    require_once('../../../Conexion/google_config.php');
+
+    $origenLat = floatval($_POST['origenLat'] ?? 0);
+    $origenLng = floatval($_POST['origenLng'] ?? 0);
+    $destinoLat = floatval($_POST['destinoLat'] ?? 0);
+    $destinoLng = floatval($_POST['destinoLng'] ?? 0);
+
+    if (!defined('GOOGLE_API_KEY_SERVER')) {
+        echo json_encode(['resultado' => 0, 'message' => 'No está configurada GOOGLE_API_KEY_SERVER.']);
+        exit;
+    }
+
+    $body = [
+        'origin' => ['location' => ['latLng' => ['latitude' => $origenLat, 'longitude' => $origenLng]]],
+        'destination' => ['location' => ['latLng' => ['latitude' => $destinoLat, 'longitude' => $destinoLng]]],
+        'travelMode' => 'DRIVE',
+        'routingPreference' => 'TRAFFIC_AWARE_OPTIMAL',
+    ];
+
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, 'https://routes.googleapis.com/directions/v2:computeRoutes');
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Content-Type: application/json',
+        'X-Goog-Api-Key: ' . GOOGLE_API_KEY_SERVER,
+        'X-Goog-FieldMask: routes.polyline.encodedPolyline',
+    ]);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
+    $respuesta = curl_exec($ch);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if ($curlError) {
+        echo json_encode(['resultado' => 0, 'message' => 'Error de conexión con Google: ' . $curlError]);
+        exit;
+    }
+
+    $data = json_decode($respuesta, true);
+    $polyline = $data['routes'][0]['polyline']['encodedPolyline'] ?? '';
+    if ($polyline === '') {
+        $motivo = $data['error']['message'] ?? 'la Routes API no devolvió una ruta válida';
+        echo json_encode(['resultado' => 0, 'message' => $motivo]);
+        exit;
+    }
+
+    echo json_encode(['resultado' => 1, 'polyline' => $polyline]);
+    exit;
+}
+
 if($_POST['ViewOrder']==1){
 
     $Recorrido = $_POST['Recorrido'] ?? '';
