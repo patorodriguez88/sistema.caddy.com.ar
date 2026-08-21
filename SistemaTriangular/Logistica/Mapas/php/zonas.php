@@ -13,12 +13,18 @@ header('Content-Type: application/json; charset=utf-8');
 // importadas de un KML).
 function contarServiciosEnZona(mysqli $mysqli, array $bbox, ?array $poligono, string $exito): int
 {
+    // LatitudN/LongitudE siempre se guardan como el valor mas grande (mas al
+    // norte/este) y LatitudS/LongitudO el mas chico (confirmado revisando
+    // como Subir/SubirPoligono arman el bbox desde el rectangulo/poligono
+    // dibujado) - la comparacion de abajo estaba invertida desde antes de
+    // esta sesion (Latitud>N AND Latitud<S, imposible si N>S siempre) y
+    // esta funcion devolvia 0 candidatos para cualquier zona real.
     $sql = $mysqli->query(
         "SELECT Clientes.Latitud, Clientes.Longitud FROM Clientes
          INNER JOIN HojaDeRuta ON Clientes.id = HojaDeRuta.idCliente
          WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
-           AND Clientes.Latitud>'{$bbox['LatitudN']}' AND Clientes.Latitud<'{$bbox['LatitudS']}'
-           AND Clientes.Longitud>'{$bbox['LongitudE']}' AND Clientes.Longitud<'{$bbox['LongitudO']}'
+           AND Clientes.Latitud>'{$bbox['LatitudS']}' AND Clientes.Latitud<'{$bbox['LatitudN']}'
+           AND Clientes.Longitud>'{$bbox['LongitudO']}' AND Clientes.Longitud<'{$bbox['LongitudE']}'
            AND HojaDeRuta.Recorrido IN($exito)"
     );
 
@@ -297,31 +303,51 @@ if (isset($_POST['CambiarRecorridos'])) {
   $exito = trim($exito, '[]');
   $exito = str_replace('"', '', $exito);
 
-  if ($idZona <= 0) {
-    echo json_encode(['success' => 0, 'error' => 'Falta idZona']);
+  // Dos formas de indicar la zona: una persistida en ZonasMapa (idZona) o un
+  // poligono armado al vuelo por el operador con "Dibujar Zona" en el mapa
+  // (PoligonoManual) - ese no se guarda como Zona, es solo para esta
+  // asignacion puntual, asi que no hay fila ni bbox en la base para leer.
+  $poligonoManualJson = $_POST['PoligonoManual'] ?? '';
+
+  if ($idZona > 0) {
+    $stmt = $mysqli->prepare("SELECT * FROM ZonasMapa WHERE id=? LIMIT 1");
+    $stmt->bind_param('i', $idZona);
+    $stmt->execute();
+    $row = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$row) {
+      echo json_encode(['success' => 0, 'error' => 'Zona no encontrada']);
+      exit;
+    }
+
+    // Poligono real de la zona si existe (>=3 vertices) - se usa para filtrar
+    // en PHP los candidatos traidos por la caja envolvente, en vez de mover
+    // servicios que caen en la caja pero visualmente fuera de la forma dibujada
+    // (relevante para formas irregulares, ej. zonas importadas de un KML).
+    $poligono = poligonoDeZona($row['Poligono']);
+    $bbox = ['LatitudN' => $row['LatitudN'], 'LatitudS' => $row['LatitudS'], 'LongitudE' => $row['LongitudE'], 'LongitudO' => $row['LongitudO']];
+  } elseif ($poligonoManualJson !== '') {
+    $poligono = poligonoDeZona($poligonoManualJson);
+    if ($poligono === null) {
+      echo json_encode(['success' => 0, 'error' => 'Poligono invalido.']);
+      exit;
+    }
+    $lats = array_column($poligono, 'lat');
+    $lngs = array_column($poligono, 'lng');
+    $bbox = ['LatitudN' => max($lats), 'LatitudS' => min($lats), 'LongitudE' => max($lngs), 'LongitudO' => min($lngs)];
+  } else {
+    echo json_encode(['success' => 0, 'error' => 'Falta idZona o PoligonoManual']);
     exit;
   }
 
-  $stmt = $mysqli->prepare("SELECT * FROM ZonasMapa WHERE id=? LIMIT 1");
-  $stmt->bind_param('i', $idZona);
-  $stmt->execute();
-  $row = $stmt->get_result()->fetch_assoc();
-  $stmt->close();
-  if (!$row) {
-    echo json_encode(['success' => 0, 'error' => 'Zona no encontrada']);
-    exit;
-  }
-
-  // Poligono real de la zona si existe (>=3 vertices) - se usa para filtrar
-  // en PHP los candidatos traidos por la caja envolvente, en vez de mover
-  // servicios que caen en la caja pero visualmente fuera de la forma dibujada
-  // (relevante para formas irregulares, ej. zonas importadas de un KML).
-  $poligono = poligonoDeZona($row['Poligono']);
-
+  // Mismo criterio que contarServiciosEnZona(): LatitudN/LongitudE son
+  // siempre el valor mas grande (norte/este), la comparacion va con el
+  // mayor arriba - ver comentario ahi para el detalle del bug que tenia
+  // esto antes (invertido, 0 candidatos siempre para cualquier zona real).
   $query = "SELECT HojaDeRuta.id,HojaDeRuta.Seguimiento,Clientes.Latitud,Clientes.Longitud
     FROM HojaDeRuta INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
-    WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>'' AND Clientes.Latitud>'$row[LatitudN]' AND
-    Clientes.Latitud<'$row[LatitudS]' AND Clientes.Longitud>'$row[LongitudE]' AND Clientes.Longitud<'$row[LongitudO]' AND HojaDeRuta.Recorrido IN($exito)";
+    WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>'' AND Clientes.Latitud>'$bbox[LatitudS]' AND
+    Clientes.Latitud<'$bbox[LatitudN]' AND Clientes.Longitud>'$bbox[LongitudO]' AND Clientes.Longitud<'$bbox[LongitudE]' AND HojaDeRuta.Recorrido IN($exito)";
 
   $result = $mysqli->query($query);
   $cuento = 0;

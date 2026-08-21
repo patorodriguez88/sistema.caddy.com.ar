@@ -25,6 +25,13 @@ let zonaId = null;
 let zonasCache = [];
 let vistaTodasActiva = false;
 
+// Zonas "manuales" - poligonos que el operador dibuja a mano con "Dibujar
+// Zona" para armar cards de asignacion al vuelo, sin guardarlas como Zona
+// persistida en ZonasMapa (a diferencia de Agregar Zona/Importar KML). Cada
+// una vive solo mientras dura la vista "Ver Todas las Zonas" actual.
+let zonasManuales = [];
+let manualZonaContador = 0;
+
 let milat;
 let milng;
 
@@ -276,6 +283,191 @@ function initMap() {
 }
 
 // =========================
+// "Dibujar Zona" - la libreria google.maps.drawing (DrawingManager) esta
+// deprecada (Maps JS API 3.65+, ya ni carga - "no longer available"), asi
+// que se arma a mano: un Polygon vacio que va creciendo con cada click en
+// el mapa, mismo patron que ya usa el resto del sistema para editar
+// poligonos de zonas. clickable:false en el poligono en progreso para que
+// los clicks le lleguen al mapa (map.addListener) y no se los coma el
+// propio poligono.
+// =========================
+let dibujandoZonaManual = false;
+let polygonEnProgreso = null;
+let clickListenerDibujo = null;
+let dblclickListenerDibujo = null;
+
+// Mientras se dibuja, las zonas ya pintadas (overlaysTodas) no deben
+// interceptar el click - por defecto son clickable:true (para su propio
+// InfoWindow con el nombre), y un click "arriba" de una de esas formas le
+// llega A ELLA, no al mapa, asi que clickListenerDibujo nunca se disparaba
+// si el operador clickeaba sobre (o cerca de) una zona existente.
+function setClickeableZonasExistentes(clickeable) {
+  overlaysTodas.forEach(function (o) {
+    if (o && typeof o.setOptions === "function") o.setOptions({ clickable: clickeable });
+  });
+  markers.forEach(function (m) {
+    if (m && typeof m.setOptions === "function") m.setOptions({ clickable: clickeable });
+  });
+}
+
+function iniciarDibujoManual() {
+  dibujandoZonaManual = true;
+  setClickeableZonasExistentes(false);
+
+  polygonEnProgreso = new google.maps.Polygon({
+    map: map,
+    // [[]] (un anillo vacio), no [] (cero anillos) - con [] getPath() no
+    // tenia ningun anillo "primero" que devolver y quedaba undefined, asi
+    // que el primer click tiraba "Cannot read properties of undefined
+    // (reading 'push')" y nunca se agregaba ningun vertice.
+    paths: [[]],
+    strokeColor: "#000000",
+    strokeWeight: 2,
+    strokeOpacity: 0.8,
+    fillColor: "#000000",
+    fillOpacity: 0.12,
+    editable: false,
+    clickable: false,
+  });
+
+  $("#dibujar_zona_manual_btn")
+    .removeClass("btn-outline-dark")
+    .addClass("btn-dark")
+    .html('<i class="mdi mdi-vector-polygon"></i> Dibujando... (doble click para cerrar)');
+
+  toast(
+    "info",
+    "Dibujando zona",
+    "Hacé click en el mapa para ir marcando los vértices, y doble click para cerrar el polígono."
+  );
+
+  clickListenerDibujo = map.addListener("click", function (e) {
+    polygonEnProgreso.getPath().push(e.latLng);
+  });
+
+  dblclickListenerDibujo = map.addListener("dblclick", function (e) {
+    e.stop(); // sin esto el doble click tambien hace zoom-in del mapa
+    finalizarDibujoManual();
+  });
+}
+
+function finalizarDibujoManual() {
+  if (clickListenerDibujo) google.maps.event.removeListener(clickListenerDibujo);
+  if (dblclickListenerDibujo) google.maps.event.removeListener(dblclickListenerDibujo);
+  dibujandoZonaManual = false;
+  setClickeableZonasExistentes(true);
+  $("#dibujar_zona_manual_btn")
+    .removeClass("btn-dark")
+    .addClass("btn-outline-dark")
+    .html('<i class="mdi mdi-vector-polygon"></i> Dibujar Zona');
+
+  if (!polygonEnProgreso) return;
+
+  const path = polygonEnProgreso.getPath();
+  if (path.getLength() < 3) {
+    Swal.fire({ icon: "warning", title: "Hacen falta al menos 3 puntos para cerrar una zona" });
+    polygonEnProgreso.setMap(null);
+    polygonEnProgreso = null;
+    return;
+  }
+
+  polygonEnProgreso.setOptions({ editable: true, clickable: true });
+  agregarZonaManual(polygonEnProgreso);
+  polygonEnProgreso = null;
+}
+
+function cancelarDibujoManual() {
+  if (clickListenerDibujo) google.maps.event.removeListener(clickListenerDibujo);
+  if (dblclickListenerDibujo) google.maps.event.removeListener(dblclickListenerDibujo);
+  dibujandoZonaManual = false;
+  setClickeableZonasExistentes(true);
+  if (polygonEnProgreso) {
+    polygonEnProgreso.setMap(null);
+    polygonEnProgreso = null;
+  }
+  $("#dibujar_zona_manual_btn")
+    .removeClass("btn-dark")
+    .addClass("btn-outline-dark")
+    .html('<i class="mdi mdi-vector-polygon"></i> Dibujar Zona');
+}
+
+function agregarZonaManual(polygon) {
+  const path = polygon.getPath();
+  const puntos = [];
+  for (let i = 0; i < path.getLength(); i++) {
+    const p = path.getAt(i);
+    puntos.push({ lat: p.lat(), lng: p.lng() });
+  }
+
+  if (puntos.length < 3) {
+    polygon.setMap(null);
+    return;
+  }
+
+  manualZonaContador++;
+  zonasManuales.push({
+    id: "manual-" + manualZonaContador,
+    nombre: "Zona Manual " + manualZonaContador,
+    color: "#000000",
+    poligono: puntos,
+    shape: polygon,
+  });
+
+  // Se agrega al mismo array que "Ver Todas las Zonas" ya limpia en cada
+  // recarga, asi las zonas dibujadas a mano se borran solas junto con el
+  // resto de los overlays sin necesidad de un cleanup aparte.
+  overlaysTodas.push(polygon);
+
+  // Recalcular vertices si el operador edita el poligono despues de dibujarlo
+  // (editable:true) - sin esto la card quedaba con el conteo de cuando se
+  // termino de dibujar, no del ajuste final.
+  const path2 = polygon.getPath();
+  ["set_at", "insert_at", "remove_at"].forEach(function (evento) {
+    path2.addListener(evento, function () {
+      const nuevosPuntos = [];
+      for (let i = 0; i < path2.getLength(); i++) {
+        const p = path2.getAt(i);
+        nuevosPuntos.push({ lat: p.lat(), lng: p.lng() });
+      }
+      const zm = zonasManuales.find((z) => z.shape === polygon);
+      if (zm) zm.poligono = nuevosPuntos;
+      renderCardsAsignacion();
+    });
+  });
+
+  toast("success", "Zona dibujada", "Se agregó como card abajo, lista para arrastrar a un Recorrido.");
+  renderCardsAsignacion();
+}
+
+$(document).on("click", "#dibujar_zona_manual_btn", function () {
+  if (!map) return;
+
+  // Toggle: si ya estaba dibujando, el mismo boton cancela el modo.
+  if (dibujandoZonaManual) {
+    cancelarDibujoManual();
+    return;
+  }
+
+  if (!Array.isArray(selected) || selected.length === 0) {
+    Swal.fire({ icon: "warning", title: "Elegí primero uno o más Recorridos" });
+    return;
+  }
+
+  if (!vistaTodasActiva) {
+    // mostrarFormas:false - trae los datos de las zonas (necesarios para
+    // que sus cards de conteo/drag&drop sigan funcionando junto a la que se
+    // va a dibujar) pero sin pintar las 9-10 formas: el operador quiere un
+    // lienzo limpio para dibujar la suya, no que le tapen el mapa.
+    // callback encadenado: recien arranca el modo dibujo cuando termina el
+    // fetch, para no pisarse con el usuario clickeando antes de tiempo.
+    renderTodasLasZonas(iniciarDibujoManual, false);
+    return;
+  }
+
+  iniciarDibujoManual();
+});
+
+// =========================
 // Render de zona (update overlays)
 // =========================
 function renderZona(id) {
@@ -290,6 +482,8 @@ function renderZona(id) {
   clearMarkers();
   clearPolygon();
   clearOverlaysTodas();
+  if (dibujandoZonaManual) cancelarDibujoManual();
+  zonasManuales = [];
   vistaTodasActiva = false;
   $("#fila_asignacion_zonas").addClass("d-none");
 
@@ -596,11 +790,25 @@ function clearOverlaysTodas() {
   overlaysTodas = [];
 }
 
-function renderTodasLasZonas() {
+// callback (opcional): se ejecuta recien cuando terminan de dibujarse las
+// zonas - sin esto, "Dibujar Zona" disparaba esto en paralelo (fetch async)
+// y arrancaba el modo dibujo al toque, antes de que las 9 zonas terminaran
+// de renderizarse; el usuario terminaba dibujando "por encima" de zonas que
+// recien estaban apareciendo.
+// mostrarFormas (default true): "Dibujar Zona" necesita los DATOS de las
+// zonas existentes (zonasCache, para que sus cards de conteo/drag&drop
+// tambien sigan funcionando) pero no quiere ver las 9-10 formas pintadas
+// tapando el lienzo limpio donde va a dibujar la suya - con false se trae
+// todo igual pero no se crea ningun Polygon/Rectangle en el mapa ni se
+// mueve el zoom para encuadrarlas.
+function renderTodasLasZonas(callback, mostrarFormas) {
+  if (mostrarFormas === undefined) mostrarFormas = true;
   clearRectangle();
   clearPolygon();
   clearMarkers();
   clearOverlaysTodas();
+  if (dibujandoZonaManual) cancelarDibujoManual();
+  zonasManuales = []; // los poligonos ya se limpiaron del mapa arriba (overlaysTodas)
   zona = null;
   zonaId = null;
   vistaTodasActiva = true;
@@ -618,72 +826,76 @@ function renderTodasLasZonas() {
 
       zonasCache = zonas;
 
-      let infowindowActivo = null;
-      const bounds = new google.maps.LatLngBounds();
+      if (mostrarFormas) {
+        let infowindowActivo = null;
+        const bounds = new google.maps.LatLngBounds();
 
-      zonas.forEach(function (z) {
-        const color = z.Color || "#4D1A50";
-        let shape = null;
-        let poligonoPts = null;
+        zonas.forEach(function (z) {
+          const color = z.Color || "#4D1A50";
+          let shape = null;
+          let poligonoPts = null;
 
-        if (z.Poligono) {
-          try {
-            const parsed = typeof z.Poligono === "string" ? JSON.parse(z.Poligono) : z.Poligono;
-            if (Array.isArray(parsed) && parsed.length >= 3) {
-              poligonoPts = parsed
-                .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
-                .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+          if (z.Poligono) {
+            try {
+              const parsed = typeof z.Poligono === "string" ? JSON.parse(z.Poligono) : z.Poligono;
+              if (Array.isArray(parsed) && parsed.length >= 3) {
+                poligonoPts = parsed
+                  .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+                  .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+              }
+            } catch (e) {
+              poligonoPts = null;
             }
-          } catch (e) {
-            poligonoPts = null;
           }
-        }
 
-        if (poligonoPts && poligonoPts.length >= 3) {
-          shape = new google.maps.Polygon({
-            paths: poligonoPts,
-            strokeColor: color,
-            fillColor: color,
-            fillOpacity: 0.25,
-            editable: false,
-            map,
-          });
-          poligonoPts.forEach((p) => bounds.extend(p));
-        } else {
-          const rectBounds = {
-            north: Number(z.LatitudN),
-            south: Number(z.LatitudS),
-            east: Number(z.LongitudE),
-            west: Number(z.LongitudO),
-          };
-          if (![rectBounds.north, rectBounds.south, rectBounds.east, rectBounds.west].every(Number.isFinite)) return;
-          shape = new google.maps.Rectangle({
-            bounds: rectBounds,
-            strokeColor: color,
-            fillColor: color,
-            fillOpacity: 0.25,
-            editable: false,
-            map,
-          });
-          bounds.extend({ lat: rectBounds.north, lng: rectBounds.east });
-          bounds.extend({ lat: rectBounds.south, lng: rectBounds.west });
-        }
+          if (poligonoPts && poligonoPts.length >= 3) {
+            shape = new google.maps.Polygon({
+              paths: poligonoPts,
+              strokeColor: color,
+              fillColor: color,
+              fillOpacity: 0.25,
+              editable: false,
+              map,
+            });
+            poligonoPts.forEach((p) => bounds.extend(p));
+          } else {
+            const rectBounds = {
+              north: Number(z.LatitudN),
+              south: Number(z.LatitudS),
+              east: Number(z.LongitudE),
+              west: Number(z.LongitudO),
+            };
+            if (![rectBounds.north, rectBounds.south, rectBounds.east, rectBounds.west].every(Number.isFinite)) return;
+            shape = new google.maps.Rectangle({
+              bounds: rectBounds,
+              strokeColor: color,
+              fillColor: color,
+              fillOpacity: 0.25,
+              editable: false,
+              map,
+            });
+            bounds.extend({ lat: rectBounds.north, lng: rectBounds.east });
+            bounds.extend({ lat: rectBounds.south, lng: rectBounds.west });
+          }
 
-        const iw = new google.maps.InfoWindow({ content: `<b>${z.Nombre}</b>` });
-        shape.addListener("click", function (e) {
-          if (infowindowActivo) infowindowActivo.close();
-          iw.setPosition(e.latLng);
-          iw.open(map);
-          infowindowActivo = iw;
+          const iw = new google.maps.InfoWindow({ content: `<b>${z.Nombre}</b>` });
+          shape.addListener("click", function (e) {
+            if (infowindowActivo) infowindowActivo.close();
+            iw.setPosition(e.latLng);
+            iw.open(map);
+            infowindowActivo = iw;
+          });
+
+          overlaysTodas.push(shape);
         });
 
-        overlaysTodas.push(shape);
-      });
+        map.fitBounds(bounds);
+        $("#zonas_map_title").html("Zonas google Maps (todas)");
+        $("#cantidad").html(zonas.length + " zona(s)");
+      }
 
-      map.fitBounds(bounds);
-      $("#zonas_map_title").html("Zonas google Maps (todas)");
-      $("#cantidad").html(zonas.length + " zona(s)");
       renderCardsAsignacion();
+      if (typeof callback === "function") callback();
     },
   });
 }
@@ -743,6 +955,32 @@ function renderCardsAsignacion() {
         "</div>"
     );
     card.attr("data-idzona", z.id);
+    contenedor.append(card);
+  });
+
+  // Zonas dibujadas a mano ("Dibujar Zona") - mismo calculo de conteo, pero
+  // el poligono ya esta en memoria (no hace falta parsear JSON de la DB) y
+  // la card lleva data-manualid en vez de data-idzona.
+  zonasManuales.forEach(function (zm) {
+    const cantidad = waypointsData.filter(
+      (w) => !w.movido && pointInPolygon({ lat: w.lat, lng: w.lng }, zm.poligono)
+    ).length;
+    if (cantidad === 0) return;
+
+    huboAlguna = true;
+
+    const card = $(
+      '<div class="zona-drag-card border rounded p-2 mb-2" draggable="true" style="border-left:4px dashed ' +
+        zm.color +
+        ' !important;">' +
+        '<div class="d-flex justify-content-between align-items-center">' +
+        "<strong>" + zm.nombre + "</strong>" +
+        '<span class="badge bg-light text-dark border">' + cantidad + (cantidad === 1 ? " waypoint" : " waypoints") + "</span>" +
+        "</div>" +
+        '<div class="mt-1"><span class="badge bg-light text-muted border"><i class="mdi mdi-cursor-move"></i> Arrastrar a un Recorrido</span></div>' +
+        "</div>"
+    );
+    card.attr("data-manualid", zm.id);
     contenedor.append(card);
   });
 
@@ -813,7 +1051,12 @@ function cargarRecorridosEnAlta() {
 function activarDragAndDropZonas() {
   document.querySelectorAll(".zona-drag-card").forEach((card) => {
     card.addEventListener("dragstart", function (e) {
-      e.dataTransfer.setData("text/plain", card.getAttribute("data-idzona"));
+      // Payload chico con el tipo de zona - persistida (idZona, va contra
+      // ZonasMapa) o manual (el poligono dibujado, nunca se guarda en la DB).
+      const idZona = card.getAttribute("data-idzona");
+      const manualId = card.getAttribute("data-manualid");
+      const payload = idZona ? { tipo: "persistida", idZona: idZona } : { tipo: "manual", manualId: manualId };
+      e.dataTransfer.setData("text/plain", JSON.stringify(payload));
       e.dataTransfer.effectAllowed = "move";
     });
   });
@@ -830,9 +1073,14 @@ function activarDragAndDropZonas() {
     card.addEventListener("drop", function (e) {
       e.preventDefault();
       card.classList.remove("recorrido-dragover");
-      const idZona = e.dataTransfer.getData("text/plain");
-      if (!idZona) return;
-      moverZonaARecorrido(idZona, card);
+      let payload;
+      try {
+        payload = JSON.parse(e.dataTransfer.getData("text/plain"));
+      } catch (err) {
+        return;
+      }
+      if (!payload || !payload.tipo) return;
+      moverZonaARecorrido(payload, card);
     });
   });
 }
@@ -842,9 +1090,22 @@ function activarDragAndDropZonas() {
 // un boton "Guardar" al final) - se llama a CambiarRecorridos ahi mismo y,
 // si funciona, se recolorean puntualmente los markers que se movieron
 // (match por lat/lng) en vez de recargar todo el mapa.
-function moverZonaARecorrido(idZona, cardDestino) {
+function moverZonaARecorrido(payload, cardDestino) {
   const recorridoDestino = cardDestino.getAttribute("data-recorrido");
   const colorDestino = (cardDestino.getAttribute("data-color") || "#666666").replace("#", "");
+
+  const dataAjax = {
+    CambiarRecorridos: 1,
+    Recnew: recorridoDestino,
+    Recorridos: selected,
+  };
+  if (payload.tipo === "manual") {
+    const zm = zonasManuales.find((z) => z.id === payload.manualId);
+    if (!zm) return;
+    dataAjax.PoligonoManual = JSON.stringify(zm.poligono);
+  } else {
+    dataAjax.idZona = payload.idZona;
+  }
 
   cardDestino.style.opacity = "0.5";
 
@@ -852,12 +1113,7 @@ function moverZonaARecorrido(idZona, cardDestino) {
     url: "Mapas/php/zonas.php",
     type: "POST",
     dataType: "json",
-    data: {
-      CambiarRecorridos: 1,
-      Recnew: recorridoDestino,
-      idZona: idZona,
-      Recorridos: selected,
-    },
+    data: dataAjax,
     success: function (jsonData) {
       cardDestino.style.opacity = "1";
 

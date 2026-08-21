@@ -95,7 +95,7 @@ if(($_POST['SegmentoRuta'] ?? null) == 1){
     exit;
 }
 
-if($_POST['ViewOrder']==1){
+if(isset($_POST['ViewOrder']) && $_POST['ViewOrder']==1){
 
     $Recorrido = $_POST['Recorrido'] ?? '';
     $stmt = $mysqli->prepare(
@@ -110,7 +110,7 @@ if($_POST['ViewOrder']==1){
     echo json_encode(array('resultado'=>1,'newPosicion'=>$Posicion));
     }
 
-if($_POST['NewOrder']==1){
+if(isset($_POST['NewOrder']) && $_POST['NewOrder']==1){
 
 $Posicion=$_POST['Posicion'];
 $Retirado=$_POST['valor_retirado'];
@@ -139,7 +139,7 @@ if ($Recorrido !== '') {
 echo json_encode(array('resultado'=>1,'newPosicion'=>$Posicion,'retirado'=>$Retirado,'new_p'=>$new_p));
 }
 
-if($_POST['RestartOrder']==1){
+if(isset($_POST['RestartOrder']) && $_POST['RestartOrder']==1){
  $Recorrido = $_POST['Recorrido'] ?? '';
  $stmt = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = '0',Posicion_retiro='0' WHERE Recorrido=? AND Eliminado=0 AND Estado='Abierto'");
  $stmt->bind_param('s', $Recorrido);
@@ -306,7 +306,7 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
 
 //ORDENAR SEGUN ORDEN DEL FLETERO
 
-if($_POST['Posiciones_order']==1){
+if(isset($_POST['Posiciones_order']) && $_POST['Posiciones_order']==1){
     $id=$_POST['id'];
     $Recorrido = $_POST['Recorrido'] ?? '';
     $Usuario = $_SESSION['Usuario'] ?? 'sistema';

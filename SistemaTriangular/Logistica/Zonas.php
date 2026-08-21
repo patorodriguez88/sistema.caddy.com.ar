@@ -197,9 +197,12 @@
                                     <h4 class="header-title mb-3">Geolocalizacion Zonas </h4>
                                     <div class="tab-content">
                                         <div class="tab-pane show active mb-3" id="default-buttons-preview">
-                                            <div class="button-list">
-                                                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#zona-modal">Agregar Zona</button>
-                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importar-poligono-modal">Importar Zonas (KML/KMZ)</button>
+                                            <div class="d-flex flex-wrap gap-2">
+                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#zona-modal">Agregar Zona</button>
+                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importar-poligono-modal">Importar KML/KMZ</button>
+                                                <button type="button" class="btn btn-sm btn-outline-dark" id="dibujar_zona_manual_btn">
+                                                    <i class="mdi mdi-vector-polygon"></i> Dibujar Zona
+                                                </button>
                                             </div>
                                         </div>
                                     </div>
