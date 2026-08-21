@@ -9,7 +9,7 @@ class AsanaClient
     // 🔒 Ideal: mover client_id/secret/redirect a tabla o config fuera del repo
     private string $clientId = '1204867479928301';
     private string $clientSecret = '84f466e023db6f9958ddebad539b4df6';
-    private string $redirectUri = 'https://www.sistemacaddy.com.ar/Api/Asana/recepcion.php';
+    private string $redirectUri = 'https://www.sistema.caddy.com.ar/Api/Asana/recepcion.php';
 
     public function __construct(mysqli $mysqli)
     {
