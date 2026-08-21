@@ -34,6 +34,33 @@ function normalizarColorRecorrido(c) {
   return limpio;
 }
 
+// Cuando dos o mas paradas comparten coordenadas exactas (o casi), sus
+// markers quedan tapados unos con otros hasta que se hace zoom a nivel
+// calle. Mismo offset en abanico que ya se uso en Planificador
+// (planificador.js), hecho reusable aca para el mapa real y el preview de
+// "Ver Ruta" - cada caller pasa su propio registry (un Map nuevo por
+// render) asi no hace falta resetear estado global entre pantallas.
+var COINCIDENT_PRECISION = 5; // ~1.1 m de precision para considerar "mismo punto"
+var COINCIDENT_OFFSET_METERS = 6; // separacion entre pines coincidentes, por anillo
+
+function offsetCoincidentMarker(lat, lng, registry) {
+  var key = lat.toFixed(COINCIDENT_PRECISION) + "," + lng.toFixed(COINCIDENT_PRECISION);
+  var count = registry.get(key) || 0;
+  registry.set(key, count + 1);
+  if (count === 0) return { lat: lat, lng: lng };
+
+  var ring = Math.floor((count - 1) / 8) + 1;
+  var angle = (((count - 1) % 8) * 45 * Math.PI) / 180;
+  var radiusM = COINCIDENT_OFFSET_METERS * ring;
+
+  var metersPerDegLat = 111320;
+  var metersPerDegLng = 111320 * Math.cos((lat * Math.PI) / 180);
+  return {
+    lat: lat + (radiusM * Math.sin(angle)) / metersPerDegLat,
+    lng: lng + (radiusM * Math.cos(angle)) / metersPerDegLng,
+  };
+}
+
 // Pin numerado tipo Google Maps (mismo path que ya usaba hojaderuta.js,
 // hecho reusable - antes estaba declarado adentro del for de initMap()).
 function pinSymbol(color) {
@@ -108,7 +135,7 @@ function construirInfoWindowServicio(datos) {
     : "";
 
   return (
-    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:2px 4px;">' +
+    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:2px 4px;margin-top:-10px;">' +
     etiquetaHtml +
     '<div style="font-size:15px;font-weight:600;color:#202124;margin-bottom:2px;">' +
     (datos.cliente || "") +
@@ -177,6 +204,7 @@ function initMap(c) {
 
       var colorRecorrido = normalizarColorRecorrido(c);
       var bounds = new google.maps.LatLngBounds();
+      var coincidentRegistry = new Map();
 
       for (var i = 0; i < objeto_json.data.length; i++) {
         var a = Number(objeto_json.data.length);
@@ -213,10 +241,11 @@ function initMap(c) {
         }
 
         var latlong = objeto_json.data[i].coordenadas.split(",");
-        myLatLng = {
-          lat: Number(latlong[0]),
-          lng: Number(latlong[1]),
-        };
+        myLatLng = offsetCoincidentMarker(
+          Number(latlong[0]),
+          Number(latlong[1]),
+          coincidentRegistry,
+        );
         bounds.extend(myLatLng);
 
         var marker = new google.maps.Marker({

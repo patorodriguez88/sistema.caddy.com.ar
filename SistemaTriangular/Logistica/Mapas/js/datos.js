@@ -134,12 +134,17 @@ function dibujarPreviewRuta(jsonData) {
   }
 
   var bounds = new google.maps.LatLngBounds();
+  var coincidentRegistry = new Map();
 
   var infowindowActivo = null;
 
   jsonData.paradas.forEach(function (p) {
+    // Igual que en Planificador: si esta parada comparte coordenadas con
+    // otra ya dibujada, se separa en abanico para que no queden tapadas.
+    var pos = offsetCoincidentMarker(p.lat, p.lng, coincidentRegistry);
+
     var marker = new google.maps.Marker({
-      position: { lat: p.lat, lng: p.lng },
+      position: pos,
       label: pinLabel(p.posicion),
       icon: pinSymbol(CADDY_ORANGE),
       map: map,
