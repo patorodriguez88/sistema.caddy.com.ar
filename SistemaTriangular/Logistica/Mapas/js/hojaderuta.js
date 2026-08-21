@@ -35,29 +35,23 @@ function normalizarColorRecorrido(c) {
 }
 
 // Cuando dos o mas paradas comparten coordenadas exactas (o casi), sus
-// markers quedan tapados unos con otros hasta que se hace zoom a nivel
-// calle. Mismo offset en abanico que ya se uso en Planificador
-// (planificador.js), hecho reusable aca para el mapa real y el preview de
-// "Ver Ruta" - cada caller pasa su propio registry (un Map nuevo por
-// render) asi no hace falta resetear estado global entre pantallas.
+// markers quedan tapados unos con otros. Un offset "siempre visible" (lo
+// que se uso primero) solo se notaba haciendo zoom a nivel calle - ahora se
+// agrupan en un solo pin con contador, y al hacer click se abren en abanico
+// (mismo patron que usa Google Maps con puntos muy cercanos entre si; no
+// hay una funcion nativa de la API para esto, se arma a mano). Compartido
+// entre el mapa real de Hoja de Ruta (initMap) y el preview de "Ver Ruta"
+// (Mapas/js/datos.js).
 var COINCIDENT_PRECISION = 5; // ~1.1 m de precision para considerar "mismo punto"
-var COINCIDENT_OFFSET_METERS = 6; // separacion entre pines coincidentes, por anillo
+var ABANICO_RADIO_METROS = 14; // separacion entre pines al expandir un grupo
 
-function offsetCoincidentMarker(lat, lng, registry) {
-  var key = lat.toFixed(COINCIDENT_PRECISION) + "," + lng.toFixed(COINCIDENT_PRECISION);
-  var count = registry.get(key) || 0;
-  registry.set(key, count + 1);
-  if (count === 0) return { lat: lat, lng: lng };
-
-  var ring = Math.floor((count - 1) / 8) + 1;
-  var angle = (((count - 1) % 8) * 45 * Math.PI) / 180;
-  var radiusM = COINCIDENT_OFFSET_METERS * ring;
-
+function posicionEnAbanico(lat, lng, idx, total, radioM) {
+  var angle = ((idx * 360) / total) * (Math.PI / 180);
   var metersPerDegLat = 111320;
   var metersPerDegLng = 111320 * Math.cos((lat * Math.PI) / 180);
   return {
-    lat: lat + (radiusM * Math.sin(angle)) / metersPerDegLat,
-    lng: lng + (radiusM * Math.cos(angle)) / metersPerDegLng,
+    lat: lat + (radioM * Math.sin(angle)) / metersPerDegLat,
+    lng: lng + (radioM * Math.cos(angle)) / metersPerDegLng,
   };
 }
 
@@ -81,6 +75,54 @@ function pinLabel(Posicion) {
     fontWeight: "bold",
     text: String(Posicion),
   };
+}
+
+// Agrupa "puntos" ({lat, lng, ...cualquier dato propio}) que comparten
+// (casi) la misma coordenada. Los grupos de 1 se dibujan directo
+// (crearMarkerCallback(punto, posReal)); los de 2+ arrancan colapsados en
+// un pin con contador (color colorCluster) que al hacer click se reemplaza
+// por los markers individuales en abanico. bounds se extiende con el punto
+// real de cada grupo (uno solo, no cada punto individual).
+function dibujarPuntosAgrupados(mapa, puntos, bounds, colorCluster, crearMarkerCallback) {
+  var grupos = new Map();
+  puntos.forEach(function (p) {
+    var key = p.lat.toFixed(COINCIDENT_PRECISION) + "," + p.lng.toFixed(COINCIDENT_PRECISION);
+    if (!grupos.has(key)) grupos.set(key, []);
+    grupos.get(key).push(p);
+  });
+
+  grupos.forEach(function (grupo) {
+    bounds.extend({ lat: grupo[0].lat, lng: grupo[0].lng });
+
+    if (grupo.length === 1) {
+      crearMarkerCallback(grupo[0], { lat: grupo[0].lat, lng: grupo[0].lng });
+      return;
+    }
+
+    var clusterMarker = new google.maps.Marker({
+      position: { lat: grupo[0].lat, lng: grupo[0].lng },
+      map: mapa,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 15,
+        fillColor: "#" + colorCluster,
+        fillOpacity: 1,
+        strokeColor: "#FFFFFF",
+        strokeWeight: 2,
+      },
+      label: { text: String(grupo.length), color: "#fff", fontWeight: "bold" },
+      zIndex: 999,
+      title: grupo.length + " paradas en esta dirección - click para verlas",
+    });
+
+    clusterMarker.addListener("click", function () {
+      clusterMarker.setMap(null);
+      grupo.forEach(function (p, idx) {
+        var pos = posicionEnAbanico(p.lat, p.lng, idx, grupo.length, ABANICO_RADIO_METROS);
+        crearMarkerCallback(p, pos);
+      });
+    });
+  });
 }
 
 // InfoWindow compartido entre el mapa real (hojaderuta.js) y el preview de
@@ -116,10 +158,13 @@ function construirInfoWindowServicio(datos) {
       "</a>";
   }
 
+  // El titulo (arriba de todo) es siempre el nombre del cliente - la
+  // etiqueta (si hay) es info secundaria y va DESPUES del nombre, no antes,
+  // para no dejar un hueco raro arriba tipo "espacio para titulo vacio".
   var etiquetaHtml = datos.etiqueta
     ? '<div style="display:inline-block;background:#' +
       CADDY_ORANGE +
-      ';color:#fff;font-weight:600;font-size:12px;border-radius:12px;padding:2px 9px;margin-bottom:6px;">' +
+      ';color:#fff;font-weight:600;font-size:11px;border-radius:10px;padding:2px 8px;margin-bottom:6px;">' +
       datos.etiqueta +
       "</div>"
     : "";
@@ -135,11 +180,11 @@ function construirInfoWindowServicio(datos) {
     : "";
 
   return (
-    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:2px 4px;margin-top:-10px;">' +
-    etiquetaHtml +
-    '<div style="font-size:15px;font-weight:600;color:#202124;margin-bottom:2px;">' +
+    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:0 4px;margin-top:-10px;">' +
+    '<div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:4px;">' +
     (datos.cliente || "") +
     "</div>" +
+    etiquetaHtml +
     '<div style="font-size:13px;color:#5f6368;margin-bottom:8px;">' +
     (datos.direccion || "") +
     "</div>" +
@@ -204,52 +249,37 @@ function initMap(c) {
 
       var colorRecorrido = normalizarColorRecorrido(c);
       var bounds = new google.maps.LatLngBounds();
-      var coincidentRegistry = new Map();
 
-      for (var i = 0; i < objeto_json.data.length; i++) {
-        var a = Number(objeto_json.data.length);
+      $("#marker").html("Total " + objeto_json.data.length);
+      $("#marker_2").html("Errores " + 0); // ver nota en agrupado de abajo
+      $("#marker_0").html("Entregas " + objeto_json.Total_entregas); //ENCONTRADOS EN TABLA
+      $("#marker_1").html("Retiros " + objeto_json.Total_retiros);
 
-        $("#marker").html("Total " + objeto_json.data.length);
-        $("#marker_2").html("Errores " + Number(a - (markers.length + 1)));
-        $("#marker_0").html("Entregas " + objeto_json.Total_entregas); //ENCONTRADOS EN TABLA
-        $("#marker_1").html("Retiros " + objeto_json.Total_retiros);
-
+      // Crea el marker real de UN punto puntual en la posicion indicada -
+      // toda la logica de icono/color/InfoWindow/click (antes inline en el
+      // for principal), parametrizada para poder crearse de una (puntos
+      // sueltos) o diferida (al expandir un grupo de puntos coincidentes,
+      // ver mas abajo).
+      function crearMarkerPunto(i, pos) {
         if (c != "") {
           if (c == "t") {
-            if (objeto_json[0][i] == null) {
-              var icono = null;
-            } else {
-              var icono = pinSymbol(objeto_json[0][i]);
-            }
+            var icono = objeto_json[0][i] == null ? null : pinSymbol(objeto_json[0][i]);
           } else {
-            if (
-              objeto_json.data[i].Retirado == 0 &&
-              objeto_json.data[i].Entrega == 0
-            ) {
+            if (objeto_json.data[i].Retirado == 0 && objeto_json.data[i].Entrega == 0) {
               var valor_retirado = 0;
               var icono = pinSymbol("ffc107");
-              // var Posicion=objeto_json.data[i].Posicion_retiro;
             } else {
               var valor_retirado = 1;
-              // var Posicion=objeto_json.data[i].Posicion;
               var icono = pinSymbol(colorRecorrido);
               $("#marker_0").css("color", `#${colorRecorrido}`);
             }
           }
         } else {
-          icono = pinSymbol(colorRecorrido);
+          var icono = pinSymbol(colorRecorrido);
         }
 
-        var latlong = objeto_json.data[i].coordenadas.split(",");
-        myLatLng = offsetCoincidentMarker(
-          Number(latlong[0]),
-          Number(latlong[1]),
-          coincidentRegistry,
-        );
-        bounds.extend(myLatLng);
-
         var marker = new google.maps.Marker({
-          position: myLatLng,
+          position: pos,
           map: map,
           label: pinLabel(objeto_json.data[i].Posicion),
           title: objeto_json.data[i].nombrecliente,
@@ -262,27 +292,26 @@ function initMap(c) {
         var tel1 = objeto_json.data[i].Celular;
         var tel2 = objeto_json.data[i].Telefono;
 
-        markers[i].id = objeto_json.data[i].idHojaderuta;
-        markers[i].Recorrido = objeto_json.data[i].Recorrido;
+        marker.id = objeto_json.data[i].idHojaderuta;
+        marker.Recorrido = objeto_json.data[i].Recorrido;
 
-        markers[i].infoWindow = new google.maps.InfoWindow({
+        marker.infoWindow = new google.maps.InfoWindow({
           content: construirInfoWindowServicio({
             cliente: objeto_json.data[i].nombrecliente,
             direccion: objeto_json.data[i].Direccion,
             seguimiento: objeto_json.data[i].Seguimiento,
             telefono1: tel1,
             telefono2: tel2,
-            etiqueta: "Recorrido " + objeto_json.data[i].Recorrido,
+            // Sin etiqueta "Recorrido X" aca - no aporta nada viendo un solo
+            // recorrido a la vez (si en algun momento se quiere distinguir
+            // en la vista "Ver Todos", ahi si tendria sentido agregarla).
           }),
         });
 
-        google.maps.event.addListener(markers[i], "click", function () {
+        google.maps.event.addListener(marker, "click", function () {
           if ($("#alert_ordenar").css("display") == "block") {
-            // console.log('marker',this);
             var send_id = this.id;
             var valorpato = this;
-
-            console.log("valor", valorpato);
 
             let Posicion = $("#next_number").html();
             $.ajax({
@@ -300,7 +329,6 @@ function initMap(c) {
 
                 if (jsonData.resultado == "1") {
                   $("#next_number").html(jsonData.new_p);
-                  // console.log('marker',markers[_i]);
                   valorpato.icon = pinSymbol("#CCCCCC");
                   valorpato.setMap(null);
                   valorpato.setMap(map);
@@ -318,11 +346,26 @@ function initMap(c) {
               infowindowActivo.close();
             }
 
-            infowindowActivo = this.infoWindow;
-            infowindowActivo.open(map, this);
+            infowindowActivo = marker.infoWindow;
+            infowindowActivo.open(map, marker);
           }
         });
+
+        return marker;
       }
+
+      // "Errores" del bloque de arriba se simplifica a 0 fijo: con el flujo
+      // normal (todos los puntos terminan con marker, agrupados o no)
+      // siempre daba 0 de todas formas.
+      var puntosParaAgrupar = [];
+      for (var gi = 0; gi < objeto_json.data.length; gi++) {
+        var ll = objeto_json.data[gi].coordenadas.split(",");
+        puntosParaAgrupar.push({ i: gi, lat: Number(ll[0]), lng: Number(ll[1]) });
+      }
+
+      dibujarPuntosAgrupados(map, puntosParaAgrupar, bounds, colorRecorrido, function (punto, pos) {
+        crearMarkerPunto(punto.i, pos);
+      });
 
       // Traza real de la ruta (si el recorrido tiene un Polyline guardado -
       // desde el Planificador, o desde "Ordenar segun Reparto") - antes el

@@ -134,22 +134,18 @@ function dibujarPreviewRuta(jsonData) {
   }
 
   var bounds = new google.maps.LatLngBounds();
-  var coincidentRegistry = new Map();
-
   var infowindowActivo = null;
 
-  jsonData.paradas.forEach(function (p) {
-    // Igual que en Planificador: si esta parada comparte coordenadas con
-    // otra ya dibujada, se separa en abanico para que no queden tapadas.
-    var pos = offsetCoincidentMarker(p.lat, p.lng, coincidentRegistry);
-
+  // Mismo agrupado+expansion al click que el mapa real de Hoja de Ruta
+  // (hojaderuta.js) - antes se ofseteaban siempre en un abanico chico, que
+  // solo se notaba haciendo zoom a nivel calle.
+  dibujarPuntosAgrupados(map, jsonData.paradas, bounds, CADDY_ORANGE, function (p, pos) {
     var marker = new google.maps.Marker({
       position: pos,
       label: pinLabel(p.posicion),
       icon: pinSymbol(CADDY_ORANGE),
       map: map,
     });
-    bounds.extend(marker.getPosition());
 
     // Antes el preview no mostraba nada al hacer click en un pin (a
     // diferencia del mapa real, que ya tenia InfoWindow) - mismo diseño
