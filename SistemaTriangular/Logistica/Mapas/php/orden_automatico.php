@@ -442,6 +442,8 @@ if ($_POST['Orden_Automatic'] == 1) {
         'idsParadas' => array_column($paradasConDatos, 'id'),
         'polyline' => $polyline,
         'Usuario' => $Usuario,
+        'kmTotal' => $kmTotal,
+        'duracionTotalMin' => round($duracionTotalSeg / 60),
     ];
     sort($_SESSION['PreviewOrden'][$Recorrido]['idsParadas']);
 
@@ -502,8 +504,8 @@ if (($_POST['Orden_Automatic_Confirmar'] ?? null) == 1) {
     // TRAZABILIDAD: quien/cuando/con que metodo se ordeno este recorrido, y
     // el trazo real de la ruta (para dibujar la linea en el mapa de Hoja de
     // Ruta, igual que ya se hace en el Planificador).
-    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico', Polyline = ? WHERE Numero = ?");
-    $stmtTraza->bind_param('sss', $preview['Usuario'], $preview['polyline'], $Recorrido);
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico', UltimoOrdenKm = ?, UltimoOrdenMinutos = ?, Polyline = ? WHERE Numero = ?");
+    $stmtTraza->bind_param('sdiss', $preview['Usuario'], $preview['kmTotal'], $preview['duracionTotalMin'], $preview['polyline'], $Recorrido);
     $stmtTraza->execute();
 
     unset($_SESSION['PreviewOrden'][$Recorrido]);

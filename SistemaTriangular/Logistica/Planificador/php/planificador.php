@@ -155,9 +155,11 @@ if (isset($_POST['AsignarRecorrido'])) {
     $zona = $mysqli->real_escape_string($_POST['zona'] ?? '');
     $color = isset($_POST['color']) ? $mysqli->real_escape_string($_POST['color']) : '000000';
     $km = isset($_POST['kilometros']) ? floatval($_POST['kilometros']) : 0;
+    $tiempoTotal = isset($_POST['tiempoTotal']) ? intval($_POST['tiempoTotal']) : 0;
     $puntos = isset($_POST['puntos']) ? intval($_POST['puntos']) : 0;
     $polyline = isset($_POST['polyline']) ? $mysqli->real_escape_string($_POST['polyline']) : '';
     $diaSalida = traducirDia(date('l'));
+    $Usuario = $_SESSION['Usuario'] ?? 'sistema';
 
     if ($nombreRecorrido === '' || !is_array($datos) || count($datos) === 0 || $recorrido_destino <= 0) {
         echo json_encode(['status' => 'error', 'message' => 'Datos inválidos o vacíos.']);
@@ -184,11 +186,12 @@ if (isset($_POST['AsignarRecorrido'])) {
 
     $stmtUpd = $mysqli->prepare("
         UPDATE Recorridos
-        SET Nombre = ?, Zona = ?, Kilometros = ?, Activo = 1, Color = ?, DiaSalida = ?, Servicios = ?, Polyline = ?
+        SET Nombre = ?, Zona = ?, Kilometros = ?, Activo = 1, Color = ?, DiaSalida = ?, Servicios = ?, Polyline = ?,
+            UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Planificador', UltimoOrdenKm = ?, UltimoOrdenMinutos = ?
         WHERE Numero = ?
     ");
     $stmtUpd->bind_param(
-        "ssdssisi",
+        "ssdssissdis",
         $nombreRecorrido,
         $zona,
         $km,
@@ -196,6 +199,9 @@ if (isset($_POST['AsignarRecorrido'])) {
         $diaSalida,
         $puntos,
         $polyline,
+        $Usuario,
+        $km,
+        $tiempoTotal,
         $recorrido_destino
     );
     $stmtUpd->execute();

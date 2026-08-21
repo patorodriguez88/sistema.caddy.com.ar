@@ -234,6 +234,7 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
 
     $stmtUpdate = $mysqli->prepare("UPDATE HojaDeRuta SET Hora = ? WHERE id = ? LIMIT 1");
     $actualizadas = 0;
+    $minutosTotal = 0;
 
     while ($row = $res->fetch_assoc()) {
         $lat = floatval($row['Latitud']);
@@ -248,6 +249,7 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
         $distKm = $earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a));
 
         $minutos = ($distKm / $velocidadPromedioKmh * 60) + $timeDelivered;
+        $minutosTotal += $minutos;
         $horaActual->modify('+' . round($minutos) . ' minute');
         $horaTexto = $horaActual->format('H:i:s');
 
@@ -264,6 +266,11 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
     // es el path completo que el frontend ya armo (manualOrderPath), se
     // re-codifica como un unico polyline para que quede persistido igual
     // que lo deja "Aceptar Ruta" del orden automatico.
+    // Km total: se suma el path denso ya armado tramo a tramo (SegmentoRuta,
+    // que sigue calles reales) en vez de la distancia Haversine linea-recta
+    // que se usa arriba solo para estimar horarios - da un numero mucho mas
+    // cercano al kilometraje real que va a recorrer el chofer.
+    $kmTotalManual = 0;
     $rutaPuntosPost = $_POST['RutaPuntos'] ?? '';
     if ($rutaPuntosPost !== '') {
         $puntos = json_decode($rutaPuntosPost, true);
@@ -276,12 +283,22 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
                 $stmtPoly = $mysqli->prepare("UPDATE Recorridos SET Polyline = ? WHERE Numero = ?");
                 $stmtPoly->bind_param('ss', $polylineManual, $Recorrido);
                 $stmtPoly->execute();
+
+                for ($i = 1; $i < count($puntosValidos); $i++) {
+                    $p1 = $puntosValidos[$i - 1];
+                    $p2 = $puntosValidos[$i];
+                    $dLatKm = deg2rad(floatval($p2['lat']) - floatval($p1['lat']));
+                    $dLonKm = deg2rad(floatval($p2['lng']) - floatval($p1['lng']));
+                    $aKm = sin($dLatKm / 2) ** 2 + cos(deg2rad(floatval($p1['lat']))) * cos(deg2rad(floatval($p2['lat']))) * sin($dLonKm / 2) ** 2;
+                    $kmTotalManual += $earthRadius * 2 * atan2(sqrt($aKm), sqrt(1 - $aKm));
+                }
             }
         }
     }
 
-    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Manual' WHERE Numero = ?");
-    $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Manual', UltimoOrdenKm = ?, UltimoOrdenMinutos = ? WHERE Numero = ?");
+    $minutosTotalRedondeado = (int) round($minutosTotal);
+    $stmtTraza->bind_param('sdis', $Usuario, $kmTotalManual, $minutosTotalRedondeado, $Recorrido);
     $stmtTraza->execute();
 
     echo json_encode(['resultado' => 1, 'actualizadas' => $actualizadas]);

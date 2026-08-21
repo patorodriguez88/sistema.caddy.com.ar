@@ -294,6 +294,7 @@ foreach ($routeSummary as $i => $summary) {
     $distanceKm = $summary['distance_km'];
     list($h, $m) = explode(':', $summary['estimated_time']);
     $durationMin = $h * 60 + $m;
+    $summary['duration_min'] = $durationMin;
 
     $limiteKm = null;
     if (is_array($maxKm)) {

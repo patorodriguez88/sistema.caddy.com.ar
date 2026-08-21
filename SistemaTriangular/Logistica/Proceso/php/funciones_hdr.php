@@ -1,6 +1,25 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
 
+// Etiqueta legible para Recorridos.UltimoOrdenMetodo, mostrada en las cards
+// de Hoja de Ruta - 'Gestya' es el nombre interno del sistema legacy de
+// Ordenar segun Reparto, se muestra como "Reparto" para el operador.
+function etiquetaMetodoOrden($metodo)
+{
+  switch ($metodo) {
+    case 'Automatico':
+      return 'Automático';
+    case 'Manual':
+      return 'Manual';
+    case 'Gestya':
+      return 'Reparto';
+    case 'Planificador':
+      return 'Planificador';
+    default:
+      return null;
+  }
+}
+
 if (isset($_POST['Color'])) {
   $color = explode('#', $_POST['ColorSeleccionado'], 2);
   $sql = "UPDATE Recorridos SET Color='$color[1]' WHERE Numero='$_POST[Recorrido]'";
@@ -34,7 +53,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     $sqllogistica = $mysqli->query("SELECT * FROM Logistica WHERE id=(SELECT MAX(id) FROM Logistica WHERE Recorrido='$fila[Recorrido]' AND Eliminado='0')");
     $datologistica = $sqllogistica->fetch_array(MYSQLI_ASSOC);
 
-    $sqlrecorrido = $mysqli->query("SELECT Color,Nombre FROM Recorridos WHERE Numero='$fila[Recorrido]'");
+    $sqlrecorrido = $mysqli->query("SELECT Color,Nombre,UltimoOrdenMetodo,UltimoOrdenKm,UltimoOrdenMinutos FROM Recorridos WHERE Numero='$fila[Recorrido]'");
     $datorecorrido = $sqlrecorrido->fetch_array(MYSQLI_ASSOC);
 
 
@@ -149,6 +168,31 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
       echo '<span class="text-nowrap"><i class="mdi mdi-18px mdi-map-marker text-danger"></i>' . $difhdr . ' Cerrados ! </span>';
     }
     echo '</p>';
+
+    // Horario de salida (Logistica.Hora de la Orden vigente) y, si ya se
+    // calculo/confirmo un orden para este Recorrido, el metodo usado
+    // (Automatico/Manual/Reparto/Planificador) + km y tiempo totales
+    // estimados de esa ruta.
+    if (!empty($datologistica['Hora']) && $datologistica['Hora'] !== '00:00:00') {
+      echo '<p class="mb-0 text-muted small"><i class="mdi mdi-18px mdi-clock-outline"></i> Salida ' . substr($datologistica['Hora'], 0, 5) . '</p>';
+    }
+    $metodoLabel = etiquetaMetodoOrden($datorecorrido['UltimoOrdenMetodo'] ?? null);
+    if ($metodoLabel !== null) {
+      echo '<p class="mb-0 text-muted small"><i class="mdi mdi-18px mdi-routes"></i> Orden ' . $metodoLabel . '</p>';
+    }
+    if (!empty($datorecorrido['UltimoOrdenKm']) || !empty($datorecorrido['UltimoOrdenMinutos'])) {
+      echo '<p class="mb-0 text-muted small">';
+      if (!empty($datorecorrido['UltimoOrdenKm'])) {
+        echo '<span class="text-nowrap mr-2"><i class="mdi mdi-18px mdi-map-marker-distance"></i> ' . number_format((float)$datorecorrido['UltimoOrdenKm'], 1) . ' km</span>';
+      }
+      if (!empty($datorecorrido['UltimoOrdenMinutos'])) {
+        $min = (int)$datorecorrido['UltimoOrdenMinutos'];
+        $tiempoTexto = $min >= 60 ? floor($min / 60) . 'h ' . ($min % 60) . 'm' : $min . ' min';
+        echo '<span class="text-nowrap"><i class="mdi mdi-18px mdi-timer-outline"></i> ' . $tiempoTexto . '</span>';
+      }
+      echo '</p>';
+    }
+
     echo '<p class="mb-0 text-muted">';
     echo  '<span class="badge badge-' . $color . ' mr-1">';
     if (isset($datorecorrido['Color']) && isset($datologistica['Estado'])) {

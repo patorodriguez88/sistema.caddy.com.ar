@@ -852,6 +852,7 @@ document.getElementById("btn_guardar_asignaciones")?.addEventListener("click", a
           color: (resumenSeleccionado.color || "#000000").replace("#", ""),
           recorrido: asign.nombre || `Ruta ${resumenSeleccionado.routeIndex}`,
           kilometros: resumenSeleccionado.distance_km || 0,
+          tiempoTotal: resumenSeleccionado.duration_min || 0,
           puntos: resumenSeleccionado.waypoints_count || 0,
           zona: asign.zona || "",
           polyline: rutaSeleccionada?.polyline?.encodedPolyline || "",
