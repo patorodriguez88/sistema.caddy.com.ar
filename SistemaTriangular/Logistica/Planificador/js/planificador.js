@@ -5,6 +5,28 @@ let markerCoordCounts = new Map();
 let activeClusterer = null; // MarkerClusterer activo, se limpia en clearMap()
 const routeColors = ["#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#20c997"];
 
+// Violeta de marca Caddy (--caddy-purple en inicio.php) para el icono de
+// los clusters de MarkerClusterer - por defecto la libreria usa un
+// naranja/rojo generico que se confundia con los colores de ruta por
+// vehiculo (routeColors).
+const CADDY_PURPLE = "4D1A50";
+const clustererRenderer = {
+  render: ({ count, position }) =>
+    new google.maps.Marker({
+      position,
+      label: { text: String(count), color: "#fff", fontWeight: "bold" },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 18,
+        fillColor: "#" + CADDY_PURPLE,
+        fillOpacity: 1,
+        strokeColor: "#FFFFFF",
+        strokeWeight: 2,
+      },
+      zIndex: 1000 + count,
+    }),
+};
+
 // Cuando dos o mas paradas comparten coordenadas exactas (o casi), sus
 // markers quedan tapados unos con otros. Este offset los reparte en un
 // abanico chico alrededor del punto real (el primero de cada coordenada
@@ -323,7 +345,7 @@ window.onload = () => {
         // sigue haciendo falta aparte para paradas con la MISMA coordenada
         // exacta, que clusterizar no separa por mas zoom que se haga.
         if (window.markerClusterer && markers.length > 0) {
-          activeClusterer = new markerClusterer.MarkerClusterer({ map, markers });
+          activeClusterer = new markerClusterer.MarkerClusterer({ map, markers, renderer: clustererRenderer });
         }
 
         renderResumenEstiloDashboard(result.data.summary);

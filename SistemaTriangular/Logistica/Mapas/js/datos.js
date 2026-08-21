@@ -32,17 +32,36 @@ function pedirFechaHoraYVerRuta() {
     String(ahora.getDate()).padStart(2, "0");
   var horaDefault = String(ahora.getHours()).padStart(2, "0") + ":" + String(ahora.getMinutes()).padStart(2, "0");
 
+  var campoStyle = "margin:0;width:100%;box-sizing:border-box;";
+  var labelStyle = "display:block;text-align:left;font-size:13px;font-weight:600;color:#555;margin:14px 2px 4px;";
+
   Swal.fire({
-    title: "¿A qué fecha y hora sale el recorrido?",
+    title: "Datos del recorrido",
     html:
-      '<input type="date" id="swal-fecha-salida" class="swal2-input" value="' +
+      '<div style="text-align:left;">' +
+      '<label for="swal-fecha-salida" style="' +
+      labelStyle +
+      'margin-top:2px;">Fecha de salida</label>' +
+      '<input type="date" id="swal-fecha-salida" class="swal2-input" style="' +
+      campoStyle +
+      '" value="' +
       fechaDefault +
       '">' +
-      '<input type="time" id="swal-hora-salida" class="swal2-input" value="' +
+      '<label for="swal-hora-salida" style="' +
+      labelStyle +
+      '">Hora de salida</label>' +
+      '<input type="time" id="swal-hora-salida" class="swal2-input" style="' +
+      campoStyle +
+      '" value="' +
       horaDefault +
       '">' +
-      '<label for="swal-tiempo-parada" style="display:block;font-size:13px;color:#666;margin-top:8px;">Tiempo de espera por parada (minutos)</label>' +
-      '<input type="number" id="swal-tiempo-parada" class="swal2-input" min="0" step="1" value="5">',
+      '<label for="swal-tiempo-parada" style="' +
+      labelStyle +
+      '">Tiempo de espera por parada (minutos)</label>' +
+      '<input type="number" id="swal-tiempo-parada" class="swal2-input" style="' +
+      campoStyle +
+      '" min="0" step="1" value="5">' +
+      "</div>",
     focusConfirm: false,
     showCancelButton: true,
     confirmButtonText: "Calcular ruta",

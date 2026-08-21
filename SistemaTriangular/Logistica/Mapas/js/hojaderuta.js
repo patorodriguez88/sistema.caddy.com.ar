@@ -1,3 +1,29 @@
+// Violeta de marca Caddy (mismo que --caddy-purple en inicio.php) para el
+// icono de los clusters de MarkerClusterer - por defecto la libreria usa un
+// naranja/rojo generico que se confundia con el naranja de los pines
+// (CADDY_ORANGE) y la traza de la ruta.
+var CADDY_PURPLE = "4D1A50";
+
+var clustererRenderer = {
+  render: function (_ref) {
+    var count = _ref.count;
+    var position = _ref.position;
+    return new google.maps.Marker({
+      position: position,
+      label: { text: String(count), color: "#fff", fontWeight: "bold" },
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 18,
+        fillColor: "#" + CADDY_PURPLE,
+        fillOpacity: 1,
+        strokeColor: "#FFFFFF",
+        strokeWeight: 2,
+      },
+      zIndex: 1000 + count,
+    });
+  },
+};
+
 // TODO: migrate to AdvancedMarkerElement
 function asignacion_recorrido() {
   $("#asignaciones").show();
@@ -129,7 +155,11 @@ function dibujarPuntosAgrupados(mapa, puntos, bounds, colorCluster, crearMarkerC
     activeClusterers.get(mapa).clearMarkers();
   }
   if (window.markerClusterer && todosLosMarkers.length > 0) {
-    var clusterer = new markerClusterer.MarkerClusterer({ map: mapa, markers: todosLosMarkers });
+    var clusterer = new markerClusterer.MarkerClusterer({
+      map: mapa,
+      markers: todosLosMarkers,
+      renderer: clustererRenderer,
+    });
     activeClusterers.set(mapa, clusterer);
   }
 }
