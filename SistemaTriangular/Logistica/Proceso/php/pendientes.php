@@ -118,19 +118,33 @@ if (isset($_POST['Pendientes'])) {
     $_SESSION['RecorridoMapa'] = $_POST['Recorrido'];
   }
 
+  // Clientes.HorarioEntregaSolicitado se trae como fallback (aliasedo,
+  // TransClientes.* ya trae su propia columna HorarioEntregaSolicitado) -
+  // TransClientes.HorarioEntregaSolicitado solo se carga hoy desde el flujo
+  // normal de Ventas.php; Colecta/Flex y las altas desde TiendaNube/Meli/
+  // importacion masiva nunca lo completan aunque el cliente sí tenga la
+  // preferencia cargada en su ficha. El icono de aviso en pendientes.js usa
+  // el fallback para no perder esa preferencia en silencio.
   if (isset($_SESSION['Recorrido']) && $_SESSION['Recorrido'] == 'Todos') {
 
-    $sql = "SELECT TransClientes.*, 
+    // Antes esta rama no joineaba Clientes en absoluto - sin Latitud/
+    // Longitud, el icono de direccion (pendientes.js) mostraba TODAS las
+    // filas en rojo por "sin coordenadas" aunque estuvieran bien.
+    $sql = "SELECT TransClientes.*,
+                   Clientes.Latitud,
+                   Clientes.Longitud,
+                   Clientes.HorarioEntregaSolicitado AS HorarioEntregaSolicitadoCliente,
                    IF(TransClientes.Retirado=1, HojaDeRuta.Posicion, HojaDeRuta.Posicion_retiro) AS Posicion,
                    HojaDeRuta.Estado AS HdrEstado,
                    HojaDeRuta.Hora,
                    HojaDeRuta.Hora_retiro
-            FROM TransClientes 
-            INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes 
-            WHERE Entregado=0 
-              AND TransClientes.Eliminado=0 
-              AND TransClientes.Haber=0 
-              AND TransClientes.CodigoSeguimiento<>'' 
+            FROM TransClientes
+            INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes
+            INNER JOIN Clientes ON Clientes.id=TransClientes.idClienteDestino
+            WHERE Entregado=0
+              AND TransClientes.Eliminado=0
+              AND TransClientes.Haber=0
+              AND TransClientes.CodigoSeguimiento<>''
               AND TransClientes.Devuelto=0";
   } else {
 
@@ -139,22 +153,23 @@ if (isset($_POST['Pendientes'])) {
     // esto tiraba un warning al leerlo directo, mezclado con el JSON de la
     // tabla de pendientes que se auto-inicializa al cargar la pagina.
     $recorrido = $mysqli->real_escape_string($_SESSION['Recorrido'] ?? '');
-    $sql = "SELECT Clientes.Latitud, 
-                   Clientes.Longitud, 
-                   TransClientes.*, 
-                   HojaDeRuta.Posicion, 
-                   HojaDeRuta.Posicion_retiro, 
-                   HojaDeRuta.Estado AS HdrEstado, 
-                   HojaDeRuta.Hora, 
-                   HojaDeRuta.Hora_retiro 
-            FROM TransClientes 
+    $sql = "SELECT Clientes.Latitud,
+                   Clientes.Longitud,
+                   Clientes.HorarioEntregaSolicitado AS HorarioEntregaSolicitadoCliente,
+                   TransClientes.*,
+                   HojaDeRuta.Posicion,
+                   HojaDeRuta.Posicion_retiro,
+                   HojaDeRuta.Estado AS HdrEstado,
+                   HojaDeRuta.Hora,
+                   HojaDeRuta.Hora_retiro
+            FROM TransClientes
             INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes
-            INNER JOIN Clientes ON Clientes.id=TransClientes.idClienteDestino 
-            WHERE TransClientes.Entregado=0 
-              AND TransClientes.Eliminado=0 
-              AND TransClientes.Haber=0 
-              AND TransClientes.CodigoSeguimiento<>'' 
-              AND TransClientes.Devuelto=0 
+            INNER JOIN Clientes ON Clientes.id=TransClientes.idClienteDestino
+            WHERE TransClientes.Entregado=0
+              AND TransClientes.Eliminado=0
+              AND TransClientes.Haber=0
+              AND TransClientes.CodigoSeguimiento<>''
+              AND TransClientes.Devuelto=0
               AND TransClientes.Recorrido='$recorrido'
             ORDER BY IF(TransClientes.Retirado=1, HojaDeRuta.Posicion, HojaDeRuta.Posicion_retiro) ASC";
   }

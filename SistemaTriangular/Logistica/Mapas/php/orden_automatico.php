@@ -201,9 +201,14 @@ if ($_POST['Orden_Automatic'] == 1) {
     }
 
     // PARADAS ABIERTAS DEL RECORRIDO, CON COORDENADAS VALIDAS. Se suma el
-    // HorarioEntregaSolicitado (TransClientes) de cada parada, si lo cargo
-    // el operador al confirmar la venta, para usarlo como prioridad al
-    // ordenar (ver ordenarPorCercania).
+    // HorarioEntregaSolicitado para usarlo como prioridad al ordenar (ver
+    // ordenarPorCercania) - COALESCE con Clientes.HorarioEntregaSolicitado
+    // porque TransClientes.HorarioEntregaSolicitado solo se carga hoy desde
+    // el flujo normal de Ventas.php (y ahi depende de un prefill 100%
+    // client-side sin red de seguridad); Colecta/Flex y las altas desde
+    // TiendaNube/Meli/importacion masiva nunca lo completan aunque el
+    // cliente sí tenga la preferencia cargada en su ficha - sin este
+    // fallback, esos envios perdian la preferencia del cliente en silencio.
     // nombrecliente/Direccion/Telefono*/Seguimiento se traen para poder armar
     // el InfoWindow del preview en el mapa (antes de aceptar la ruta no
     // mostraba nada al hacer click en un pin, a diferencia del mapa real).
@@ -211,7 +216,7 @@ if ($_POST['Orden_Automatic'] == 1) {
         "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, HojaDeRuta.Seguimiento,
                 Clientes.Latitud, Clientes.Longitud, Clientes.nombrecliente, Clientes.Direccion,
                 Clientes.Telefono, Clientes.Celular, Clientes.Celular2,
-                TransClientes.HorarioEntregaSolicitado
+                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaSolicitado) AS HorarioEntregaSolicitado
            FROM HojaDeRuta
           INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
           LEFT JOIN TransClientes ON TransClientes.id = HojaDeRuta.idTransClientes

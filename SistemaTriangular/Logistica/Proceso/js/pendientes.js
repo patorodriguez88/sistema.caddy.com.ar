@@ -16,6 +16,17 @@ function horaAMinutos(hhmm) {
   return h * 60 + m;
 }
 
+// TransClientes.HorarioEntregaSolicitado (de esta venta puntual) manda si
+// esta cargado; si no, cae a Clientes.HorarioEntregaSolicitado (la
+// preferencia de base del cliente, ver HorarioEntregaSolicitadoCliente que
+// agrega pendientes.php). TransClientes.HorarioEntregaSolicitado solo se
+// completa hoy desde el flujo normal de Ventas.php - Colecta/Flex y las
+// altas desde TiendaNube/Meli/importacion masiva nunca lo cargan aunque el
+// cliente sí tenga la preferencia guardada en su ficha.
+function horarioSolicitadoEfectivo(row) {
+  return row.HorarioEntregaSolicitado || row.HorarioEntregaSolicitadoCliente || "";
+}
+
 // Icono de aviso junto al nombre del cliente cuando el horario planificado
 // para esta parada se aleja mas de UMBRAL_DISCREPANCIA_HORARIO_MIN del
 // horario que el cliente pidio - sin esto, un recorrido ya ordenado podia
@@ -23,7 +34,8 @@ function horaAMinutos(hhmm) {
 // visible en ningun lado hasta que el cliente reclamara.
 function avisoHorarioIcono(row) {
   if (row.Retirado != 1) return ""; // el horario solicitado es de entrega, no de retiro
-  var minSolicitado = horaAMinutos(row.HorarioEntregaSolicitado);
+  var horarioSolicitado = horarioSolicitadoEfectivo(row);
+  var minSolicitado = horaAMinutos(horarioSolicitado);
   var minPlanificado = horaAMinutos(row.Hora);
   if (minSolicitado === null || minPlanificado === null) return "";
 
@@ -37,7 +49,7 @@ function avisoHorarioIcono(row) {
 
   return (
     ' <i class="mdi mdi-18px mdi-alert text-warning" title="Horario solicitado: ' +
-    row.HorarioEntregaSolicitado +
+    horarioSolicitado +
     " · Horario planificado: " +
     row.Hora +
     " · " +
@@ -408,10 +420,11 @@ $(document).ready(function () {
               horaEstimada.substring(0, 5) +
               "</small>";
           }
-          if (row.HorarioEntregaSolicitado) {
+          var horarioSolicitado = horarioSolicitadoEfectivo(row);
+          if (horarioSolicitado) {
             lineas +=
               '<br><small class="text-info"><i class="mdi mdi-clock-alert-outline"></i> Solicitado ' +
-              row.HorarioEntregaSolicitado.substring(0, 5) +
+              horarioSolicitado.substring(0, 5) +
               "</small>";
           }
           return (
