@@ -68,6 +68,7 @@ function cargarClientes() {
           lng: p.lng,
           nombrecliente: p.nombrecliente,
           CodigoSeguimiento: p.CodigoSeguimiento,
+          horarioSolicitado: p.horarioSolicitado,
         }));
 
         $("#calcular_ruta").prop("disabled", false);
@@ -112,29 +113,89 @@ function calcularDistancia(lat1, lng1, lat2, lng2) {
   return R * c;
 }
 
+const VELOCIDAD_PROMEDIO_KMH = 25;
+
+function horaAMinutos(hhmm) {
+  if (!hhmm) return null;
+  const partes = String(hhmm).split(":");
+  if (partes.length < 2) return null;
+  const h = parseInt(partes[0], 10);
+  const m = parseInt(partes[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+// Busca el horario solicitado de un punto por coordenada, con la misma
+// tolerancia que findWaypointData() en getRoute.php - los puntos que se
+// ordenan vienen del textarea (solo lat,lng, sin metadata), asi que hace
+// falta volver a matchear contra waypointsData para recuperar el horario.
+function buscarHorarioPorCoordenada(lat, lng, waypointsData, tolerancia = 0.0001) {
+  if (!waypointsData) return null;
+  for (const item of waypointsData) {
+    if (Math.abs(item.lat - lat) < tolerancia && Math.abs(item.lng - lng) < tolerancia) {
+      return item.horarioSolicitado || null;
+    }
+  }
+  return null;
+}
+
+// Nearest-neighbor por cercania. Con horaSalidaMinutos/waypointsData, aplica
+// el mismo criterio de urgencia que ya usa ordenarPorCercania() en
+// Logistica/Mapas/php/orden_automatico.php: las paradas con horario
+// solicitado que ya se cumplio (o esta por cumplirse en menos de 60 min,
+// segun la hora estimada de llegada) se priorizan por sobre la mas cercana
+// - no obliga a cumplirlo siempre, pero evita que queden muy desacomodadas
+// en la ruta. Solo afecta el ORDEN dentro de cada vehiculo/cluster, no a
+// que vehiculo se asigna cada parada (eso lo decide el K-means de
+// getRoute.php, sin cambios).
 function ordenarWaypointsPorCercania(
   puntos,
-  origen = { lat: -31.444994776141503, lng: -64.1779408896999 }
+  origen = { lat: -31.444994776141503, lng: -64.1779408896999 },
+  horaSalidaMinutos = null,
+  waypointsData = null,
+  tiempoPorParadaMin = 5
 ) {
   const ordenado = [];
   let actual = origen;
   const restante = [...puntos];
+  let tiempoAcumuladoMin = 0;
 
   while (restante.length > 0) {
-    let menorDist = Infinity;
+    let mejorScore = Infinity;
     let siguienteIndex = 0;
+    let mejorDist = 0;
 
     for (let i = 0; i < restante.length; i++) {
       const dist = calcularDistancia(actual.lat, actual.lng, restante[i].lat, restante[i].lng);
-      if (dist < menorDist) {
-        menorDist = dist;
+
+      let bonus = 0;
+      if (horaSalidaMinutos !== null) {
+        const horarioSolicitado =
+          restante[i].horarioSolicitado !== undefined
+            ? restante[i].horarioSolicitado
+            : buscarHorarioPorCoordenada(restante[i].lat, restante[i].lng, waypointsData);
+        const minSolicitado = horaAMinutos(horarioSolicitado);
+        if (minSolicitado !== null) {
+          const llegadaEstimadaMin = tiempoAcumuladoMin + (dist / VELOCIDAD_PROMEDIO_KMH) * 60;
+          const urgenciaMin = minSolicitado - (horaSalidaMinutos + llegadaEstimadaMin);
+          if (urgenciaMin <= 60) {
+            bonus = (60 - urgenciaMin) / 2;
+          }
+        }
+      }
+
+      const score = dist - bonus;
+      if (score < mejorScore) {
+        mejorScore = score;
         siguienteIndex = i;
+        mejorDist = dist;
       }
     }
 
     const siguiente = restante.splice(siguienteIndex, 1)[0];
     ordenado.push(siguiente);
     actual = siguiente;
+    tiempoAcumuladoMin += (mejorDist / VELOCIDAD_PROMEDIO_KMH) * 60 + tiempoPorParadaMin;
   }
 
   return ordenado;
@@ -146,10 +207,17 @@ window.onload = () => {
   document.getElementById("routeForm").addEventListener("submit", async function (e) {
     e.preventDefault();
 
-    const waypoints = ordenarWaypointsPorCercania(
-      parseMultipleLatLng(document.getElementById("waypoints").value)
-    );
     const tiempoPorParada = parseInt(document.getElementById("stopTimes").value.trim()) || 600;
+    const startTime = document.getElementById("startTime").value;
+    const horaSalidaMinutos = horaAMinutos(startTime);
+
+    const waypoints = ordenarWaypointsPorCercania(
+      parseMultipleLatLng(document.getElementById("waypoints").value),
+      undefined,
+      horaSalidaMinutos,
+      window.waypointsData,
+      tiempoPorParada / 60,
+    );
     const stopTimes = waypoints.map(() => tiempoPorParada);
 
     const driversCount = parseInt(document.getElementById("driversCount").value);
@@ -173,7 +241,6 @@ window.onload = () => {
     }
 
     const maxMinutes = parseFloat(document.getElementById("maxMinutes").value);
-    const startTime = document.getElementById("startTime").value;
 
     const payload = {
       waypoints,

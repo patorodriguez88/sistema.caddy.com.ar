@@ -48,8 +48,15 @@ if (isset($_POST['BuscarRecorridos'])) {
 if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
     $Recorrido = intval($_POST['Recorrido']);
 
+    // COALESCE con Clientes.HorarioEntregaSolicitado: TransClientes.HorarioEntregaSolicitado
+    // solo se completa hoy desde el flujo normal de Ventas.php - Colecta/Flex
+    // y las altas desde TiendaNube/Meli/importacion masiva nunca lo cargan,
+    // aunque el cliente sí tenga la preferencia guardada en su ficha. Se usa
+    // para priorizar paradas urgentes al ordenar (ver ordenarWaypointsPorCercania
+    // en planificador.js), mismo criterio que ya usa orden_automatico.php.
     $stmt = $mysqli->prepare("
-        SELECT ts.id, ts.CodigoSeguimiento, cs.nombrecliente, cs.Latitud, cs.Longitud
+        SELECT ts.id, ts.CodigoSeguimiento, cs.nombrecliente, cs.Latitud, cs.Longitud,
+               COALESCE(ts.HorarioEntregaSolicitado, cs.HorarioEntregaSolicitado) AS HorarioEntregaSolicitado
         FROM TransClientes AS ts
         LEFT JOIN Clientes AS cs ON ts.idClienteDestino = cs.id
         WHERE ts.Eliminado = 0
@@ -79,6 +86,7 @@ if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
                 'lng' => $lng,
                 'nombrecliente' => $nombre,
                 'CodigoSeguimiento' => $row['CodigoSeguimiento'],
+                'horarioSolicitado' => $row['HorarioEntregaSolicitado'],
             ];
         } else {
             $sinCoordenadas[] = "• $nombre (Seguimiento {$row['CodigoSeguimiento']})";
