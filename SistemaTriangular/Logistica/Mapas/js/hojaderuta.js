@@ -226,6 +226,11 @@ function dibujarPuntosAgrupados(mapa, puntos, bounds, colorCluster, crearMarkerC
       map: mapa,
       markers: todosLosMarkers,
       renderer: clustererRenderer,
+      // Sin esto la libreria usa su algoritmo por defecto (radius:60px),
+      // que agrupaba paradas a varias cuadras de distancia entre si en
+      // vez de solo las realmente pegadas - se achica el radio para que
+      // agrupe menos (necesita pines mas cerca en pantalla para juntarse).
+      algorithm: new markerClusterer.SuperClusterAlgorithm({ radius: 35, maxZoom: 19 }),
     });
     activeClusterers.set(mapa, clusterer);
   }
