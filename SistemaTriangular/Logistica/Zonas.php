@@ -39,6 +39,45 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        /* Los Recorridos de "Seleccionar Recorridos" traen nombre + estado
+           (ej. "9504 | Demo Recorrido 4 - Gomez Mariano -> En Ruta ...") y
+           el chip de select2 se salia del input en vez de acomodarse -
+           select2 a veces calcula el ancho del contenedor mal si el select
+           original esta oculto al inicializarse. Se fuerza 100% y se deja
+           que cada chip haga wrap a varias lineas en vez de desbordar. */
+        #select_rec_mapa+.select2-container {
+            width: 100% !important;
+        }
+
+        #select_rec_mapa+.select2-container .select2-selection__choice {
+            max-width: 100%;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        /* Drag & drop de zonas sobre Recorridos - mismo patron visual que
+           Planificador (cards con borde de color), agregando feedback de
+           hover que ahi no tenia (la clase se togglea pero no tenia estilo). */
+        .zona-drag-card {
+            cursor: grab;
+            transition: box-shadow .15s;
+        }
+
+        .zona-drag-card:active {
+            cursor: grabbing;
+        }
+
+        .recorrido-drop-card {
+            transition: background-color .15s, border-color .15s;
+        }
+
+        .recorrido-drop-card.recorrido-dragover {
+            background-color: rgba(77, 26, 80, .08);
+            border-color: #4D1A50 !important;
+        }
+    </style>
 </head>
 
 <body>
@@ -58,7 +97,7 @@
                                 <div class="modal-body p-4">
                                     <div class="text-center">
                                         <i class="dripicons-information h1 text-info"></i>
-                                        <h4 class="mt-2">Estamos moviendo los registros !</h4>
+                                        <h4 id="info-alert-modal-title" class="mt-2">Estamos moviendo los registros !</h4>
                                         <p id="info-alert-body" class="mt-3"> No cierres esta ventana. </p>
                                         <div class="spinner-grow text-primary" role="status"></div>
                                     </div>
@@ -89,6 +128,27 @@
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
+                    <!-- Importar zonas desde KML/KMZ -->
+                    <div class="modal fade" id="importar-poligono-modal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h4 class="modal-title">Importar Zonas (KML/KMZ)</h4>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="form-group mb-3">
+                                        <label>Archivo exportado de Google My Maps</label>
+                                        <input type="file" class="form-control" id="importar_poligono_file" accept=".kml,.kmz">
+                                        <span class="font-13 text-muted">Cada polígono con nombre del archivo se crea (o actualiza, si ya existe una zona con ese nombre) como una Zona lista para usar.</span>
+                                    </div>
+                                    <div class="button-list text-right">
+                                        <button id="importar_poligono_ok" type="button" class="btn btn-primary">Importar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     <div class="modal fade" id="renderizar-modal" tabindex="-1" role="dialog" aria-hidden="true">
                         <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
@@ -139,7 +199,7 @@
                                         <div class="tab-pane show active mb-3" id="default-buttons-preview">
                                             <div class="button-list">
                                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#zona-modal">Agregar Zona</button>
-                                                <!--                                                     <button type="button" class="btn btn-secondary" data-bs-toggle="modal"  data-bs-target="#renderizar-modal">Secondary</button> -->
+                                                <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importar-poligono-modal">Importar Zonas (KML/KMZ)</button>
                                             </div>
                                         </div>
                                     </div>
@@ -157,6 +217,7 @@
                                                 multiple="multiple"
                                                 data-placeholder="Seleccionar Recorridos ...">
                                             </select>
+                                            <span id="geo-warning-badge" class="badge bg-warning text-dark mt-2" style="display:none;cursor:pointer;"></span>
                                         </div>
                                     </div>
                                     <div class="accordion custom-accordion" id="custom-accordion-one">
@@ -184,17 +245,43 @@
                                             <!-- item-->
                                             <a id="cambiar_recorrido" role="button" class="dropdown-item">Cambiar Recorrido</a>
                                             <!-- item-->
-                                            <!--                                                 <a id="todos_recorrido" role="button" class="dropdown-item"> Ver Todos</a> -->
+                                            <a id="ver_todas_zonas" role="button" class="dropdown-item">Ver Todas las Zonas</a>
                                             <!-- item-->
                                             <!--                                                 <a id="asignacion_recorrido" role="button" class="dropdown-item">Asignar</a> -->
                                             <!-- item-->
                                             <!--                                                 <a href="javascript:void(0);" class="dropdown-item">Action</a> -->
                                         </div>
                                     </div>
-                                    <h4 class="header-title mb-3">Zonas Google Map </h4>
+                                    <h4 id="zonas_map_title" class="header-title mb-3">Zonas Google Map </h4>
                                     <div id="map" class="gmaps" style="min-height: 400px;"></div>
                                 </div> <!-- end card-body-->
                             </div> <!-- end card-->
+
+                            <!-- Cards de asignacion por drag & drop: zonas (con conteo de
+                                 waypoints) a la izquierda, Recorridos en alta (destino) a la
+                                 derecha - debajo del mapa, en la misma columna (antes quedaba
+                                 como fila aparte al final de la pagina, empujada abajo del
+                                 todo por el acordeon de zonas de la izquierda que es mas alto).
+                                 Se muestra solo en la vista "Ver Todas las Zonas" con
+                                 Recorridos seleccionados. -->
+                            <div class="row mt-3 d-none" id="fila_asignacion_zonas">
+                                <div class="col-md-6">
+                                    <div class="card mb-0">
+                                        <div class="card-body">
+                                            <h4 class="header-title mb-3">Zonas <span class="text-muted small">(arrastrar a un Recorrido)</span></h4>
+                                            <div id="contenedorZonasDrag"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="card mb-0">
+                                        <div class="card-body">
+                                            <h4 class="header-title mb-3">Recorridos en Alta</h4>
+                                            <div id="contenedorRecorridosDrop" class="row g-2"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </div> <!-- end col-->
                     </div>
                     <!-- end row-->
@@ -235,7 +322,16 @@
     <!-- Funciones -->
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Mapas/js/zonas.js"></script>
+    <?php
+    // Cache-busting por fecha de modificacion - mismo patron que HojaDeRuta2.php,
+    // sin esto el navegador cachea zonas.js entre cambios y un fix ya deployado
+    // parece no andar (era el JS viejo en cache).
+    $verJs = function ($ruta) {
+        $abs = __DIR__ . '/' . $ruta;
+        return $ruta . '?v=' . (file_exists($abs) ? filemtime($abs) : time());
+    };
+    ?>
+    <script src="<?php echo $verJs('Mapas/js/zonas.js'); ?>"></script>
 
     <script
         src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&callback=initMap&loading=async"
@@ -248,7 +344,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="../Funciones/js/alertas.js"></script>
+    <script src="<?php echo $verJs('../Funciones/js/alertas.js'); ?>"></script>
 </body>
 
 </html>

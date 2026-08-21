@@ -8,9 +8,22 @@ let polygon = null;
 let currentPolyPoints = null;
 let infoWindow = null;
 let markers = [];
+// Paralelo a "markers" - cada waypoint cargado con su marker real y si ya
+// fue movido a otro Recorrido en esta sesion de trabajo (drag&drop de zonas
+// sobre Recorridos "en alta" - ver renderCardsAsignacion/moverZonaARecorrido
+// mas abajo). Se usa para: contar waypoints por zona sin ir al servidor, y
+// para recolorear en el mapa justo los markers que se movieron.
+let waypointsData = [];
 
 let zona = null;
 let zonaId = null;
+
+// Cache de la ultima respuesta de listarZonas (Poligono/Color por zona) y si
+// estamos parados en la vista "Ver Todas las Zonas" - las cards de
+// asignacion por drag&drop solo tienen sentido ahi, no mirando una zona
+// puntual del acordeon (esa ya tiene su propio "Cambiar Recorrido").
+let zonasCache = [];
+let vistaTodasActiva = false;
 
 let milat;
 let milng;
@@ -101,11 +114,13 @@ $(document).ready(function () {
     url: "Mapas/php/zonas.php",
   });
 
-  // Cargar recorridos
+  // Cargar recorridos - solo los que tienen servicios abiertos asignados
+  // (no tiene sentido elegir uno vacio para reasignar nada desde ahi).
   $.ajax({
-    data: { BuscarRecorridos: 1 },
+    data: { RecorridosConServicios: 1 },
     type: "POST",
-    url: "Proceso/php/pendientes.php",
+    url: "Mapas/php/zonas.php",
+    dataType: "html", // zonas.php manda Content-Type: application/json por defecto en otras acciones - ver dataType:"text" en datos.js para el mismo caso
     success: function (response) {
       $(".selector-recorrido1 select").html(response).fadeIn();
     },
@@ -121,6 +136,49 @@ $(document).ready(function () {
 function clearMarkers() {
   markers.forEach((m) => m.setMap(null));
   markers = [];
+  waypointsData = [];
+}
+
+// Icono de pin - antes vivia adentro del callback de exito de
+// cargarWaypointsZona() (no reusable); se saca a nivel de modulo para poder
+// llamarlo tambien al recolorear markers movidos (moverZonaARecorrido).
+function pinSymbol(color) {
+  return {
+    path: "M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z",
+    fillColor: "#" + color,
+    fillOpacity: 1,
+    strokeColor: "#FFFFFF",
+    strokeWeight: 1,
+    scale: 1,
+  };
+}
+
+// Tarjeta de info al tocar un waypoint - mismo estilo/diseño que
+// construirInfoWindowServicio() de Mapas/js/hojaderuta.js, pero recortada
+// (sin telefono/WhatsApp ni "Ver en tabla", que no aplican en Zonas) y
+// duplicada aca en vez de compartida: hojaderuta.js declara sus propios
+// globals "map"/"markers" a nivel de modulo, cargarlo junto con zonas.js en
+// la misma pagina chocaria (doble declaracion de la misma variable).
+function construirInfoWindowZona(datos) {
+  var seguimientoHtml = datos.seguimiento
+    ? '<div style="font-size:12px;color:#5f6368;margin-bottom:4px;"><b>Seguimiento:</b> ' + datos.seguimiento + "</div>"
+    : "";
+  var recorridoHtml = datos.recorrido
+    ? '<div style="font-size:12px;color:#5f6368;"><b>Recorrido:</b> ' + datos.recorrido + "</div>"
+    : "";
+
+  return (
+    '<div style="min-width:200px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:0 4px;margin-top:-2px;">' +
+    '<div style="font-size:16px;font-weight:700;color:#202124;margin-bottom:4px;line-height:1.3;">' +
+    (datos.cliente || "") +
+    "</div>" +
+    '<div style="font-size:13px;color:#5f6368;margin-bottom:6px;">' +
+    (datos.direccion || "") +
+    "</div>" +
+    seguimientoHtml +
+    recorridoHtml +
+    "</div>"
+  );
 }
 
 function clearRectangle() {
@@ -227,10 +285,13 @@ function renderZona(id) {
   // Si maps todavía no cargó, initMap() se ejecuta por callback y luego renderZona
   if (!map) return;
 
-  // limpiar overlays anteriores
+  // limpiar overlays anteriores (incluida la vista de "todas las zonas")
   clearRectangle();
   clearMarkers();
   clearPolygon();
+  clearOverlaysTodas();
+  vistaTodasActiva = false;
+  $("#fila_asignacion_zonas").addClass("d-none");
 
   // 1) bounds + rectangle o polígono
   $.ajax({
@@ -242,7 +303,7 @@ function renderZona(id) {
       // 🔁 Sincronizar nombre e id desde backend
       if (jsonData && jsonData.Nombre) zona = jsonData.Nombre;
       if (jsonData && jsonData.id) zonaId = Number(jsonData.id);
-      if (zona) $(".header-title").html("Zonas google Maps " + zona);
+      if (zona) $("#zonas_map_title").html("Zonas google Maps " + zona);
       $("#cantidad").html(
         (jsonData.Total || 0) + " Servicios dentro de " + (zona || "-")
       );
@@ -314,6 +375,7 @@ function renderZona(id) {
             // centrar en el polígono
             const polyBounds = computeBoundsFromPoints(polyPoints);
             map.fitBounds(polyBounds);
+            cargarWaypointsZona();
             return; // 👈 no dibujar rectángulo si hay polígono
           }
         } catch (e) {
@@ -337,14 +399,25 @@ function renderZona(id) {
         { lat: bounds.north, lng: bounds.east }
       );
       map.fitBounds(gBounds);
+      cargarWaypointsZona();
     },
   });
+}
 
-  // 2) markers (tu endpoint actual)
-  const xhttp = new XMLHttpRequest();
-  xhttp.onreadystatechange = function () {
-    if (xhttp.readyState === 4 && xhttp.status === 200) {
-      const objeto_json = JSON.parse(xhttp.responseText);
+// Markers de la zona - encadenado DESPUES de que termina "Buscar" (arriba),
+// no en paralelo: antes se disparaban los dos requests juntos y, segun cual
+// llegaba primero al servidor, este pedido podia leer $_SESSION['rec']
+// todavia vacio/desactualizado (los waypoints no aparecian) o
+// currentPolyPoints todavia con la forma de la zona anterior (filtraba mal).
+// Ahora manda "rec" directo, sin depender de sesion.
+function cargarWaypointsZona() {
+  $.ajax({
+    url: "Mapas/php/datos_zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: { rec: selected },
+    success: function (objeto_json) {
+      clearMarkers();
 
       for (let i = 0; i < objeto_json.data.length; i++) {
         const latlong = (objeto_json.data[i].coordenadas || "").split(",");
@@ -355,18 +428,6 @@ function renderZona(id) {
 
         if (!Number.isFinite(myLatLng.lat) || !Number.isFinite(myLatLng.lng))
           continue;
-
-        // Mantengo tu icono de colores
-        function pinSymbol(color) {
-          return {
-            path: "M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z",
-            fillColor: "#" + color,
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 1,
-            scale: 1,
-          };
-        }
 
         // ✅ Si hay polígono, filtrar puntos por contención
         if (Array.isArray(currentPolyPoints) && currentPolyPoints.length >= 3) {
@@ -384,13 +445,27 @@ function renderZona(id) {
           icon: icono,
         });
 
-        markers.push(marker);
-      }
-    }
-  };
+        // Antes el click en un waypoint no mostraba nada - mismo diseño de
+        // tarjeta que ya usa Hoja de Ruta, sin telefono (no hace falta aca).
+        const datosServicio = {
+          cliente: objeto_json.data[i].nombrecliente,
+          direccion: objeto_json.data[i].Direccion,
+          seguimiento: objeto_json.data[i].Seguimiento,
+          recorrido: objeto_json.data[i].Recorrido,
+        };
+        marker.addListener("click", function () {
+          if (!infoWindow) infoWindow = new google.maps.InfoWindow();
+          infoWindow.setContent(construirInfoWindowZona(datosServicio));
+          infoWindow.open(map, marker);
+        });
 
-  xhttp.open("POST", "Mapas/php/datos_zonas.php", true);
-  xhttp.send();
+        markers.push(marker);
+        waypointsData.push({ lat: myLatLng.lat, lng: myLatLng.lng, marker, movido: false });
+      }
+
+      renderCardsAsignacion();
+    },
+  });
 }
 
 // =========================
@@ -406,7 +481,7 @@ $(document).on("click", "#zonas_accordion .card-header", function () {
   zona = z || zona || null;
   zonaId = Number(idz);
 
-  if (zona) $(".header-title").html("Zonas google Maps " + zona);
+  if (zona) $("#zonas_map_title").html("Zonas google Maps " + zona);
   renderZona(zonaId);
 });
 
@@ -420,8 +495,420 @@ $("#select_rec_mapa").change(function () {
       selected.push(e.value);
     });
 
-  // ✅ NO initMap() (eso solo inicializa), renderiza la zona
-  renderZona(zonaId);
+  // ✅ NO initMap() (eso solo inicializa)
+  if (zonaId) {
+    // Viendo una zona puntual: renderZona() ya encadena la carga de waypoints.
+    renderZona(zonaId);
+  } else if (map) {
+    // Sin zona puntual seleccionada (ej. "Ver Todas las Zonas", o recien
+    // entrando a la pantalla) - antes no pasaba nada hasta abrir una zona
+    // del acordeon; ahora los waypoints se cargan apenas se eligen
+    // Recorridos, sin depender de estar mirando una zona especifica.
+    cargarWaypointsZona();
+  }
+  verificarGeolocalizacion();
+});
+
+// =========================
+// Aviso de geolocalizacion faltante
+// =========================
+// Antes los servicios sin coordenadas validas (o con basura/'0') quedaban
+// silenciosamente afuera del mapa (Clientes.Latitud<>'' no los detecta) sin
+// ningun aviso - un chofer podia terminar sin ese servicio en ninguna zona y
+// nadie se enteraba. Se deja un badge persistente (no solo un toast que se
+// pierde) + bloqueo de confirmacion antes de mover servicios.
+let ultimoChequeoGeo = null;
+
+function verificarGeolocalizacion(callback) {
+  if (!Array.isArray(selected) || selected.length === 0) {
+    ultimoChequeoGeo = null;
+    $("#geo-warning-badge").hide();
+    if (typeof callback === "function") callback(null);
+    return;
+  }
+
+  $.ajax({
+    url: "Mapas/php/zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: { VerificarGeolocalizacion: 1, rec: selected },
+    success: function (r) {
+      ultimoChequeoGeo = r;
+      if (r.status === "warning") {
+        $("#geo-warning-badge")
+          .text("⚠ " + r.faltantes.length + " sin geolocalizar (no incluidos)")
+          .show();
+      } else {
+        $("#geo-warning-badge").hide();
+      }
+      if (typeof callback === "function") callback(r);
+    },
+  });
+}
+
+// Click en el badge => ver el listado completo
+$(document).on("click", "#geo-warning-badge", function () {
+  if (!ultimoChequeoGeo || !ultimoChequeoGeo.faltantes?.length) return;
+  Swal.fire({
+    icon: "warning",
+    title: "Servicios sin geolocalizar",
+    html:
+      "<div style='text-align:left;max-height:300px;overflow-y:auto'>" +
+      ultimoChequeoGeo.faltantes.map((f) => `<div>• ${f}</div>`).join("") +
+      "</div>",
+  });
+});
+
+// Confirma con el operador si hay servicios sin geolocalizar antes de seguir
+// con una accion que mueve datos (Cambiar Recorrido). Si no hay faltantes,
+// sigue directo.
+function confirmarSiFaltanGeo(onContinuar) {
+  if (!ultimoChequeoGeo || !ultimoChequeoGeo.faltantes?.length) {
+    onContinuar();
+    return;
+  }
+  Swal.fire({
+    icon: "warning",
+    title: "Hay servicios sin geolocalizar",
+    html:
+      `<p>${ultimoChequeoGeo.faltantes.length} servicio(s) de los Recorridos seleccionados no tienen coordenadas válidas y NO se van a mover con esta acción:</p>` +
+      "<div style='text-align:left;max-height:200px;overflow-y:auto'>" +
+      ultimoChequeoGeo.faltantes.map((f) => `<div>• ${f}</div>`).join("") +
+      "</div>",
+    showCancelButton: true,
+    confirmButtonText: "Continuar de todas formas",
+    cancelButtonText: "Cancelar",
+  }).then((result) => {
+    if (result.isConfirmed) onContinuar();
+  });
+}
+
+// =========================
+// Ver todas las zonas juntas (overview de solo lectura)
+// =========================
+let overlaysTodas = [];
+
+function clearOverlaysTodas() {
+  overlaysTodas.forEach((o) => {
+    google.maps.event.clearInstanceListeners(o);
+    o.setMap(null);
+  });
+  overlaysTodas = [];
+}
+
+function renderTodasLasZonas() {
+  clearRectangle();
+  clearPolygon();
+  clearMarkers();
+  clearOverlaysTodas();
+  zona = null;
+  zonaId = null;
+  vistaTodasActiva = true;
+
+  $.ajax({
+    url: "Mapas/php/zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: { listarZonas: 1 },
+    success: function (zonas) {
+      if (!Array.isArray(zonas) || zonas.length === 0) {
+        Swal.fire({ icon: "info", title: "No hay zonas para mostrar" });
+        return;
+      }
+
+      zonasCache = zonas;
+
+      let infowindowActivo = null;
+      const bounds = new google.maps.LatLngBounds();
+
+      zonas.forEach(function (z) {
+        const color = z.Color || "#4D1A50";
+        let shape = null;
+        let poligonoPts = null;
+
+        if (z.Poligono) {
+          try {
+            const parsed = typeof z.Poligono === "string" ? JSON.parse(z.Poligono) : z.Poligono;
+            if (Array.isArray(parsed) && parsed.length >= 3) {
+              poligonoPts = parsed
+                .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+                .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+            }
+          } catch (e) {
+            poligonoPts = null;
+          }
+        }
+
+        if (poligonoPts && poligonoPts.length >= 3) {
+          shape = new google.maps.Polygon({
+            paths: poligonoPts,
+            strokeColor: color,
+            fillColor: color,
+            fillOpacity: 0.25,
+            editable: false,
+            map,
+          });
+          poligonoPts.forEach((p) => bounds.extend(p));
+        } else {
+          const rectBounds = {
+            north: Number(z.LatitudN),
+            south: Number(z.LatitudS),
+            east: Number(z.LongitudE),
+            west: Number(z.LongitudO),
+          };
+          if (![rectBounds.north, rectBounds.south, rectBounds.east, rectBounds.west].every(Number.isFinite)) return;
+          shape = new google.maps.Rectangle({
+            bounds: rectBounds,
+            strokeColor: color,
+            fillColor: color,
+            fillOpacity: 0.25,
+            editable: false,
+            map,
+          });
+          bounds.extend({ lat: rectBounds.north, lng: rectBounds.east });
+          bounds.extend({ lat: rectBounds.south, lng: rectBounds.west });
+        }
+
+        const iw = new google.maps.InfoWindow({ content: `<b>${z.Nombre}</b>` });
+        shape.addListener("click", function (e) {
+          if (infowindowActivo) infowindowActivo.close();
+          iw.setPosition(e.latLng);
+          iw.open(map);
+          infowindowActivo = iw;
+        });
+
+        overlaysTodas.push(shape);
+      });
+
+      map.fitBounds(bounds);
+      $("#zonas_map_title").html("Zonas google Maps (todas)");
+      $("#cantidad").html(zonas.length + " zona(s)");
+      renderCardsAsignacion();
+    },
+  });
+}
+
+// =========================
+// Cards de asignacion por drag & drop: zonas (con conteo de waypoints, a la
+// izquierda) sobre Recorridos "en alta" (destino, a la derecha) - solo
+// tiene sentido en la vista "Ver Todas las Zonas" con Recorridos elegidos y
+// waypoints ya cargados en el mapa.
+// =========================
+function renderCardsAsignacion() {
+  const $fila = $("#fila_asignacion_zonas");
+
+  if (!vistaTodasActiva || !Array.isArray(selected) || selected.length === 0 || waypointsData.length === 0) {
+    $fila.addClass("d-none");
+    return;
+  }
+
+  const contenedor = $("#contenedorZonasDrag");
+  contenedor.empty();
+
+  let huboAlguna = false;
+
+  zonasCache.forEach(function (z) {
+    let poligonoPts = null;
+    if (z.Poligono) {
+      try {
+        const parsed = typeof z.Poligono === "string" ? JSON.parse(z.Poligono) : z.Poligono;
+        if (Array.isArray(parsed) && parsed.length >= 3) {
+          poligonoPts = parsed
+            .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+            .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+        }
+      } catch (e) {
+        poligonoPts = null;
+      }
+    }
+    if (!poligonoPts || poligonoPts.length < 3) return; // sin poligono real no hay forma de contar
+
+    const cantidad = waypointsData.filter(
+      (w) => !w.movido && pointInPolygon({ lat: w.lat, lng: w.lng }, poligonoPts)
+    ).length;
+    if (cantidad === 0) return;
+
+    huboAlguna = true;
+    const color = z.Color ? "#" + String(z.Color).replace("#", "") : "#4D1A50";
+
+    const card = $(
+      '<div class="zona-drag-card border rounded p-2 mb-2" draggable="true" style="border-left:4px solid ' +
+        color +
+        ' !important;">' +
+        '<div class="d-flex justify-content-between align-items-center">' +
+        "<strong>" + z.Nombre + "</strong>" +
+        '<span class="badge bg-light text-dark border">' + cantidad + (cantidad === 1 ? " waypoint" : " waypoints") + "</span>" +
+        "</div>" +
+        '<div class="mt-1"><span class="badge bg-light text-muted border"><i class="mdi mdi-cursor-move"></i> Arrastrar a un Recorrido</span></div>' +
+        "</div>"
+    );
+    card.attr("data-idzona", z.id);
+    contenedor.append(card);
+  });
+
+  if (!huboAlguna) {
+    contenedor.html(
+      '<div class="text-muted small">No hay waypoints geolocalizados dentro de ninguna zona con los Recorridos seleccionados.</div>'
+    );
+  }
+
+  $fila.removeClass("d-none");
+  cargarRecorridosEnAlta();
+}
+
+function cargarRecorridosEnAlta() {
+  const contenedor = $("#contenedorRecorridosDrop");
+  contenedor.html('<div class="col-12 text-muted small"><i class="mdi mdi-dots-circle mdi-spin"></i> Buscando Recorridos en alta...</div>');
+
+  $.ajax({
+    url: "Mapas/php/zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: { RecorridosEnAlta: 1 },
+    success: function (r) {
+      contenedor.empty();
+
+      if (r.status !== "success" || !r.data || r.data.length === 0) {
+        contenedor.html('<div class="col-12 text-muted small">No hay Recorridos en alta disponibles.</div>');
+        return;
+      }
+
+      r.data.forEach(function (o) {
+        const color = "#" + String(o.Color || "666666").replace("#", "");
+        // col-12: esta card ya vive anidada dos niveles adentro de una
+        // columna angosta (col-xl-8 > col-md-6) - partir en col-md-6 de
+        // nuevo aca dejaba media card vacia con 1-2 Recorridos, que es lo
+        // usual (son pocos los "en alta" a la vez).
+        const col = $('<div class="col-12"></div>');
+        const card = $(
+          '<div class="recorrido-drop-card border rounded p-2" style="border-left:4px solid ' +
+            color +
+            ' !important;">' +
+            '<div class="d-flex align-items-center gap-2">' +
+            '<i class="mdi mdi-truck font-20" style="color:' + color + '"></i>' +
+            '<div class="flex-grow-1">' +
+            "<strong>Recorrido " + o.Recorrido + "</strong>" +
+            '<div class="text-muted small">' +
+            (o.NombreRecorrido || "") +
+            (o.NombreChofer ? " · " + o.NombreChofer : "") +
+            "</div>" +
+            "</div>" +
+            "</div>" +
+            "</div>"
+        );
+        card.attr("data-recorrido", o.Recorrido);
+        card.attr("data-color", color);
+        col.append(card);
+        contenedor.append(col);
+      });
+
+      activarDragAndDropZonas();
+    },
+    error: function () {
+      contenedor.html('<div class="col-12 text-danger small">No se pudo cargar la lista de Recorridos en alta.</div>');
+    },
+  });
+}
+
+function activarDragAndDropZonas() {
+  document.querySelectorAll(".zona-drag-card").forEach((card) => {
+    card.addEventListener("dragstart", function (e) {
+      e.dataTransfer.setData("text/plain", card.getAttribute("data-idzona"));
+      e.dataTransfer.effectAllowed = "move";
+    });
+  });
+
+  document.querySelectorAll(".recorrido-drop-card").forEach((card) => {
+    card.addEventListener("dragover", function (e) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = "move";
+      card.classList.add("recorrido-dragover");
+    });
+    card.addEventListener("dragleave", function () {
+      card.classList.remove("recorrido-dragover");
+    });
+    card.addEventListener("drop", function (e) {
+      e.preventDefault();
+      card.classList.remove("recorrido-dragover");
+      const idZona = e.dataTransfer.getData("text/plain");
+      if (!idZona) return;
+      moverZonaARecorrido(idZona, card);
+    });
+  });
+}
+
+// Al soltar: reasignacion REAL e inmediata (confirmado con el usuario, a
+// diferencia de Planificador que arma todo en pantalla y graba recien con
+// un boton "Guardar" al final) - se llama a CambiarRecorridos ahi mismo y,
+// si funciona, se recolorean puntualmente los markers que se movieron
+// (match por lat/lng) en vez de recargar todo el mapa.
+function moverZonaARecorrido(idZona, cardDestino) {
+  const recorridoDestino = cardDestino.getAttribute("data-recorrido");
+  const colorDestino = (cardDestino.getAttribute("data-color") || "#666666").replace("#", "");
+
+  cardDestino.style.opacity = "0.5";
+
+  $.ajax({
+    url: "Mapas/php/zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: {
+      CambiarRecorridos: 1,
+      Recnew: recorridoDestino,
+      idZona: idZona,
+      Recorridos: selected,
+    },
+    success: function (jsonData) {
+      cardDestino.style.opacity = "1";
+
+      if (jsonData.success != 1) {
+        Swal.fire({ icon: "error", title: "Error", text: jsonData.error || "No se pudo mover el recorrido." });
+        return;
+      }
+
+      toast("success", "Listo", "Se movieron " + jsonData.cuenta + " servicio(s) al Recorrido " + recorridoDestino + ".");
+
+      const TOLERANCIA = 0.0001;
+      (jsonData.movidos || []).forEach(function (p) {
+        const w = waypointsData.find(
+          (x) => !x.movido && Math.abs(x.lat - p.lat) < TOLERANCIA && Math.abs(x.lng - p.lng) < TOLERANCIA
+        );
+        if (w) {
+          w.marker.setIcon(pinSymbol(colorDestino));
+          w.movido = true;
+        }
+      });
+
+      renderCardsAsignacion();
+    },
+    error: function () {
+      cardDestino.style.opacity = "1";
+      Swal.fire({ icon: "error", title: "Error del servidor", text: "No se pudo mover. Reintentá de nuevo." });
+    },
+  });
+}
+
+$(document).on("click", "#ver_todas_zonas", function () {
+  renderTodasLasZonas();
+});
+
+// Restaurar el trigger de "Cambiar Recorrido" (dropdown de tres puntos del
+// mapa) - hoy no disparaba nada, el modal #renderizar-modal quedaba sin
+// forma de abrirse.
+$(document).on("click", "#cambiar_recorrido", function () {
+  if (!zonaId) {
+    Swal.fire({ icon: "warning", title: "Elegí una zona primero" });
+    return;
+  }
+  $.ajax({
+    data: { BuscarRecorridos: 1 },
+    type: "POST",
+    url: "Proceso/php/pendientes.php",
+    success: function (response) {
+      $("#recorrido_t").html(response).fadeIn();
+      $("#renderizar-modal").modal("show");
+    },
+  });
 });
 
 // Eliminar zona
@@ -641,26 +1128,82 @@ $("#agregarzonas").click(function () {
 $("#renderizar_ok").click(function () {
   var recnew = $("#recorrido_t").val();
 
+  confirmarSiFaltanGeo(function () {
+    $.ajax({
+      data: {
+        CambiarRecorridos: 1,
+        Recnew: recnew,
+        idZona: zonaId,
+        Recorridos: selected,
+      },
+      type: "POST",
+      url: "Mapas/php/zonas.php",
+      dataType: "json",
+      beforeSend: function () {
+        $("#renderizar-modal").modal("hide");
+        mostrarModalCarga("#info-alert-modal", "Estamos moviendo los registros !");
+      },
+      success: function (jsonData) {
+        ocultarModalCarga("#info-alert-modal");
+        if (jsonData.success == 1) {
+          toast("success", "Exito !", "Se movieron " + jsonData.cuenta + " registros.!");
+          renderZona(zonaId);
+        } else {
+          Swal.fire({ icon: "error", title: "Error", text: jsonData.error || "No se pudo cambiar el recorrido." });
+        }
+      },
+      error: function () {
+        ocultarModalCarga("#info-alert-modal");
+        Swal.fire({ icon: "error", title: "Error del servidor", text: "No se pudo cambiar el recorrido. Reintentá de nuevo." });
+      },
+    });
+  });
+});
+
+// =========================
+// Importar zonas desde KML/KMZ (ej. mapa de zonas FLEX exportado de Google My Maps)
+// =========================
+$("#importar_poligono_ok").click(function () {
+  const archivo = $("#importar_poligono_file")[0].files[0];
+  if (!archivo) {
+    Swal.fire({ icon: "warning", title: "Elegí un archivo .kml o .kmz primero" });
+    return;
+  }
+
+  const formData = new FormData();
+  formData.append("ImportarKML", 1);
+  formData.append("archivo", archivo);
+
   $.ajax({
-    data: {
-      CambiarRecorridos: 1,
-      Recnew: recnew,
-      Zona: zona,
-      Recorridos: selected,
-    },
-    type: "POST",
     url: "Mapas/php/zonas.php",
+    type: "POST",
+    data: formData,
+    processData: false,
+    contentType: false,
+    dataType: "json",
     beforeSend: function () {
-      $("#renderizar-modal").modal("hide");
-      $("#info-alert-modal").modal("show");
+      $("#importar-poligono-modal").modal("hide");
+      mostrarModalCarga("#info-alert-modal", "Importando zonas...");
     },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
-      if (jsonData.success == 1) {
-        $("#info-alert-modal").modal("hide");
-        toast("success", "Exito !", "Se movieron " + jsonData.cuenta + " registros.!");
-        renderZona(zonaId);
+    success: function (r) {
+      ocultarModalCarga("#info-alert-modal");
+      if (r.status === "success") {
+        toast("success", "Listo", r.message);
+        if (r.omitidas && r.omitidas.length) {
+          Swal.fire({
+            icon: "warning",
+            title: "Algunos placemarks no se importaron",
+            html: "<div style='text-align:left'>" + r.omitidas.map((o) => `<div>• ${o}</div>`).join("") + "</div>",
+          });
+        }
+        cargarZonasAccordion();
+      } else {
+        Swal.fire({ icon: "error", title: "No se pudo importar", text: r.message || "" });
       }
+    },
+    error: function () {
+      ocultarModalCarga("#info-alert-modal");
+      Swal.fire({ icon: "error", title: "Error del servidor", text: "No se pudo importar el archivo. Reintentá de nuevo." });
     },
   });
 });
