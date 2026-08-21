@@ -125,7 +125,7 @@ $("#button_date_blocked").click(function () {
 function verguia() {
   let id = $("#inputcodigo").val();
   window.open(
-    "https://wwwsistemacaddy.com.ar/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" +
+    "https://www.sistemacaddy.com.ar/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" +
       id,
     "_blank",
   );
