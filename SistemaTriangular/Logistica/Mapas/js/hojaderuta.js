@@ -616,36 +616,58 @@ $("#restaurar_orden").click(function () {
   var Recorrido = $("#recorrido").html();
   $("#warning-alert-modal").modal("show");
 
-  $("#warning-alert-modal-ok").click(function () {
-    $.ajax({
-      data: { RestartOrder: 1, Recorrido: Recorrido },
-      url: "Mapas/php/cambiar_posicion.php",
-      type: "post",
-      beforeSend: function () {
-        $("#info-alert-modal").modal("show");
-        $("#info-alert-modal-title").html(
-          "Restableciendo Todo el Orden al Recorrido " + Recorrido,
-        );
-      },
+  // .off() antes de .on(): cada click en "Restablecer Orden" volvia a
+  // agregar OTRO listener a #warning-alert-modal-ok sin sacar el anterior -
+  // si se abria este flujo mas de una vez, "Continuar" terminaba disparando
+  // el AJAX 2, 3, 4 veces (una por cada listener acumulado).
+  $("#warning-alert-modal-ok")
+    .off("click")
+    .on("click", function () {
+      $.ajax({
+        data: { RestartOrder: 1, Recorrido: Recorrido },
+        url: "Mapas/php/cambiar_posicion.php",
+        type: "post",
+        beforeSend: function () {
+          $("#info-alert-modal").modal("show");
+          $("#info-alert-modal-title").html(
+            "Restableciendo Todo el Orden al Recorrido " + Recorrido,
+          );
+        },
 
-      success: function (response) {
-        var jsonData = JSON.parse(response);
-
-        if (jsonData.resultado == "1") {
-          // veo() ya refresca Roadmap_end para este Recorrido antes de leer
-          // el mapa (ver funciones_hdr.js) - llamar renderizar_datos() aca
-          // aparte era trabajo duplicado.
-          veo(Recorrido);
-
+        success: function (response) {
           $("#info-alert-modal").modal("hide");
-          $("#next_number").html(1);
 
-          var datatable = $("#seguimiento").DataTable();
-          datatable.ajax.reload();
-        }
-      },
+          var jsonData;
+          try {
+            jsonData = JSON.parse(response);
+          } catch (e) {
+            toast("error", "Error", "Respuesta inválida del servidor.");
+            return;
+          }
+
+          if (jsonData.resultado == "1") {
+            // veo() ya refresca Roadmap_end para este Recorrido antes de leer
+            // el mapa (ver funciones_hdr.js) - llamar renderizar_datos() aca
+            // aparte era trabajo duplicado.
+            veo(Recorrido);
+
+            $("#next_number").html(1);
+
+            var datatable = $("#seguimiento").DataTable();
+            datatable.ajax.reload();
+          } else {
+            toast("error", "Error", "No se pudo restablecer el orden. Reintentá de nuevo.");
+          }
+        },
+        // Sin esto, un fallo (network, 500, JSON invalido) dejaba el modal
+        // "Restableciendo..." pegado para siempre, sin ningun aviso.
+        error: function (jqXHR, textStatus, errorThrown) {
+          $("#info-alert-modal").modal("hide");
+          console.error("Error en RestartOrder:", textStatus, errorThrown);
+          toast("error", "Error del servidor", "No se pudo restablecer el orden. Reintentá de nuevo.");
+        },
+      });
     });
-  });
   $("#warning-alert-modal-cancel").click(function () {});
 });
 
