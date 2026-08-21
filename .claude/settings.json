@@ -257,7 +257,39 @@
       "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SHOW COLUMNS FROM Seguimiento LIKE '%ebhook%';\")",
       "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SELECT Webhook, COUNT\\(*\\) FROM Seguimiento GROUP BY Webhook;\")",
       "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SHOW COLUMNS FROM Seguimiento;\")",
-      "Bash(node -c SistemaTriangular/Funciones/js/alertas.js)"
+      "Bash(node -c SistemaTriangular/Funciones/js/alertas.js)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SHOW COLUMNS FROM Recorridos LIKE 'UltimoOrdenKm'; SHOW COLUMNS FROM Recorridos LIKE 'UltimoOrdenMinutos';\")",
+      "Bash(node -c \"/Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar/SistemaTriangular/Servicios/Procesos/js/pendientes.js\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SHOW COLUMNS FROM Clientes LIKE 'Observaciones';\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SHOW COLUMNS FROM Ventas LIKE 'id';\")",
+      "Bash(rm -f /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/test_remito*.pdf)",
+      "Bash(rm -f \"/Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar/SistemaTriangular/Servicios/Informes/temp/\"remito_*.png)",
+      "WebFetch(domain:leyes-ar.com)",
+      "WebFetch(domain:biblioteca.afip.gob.ar)",
+      "Bash(php /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/test_remito.php \"00CM6YK8Z\")",
+      "Bash(php /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/test_remito.php \"0AT4RH91Z\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SELECT id, token FROM Api WHERE id=2\\\\G\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -N -e \"SELECT token FROM Api WHERE id=2\")",
+      "Bash(curl -s https://app.asana.com/api/1.0/tasks/1217675770932168?opt_fields=name,notes,html_notes,completed,due_on,assignee.name,created_at,modified_at,memberships.section.name,permalink_url -H 'Authorization: Bearer __CMDSUB_OUTPUT__')",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SHOW COLUMNS FROM Api;\")",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SELECT id, refresh_token, client_id, client_secret FROM Api WHERE id=2\\\\G\")",
+      "Bash(curl -s \"https://asanausercontent.com/us1/assets/734348733635084/1217675770932170/9a71b159bd0f1c0e3ba7532fe2436b55?e=1787344359&v=0&t=aemYqBBdvf5BenfpgsxCqOjLXs-7X-rw4rX2F8FKgu8\" -o /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/asana_task/nuevo.png)",
+      "Bash(curl -s \"https://asanausercontent.com/us1/assets/734348733635084/1217675770932172/22fde245aaa555091d63299f79988704?e=1787344359&v=0&t=epFB6j8A82rRANgzj3ZC0Nxf-QQjrMM1KPxqITN7Nc0\" -o /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/asana_task/viejo.png)",
+      "Bash(file /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/asana_task/*.png)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SHOW COLUMNS FROM TransClientes;\")",
+      "Bash(node -c Admin/Procesos/js/cobranza_integrada.js)",
+      "Bash(php -d display_errors=0 -d error_reporting=0 /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/test_cobranza.php)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql --socket=/Applications/XAMPP/xamppfiles/var/mysql/mysql.sock -u root dinter6_triangular -e \"SHOW COLUMNS FROM Ventas;\")",
+      "Bash(echo \"exit=$?\")",
+      "Bash(curl -s \"http://localhost/SistemaTriangular/_test_session_debug.php\")",
+      "Bash(curl -s -X POST http://localhost/SistemaTriangular/Admin/Procesos/php/cobranza_integrada.php -H 'Cookie: PHPSESSID=__CMDSUB_OUTPUT__' --data-urlencode Pendientes=1 --data-urlencode Inicio=2026-01-01 --data-urlencode Final=2026-12-31 -o /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/resp.json -w 'HTTP_CODE:%{http_code}\\\\n')",
+      "Bash(rm -f /private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad/test_verfechas*.php \\\\ *)",
+      "Bash(python3 -c \"import json; json.load\\(open\\('.claude/settings.json'\\)\\); print\\('valid JSON'\\)\")",
+      "Bash(git reset *)"
+    ],
+    "additionalDirectories": [
+      "/private/tmp/claude-501/-Applications-XAMPP-xamppfiles-htdocs-sistema-caddy-com-ar/142cffed-901f-45c1-b327-7cdd3b0048cf/scratchpad",
+      "/Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar/SistemaTriangular/Servicios/Informes/temp"
     ]
   }
 }
