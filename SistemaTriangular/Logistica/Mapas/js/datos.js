@@ -18,73 +18,16 @@ $("#points").click(function () {
   $("#optimizar_ok").css("display", "none");
 });
 
-// Antes de calcular, se le pregunta al operador a que fecha/hora sale el
-// recorrido (por defecto ahora mismo) - no siempre es hoy mismo/ahora, y
-// depender en silencio de Logistica.Hora podia quedar desactualizado o en
-// el pasado (ver fix de "Timestamp must be set to a future time").
+// El prompt de fecha/hora/tiempo de espera es compartido (pedirFechaHoraTiempoParada,
+// definido en hojaderuta.js que carga antes que este archivo) - tambien lo
+// usa el cierre de "Ordenar Manual".
 function pedirFechaHoraYVerRuta() {
-  var ahora = new Date();
-  var fechaDefault =
-    ahora.getFullYear() +
-    "-" +
-    String(ahora.getMonth() + 1).padStart(2, "0") +
-    "-" +
-    String(ahora.getDate()).padStart(2, "0");
-  var horaDefault = String(ahora.getHours()).padStart(2, "0") + ":" + String(ahora.getMinutes()).padStart(2, "0");
-
-  var campoStyle = "margin:0;width:100%;box-sizing:border-box;";
-  var labelStyle = "display:block;text-align:left;font-size:13px;font-weight:600;color:#555;margin:14px 2px 4px;";
-
-  Swal.fire({
-    title: "Datos del recorrido",
-    html:
-      '<div style="text-align:left;">' +
-      '<label for="swal-fecha-salida" style="' +
-      labelStyle +
-      'margin-top:2px;">Fecha de salida</label>' +
-      '<input type="date" id="swal-fecha-salida" class="swal2-input" style="' +
-      campoStyle +
-      '" value="' +
-      fechaDefault +
-      '">' +
-      '<label for="swal-hora-salida" style="' +
-      labelStyle +
-      '">Hora de salida</label>' +
-      '<input type="time" id="swal-hora-salida" class="swal2-input" style="' +
-      campoStyle +
-      '" value="' +
-      horaDefault +
-      '">' +
-      '<label for="swal-tiempo-parada" style="' +
-      labelStyle +
-      '">Tiempo de espera por parada (minutos)</label>' +
-      '<input type="number" id="swal-tiempo-parada" class="swal2-input" style="' +
-      campoStyle +
-      '" min="0" step="1" value="5">' +
-      "</div>",
-    focusConfirm: false,
-    showCancelButton: true,
-    confirmButtonText: "Calcular ruta",
-    cancelButtonText: "Cancelar",
-    preConfirm: function () {
-      var fecha = document.getElementById("swal-fecha-salida").value;
-      var hora = document.getElementById("swal-hora-salida").value;
-      var tiempoParadaVal = document.getElementById("swal-tiempo-parada").value;
-      var tiempoParada = tiempoParadaVal === "" ? 5 : parseInt(tiempoParadaVal, 10);
-      if (!fecha || !hora) {
-        Swal.showValidationMessage("Completá fecha y hora de salida.");
-        return false;
-      }
-      if (isNaN(tiempoParada) || tiempoParada < 0) {
-        Swal.showValidationMessage("El tiempo de espera por parada tiene que ser un número mayor o igual a 0.");
-        return false;
-      }
-      return { fecha: fecha, hora: hora, tiempoParada: tiempoParada };
+  pedirFechaHoraTiempoParada(
+    { titulo: "Datos del recorrido", confirmButtonText: "Calcular ruta" },
+    function (fecha, hora, tiempoParada) {
+      verRutaOptimizada(fecha, hora, tiempoParada);
     },
-  }).then(function (result) {
-    if (!result.isConfirmed) return;
-    verRutaOptimizada(result.value.fecha, result.value.hora, result.value.tiempoParada);
-  });
+  );
 }
 
 function verRutaOptimizada(fechaSalida, horaSalida, tiempoPorParada) {

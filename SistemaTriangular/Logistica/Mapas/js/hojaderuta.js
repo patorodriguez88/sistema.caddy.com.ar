@@ -4,6 +4,77 @@
 // (CADDY_ORANGE) y la traza de la ruta.
 var CADDY_PURPLE = "4D1A50";
 
+// Prompt compartido de fecha/hora de salida + tiempo de espera por parada -
+// lo usa tanto "Ver Ruta" (Mapas/js/datos.js) como el cierre de "Ordenar
+// Manual" (mas abajo en este archivo). Antes Ordenar Manual calculaba los
+// horarios en silencio (Logistica.Hora + Variables.TiempoPorParada, sin
+// preguntarle nada al operador) - inconsistente con "Ver Ruta", que si
+// pregunta.
+function pedirFechaHoraTiempoParada(opciones, callback) {
+  var ahora = new Date();
+  var fechaDefault =
+    ahora.getFullYear() +
+    "-" +
+    String(ahora.getMonth() + 1).padStart(2, "0") +
+    "-" +
+    String(ahora.getDate()).padStart(2, "0");
+  var horaDefault = String(ahora.getHours()).padStart(2, "0") + ":" + String(ahora.getMinutes()).padStart(2, "0");
+
+  var campoStyle = "margin:0;width:100%;box-sizing:border-box;";
+  var labelStyle = "display:block;text-align:left;font-size:13px;font-weight:600;color:#555;margin:14px 2px 4px;";
+
+  Swal.fire({
+    title: opciones.titulo || "Datos del recorrido",
+    html:
+      '<div style="text-align:left;">' +
+      '<label for="swal-fecha-salida" style="' +
+      labelStyle +
+      'margin-top:2px;">Fecha de salida</label>' +
+      '<input type="date" id="swal-fecha-salida" class="swal2-input" style="' +
+      campoStyle +
+      '" value="' +
+      fechaDefault +
+      '">' +
+      '<label for="swal-hora-salida" style="' +
+      labelStyle +
+      '">Hora de salida</label>' +
+      '<input type="time" id="swal-hora-salida" class="swal2-input" style="' +
+      campoStyle +
+      '" value="' +
+      horaDefault +
+      '">' +
+      '<label for="swal-tiempo-parada" style="' +
+      labelStyle +
+      '">Tiempo de espera por parada (minutos)</label>' +
+      '<input type="number" id="swal-tiempo-parada" class="swal2-input" style="' +
+      campoStyle +
+      '" min="0" step="1" value="5">' +
+      "</div>",
+    focusConfirm: false,
+    showCancelButton: true,
+    confirmButtonText: opciones.confirmButtonText || "Confirmar",
+    cancelButtonText: "Cancelar",
+    preConfirm: function () {
+      var fecha = document.getElementById("swal-fecha-salida").value;
+      var hora = document.getElementById("swal-hora-salida").value;
+      var tiempoParadaVal = document.getElementById("swal-tiempo-parada").value;
+      var tiempoParada = tiempoParadaVal === "" ? 5 : parseInt(tiempoParadaVal, 10);
+      if (!fecha || !hora) {
+        Swal.showValidationMessage("Completá fecha y hora de salida.");
+        return false;
+      }
+      if (isNaN(tiempoParada) || tiempoParada < 0) {
+        Swal.showValidationMessage("El tiempo de espera por parada tiene que ser un número mayor o igual a 0.");
+        return false;
+      }
+      return { fecha: fecha, hora: hora, tiempoParada: tiempoParada };
+    },
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+    callback(result.value.fecha, result.value.hora, result.value.tiempoParada);
+  });
+}
+
 var clustererRenderer = {
   render: function (_ref) {
     var count = _ref.count;
@@ -552,35 +623,68 @@ $("#ordenar_recorrido").click(function () {
   var Recorrido = $("#recorrido").html();
 
   if ($("#alert_ordenar").css("display") == "block") {
-    // CERRAR el orden manual: calcula la hora estimada de llegada a cada
-    // parada segun el orden que quedo armado (Haversine + velocidad
-    // promedio, sin llamar a la Routes API - mismo criterio que ya usa
-    // ordenarPorCercania() en orden_automatico.php para estimar mientras
-    // ordena) y las guarda en HojaDeRuta.Hora. veo() al final refresca el
-    // mapa con la traza real ya calculada (reemplaza la linea recta "en
-    // progreso" de manualOrderPolyline).
     $("#alert_ordenar").hide();
     $("#map").css("min-height", "400px");
     $("#ordenar_recorrido").html("Ordenar");
 
-    $.ajax({
-      data: { CalcularHorariosManual: 1, Recorrido: Recorrido },
-      url: "Mapas/php/cambiar_posicion.php",
-      type: "post",
-      beforeSend: function () {
-        $("#info-alert-modal-title").html("Calculando horarios...");
-        $("#info-alert-modal").modal("show");
+    // Si no se clickeo ninguna parada en esta sesion de orden manual, no
+    // hay nada que calcular ni guardar - cerrar sin mas.
+    if (manualOrderPath.length === 0) {
+      return;
+    }
+
+    // Se pregunta fecha/hora de salida y tiempo de espera por parada, igual
+    // que "Ver Ruta" (antes Ordenar Manual calculaba en silencio con
+    // Logistica.Hora/Variables.TiempoPorParada, sin preguntar nada).
+    pedirFechaHoraTiempoParada(
+      { titulo: "Confirmar orden manual", confirmButtonText: "Calcular horarios" },
+      function (fecha, hora, tiempoParada) {
+        // La ruta real (por calles) que ya se armo en pantalla mientras se
+        // ordenaba (manualOrderPath) se manda tal cual para guardarla en
+        // Recorridos.Polyline - antes se perdia al cerrar (se recalculaban
+        // los horarios pero la traza dibujada durante el ordenamiento no
+        // quedaba guardada en ningun lado).
+        $.ajax({
+          data: {
+            CalcularHorariosManual: 1,
+            Recorrido: Recorrido,
+            FechaSalida: fecha,
+            HoraSalida: hora,
+            TiempoPorParada: tiempoParada,
+            RutaPuntos: JSON.stringify(manualOrderPath),
+          },
+          url: "Mapas/php/cambiar_posicion.php",
+          type: "post",
+          beforeSend: function () {
+            $("#info-alert-modal-title").html("Calculando horarios...");
+            $("#info-alert-modal").modal("show");
+          },
+          success: function (response) {
+            $("#info-alert-modal").modal("hide");
+
+            var jsonData;
+            try {
+              jsonData = JSON.parse(response);
+            } catch (e) {
+              toast("error", "Error", "Respuesta inválida del servidor.");
+              return;
+            }
+
+            if (jsonData.resultado == 1) {
+              toast("success", "Listo", "Se calcularon los horarios de " + jsonData.actualizadas + " paradas.");
+              veo(Recorrido);
+            } else {
+              toast("error", "Error", jsonData.message || "No se pudieron calcular los horarios.");
+            }
+          },
+          error: function (jqXHR, textStatus, errorThrown) {
+            $("#info-alert-modal").modal("hide");
+            console.error("Error en CalcularHorariosManual:", textStatus, errorThrown);
+            toast("error", "Error del servidor", "No se pudieron calcular los horarios. Reintentá de nuevo.");
+          },
+        });
       },
-      success: function () {
-        $("#info-alert-modal").modal("hide");
-        veo(Recorrido);
-      },
-      error: function (jqXHR, textStatus, errorThrown) {
-        $("#info-alert-modal").modal("hide");
-        console.error("Error en CalcularHorariosManual:", textStatus, errorThrown);
-        toast("error", "Error", "No se pudieron calcular los horarios. Reintentá de nuevo.");
-      },
-    });
+    );
     return;
   }
 

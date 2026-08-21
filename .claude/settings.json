@@ -223,7 +223,13 @@
       "Bash(git -C /Applications/XAMPP/xamppfiles/htdocs/sistema.caddy.com.ar add .claude/settings.json)",
       "Bash(node -c SistemaTriangular/Logistica/Planificador/js/planificador.js)",
       "Bash(node -c SistemaTriangular/Logistica/Mapas/js/datos.js)",
-      "Bash(node -c SistemaTriangular/Logistica/Proceso/js/funciones_hdr.js)"
+      "Bash(node -c SistemaTriangular/Logistica/Proceso/js/funciones_hdr.js)",
+      "Bash(node -c SistemaTriangular/Admin/Procesos/js/refrescar_sandbox.js)",
+      "Bash(/Applications/XAMPP/xamppfiles/bin/mysql -u root -S /Applications/XAMPP/xamppfiles/var/mysql/mysql.sock dinter6_triangular -e \"SHOW CREATE TABLE Roadmap_end\\\\G\")",
+      "Bash(node -c SistemaTriangular/Logistica/Proceso/js/pendientes.js)",
+      "Bash(node -c SistemaTriangular/Logistica/Mapas/js/hojaderuta.js)",
+      "Bash(echo \"hojaderuta: $?\")",
+      "Bash(echo \"datos: $?\")"
     ]
   }
 }

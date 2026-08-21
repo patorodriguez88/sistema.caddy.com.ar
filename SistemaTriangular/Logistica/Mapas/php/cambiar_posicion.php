@@ -1,6 +1,40 @@
 <?php
 require_once('../../../Conexion/Conexioni.php');
 
+// Encoding del algoritmo estandar de polylines de Google - copia de las
+// mismas funciones que ya usa Mapas/php/orden_automatico.php (se duplican
+// aca en vez de requerir ese archivo para no acoplar los dos subsistemas de
+// ordenamiento, automatico y manual).
+function encodePolylineNumber(int $num): string
+{
+    $encoded = '';
+    while ($num >= 0x20) {
+        $encoded .= chr((0x20 | ($num & 0x1f)) + 63);
+        $num >>= 5;
+    }
+    return $encoded . chr($num + 63);
+}
+
+function encodePolylinePoints(array $points): string
+{
+    $encoded = '';
+    $prevLat = 0;
+    $prevLng = 0;
+    foreach ($points as $p) {
+        $lat = (int) round($p['lat'] * 1e5);
+        $lng = (int) round($p['lng'] * 1e5);
+
+        $dLat = $lat - $prevLat;
+        $dLng = $lng - $prevLng;
+        $encoded .= encodePolylineNumber($dLat << 1 < 0 ? ~($dLat << 1) : $dLat << 1);
+        $encoded .= encodePolylineNumber($dLng << 1 < 0 ? ~($dLng << 1) : $dLng << 1);
+
+        $prevLat = $lat;
+        $prevLng = $lng;
+    }
+    return $encoded;
+}
+
 // Las 4 acciones de este archivo armaban las consultas por concatenacion
 // directa de $_POST (sin prepare/bind_param) - se pasan a consultas
 // preparadas, mismo comportamiento, sin la superficie de inyeccion SQL.
@@ -135,26 +169,45 @@ if($_POST['RestartOrder']==1){
 // ordena) y las guarda en HojaDeRuta.Hora, igual que hace "Aceptar Ruta".
 if(($_POST['CalcularHorariosManual'] ?? null) == 1){
     $Recorrido = $_POST['Recorrido'] ?? '';
+    $Usuario = $_SESSION['Usuario'] ?? 'sistema';
     if ($Recorrido === '') {
         echo json_encode(['resultado' => 0, 'message' => 'Falta el Recorrido.']);
         exit;
     }
 
-    // Hora de salida: Logistica.Hora de este Recorrido (misma Orden de
-    // Salida que usa orden_automatico.php como fallback cuando el operador
-    // no la elige explicitamente), u 8:00 si no hay ninguna cargada.
-    $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = ? AND Estado <> 'Cerrada' AND Eliminado = 0");
-    $stmt->bind_param('s', $Recorrido);
-    $stmt->execute();
-    $rowInicio = $stmt->get_result()->fetch_assoc();
-    $HoraSalida = $rowInicio['Hora'] ?? '08:00:00';
+    // Fecha/Hora de salida y tiempo por parada: el operador los elige al
+    // cerrar "Ordenar Manual" (mismo prompt que "Ver Ruta"). Si no vienen
+    // (o vienen invalidos), cae al criterio viejo: Logistica.Hora de este
+    // Recorrido (u 8:00 si no hay ninguna Orden de Salida cargada) +
+    // Variables.TiempoPorParada (o 5 si tampoco existe esa Variable).
+    $fechaSalidaPost = trim($_POST['FechaSalida'] ?? '');
+    $horaSalidaPost = trim($_POST['HoraSalida'] ?? '');
+    $fechaValida = $fechaSalidaPost !== '' && DateTime::createFromFormat('Y-m-d', $fechaSalidaPost) !== false;
+    $horaValida = (bool)preg_match('/^\d{2}:\d{2}(:\d{2})?$/', $horaSalidaPost);
 
-    $timeDelivered = 5;
-    $stmtVar = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
-    $stmtVar->execute();
-    $rowVar = $stmtVar->get_result()->fetch_assoc();
-    if ($rowVar && is_numeric($rowVar['Valor'])) {
-        $timeDelivered = (float)$rowVar['Valor'];
+    if ($fechaValida && $horaValida) {
+        $fechaSalida = $fechaSalidaPost;
+        $HoraSalida = strlen($horaSalidaPost) === 5 ? $horaSalidaPost . ':00' : $horaSalidaPost;
+    } else {
+        $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = ? AND Estado <> 'Cerrada' AND Eliminado = 0");
+        $stmt->bind_param('s', $Recorrido);
+        $stmt->execute();
+        $rowInicio = $stmt->get_result()->fetch_assoc();
+        $HoraSalida = $rowInicio['Hora'] ?? '08:00:00';
+        $fechaSalida = date('Y-m-d');
+    }
+
+    $timeDeliveredPost = $_POST['TiempoPorParada'] ?? null;
+    if (is_numeric($timeDeliveredPost) && (float)$timeDeliveredPost >= 0) {
+        $timeDelivered = (float)$timeDeliveredPost;
+    } else {
+        $timeDelivered = 5;
+        $stmtVar = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
+        $stmtVar->execute();
+        $rowVar = $stmtVar->get_result()->fetch_assoc();
+        if ($rowVar && is_numeric($rowVar['Valor'])) {
+            $timeDelivered = (float)$rowVar['Valor'];
+        }
     }
 
     // Mismo join que ya usa ViewOrder() en este archivo para este
@@ -205,6 +258,31 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
         $actual = ['lat' => $lat, 'lng' => $lng];
     }
     $stmtUpdate->close();
+
+    // La ruta que se ve mientras se ordena a mano (tramo por tramo, real
+    // via SegmentoRuta) se pierde al cerrar si no se guarda aca - RutaPuntos
+    // es el path completo que el frontend ya armo (manualOrderPath), se
+    // re-codifica como un unico polyline para que quede persistido igual
+    // que lo deja "Aceptar Ruta" del orden automatico.
+    $rutaPuntosPost = $_POST['RutaPuntos'] ?? '';
+    if ($rutaPuntosPost !== '') {
+        $puntos = json_decode($rutaPuntosPost, true);
+        if (is_array($puntos) && count($puntos) > 0) {
+            $puntosValidos = array_values(array_filter($puntos, function ($p) {
+                return isset($p['lat'], $p['lng']) && is_numeric($p['lat']) && is_numeric($p['lng']);
+            }));
+            if (count($puntosValidos) > 0) {
+                $polylineManual = encodePolylinePoints($puntosValidos);
+                $stmtPoly = $mysqli->prepare("UPDATE Recorridos SET Polyline = ? WHERE Numero = ?");
+                $stmtPoly->bind_param('ss', $polylineManual, $Recorrido);
+                $stmtPoly->execute();
+            }
+        }
+    }
+
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Manual' WHERE Numero = ?");
+    $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+    $stmtTraza->execute();
 
     echo json_encode(['resultado' => 1, 'actualizadas' => $actualizadas]);
 }
