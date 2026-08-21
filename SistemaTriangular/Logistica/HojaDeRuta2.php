@@ -680,6 +680,13 @@
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
+
+    <!-- Marker Clustering (oficial de Google): agrupa pines cercanos en pantalla
+         y se reagrupa solo al hacer zoom - antes el agrupado casero solo cubria
+         paradas con coordenadas practicamente identicas, no el caso de un
+         recorrido que abarca varias ciudades con muchas paradas amontonadas en
+         los mismos pixeles al ver el mapa alejado. -->
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
 </body>
 
 </html>

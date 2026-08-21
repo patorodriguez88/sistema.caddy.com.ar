@@ -136,9 +136,9 @@ function dibujarPreviewRuta(jsonData) {
   var bounds = new google.maps.LatLngBounds();
   var infowindowActivo = null;
 
-  // Mismo agrupado+expansion al click que el mapa real de Hoja de Ruta
-  // (hojaderuta.js) - antes se ofseteaban siempre en un abanico chico, que
-  // solo se notaba haciendo zoom a nivel calle.
+  // Mismo clustering real (agrupado por pixeles, se reagrupa con el zoom)
+  // que el mapa real de Hoja de Ruta - ver nota completa en
+  // dibujarPuntosAgrupados(), Mapas/js/hojaderuta.js.
   dibujarPuntosAgrupados(map, jsonData.paradas, bounds, CADDY_ORANGE, function (p, pos) {
     var marker = new google.maps.Marker({
       position: pos,
@@ -165,6 +165,8 @@ function dibujarPreviewRuta(jsonData) {
       infowindowActivo = infoWindow;
       infoWindow.open(map, marker);
     });
+
+    return marker;
   });
 
   map.fitBounds(bounds);

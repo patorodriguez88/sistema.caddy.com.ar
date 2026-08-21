@@ -229,6 +229,13 @@ if ($rowStopTime && is_numeric($rowStopTime['Valor'])) {
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
 
+    <!-- Marker Clustering (oficial de Google): agrupa pines cercanos en pantalla
+         y se reagrupa solo al hacer zoom - antes el offset casero (planificador.js)
+         solo separaba paradas con coordenadas practicamente identicas, no el caso
+         de rutas que abarcan varias ciudades con muchas paradas amontonadas en
+         los mismos pixeles al ver el mapa alejado. -->
+    <script src="https://unpkg.com/@googlemaps/markerclusterer/dist/index.min.js"></script>
+
     <script
         src="https://maps.googleapis.com/maps/api/js?key=<?php echo GOOGLE_API_KEY_BROWSER; ?>&libraries=places&callback=initMap&loading=async"
         async

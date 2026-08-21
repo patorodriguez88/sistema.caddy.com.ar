@@ -2,6 +2,7 @@ let map;
 let markers = [];
 let routePaths = [];
 let markerCoordCounts = new Map();
+let activeClusterer = null; // MarkerClusterer activo, se limpia en clearMap()
 const routeColors = ["#007bff", "#28a745", "#ffc107", "#dc3545", "#6f42c1", "#20c997"];
 
 // Cuando dos o mas paradas comparten coordenadas exactas (o casi), sus
@@ -316,6 +317,15 @@ window.onload = () => {
         result.data.routes.forEach((route, index) => drawRoute(route, index, bounds));
         map.fitBounds(bounds);
 
+        // Clustering real (agrupado por pixeles en pantalla, se reagrupa
+        // solo al hacer zoom - libreria oficial de Google) sobre TODOS los
+        // markers de todas las rutas. El offset de offsetCoincidentMarker()
+        // sigue haciendo falta aparte para paradas con la MISMA coordenada
+        // exacta, que clusterizar no separa por mas zoom que se haga.
+        if (window.markerClusterer && markers.length > 0) {
+          activeClusterer = new markerClusterer.MarkerClusterer({ map, markers });
+        }
+
         renderResumenEstiloDashboard(result.data.summary);
         renderLeyendaColores(result.data.summary);
 
@@ -393,6 +403,10 @@ function clearMap() {
   routePaths.forEach((path) => path.setMap(null));
   routePaths = [];
   markerCoordCounts.clear();
+  if (activeClusterer) {
+    activeClusterer.clearMarkers();
+    activeClusterer = null;
+  }
 }
 
 function parseMultipleLatLng(value) {

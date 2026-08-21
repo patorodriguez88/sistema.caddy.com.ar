@@ -83,46 +83,55 @@ function pinLabel(Posicion) {
 // un pin con contador (color colorCluster) que al hacer click se reemplaza
 // por los markers individuales en abanico. bounds se extiende con el punto
 // real de cada grupo (uno solo, no cada punto individual).
+// Se probo primero con un agrupado casero (grupos por coordenada +
+// expansion en abanico al click), pero eso solo resolvia el caso de
+// paradas con coordenadas practicamente identicas - en un recorrido que
+// abarca varias ciudades, muchas paradas de direcciones DISTINTAS quedan
+// amontonadas en los mismos pocos pixeles al ver el mapa alejado, y ese
+// agrupado casero no se reacomoda con el zoom (ademas de que dos clusters
+// cercanos pero no idénticos podian superponerse visualmente entre si,
+// confundiendo cual se estaba clickeando). Ahora se usa clustering real
+// (MarkerClusterer, libreria oficial de Google cargada como script global)
+// que agrupa por pixeles en pantalla y se reagrupa solo al hacer zoom -
+// click en un cluster hace zoom-in, igual que en Google Maps de verdad.
+//
+// El offset chico (paso 1, siempre activo) sigue haciendo falta aparte para
+// paradas con la MISMA coordenada exacta (ej. mismo edificio): por mas zoom
+// que se haga, dos pines en el pixel exacto nunca se separan solos.
+var activeClusterers = new WeakMap(); // mapa -> MarkerClusterer activo, para poder limpiarlo en el proximo render
+
 function dibujarPuntosAgrupados(mapa, puntos, bounds, colorCluster, crearMarkerCallback) {
-  var grupos = new Map();
+  var registroExactos = new Map();
+  var todosLosMarkers = [];
+
   puntos.forEach(function (p) {
     var key = p.lat.toFixed(COINCIDENT_PRECISION) + "," + p.lng.toFixed(COINCIDENT_PRECISION);
-    if (!grupos.has(key)) grupos.set(key, []);
-    grupos.get(key).push(p);
+    var count = registroExactos.get(key) || 0;
+    registroExactos.set(key, count + 1);
+
+    var pos =
+      count === 0
+        ? { lat: p.lat, lng: p.lng }
+        : posicionEnAbanico(
+            p.lat,
+            p.lng,
+            (count - 1) % 8,
+            8,
+            ABANICO_RADIO_METROS * (Math.floor((count - 1) / 8) + 1),
+          );
+
+    bounds.extend(pos);
+    var marker = crearMarkerCallback(p, pos);
+    if (marker) todosLosMarkers.push(marker);
   });
 
-  grupos.forEach(function (grupo) {
-    bounds.extend({ lat: grupo[0].lat, lng: grupo[0].lng });
-
-    if (grupo.length === 1) {
-      crearMarkerCallback(grupo[0], { lat: grupo[0].lat, lng: grupo[0].lng });
-      return;
-    }
-
-    var clusterMarker = new google.maps.Marker({
-      position: { lat: grupo[0].lat, lng: grupo[0].lng },
-      map: mapa,
-      icon: {
-        path: google.maps.SymbolPath.CIRCLE,
-        scale: 15,
-        fillColor: "#" + colorCluster,
-        fillOpacity: 1,
-        strokeColor: "#FFFFFF",
-        strokeWeight: 2,
-      },
-      label: { text: String(grupo.length), color: "#fff", fontWeight: "bold" },
-      zIndex: 999,
-      title: grupo.length + " paradas en esta dirección - click para verlas",
-    });
-
-    clusterMarker.addListener("click", function () {
-      clusterMarker.setMap(null);
-      grupo.forEach(function (p, idx) {
-        var pos = posicionEnAbanico(p.lat, p.lng, idx, grupo.length, ABANICO_RADIO_METROS);
-        crearMarkerCallback(p, pos);
-      });
-    });
-  });
+  if (activeClusterers.has(mapa)) {
+    activeClusterers.get(mapa).clearMarkers();
+  }
+  if (window.markerClusterer && todosLosMarkers.length > 0) {
+    var clusterer = new markerClusterer.MarkerClusterer({ map: mapa, markers: todosLosMarkers });
+    activeClusterers.set(mapa, clusterer);
+  }
 }
 
 // InfoWindow compartido entre el mapa real (hojaderuta.js) y el preview de
@@ -364,7 +373,7 @@ function initMap(c) {
       }
 
       dibujarPuntosAgrupados(map, puntosParaAgrupar, bounds, colorRecorrido, function (punto, pos) {
-        crearMarkerPunto(punto.i, pos);
+        return crearMarkerPunto(punto.i, pos);
       });
 
       // Traza real de la ruta (si el recorrido tiene un Polyline guardado -
