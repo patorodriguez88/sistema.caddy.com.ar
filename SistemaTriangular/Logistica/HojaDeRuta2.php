@@ -656,7 +656,7 @@
 
     <!-- SweetAlert2 JS -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script src="../Funciones/js/alertas.js"></script>
+    <script src="<?php echo $verJs('../Funciones/js/alertas.js'); ?>"></script>
 
     <!-- Marker Clustering (oficial de Google): agrupa pines cercanos en pantalla
          y se reagrupa solo al hacer zoom - antes el agrupado casero solo cubria

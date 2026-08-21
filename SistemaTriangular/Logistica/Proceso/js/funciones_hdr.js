@@ -61,16 +61,15 @@ function paneles() {
     type: "POST",
     url: "Proceso/php/funciones_hdr.php",
     beforeSend: function () {
-      $("#info-alert-modal-title").html("Cargando Hojas de Ruta...");
-      $("#info-alert-modal").modal("show");
+      mostrarModalCarga("#info-alert-modal", "Cargando Hojas de Ruta...");
     },
     success: function (response) {
       $("#hdractivas").html(response).fadeIn();
-      $("#info-alert-modal").modal("hide");
+      ocultarModalCarga("#info-alert-modal");
     },
     error: function (jqXHR, textStatus, errorThrown) {
       console.error("Error en paneles():", textStatus, errorThrown);
-      $("#info-alert-modal").modal("hide");
+      ocultarModalCarga("#info-alert-modal");
       toast("error", "Error", "No se pudieron cargar las Hojas de Ruta. Recargá la página.");
     },
   });

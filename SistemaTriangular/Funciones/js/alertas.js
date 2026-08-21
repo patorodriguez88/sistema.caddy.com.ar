@@ -58,3 +58,37 @@ function alerta(tipo, titulo, mensaje) {
     confirmButtonColor: "#10c469",
   });
 }
+
+// FUNCIONES PARA EL MODAL GENERICO DE "CARGANDO..." (#info-alert-modal,
+// reusado en HojaDeRuta2/Zonas/etc con su propio -title dentro de cada
+// pagina) - Bootstrap 5 ignora modal("hide") si todavia esta a mitad de la
+// transicion de modal("show") (chequea un flag interno _isTransitioning).
+// En pedidos que resuelven muy rapido (ej. localhost, sin latencia real de
+// red) el success/error de un $.ajax puede llegar y llamar hide() antes de
+// que termine de animarse el show(), y el modal queda trabado para siempre
+// con el spinner girando - nunca pasaba con pedidos mas lentos (ej. Routes
+// API de Google) porque para cuando llegaba la respuesta el show() ya habia
+// terminado hace rato. Se corrige esperando el evento shown.bs.modal antes
+// de ocultar si el modal todavia no termino de mostrarse.
+//
+// mostrarModalCarga("#info-alert-modal", "Cargando...");
+// ocultarModalCarga("#info-alert-modal");
+function mostrarModalCarga(selector, titulo) {
+  if (titulo) {
+    $(selector + "-title").html(titulo);
+  }
+  $(selector).modal("show");
+}
+
+function ocultarModalCarga(selector) {
+  const $el = $(selector);
+  const el = $el.get(0);
+  if (!el) return;
+  if (el.classList.contains("show")) {
+    $el.modal("hide");
+  } else {
+    $el.one("shown.bs.modal", function () {
+      $el.modal("hide");
+    });
+  }
+}
