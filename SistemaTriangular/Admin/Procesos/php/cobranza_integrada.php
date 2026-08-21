@@ -1,9 +1,18 @@
 <?php
-session_start();
+// Content-Type explicito + isset() en cada rama: sin esto, un simple Notice/
+// Warning de PHP (ej. "Undefined array key" de una accion que no vino en el
+// POST) se imprime ANTES del json_encode y rompe el JSON.parse() del
+// navegador - con display_errors apagado (Apache de produccion) no se nota,
+// pero con el server de pruebas local (php -S, display_errors On) la grilla
+// queda vacia sin ningun error visible en Network, solo en Console.
+header('Content-Type: application/json; charset=utf-8');
+// Conexioni.php ya hace su propio session_start() - llamarlo tambien aca
+// generaba un Notice "session already active" en TODAS las acciones de este
+// archivo, que se sumaba a la corrupcion del JSON de salida.
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
-if($_POST['Change_import']==1){
+if(isset($_POST['Change_import']) && $_POST['Change_import']==1){
 
     $id=$_POST['id'];
     $Importe=$_POST['Importe'];
@@ -53,7 +62,7 @@ if($_POST['Change_import']==1){
 
 }
 
-if($_POST['Totales']==1){
+if(isset($_POST['Totales']) && $_POST['Totales']==1){
     $id=$_POST['id'];
     $sql_number="SELECT surrender_time,surrender_name,idCliente,Cliente,FechaPedido,SUM(Total)as Total,SUM(Ventas.CobrarEnvio)as Cobranza 
     FROM Ventas INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=Ventas.NumPedido WHERE surrender_number='$id' 
@@ -71,9 +80,13 @@ if($_POST['Totales']==1){
     'name'=>$ResultadoTotales['surrender_name'],'time'=>$ResultadoTotales['surrender_time']));    
 }
 
-if($_POST['VerFechas']==1){
-  $_SESSION[RecorridoMapa]=$_POST[Recorrido];
-  $Fecha=explode(' - ',$_POST[Fechas],2);
+if(isset($_POST['VerFechas']) && $_POST['VerFechas']==1){
+  // Claves de array sin comillas ($_POST[Recorrido], $_SESSION[RecorridoMapa])
+  // - en PHP 8 eso ya no es un Warning, es un Error fatal (constante
+  // indefinida): esta rama fallaba SIEMPRE, en cualquier entorno, cada vez
+  // que se cambiaba el rango de fechas en esta pantalla.
+  $_SESSION['RecorridoMapa'] = $_POST['Recorrido'] ?? null;
+  $Fecha=explode(' - ',$_POST['Fechas'],2);
 
   $FechaInicio=explode('/',$Fecha[0],3);
   $FechaI=$FechaInicio[2].'-'.$FechaInicio[0].'-'.$FechaInicio[1];
@@ -84,17 +97,26 @@ if($_POST['VerFechas']==1){
   echo json_encode(array('Inicio'=>$FechaI,'Final'=>$FechaF));
 }
 
-  if($_POST['Pendientes']==1){
-  $sql="SELECT * FROM `Ventas` WHERE FechaPedido>='$_POST[Inicio]' AND FechaPedido<='$_POST[Final]' AND Eliminado=0 AND CobrarEnvio<>0";
+  if(isset($_POST['Pendientes']) && $_POST['Pendientes']==1){
+  // Se agrega el join con TransClientes para poder mostrar en la grilla el
+  // destinatario, el codigo de proveedor interno del cliente y el estado
+  // del paquete (Entregado/Devuelto) - antes solo se veia el nombre del
+  // cliente (empresa), sin forma de identificar el envio puntual.
+  $sql="SELECT v.*, tc.ClienteDestino, tc.CodigoProveedor, tc.Entregado, tc.Devuelto
+  FROM `Ventas` AS v
+  INNER JOIN TransClientes AS tc ON v.NumPedido = tc.CodigoSeguimiento
+  WHERE v.FechaPedido>='$_POST[Inicio]' AND v.FechaPedido<='$_POST[Final]' AND v.Eliminado=0 AND v.CobrarEnvio<>0 AND tc.Eliminado=0";
   $Resultado=$mysqli->query($sql);
   $rows=array();   
   while($row = $Resultado->fetch_array(MYSQLI_ASSOC)){
   $rows[]=$row;
   }
-  echo json_encode(array('data'=>$rows,'Inicio'=>$FechaI,'Final'=>$FechaF));
+  // $FechaI/$FechaF eran de la rama VerFechas - copiados aca por error, no
+  // se calculan en esta rama y siempre daban "Undefined variable".
+  echo json_encode(array('data'=>$rows));
 }
 
-if($_POST['Cobranza_Integrada']==1){
+if(isset($_POST['Cobranza_Integrada']) && $_POST['Cobranza_Integrada']==1){
     
 $nombre=$_POST['nombre'];
 $dni=$_POST['dni'];
@@ -109,7 +131,7 @@ $rows=array();
 $sql_number="SELECT MAX(surrender_number)as Numero FROM Ventas WHERE Eliminado=0";
 $sql_dato=$mysqli->query($sql_number);
 $Resultado_number=$sql_dato->fetch_array(MYSQLI_ASSOC);
-$Numero=$Resultado_number[Numero]+1;
+$Numero=$Resultado_number['Numero']+1;
 
       for($i=0;$i<count($box);$i++){
         $sql=$mysqli->query("UPDATE Ventas SET surrender_name='$name',surrender_time='$time',surrender_observations='$obs',surrender_number='$Numero' WHERE idPedido='$box[$i]' AND Eliminado='0'");
@@ -118,7 +140,7 @@ $Numero=$Resultado_number[Numero]+1;
       echo json_encode(array('data'=>$rows,'surrender_number'=>$Numero));
 }
 
-if($_POST['Actualiza']==1){
+if(isset($_POST['Actualiza']) && $_POST['Actualiza']==1){
 // $Entregado=$_POST[entregado];  
 // $Observaciones='Carga Manual: '.$_POST[Observaciones];
 // if($_POST[Fecha]==''){
@@ -147,7 +169,7 @@ if($_POST['Actualiza']==1){
 // echo json_encode(array('success'=>1));
 }
 
-if($_POST['EliminarRegistro']==1){
+if(isset($_POST['EliminarRegistro']) && $_POST['EliminarRegistro']==1){
 //   //ACTURALIZO HOJA DE RUTA
 //   if($sql=$mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]'")){
 //   $hojaderuta=1;  
@@ -210,7 +232,7 @@ if($_POST['EliminarRegistro']==1){
   
 // }
 //HASTA ACA SELET RECORRIDOS
-if($_POST['Invoice']==1){
+if(isset($_POST['Invoice']) && $_POST['Invoice']==1){
     $Number=$_POST['Number'];
     $sql="SELECT Ventas.*,TransClientes.ClienteDestino FROM `Ventas` INNER JOIN TransClientes ON Ventas.NumPedido=TransClientes.CodigoSeguimiento 
     WHERE surrender_number='$Number' AND Ventas.Eliminado=0 AND Ventas.CobrarEnvio<>0 AND TransClientes.Eliminado=0";

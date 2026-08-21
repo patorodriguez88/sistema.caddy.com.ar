@@ -65,10 +65,23 @@ datatable.destroy();
               }
             },
             {data:"Usuario"},
-            {data:"Cliente"},
+            {data:"Cliente",
+            render: function (data, type, row) {
+                var entregado = row.Entregado == 1
+                  ? '<span class="badge rounded-pill bg-success text-white">Entregado</span>'
+                  : '<span class="badge rounded-pill bg-danger text-white">No Entregado</span>';
+                var devuelto = row.Devuelto == 1
+                  ? ' <span class="badge rounded-pill bg-warning text-white">Devuelto</span>'
+                  : '';
+                return '<h6 class="font-15 mb-1 fw-normal">'+row.Cliente+'</h6>'+
+                       '<h6 class="font-15 mb-1 fw-normal">'+row.ClienteDestino+'</h6>'+
+                       entregado+devuelto;
+              }
+            },
             {data:"Titulo",
             render: function (data, type, row) {
                 return '<h6 class="font-15 mb-1 fw-normal">'+row.Titulo+'</h6>'+
+                       '<span class="text-muted font-11">Codigo Proveedor: '+row.CodigoProveedor+'</span><br>'+
                        '<span class="text-muted font-11">'+row.NumeroRepo+' '+row.NumPedido+'</span>';
               }
             },
