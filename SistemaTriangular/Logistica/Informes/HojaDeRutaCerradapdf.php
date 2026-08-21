@@ -157,13 +157,19 @@ foreach ($items as $fila) {
         continue;
     }
 
+    // COALESCE con Clientes.HorarioEntregaSolicitado: TransClientes.HorarioEntregaSolicitado
+    // solo se completa hoy desde el flujo normal de Ventas.php - Colecta/Flex
+    // y las altas desde TiendaNube/Meli/importacion masiva nunca lo cargan,
+    // aunque el cliente sí tenga la preferencia guardada en su ficha.
     $trans = mysqli_fetch_one(
         $mysqli,
-        "SELECT RazonSocial, DomicilioOrigen, Retirado, NumeroComprobante, TelefonoOrigen,
-                HorarioEntregaSolicitado
+        "SELECT TransClientes.RazonSocial, TransClientes.DomicilioOrigen, TransClientes.Retirado,
+                TransClientes.NumeroComprobante, TransClientes.TelefonoOrigen,
+                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaSolicitado) AS HorarioEntregaSolicitado
            FROM TransClientes
-          WHERE CodigoSeguimiento = ?
-            AND Eliminado = 0
+           LEFT JOIN Clientes ON Clientes.id = TransClientes.idClienteDestino
+          WHERE TransClientes.CodigoSeguimiento = ?
+            AND TransClientes.Eliminado = 0
           LIMIT 1",
         's',
         [$seg]
