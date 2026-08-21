@@ -135,13 +135,35 @@ function dibujarPreviewRuta(jsonData) {
 
   var bounds = new google.maps.LatLngBounds();
 
+  var infowindowActivo = null;
+
   jsonData.paradas.forEach(function (p) {
     var marker = new google.maps.Marker({
       position: { lat: p.lat, lng: p.lng },
-      label: String(p.posicion),
+      label: pinLabel(p.posicion),
+      icon: pinSymbol(CADDY_ORANGE),
       map: map,
     });
     bounds.extend(marker.getPosition());
+
+    // Antes el preview no mostraba nada al hacer click en un pin (a
+    // diferencia del mapa real, que ya tenia InfoWindow) - mismo diseño
+    // compartido (construirInfoWindowServicio, en hojaderuta.js).
+    var infoWindow = new google.maps.InfoWindow({
+      content: construirInfoWindowServicio({
+        cliente: p.nombrecliente,
+        direccion: p.Direccion,
+        seguimiento: p.Seguimiento,
+        telefono1: p.Celular,
+        telefono2: p.Telefono,
+        etiqueta: "Parada " + p.posicion + " · Hora estimada " + (p.horaEstimada || "").substring(0, 5),
+      }),
+    });
+    marker.addListener("click", function () {
+      if (infowindowActivo) infowindowActivo.close();
+      infowindowActivo = infoWindow;
+      infoWindow.open(map, marker);
+    });
   });
 
   map.fitBounds(bounds);

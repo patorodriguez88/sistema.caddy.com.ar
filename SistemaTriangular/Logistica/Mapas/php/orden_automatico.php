@@ -204,8 +204,13 @@ if ($_POST['Orden_Automatic'] == 1) {
     // HorarioEntregaSolicitado (TransClientes) de cada parada, si lo cargo
     // el operador al confirmar la venta, para usarlo como prioridad al
     // ordenar (ver ordenarPorCercania).
+    // nombrecliente/Direccion/Telefono*/Seguimiento se traen para poder armar
+    // el InfoWindow del preview en el mapa (antes de aceptar la ruta no
+    // mostraba nada al hacer click en un pin, a diferencia del mapa real).
     $stmt = $mysqli->prepare(
-        "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, Clientes.Latitud, Clientes.Longitud,
+        "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, HojaDeRuta.Seguimiento,
+                Clientes.Latitud, Clientes.Longitud, Clientes.nombrecliente, Clientes.Direccion,
+                Clientes.Telefono, Clientes.Celular, Clientes.Celular2,
                 TransClientes.HorarioEntregaSolicitado
            FROM HojaDeRuta
           INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
@@ -232,7 +237,18 @@ if ($_POST['Orden_Automatic'] == 1) {
                 sscanf($row['HorarioEntregaSolicitado'], '%d:%d', $hs, $ms);
                 $horarioSolicitadoMin = $hs * 60 + $ms;
             }
-            $paradas[] = ['id' => $row['id'], 'lat' => $lat, 'lng' => $lng, 'horarioSolicitadoMin' => $horarioSolicitadoMin];
+            $paradas[] = [
+                'id' => $row['id'],
+                'lat' => $lat,
+                'lng' => $lng,
+                'horarioSolicitadoMin' => $horarioSolicitadoMin,
+                'nombrecliente' => $row['nombrecliente'],
+                'Direccion' => $row['Direccion'],
+                'Seguimiento' => $row['Seguimiento'],
+                'Telefono' => $row['Telefono'],
+                'Celular' => $row['Celular'],
+                'Celular2' => $row['Celular2'],
+            ];
         } else {
             $sinCoordenadas++;
         }
@@ -394,6 +410,12 @@ if ($_POST['Orden_Automatic'] == 1) {
             'distanciaM' => $distanciaM,
             'duracionSeg' => $duracionSeg,
             'horaEstimada' => $horaTexto,
+            'nombrecliente' => $parada['nombrecliente'] ?? '',
+            'Direccion' => $parada['Direccion'] ?? '',
+            'Seguimiento' => $parada['Seguimiento'] ?? '',
+            'Telefono' => $parada['Telefono'] ?? '',
+            'Celular' => $parada['Celular'] ?? '',
+            'Celular2' => $parada['Celular2'] ?? '',
         ];
     }
 

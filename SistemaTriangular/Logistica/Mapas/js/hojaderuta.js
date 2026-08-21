@@ -20,6 +20,109 @@ function verentabla(a) {
 }
 const pato = 22;
 
+// Color de marca Caddy, usado como default de los pines/traza cuando el
+// Recorrido no tiene un color propio configurado (Recorridos.Color vacio, o
+// el negro que trae por defecto el <input type=color> del circulo de color
+// de la card cuando nunca se toco) - antes esos casos quedaban con el pin
+// negro de Google, que no comunica nada y no matchea el resto de la UI.
+var CADDY_ORANGE = "E24F30";
+function normalizarColorRecorrido(c) {
+  var limpio = (c || "").replace("#", "").toLowerCase();
+  if (limpio === "" || limpio === "000000" || limpio === "000") {
+    return CADDY_ORANGE;
+  }
+  return limpio;
+}
+
+// Pin numerado tipo Google Maps (mismo path que ya usaba hojaderuta.js,
+// hecho reusable - antes estaba declarado adentro del for de initMap()).
+function pinSymbol(color) {
+  return {
+    path: "M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z",
+    fillColor: "#" + (color || CADDY_ORANGE),
+    fillOpacity: 1,
+    strokeColor: "#FFFFFF",
+    strokeWeight: 1,
+    scale: 1,
+    labelOrigin: new google.maps.Point(0, -29),
+  };
+}
+
+function pinLabel(Posicion) {
+  return {
+    color: "white",
+    fontWeight: "bold",
+    text: String(Posicion),
+  };
+}
+
+// InfoWindow compartido entre el mapa real (hojaderuta.js) y el preview de
+// "Ver Ruta" (Mapas/js/datos.js) - antes el contenido era HTML crudo sin
+// estilo (un <h4>/<p> sueltos, hasta un <td> fuera de cualquier tabla) y el
+// preview no mostraba nada al hacer click en un pin. Diseño tipo tarjeta,
+// estilo Google Maps.
+function construirInfoWindowServicio(datos) {
+  var cel = "";
+  if (datos.telefono1 && datos.telefono2 && datos.telefono1 !== datos.telefono2) {
+    cel = datos.telefono1 + " | " + datos.telefono2;
+  } else {
+    cel = datos.telefono1 || datos.telefono2 || "";
+  }
+
+  var whatsappHtml = "";
+  if (cel) {
+    var mensaje = encodeURIComponent(
+      "Hola " +
+        (datos.cliente || "") +
+        "! nos comunicamos de Caddy Logística, tenemos un envío para entregarte, pero necesitamos corroborar tu dirección, ya que nuestro cliente nos indicó que la misma era " +
+        (datos.direccion || "") +
+        "... pero no logramos ubicarnos. ¿Nos podrás ayudar?",
+    );
+    whatsappHtml =
+      '<a href="https://api.whatsapp.com/send?phone=' +
+      cel +
+      "&text=" +
+      mensaje +
+      '" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:#25D366;color:#fff;text-decoration:none;font-size:13px;font-weight:600;padding:6px 12px;border-radius:16px;margin-top:2px;">' +
+      '<i class="mdi mdi-whatsapp"></i> ' +
+      cel +
+      "</a>";
+  }
+
+  var etiquetaHtml = datos.etiqueta
+    ? '<div style="display:inline-block;background:#' +
+      CADDY_ORANGE +
+      ';color:#fff;font-weight:600;font-size:12px;border-radius:12px;padding:2px 9px;margin-bottom:6px;">' +
+      datos.etiqueta +
+      "</div>"
+    : "";
+
+  var seguimientoHtml = datos.seguimiento
+    ? '<div style="font-size:12px;color:#5f6368;margin-bottom:8px;"><b>Seguimiento:</b> ' + datos.seguimiento + "</div>"
+    : "";
+
+  var verEnTablaHtml = datos.seguimiento
+    ? '<a style="cursor:pointer;font-size:12px;color:#1a73e8;text-decoration:none;" onclick="verentabla(\'' +
+      datos.seguimiento +
+      "')\">Ver en tabla</a>"
+    : "";
+
+  return (
+    '<div style="min-width:220px;max-width:260px;font-family:-apple-system,Roboto,Arial,sans-serif;padding:2px 4px;">' +
+    etiquetaHtml +
+    '<div style="font-size:15px;font-weight:600;color:#202124;margin-bottom:2px;">' +
+    (datos.cliente || "") +
+    "</div>" +
+    '<div style="font-size:13px;color:#5f6368;margin-bottom:8px;">' +
+    (datos.direccion || "") +
+    "</div>" +
+    seguimientoHtml +
+    whatsappHtml +
+    (verEnTablaHtml ? '<div style="margin-top:8px;">' + verEnTablaHtml + "</div>" : "") +
+    "</div>"
+  );
+}
+
 // Decodifica un polyline encodeado de Google (mismo algoritmo que usa
 // Planificador/js/planificador.js) para poder dibujar la traza real de la
 // ruta en el mapa, no solo los puntos sueltos.
@@ -72,27 +175,10 @@ function initMap(c) {
 
       $("#header-title2").html(c);
 
-      for (var i = 0; i < objeto_json.data.length; i++) {
-        //ICONO DE COLORES
-        function pinSymbol(color) {
-          return {
-            path: "M 0,0 C -2,-20 -10,-22 -10,-30 A 10,10 0 1,1 10,-30 C 10,-22 2,-20 0,0 z",
-            fillColor: "#" + color,
-            fillOpacity: 1,
-            strokeColor: "#FFFFFF",
-            strokeWeight: 1,
-            scale: 1,
-            labelOrigin: new google.maps.Point(0, -29),
-          };
-        }
-        function pinLabel(Posicion) {
-          return {
-            color: "white",
-            fontWeight: "bold",
-            text: Posicion,
-          };
-        }
+      var colorRecorrido = normalizarColorRecorrido(c);
+      var bounds = new google.maps.LatLngBounds();
 
+      for (var i = 0; i < objeto_json.data.length; i++) {
         var a = Number(objeto_json.data.length);
 
         $("#marker").html("Total " + objeto_json.data.length);
@@ -118,12 +204,12 @@ function initMap(c) {
             } else {
               var valor_retirado = 1;
               // var Posicion=objeto_json.data[i].Posicion;
-              var icono = pinSymbol(c);
-              $("#marker_0").css("color", `#${c}`);
+              var icono = pinSymbol(colorRecorrido);
+              $("#marker_0").css("color", `#${colorRecorrido}`);
             }
           }
         } else {
-          icono = null;
+          icono = pinSymbol(colorRecorrido);
         }
 
         var latlong = objeto_json.data[i].coordenadas.split(",");
@@ -131,6 +217,7 @@ function initMap(c) {
           lat: Number(latlong[0]),
           lng: Number(latlong[1]),
         };
+        bounds.extend(myLatLng);
 
         var marker = new google.maps.Marker({
           position: myLatLng,
@@ -145,50 +232,19 @@ function initMap(c) {
 
         var tel1 = objeto_json.data[i].Celular;
         var tel2 = objeto_json.data[i].Telefono;
-        var tel3 = objeto_json.data[i].Telefono2;
-        // console.log('markers',markers.length);
 
-        if (tel2 == tel1) {
-          var cel = tel1;
-        } else {
-          var cel = tel1 + " | " + tel2;
-        }
-
-        var contentString =
-          '<h4 id="firstHeading" class="firstHeading">' +
-          objeto_json.data[i].nombrecliente +
-          "</h4>" +
-          '<div id="bodyContent">' +
-          "<p><b>Recorrido: " +
-          objeto_json.data[i].Recorrido +
-          "</b></p>" +
-          '<p><b><a target="t_blank" href="https://api.whatsapp.com/send?phone=' +
-          cel +
-          "&text=Hola " +
-          objeto_json.data[i].nombrecliente +
-          " !,%20 nos comunicamos de Caddy Logística, tenemos un envío para entregarte, pero necesitamos corroborar tu dirección, ya que nuestro cliente nos indicó que la misma era " +
-          objeto_json.data[i].Direccion +
-          '... pero no logramos ubicarnos. Nos podrás ayudar ?. "> Teléfono: ' +
-          cel +
-          "</a></b></p>" +
-          "<p><b>Seguimiento: " +
-          objeto_json.data[i].Seguimiento +
-          "</b></p>" +
-          "<p>Dir:" +
-          objeto_json.data[i].Direccion +
-          "</p>" +
-          '<td class="table-action">' +
-          '<a style="cursor:pointer" data-id="' +
-          objeto_json.data[i].Seguimiento +
-          '" id="' +
-          objeto_json.data[i].Seguimiento +
-          '" onclick="verentabla(this.id)"><b class="text-primary">Ver en Tabla</b></a>' +
-          "</td></div>";
         markers[i].id = objeto_json.data[i].idHojaderuta;
         markers[i].Recorrido = objeto_json.data[i].Recorrido;
 
         markers[i].infoWindow = new google.maps.InfoWindow({
-          content: contentString,
+          content: construirInfoWindowServicio({
+            cliente: objeto_json.data[i].nombrecliente,
+            direccion: objeto_json.data[i].Direccion,
+            seguimiento: objeto_json.data[i].Seguimiento,
+            telefono1: tel1,
+            telefono2: tel2,
+            etiqueta: "Recorrido " + objeto_json.data[i].Recorrido,
+          }),
         });
 
         google.maps.event.addListener(markers[i], "click", function () {
@@ -258,6 +314,14 @@ function initMap(c) {
           });
           hdrRoutePolyline.setMap(map);
         }
+      }
+
+      // El mapa arrancaba siempre centrado en el mismo punto fijo con zoom
+      // 10, sin importar donde estuvieran las paradas reales - ahora encuadra
+      // automaticamente todos los waypoints del recorrido (igual que ya hace
+      // el preview de "Ver Ruta" y el Planificador).
+      if (objeto_json.data.length > 0) {
+        map.fitBounds(bounds);
       }
     }
   };
