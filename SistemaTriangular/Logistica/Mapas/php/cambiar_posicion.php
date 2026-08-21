@@ -53,11 +53,104 @@ if($_POST['RestartOrder']==1){
  $Recorrido = $_POST['Recorrido'] ?? '';
  $stmt = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = '0',Posicion_retiro='0' WHERE Recorrido=? AND Eliminado=0 AND Estado='Abierto'");
  $stmt->bind_param('s', $Recorrido);
- if($stmt->execute()){
+ $ok = $stmt->execute();
+
+ // Al resetear el orden, la traza guardada (Recorridos.Polyline, de un
+ // calculo anterior) ya no corresponde a nada - sin esto quedaba dibujada
+ // en el mapa una ruta vieja que no coincidia con el orden (0) recien
+ // reseteado.
+ if ($ok && $Recorrido !== '') {
+     $stmtPoly = $mysqli->prepare("UPDATE Recorridos SET Polyline = NULL WHERE Numero = ?");
+     $stmtPoly->bind_param('s', $Recorrido);
+     $stmtPoly->execute();
+ }
+
+ if($ok){
  echo json_encode(array('resultado'=>1));
  }else{
  echo json_encode(array('resultado'=>0));
  }
+}
+
+// Al cerrar "Ordenar Manual", calcula la hora estimada de llegada a cada
+// parada segun el orden que el operador armo a mano (Haversine + velocidad
+// promedio, sin llamar a la Routes API de Google - mismo criterio que ya
+// usa ordenarPorCercania() en orden_automatico.php para estimar mientras
+// ordena) y las guarda en HojaDeRuta.Hora, igual que hace "Aceptar Ruta".
+if(($_POST['CalcularHorariosManual'] ?? null) == 1){
+    $Recorrido = $_POST['Recorrido'] ?? '';
+    if ($Recorrido === '') {
+        echo json_encode(['resultado' => 0, 'message' => 'Falta el Recorrido.']);
+        exit;
+    }
+
+    // Hora de salida: Logistica.Hora de este Recorrido (misma Orden de
+    // Salida que usa orden_automatico.php como fallback cuando el operador
+    // no la elige explicitamente), u 8:00 si no hay ninguna cargada.
+    $stmt = $mysqli->prepare("SELECT Hora FROM Logistica WHERE Recorrido = ? AND Estado <> 'Cerrada' AND Eliminado = 0");
+    $stmt->bind_param('s', $Recorrido);
+    $stmt->execute();
+    $rowInicio = $stmt->get_result()->fetch_assoc();
+    $HoraSalida = $rowInicio['Hora'] ?? '08:00:00';
+
+    $timeDelivered = 5;
+    $stmtVar = $mysqli->prepare("SELECT Valor FROM Variables WHERE Nombre = 'TiempoPorParada' LIMIT 1");
+    $stmtVar->execute();
+    $rowVar = $stmtVar->get_result()->fetch_assoc();
+    if ($rowVar && is_numeric($rowVar['Valor'])) {
+        $timeDelivered = (float)$rowVar['Valor'];
+    }
+
+    // Mismo join que ya usa ViewOrder() en este archivo para este
+    // subsistema (manual ordena Posicion/Posicion_retiro por separado
+    // segun Retirado, a diferencia de orden_automatico.php que trata todo
+    // como una sola secuencia - se respeta la convencion existente acá).
+    $stmt = $mysqli->prepare(
+        "SELECT HojaDeRuta.id, Clientes.Latitud, Clientes.Longitud,
+                IF(TransClientes.Retirado=1, HojaDeRuta.Posicion, HojaDeRuta.Posicion_retiro) AS PosicionEfectiva
+           FROM HojaDeRuta
+          INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
+          INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento = HojaDeRuta.Seguimiento
+          WHERE HojaDeRuta.Recorrido = ? AND HojaDeRuta.Eliminado = 0 AND HojaDeRuta.Estado = 'Abierto' AND HojaDeRuta.Devuelto = 0
+          ORDER BY PosicionEfectiva ASC"
+    );
+    $stmt->bind_param('s', $Recorrido);
+    $stmt->execute();
+    $res = $stmt->get_result();
+
+    $earthRadius = 6371;
+    $velocidadPromedioKmh = 25;
+    $actual = ['lat' => -31.444994776141503, 'lng' => -64.1779408896999]; // origen fijo, mismo que orden_automatico.php/Planificador
+    $horaActual = new DateTime(date('Y-m-d') . ' ' . $HoraSalida);
+
+    $stmtUpdate = $mysqli->prepare("UPDATE HojaDeRuta SET Hora = ? WHERE id = ? LIMIT 1");
+    $actualizadas = 0;
+
+    while ($row = $res->fetch_assoc()) {
+        $lat = floatval($row['Latitud']);
+        $lng = floatval($row['Longitud']);
+        if ($lat === 0.0 && $lng === 0.0) {
+            continue; // sin coordenadas, no se puede estimar la hora de esta parada
+        }
+
+        $dLat = deg2rad($lat - $actual['lat']);
+        $dLon = deg2rad($lng - $actual['lng']);
+        $a = sin($dLat / 2) ** 2 + cos(deg2rad($actual['lat'])) * cos(deg2rad($lat)) * sin($dLon / 2) ** 2;
+        $distKm = $earthRadius * 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        $minutos = ($distKm / $velocidadPromedioKmh * 60) + $timeDelivered;
+        $horaActual->modify('+' . round($minutos) . ' minute');
+        $horaTexto = $horaActual->format('H:i:s');
+
+        $stmtUpdate->bind_param('si', $horaTexto, $row['id']);
+        $stmtUpdate->execute();
+        $actualizadas++;
+
+        $actual = ['lat' => $lat, 'lng' => $lng];
+    }
+    $stmtUpdate->close();
+
+    echo json_encode(['resultado' => 1, 'actualizadas' => $actualizadas]);
 }
 
 //ORDENAR SEGUN ORDEN DEL FLETERO

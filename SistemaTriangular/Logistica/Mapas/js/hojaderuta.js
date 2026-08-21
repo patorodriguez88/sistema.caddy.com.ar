@@ -268,6 +268,13 @@ function decodePolyline(encoded) {
 // vuelve a dibujar cada vez que se abre un recorrido).
 var hdrRoutePolyline = null;
 
+// Traza "en progreso" de Ordenar Manual: se va armando punto por punto a
+// medida que el operador clickea cada parada (antes no habia ningun
+// feedback visual de la ruta mientras se ordenaba a mano, solo el numero y
+// el color del pin). Se resetea al entrar a modo Ordenar Manual.
+var manualOrderPath = [];
+var manualOrderPolyline = null;
+
 function initMap(c) {
   var divMapa = document.getElementById("map");
   var xhttp;
@@ -377,6 +384,23 @@ function initMap(c) {
                     fontWeight: "bold",
                     text: jsonData.newPosicion,
                   };
+
+                  // Va armando la ruta en pantalla a medida que se clickea
+                  // cada parada, en el orden en que se van eligiendo (linea
+                  // recta punto a punto, no la ruta real de Google - eso
+                  // recien se calcula al cerrar el orden).
+                  manualOrderPath.push(valorpato.getPosition());
+                  if (manualOrderPolyline) {
+                    manualOrderPolyline.setMap(null);
+                  }
+                  manualOrderPolyline = new google.maps.Polyline({
+                    path: manualOrderPath,
+                    geodesic: true,
+                    strokeColor: "#" + CADDY_PURPLE,
+                    strokeOpacity: 0.85,
+                    strokeWeight: 3,
+                  });
+                  manualOrderPolyline.setMap(map);
                 }
               },
             });
@@ -475,16 +499,51 @@ $("#ordenar_recorrido_automatic").click(function () {
 });
 
 $("#ordenar_recorrido").click(function () {
+  var Recorrido = $("#recorrido").html();
+
   if ($("#alert_ordenar").css("display") == "block") {
+    // CERRAR el orden manual: calcula la hora estimada de llegada a cada
+    // parada segun el orden que quedo armado (Haversine + velocidad
+    // promedio, sin llamar a la Routes API - mismo criterio que ya usa
+    // ordenarPorCercania() en orden_automatico.php para estimar mientras
+    // ordena) y las guarda en HojaDeRuta.Hora. veo() al final refresca el
+    // mapa con la traza real ya calculada (reemplaza la linea recta "en
+    // progreso" de manualOrderPolyline).
     $("#alert_ordenar").hide();
     $("#map").css("min-height", "400px");
     $("#ordenar_recorrido").html("Ordenar");
-  } else {
-    $("#alert_ordenar").show();
-    $("#map").css("min-height", "450px");
-    $("#ordenar_recorrido").html("Cerrar Orden");
+
+    $.ajax({
+      data: { CalcularHorariosManual: 1, Recorrido: Recorrido },
+      url: "Mapas/php/cambiar_posicion.php",
+      type: "post",
+      beforeSend: function () {
+        $("#info-alert-modal-title").html("Calculando horarios...");
+        $("#info-alert-modal").modal("show");
+      },
+      success: function () {
+        $("#info-alert-modal").modal("hide");
+        veo(Recorrido);
+      },
+      error: function (jqXHR, textStatus, errorThrown) {
+        $("#info-alert-modal").modal("hide");
+        console.error("Error en CalcularHorariosManual:", textStatus, errorThrown);
+        toast("error", "Error", "No se pudieron calcular los horarios. Reintentá de nuevo.");
+      },
+    });
+    return;
   }
-  var Recorrido = $("#recorrido").html();
+
+  // ABRIR el orden manual: arranca la traza "en progreso" de cero.
+  $("#alert_ordenar").show();
+  $("#map").css("min-height", "450px");
+  $("#ordenar_recorrido").html("Cerrar Orden");
+
+  manualOrderPath = [];
+  if (manualOrderPolyline) {
+    manualOrderPolyline.setMap(null);
+    manualOrderPolyline = null;
+  }
 
   $.ajax({
     data: { ViewOrder: 1, Recorrido: Recorrido },
