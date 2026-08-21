@@ -1,3 +1,51 @@
+// Umbral para avisar que el horario planificado (HojaDeRuta.Hora, se pisa
+// cuando se ordena el recorrido - manual, "Ordenar segun Reparto", o "Ver
+// Ruta" -> "Aceptar Ruta") se aleja demasiado del horario que pidio el
+// cliente (TransClientes.HorarioEntregaSolicitado) - mismo criterio (60 min)
+// que ya usa ordenarPorCercania() en orden_automatico.php para priorizar
+// paradas urgentes al armar el orden.
+var UMBRAL_DISCREPANCIA_HORARIO_MIN = 60;
+
+function horaAMinutos(hhmm) {
+  if (!hhmm) return null;
+  var partes = String(hhmm).split(":");
+  if (partes.length < 2) return null;
+  var h = parseInt(partes[0], 10);
+  var m = parseInt(partes[1], 10);
+  if (isNaN(h) || isNaN(m)) return null;
+  return h * 60 + m;
+}
+
+// Icono de aviso junto al nombre del cliente cuando el horario planificado
+// para esta parada se aleja mas de UMBRAL_DISCREPANCIA_HORARIO_MIN del
+// horario que el cliente pidio - sin esto, un recorrido ya ordenado podia
+// dejar una entrega horas antes/despues de lo solicitado sin que quedara
+// visible en ningun lado hasta que el cliente reclamara.
+function avisoHorarioIcono(row) {
+  if (row.Retirado != 1) return ""; // el horario solicitado es de entrega, no de retiro
+  var minSolicitado = horaAMinutos(row.HorarioEntregaSolicitado);
+  var minPlanificado = horaAMinutos(row.Hora);
+  if (minSolicitado === null || minPlanificado === null) return "";
+
+  var diferencia = minPlanificado - minSolicitado;
+  if (Math.abs(diferencia) <= UMBRAL_DISCREPANCIA_HORARIO_MIN) return "";
+
+  var texto =
+    diferencia > 0
+      ? "Va a llegar ~" + Math.round(diferencia / 60) + "h después de lo solicitado"
+      : "Va a llegar ~" + Math.round(-diferencia / 60) + "h antes de lo solicitado";
+
+  return (
+    ' <i class="mdi mdi-18px mdi-alert text-warning" title="Horario solicitado: ' +
+    row.HorarioEntregaSolicitado +
+    " · Horario planificado: " +
+    row.Hora +
+    " · " +
+    texto +
+    '"></i>'
+  );
+}
+
 function geocodeResult(results, status) {
   // Verificamos el estatus
   if (status == "OK") {
@@ -434,6 +482,7 @@ $(document).ready(function () {
           return (
             "<td><b>" +
             row.ClienteDestino +
+            avisoHorarioIcono(row) +
             "</br>" +
             '<a data-id="' +
             row.id +
