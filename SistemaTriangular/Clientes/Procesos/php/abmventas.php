@@ -100,12 +100,12 @@ if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
   $Resultado=$mysqli->query($sql);  
   $row=$Resultado->fetch_array(MYSQLI_ASSOC);
 
-  $Codigo= sprintf("%10d", $_POST[codigoventa]);
+  $Codigo= sprintf("%10d", $_POST['codigoventa']);
   if($mysqli->query("INSERT INTO `Ventas`(`FechaPedido`, `Codigo`, `Titulo`, `Precio`, `Cantidad`, `Comentario`,
   `terminado`, `NumPedido`, `Total`, `Cliente`, `FechaEntrega`, `Localidad`, `NumeroRepo`, `ImporteNeto`, `Exento`, `Iva1`, `Usuario`,`idCliente`) VALUES 
-  ('{$Fecha}','{$Codigo}','{$_POST[tituloventa]}','{$_POST[precioventa]}','{$_POST[cantidadventa]}','{$_POST[observacionesventa]}','1',
-  '{$_POST[codigoseguimiento]}','{$_POST[totalventa]}','{$row[Cliente]}','{$row[Fecha]}','{$row[Localidad]}','{$row[NumeroComprobante]}','{$Neto}','0',
-  '{$iva}','{$_SESSION[Usuario]}','{$row[idCliente]}')")){
+  ('{$Fecha}','{$Codigo}','{$_POST['tituloventa']}','{$_POST['precioventa']}','{$_POST['cantidadventa']}','{$_POST['observacionesventa']}','1',
+  '{$_POST['codigoseguimiento']}','{$_POST['totalventa']}','{$row['Cliente']}','{$row['Fecha']}','{$row['Localidad']}','{$row['NumeroComprobante']}','{$Neto}','0',
+  '{$iva}','{$_SESSION['Usuario']}','{$row['idCliente']}')")){
   
   $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0'";
   $ResultadoV=$mysqli->query($sqlV);  
@@ -133,7 +133,12 @@ if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
 
 //MODIFICAR VENTAS
 if(isset($_POST['ModificarDatosVentas']) && $_POST['ModificarDatosVentas']==1){
-$info="M: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)');
+// Los 4 flags de mas abajo solo se pisan segun que rama se recorre - sin
+// esto, cualquier rama que no los toque (ej. successventas=0) los deja
+// indefinidos y el "Undefined variable" se cuela antes del json_encode,
+// rompiendo el JSON.parse() del lado del cliente.
+$successventas=0; $successtrans=0; $successctasctes=0; $successctasctesinsert=0;
+$info="M: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)');
     $sql="SELECT Fecha,IF(FormaDePago='Origen',RazonSocial,ClienteDestino)as RazonSocial,
                        IF(FormaDePago='Origen',Cuit,idClienteDestino)as Cuit,TipoDeComprobante,NumeroComprobante,Debe,
                        IF(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente,
@@ -170,8 +175,8 @@ $info="M: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)');
       
             if($rowV[Total]>0){ 
 
-                    if($mysqli->query("INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`,`Usuario`,`Observaciones`, `idCliente`,`idTransClientes`) VALUES ('{$row[Fecha]}','{$row[RazonSocial]}','{$row[Cuit]}','{$row[TipoDeComprobante]}',
-                    '{$row[NumeroComprobante]}','{$rowV[Total]}','{$_SESSION[Usuario]}','{$row[Observaciones]}','{$row[idCliente]}','{$row[id]}')")){
+                    if($mysqli->query("INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`,`Usuario`,`Observaciones`, `idCliente`,`idTransClientes`) VALUES ('{$row['Fecha']}','{$row['RazonSocial']}','{$row['Cuit']}','{$row['TipoDeComprobante']}',
+                    '{$row['NumeroComprobante']}','{$rowV['Total']}','{$_SESSION['Usuario']}','{$row['Observaciones']}','{$row['idCliente']}','{$row['id']}')")){
                     $successctasctesinsert=1;    
                     }else{
                     $successctasctesinsert=0;      
@@ -309,7 +314,7 @@ if(isset($_POST['id_servicio']) && $_POST['id_servicio']<>''){
   $datoservicios=$sqlservicios->fetch_array(MYSQLI_ASSOC);
   $PrecioVenta=$datoservicios['PrecioVenta'];
   $Codigo=$datoservicios['id'];  
-  echo json_encode(array('success'=> 1,'PrecioVenta'=> $PrecioVenta,'Codigo'=>$Codigo,'Titulo'=>$datoservicios[Titulo]));
+  echo json_encode(array('success'=> 1,'PrecioVenta'=> $PrecioVenta,'Codigo'=>$Codigo,'Titulo'=>$datoservicios['Titulo']));
 }
 
 //BUSCAR DATOS
@@ -338,7 +343,7 @@ if(isset($_POST['BuscarDatos']) && $_POST['BuscarDatos']==1){
 
 //ELIMINAR GUIA DE CARGA
 if(isset($_POST['EliminarRegistro']) && $_POST['EliminarRegistro']==1){
-  $info="B: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)').' clientes.procesos.php.abmventas';
+  $info="B: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)').' clientes.procesos.php.abmventas';
   //ACTURALIZO HOJA DE RUTA
   if($sql=$mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1")){
   $hojaderuta=1;  

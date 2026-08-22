@@ -92,3 +92,22 @@ function ocultarModalCarga(selector) {
     });
   }
 }
+
+// FIX: Bootstrap 5 no maneja bien un modal abierto arriba de otro (ej. el par
+// "Modificar Guia" / "Modificar Venta" en Clientes.php) - cada modal nuevo y
+// su backdrop se agregan con el mismo z-index base, asi que el backdrop del
+// modal de ADENTRO puede terminar quedando ARRIBA del contenido del modal de
+// AFUERA sin tapar visualmente nada raro, pero el click cae en ese backdrop
+// en vez del boton (ej. "Guardar Cambios" no hacia nada). Se sube el z-index
+// de cada modal nuevo y su backdrop segun cuantos modales ya estan abiertos,
+// para que el ultimo en abrirse siempre quede arriba de todo.
+$(document).on("show.bs.modal", ".modal", function () {
+  var zIndex = 1055 + 20 * $(".modal:visible").length;
+  $(this).css("z-index", zIndex);
+  setTimeout(function () {
+    $(".modal-backdrop")
+      .not(".modal-stack")
+      .css("z-index", zIndex - 5)
+      .addClass("modal-stack");
+  }, 0);
+});
