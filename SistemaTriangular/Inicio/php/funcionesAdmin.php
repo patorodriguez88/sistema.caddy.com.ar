@@ -46,7 +46,7 @@ if (isset($_POST['RemitosRec'])) {
   $Resultado = $mysqli->query($sql);
   $rows = array();
   while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-    header('Location:https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Informes/RemitopdfAut.php?CS="' . $fila['CodigoSeguimiento'] . '"');
+    header('Location:/SistemaTriangular/Ventas/Informes/RemitopdfAut.php?CS="' . $fila['CodigoSeguimiento'] . '"');
   }
   $contar = $Resultado->num_rows;
   echo json_encode(array('data' => $rows, $contar));

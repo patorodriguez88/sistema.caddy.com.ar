@@ -5,7 +5,7 @@ $("#modal_seguimiento").on('show.bs.modal', function (e) {
         $.ajax({
           data:{'Seguimiento_Visitas':1,'CodigoSeguimiento':id},
           type: "POST",
-          url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Funciones/php/tablas.php",
+          url: "/SistemaTriangular/Funciones/php/tablas.php",
           success: function(response)
           {
             var jsonData = JSON.parse(response);   
@@ -36,7 +36,7 @@ $("#modal_seguimiento").on('show.bs.modal', function (e) {
           $.ajax({
           data:{'CambiarEstado':1,'CodigoSeguimiento':id,'ctacte':check},
           type: "POST",
-          url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Funciones/php/cambiarestado.php",
+          url: "/SistemaTriangular/Funciones/php/cambiarestado.php",
           success: function(response)
           {
             var jsonData = JSON.parse(response);   
@@ -55,7 +55,7 @@ $("#modal_seguimiento").on('show.bs.modal', function (e) {
        $.ajax({
           data:{'Seguimiento_Modal':1,'CodigoSeguimiento':id},
           type: "POST",
-          url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Funciones/php/tablas.php",
+          url: "/SistemaTriangular/Funciones/php/tablas.php",
           success: function(response)
           {
           var jsonData = JSON.parse(response);   
@@ -108,7 +108,7 @@ $("#modal_seguimiento").on('show.bs.modal', function (e) {
             paging: false,
             searching: false,
             ajax: {
-              url:"https://www.sistema.caddy.com.ar/SistemaTriangular/Funciones/php/tablas.php",
+              url:"/SistemaTriangular/Funciones/php/tablas.php",
               data:{'Seguimiento_Tabla':1,'CodigoSeguimiento':id},
               type:'post'
               },

@@ -31,7 +31,7 @@ if ($_FILES["imagen"]["error"] > 0) {
 			$resultado = @move_uploaded_file($_FILES["imagen"]["tmp_name"], $ruta);
 			if ($resultado) {
 				echo "El archivo ha sido movido exitosamente";
-				header("location:http://www.sistema.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php");
+				header("location:/SistemaTriangular/Inicio/Cpanel.php");
 			} else {
 				echo "Ocurrio un error al mover el archivo.";
 				echo $ruta;
@@ -41,6 +41,6 @@ if ($_FILES["imagen"]["error"] > 0) {
 		}
 	} else {
 		echo "Archivo no permitido, es tipo de archivo prohibido o excede el tamano de $limite_kb Kilobytes";
-		header("location:http://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Ventas.php");
+		header("location:/SistemaTriangular/Ventas/Ventas.php");
 	}
 }

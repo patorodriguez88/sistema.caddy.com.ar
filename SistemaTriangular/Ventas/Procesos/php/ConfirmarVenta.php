@@ -493,6 +493,6 @@ unset($_SESSION['NumeroPedido']);
 unset($_SESSION['NCliente']);
 unset($_SESSION['NClienteDestino_t']);
 
-// header("location:https://www.sistema.caddy.com.ar/SistemaTriangular/Ventas/Ventas_e.php?UltimoPaso=Si&Repo=$Seguimiento");		
+// header("location:/SistemaTriangular/Ventas/Ventas_e.php?UltimoPaso=Si&Repo=$Seguimiento");		
 
 echo json_encode(['success' => 1, 'message' => 'Registro exitoso', 'data' => $Seguimiento]);

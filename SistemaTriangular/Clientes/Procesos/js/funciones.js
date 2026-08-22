@@ -4494,7 +4494,7 @@ $("#facturar_detalle_boton").click(function () {
         $("#total_up_detalle").val(total.toFixed(2));
       },
       ajax: {
-        url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/tablas.php",
+        url: "/SistemaTriangular/Clientes/Procesos/php/tablas.php",
         data: {
           FacturacionProformaDetalle: 1,
           id: id,
@@ -4640,7 +4640,7 @@ $("#facturar_recorridos_boton").click(function () {
         $("#total_up_r").val(total.toFixed(2));
       },
       ajax: {
-        url: "https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/tablas.php",
+        url: "/SistemaTriangular/Clientes/Procesos/php/tablas.php",
         data: {
           FacturacionProformaRecorridos: 1,
           id: id,

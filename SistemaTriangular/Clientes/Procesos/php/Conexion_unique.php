@@ -24,7 +24,7 @@ if ($_GET['token'] <> null) {
 
         unset($_SESSION['token_unique']);
 
-        header("location:https://www.sistema.caddy.com.ar/SistemaTriangular/Mail/plantilla/invoice_failed.html");
+        header("location:/SistemaTriangular/Mail/plantilla/invoice_failed.html");
     }
 }
 

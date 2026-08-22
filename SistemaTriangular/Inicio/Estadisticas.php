@@ -3,7 +3,7 @@ ob_start();
 session_start();
 include_once "../ConexionBD.php";
 if ($_SESSION['Nivel']==''){
-header("location:http://www.sistema.caddy.com.ar");
+header("location:/");
 }
 // print $_SESSION['NCliente'];
 $user= $_POST['user'];

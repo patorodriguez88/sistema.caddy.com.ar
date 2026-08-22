@@ -20,16 +20,16 @@ session_start();
         <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
         <!-- third party css -->
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/vendor/dataTables.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/vendor/responsive.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/vendor/buttons.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/vendor/select.bootstrap4.css" rel="stylesheet" type="text/css" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/vendor/dataTables.bootstrap4.css" rel="stylesheet" type="text/css" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/vendor/responsive.bootstrap4.css" rel="stylesheet" type="text/css" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/vendor/buttons.bootstrap4.css" rel="stylesheet" type="text/css" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/vendor/select.bootstrap4.css" rel="stylesheet" type="text/css" />
         <!-- third party css end -->
 
         <!-- App css -->
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/app.min.css" rel="stylesheet" type="text/css" id="light-style" />
-        <link href="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/css/app-dark.min.css" rel="stylesheet" type="text/css" id="dark-style" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/app.min.css" rel="stylesheet" type="text/css" id="light-style" />
+        <link href="/SistemaTriangular/hyper/dist/saas/assets/css/app-dark.min.css" rel="stylesheet" type="text/css" id="dark-style" />
 
 
     </head>
@@ -116,7 +116,7 @@ session_start();
                                     <div class="col-md-4">
                                         <div class="mb-3">
                                             <div class="float-left mb-3">
-                                            <img src="https://www.sistema.caddy.com.ar/SistemaTriangular/images/LogoCaddy.png" alt="" height="70">
+                                            <img src="/SistemaTriangular/images/LogoCaddy.png" alt="" height="70">
                                             </div>
                                         </div>
                                     </div>
@@ -481,30 +481,30 @@ session_start();
         </div>
         <!-- END wrapper -->
         <!-- bundle -->
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/app.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/app.min.js"></script>
 
         <!-- third party js -->
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/jquery.dataTables.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.bootstrap4.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.responsive.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/responsive.bootstrap4.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.buttons.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.bootstrap4.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.html5.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.flash.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.print.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.keyTable.min.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.select.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/jquery.dataTables.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.bootstrap4.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.responsive.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/responsive.bootstrap4.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.buttons.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.bootstrap4.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.html5.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.flash.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/buttons.print.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.keyTable.min.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/vendor/dataTables.select.min.js"></script>
         <!-- third party js ends -->
 
         <!-- demo app -->
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/hyper/dist/saas/assets/js/pages/demo.datatable-init.js"></script>
+        <script src="/SistemaTriangular/hyper/dist/saas/assets/js/pages/demo.datatable-init.js"></script>
 
         <!-- funciones -->
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/Menu/js/funciones.js"></script>
+        <script src="/SistemaTriangular/Menu/js/funciones.js"></script>
         <script src="Procesos/js/invoice.js"></script>
-        <script src="https://www.sistema.caddy.com.ar/SistemaTriangular/Clientes/Funciones/js/datosempresa.js"></script>
+        <script src="/SistemaTriangular/Clientes/Funciones/js/datosempresa.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
         
