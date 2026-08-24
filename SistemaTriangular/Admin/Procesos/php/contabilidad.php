@@ -126,6 +126,18 @@ function guardarAsiento($conexion) {
             $cuenta = $conexion->real_escape_string($cuenta);
             $observaciones = $conexion->real_escape_string($observaciones);
 
+            // Si la cuenta de esta fila es una forma de pago real (Caja, Banco
+            // Macro, etc.), completamos FormaDePago automáticamente en vez de
+            // dejarlo vacío — misma tabla/criterio que usa cargarpago.php.
+            // Para cuentas que no son forma de pago (Sueldos, Gastos, etc.)
+            // queda NULL a propósito, no aplica.
+            $formaDePago = null;
+            $sqlFormaDePago = $conexion->query("SELECT FormaDePago FROM FormaDePago WHERE CuentaContable='$cuenta' LIMIT 1");
+            if ($sqlFormaDePago && $filaFormaDePago = $sqlFormaDePago->fetch_assoc()) {
+                $formaDePago = $filaFormaDePago['FormaDePago'];
+            }
+            $formaDePagoSQL = $formaDePago !== null ? "'" . $conexion->real_escape_string($formaDePago) . "'" : "NULL";
+
             if ($idFila && trim($idFila) !== '') {
                 // UPDATE
                 $sql = "UPDATE Tesoreria SET
@@ -136,7 +148,8 @@ function guardarAsiento($conexion) {
                             Haber = $haber,
                             Observaciones = '$observaciones',
                             Usuario = '$usuario',
-                            InfoABM = '$infoABM'
+                            InfoABM = '$infoABM',
+                            FormaDePago = $formaDePagoSQL
                         WHERE id = $idFila";
             } else {
                 // INSERT
@@ -150,9 +163,9 @@ function guardarAsiento($conexion) {
                 // NULL y los informes de Sumas y Saldos / Mayor (que filtran
                 // Pendiente=0) no encontraban nunca los asientos nuevos.
                 $sql = "INSERT INTO Tesoreria
-                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, Caja, Dominio, Eliminado, Pendiente, NoOperativo)
+                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, FormaDePago, Caja, Dominio, Eliminado, Pendiente, NoOperativo)
                         VALUES
-                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', 0, 0, 0, 0, 0)";
+                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', $formaDePagoSQL, 0, 0, 0, 0, 0)";
             }
 
             if (!$conexion->query($sql)) {
