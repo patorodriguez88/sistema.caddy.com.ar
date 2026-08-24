@@ -365,6 +365,43 @@ function eliminar_mvi(i) {
   });
 }
 
+function desvincularRelacion(id, nombre) {
+  Swal.fire({
+    icon: "warning",
+    title: "Desvincular cliente",
+    html:
+      "Vas a desvincular a <b>" +
+      nombre +
+      "</b> de este cliente principal. Va a dejar de heredar la relación y de administrar cuentas de envío.",
+    showCancelButton: true,
+    confirmButtonText: "Sí, desvincular",
+    cancelButtonText: "Cancelar",
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      data: {
+        DesvincularRelacion: 1,
+        id: id,
+      },
+      url: "Procesos/php/funciones.php",
+      type: "post",
+      dataType: "json",
+      success: function (jsonData) {
+        if (jsonData.success == 1) {
+          toast("success", "Listo !", "Cliente desvinculado.");
+          $("#relaciones_tabla").DataTable().ajax.reload(null, false);
+        } else {
+          toast("error", "Error", jsonData.error || "No se pudo desvincular.");
+        }
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo desvincular.");
+      },
+    });
+  });
+}
+
 //CONTACT
 $("#btn_agregar_contacto").click(function () {
   $("#contact-modal").modal("show");
@@ -1717,60 +1754,78 @@ $(document).on("change", 'select[name="formadepago"]', function (e) {
   }
 });
 
-$("#modificar_relacion").click(function () {
-  document.getElementById("relacion_select").style.display = "block";
-  document.getElementById("relacion").style.display = "none";
-});
-
 $("#modificar_condicion_facturacion").click(function () {
   document.getElementById("condicion_select").style.display = "block";
   document.getElementById("condicion_div").style.display = "none";
 });
 
-$("#nueva_relacion").change(function () {
-  if (
-    document.getElementById("nueva_relacion").value != "" ||
-    document.getElementById("nueva_relacion").value != "Seleccionar Relacion"
-  ) {
-    var relacion = document.getElementById("nueva_relacion").value;
-  } else {
-    var relacion = document.getElementById("relacionasignada").value;
+$("#agregar_relacionado").change(function () {
+  var idHijo = $(this).val();
+  if (!idHijo) return;
+
+  var idPadre = document.getElementById("codigo").value;
+
+  if (idHijo == idPadre) {
+    toast("error", "Error", "Un cliente no puede relacionarse consigo mismo.");
+    $("#agregar_relacionado").val(null).trigger("change.select2");
+    return;
   }
-  var id = document.getElementById("codigo").value;
 
   $.ajax({
     data: {
-      ConfirmarRelacion: 1,
-      id: id,
-      relacion: relacion,
+      AgregarRelacion: 1,
+      id_padre: idPadre,
+      id_hijo: idHijo,
     },
     url: "Procesos/php/funciones.php",
     type: "post",
-    success: function (respuesta) {
-      var jsonData = JSON.parse(respuesta);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
-        toast("success", "Exito !", "Registro Actualizado.");
+        toast("success", "Listo !", "Cliente relacionado agregado.");
+        $("#relaciones_tabla").DataTable().ajax.reload(null, false);
+      } else {
+        toast("error", "Error", jsonData.error || "No se pudo agregar la relación.");
       }
+      $("#agregar_relacionado").val(null).trigger("change.select2");
+    },
+    error: function () {
+      toast("error", "Error", "No se pudo agregar la relación.");
+      $("#agregar_relacionado").val(null).trigger("change.select2");
     },
   });
 });
 
 $(document).on("change", 'input[type="checkbox"]', function (e) {
-  if (this.id == "accesoweb") {
-    if (this.checked) {
-      $("#accesoweb").val(1);
-    } else {
-      $("#accesoweb").val(0);
-    }
-  }
   if (this.id == "retira") {
-    if (this.checked) {
-      $("#retira").val(1);
-      $("#retira_label").html("El Cliente Requiere Retiros y Entregas");
-    } else {
-      $("#retira").val(0);
-      $("#retira_label").html("El Cliente Requiere Solo Entregas");
-    }
+    var idCliente = document.getElementById("codigo").value;
+    var nuevoValor = this.checked ? 1 : 0;
+
+    $("#retira").val(nuevoValor);
+    $("#retira_label").html(
+      nuevoValor
+        ? "El Cliente Requiere Solo Entregas"
+        : "El Cliente Requiere Retiros y Entregas",
+    );
+
+    $.ajax({
+      data: {
+        ActualizarRetiro: 1,
+        id: idCliente,
+        retiro: nuevoValor,
+      },
+      url: "Procesos/php/funciones.php",
+      type: "post",
+      dataType: "json",
+      success: function (jsonData) {
+        if (jsonData.success != 1) {
+          toast("error", "Error", "No se pudo guardar el cambio.");
+        }
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo guardar el cambio.");
+      },
+    });
   }
 });
 
@@ -1858,9 +1913,15 @@ $("#buscarcliente").change(function () {
   obtenerUsuarios();
 
   document.getElementById("crearcliente").style.display = "none";
-  document.getElementById("relacion_select").style.display = "none";
-  document.getElementById("relacion").style.display = "block";
-  $("#claveweb_label").prop("readonly", false);
+
+  // Limpio "Solo Entregas" y Accesos Web al toque, así no se ve (ni se puede guardar
+  // por error) el valor del cliente anterior mientras llega la respuesta del nuevo.
+  $("#retira").prop("checked", false).val(0);
+  $("#retira_label").html("");
+  $("#accesos_web_lista").html(
+    '<div class="text-muted" style="font-size:13px">Cargando...</div>',
+  );
+  $("#btn_crear_acceso_web").hide();
 
   // Si el modal de "Asociar Pago" quedó abierto de la selección anterior, se cierra:
   // sus checkboxes/arrays internos (checkedPagos, checkedFacturas, etc. en cargarpago.js)
@@ -1975,8 +2036,6 @@ $("#buscarcliente").change(function () {
         $("#observaciones").val(jsonData.Observaciones);
         $("#horario_entrega_cliente").val(jsonData.HorarioEntregaSolicitado);
         $("#ingresosbrutos").val(jsonData.IngresosBrutos);
-        $("#relacionasignada").val(jsonData.RelacionAsignada);
-        $("#relacionasignada_label").val(jsonData.RelacionAsignada_label);
         //FACTURACION
         $("#razonsocial_facturacion").val(jsonData.RazonSocial_f);
         $("#direccion_facturacion").val(jsonData.Direccion_f);
@@ -2024,19 +2083,14 @@ $("#buscarcliente").change(function () {
           // document.getElementById("meli_switch").checked = false;
         }
 
-        if (jsonData.AccesoWeb == 1) {
-          document.getElementById("accesoweb").checked = true;
-          $("#claveweb_label").get(0).type = "password";
-        } else {
-          document.getElementById("accesoweb").checked = false;
-        }
-        if (jsonData.Retira == 1) {
-          document.getElementById("retira").checked = true;
-          $("#retira_label").html("El Cliente Requiere Solo Entregas");
-        } else {
-          document.getElementById("retira").checked = false;
-          $("#retira_label").html("El Cliente Requiere Retiros y Entregas");
-        }
+        cargarAccesosWeb(document.getElementById("codigo").value, jsonData.Mail);
+        var retiraDelCliente = jsonData.Retira == 1 ? 1 : 0;
+        $("#retira").prop("checked", retiraDelCliente == 1).val(retiraDelCliente);
+        $("#retira_label").html(
+          retiraDelCliente == 1
+            ? "El Cliente Requiere Solo Entregas"
+            : "El Cliente Requiere Retiros y Entregas",
+        );
         var id = document.getElementById("codigo").value;
 
         $("#basic").DataTable({
@@ -2262,10 +2316,26 @@ $("#buscarcliente").change(function () {
               },
               className: "dt-body-center",
             },
+            {
+              data: "id",
+              orderable: false,
+              className: "dt-body-center",
+              render: function (data, type, row) {
+                var nombre = (row.nombrecliente || "").replace(/'/g, "\\'");
+                return (
+                  "<a href='#' onclick=\"desvincularRelacion(" +
+                  row.id +
+                  ",'" +
+                  nombre +
+                  "'); return false;\" title='Desvincular'>" +
+                  "<i class='mdi mdi-18px mdi-trash-can text-danger'></i></a>"
+                );
+              },
+            },
           ],
           select: {
             style: "os",
-            selector: "td:not(:last-child)", // no row selection on last column
+            selector: "td:not(:nth-last-child(-n+2))", // no row selection on the AdminEnvios/Acciones columns
           },
           rowCallback: function (row, data) {
             // Set the checked state of the checkbox in the table
@@ -2491,31 +2561,6 @@ $("#buscarcliente").change(function () {
 
   $.ajax({
     data: {
-      Usuario: 1,
-      id: id,
-    },
-    url: "Procesos/php/funciones.php",
-    type: "post",
-    dataType: "json",
-
-    success: function (jsonData) {
-      if (miClienteChangeSeq !== _clienteChangeSeq) return;
-      if (
-        jsonData &&
-        Array.isArray(jsonData.data) &&
-        jsonData.data.length > 0 &&
-        jsonData.data[0].Pass != null
-      ) {
-        $("#claveweb_label").val(jsonData.data[0].Pass);
-      } else {
-        $("#claveweb_label").val("");
-        console.warn("No se encontraron datos de usuario:", jsonData);
-      }
-    },
-  });
-
-  $.ajax({
-    data: {
       TotalRemitos: 1,
       id: id,
     },
@@ -2571,15 +2616,260 @@ $("#buscarcliente").change(function () {
   });
 });
 
-$("#claveweb_button").click(function () {
-  $("#claveweb_button2").show();
-  $("#claveweb_button").hide();
-  $("#claveweb_label").prop("type", "text");
+//ACCESOS WEB
+function cargarAccesosWeb(clienteId, mailDefault) {
+  $.ajax({
+    data: { ListarAccesosWeb: 1, id: clienteId },
+    url: "Procesos/php/accesos_web.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      renderAccesosWeb(
+        jsonData && Array.isArray(jsonData.data) ? jsonData.data : [],
+        clienteId,
+        mailDefault,
+      );
+    },
+    error: function () {
+      renderAccesosWeb([], clienteId, mailDefault);
+    },
+  });
+}
+
+function renderAccesosWeb(lista, clienteId, mailDefault) {
+  var $lista = $("#accesos_web_lista");
+  $lista.empty();
+
+  var $btnCrear = $("#btn_crear_acceso_web");
+  $btnCrear.data("cliente-id", clienteId);
+  $btnCrear.data("mail-default", mailDefault || "");
+  $btnCrear.show();
+
+  if (!lista || lista.length === 0) {
+    $lista.append(
+      '<div class="text-muted" style="font-size:13px">Este cliente todavía no puede entrar a la web. Creá un acceso para darle usuario y contraseña.</div>',
+    );
+    return;
+  }
+
+  lista.forEach(function (usuario) {
+    var activo = usuario.ACTIVO == 1 && usuario.Estado === "Activo";
+    var badge = activo
+      ? '<span class="badge bg-success" title="Puede ingresar a la web">Activo</span>'
+      : '<span class="badge bg-secondary" title="No puede ingresar a la web">Inactivo</span>';
+    var ultimoAcceso = usuario.UltimoAcceso
+      ? '<div class="mt-1"><small class="text-muted">Último acceso: ' +
+        usuario.UltimoAcceso +
+        "</small></div>"
+      : "";
+
+    var fila =
+      '<div class="border rounded p-2 mb-2 acceso-web-fila" data-usuario-id="' +
+      usuario.id +
+      '">' +
+      '<div class="d-flex justify-content-between align-items-center">' +
+      '<div><b>' +
+      (usuario.Nombre ? usuario.Nombre + " — " : "") +
+      usuario.Usuario +
+      "</b> " +
+      badge +
+      "</div>" +
+      '<div class="d-flex align-items-center">' +
+      '<div class="form-check form-switch d-inline-block me-2">' +
+      '<input type="checkbox" class="form-check-input toggle-acceso-web" id="toggle_acceso_' +
+      usuario.id +
+      '" ' +
+      (activo ? "checked" : "") +
+      ">" +
+      '<label class="form-check-label" for="toggle_acceso_' +
+      usuario.id +
+      '"></label>' +
+      "</div>" +
+      '<button type="button" class="btn btn-sm btn-outline-warning me-2 btn-resetear-acceso-web">Resetear Contraseña</button>' +
+      '<button type="button" class="btn btn-sm btn-outline-danger btn-eliminar-acceso-web" title="Eliminar acceso"><i class="mdi mdi-trash-can"></i></button>' +
+      "</div>" +
+      "</div>" +
+      ultimoAcceso +
+      "</div>";
+
+    $lista.append(fila);
+  });
+}
+
+$("#btn_crear_acceso_web").click(function () {
+  var clienteId = $(this).data("cliente-id");
+  var mailDefault = $(this).data("mail-default") || "";
+
+  // El acceso web siempre sale de un Contacto ya cargado (necesitamos nombre,
+  // apellido y mail reales) — se busca la lista antes de mostrar el picker.
+  $.ajax({
+    data: { Contact: 1, id: clienteId },
+    url: "Procesos/php/tablas.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      var contactos = jsonData && Array.isArray(jsonData.data) ? jsonData.data : [];
+
+      if (contactos.length === 0) {
+        Swal.fire({
+          icon: "info",
+          title: "No hay contactos cargados",
+          html: "Para crear un acceso web primero hay que cargar un contacto (nombre, apellido y mail) en la pestaña <b>Contacto</b>.",
+          confirmButtonText: "Entendido",
+        });
+        return;
+      }
+
+      var inputOptions = {};
+      contactos.forEach(function (c) {
+        inputOptions[c.id] =
+          c.Nombre + " " + c.Apellido + " (" + c.email + ")";
+      });
+
+      Swal.fire({
+        title: "Crear Acceso Web",
+        input: "select",
+        inputLabel: "Contacto",
+        inputPlaceholder: "Seleccioná un contacto",
+        inputOptions: inputOptions,
+        showCancelButton: true,
+        confirmButtonText: "Crear",
+        cancelButtonText: "Cancelar",
+        inputValidator: function (value) {
+          if (!value) return "Seleccioná un contacto.";
+        },
+      }).then(function (result) {
+        if (!result.isConfirmed) return;
+
+        $.ajax({
+          data: { CrearAccesoWeb: 1, id: clienteId, contacto_id: result.value },
+          url: "Procesos/php/accesos_web.php",
+          type: "post",
+          dataType: "json",
+          success: function (jsonData) {
+            if (jsonData.success == 1) {
+              toast(
+                "success",
+                "Listo !",
+                jsonData.mail_enviado
+                  ? "Acceso creado y notificado por mail."
+                  : "Acceso creado, pero no se pudo enviar el mail.",
+              );
+              cargarAccesosWeb(clienteId, mailDefault);
+            } else {
+              toast("error", "Error", jsonData.error || "No se pudo crear el acceso.");
+            }
+          },
+          error: function () {
+            toast("error", "Error", "No se pudo crear el acceso.");
+          },
+        });
+      });
+    },
+    error: function () {
+      toast("error", "Error", "No se pudieron cargar los contactos.");
+    },
+  });
 });
-$("#claveweb_button2").click(function () {
-  $("#claveweb_button").show();
-  $("#claveweb_button2").hide();
-  $("#claveweb_label").prop("type", "password");
+
+$("#accesos_web_lista").on("click", ".btn-resetear-acceso-web", function () {
+  var usuarioId = $(this).closest(".acceso-web-fila").data("usuario-id");
+  var clienteId = document.getElementById("codigo").value;
+
+  Swal.fire({
+    icon: "warning",
+    title: "Resetear Contraseña",
+    html: "Se va a generar una contraseña nueva y notificarla por mail; la actual dejará de funcionar.",
+    showCancelButton: true,
+    confirmButtonText: "Sí, resetear",
+    cancelButtonText: "Cancelar",
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      data: { ResetearAccesoWeb: 1, usuario_id: usuarioId },
+      url: "Procesos/php/accesos_web.php",
+      type: "post",
+      dataType: "json",
+      success: function (jsonData) {
+        if (jsonData.success) {
+          toast("success", "Listo !", "Contraseña reseteada y notificada por mail.");
+        } else {
+          toast("error", "Error", jsonData.error || "No se pudo resetear la contraseña.");
+        }
+        cargarAccesosWeb(clienteId);
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo resetear la contraseña.");
+        cargarAccesosWeb(clienteId);
+      },
+    });
+  });
+});
+
+$("#accesos_web_lista").on("change", ".toggle-acceso-web", function () {
+  var $checkbox = $(this);
+  var usuarioId = $checkbox.closest(".acceso-web-fila").data("usuario-id");
+  var activo = $checkbox.is(":checked") ? 1 : 0;
+  var clienteId = document.getElementById("codigo").value;
+  var mailDefault = $("#btn_crear_acceso_web").data("mail-default") || "";
+
+  $.ajax({
+    data: { ToggleAccesoWeb: 1, usuario_id: usuarioId, activo: activo },
+    url: "Procesos/php/accesos_web.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      if (jsonData.success == 1) {
+        toast("success", "Registro Actualizado !", "Se han realizado cambios.");
+        // Recargo la lista para que el badge Activo/Inactivo refleje el cambio.
+        cargarAccesosWeb(clienteId, mailDefault);
+      } else {
+        $checkbox.prop("checked", !activo);
+        toast("error", "Error", jsonData.error || "No se pudo actualizar el acceso.");
+      }
+    },
+    error: function () {
+      $checkbox.prop("checked", !activo);
+      toast("error", "Error", "No se pudo actualizar el acceso.");
+    },
+  });
+});
+
+$("#accesos_web_lista").on("click", ".btn-eliminar-acceso-web", function () {
+  var usuarioId = $(this).closest(".acceso-web-fila").data("usuario-id");
+  var clienteId = document.getElementById("codigo").value;
+  var mailDefault = $("#btn_crear_acceso_web").data("mail-default") || "";
+
+  Swal.fire({
+    icon: "warning",
+    title: "Eliminar acceso web",
+    html: "Se va a borrar este usuario y contraseña. El cliente ya no va a poder entrar a la web con estos datos.",
+    showCancelButton: true,
+    confirmButtonText: "Sí, eliminar",
+    cancelButtonText: "Cancelar",
+  }).then(function (result) {
+    if (!result.isConfirmed) return;
+
+    $.ajax({
+      data: { EliminarAccesoWeb: 1, usuario_id: usuarioId },
+      url: "Procesos/php/accesos_web.php",
+      type: "post",
+      dataType: "json",
+      success: function (jsonData) {
+        if (jsonData.success == 1) {
+          toast("success", "Listo !", "Acceso eliminado.");
+        } else {
+          toast("error", "Error", jsonData.error || "No se pudo eliminar el acceso.");
+        }
+        cargarAccesosWeb(clienteId, mailDefault);
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo eliminar el acceso.");
+        cargarAccesosWeb(clienteId, mailDefault);
+      },
+    });
+  });
 });
 
 $("#agregar_botton").click(function () {

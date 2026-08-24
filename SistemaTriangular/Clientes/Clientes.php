@@ -2005,6 +2005,12 @@
                                                             <span id="perfil_conctact" class="d-none d-md-block">Contacto</span>
                                                         </a>
                                                     </li>
+                                                    <li class="nav-item">
+                                                        <a href="#accesos_web-information" data-bs-toggle="tab" aria-expanded="false" class="nav-link">
+                                                            <i class="mdi mdi-key-variant d-md-none d-block"></i>
+                                                            <span class="d-none d-md-block">Accesos Web</span>
+                                                        </a>
+                                                    </li>
                                                 </ul>
                                             </div>
                                         </div>
@@ -2140,52 +2146,14 @@
                                                     </div>
                                                     <div class="row">
 
-                                                        <div class="col-lg-4 mt-3" id="relacion_select" style="display:none">
-                                                            <div class="form-group">
-                                                                <label for="nueva_relacion">Relacion</label>
-                                                                <select id="nueva_relacion" class="form-control select2" data-toggle="select2">
-                                                                    <option value="">Seleccionar Relacion</option>
-                                                                    <!-- El optgroup se insertará dinámicamente -->
-                                                                </select>
-                                                            </div>
+                                                        <div class="col-lg-3 mt-3">
+                                                            <div class="form-check form-switch">
+                                                                <input type="checkbox" class="form-check-input" id="retira" name="retira">
+                                                                <label class="form-check-label" for="retira" data-on-label="1" data-off-label="0">Solo Entregas</label>
 
-                                                            <div class="col-lg-4 mt-3" id="relacion">
-                                                                <div class="form-group">
-                                                                    <label for="relacion">Relaciones</label>
-                                                                    <div class="input-group mb-3">
-                                                                        <input type="text" name="relacionasignada_label" id="relacionasignada_label" onclick='javascript.void(0)' class="form-control" placeholder="Relacion" aria-label="Relacion" aria-describedby="button-addon2" readonly>
-                                                                        <input type="hidden" name="relacionasignada" id="relacionasignada" onclick='javascript.void(0)' class="form-control" placeholder="Relacion" aria-label="Relacion" aria-describedby="button-addon2">
-                                                                        <div class="input-group-append">
-                                                                            <button id="modificar_relacion" type="button" class="btn btn-outline-info"><i class="uil-exchange-alt"></i> Cambiar</button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
                                                             </div>
-                                                            <div class="col-lg-4 mt-3">
-                                                                <div class="form-group">
-                                                                    <div class="custom-control custom-switch">
-                                                                        <input type="checkbox" class="custom-control-input" id="accesoweb" name="accesoweb">
-                                                                        <label class="custom-control-label" for="accesoweb" data-on-label="1" data-off-label="0">Acceso Web</label>
-                                                                    </div>
-                                                                    <div class="input-group mt-1">
-                                                                        <input type="text" name="claveweb_label" id="claveweb_label" onclick='javascript.void(0)' class="form-control" placeholder="Escriba la clave web aquí" aria-label="Clave Web" aria-describedby="button-addon2" readonly>
-                                                                        <!--                                                       <input type="hidden" name="relacionasignada" id="relacionasignada" onclick='javascript.void(0)' class="form-control" placeholder="Relacion" aria-label="Relacion" aria-describedby="button-addon2"> -->
-                                                                        <div class="input-group-append">
-                                                                            <button id="claveweb_button" type="button" class="btn btn-outline-info"><i class="mdi mdi-18px mdi-eye"></i></button>
-                                                                            <button style="display:none" id="claveweb_button2" type="button" class="btn btn-outline-info"><i class="mdi mdi-18px mdi-eye-off"></i></button>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            <div class="col-lg-3 mt-3">
-                                                                <div class="custom-control custom-switch">
-                                                                    <input type="checkbox" class="custom-control-input" id="retira" name="retira">
-                                                                    <label class="custom-control-label" for="retira" data-on-label="1" data-off-label="0">Solo Entregas</label>
-
-                                                                </div>
-                                                                <div class="mt-3">
-                                                                    <a id="retira_label"></a>
-                                                                </div>
+                                                            <div class="mt-3">
+                                                                <a id="retira_label"></a>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -2436,6 +2404,28 @@
                                                     </div>
                                                 </div>
                                             </div>
+
+                                            <div class="tab-pane" id="accesos_web-information">
+                                                <div class="row">
+                                                    <div class="text-end">
+                                                        <button id="btn_crear_acceso_web" type="button" class="btn btn-success" style="display:none">
+                                                            <i class="mdi mdi-account-plus"></i> Crear usuario y contraseña
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
+                                                    <div class="col-lg-8 mt-3">
+                                                        <div>
+                                                            <small class="text-muted">Usuario y contraseña con los que este cliente entra a plataforma.caddy.com.ar. Para que vea envíos de clientes relacionados, además hay que tildar "Adm. Web" en la pestaña Relaciones.</small>
+                                                        </div>
+                                                        <div class="border rounded p-2 mt-1">
+                                                            <div id="accesos_web_lista">
+                                                                <div class="text-muted" style="font-size:13px">Cargando...</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
 
@@ -2540,7 +2530,18 @@
                                             <div class="col-sm-12 mb-3">
                                                 <h4 class="mt-2">Relaciones</h4>
 
-                                                En la siguiente tabla figuran los clientes relacionados con el cliente principal, en la seccion Adm.Web se puede seleccionar los clientes relacionados que el cliente principal puede administrar desde su pataforma web.
+En la siguiente tabla figuran los clientes relacionados con el cliente principal, en la seccion Adm.Web se puede seleccionar los clientes relacionados que el cliente principal puede administrar desde su pataforma web. Para que el cliente principal pueda entrar a la web y ver esto, necesita tener un usuario propio creado en "Accesos Web" (pestaña Datos Cliente).
+                                                <div class="row">
+                                                    <div class="col-lg-6 mt-3">
+                                                        <div class="form-group">
+                                                            <label for="agregar_relacionado">Agregar cliente relacionado</label>
+                                                            <select id="agregar_relacionado" class="form-control select2" data-toggle="select2">
+                                                                <option value="">Buscar cliente para relacionar...</option>
+                                                            </select>
+                                                            <small class="text-muted">Buscá y seleccioná un cliente existente para agregarlo como relacionado de este cliente (este cliente pasa a ser su principal).</small>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                                 <div class="row">
                                                     <div class="col-md-12 mt-3 mb-3">
                                                         <h5 class="card-title mb-2">El cliente esta administrando las siguientes cuentas:</h5>
@@ -2559,10 +2560,12 @@
                                                                         <th>Direccion</th>
                                                                         <th>Telefono</th>
                                                                         <th>Adm. Web</th>
+                                                                        <th>Acciones</th>
                                                                     </tr>
                                                             </tbody>
                                                             <tfoot>
                                                                 <tr>
+                                                                    <th></th>
                                                                     <th></th>
                                                                     <th></th>
                                                                     <th></th>
@@ -3320,7 +3323,7 @@
     <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
 
-    <script src="Procesos/js/funciones.js"></script>
+    <script src="Procesos/js/funciones.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/funciones.js'); ?>"></script>
     <script src="Procesos/js/factura_afip.js"></script>
     <!-- <script src="Procesos/js/factura_afip_proforma.js"></script> -->
 
@@ -3335,7 +3338,7 @@
     <script src="Procesos/js/clientes.js"></script>
 
     <!-- end demo js-->
-    <script src="Procesos/js/select2_clientes.js"></script>
+    <script src="Procesos/js/select2_clientes.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/select2_clientes.js'); ?>"></script>
 
     <!-- webhook -->
     <script src="Procesos/js/webhook.js"></script>

@@ -451,6 +451,26 @@ if (isset($_POST['AdminEnvios'])) {
   }
 }
 
+if (isset($_POST['ActualizarRetiro'])) {
+  $id = intval($_POST['id'] ?? 0);
+  $retiro = intval($_POST['retiro'] ?? 0) ? 1 : 0;
+
+  if ($id <= 0) {
+    echo json_encode(array('success' => 0, 'error' => 'Cliente inválido.'));
+    exit;
+  }
+
+  $stmt = $mysqli->prepare("UPDATE Clientes SET Retiro=? WHERE id=? LIMIT 1");
+  $stmt->bind_param("ii", $retiro, $id);
+
+  if ($stmt->execute()) {
+    echo json_encode(array('success' => 1));
+  } else {
+    echo json_encode(array('success' => 0, 'error' => $mysqli->error));
+  }
+  $stmt->close();
+}
+
 if (isset($_POST['ClearTarifa'])) {
   // $sql="DELETE FROM `ClientesyServicios` WHERE id='$_POST[id]'"; 
   if ($mysqli->query($sql)) {
@@ -593,6 +613,53 @@ if (isset($_POST['ConfirmarRelacion'])) {
   if ($mysqli->query("UPDATE Clientes SET Relacion='$_POST[relacion]' WHERE id='$_POST[id]'")) {
     echo json_encode(array('success' => 1));
   }
+}
+
+if (isset($_POST['DesvincularRelacion'])) {
+
+  $id = intval($_POST['id'] ?? 0);
+  if ($id <= 0) {
+    echo json_encode(array('success' => 0, 'error' => 'Cliente inválido.'));
+    exit;
+  }
+
+  $stmt = $mysqli->prepare("UPDATE Clientes SET Relacion='', AdminEnvios=0 WHERE id=? LIMIT 1");
+  $stmt->bind_param("i", $id);
+
+  if ($stmt->execute()) {
+    echo json_encode(array('success' => 1));
+  } else {
+    echo json_encode(array('success' => 0, 'error' => 'No se pudo desvincular: ' . $mysqli->error));
+  }
+  $stmt->close();
+}
+
+// Agrega un cliente existente como relacionado (hijo) del cliente que está abierto
+// en la ficha (padre) — es el flujo inverso a ConfirmarRelacion: acá te parás en el
+// padre y buscás/agregás hijos, en vez de pararte en el hijo y elegir su padre.
+if (isset($_POST['AgregarRelacion'])) {
+
+  $idPadre = intval($_POST['id_padre'] ?? 0);
+  $idHijo = intval($_POST['id_hijo'] ?? 0);
+
+  if ($idPadre <= 0 || $idHijo <= 0) {
+    echo json_encode(array('success' => 0, 'error' => 'Cliente inválido.'));
+    exit;
+  }
+  if ($idPadre === $idHijo) {
+    echo json_encode(array('success' => 0, 'error' => 'Un cliente no puede relacionarse consigo mismo.'));
+    exit;
+  }
+
+  $stmt = $mysqli->prepare("UPDATE Clientes SET Relacion=? WHERE id=? LIMIT 1");
+  $stmt->bind_param("ii", $idPadre, $idHijo);
+
+  if ($stmt->execute()) {
+    echo json_encode(array('success' => 1));
+  } else {
+    echo json_encode(array('success' => 0, 'error' => 'No se pudo agregar la relación: ' . $mysqli->error));
+  }
+  $stmt->close();
 }
 
 if (isset($_POST['Actualizar'])) {
@@ -881,16 +948,6 @@ if (isset($_POST['Datos'])) {
     'TareasAsana' => $row['TareasAsana'] ?? null,
     'TareasAsana_gid' => $row['TareasAsana_gid'] ?? null
   ));
-}
-
-if (isset($_POST['Usuario'])) {
-  $sql = "SELECT usuarios.PASSWORD as Pass,ACTIVO,Mail FROM usuarios WHERE NdeCliente='$_POST[id]'";
-  $Resultado = $mysqli->query($sql);
-  $rows = array();
-  while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-    $rows[] = $row;
-  }
-  echo json_encode(array('data' => $rows));
 }
 
 if (isset($_POST['Fechas'])) {
