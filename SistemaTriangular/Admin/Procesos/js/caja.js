@@ -74,19 +74,22 @@ $(document).on("click", ".cerrar-modal-informe", function () {
   $("#modal_informe_cierre").modal("hide");
 });
 
+// PDF con el diseño del sistema (membrete, card de datos, footer paginado),
+// mismo patrón que window.imprimirAsiento() en contabilidad.js — antes era
+// window.print() sobre el modal, sin membrete ni paginado.
+var idCajaInformeActual = null;
+
 $(document).on("click", "#btn_imprimir_informe_cierre", function () {
-  document.body.classList.add("print-informe-cierre");
-  window.print();
-
-  setTimeout(function () {
-    document.body.classList.remove("print-informe-cierre");
-  }, 500);
+  if (!idCajaInformeActual) return;
+  window.open(
+    "../Admin/Informes/CierreCajapdf.php?idCaja=" +
+      encodeURIComponent(idCajaInformeActual),
+    "_blank",
+  );
 });
 
-window.addEventListener("afterprint", function () {
-  document.body.classList.remove("print-informe-cierre");
-});
 function verInformeCierre(idCaja) {
+  idCajaInformeActual = idCaja;
   // ocultar toast flotante
   if (myToast) {
     myToast.reset();
