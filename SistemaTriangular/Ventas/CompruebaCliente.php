@@ -371,6 +371,6 @@ a:
 <script async defer
 src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&libraries=places&callback=initMap">
 </script>
-<?
+<?php
 ob_end_flush();	
 ?>

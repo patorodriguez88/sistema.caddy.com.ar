@@ -62,7 +62,7 @@ $Dominio = $_GET['Dominio'];
     }
   </script>
 
-  <?
+  <?php
 
   echo "<div id='contenedor'>";
   echo "<div id='cabecera'>";
@@ -589,7 +589,7 @@ $Dominio = $_GET['Dominio'];
       <script>
         alertify.error("Los km no se cargaron porque ya existe otra orden en Alta o Cargada");
       </script>
-    <?
+    <?php
       $Kilometros = "";
       $Observaciones = "";
       $CombustibleSalida = "";
@@ -650,7 +650,7 @@ $Dominio = $_GET['Dominio'];
     <script type="text/javascript">
       agregar_calendario();
     </script>
-    <?
+    <?php
     $Recorrido = $_GET['recorrido_t'];
     // // AGREGAR EN HOJADERUTA  EL NUMERO DE ORDEN A LAS QUE CORRESPONDAN CON EL RECORRIDO Y ESTEN ABIERTAS	
     // $sql3="UPDATE HojaDeRuta SET NumeroDeOrden ='$Numero' WHERE Recorrido='$Recorrido' AND Estado='Abierta' AND Eliminado='0'";
@@ -682,8 +682,8 @@ $Dominio = $_GET['Dominio'];
     // mysql_query($sql5);
 
     ?><script>
-      window.open('Informes/ControldeVehiculospdf.php?NO=<? echo $Numero; ?>');
-    </script><?
+      window.open('Informes/ControldeVehiculospdf.php?NO=<?php echo $Numero; ?>');
+    </script><?php
               // header("location:Logistica.php");
             }
             //-------------------------------------------------HASTA ACA ALTA ORDENES DE SALIDA----------------------------------	
@@ -703,7 +703,7 @@ $Dominio = $_GET['Dominio'];
               ?>
         <script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
         <script language="JavaScript" type="text/javascript">
-          alertify.error("ERROR: La orden <? echo $Orden; ?> ya fue cargada")
+          alertify.error("ERROR: La orden <?php echo $Orden; ?> ya fue cargada")
         </script>
       <?php
                   goto a;
@@ -718,7 +718,7 @@ $Dominio = $_GET['Dominio'];
       ?>
         <script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
         <script language="JavaScript" type="text/javascript">
-          alertify.error("ERROR: La orden <? echo $Orden; ?> esta Pendiente, debe cerrar la orden anterior.")
+          alertify.error("ERROR: La orden <?php echo $Orden; ?> esta Pendiente, debe cerrar la orden anterior.")
         </script>
       <?php
                   goto a;
@@ -735,7 +735,7 @@ $Dominio = $_GET['Dominio'];
             document.getElementById('nombrecliente_t').style.display = 'block';
           });
         </script>
-      <?
+      <?php
 
                   //NOMBRE CLIENTE
                   $sql = mysql_query("SELECT nombrecliente FROM Clientes WHERE id='$fileCodigoProductos[Cliente]'");
@@ -802,7 +802,7 @@ document.getElementById("botonCargar").style='opacity:0.5;filter:aplpha(opacity=
 // document.getElementsByName('Orden100').disabled=true;
 </script>
  -->
-      <?
+      <?php
                 }
                 echo "<div><label>Acompañante:</label><input name='acompanante_t' type='text' style='width:250px;'/></div>";
                 echo "<div><label>Kilometros:</label><input id='km' name='kilometros_t' type='text' value='" . $file[Kilometros] . "' style='width:120px;'/></div>";
@@ -842,7 +842,7 @@ document.getElementById("botonCargar").style='opacity:0.5;filter:aplpha(opacity=
       <script>
         alertify.error("Los km no se cargaron porque ya existe otra orden en Alta o Cargada");
       </script>
-      <?
+      <?php
                 $Kilometros = "";
                 $Observaciones = "";
                 $CombustibleSalida = "";

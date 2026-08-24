@@ -20,7 +20,7 @@ include("../conexionmy.php");
 		<script src="smartphone/js/mobile.js"></script>
 </head>
 <body>
-<?									
+<?php									
 
 //---------------------Cliente
 echo "<div id='myDiv' style='visibility:visible'>";

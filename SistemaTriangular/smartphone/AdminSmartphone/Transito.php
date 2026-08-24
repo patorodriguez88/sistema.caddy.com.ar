@@ -71,7 +71,7 @@ $Recorrido=$_SESSION['RecorridoAsignado'];
 //         document.getElementById("ejemplo").innerHTML = mensaje;
         }
 </script> -->
-<?                      
+<?php                      
                       
 if($_POST['Valor']=='Aceptar'){
   
@@ -83,7 +83,7 @@ $Recorrido=$_SESSION['RecorridoAsignado'];
   alert("NO TENES NINGUN RECORRIDO ASINGADO, NO SE PUEDE CARGAR CODIGOS DE REPARTO.");
   location.href ="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/Cpanel.php";
   </script>                      
-  <?
+  <?php
   }
   
 $CodigoSeguimiento=$_POST['codigo_t'];    
@@ -96,14 +96,14 @@ $datos=mysql_fetch_array($Vacio);
 			alert("ERROR EL REMITO NO EXISTE");
       location.href ="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/Cpanel.php";
 		</script>
-		<?
+		<?php
     }elseif($datos[Entregado]==1){
 			?>
 		<script language="JavaScript" type="text/javascript">
-    alert("EL REMITO <? echo $CodigoSeguimiento; ?> YA FUE ENTREGADO");
+    alert("EL REMITO <?php echo $CodigoSeguimiento; ?> YA FUE ENTREGADO");
     location.href ="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/Cpanel.php";
    </script>
-		<?
+		<?php
 		}
 
 

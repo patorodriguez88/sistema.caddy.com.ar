@@ -1,4 +1,4 @@
-<?
+<?php
 ob_start();
 session_start();
 ?>
@@ -10,7 +10,7 @@ session_start();
     <link rel="stylesheet" href="../css/nuevo.css">
   </head>
   <body>
-<? 
+<?php 
 echo "<div id='contenedor'>"; 
   echo "<div id='cabecera'>"; 
   include("../Menu/MenuGestion.php"); 

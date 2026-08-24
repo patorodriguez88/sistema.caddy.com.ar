@@ -1,4 +1,4 @@
-<?
+<?php
     $dato1=$_POST[id];
     $host="localhost";
     $user="dinter6_prodrig";

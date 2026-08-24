@@ -102,7 +102,7 @@ function cuenta(){
    document.forms[0].caracteres.value=document.forms[0].observaciones_t.value.length 
 } 
 </script>  
-<?
+<?php
 //  goto a;                     
 if($_POST['Valor']=='Aceptar'){
 $CodigoSeguimiento=$_POST['codigoseguimiento_t'];
@@ -389,7 +389,7 @@ echo "<h3>Observaciones: (Max:200):<input type='text' name='caracteres' size='4'
 echo "<textarea rows='3' cols='40' name='observaciones_t' value='' onKeyDown='valida_longitud()' onKeyUp='valida_longitud()'></textarea>";
 ?>
 <!-- <iframe name="imagenes" width="135" height="200" marginwidth="0" marginheight="0" frameBorder=0 noResize align="top" src="../firma/firma.html"></iframe>  -->
-<?
+<?php
 echo "<input class='button-big' name='Valor' type='submit' value='Aceptar'>";
 ?>	
 <input class="button-big" type="button" value="Cancelar" onClick="location.href='HojaDeRuta.php'">

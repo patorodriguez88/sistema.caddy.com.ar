@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 $LocalidadOrigen=$_POST[localidadorigen];  

@@ -1704,7 +1704,7 @@
                             <div class="modal-content">
                                 <form method="POST" class="needs-validation" data-toggle="validator" data-disable="false">
                                     <div class="modal-header modal-colored-header bg-success">
-                                        <h4 class="modal-title" id="success-header-modalLabel">Crear Nuevo Cliente</h4>
+                                        <h4 class="modal-title text-white" id="success-header-modalLabel">Crear Nuevo Cliente</h4>
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">

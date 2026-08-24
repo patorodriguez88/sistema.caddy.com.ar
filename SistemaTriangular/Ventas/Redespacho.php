@@ -53,13 +53,13 @@ mysql_query("UPDATE TransClientes SET Redespacho='$id' WHERE id='$id'")){
 <script>
 alertify.success("Codigos Redespachados con Exito");
 </script>
-<?
+<?php
 }else{
  ?>
 <script>
 alertify.error("Los Codigos no pudieron ser Redespachados");
 </script>
-<?
+<?php
 }
 }  
 echo "</div>"; // principal

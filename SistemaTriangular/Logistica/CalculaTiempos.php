@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 ?>
@@ -69,7 +69,7 @@ include("../ConexionBD.php");
     <br>
     <b>Waypoints:</b> <br>
     <i>(Ctrl+Click or Cmd+Click for multiple selection)</i> <br>
-<?
+<?php
   
 $Recorrido=$_SESSION['Recorrido'];
 $query="SELECT * FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Estado='Abierto' ORDER BY Posicion ";
@@ -82,7 +82,7 @@ echo "<option value='$row[Localizacion].",".$row[Ciudad]'>$row[Localizacion]</op
 ?>
        <br>
     <b>Final:</b>
-<?
+<?php
 $query="SELECT * FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Estado='Abierto' ORDER BY Posicion";
 $result = mysql_query($query);
 echo"<select id='end'>";

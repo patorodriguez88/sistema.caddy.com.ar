@@ -25,7 +25,7 @@ AND HojaDeRuta.Estado='Abierto' ORDER BY HojaDeRuta.Posicion ASC");
 <!-- Nav -->
 <nav id="nav">
 <a href="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/Transito.php">Remito en Transito</a>
-<a href="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/HojaDeRuta.php">Servicios <? echo "(".mysql_numrows($sql).")";?></a> 
+<a href="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/HojaDeRuta.php">Servicios <?php echo "(".mysql_numrows($sql).")";?></a> 
 <a href="https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/CerrarRecorrido.php">Cerrar Briefing</a> 
 <?php
 $sqlC = mysql_query("SELECT * FROM Logistica WHERE idUsuarioChofer='".$_SESSION['idusuario']."' AND Estado='Cargada' AND Eliminado='0'");
@@ -39,8 +39,8 @@ $ruta = "../../Logistica/Polizas/" . $NumeroComprobante.".pdf";
 		//o pueden darle otro nombre para que no sobreescriba el actual.
 		if (file_exists($ruta)){
     ?>
-    <a href="https://www.caddy.com.ar/SistemaTriangular/Logistica/Polizas/<? echo $NumeroComprobante;?>.pdf">Ver Poliza <? echo $Dato[Patente];?></a> 
-    <?
+    <a href="https://www.caddy.com.ar/SistemaTriangular/Logistica/Polizas/<?php echo $NumeroComprobante;?>.pdf">Ver Poliza <?php echo $Dato[Patente];?></a> 
+    <?php
     }                       
     ?>
 <!-- <a href="https://www.caddy.com.ar/SistemaTriangular/smartphone/MP/Cobrar.php">Cobrar</a>  -->

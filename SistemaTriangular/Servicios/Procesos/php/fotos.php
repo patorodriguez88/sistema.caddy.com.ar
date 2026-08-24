@@ -94,13 +94,13 @@ if (isset($_POST['MuestroQuicks'])) {
                         <div class="col-auto">
                             <div class="avatar-sm">
                                 <span class="avatar-title bg-light text-secondary rounded">
-                                    <i class="mdi mdi-camera font-18 text-<? echo $text; ?>"></i>
+                                    <i class="mdi mdi-camera font-18 text-<?php echo $text; ?>"></i>
                                 </span>
                             </div>
                         </div>
                         <div class="col ps-0">
                             <a class="text-muted fw-bold">Fotos </a>
-                            <p class="mb-0 font-13"><? echo $total_imagenes; ?></p>
+                            <p class="mb-0 font-13"><?php echo $total_imagenes; ?></p>
                         </div>
                     </div> <!-- end row -->
                 </div> <!-- end .p-2-->

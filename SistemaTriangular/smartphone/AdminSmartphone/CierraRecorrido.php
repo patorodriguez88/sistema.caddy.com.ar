@@ -27,7 +27,7 @@ include_once "../../conexionmy.php";
 			</div>
 	  	</div>
 	 	</div>
-<?
+<?php
 $Recorrido=$_SESSION['RecorridoCargaPagos'];
 
 	echo "<table width='max' border='0'>";

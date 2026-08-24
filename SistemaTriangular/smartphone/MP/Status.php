@@ -66,7 +66,7 @@ table.width200,
                       </style>                      
                       
 
-<?
+<?php
 if($_GET[status]=='rejected'){
   
 $sql=mysql_query("SELECT Debe FROM TransClientes WHERE CodigoSeguimiento='$_SESSION[cdmp]' AND Eliminado=0");
@@ -80,18 +80,18 @@ $datosql=mysql_fetch_array($sql);
   <script
     src="https://www.mercadopago.com.ar/integrations/v1/web-tokenize-checkout.js"
     data-public-key="TEST-b4e08010-5aff-4e12-828d-4c2ec6c1a153"
-    data-transaction-amount="<? echo $datosql[Debe];?>"
+    data-transaction-amount="<?php echo $datosql[Debe];?>"
     data-button-label="Reintentar"> 
   </script>
 </form>
-<?
+<?php
 }elseif($_GET[status]=='approved'){
 ?>
   <h1>¡Perfecto!</h1>
 <p>El pago se acredito de forma correcta, podes entregar el pedido.</p>
 <input class="button-big" type="button" value="Entregar el Pedido!" onClick="location.href='https://www.caddy.com.ar/SistemaTriangular/smartphone/AdminSmartphone/HojaDeRuta.php'">
 
-<?  
+<?php  
 }  
 ?>                  
                       

@@ -1,4 +1,4 @@
-<?
+<?php
 ob_start();
 session_start();
 $conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");

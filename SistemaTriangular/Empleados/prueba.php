@@ -29,7 +29,7 @@ $font2='black';
 <script src="../spryassets/spryvalidationtextfield.js" type="text/javascript"></script>
 <!-- <script src="ajax.js"></script> -->
 	</head>	
-<?
+<?php
 echo "<body style='background:".$_SESSION['ColorFondo']."'>";
 
 include("../Menu/MenuGestion.php"); 
@@ -83,7 +83,7 @@ if ($_GET['Empleados']=='Modificar'){
 				alertify.success("You've clicked OK");
 }
 	</script>
-					<?
+					<?php
 	
 // echo "<a href='Clientes.php?IdEmpleado=$Codigo&Empleados=Buscar' id='confirm'>Empleado Modificado con Exito</a><br>";
 // 	header("location:Clientes.php?IdEmpleado=$Codigo&Empleados=Buscar");			

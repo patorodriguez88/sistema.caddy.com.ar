@@ -133,7 +133,7 @@ if (isset($_POST['submit']))
                     <!-- Topbar Start -->
                     <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -143,7 +143,7 @@ if (isset($_POST['submit']))
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -275,7 +275,7 @@ if (isset($_POST['submit']))
                                 <div class="custom-file">
                                     <input type="file" class="custom-file-input" id="customFileInput" name="file">
 
-                                    <label class="custom-file-label" for="customFileInput" value="<? echo $_FILES['file']['name'];?>" disabled>Seleccione un Archivo</label>
+                                    <label class="custom-file-label" for="customFileInput" value="<?php echo $_FILES['file']['name'];?>" disabled>Seleccione un Archivo</label>
                                 </div>
                               <div class="input-group-append">
                                 <input type="submit" name="submit" value="upload" class="btn btn-primary">
@@ -287,7 +287,7 @@ if (isset($_POST['submit']))
                       </div>
                       <div class="col-lg-12 mt-2 mb-2">
                       <div id="response" class="<?php if(!empty($type)) { echo $type . " display-block"; } ?>"><?php if(!empty($message)) { echo $message; } ?></div>
-                      <input id="totalregistros" type="hidden" value="<? echo $total;?>">
+                      <input id="totalregistros" type="hidden" value="<?php echo $total;?>">
                       </div>
                     </div>
                       <div class="row" id="card" style="display:none">

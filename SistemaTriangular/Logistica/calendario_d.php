@@ -38,7 +38,7 @@ include_once "../Conexion/Conexion.php";
                     <!-- Topbar Start -->
                     <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -48,7 +48,7 @@ include_once "../Conexion/Conexion.php";
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -88,10 +88,10 @@ include_once "../Conexion/Conexion.php";
                                                       $sqlclientes=mysql_query("SELECT id,NombreCompleto FROM Empleados WHERE Puesto='Transportista' AND Inactivo=0");
                                                         while($row = mysql_fetch_array($sqlclientes)){
                                                           ?>
-                                                    <div class="external-event bg-info-lighten text-info" data-class="bg-info" data-id="<? echo $row[id];?>">
+                                                    <div class="external-event bg-info-lighten text-info" data-class="bg-info" data-id="<?php echo $row[id];?>">
                                                         <i class="mdi mdi-checkbox-blank-circle mr-2 vertical-middle"></i><?php echo $row[NombreCompleto];?>
                                                     </div>
-                                                        <?
+                                                        <?php
                                                         }
                                                       ?> 
                                                 </div>

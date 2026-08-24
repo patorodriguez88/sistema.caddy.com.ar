@@ -149,7 +149,7 @@ echo "</div>";
   }else{
     ?>
     <script>alertify.error('No hay Presupuestos Cargados para los clientes');</script>
-    <?
+    <?php
   }
 }    
     
@@ -418,7 +418,7 @@ echo "</table>";
 		<script language="JavaScript" type="text/javascript">
 			alert("DEBE SELECCIONAR AL MENOS 1 ELEMENTO")
 		</script>
-		<?
+		<?php
 goto b;	
 }
 echo "<form class='login' action='' method='get' style='width:98%'>"; 
@@ -840,7 +840,7 @@ mail($MailCliente,$asunto,$mensaje,$headers);
 		<script language="JavaScript" type="text/javascript">
 			alert("EL NUMERO DE CHEQUE YA ESTA CARGADO, NO SE CARGO")
 		</script>
-		<?
+		<?php
 goto a;
 		}
 }

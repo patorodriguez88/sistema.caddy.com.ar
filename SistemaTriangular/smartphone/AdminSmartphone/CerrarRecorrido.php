@@ -42,7 +42,7 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 									<!-- Main Content -->
 										<section>
-<?
+<?php
 if($_POST[Cerrar]=='Aceptar'){
   //PRIMERO MODIFICO LOS DATOS Y CIERRO LA ORDEN
   $Fecha=date('Y-m-d');

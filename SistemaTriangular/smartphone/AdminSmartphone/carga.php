@@ -42,7 +42,7 @@ document.getElementById('myDiv').style.visibility="hidden";
 			</div>
 	  	</div>
 	 	</div>
-<?
+<?php
 
 	 echo "<form action='' method='get'>";
 		echo "<span><label style='font-size: 1.8em;'>Recorrido:</label></span>";

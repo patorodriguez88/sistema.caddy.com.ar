@@ -1,4 +1,4 @@
-<?
+<?php
 $direccion = 'Calle Serrano 154, Madrid, España';
  
 // Obtener los resultados JSON de la peticion.

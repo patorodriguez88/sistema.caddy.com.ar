@@ -39,7 +39,7 @@ require_once('vendor/SpreadsheetReader.php');
                                         <!-- Topbar Start -->
                     <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -49,7 +49,7 @@ require_once('vendor/SpreadsheetReader.php');
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -87,7 +87,7 @@ require_once('vendor/SpreadsheetReader.php');
         <tbody>
             
 
-        <?
+        <?php
         if (isset($_POST["import"]))
         {
             
@@ -202,7 +202,7 @@ require_once('vendor/SpreadsheetReader.php');
                 <td><?php   echo $Row[17]; ?></td> 
                 </tr>   
 
-            <?
+            <?php
                 // if (!empty($nombres) || !empty($cargo) || !empty($celular) || !empty($descripcion)) {
                   
                 //     $query = "insert into tbl_productos(nombres,cargo, celular, descripcion) values('".$nombres."','".$cargo."','".$celular."','".$descripcion."')";
@@ -226,7 +226,7 @@ require_once('vendor/SpreadsheetReader.php');
                 </tbody>
 
              </table>
-             <?
+             <?php
         
          }
    unset($_POST["import"]);

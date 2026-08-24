@@ -24,7 +24,7 @@
 
       // Initialize and add the map
     function initMap() {
-    var dominio= '<? echo $_GET['pat'];?>';
+    var dominio= '<?php echo $_GET['pat'];?>';
     var dato={
         "Dominio": dominio,  
         };

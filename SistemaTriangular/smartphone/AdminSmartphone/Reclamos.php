@@ -236,11 +236,11 @@ if ($Codigo_t=''){
 		  <script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
           <script language="JavaScript" type="text/javascript">
         var pagina="http://www.revistasenlaweb.com.ar/Administrador/ReposicionesMsg.php?id=Exito"
-		<?
+		<?php
 		}else{
 		?>
 		var pagina="http://www.revistasenlaweb.com.ar/Administrador/ReposicionesMsg.php?id=Error"
-		<? 
+		<?php 
 		}
 		?> 
 		function redireccionar() 
@@ -249,7 +249,7 @@ if ($Codigo_t=''){
         } 
         setTimeout ("redireccionar()", 0);
         </script>
-<?
+<?php
 		
 	//HASTA ACA ENVIA MAIL DE RECLAMOS	
 	

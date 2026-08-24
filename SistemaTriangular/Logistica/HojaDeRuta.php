@@ -230,7 +230,7 @@ var n1 = parseFloat(document.MyForm.recorrido_t.value);
 }
 </script>
   
-<?
+<?php
   if($_GET[Ordenar]=='si'){
   echo "<script>alerta();</script>";
 }
@@ -285,14 +285,14 @@ if($_GET[Eliminarhdr]=='Aceptar'){
   $sqleliminar=$mysqli->query("UPDATE HojaDeRuta SET Eliminado=1 WHERE Recorrido='$_GET[Recorrido]' AND Estado='Abierto'");
  
   }
-    ?><script>alertify.success("Recorrido <? echo $_GET[Recorrido];?> eliminado");</script><?
-    ?><script>alertify.success("Saldo actualizado en Ctas Ctes");</script><?
-    ?><script>alertify.success("Recorrido <? echo $_GET[Recorrido];?> eliminado de Trans Clientes");</script><?
-    ?><script>alertify.success("Recorrido <? echo $_GET[Recorrido];?> eliminado de Ventas");</script><?
-    ?><script>alertify.success("Recorrido <? echo $_GET[Recorrido];?> eliminado de Hoja De Ruta");</script><?
-    ?><script>alertify.success("Recorrido <? echo $_GET[Recorrido];?> eliminado de Seguimiento");</script><?
+    ?><script>alertify.success("Recorrido <?php echo $_GET[Recorrido];?> eliminado");</script><?php
+    ?><script>alertify.success("Saldo actualizado en Ctas Ctes");</script><?php
+    ?><script>alertify.success("Recorrido <?php echo $_GET[Recorrido];?> eliminado de Trans Clientes");</script><?php
+    ?><script>alertify.success("Recorrido <?php echo $_GET[Recorrido];?> eliminado de Ventas");</script><?php
+    ?><script>alertify.success("Recorrido <?php echo $_GET[Recorrido];?> eliminado de Hoja De Ruta");</script><?php
+    ?><script>alertify.success("Recorrido <?php echo $_GET[Recorrido];?> eliminado de Seguimiento");</script><?php
   }elseif($_GET[Eliminarhdr]=='Cancelar'){
-    ?><script>alertify.error("Recorrido <? echo $_GET[Recorrido];?> no eliminado");</script><?
+    ?><script>alertify.error("Recorrido <?php echo $_GET[Recorrido];?> no eliminado");</script><?php
 }  
   
   //AGREGAR ASIGNACION
@@ -304,13 +304,13 @@ if($mysqli->query($sql)){
 <script>
  alertify.success("Fecha Actualizada en Asignaciones"); 
   </script>  
-<?  
+<?php  
 }else{
 ?>
   <script>
  alertify.error("La Fecha no se actualizo en Asignaciones"); 
   </script>  
-<?  
+<?php  
 }
   goto a;  
 }  
@@ -465,7 +465,7 @@ if($_GET['VerMapa']=='Si'){
 window.open("MapaGoogle.php","_blank");
 location.href= "HojaDeRuta.php";
 </script>';  
-<?
+<?php
 //   header("location:MapaGoogle.php");
 }
 	

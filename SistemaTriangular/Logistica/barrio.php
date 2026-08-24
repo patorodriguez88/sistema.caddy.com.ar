@@ -1,4 +1,4 @@
-<?
+<?php
 require_once('../Google/geolocalizar.php');
 
 function console_log($data) {

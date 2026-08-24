@@ -13,7 +13,7 @@ if($_GET[CodigoIncorrecto]=='Si'){
   alertify.error("Atencion Codigo de Aprobacion incorrecto","",0);
   </script>
   
-<?  
+<?php  
 unset($_SESSION[NoOperativo]);
 }
   
@@ -21,7 +21,7 @@ if($_SESSION[NoOperativo]=='1'){
 ?><script>
 alertify.error("Atencion carga comprobante NO OPERATIVO",0);
 </script>
-  <?  
+  <?php  
 }
 
 if ($_POST['CargarFactura']==1){
@@ -40,7 +40,7 @@ if ($_POST['CargarFactura']==1){
 	?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">
-		alert("ERROR: EL LIBRO IVA DEL MES <? echo "$Mes";?> DEL AÑO <? echo "$Ano"; ?> YA ESTA CERRADO")
+		alert("ERROR: EL LIBRO IVA DEL MES <?php echo "$Mes";?> DEL AÑO <?php echo "$Ano"; ?> YA ESTA CERRADO")
 		</script>
 		<?php
   unset($_SESSION[NoOperativo]);  
@@ -1107,7 +1107,7 @@ if($_GET['FacturasSeleccionadas']=='Pagar'){
     ?><script>
   alertify.error("Debe seleccionar al menos una factura","",0);
   </script>
-  <?  
+  <?php  
 goto c;
   }
 // print $Sumarfactura;  

@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 if($_GET['viajar']=='si'){
@@ -198,7 +198,7 @@ if($_POST['idcliente']<>''){
 
   </head>
   <body>
- <?
+ <?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Menu/MenuGestion.php"); 
@@ -253,7 +253,7 @@ PuntoIntermedio,Redespacho,Observaciones) VALUES
     <hr/>
     </div>
     <div><label>Cliente:</label><select name='idcliente' id='idcliente' >
-     <?
+     <?php
       $sql=mysql_query("SELECT Clientes.id,Clientes.nombrecliente,Clientes.Direccion,Localidades.Localidad From (Clientes,Localidades) WHERE 
       Clientes.Ciudad=Localidades.Localidad ORDER BY Clientes.nombrecliente");
       echo "<option value=''>Seleccione un Cliente</option>";
@@ -302,7 +302,7 @@ PuntoIntermedio,Redespacho,Observaciones) VALUES
         <div style="width:40%"><label>Comienzo | Calle:</label><input type="text" name='comienzocalle' id="start" style='width:200px;' placeholder='Calle Numero'></div>
         <div style="width:40%"><label>Ciudad:</label><select name='comienzociudad' id="startciudad" style='width:200px;'>
         
-        <?
+        <?php
         $sql=mysql_query("SELECT Localidad FROM Localidades WHERE Web=1 ORDER BY Localidad");
         echo "<option value=''>Seleccione una Localidad</option>";  
         while($Localidad=mysql_fetch_array($sql)){  
@@ -314,7 +314,7 @@ PuntoIntermedio,Redespacho,Observaciones) VALUES
         <div style="width:40%"><label>Mostrar Punto Intermedio...</label><input type='checkbox' name='wp' id='wp' Onclick='verwp()'></div>
         <div id='ver' style='display:none;width:40%'><label>Parada | Calle:</label><input type="text" id="waypoints" value="" style='width:200px;' placeholder='Calle Numero'></div>
         <div id='ver1' style='display:none;width:40%'><label>Ciudad:</label><select id="waypointsciudad" value="" style='width:200px;'>
-        <?
+        <?php
         $sql1=mysql_query("SELECT Localidad FROM Localidades ORDER BY Localidad");
         echo "<option value=''>Seleccione una Localidad</option>";  
         while($Localidad1=mysql_fetch_array($sql1)){  
@@ -324,9 +324,9 @@ PuntoIntermedio,Redespacho,Observaciones) VALUES
         </select>  
       
     </div>  
-      <div style="width:40%"><label>Final | Calle:</label><input type="text" name='finalcalle' id="end" value="<? echo $b;?>" style='width:200px;' placeholder='Calle Numero'></div>
+      <div style="width:40%"><label>Final | Calle:</label><input type="text" name='finalcalle' id="end" value="<?php echo $b;?>" style='width:200px;' placeholder='Calle Numero'></div>
       <div style="width:40%"><label>Ciudad:</label><select name='finalciudad' id="endciudad" value="" style='width:200px;' >
-      <?
+      <?php
       $sql2=mysql_query("SELECT Localidad,Web FROM Localidades ORDER BY Localidad");
       echo "<option value=''>Seleccione una Localidad</option>";    
       while($Localidad2=mysql_fetch_array($sql2)){  
@@ -674,7 +674,7 @@ function verificar(name,value,max){
 //               var costo= (200 + peso + varretiro); //ATENCION!!! ACA MODIFICAR PARA COSTO
 //               }else{
 //                 var dim=(dimensiones/1000000);
-//                 var variablecalculo= <? 
+//                 var variablecalculo= <?php 
 //                   echo $_SESSION['VariableCalculo'];
                 ?>;
 //                 var reglacalculo= parseFloat(dim * variablecalculo); // dimensiones en m3 x (precio x kilometro/capacidadtotalcarga)  

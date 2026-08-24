@@ -84,7 +84,7 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 					</header>
 				</div>
 <!-- Content -->
-<?
+<?php
 // include('mapa.html');                      
 // goto a;
 ?>
@@ -406,7 +406,7 @@ function cuenta(){
                       
 <img id="procesando" src="../images/loading.gif" alt="" style="display:none;position:absolute;z-index:999999;left:50%;top:50%;width:10%;height:20%">
 <a href="#scaner" class="btn-flotante">Scanear Codigo</a>
-<?
+<?php
 //   goto a;  
 //   }
 //DESDE ACA EL OKCOBRAR

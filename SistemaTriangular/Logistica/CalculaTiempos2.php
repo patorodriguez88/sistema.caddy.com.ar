@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 if($_GET['viajar']=='si'){

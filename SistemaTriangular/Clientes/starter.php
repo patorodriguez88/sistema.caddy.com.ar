@@ -48,7 +48,7 @@ header("location:https://www.caddy.com.ar/sistema");
           <!-- Topbar Start -->
           <div class="navbar-custom topnav-navbar">
             <div class="container-fluid">
-              <?
+              <?php
               include_once("../Menu/MenuHyper_topnav.html");
               ?>
             </div>
@@ -59,7 +59,7 @@ header("location:https://www.caddy.com.ar/sistema");
             <div class="container-fluid">
               <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                  <?
+                  <?php
                   include_once("../Menu/MenuHyper.html");
                   ?>
                 </div>
@@ -1209,13 +1209,13 @@ header("location:https://www.caddy.com.ar/sistema");
                                 <select id="rubro" class="form-control select2" data-toggle="select2">
                                                   <option>Seleccionar Rubro</option>
                                                   <optgroup label="Rubro">
-                                                  <?
+                                                  <?php
                                                   $sqlrubro="SELECT Rubro FROM Rubros ORDER BY Rubro ASC";
                                                   if ($resultado = $mysqli->query($sqlrubro)){
                                                       while($row = $resultado->fetch_assoc()){
                                                   ?>
-                                                  <option value="<? echo $row[id];?>"><? echo $row[Rubro];?></option>
-                                                  <?
+                                                  <option value="<?php echo $row[id];?>"><?php echo $row[Rubro];?></option>
+                                                  <?php
                                                      }
                                                     }
                                                   ?>  
@@ -1273,13 +1273,13 @@ header("location:https://www.caddy.com.ar/sistema");
                                 <select id="nueva_relacion" class="form-control select2" data-toggle="select2">
                                   <option>Seleccionar Relacion</a></option>
                                     <optgroup label="Relacion">
-                                    <?
+                                    <?php
                                       $sqlcuenta="SELECT id,nombrecliente FROM Clientes ORDER BY nombrecliente ASC";
                                       if ($resultado = $mysqli->query($sqlcuenta)){
                                           while($row = $resultado->fetch_assoc()){
                                           ?>
-                                          <option value="<? echo $row[id];?>"><? echo $row[id]." | ".$row[nombrecliente];?></option>
-                                           <?
+                                          <option value="<?php echo $row[id];?>"><?php echo $row[id]." | ".$row[nombrecliente];?></option>
+                                           <?php
                                           }
                                         }
                                        ?>

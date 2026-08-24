@@ -21,7 +21,7 @@ $_POST['user']='';
 	-webkit-text-size-adjust: none;
 	overflow-y: hidden;
 	height: 100%;">
-<?
+<?php
 include("MenuSmartphone/MenuLogo.html");
 ?>
 
@@ -35,7 +35,7 @@ function colorno(x){
 	x.style.background="white";
 }
 </script>
-<?
+<?php
 
 z:
 if ($_GET['Submit']=='Crear Username'){

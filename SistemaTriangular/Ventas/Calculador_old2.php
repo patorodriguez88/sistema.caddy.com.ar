@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 if($_GET['viajar']=='si'){
@@ -170,7 +170,7 @@ $_SESSION[idcliente]=$_POST[idcliente];
 
   </head>
   <body>
- <?
+ <?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Menu/MenuGestion.php"); 
@@ -229,7 +229,7 @@ PuntoIntermedio,Redespacho,Observaciones,Tarifa) VALUES
   <div><label>Cliente:</label><input type='text' name='idcliente' list='idcliente' placeholder="Comience a escribir el nombre...">
   <datalist id='idcliente'>
   <select name=''>
-  <?
+  <?php
   $sql=mysql_query("SELECT Clientes.id,Clientes.nombrecliente,Clientes.Direccion,Localidades.Localidad From (Clientes,Localidades) WHERE 
   Clientes.Ciudad=Localidades.Localidad ORDER BY Clientes.nombrecliente");
   echo "<option value=''>Seleccione un Cliente</option>";
@@ -273,7 +273,7 @@ PuntoIntermedio,Redespacho,Observaciones,Tarifa) VALUES
       <div style="width:40%"><label>Mostrar Punto Intermedio...</label><input type='checkbox' name='wp' id='wp' Onclick='verwp()'></div>
       <div id='ver' style='display:none;width:40%'><label>Parada:</label><input type="text" class="form-control" id="waypoints" value="" style='width:370px;' placeholder='Calle Numero'></div>
       <input type='hidden' id="waypointsciudad" value="" style='width:200px;'>
-      <div style="width:40%"><label>Final:</label><input type="text"  class="form-control" name='finalcalle' id="end" value="<? echo $b;?>" style='width:370px;' placeholder='Calle Numero'></div>
+      <div style="width:40%"><label>Final:</label><input type="text"  class="form-control" name='finalcalle' id="end" value="<?php echo $b;?>" style='width:370px;' placeholder='Calle Numero'></div>
       <input type="hidden" name='finalciudad' class="form-control" id="endciudad" value="" style='width:200px;' >
       <input type="hidden" name='web' id="web" value="" >
       <fieldset style='float:left;width:45%;'>  

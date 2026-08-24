@@ -130,7 +130,7 @@ function ResultadoSumaHoras($Resultado)
 if($sql=mysql_query("UPDATE `Empleados_Horarios` SET `Ingreso`='$Ingreso', `Egreso`='$Egreso',`HorasTotales`='$interval' WHERE id='$_GET[id_t]'")){
          ?>
   <script>alertify.success("Horario modificado con éxito");</script>     
-       <?
+       <?php
           
         }
   }
@@ -170,10 +170,10 @@ if($sql=mysql_query("UPDATE `Empleados_Horarios` SET `Ingreso`='$Ingreso', `Egre
       if($sql=mysql_query("INSERT INTO `Empleados_Horarios`(`idEmpleado`,`Fecha`,`Ingreso`, `Egreso`, `UsuarioCarga`,`HorasTotales`,OtroDia) 
       VALUES ('{$idEmpleado}','{$Fecha}','{$Ingreso}','{$Egreso}','{$UsuarioCarga}','{$interval}','{$OtroDia}')")
       ){
-    ?><script>alertify.success("Horario cargado con éxito");</script><?
+    ?><script>alertify.success("Horario cargado con éxito");</script><?php
       }
     }else{
-    ?><script>alertify.error("Ya se encuentra cargado");</script><?  
+    ?><script>alertify.error("Ya se encuentra cargado");</script><?php  
     }
   }
 a:

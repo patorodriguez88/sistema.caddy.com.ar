@@ -1,4 +1,4 @@
-<?
+<?php
 $Cliente = $_POST['Cliente'];
 $conexion = new mysqli('localhost','dinter6_prodrig','pato@4986','dinter6_triangular',3306);
 $consulta = "SELECT * FROM Clientes WHERE nombrecliente = '$Cliente'";

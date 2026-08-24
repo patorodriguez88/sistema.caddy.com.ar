@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 $conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
 mysql_select_db("dinter6_triangularcopia",$conexion);  

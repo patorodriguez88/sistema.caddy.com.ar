@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include_once "../ConexionBD.php";
 ?>
@@ -54,9 +54,9 @@ while($row=mysql_fetch_array($sql)){
   $Cliente=$row['RazonSocial'];
   $Mes=$Fecha[1];
 ?>
-    name: '<? echo $Cliente;?>', 
+    name: '<?php echo $Cliente;?>', 
     data: [
- <?     
+ <?php     
     $Fecha=explode('-',$row['Fecha'],3);
     $Mes=$Fecha[1];
     $Cliente=$row['RazonSocial'];
@@ -81,7 +81,7 @@ while($row=mysql_fetch_array($sql)){
       
     ]
  }, {
-<?
+<?php
 } 
 ?>
       }, {

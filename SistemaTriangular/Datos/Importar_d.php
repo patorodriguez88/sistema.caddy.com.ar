@@ -100,7 +100,7 @@ foreach ($_REQUEST as $key => $val)
                     <!-- Topbar Start -->
                     <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -110,7 +110,7 @@ foreach ($_REQUEST as $key => $val)
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -157,7 +157,7 @@ foreach ($_REQUEST as $key => $val)
                                                     <select name="imp_razonsocial" class="form-control select2" data-toggle="select2">
                                                     <optgroup label="Seleccione un Cliente">
 
-                                                    <?
+                                                    <?php
                                                     while($row=$sql->fetch_array(MYSQLI_ASSOC)){    
                                                         
                                                     echo "<option value='$row[id],$row[nombrecliente]'>".$row['nombrecliente']."</option>";
@@ -874,7 +874,7 @@ foreach ($_REQUEST as $key => $val)
                                         //     window.location.href = "https://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php";
                                         // }, 3000);
                                     </script>
-                                        <?
+                                        <?php
                                             
                                         echo ("<div class='alert alert-warning' role='alert'><i class='dripicons-warning mr-2'></i> Thank you for using this tool! Please rate <a href=\"http://www.hotscripts.com/listing/bigdump/?RID=403\" target=\"_blank\">Bigdump at Hotscripts.com</a></div>");
                                         echo ("<div class='alert alert-warning' role='alert'><i class='dripicons-warning mr-2'></i> You can send me some bucks or euros as appreciation via PayPal. Thank you!</div>");

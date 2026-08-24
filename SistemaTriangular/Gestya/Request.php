@@ -1,4 +1,4 @@
-<?
+<?php
 $Codigo = "triangular";//ingresar el codigo a consultar
 $token = "4986"; // Ingresar el token 
 $Datos="DATOSACTUALES";

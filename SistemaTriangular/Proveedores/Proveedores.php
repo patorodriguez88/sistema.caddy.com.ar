@@ -437,7 +437,7 @@
                                                 <div class="col-lg-2 mb-3">
                                                     <div class="form-group">
                                                         <label for='nasiento_t'>N Asiento:</label>
-                                                        <input id="nasiento_t" name="nasiento_t" class="form-control" type="text" value="<? echo $NAsiento; ?>" readonly />
+                                                        <input id="nasiento_t" name="nasiento_t" class="form-control" type="text" value="<?php echo $NAsiento; ?>" readonly />
                                                     </div>
                                                 </div>
                                                 <div class="col-lg-2 mb-3">
@@ -898,18 +898,18 @@
                                                                 <select id="rubro" class="form-control select2" data-bs-toggle="select2">
                                                                     <option>Seleccionar Rubro</option>
                                                                     <optgroup label="Rubro">
-                                                                        <?
+                                                                        <?php
 
                                                                         //   $sqlrubro="SELECT Rubro FROM Rubros ORDER BY Rubro ASC";
                                                                         //   if ($resultado = $mysqli->query($sqlrubro)){
                                                                         //       while($row = $resultado->fetch_assoc()){
                                                                         ?>
-                                                                        <!-- <option value="<?
+                                                                        <!-- <option value="<?php
                                                                                             // echo $row['Rubro']; 
-                                                                                            ?>"><?
+                                                                                            ?>"><?php
                                                                                                 // echo $row['Rubro']; 
                                                                                                 ?></option> -->
-                                                                        <?
+                                                                        <?php
                                                                         //  }
                                                                         // }
                                                                         ?>

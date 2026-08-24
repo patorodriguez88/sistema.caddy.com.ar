@@ -1,4 +1,4 @@
-<?
+<?php
 require_once '../signature-pad/signature-to-image.php';
 $json = $_POST['output']; // From Signature Pad
 $img = sigJsonToImage($json);

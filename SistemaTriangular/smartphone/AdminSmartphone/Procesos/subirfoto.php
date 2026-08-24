@@ -1,4 +1,4 @@
-<?
+<?php
     $i=1; 
     $image=$_POST["fpos"];
     $dir='../../../images/Photos/';

@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 // include_once "../../ConexionSmartphone.php";
 $conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");

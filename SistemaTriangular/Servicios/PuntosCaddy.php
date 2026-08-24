@@ -61,7 +61,7 @@ $numfilas = mysql_num_rows($BuscarDatos);
   <script>
   alertify.error("No existen datos para la consulta");
   </script>
-  <?  
+  <?php  
   goto a;
 }	
 $color='#B8C6DE';

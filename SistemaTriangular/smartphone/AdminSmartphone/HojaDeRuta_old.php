@@ -103,7 +103,7 @@ function cuenta(){
    document.forms[0].caracteres.value=document.forms[0].observaciones_t.value.length 
 } 
 </script>  
-<?
+<?php
 //  goto a;                     
 if($_POST['Valor']=='Aceptar'){
   
@@ -428,8 +428,8 @@ $preference->save();
 <html data-elements-color="#8e44ad">
   <body>
   <form class='feature-image' action='' method='post'>
-  <h2> Seguimiento de envio id: <? echo $_POST['codigoseguimiento_t'];?></h2>
-  <h2>Importe del Servicio: $ <? echo $precio;?></h2>
+  <h2> Seguimiento de envio id: <?php echo $_POST['codigoseguimiento_t'];?></h2>
+  <h2>Importe del Servicio: $ <?php echo $precio;?></h2>
   <h2>Este Remito debe ser cobrado, proceda con la cobranza...</h2>
     
     </form>
@@ -440,7 +440,7 @@ $preference->save();
   border-radius: 2;
   text-decoration:none;
   padding:15px;"
- href="https://www.caddy.com.ar/SistemaTriangular/smartphone/MP/Cobrar2.php?cd=<? echo $_POST['codigoseguimiento_t'];?>">Cobrar con Mercado Pago</a>
+ href="https://www.caddy.com.ar/SistemaTriangular/smartphone/MP/Cobrar2.php?cd=<?php echo $_POST['codigoseguimiento_t'];?>">Cobrar con Mercado Pago</a>
     <a  style="
   background-color: #5DADE2 ;
   color: #FFFFFF;
@@ -452,7 +452,7 @@ $preference->save();
 
   </body>
 </html>
-<?
+<?php
     goto a;
     
   }

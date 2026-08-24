@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 // include("../ConexionBD.php");
 $conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
@@ -24,7 +24,7 @@ mysql_select_db("dinter6_triangularcopia",$conexion);
     <br>
        <br>
     <b>Final:</b>
-  <input type="tet" id="end" value="<? echo $_GET[d];?>">
+  <input type="tet" id="end" value="<?php echo $_GET[d];?>">
       <br>
       <input type="submit" id='submit' >
     </div>

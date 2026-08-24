@@ -256,7 +256,7 @@ $Vacio=mysql_query("SELECT * FROM Reposiciones WHERE Cliente=$cliente AND fechaP
         alert("DEBE SELECCIONAR AL MENOS 1 ELEMENTO")
 		</script>
 		
-		<?
+		<?php
 goto a;
 		}
 

@@ -201,7 +201,7 @@ $allowedFileType = ['application/vnd.ms-excel','text/xls','text/xlsx','applicati
                     <!-- Topbar Start -->
                     <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -211,7 +211,7 @@ $allowedFileType = ['application/vnd.ms-excel','text/xls','text/xlsx','applicati
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -356,7 +356,7 @@ $allowedFileType = ['application/vnd.ms-excel','text/xls','text/xlsx','applicati
                       </div>
                       <div class="col-lg-12 mt-2 mb-2">
                       <div id="response" class="<?php if(!empty($type)) { echo $type . " display-block"; } ?>"><?php if(!empty($message)) { echo $message; } ?></div>
-                      <input id="totalregistros" type="hidden" value="<? echo $total;?>">
+                      <input id="totalregistros" type="hidden" value="<?php echo $total;?>">
                       </div>
                     </div>
                       <div class="row" id="card" style="display:none">

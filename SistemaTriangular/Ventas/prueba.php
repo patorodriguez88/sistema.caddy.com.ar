@@ -73,7 +73,7 @@ if ($_POST['FacturaSimple']=='Aceptar'){
 	?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">
-		alert("ERROR: EL LIBRO IVA DEL MES <? echo "$Mes";?> DEL AÑO <? echo "$Ano"; ?> YA ESTA CERRADO")
+		alert("ERROR: EL LIBRO IVA DEL MES <?php echo "$Mes";?> DEL AÑO <?php echo "$Ano"; ?> YA ESTA CERRADO")
 		</script>
 		<?php
 	goto a;
@@ -121,7 +121,7 @@ $Valor=1;
   <script>
   alertify.error("ERROR: La factura ya existe", "", 0);
   </script>
-  <?  
+  <?php  
 	goto a;
 	}		
   
@@ -145,7 +145,7 @@ mysql_query($sql);
   <script>
 			alertify.success("Comprobante cargado con exito");
   </script>
-<?
+<?php
 //---------------INGRESA LOS MOVIMIENTOS EN TRANSACCIONES--------------------
 $sqlTransacciones="INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Debe,Usuario)VALUES
 ('{$Fecha}','{$RazonSocial}','{$Cuit2}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Total}','{$Usuario}')";

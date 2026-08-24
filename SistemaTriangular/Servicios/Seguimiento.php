@@ -62,13 +62,13 @@ if($sql){
 <script>
 alertify.success("Aviso cargado con éxito!");
 </script>
-<?
+<?php
 }else{
 ?>
 <script>
 alertify.error("Aviso no cargado");
 </script>
-<?  
+<?php  
 }
 } 
 // AGREGAR AVISO DE SERVICE
@@ -87,13 +87,13 @@ if($sql){
 <script>
 alertify.success("Aviso cargado con éxito!");
 </script>
-<?
+<?php
 }else{
 ?>
 <script>
 alertify.error("Aviso cargado con éxito!");
 </script>
-<?  
+<?php  
 }
 }
 // HASTA ACA PARA AGREGAR AVISOS DE SERVICE
@@ -495,7 +495,7 @@ function cancelarentrega(){
 // })
 }
 </script>
-<?
+<?php
 if ($_GET['Seguimiento']=='Aceptar'){
   $CodigoSeguimiento=$_GET['codigoseguimiento_t'];
   $Fecha= date("Y-m-d");	

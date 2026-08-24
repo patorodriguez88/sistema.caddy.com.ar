@@ -9,7 +9,7 @@ echo "<table></table>";
     font-style:bold;
   }
 </style>
-<?
+<?php
 echo "<h1>Procedimiento </h1>";
 echo "<h2>1.Origne de la OC</h2>";
 

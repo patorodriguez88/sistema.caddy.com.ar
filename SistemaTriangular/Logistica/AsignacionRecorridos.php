@@ -1,4 +1,4 @@
-<?
+<?php
 ob_start();
 session_start();
 include("../ConexionBD.php");
@@ -29,7 +29,7 @@ include("../ConexionBD.php");
                 <div class="content">
                   <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -39,7 +39,7 @@ include("../ConexionBD.php");
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -102,34 +102,34 @@ include("../ConexionBD.php");
                                             </div>
                                           
                                           <div class="accordion custom-accordion" id="custom-accordion-one">
-                                              <?
+                                              <?php
                                                 $sql=mysql_query("SELECT * FROM ZonasMapa");
                                               while($row=mysql_fetch_array($sql)){
                                               ?>
                                                 <div class="card mb-0">
-                                                      <div class="card-header" id="<? echo $row[Nombre];?>">
+                                                      <div class="card-header" id="<?php echo $row[Nombre];?>">
                                                           <h5 class="m-0">
                                                               <a class="custom-accordion-title d-block py-1"
-                                                                  data-bs-toggle="collapse" href="#collapse<? echo $row[Nombre];?>"
-                                                                  aria-expanded="false" aria-controls="collapse<? echo $row[Nombre];?>"
-                                                                <i class="uil-location-point"></i> <? echo $row[Nombre];?>
+                                                                  data-bs-toggle="collapse" href="#collapse<?php echo $row[Nombre];?>"
+                                                                  aria-expanded="false" aria-controls="collapse<?php echo $row[Nombre];?>"
+                                                                <i class="uil-location-point"></i> <?php echo $row[Nombre];?>
                                                                 <i class="mdi mdi-chevron-down accordion-arrow"></i>
                                                               </a>
                                                           </h5>
                                                       </div>
 
-                                                      <div id="collapse<? echo $row[Nombre];?>" class="collapse"
+                                                      <div id="collapse<?php echo $row[Nombre];?>" class="collapse"
                                                           aria-labelledby="heading"
                                                           data-bs-parent="#custom-accordion-one">
                                                           <div class="card-body">
-                                                          <div><a><b>Latitud Norte: </b> <? echo $row[LatitudN];?> </a></div>   
-                                                          <div><a><b>Latitud Sur: </b> <? echo $row[LatitudS];?> </a></div> 
-                                                          <div><a><b>Longitud Este: </b><? echo $row[LongitudE];?> </a></div>
-                                                          <div><a><b>Longitud Oeste: </b><? echo $row[LongitudO];?> </a></div>  
+                                                          <div><a><b>Latitud Norte: </b> <?php echo $row[LatitudN];?> </a></div>   
+                                                          <div><a><b>Latitud Sur: </b> <?php echo $row[LatitudS];?> </a></div> 
+                                                          <div><a><b>Longitud Este: </b><?php echo $row[LongitudE];?> </a></div>
+                                                          <div><a><b>Longitud Oeste: </b><?php echo $row[LongitudO];?> </a></div>  
                                                           </div>
                                                       </div>
                                                   </div>
-                                               <?
+                                               <?php
                                                 }    
                                                 ?>
                                               </div>

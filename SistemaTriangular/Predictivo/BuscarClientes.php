@@ -1,4 +1,4 @@
-<?
+<?php
 
 // $Cliente = $_POST['Cliente'];
 $Cliente = 'daniel';

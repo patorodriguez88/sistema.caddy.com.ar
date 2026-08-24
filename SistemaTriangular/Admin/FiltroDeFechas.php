@@ -40,11 +40,11 @@ $Desde=$_POST['fechadesde_t'];
 $Hasta=$_POST['fechahasta_t'];
   if($_POST['NoOper']==1){
   ?>
-    <script>window.open('http://www.caddy.com.ar/SistemaTriangular/Admin/Informes/SumasySaldosNoOperpdf.php?Desde=<? echo $Desde;?>&Hasta=<? echo $Hasta;?>');</script>
+    <script>window.open('http://www.caddy.com.ar/SistemaTriangular/Admin/Informes/SumasySaldosNoOperpdf.php?Desde=<?php echo $Desde;?>&Hasta=<?php echo $Hasta;?>');</script>
     <?php
   }else{
   ?>
-    <script>window.open('http://www.caddy.com.ar/SistemaTriangular/Admin/Informes/SumasySaldospdf.php?Desde=<? echo $Desde;?>&Hasta=<? echo $Hasta;?>');</script>
+    <script>window.open('http://www.caddy.com.ar/SistemaTriangular/Admin/Informes/SumasySaldospdf.php?Desde=<?php echo $Desde;?>&Hasta=<?php echo $Hasta;?>');</script>
     <?php
   }
 }

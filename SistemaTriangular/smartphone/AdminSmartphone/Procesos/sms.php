@@ -1,4 +1,4 @@
-<?
+<?php
 if($_POST['Remito']=='Avisar que voy!'){
   $CodigoSeguimiento=$_POST['codigoseguimiento_t'];
   // DESDE ACA PARA AVISARLE MANUALMENTE AL CLIENTE QUE VOY PARA ALLA

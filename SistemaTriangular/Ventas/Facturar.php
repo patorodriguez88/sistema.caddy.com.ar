@@ -26,7 +26,7 @@ include_once "../ConexionBD.php";
   </style>
  
   
-  <?
+  <?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Menu/MenuGestion.php"); 

@@ -32,7 +32,7 @@ $Total=money_format('%i',$row[TotalAsiento]);
 		?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">alert("EL ASIENTO NO PUEDE TENER SALDO, CARGUE OTRO ASIENTO")</script>
-		<?
+		<?php
 		}
 } 	
 

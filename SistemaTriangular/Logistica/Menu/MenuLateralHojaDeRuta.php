@@ -4,7 +4,7 @@ include_once "../Conexion/Conexioni.php";
 // include_once "../ConexionBD.php";
 ?>
 </head>
-<?
+<?php
 $Recorrido=$_GET['recorrido_t'];	
 $Ordenar=$mysqli->query("SELECT Recorrido FROM HojaDeRuta WHERE Estado='Abierto' AND Eliminado='0' GROUP BY Recorrido");
 echo "<div id='cssmenu'>";
@@ -81,7 +81,7 @@ header('location:HojaDeRuta.php?id=EnviarSms');
 }elseif($_GET['Pestana']=='Agregar Ruta'){
 header('location:HojaDeRuta.php?id=Agregar');  
 }elseif($_GET['Pestana']=='Imprimir'){
-?><script>window.open('Informes/HojaDeRutapdf.php?HR=<? echo $_SESSION['Recorrido'];?>');</script><?
+?><script>window.open('Informes/HojaDeRutapdf.php?HR=<?php echo $_SESSION['Recorrido'];?>');</script><?php
 }elseif($_GET['Pestana']=='Buscar Anterior'){
 header('location:HojaDeRuta.php?id=BuscarAnterior');  
 }elseif($_GET['Pestana']=='Mapa'){
@@ -90,7 +90,7 @@ header('location:HojaDeRuta.php?id=BuscarAnterior');
 window.open("mapa.html","_blank");
 location.href= "HojaDeRuta.php";
 </script>';  
-<?
+<?php
 
 // header('location:mapa.html');  
 }elseif($_GET['Pestana']=='Ruta'){

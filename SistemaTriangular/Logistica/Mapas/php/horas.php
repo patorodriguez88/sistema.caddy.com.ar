@@ -1,4 +1,4 @@
-<?
+<?php
     $Hora='07:30:00';
     $duration='583';
     $minutos=number_format($duration/60,0);

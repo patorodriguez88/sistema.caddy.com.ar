@@ -1,4 +1,4 @@
-<?
+<?php
 ob_start();
 session_start();
 include("../ConexionBD.php");
@@ -29,7 +29,7 @@ include("../ConexionBD.php");
                 <div class="content">
                   <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -39,7 +39,7 @@ include("../ConexionBD.php");
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -72,7 +72,7 @@ include("../ConexionBD.php");
                                     <div class="card-body">
                                         <h4 class="header-title mb-3">Salidas con Fecha de Entrega Hoy</h4>
                                           <div class="accordion custom-accordion" id="custom-accordion-one">
-                                              <?
+                                              <?php
                                                 $sql=mysql_query("SELECT Recorrido,NombreChofer,Hora,HoraRetorno,Estado,SUM(KilometrosRegreso-Kilometros)as TotalKm FROM Logistica 
                                                 WHERE Fecha=CURDATE() AND Eliminado='0' GROUP BY Recorrido ");
                                               while($row=mysql_fetch_array($sql)){
@@ -84,30 +84,30 @@ include("../ConexionBD.php");
                                               
                                               ?>
                                                 <div class="card mb-0">
-                                                      <div class="card-header" id="heading<? echo $row[Recorrido];?>">
+                                                      <div class="card-header" id="heading<?php echo $row[Recorrido];?>">
                                                           <h5 class="m-0">
                                                               <a class="custom-accordion-title d-block py-1"
-                                                                  data-bs-toggle="collapse" href="#collapse<? echo $row[Recorrido];?>"
-                                                                  aria-expanded="false" aria-controls="collapse<? echo $row[Recorrido];?>" style="color:<? echo $color[ColorSistema];?>">
-                                                                <i class="uil-location-point"></i> Recorrido <? echo $row[Recorrido].' ('.$suma[TotalServicios].')';?>
+                                                                  data-bs-toggle="collapse" href="#collapse<?php echo $row[Recorrido];?>"
+                                                                  aria-expanded="false" aria-controls="collapse<?php echo $row[Recorrido];?>" style="color:<?php echo $color[ColorSistema];?>">
+                                                                <i class="uil-location-point"></i> Recorrido <?php echo $row[Recorrido].' ('.$suma[TotalServicios].')';?>
                                                                 <i class="mdi mdi-chevron-down accordion-arrow"></i>
                                                               </a>
                                                           </h5>
                                                       </div>
 
-                                                      <div id="collapse<? echo $row[Recorrido];?>" class="collapse"
-                                                          aria-labelledby="heading<? echo $row[Recorrido];?>"
+                                                      <div id="collapse<?php echo $row[Recorrido];?>" class="collapse"
+                                                          aria-labelledby="heading<?php echo $row[Recorrido];?>"
                                                           data-bs-parent="#custom-accordion-one">
                                                           <div class="card-body">
-                                                          <div><a><b>Estado Recorrido: </b> <? echo $row[Estado];?> </a></div>   
-                                                          <div><a><b>Hora: </b> <? echo $row[Hora];?> hs. Hasta <? echo $row[HoraRetorno];?> </a></div> 
-                                                          <div><a><b>Chofer: </b><? echo $row[NombreChofer];?> </a></div>
-                                                          <div><a><b>Total: $ </b><? echo $suma[Total];?> </a></div>  
-                                                          <div><a><b>Km. Totales: </b><? echo $row[TotalKm];?> </a></div>   
+                                                          <div><a><b>Estado Recorrido: </b> <?php echo $row[Estado];?> </a></div>   
+                                                          <div><a><b>Hora: </b> <?php echo $row[Hora];?> hs. Hasta <?php echo $row[HoraRetorno];?> </a></div> 
+                                                          <div><a><b>Chofer: </b><?php echo $row[NombreChofer];?> </a></div>
+                                                          <div><a><b>Total: $ </b><?php echo $suma[Total];?> </a></div>  
+                                                          <div><a><b>Km. Totales: </b><?php echo $row[TotalKm];?> </a></div>   
                                                           </div>
                                                       </div>
                                                   </div>
-                                               <?
+                                               <?php
                                                 }    
                                                 ?>
                                               </div>

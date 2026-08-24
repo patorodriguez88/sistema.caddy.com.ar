@@ -51,7 +51,7 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 					</header>
 				</div>
 <!-- Content -->
-<?
+<?php
 // include('mapa.html');                      
 // goto a;
 ?>
@@ -354,7 +354,7 @@ function cuenta(){
   </script>
 <img id="procesando" src="../images/loading.gif" alt="" style="display:none;position:absolute;z-index:999999;left:50%;top:50%;width:10%;height:20%">
 
-<?
+<?php
                       
 //AVISAR QUE VOY
 // if($_POST['Remito']=='Avisar que voy!'){
@@ -408,11 +408,11 @@ function cuenta(){
   <body>
   <form class='feature-image' action='' method='post'>
   <h2> Seguimiento de envio id: 
-  <? 
+  <?php 
 //     echo $_POST['codigoseguimiento_t'];
   ?></h2>
   <h2>Importe del Servicio: $ 
-  <? 
+  <?php 
 //     echo $precio;
   ?></h2>
   <h2>Este Remito debe ser cobrado, proceda con la cobranza...</h2>
@@ -426,7 +426,7 @@ function cuenta(){
   text-decoration:none;
   padding:15px;"
  href="https://www.caddy.com.ar/SistemaTriangular/smartphone/MP/Cobrar2.php?cd=
-  <? 
+  <?php 
 //       echo $_POST['codigoseguimiento_t'];
   ?>">Cobrar con Mercado Pago</a>
     <a  style="
@@ -440,7 +440,7 @@ function cuenta(){
 
   </body>
 </html> -->
-<?
+<?php
 //   goto a;  
 //   }
 //DESDE ACA EL OKCOBRAR

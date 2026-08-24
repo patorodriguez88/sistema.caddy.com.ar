@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 ?>
@@ -70,7 +70,7 @@ include("../ConexionBD.php");
     </style>
   </head>
   <body>
- <?
+ <?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Menu/MenuGestion.php"); 
@@ -89,8 +89,8 @@ echo  "<div id='principal'>";
         <hr/>
       </div>
       
-      <div><label>Comienzo:</label><input type="text" name='comienzo' id="start" style='width:250px;' value="<? echo $_GET[Comienzo];?>" placeholder='Direccion, Ciudad'></div>
-<?
+      <div><label>Comienzo:</label><input type="text" name='comienzo' id="start" style='width:250px;' value="<?php echo $_GET[Comienzo];?>" placeholder='Direccion, Ciudad'></div>
+<?php
 $Ordenar1="SELECT * FROM TransClientes WHERE Fecha='2019-06-07' AND Recorrido='8' LIMIT 14";
 $Stock=mysql_query($Ordenar1);
   while($row = mysql_fetch_array($Stock)){
@@ -98,7 +98,7 @@ echo "<input type='text' id='waypoints' value='$row[DomicilioDestino].",".$row[L
   
   }
       ?>
-      <div><label>Final:</label><input type="text" name='final' id="end" value="<? echo $_GET[end];?>" style='width:250px;' placeholder='Direccion, Ciudad'></div>
+      <div><label>Final:</label><input type="text" name='final' id="end" value="<?php echo $_GET[end];?>" style='width:250px;' placeholder='Direccion, Ciudad'></div>
       <titulo>Dimensiones:</titulo>
       <div><hr/></div>
       <div><label>Ancho:</label><input type="number" id="ancho" style='width:50px;' placeholder='Cm'></div>
@@ -170,7 +170,7 @@ echo "<input type='text' id='waypoints' value='$row[DomicilioDestino].",".$row[L
 
               var dato = route.legs[i].duration.value;
 //               window.location.href = window.location.href + "?viajar=si&" + "valor=" + dato;
-//               <? 
+//               <?php 
 //               $variable =$_GET['valor'];
 //               $sql="INSERT INTO Datos(Observaciones)VALUES('{$variable}')"; 
 //               mysql_query($sql);
@@ -190,7 +190,7 @@ echo "<input type='text' id='waypoints' value='$row[DomicilioDestino].",".$row[L
             var dimensiones = ancho*largo*alto;
 //             var res = totalDistance.toString().substr(0, 4);
             var res = totalDistance;
-            var costo= res * <? echo $_SESSION['PrecioKm'];?>;
+            var costo= res * <?php echo $_SESSION['PrecioKm'];?>;
             summaryPanel.innerHTML += '<b> Distancia Total: ' + res + ' km.</b><br><b> Duracion Total: ';
             summaryPanel.innerHTML += horas1 +' Horas ' + minutos + ' minutos </b><br>';
             summaryPanel.innerHTML += '<br></br><b> Dimensiones:  ' + dimensiones + ' </b>'; 

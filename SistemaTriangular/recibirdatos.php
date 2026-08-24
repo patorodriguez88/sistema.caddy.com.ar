@@ -1,4 +1,4 @@
-<?
+<?php
 $conexion = mysql_connect("localhost","dinter6_usuarioweb","usuarioelectronico");
 mysql_select_db("dinter6_triangular",$conexion);
 date_default_timezone_set('America/Argentina/Buenos_Aires');

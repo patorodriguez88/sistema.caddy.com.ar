@@ -803,7 +803,7 @@ skin_open();
         window.location.href = "https://www.caddy.com.ar/SistemaTriangular/Ventas/PreVenta.php";
     }, 3000);
   </script>
-    <?
+    <?php
         
      // echo ("<p class=\"centr\">Thank you for using this tool! Please rate <a href=\"http://www.hotscripts.com/listing/bigdump/?RID=403\" target=\"_blank\">Bigdump at Hotscripts.com</a></p>\n");
       //echo ("<p class=\"centr\">You can send me some bucks or euros as appreciation via PayPal. Thank you!</p>\n");

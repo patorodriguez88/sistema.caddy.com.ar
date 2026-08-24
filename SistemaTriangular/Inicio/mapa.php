@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 ?>
 <!DOCTYPE html >
@@ -9,7 +9,7 @@ session_start();
     <meta charset="utf-8">	
 
     <title>
-      Rec: <? echo $_SESSION[Recorrido];?>
+      Rec: <?php echo $_SESSION[Recorrido];?>
     </title>
     <style>
       /* Always set the map height explicitly to define the size of the div

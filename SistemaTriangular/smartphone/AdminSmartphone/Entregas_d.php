@@ -1,4 +1,4 @@
-<?
+<?php
 ob_start();
 session_start();
 // include_once "../../ConexionSmartphone.php";
@@ -124,7 +124,7 @@ $i=0;
     <body class="loading" data-layout-config='{"leftSideBarTheme":"dark","layoutBoxed":false, "leftSidebarCondensed":false, "leftSidebarScrollable":false,"darkMode":false, "showRightSidebarOnStart": true}'>
         <!-- Begin page -->
         <div class="wrapper">
-        <?
+        <?php
         include_once("../MenuSmartphone/MenuHyper.html");
         ?>
 
@@ -164,7 +164,7 @@ $i=0;
                         </div>     
                         <!-- end page title --> 
                         <div class="row" id="todos">
-                      <? 
+                      <?php 
                       
                       while($row=mysql_fetch_array($sql)){
                         $row[DomicilioDestino];
@@ -218,7 +218,7 @@ $i=0;
                         <div class="col-md-12">
                             <div class="card border-success border">
                                 <div class="card-body">
-                                  <?
+                                  <?php
                                       if($idProveedor[idProveedor]<>''){
                                       $idProveedortxt= "(".$idProveedor[idProveedor].")"; 
                                       }
@@ -273,7 +273,7 @@ $i=0;
                             </div> <!-- end card-->
                         </div> <!-- end col-->
                       
-                      <?
+                      <?php
                       }
                       ?>
                         </div>     

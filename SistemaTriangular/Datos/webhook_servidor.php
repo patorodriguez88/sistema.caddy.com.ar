@@ -41,7 +41,7 @@ include_once "../Conexion/Conexioni.php";
                     <!-- Topbar Start -->
                     <div class="navbar-custom topnav-navbar" style="z-index:10">
                         <div class="container-fluid">
-                            <?
+                            <?php
                             include_once("../Menu/MenuHyper_topnav.html");
                             ?>
                         </div>
@@ -51,7 +51,7 @@ include_once "../Conexion/Conexioni.php";
                         <div class="container-fluid">
                             <nav class="navbar navbar-dark navbar-expand-lg topnav-menu">
                                 <div class="collapse navbar-collapse" id="topnav-menu-content">
-                                  <?
+                                  <?php
                                   include_once("../Menu/MenuHyper.html");
                                   ?>
                                 </div>
@@ -85,7 +85,7 @@ include_once "../Conexion/Conexioni.php";
                         </div>     
                         
                       <!-- Large modal -->
-      <?
+      <?php
                  
                  
 $sql="SELECT TransClientes.id,RazonSocial FROM TransClientes INNER JOIN Clientes ON RazonSocial=Clientes.nombrecliente WHERE 

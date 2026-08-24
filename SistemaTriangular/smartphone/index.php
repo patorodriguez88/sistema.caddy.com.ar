@@ -39,7 +39,7 @@ function colorno(x){
 	x.style.background="white";
 }
 </script>
-<?
+<?php
 
 z:
 if ($_GET['Submit']=='Crear Username'){

@@ -18,7 +18,7 @@ include_once "../ConexionBD.php";
 <script src="../Highcharts-6.0.2/code/modules/exporting.js"></script>
 <link href="../css/iconic.css" media="screen" rel="stylesheet" type="text/css" />
     
-    <?
+    <?php
     include("../Menu/MenuGestion.php");
   $sql=mysql_query("SELECT NombreCompleto,VencimientoLicencia FROM Empleados WHERE Inactivo=0 ORDER BY VencimientoLicencia ASC");
   echo "<form class='login' style='margin-top:10px;background:white;border-top:red 3px solid;width:350px;float:left;margin-left:100px;min-height:380px;'>";

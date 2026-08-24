@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include_once "../../../Conexion/Conexioni.php";
 

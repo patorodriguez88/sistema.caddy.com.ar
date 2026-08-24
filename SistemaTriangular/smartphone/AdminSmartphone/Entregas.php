@@ -48,7 +48,7 @@ date_default_timezone_set('Chile/Continental');
 								<div class="12u">
 									<!-- Main Content -->
 										<section>
-<?		
+<?php		
 echo "<form class='feature-image' action='AgregarRepoSmartphone.php' method='post'>";
 echo "<header><h2>Ingrese aqui los datos del remito:</h2></header>";
 // echo "<form class='login' action='' method='POST'  style='width:450px;';>";

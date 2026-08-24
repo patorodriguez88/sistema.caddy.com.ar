@@ -1,4 +1,4 @@
-<?
+<?php
 if($_POST[Remito]=='prueba'){
 ?>
 <body onLoad="localize()">
@@ -12,7 +12,7 @@ if($_POST[Remito]=='prueba'){
 <p>Presici&oacute;n: <span id="psc"></span></p>
   
 
-<?
+<?php
 }
 echo "<form class='feature-image' action='' method='post'>";
 echo "<input type='text' id='lti' value='' name='latitud'>";

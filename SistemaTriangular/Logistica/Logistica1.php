@@ -52,7 +52,7 @@ function sendForm() {
 }
 </script>
     
-<?
+<?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Alertas/alertas.html");    
@@ -456,7 +456,7 @@ $Cliente=$ClienteEncontrado[Cliente];
     <script>
     alertify.error("Los km no se cargaron porque ya existe otra orden en Alta o Cargada");
     </script>
-  <?  
+  <?php  
 	$Kilometros="";
 	$Observaciones="";
 	$CombustibleSalida="";
@@ -534,7 +534,7 @@ $Recorrido=$_GET['recorrido_t'];
 // $sql5="UPDATE TransClientes SET Transportista ='$Chofer' WHERE Recorrido='$Recorrido' AND Entregado='0' and Eliminado='0'";
 // mysql_query($sql5);
 	
-?><script>window.open('Informes/ControldeVehiculospdf.php?NO=<? echo $Numero;?>');</script><?
+?><script>window.open('Informes/ControldeVehiculospdf.php?NO=<?php echo $Numero;?>');</script><?php
 // header("location:Logistica.php");
 }	
 //-------------------------------------------------HASTA ACA ALTA ORDENES DE SALIDA----------------------------------	
@@ -553,7 +553,7 @@ $sql=mysql_query("SELECT * FROM Logistica WHERE NumerodeOrden='$Orden' AND Elimi
 	?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">
-		alertify.error("ERROR: La orden <? echo $Orden;?> ya fue cargada")
+		alertify.error("ERROR: La orden <?php echo $Orden;?> ya fue cargada")
 		</script>
 <?php
    goto a; 
@@ -568,7 +568,7 @@ $sql=mysql_query("SELECT * FROM Logistica WHERE NumerodeOrden='$Orden' AND Elimi
 	?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">
-		alertify.error("ERROR: La orden <? echo $Orden;?> esta Pendiente, debe cerrar la orden anterior.")
+		alertify.error("ERROR: La orden <?php echo $Orden;?> esta Pendiente, debe cerrar la orden anterior.")
 		</script>
 <?php
    goto a; 
@@ -651,7 +651,7 @@ if ($_GET['Orden']=='Cargar'){
     <script>
     alertify.error("Los km no se cargaron porque ya existe otra orden en Alta o Cargada");
     </script>
-  <?  
+  <?php  
 	$Kilometros="";
 	$Observaciones="";
 	$CombustibleSalida="";

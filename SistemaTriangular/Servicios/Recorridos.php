@@ -129,7 +129,7 @@ if($numfilas==0){
   <script>
   alertify.error("No existen datos para la consulta");
   </script>
-  <?  
+  <?php  
   goto a;
 }	
 

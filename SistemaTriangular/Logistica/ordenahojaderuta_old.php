@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 global $host,$user,$password,$database;
 $host='localhost';

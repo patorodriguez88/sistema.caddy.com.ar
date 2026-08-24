@@ -31,7 +31,7 @@ date_default_timezone_set('Chile/Continental');
 <!-- <script src="ajax.js"></script> -->
 	</head>	
   <body>
-<?
+<?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Alertas/alertas.html");    
@@ -74,7 +74,7 @@ if($_POST[vermapa]=='Abrir Mapa'){
   }else{
   ?> 
  <script>alertify.error("No hay Recorrido Seleccionado");</script> 
-  <?  
+  <?php  
   }  
 }
 echo "</div>"; // principal

@@ -43,7 +43,7 @@ $meses=array(1=>"Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio",
 <script src="../spryassets/spryvalidationtextfield.js" type="text/javascript"></script>
 <script src="../js/geolocalizar.js" type="text/javascript"></script>
   </head>	
-<?
+<?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Alertas/alertas.html");    
@@ -75,7 +75,7 @@ echo  "<div id='principal'>";
   }
 </script>  
   
- <? 
+ <?php 
   
   
 echo "</div>";//cuerpo

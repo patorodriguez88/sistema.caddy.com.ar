@@ -36,7 +36,7 @@ echo "</form>";
 ?>
 </center>
 </body>
-<?
+<?php
 echo "</div>"; // principal
 echo "</div>"; //cuerpo
 echo "</div>";  //contenedor

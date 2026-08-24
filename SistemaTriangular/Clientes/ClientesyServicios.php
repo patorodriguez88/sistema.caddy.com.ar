@@ -52,13 +52,13 @@ if($_GET[carga]=='ok'){
   <script>
   alertify.success('Cargado ok!');
   </script>
-  <?
+  <?php
   }elseif($_GET[carga]=='null'){
   ?>
   <script>
   alertify.error('No se cargo la tarifa...');
   </script>
-  <?
+  <?php
   }
 
   if($_POST[Actualizar]=='Aceptar'){

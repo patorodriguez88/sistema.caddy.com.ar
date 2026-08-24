@@ -1,4 +1,4 @@
-<?
+<?php
 include '../src/Afip.php'; //SACAR EL FALSE PARA QUE NO SEA PRODUCCION
 
 try {

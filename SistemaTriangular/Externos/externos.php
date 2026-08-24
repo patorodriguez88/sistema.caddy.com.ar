@@ -139,7 +139,7 @@
                                         </div><!-- end col -->
                                         <div class="col-sm-4 offset-sm-2">
                                             <div class="mt-3 float-sm-right">
-                                                <p class="font-13"><strong>Fecha: </strong> <span id="report_fechaS"></span><? echo date('d.M.Y') ?></p>
+                                                <p class="font-13"><strong>Fecha: </strong> <span id="report_fechaS"></span><?php echo date('d.M.Y') ?></p>
                                                 <p class="font-13"><strong>Orden Status: </strong> <span class="badge badge-success float-right"> &nbsp; Pendiente</span></p>
                                                 <p class="font-13"><strong>Orden ID: </strong> <span class="float-right" id="report_id"></span></p>
                                             </div>

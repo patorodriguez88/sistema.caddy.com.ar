@@ -39,7 +39,7 @@ document.getElementById('myDiv').style.visibility="hidden";
 			</div>
 	  	</div>
 	 	</div>
-<?
+<?php
 	$Recorrido=$_SESSION['RecorridoCargaPagos'];
 
 	if ($_GET['paso']=="Cerrar Recorrido"){
@@ -49,14 +49,14 @@ document.getElementById('myDiv').style.visibility="hidden";
 		?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">alert("RECORRIDO CERRADO")</script>
-		<?
+		<?php
 			//unset($_SESSION['RecorridoCargaPagos']);
 			header("location:CierraRecorrido.php");
 		}else{
 		?>
 		<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 		<script language="JavaScript" type="text/javascript">alert("NO HAY CARGA PARA CERRAR")</script>
-		<?
+		<?php
 	}
 	}
 	if ($_SESSION['RecorridoCargaPagos']==""){
@@ -82,14 +82,14 @@ $ClienteSelec=$_GET['cliente_t'];
 			?>
 			<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 			<script language="JavaScript" type="text/javascript">alert("POR FAVOR INDIQUE UN CLIENTE")</script>
-			<?
+			<?php
 			goto a;
 			}
 		if ($_GET['importe_t']==''){
 			?>
 			<script src="scripts/ac_runactivecontent.js" type="text/javascript"></script>
 			<script language="JavaScript" type="text/javascript">alert("POR FAVOR CARGUE UN IMPORTE")</script>
-			<?
+			<?php
 			goto a;
 			}else{
 		

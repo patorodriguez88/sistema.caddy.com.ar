@@ -60,7 +60,7 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
   </script>
 
     <body>
-<?
+<?php
 $sql=mysql_query("SELECT * FROM `TransClientes`,`HojaDeRuta` 
 WHERE TransClientes.CodigoSeguimiento=HojaDeRuta.Seguimiento 
 AND TransClientes.Retirado='1'

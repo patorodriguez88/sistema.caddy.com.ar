@@ -32,7 +32,7 @@ $password= $_POST['password'];
 <body>  
 </body>  
 </html>
-<?
+<?php
 echo "<div id='contenedor'>"; 
 echo "<div id='cabecera'>"; 
 include("../Menu/MenuGestion.php"); 

@@ -1,4 +1,4 @@
-<?
+<?php
 include '../src/Afip_false.php'; 
 // include '../src/Afip.php'; 
 // $document_types = $afip->ElectronicBilling->GetDocumentTypes();

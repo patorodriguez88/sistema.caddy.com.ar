@@ -1,4 +1,4 @@
-<?
+<?php
 session_start();
 include("../ConexionBD.php");
 ?>
@@ -105,7 +105,7 @@ include("../ConexionBD.php");
     <br>
     <b>Waypoints:</b> <br>
     <i>(Ctrl+Click or Cmd+Click for multiple selection)</i> <br>
-<?
+<?php
   
 $Recorrido=$_SESSION['Recorrido'];
 // $Recorrido='53';
@@ -123,7 +123,7 @@ while ($row = @mysql_fetch_array($result)){
 ?>
        <br>
     <b>Final:</b>
-<?
+<?php
     $query="SELECT * FROM HojaDeRuta WHERE Recorrido='$Recorrido' AND Estado='Abierto' AND Eliminado='0' ORDER BY Posicion";
     $result = mysql_query($query);
     echo"<select id='end'>";
