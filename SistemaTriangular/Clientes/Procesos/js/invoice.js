@@ -440,28 +440,42 @@ $(document).ready(function () {
           // Agrega más días festivos según sea necesario
         ];
 
-        // Asegurarse de que la fecha resultante sea 7 días corridos hábiles y sin días festivos
-        for (let i = 0; i < 7; ) {
-          res.setDate(res.getDate() + 1);
+        var f;
+        if (jsonData.VencimientoFacturacion) {
+          // El comprobante ya tiene un vencimiento GRABADO en Facturacion al
+          // momento de emitirse - se muestra ese, tal cual quedó, sin
+          // recalcular (aunque después haya cambiado Clientes.DiasVencimiento).
+          var partesVenc = jsonData.VencimientoFacturacion.split("-"); // YYYY-MM-DD
+          f = partesVenc[2] + "/" + partesVenc[1] + "/" + partesVenc[0];
+        } else {
+          // Comprobante todavía no emitido (proforma) o sin fila en
+          // Facturacion: se calcula en vivo con los días de vencimiento
+          // parametrizados por cliente (Clientes.php > Datos Facturación),
+          // mínimo 7 y máximo 30 - ver también factura_pdf.php, que
+          // implementa la misma regla del lado del servidor para el PDF.
+          var diasVencimiento = parseInt(jsonData.DiasVencimiento, 10);
+          if (isNaN(diasVencimiento) || diasVencimiento < 7) diasVencimiento = 7;
+          if (diasVencimiento > 30) diasVencimiento = 30;
 
-          // Si es un día hábil y no es un día festivo, incrementar el contador
-          if (
-            esDiaHabil(res) &&
-            !diasFestivos.some(
-              (festivo) =>
-                festivo.mes === res.getMonth() + 1 &&
-                festivo.dia === res.getDate(),
-            )
-          ) {
-            i++;
+          // Asegurarse de que la fecha resultante sea "diasVencimiento" días corridos hábiles y sin días festivos
+          for (let i = 0; i < diasVencimiento; ) {
+            res.setDate(res.getDate() + 1);
+
+            // Si es un día hábil y no es un día festivo, incrementar el contador
+            if (
+              esDiaHabil(res) &&
+              !diasFestivos.some(
+                (festivo) =>
+                  festivo.mes === res.getMonth() + 1 &&
+                  festivo.dia === res.getDate(),
+              )
+            ) {
+              i++;
+            }
           }
+
+          f = res.getDate() + "/" + (res.getMonth() + 1) + "/" + res.getFullYear();
         }
-
-        // console.log("Fecha después de 7 días corridos hábiles y sin días festivos:", res.toLocaleDateString());
-
-        // res.setDate(res.getDate() + 7);
-        var f =
-          res.getDate() + "/" + (res.getMonth() + 1) + "/" + res.getFullYear();
         $("#venc_pago").html(f);
         $("#factura_titulo2").html(jsonData.TipoDeComprobante);
         $("#factura_codigo").html(jsonData.id);

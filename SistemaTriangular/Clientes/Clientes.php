@@ -1714,11 +1714,13 @@
                                         <div class="row">
                                             <div class="col-lg-5 mt-3">
                                                 <label>Nombre Cliente</label>
-                                                <input class="form-control" type='text' value='' id='nombrecliente_nc' placeholder='Nombre Cliente' onblur='ComprobarNombre(this.value)'>
+                                                <input class="form-control" type='text' value='' id='nombrecliente_nc' placeholder='Nombre Cliente' onblur='ComprobarNombre(this.value)' required>
+                                                <div class="invalid-feedback">El nombre del cliente es obligatorio.</div>
                                             </div>
                                             <div class="col-lg-7 mt-3">
                                                 <label>Direccion</label>
-                                                <input type='text' class="form-control" name='direccion_nc' id='direccion_nc' placeholder='Direccion: Calle Numero'>
+                                                <input type='text' class="form-control" name='direccion_nc' id='direccion_nc' placeholder='Direccion: Calle Numero' required>
+                                                <div class="invalid-feedback">La dirección es obligatoria.</div>
                                             </div>
                                         </div>
                                         <div class="row">
@@ -1736,7 +1738,7 @@
                                             </div>
                                         </div>
                                         <div class="row">
-                                            <div class="col-lg-8 mt-3">
+                                            <div class="col-lg-6 mt-3">
                                                 <label>Observaciones</label>
                                                 <input class='form-control' type='text' value='' id='observaciones_nc' placeholder='Alguna Observacion ?'>
                                             </div>
@@ -1747,9 +1749,9 @@
                                             <input type='hidden' name='cp_nc' id='cp_nc'>
 
 
-                                            <div class="col-lg-4 mt-3">
+                                            <div class="col-lg-6 mt-3">
                                                 <label>Relacion</label>
-                                                <select name="relacion_nc" id="relacion_nc" class="form-control select2" data-toggle="select2" required>
+                                                <select name="relacion_nc" id="relacion_nc" class="form-control select2" data-toggle="select2">
                                                     <option value="">Seleccione un Cliente para la Relacion</option>
 
                                                 </select>
@@ -1765,6 +1767,30 @@
                     </div><!-- /.modal-dialog -->
                 </div><!-- /.modal -->
                 <!--         END MODAL NUEVO CLIENTE -->
+
+                <!--MODAL AJUSTAR UBICACION EN EL MAPA -->
+                <div id="modal-ubicacion-mapa" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="modal-ubicacion-mapaLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header modal-colored-header bg-info">
+                                <h4 class="modal-title text-white" id="modal-ubicacion-mapaLabel">Ajustar Ubicación Exacta</h4>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-muted mb-2">Arrastrá el marcador hasta la ubicación exacta de la casa/local del cliente.</p>
+                                <div id="mapa_ubicacion_cliente" style="width:100%; height:420px; border-radius:6px;"></div>
+                                <div class="mt-2 text-muted" style="font-size:12px">
+                                    <span id="mapa_ubicacion_coords_label"></span>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                <button id="btn_guardar_ubicacion" type="button" class="btn btn-info"><i class="mdi mdi-content-save me-1"></i>Guardar Ubicación</button>
+                            </div>
+                        </div><!-- /.modal-content -->
+                    </div><!-- /.modal-dialog -->
+                </div><!-- /.modal -->
+                <!--         END MODAL AJUSTAR UBICACION EN EL MAPA -->
 
                 <!-- Standard modal -->
                 <!--                      <div class="modal fade" id="bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
@@ -2035,7 +2061,12 @@
                                                         <div class="col-lg-5 mt-3">
                                                             <div class="form-group">
                                                                 <label for="direccion">Dirección</label>
-                                                                <input type="text" name="direccion" id="direccion" class="form-control">
+                                                                <div class="input-group">
+                                                                    <input type="text" name="direccion" id="direccion" class="form-control">
+                                                                    <button type="button" id="btn_ajustar_ubicacion" class="btn btn-outline-secondary" title="Ajustar ubicación exacta en el mapa">
+                                                                        <i class="mdi mdi-map-marker-radius"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
                                                         <div class="col-lg-2 mt-3">
@@ -2206,7 +2237,7 @@
                                                             <input type="text" id="cuit_facturacion" class="form-control">
                                                         </div>
                                                     </div>
-                                                    <div class="col-lg-4 mt-3">
+                                                    <div class="col-lg-2 mt-3">
                                                         <div class="form-group">
                                                             <label for="cai_facturacion">C.A.I.</label>
                                                             <input type="text" id="cai_facturacion" class="form-control">
@@ -2225,6 +2256,13 @@
                                                             </select>
                                                         </div>
                                                     </div>
+                                                    <div class="col-lg-2 mt-3">
+                                                        <div class="form-group">
+                                                            <label for="dias_vencimiento_facturacion">Días Vencim.</label>
+                                                            <input type="number" id="dias_vencimiento_facturacion" name="dias_vencimiento_facturacion" class="form-control" min="7" max="30" step="1" value="7">
+                                                            <small class="form-text text-muted">Min. 7, máx. 30.</small>
+                                                        </div>
+                                                    </div>
 
                                                     <!-- TAREAS ASANA -->
                                                     <div class="col-lg-4 mt-3">
@@ -2235,14 +2273,6 @@
                                                         <select id="asana_gid" class="form-control select2" data-toggle="select2">
                                                             <option>Seleccione un Usuario Asana</option>
                                                         </select>
-                                                    </div>
-
-                                                    <div class="col-lg-4 mt-3">
-                                                        <div class="form-group">
-                                                            <div class="form-group mb-3">
-
-                                                            </div>
-                                                        </div>
                                                     </div>
                                                 </div>
                                                 <div calss="row">

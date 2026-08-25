@@ -14,12 +14,18 @@ function pdf_text($texto)
     return mb_convert_encoding((string)$texto, 'ISO-8859-1', 'UTF-8');
 }
 
-// Vencimiento de pago = fecha de la factura + 7 días hábiles (sin fines de semana
-// ni feriados). Debe reflejar exactamente la misma regla que la vista previa
-// (Clientes/Procesos/js/invoice.js, función que arma "#venc_pago") — si cambia acá,
-// cambiar también ahí, porque son dos implementaciones separadas de la misma regla.
-function fechaVencimientoPago($fechaFactura)
+// Vencimiento de pago = fecha de la factura + N días hábiles (sin fines de semana
+// ni feriados), donde N es Clientes.DiasVencimiento (parametrizable por cliente,
+// mínimo 7 y máximo 30 - ver Clientes.php > Datos Facturación). Debe reflejar
+// exactamente la misma regla que la vista previa (Clientes/Procesos/js/invoice.js,
+// función que arma "#venc_pago") — si cambia acá, cambiar también ahí, porque son
+// dos implementaciones separadas de la misma regla.
+function fechaVencimientoPago($fechaFactura, $diasVencimiento = 7)
 {
+    $diasVencimiento = (int)$diasVencimiento;
+    if ($diasVencimiento < 7) $diasVencimiento = 7;
+    if ($diasVencimiento > 30) $diasVencimiento = 30;
+
     $diasFestivos = [
         ['mes' => 12, 'dia' => 25], // Navidad
         ['mes' => 1,  'dia' => 1],  // Año Nuevo
@@ -29,7 +35,7 @@ function fechaVencimientoPago($fechaFactura)
     $fecha = new DateTime($fechaFactura);
     $agregados = 0;
 
-    while ($agregados < 7) {
+    while ($agregados < $diasVencimiento) {
         $fecha->modify('+1 day');
 
         $esHabil = (int)$fecha->format('N') < 6; // 1=lunes ... 7=domingo
@@ -152,9 +158,14 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
             C.Telefono,
             C.Celular,
             C.Mail,
-            C.CondicionAnteIva
+            C.CondicionAnteIva,
+            C.DiasVencimiento,
+            F.Vencimiento AS VencimientoFacturacion
         FROM Ctasctes CT
         LEFT JOIN Clientes C ON C.id = CT.idCliente
+        LEFT JOIN Facturacion F ON F.NumeroComprobante = CT.NumeroFactura
+            AND F.TipoDeComprobante = CT.TipoDeComprobante
+            AND F.Eliminado = 0
         WHERE CT.id = '{$idCtasctes}'
         LIMIT 1
     ");
@@ -476,6 +487,16 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->Cell(54, 5, $fechaHasta, 0, 1);
 
     // Card 3: Vencimiento de pago
+    // Prioridad: el vencimiento QUEDÓ GRABADO en Facturacion al momento de emitir
+    // el comprobante (no se recalcula después, aunque cambie Clientes.DiasVencimiento
+    // más adelante). Solo se recalcula en vivo si por algún motivo ese registro no
+    // existe (comprobantes viejos sin fila en Facturacion, por ejemplo).
+    $vencFacturacion = $row['VencimientoFacturacion'] ?? null;
+    if ($vencFacturacion && $vencFacturacion !== '0000-00-00') {
+        $fechaVenc = date('d/m/Y', strtotime($vencFacturacion));
+    } else {
+        $fechaVenc = fechaVencimientoPago($row['Fecha'], $row['DiasVencimiento'] ?? 7);
+    }
     $pdf->RoundedRect(154, $row2Y, 46, $row2H, 3, 'FD');
     $pdf->SetFont('Arial', 'B', 8);
     $pdf->SetTextColor(...$mutedC);
@@ -484,7 +505,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', 'B', 10);
     $pdf->SetTextColor(...$darkText);
     $pdf->SetXY(158, $row2Y + 9);
-    $pdf->Cell(0, 5, fechaVencimientoPago($row['Fecha']), 0, 1);
+    $pdf->Cell(0, 5, $fechaVenc, 0, 1);
     $pdf->SetFont('Arial', '', 8);
     $pdf->SetTextColor(...$mutedC);
     $pdf->SetXY(158, $row2Y + 15);

@@ -471,6 +471,30 @@ if (isset($_POST['ActualizarRetiro'])) {
   $stmt->close();
 }
 
+if (isset($_POST['GuardarUbicacion'])) {
+  $id = intval($_POST['id'] ?? 0);
+  $lat = filter_var($_POST['lat'] ?? null, FILTER_VALIDATE_FLOAT);
+  $lng = filter_var($_POST['lng'] ?? null, FILTER_VALIDATE_FLOAT);
+
+  if ($id <= 0 || $lat === false || $lng === false) {
+    echo json_encode(array('success' => 0, 'error' => 'Datos inválidos.'));
+    exit;
+  }
+
+  // Latitud/Longitud son columnas TEXT (no numéricas) en Clientes.
+  $latStr = (string)$lat;
+  $lngStr = (string)$lng;
+  $stmt = $mysqli->prepare("UPDATE Clientes SET Latitud=?, Longitud=? WHERE id=? LIMIT 1");
+  $stmt->bind_param("ssi", $latStr, $lngStr, $id);
+
+  if ($stmt->execute()) {
+    echo json_encode(array('success' => 1));
+  } else {
+    echo json_encode(array('success' => 0, 'error' => $mysqli->error));
+  }
+  $stmt->close();
+}
+
 if (isset($_POST['ClearTarifa'])) {
   // $sql="DELETE FROM `ClientesyServicios` WHERE id='$_POST[id]'"; 
   if ($mysqli->query($sql)) {
@@ -701,6 +725,19 @@ if (isset($_POST['Actualizar'])) {
     $__retiro = in_array($val, ['1', 'on', 'true', 'sí', 'si'], true) ? 1 : 0;
   }
 
+  // DIAS DE VENCIMIENTO DEL COMPROBANTE (parametrizable por cliente, min 7 / max 30)
+  $__diasVencimiento = (int)$__post('dias_vencimiento_f', '7');
+  if ($__diasVencimiento < 7) $__diasVencimiento = 7;
+  if ($__diasVencimiento > 30) $__diasVencimiento = 30;
+
+  // CondicionAnteIva_f / TipoDocumento_f son columnas int (nullable) - mismo
+  // motivo que HorarioEntregaSolicitado mas arriba: '' rompe el INSERT/UPDATE
+  // en modo estricto ("Incorrect integer value"), hay que mandar NULL real.
+  $__condivaF = $__post('condiva_f');
+  $__condivaF = $__condivaF !== '' ? $__condivaF : null;
+  $__tipodocF = $__post('tipodocumento_f');
+  $__tipodocF = $__tipodocF !== '' ? $__tipodocF : null;
+
   // 2) Recolectar campos con defaults para evitar Undefined array key
   $__data = [
     'Direccion'            => $__post('dir'),
@@ -723,11 +760,12 @@ if (isset($_POST['Actualizar'])) {
     'SituacionFiscal'      => $descAFIP,
     'RazonSocial_f'        => $__post('razonsocial_f'),
     'Direccion_f'          => $__post('direccion_f'),
-    'CondicionAnteIva_f'   => $__post('condiva_f'),
-    'TipoDocumento_f'      => $__post('tipodocumento_f'),
+    'CondicionAnteIva_f'   => $__condivaF,
+    'TipoDocumento_f'      => $__tipodocF,
     'Cuit_f'               => $__post('documento_f'),
     // 'Cai_f'                => $__post('cai_f'),
     'Observaciones_f'      => $__post('observaciones_f'),
+    'DiasVencimiento'      => (string)$__diasVencimiento,
   ];
 
   $__id = $__post('id');
@@ -907,12 +945,39 @@ if (isset($_POST['Datos'])) {
     $Observaciones_f = '';
   }
 
+  // CondicionAnteIva_f guarda el código AFIP (1, 5, 6...); AfipTipoDeResponsables.Codigo
+  // lo tiene con ceros a la izquierda ("001"), por eso el CAST para compararlos.
+  $CondicionAnteIva_f_label = '';
+  if (!empty($row['CondicionAnteIva_f'])) {
+    $__stmtCond = $mysqli->prepare("SELECT Descripcion FROM AfipTipoDeResponsables WHERE CAST(Codigo AS UNSIGNED) = ? LIMIT 1");
+    $__stmtCond->bind_param("i", $row['CondicionAnteIva_f']);
+    $__stmtCond->execute();
+    if ($__rowCond = $__stmtCond->get_result()->fetch_assoc()) {
+      $CondicionAnteIva_f_label = $__rowCond['Descripcion'];
+    }
+    $__stmtCond->close();
+  }
+
+  // TipoDocumento_f guarda el código AFIP (80=CUIT, 96=DNI...)
+  $TipoDocumento_f_label = '';
+  if (isset($row['TipoDocumento_f']) && $row['TipoDocumento_f'] !== null && $row['TipoDocumento_f'] !== '') {
+    $__stmtDoc = $mysqli->prepare("SELECT Descripcion FROM AfipDocumentoIdComprador WHERE Codigo = ? LIMIT 1");
+    $__stmtDoc->bind_param("i", $row['TipoDocumento_f']);
+    $__stmtDoc->execute();
+    if ($__rowDoc = $__stmtDoc->get_result()->fetch_assoc()) {
+      $TipoDocumento_f_label = $__rowDoc['Descripcion'];
+    }
+    $__stmtDoc->close();
+  }
+
   echo json_encode(array(
     'success' => 1,
     'NextProforma' => $NComprobanteSiguiente,
     'id' => $row['id'],
     'RazonSocial' => $row['nombrecliente'],
     'direccion' => $row['Direccion'],
+    'Latitud' => $row['Latitud'] ?? '',
+    'Longitud' => $row['Longitud'] ?? '',
     'localidad' => $row['Ciudad'],
     'provincia' => $row['Provincia'],
     'codigopostal' => $row['CodigoPostal'],
@@ -937,9 +1002,12 @@ if (isset($_POST['Datos'])) {
     'RazonSocial_f' => $row['RazonSocial_f'],
     'Direccion_f' => $row['Direccion_f'],
     'TipoDocumento_f' => $row['TipoDocumento_f'],
+    'TipoDocumento_f_label' => $TipoDocumento_f_label,
     'Cuit_f' => $row['Cuit_f'],
     'CondicionAnteIva_f' => $row['CondicionAnteIva_f'],
+    'CondicionAnteIva_f_label' => $CondicionAnteIva_f_label,
     'CicloFacturacion' => $row['CicloFacturacion'],
+    'DiasVencimiento' => $row['DiasVencimiento'] ?? 7,
     'user_id' => $row['user_id'],
     'sure_min' => $sure_min,
     'sure_perc' => $row['sure_perc'],

@@ -1280,6 +1280,7 @@ $("#ciclo_facturacion").change(function () {
     success: function (respuesta) {
       var jsonData = JSON.parse(respuesta);
       if (jsonData.success == 1) {
+        $("#ciclo_facturacion_label").html(ciclo);
         toast("success", "Exito !", "Registro Actualizado.");
       } else {
         toast("error", "Error !", "Registro No Actualizado.");
@@ -2021,6 +2022,22 @@ $("#buscarcliente").change(function () {
 
         $("#razonsocial").val(jsonData.RazonSocial);
         $("#direccion").val(jsonData.direccion);
+        // Coordenadas exactas guardadas (si el operador ya las ajustó en el
+        // mapa) - las usa #btn_ajustar_ubicacion para centrar el marcador.
+        clienteUbicacionActual = {
+          lat: parseFloat(jsonData.Latitud),
+          lng: parseFloat(jsonData.Longitud),
+        };
+        if (
+          isNaN(clienteUbicacionActual.lat) ||
+          isNaN(clienteUbicacionActual.lng) ||
+          // La gran mayoría de los clientes tiene 0,0 (nunca se les cargó una
+          // ubicación real) - no es una coordenada válida de Argentina, así
+          // que se trata igual que "sin ubicación guardada".
+          (clienteUbicacionActual.lat === 0 && clienteUbicacionActual.lng === 0)
+        ) {
+          clienteUbicacionActual = null;
+        }
         $("#localidad").val(jsonData.localidad);
         $("#provincia").val(jsonData.provincia);
         $("#codigopostal").val(jsonData.codigopostal);
@@ -2039,11 +2056,25 @@ $("#buscarcliente").change(function () {
         //FACTURACION
         $("#razonsocial_facturacion").val(jsonData.RazonSocial_f);
         $("#direccion_facturacion").val(jsonData.Direccion_f);
+        // El select nunca tuvo <option>s cargadas (no hay de dónde elegir todavía),
+        // por eso mostraba el código crudo. Se inyecta una única option con el
+        // texto resuelto, así al menos se ve el tipo de documento en lugar del número.
+        if (jsonData.TipoDocumento_f) {
+          $("#tipodocumento_facturacion").html(
+            "<option value='" + jsonData.TipoDocumento_f + "'>" +
+              (jsonData.TipoDocumento_f_label || jsonData.TipoDocumento_f) +
+              "</option>",
+          );
+        } else {
+          $("#tipodocumento_facturacion").html("");
+        }
         $("#tipodocumento_facturacion").val(jsonData.TipoDocumento_f);
         $("#cuit_facturacion").val(jsonData.Cuit_f);
-        $("#condicion_facturacion").val(jsonData.CondicionAnteIva_f);
+        $("#condicion_facturacion").val(jsonData.CondicionAnteIva_f_label || jsonData.CondicionAnteIva_f);
         $("#ciclo_facturacion_label").html(jsonData.CicloFacturacion);
+        $("#ciclo_facturacion").val(jsonData.CicloFacturacion || "");
         $("#observaciones_facturacion").val(jsonData.Observaciones_f);
+        $("#dias_vencimiento_facturacion").val(jsonData.DiasVencimiento || 7);
         //ASANA
         if (jsonData.TareasAsana == 1) {
           $("#tareas_asana").prop("checked", true);
@@ -2935,6 +2966,11 @@ $("#agregar_botton").click(function () {
   });
 });
 
+$(document).on("change", "#dias_vencimiento_facturacion", function () {
+  var v = Math.min(30, Math.max(7, parseInt(this.value, 10) || 7));
+  this.value = v;
+});
+
 $("#guardar_botton").click(function () {
   var id = document.getElementById("buscarcliente").value;
   var dir = document.getElementById("direccion").value;
@@ -2974,6 +3010,14 @@ $("#guardar_botton").click(function () {
   var observaciones_f = document.getElementById(
     "observaciones_facturacion",
   ).value;
+  var dias_vencimiento_f = Math.min(
+    30,
+    Math.max(
+      7,
+      parseInt(document.getElementById("dias_vencimiento_facturacion").value, 10) || 7,
+    ),
+  );
+  document.getElementById("dias_vencimiento_facturacion").value = dias_vencimiento_f;
 
   var dato = {
     Actualizar: 1,
@@ -3002,6 +3046,7 @@ $("#guardar_botton").click(function () {
     documento_f: documento_f,
     cai_f: cai_f,
     observaciones_f: observaciones_f,
+    dias_vencimiento_f: dias_vencimiento_f,
   };
 
   $.ajax({
@@ -5532,6 +5577,10 @@ function ComprobarNombre(n) {
   });
 }
 
+$(document).on("input", "#nombrecliente_nc, #direccion_nc", function () {
+  $(this).removeClass("is-invalid");
+});
+
 $("#AgregarCliente").click(function () {
   var nombre = document.getElementById("nombrecliente_nc").value;
   var email = document.getElementById("email_nc").value;
@@ -5539,6 +5588,16 @@ $("#AgregarCliente").click(function () {
   var telefono = document.getElementById("telefono_nc").value;
   var celular = document.getElementById("celular_nc").value;
   var relacion = document.getElementById("relacion_nc").value;
+
+  $("#nombrecliente_nc, #direccion_nc").removeClass("is-invalid");
+  var faltaNombre = nombre.trim() === "";
+  var faltaDireccion = direccion.trim() === "";
+  if (faltaNombre || faltaDireccion) {
+    if (faltaNombre) $("#nombrecliente_nc").addClass("is-invalid");
+    if (faltaDireccion) $("#direccion_nc").addClass("is-invalid");
+    toast("error", "Faltan datos", "Nombre y Dirección son obligatorios.");
+    return;
+  }
   var cp = document.getElementById("cp_nc").value;
   var ciudad = document.getElementById("ciudad_nc").value;
   var observaciones = document.getElementById("observaciones_nc").value;
@@ -5716,3 +5775,152 @@ function vercomprobante() {
 }
 
 // $("#miarchivo").dropzone({ url: "../../FacturasVenta/" });
+
+// ===== AJUSTAR UBICACION EXACTA EN EL MAPA (Latitud/Longitud del cliente) =====
+// Se carga el JS de Google Maps recién al abrir el modal por primera vez, para
+// no pagar esa carga en cada visita a Clientes.php (la mayoría de las veces
+// no hace falta tocar el mapa).
+var clienteUbicacionActual = null; // {lat, lng} del cliente cargado, si ya tiene guardado
+var mapaUbicacionCliente = null;
+var markerUbicacionCliente = null;
+var googleMapsUbicacionCargado = false;
+var googleMapsUbicacionCargando = false;
+
+function cargarGoogleMapsUbicacion(callback) {
+  if (googleMapsUbicacionCargado) {
+    callback();
+    return;
+  }
+  if (googleMapsUbicacionCargando) {
+    // Ya se está cargando (doble click) - esperamos a que termine.
+    var esperar = setInterval(function () {
+      if (googleMapsUbicacionCargado) {
+        clearInterval(esperar);
+        callback();
+      }
+    }, 200);
+    return;
+  }
+  googleMapsUbicacionCargando = true;
+  window.initMapaUbicacionCliente = function () {
+    googleMapsUbicacionCargado = true;
+    googleMapsUbicacionCargando = false;
+    callback();
+  };
+  var script = document.createElement("script");
+  script.src =
+    "https://maps.googleapis.com/maps/api/js?key=AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8&callback=initMapaUbicacionCliente";
+  script.async = true;
+  document.head.appendChild(script);
+}
+
+function mostrarCoordsUbicacion(lat, lng) {
+  $("#mapa_ubicacion_coords_label").html(
+    "Lat: " + lat.toFixed(6) + " · Lng: " + lng.toFixed(6),
+  );
+}
+
+function inicializarMapaUbicacion(lat, lng) {
+  var centro = { lat: lat, lng: lng };
+
+  mapaUbicacionCliente = new google.maps.Map(
+    document.getElementById("mapa_ubicacion_cliente"),
+    { center: centro, zoom: 17 },
+  );
+
+  markerUbicacionCliente = new google.maps.Marker({
+    position: centro,
+    map: mapaUbicacionCliente,
+    draggable: true,
+  });
+
+  mostrarCoordsUbicacion(lat, lng);
+
+  markerUbicacionCliente.addListener("dragend", function () {
+    var pos = markerUbicacionCliente.getPosition();
+    mostrarCoordsUbicacion(pos.lat(), pos.lng());
+  });
+
+  // Permite reposicionar el marcador también con un click en el mapa.
+  mapaUbicacionCliente.addListener("click", function (e) {
+    markerUbicacionCliente.setPosition(e.latLng);
+    mostrarCoordsUbicacion(e.latLng.lat(), e.latLng.lng());
+  });
+}
+
+$("#btn_ajustar_ubicacion").click(function () {
+  var idCliente = document.getElementById("codigo").value;
+  if (!idCliente) {
+    toast("error", "Error", "Primero buscá un cliente.");
+    return;
+  }
+
+  $("#modal-ubicacion-mapa").modal("show");
+
+  $("#modal-ubicacion-mapa").one("shown.bs.modal", function () {
+    cargarGoogleMapsUbicacion(function () {
+      if (clienteUbicacionActual) {
+        // Ya tiene coordenadas guardadas: centramos ahí directamente.
+        inicializarMapaUbicacion(
+          clienteUbicacionActual.lat,
+          clienteUbicacionActual.lng,
+        );
+      } else {
+        // Sin coordenadas todavía: geocodificamos la dirección cargada para
+        // arrancar cerca, y el operador ajusta el marcador a mano.
+        var direccion = document.getElementById("direccion").value;
+        var localidad = document.getElementById("localidad").value;
+        var provincia = document.getElementById("provincia").value;
+        var geocoder = new google.maps.Geocoder();
+        geocoder.geocode(
+          { address: [direccion, localidad, provincia, "Argentina"].filter(Boolean).join(", ") },
+          function (results, status) {
+            if (status === "OK" && results[0]) {
+              var loc = results[0].geometry.location;
+              inicializarMapaUbicacion(loc.lat(), loc.lng());
+            } else {
+              // Fallback: Córdoba Capital, para que el operador ubique a mano.
+              inicializarMapaUbicacion(-31.4201, -64.1888);
+              toast(
+                "info",
+                "No se encontró la dirección",
+                "Ubicá el marcador a mano.",
+              );
+            }
+          },
+        );
+      }
+    });
+  });
+});
+
+$("#btn_guardar_ubicacion").click(function () {
+  if (!markerUbicacionCliente) return;
+
+  var idCliente = document.getElementById("codigo").value;
+  var pos = markerUbicacionCliente.getPosition();
+
+  $.ajax({
+    data: {
+      GuardarUbicacion: 1,
+      id: idCliente,
+      lat: pos.lat(),
+      lng: pos.lng(),
+    },
+    url: "Procesos/php/funciones.php",
+    type: "post",
+    dataType: "json",
+    success: function (jsonData) {
+      if (jsonData.success == 1) {
+        clienteUbicacionActual = { lat: pos.lat(), lng: pos.lng() };
+        toast("success", "Listo !", "Ubicación guardada.");
+        $("#modal-ubicacion-mapa").modal("hide");
+      } else {
+        toast("error", "Error", jsonData.error || "No se pudo guardar la ubicación.");
+      }
+    },
+    error: function () {
+      toast("error", "Error", "No se pudo guardar la ubicación.");
+    },
+  });
+});

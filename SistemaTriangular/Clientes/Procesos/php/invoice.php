@@ -175,6 +175,20 @@ if (isset($_POST['Datos'])) {
     $sqlCtaCte = $mysqli->query("SELECT idCliente,TipoDeComprobante,NumeroFactura,Fecha,idIvaVentas,FacturacionxRecorrido FROM Ctasctes WHERE id='$_POST[idCtaCte]' AND Eliminado='0'"); //ACA AGREGUE EL ELIMINADO POR CERO EL 10/11/23
     $idCliente = $sqlCtaCte->fetch_array(MYSQLI_ASSOC);
 
+    // Vencimiento ya grabado en Facturacion al momento de emitir el comprobante
+    // (no se recalcula, aunque despues cambie Clientes.DiasVencimiento).
+    $__vencFacturacion = null;
+    $__stmtVenc = $mysqli->prepare("SELECT Vencimiento FROM Facturacion WHERE NumeroComprobante=? AND TipoDeComprobante=? AND Eliminado=0 LIMIT 1");
+    if ($__stmtVenc) {
+        $__stmtVenc->bind_param("ss", $idCliente['NumeroFactura'], $idCliente['TipoDeComprobante']);
+        $__stmtVenc->execute();
+        $__resVenc = $__stmtVenc->get_result();
+        if ($__rowVenc = $__resVenc->fetch_assoc()) {
+            $__vencFacturacion = $__rowVenc['Vencimiento'];
+        }
+        $__stmtVenc->close();
+    }
+
     $sql = "SELECT * FROM Clientes WHERE id='$idCliente[idCliente]'";
     $Resultado = $mysqli->query($sql);
     $row = $Resultado->fetch_array(MYSQLI_ASSOC);
@@ -230,7 +244,9 @@ if (isset($_POST['Datos'])) {
         'Cuit_f' => $row['Cuit_f'],
         'CondicionAnteIva_f' => $row['CondicionAnteIva_f'],
         'Cae' => $row_ivaVentas['CAE'],
-        'VencimientoCAE' => $row_ivaVentas['FechaVencimientoCAE']
+        'VencimientoCAE' => $row_ivaVentas['FechaVencimientoCAE'],
+        'DiasVencimiento' => $row['DiasVencimiento'] ?? 7,
+        'VencimientoFacturacion' => ($__vencFacturacion && $__vencFacturacion !== '0000-00-00') ? $__vencFacturacion : null
     ));
 }
 

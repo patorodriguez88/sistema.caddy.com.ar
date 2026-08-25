@@ -37,12 +37,17 @@ function geolocalizar($Direccion){
 
 $idoferta= $mysqli->query("SELECT MAX(id) AS id FROM Clientes");
 if ($row = $idoferta->fetch_array(MYSQLI_ASSOC)) {
- $id = trim($row[id])+1;
+ $id = trim($row['id'])+1;
  }
 
 $NdeCliente=$id;
 $nombrecliente=utf8_encode($_POST['nombrecliente']);
 $Direccion=addslashes($_POST['Direccion']);
+
+if(trim($_POST['nombrecliente'] ?? '') === '' || trim($_POST['Direccion'] ?? '') === ''){
+    echo json_encode(array('success' => 0, 'error' => 'Nombre y Dirección son obligatorios.'));
+    exit;
+}
 
 $datosmapa = geolocalizar($_POST['Direccion']);
 $latitud = $datosmapa[0];
@@ -51,9 +56,9 @@ $types= $datosmapa[3];
 // $localizacion = $datosmapa[2];
 
 $Calle=addslashes(utf8_encode($_POST['Calle']));
-$Numero=$_POST['Numero'];
+$Numero=(int)($_POST['Numero'] ?? 0);
 $Pisodepto=$_POST['Pisodepto'];
-$Barrio=$_POST['Barrio'];  
+$Barrio=$_POST['Barrio'];
 $Ciudad=$_POST['Ciudad'];
 $Provincia=utf8_encode($_POST['Provincia']);
 $Telefono=$_POST['Telefono'];
@@ -63,42 +68,45 @@ $Mail=$_POST['Mail'];
 $Pais=$_POST['Pais'];
 $CodigoPostal=$_POST['CodigoPostal'];
 $Observaciones=$_POST['Observaciones'];
-$idProveedor=$_POST['idProveedor'];  
-$PAGINAWEB=$_POST['PAGINAWEB'];
-$DocumentoNacional=$_POST['DocumentoNacional'];
-$Categoria=$_POST['Categoria'];
-$SituacionFiscal=$_POST['SituacionFiscal'];
-$ExtTrabajo=$_POST['Ext_Trabajo_t'];
-$Kilometros=$_POST['distancia'];
-$Interno=$_POST['Interno_t'];
-$Tipo_Documento=$_POST['Tipo_Documento_t'];
-$CondicionAnteIva=$_POST['CondicionAnteIva_t'];
+$Distribuidora=$_POST['Distribuidora'] ?? '';
+$idProveedor=(int)($_POST['idProveedor'] ?? 0);
+$PAGINAWEB=$_POST['PAGINAWEB'] ?? '';
+$DocumentoNacional=$_POST['DocumentoNacional'] ?? '';
+$Categoria=$_POST['Categoria'] ?? '';
+$SituacionFiscal=$_POST['SituacionFiscal'] ?? '';
+$ExtTrabajo=$_POST['Ext_Trabajo_t'] ?? '';
+$Kilometros=(int)($_POST['distancia'] ?? 0);
+$Interno=$_POST['Interno_t'] ?? '';
+$Tipo_Documento=$_POST['Tipo_Documento_t'] ?? '';
+$CondicionAnteIva=$_POST['CondicionAnteIva_t'] ?? '';
 
-if($_POST['Cuit_t']<>''){
+if(($_POST['Cuit_t'] ?? '')<>''){
 $Cuit=$_POST['Cuit_t'];
 }else{
-$Cuit=$NdeCliente;  
-}  
-$user_id=$_POST['user_id_t'];
-$Usuario=$_POST['Usuario_t'];
-$PASSWORD=$_POST['PASSWORD_t'];
-$Recorrido=$_POST['Recorrido_t'];
-$Relacion=$_POST['Relacion'];  
+$Cuit=$NdeCliente;
+}
+$user_id=$_POST['user_id_t'] ?? '';
+$Usuario=(int)($_POST['Usuario_t'] ?? 0);
+$PASSWORD=$_POST['PASSWORD_t'] ?? '';
+$Recorrido=(int)($_POST['Recorrido_t'] ?? 0);
+$Relacion=$_POST['Relacion'] ?? '';
 
 if(($nombrecliente<>'')||($Direccion<>'')){
     $sql="INSERT INTO Clientes(NdeCliente,nombrecliente,DocumentoNacional,Distribuidora,Rubro,Mail,Ciudad,Provincia,Pais,
     CodigoPostal,Telefono,ExtTrabajo,Celular2,Celular,Direccion,PaginaWeb,Observaciones,Categoria,SituacionFiscal,
     TipoDocumento,CondicionAnteIva,Cuit,userid,Usuario,PASSWORD,Recorrido,Relacion,Calle,Numero,PisoDepto,Barrio,
-    idProveedor,Kilometros,Latitud,Longitud,Types)VALUES('{$NdeCliente}','{$nombrecliente}','{$DocumentoNacional}','{$Distribuidora}','{$Rubro}',
-    '{$Mail}','{$Ciudad}','{$Provincia}','{$Pais}','{$CodigoPostal}','{$Telefono}','{$Ext_Trabajo}','{$Interno}',
-    '{$Celular}','{$Direccion}','{$PAGINA_WEB}','{$Observaciones}','{$Categoria}','{$SituacionFiscal}',
+    idProveedor,Kilometros,Latitud,Longitud,Types,carrier_id_tn,ActivarCoordenadas,sure_min,sure,Colecta,
+    Colecta_rec,Observaciones_f,Abm,TareasAsana,TareasAsana_gid,Cod,wepoint_id)VALUES('{$NdeCliente}','{$nombrecliente}','{$DocumentoNacional}','{$Distribuidora}','{$Rubro}',
+    '{$Mail}','{$Ciudad}','{$Provincia}','{$Pais}','{$CodigoPostal}','{$Telefono}','{$ExtTrabajo}','{$Interno}',
+    '{$Celular}','{$Direccion}','{$PAGINAWEB}','{$Observaciones}','{$Categoria}','{$SituacionFiscal}',
     '{$Tipo_Documento}','{$CondicionAnteIva}','{$Cuit}','{$user_id}','{$Usuario}','{$PASSWORD}',
     '{$Recorrido}','{$Relacion}','{$Calle}','{$Numero}','{$Pisodepto}','{$Barrio}','{$idProveedor}',
-    '{$Kilometros}','{$latitud}','{$longitud}','{$types}')";
+    '{$Kilometros}','{$latitud}','{$longitud}','{$types}',0,0,0,0,0,
+    0,'','',0,'',0,0)";
   
 $mysqli->query($sql);
 
-echo json_encode(array('success' => 1,'id'=> $NdeCliente,'NombreCliente'=>$nombrecliente,'Direccion'=>$_POST[Direccion]));
+echo json_encode(array('success' => 1,'id'=> $NdeCliente,'NombreCliente'=>$nombrecliente,'Direccion'=>$_POST['Direccion']));
 
 }else{
 
