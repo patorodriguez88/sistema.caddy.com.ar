@@ -13,9 +13,16 @@ function sqlNull($mysqli, $valor)
     return "'" . $mysqli->real_escape_string($valor) . "'";
 }
 
+// Antes esto era exclusivo de Nivel==1 (en la práctica, solo el
+// SuperAdministrador dueño de la cuenta - nadie más en todo el sistema tiene
+// Nivel 1). PuedeEliminarPagos es un permiso aparte, independiente del
+// Nivel, que se puede activar usuario por usuario desde Empleados/Usuarios.php
+// sin darles el resto de lo que implica ser Nivel 1.
+$puedeEliminarPago = $_SESSION['Nivel'] == 1 || !empty($_SESSION['PuedeEliminarPagos']);
+
 if (isset($_POST['Eliminar_pago_permisos'])) {
 
-    if ($_SESSION['Nivel'] == 1) {
+    if ($puedeEliminarPago) {
         echo json_encode(array('success' => 1));
     } else {
         echo json_encode(array('success' => 401));
@@ -25,7 +32,7 @@ if (isset($_POST['Eliminar_pago_permisos'])) {
 
 if (isset($_POST['Eliminar_pago'])) {
 
-    if ($_SESSION['Nivel'] != 1) {
+    if (!$puedeEliminarPago) {
         echo json_encode(array('success' => 401));
         exit;
     }

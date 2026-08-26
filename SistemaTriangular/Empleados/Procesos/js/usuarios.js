@@ -262,7 +262,7 @@ function listarUsuarios() {
 
       if (usuarios.length === 0) {
         tabla.append(
-          `<tr><td colspan="6" class="caddy-tabla-vacia">
+          `<tr><td colspan="7" class="caddy-tabla-vacia">
             <i class="uil-users-alt"></i>
             No hay usuarios de sistema para mostrar.
           </td></tr>`
@@ -291,6 +291,8 @@ function listarUsuarios() {
           ? "caddy-btn-reenviar is-pendiente btn-reenviar-acceso"
           : "caddy-btn-reenviar btn-reenviar-acceso";
 
+        const puedeEliminarPagos = Number(user.PuedeEliminarPagos) === 1;
+
         tabla.append(
           `<tr>
             <td>${user.nombre} ${user.apellido}<br><small class="text-muted">Usuario: ${user.Usuario}</small></td>
@@ -298,6 +300,11 @@ function listarUsuarios() {
             <td>${rolHtml}</td>
             <td>${notifHtml}</td>
             <td>${accesoHtml}</td>
+            <td class="text-center">
+              <div class="form-check form-switch d-inline-block">
+                <input type="checkbox" class="form-check-input chk-eliminar-pagos" data-id="${user.id}" ${puedeEliminarPagos ? "checked" : ""} title="Permite borrar pagos (Ctasctes), independiente del Nivel">
+              </div>
+            </td>
             <td>
               <button type="button" class="${btnClass}" data-id="${user.id}" data-mail="${user.Usuario}" title="Reenviar acceso: genera una contraseña temporal nueva y la manda por mail">
                 <i class="uil-repeat"></i>
@@ -311,7 +318,7 @@ function listarUsuarios() {
     .catch(() => {
       tabla.empty();
       tabla.append(
-        `<tr><td colspan="6" class="caddy-tabla-vacia">
+        `<tr><td colspan="7" class="caddy-tabla-vacia">
           <i class="uil-exclamation-triangle"></i>
           No se pudo cargar la lista de usuarios. Puede faltar una migración de base de datos — avisá a sistemas.
         </td></tr>`
@@ -382,6 +389,20 @@ $(document).on("click", ".btn-eliminar-usuario", function () {
         Swal.fire("No se pudo eliminar", r.error || "Error desconocido.", "error");
       }
     });
+  });
+});
+
+// 💸 Permiso de Eliminar Pagos (independiente del Nivel)
+$(document).on("change", ".chk-eliminar-pagos", function () {
+  const $chk = $(this);
+  const usuario_id = $chk.data("id");
+  const activo = $chk.is(":checked") ? 1 : 0;
+
+  post("toggle_eliminar_pagos", { usuario_id, activo }).then((r) => {
+    if (!r.success) {
+      $chk.prop("checked", !activo); // revertir el switch si falló
+      Swal.fire("No se pudo guardar", r.error || "Error desconocido.", "error");
+    }
   });
 });
 

@@ -74,6 +74,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         case 'listar_roles_permisos':
             listarRolesConPermisos($mysqli);
             break;
+        case 'toggle_eliminar_pagos':
+            requiereGestionRoles($mysqli);
+            toggleEliminarPagos($mysqli);
+            break;
         case 'puede_gestionar_roles':
             echo json_encode(['puede' => usuarioPuedeGestionarRoles($mysqli)]);
             break;
@@ -237,6 +241,7 @@ function listarUsuarios($mysqli)
 {
     $sql = "SELECT u.id, u.Nombre AS nombre, u.Apellido AS apellido, u.Usuario, u.NIVEL,
                    u.NotificacionAccesoEnviada, u.NotificacionAccesoFecha, u.UltimoAcceso,
+                   u.PuedeEliminarPagos,
                    r.id AS rol_id, r.nombre AS rol
             FROM usuarios u
             LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
@@ -296,6 +301,29 @@ function desactivarUsuario($mysqli)
 
     $mysqli->query("UPDATE usuarios SET Activo = 0 WHERE id = $id LIMIT 1");
     echo json_encode(['success' => true]);
+}
+
+// Permiso independiente del Nivel para borrar pagos (Ctasctes) - antes era
+// exclusivo de Nivel==1 (en la práctica, solo el SuperAdministrador dueño de
+// la cuenta). Se activa/desactiva usuario por usuario, sin darle al resto el
+// Nivel 1 completo. Ver Clientes/Procesos/php/eliminapago.php.
+function toggleEliminarPagos($mysqli)
+{
+    $id = intval($_POST['usuario_id'] ?? 0);
+    $activo = !empty($_POST['activo']) ? 1 : 0;
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Usuario inválido.']);
+        return;
+    }
+
+    $stmt = $mysqli->prepare("UPDATE usuarios SET PuedeEliminarPagos = ? WHERE id = ? LIMIT 1");
+    $stmt->bind_param("ii", $activo, $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'error' => $mysqli->error]);
+    }
+    $stmt->close();
 }
 
 // Reenvía el mail de acceso al sistema con una contraseña temporal NUEVA — la

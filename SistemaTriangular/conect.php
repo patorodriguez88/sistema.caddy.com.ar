@@ -140,6 +140,7 @@ if ($fila && $passwordOk) {
     $_SESSION['FechaPassword'] = $fila['FechaPassword'];
     $_SESSION['NCliente'] = $fila['NdeCliente'];
     $_SESSION['Nivel'] = $fila['NIVEL'];
+    $_SESSION['PuedeEliminarPagos'] = intval($fila['PuedeEliminarPagos'] ?? 0);
     $_SESSION['idusuario'] = $fila['id'];
     $_SESSION['Direccion'] = $fila['Direccion'];
     $_SESSION['NombreUsuario'] = $fila['Nombre'];
