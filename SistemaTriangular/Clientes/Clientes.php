@@ -1560,7 +1560,7 @@
                                             <div class="col-lg-4 mt-3">
                                                 <div class="mb-3">
                                                     <label for="importe_transferencia" class="form-label">Importe</label>
-                                                    <input id="importe_transferencia" type="text" onkeydown="noComa(event)" class="form-control" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
+                                                    <input id="importe_transferencia" type="text" onkeydown="noComa(event)" class="form-control input-moneda" data-toggle="input-mask" data-mask-format="###0.00" data-reverse="true">
                                                     <span class="font-13 text-muted">e.g "#.##0,00"</span>
                                                 </div>
                                             </div>
@@ -1595,7 +1595,7 @@
                                             <div class="col-lg-3 mt-3">
                                                 <div class="mb-3">
                                                     <label for="importe_cheque" class="form-label">Importe a Cobrar</label>
-                                                    <input id="importe_cheque" type="text" onkeydown="noComa(event)" class="form-control" data-toggle="input-mask" data-mask-format="#.##0,00" data-reverse="true">
+                                                    <input id="importe_cheque" type="text" onkeydown="noComa(event)" class="form-control input-moneda" data-toggle="input-mask" data-mask-format="#.##0,00" data-reverse="true">
                                                     <span class="font-13 text-muted">e.g "xxx.xxx.xxxx-xx"</span>
                                                 </div>
                                             </div>
