@@ -181,7 +181,7 @@ foreach ($items as $fila) {
         continue;
     }
 
-    // COALESCE con Clientes.HorarioEntregaSolicitado: TransClientes.HorarioEntregaSolicitado
+    // COALESCE con Clientes.HorarioEntregaDesde: TransClientes.HorarioEntregaSolicitado
     // solo se completa hoy desde el flujo normal de Ventas.php - Colecta/Flex
     // y las altas desde TiendaNube/Meli/importacion masiva nunca lo cargan,
     // aunque el cliente sí tenga la preferencia guardada en su ficha.
@@ -189,7 +189,7 @@ foreach ($items as $fila) {
         $mysqli,
         "SELECT TransClientes.CodigoSeguimiento, TransClientes.RazonSocial, TransClientes.DomicilioOrigen, TransClientes.Retirado,
                 TransClientes.NumeroComprobante, TransClientes.TelefonoOrigen, TransClientes.TelefonoDestino, TransClientes.CodigoProveedor,
-                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaSolicitado) AS HorarioEntregaSolicitado
+                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaDesde) AS HorarioEntregaSolicitado
            FROM TransClientes
            LEFT JOIN Clientes ON Clientes.id = TransClientes.idClienteDestino
           WHERE TransClientes.CodigoSeguimiento = ?

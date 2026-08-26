@@ -118,7 +118,7 @@ if (isset($_POST['Pendientes'])) {
     $_SESSION['RecorridoMapa'] = $_POST['Recorrido'];
   }
 
-  // Clientes.HorarioEntregaSolicitado se trae como fallback (aliasedo,
+  // Clientes.HorarioEntregaDesde se trae como fallback (aliasedo,
   // TransClientes.* ya trae su propia columna HorarioEntregaSolicitado) -
   // TransClientes.HorarioEntregaSolicitado solo se carga hoy desde el flujo
   // normal de Ventas.php; Colecta/Flex y las altas desde TiendaNube/Meli/
@@ -133,7 +133,7 @@ if (isset($_POST['Pendientes'])) {
     $sql = "SELECT TransClientes.*,
                    Clientes.Latitud,
                    Clientes.Longitud,
-                   Clientes.HorarioEntregaSolicitado AS HorarioEntregaSolicitadoCliente,
+                   Clientes.HorarioEntregaDesde AS HorarioEntregaSolicitadoCliente,
                    IF(TransClientes.Retirado=1, HojaDeRuta.Posicion, HojaDeRuta.Posicion_retiro) AS Posicion,
                    HojaDeRuta.Estado AS HdrEstado,
                    HojaDeRuta.Hora,
@@ -155,7 +155,7 @@ if (isset($_POST['Pendientes'])) {
     $recorrido = $mysqli->real_escape_string($_SESSION['Recorrido'] ?? '');
     $sql = "SELECT Clientes.Latitud,
                    Clientes.Longitud,
-                   Clientes.HorarioEntregaSolicitado AS HorarioEntregaSolicitadoCliente,
+                   Clientes.HorarioEntregaDesde AS HorarioEntregaSolicitadoCliente,
                    TransClientes.*,
                    HojaDeRuta.Posicion,
                    HojaDeRuta.Posicion_retiro,

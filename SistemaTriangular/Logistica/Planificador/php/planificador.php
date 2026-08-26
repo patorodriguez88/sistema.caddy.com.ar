@@ -48,7 +48,7 @@ if (isset($_POST['BuscarRecorridos'])) {
 if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
     $Recorrido = intval($_POST['Recorrido']);
 
-    // COALESCE con Clientes.HorarioEntregaSolicitado: TransClientes.HorarioEntregaSolicitado
+    // COALESCE con Clientes.HorarioEntregaDesde: TransClientes.HorarioEntregaSolicitado
     // solo se completa hoy desde el flujo normal de Ventas.php - Colecta/Flex
     // y las altas desde TiendaNube/Meli/importacion masiva nunca lo cargan,
     // aunque el cliente sí tenga la preferencia guardada en su ficha. Se usa

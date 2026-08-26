@@ -202,7 +202,7 @@ if ($_POST['Orden_Automatic'] == 1) {
 
     // PARADAS ABIERTAS DEL RECORRIDO, CON COORDENADAS VALIDAS. Se suma el
     // HorarioEntregaSolicitado para usarlo como prioridad al ordenar (ver
-    // ordenarPorCercania) - COALESCE con Clientes.HorarioEntregaSolicitado
+    // ordenarPorCercania) - COALESCE con Clientes.HorarioEntregaDesde
     // porque TransClientes.HorarioEntregaSolicitado solo se carga hoy desde
     // el flujo normal de Ventas.php (y ahi depende de un prefill 100%
     // client-side sin red de seguridad); Colecta/Flex y las altas desde
@@ -216,7 +216,7 @@ if ($_POST['Orden_Automatic'] == 1) {
         "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, HojaDeRuta.Seguimiento,
                 Clientes.Latitud, Clientes.Longitud, Clientes.nombrecliente, Clientes.Direccion,
                 Clientes.Telefono, Clientes.Celular, Clientes.Celular2,
-                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaSolicitado) AS HorarioEntregaSolicitado
+                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaDesde) AS HorarioEntregaSolicitado
            FROM HojaDeRuta
           INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
           LEFT JOIN TransClientes ON TransClientes.id = HojaDeRuta.idTransClientes
