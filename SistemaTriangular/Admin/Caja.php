@@ -148,7 +148,7 @@
                                     </div>
 
                                     <div class="table-responsive">
-                                        <table id="cierre_caja" class="table table-centered table-nowrap mb-0">
+                                        <table id="cierre_caja" class="table table-centered table-nowrap table-sm mb-0" style="font-size:12px">
                                             <thead>
                                                 <tr>
                                                     <th>Número</th>

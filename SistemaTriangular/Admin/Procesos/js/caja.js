@@ -343,7 +343,16 @@ var tablaCierres = $("#cierre_caja").DataTable({
       data: "Diferencia",
       render: $.fn.dataTable.render.number(".", ",", 2, "$ "),
     },
-    { data: "TimeStamp" },
+    {
+      data: "TimeStamp",
+      render: function (data) {
+        // Fecha ya la muestra la columna "Fecha" - acá solo interesa la hora,
+        // mostrar el TimeStamp completo (fecha+hora) hacía la columna
+        // innecesariamente ancha.
+        var partes = (data || "").split(" ");
+        return partes.length > 1 ? partes[1].substring(0, 5) : data || "";
+      },
+    },
     {
       data: "id",
       orderable: false,
