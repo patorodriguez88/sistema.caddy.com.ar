@@ -143,12 +143,16 @@ VALUES('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroCom
     $InfoABM = 'Creado por ' . $_SESSION['Usuario'] . ' el ' . date('d-m-Y H:i');
 
     $Banco = $_POST['banco'] ?? null;
+    // Caja=0 significa "todavía no reconciliado en ningún cierre" - así lo toma
+    // Pendientes (caja.php, acción Pendientes, filtra Caja=0) y así lo asigna
+    // recién Agregar_cierre cuando se hace el cierre real. Antes, para pagos en
+    // efectivo (Cuenta0==='111100'), esto se pisaba con el ID del ÚLTIMO cierre
+    // ya existente (MAX(id) FROM Caja) - un cierre que casi siempre ya estaba
+    // cerrado ANTES de que este pago existiera. El pago nacía marcado como "ya
+    // reconciliado" en un cierre cuyo SaldoFinal se había calculado sin él, y
+    // nunca volvía a aparecer en Pendientes para que un cierre futuro lo cuente
+    // de verdad (caso real detectado: Ctasctes 131354/IGALFER, $634.520).
     $Caja = 0;
-    if ($Cuenta0 === '111100') {
-        $sql_caja = $mysqli->query("SELECT MAX(id)as Caja FROM Caja");
-        $row_caja = $sql_caja->fetch_array(MYSQLI_ASSOC);
-        $Caja = $row_caja['Caja'];
-    }
     //DEBE
     $sqlTesoreriaDebe = "INSERT INTO `Tesoreria`(
 	 Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Usuario,Sucursal,NumeroAsiento,FechaTrans,
