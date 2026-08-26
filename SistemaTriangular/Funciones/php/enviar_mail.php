@@ -6,6 +6,7 @@ use PHPMailer\PHPMailer\Exception;
 require_once __DIR__ . '/../../Librerias/phpmailer/src/Exception.php';
 require_once __DIR__ . '/../../Librerias/phpmailer/src/PHPMailer.php';
 require_once __DIR__ . '/../../Librerias/phpmailer/src/SMTP.php';
+require_once __DIR__ . '/../../Conexion/mail_config.php';
 
 function enviarMail($para, $nombre, $asunto, $html, $adjunto = null)
 {
@@ -15,10 +16,10 @@ function enviarMail($para, $nombre, $asunto, $html, $adjunto = null)
 
         // CONFIGURACION SMTP
         $mail->isSMTP();
-        $mail->Host       = 'mail.caddy.com.ar';   // cambiar
+        $mail->Host       = MAIL_HOST;
         $mail->SMTPAuth   = true;
-        $mail->Username   = 'facturacion@caddy.com.ar'; // cambiar
-        $mail->Password   = 'Vistalba@1978';            // cambiar
+        $mail->Username   = MAIL_USER;
+        $mail->Password   = MAIL_PASS;
 
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port       = 465;
@@ -27,7 +28,7 @@ function enviarMail($para, $nombre, $asunto, $html, $adjunto = null)
         $mail->Timeout = 10;
 
         // REMITENTE
-        $mail->setFrom('facturacion@caddy.com.ar', 'Caddy Logística');
+        $mail->setFrom(MAIL_USER, MAIL_FROM_NAME);
 
         // DESTINATARIOS (acepta un string único o un array de direcciones)
         $destinatarios = is_array($para) ? $para : [$para];
