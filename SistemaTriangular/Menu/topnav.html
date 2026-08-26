@@ -648,6 +648,13 @@
                 >Planificador</a
               >
               <?php endif; ?>
+              <?php if (tieneMenuPermiso('Logistica', 'RepartidoresEnVivo')): ?>
+              <a
+                href="/SistemaTriangular/Logistica/Mapas/RepartidoresEnVivo.php"
+                class="dropdown-item"
+                >Repartidores en vivo</a
+              >
+              <?php endif; ?>
             </div>
           </li>
           <?php endif; ?>
