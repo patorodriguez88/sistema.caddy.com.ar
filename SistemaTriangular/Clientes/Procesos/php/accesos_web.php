@@ -143,27 +143,44 @@ if (isset($_POST['ResetearAccesoWeb'])) {
     exit;
   }
 
-  $passwordTemporalPlano = bin2hex(random_bytes(5));
-  $passwordHash = password_hash($passwordTemporalPlano, PASSWORD_DEFAULT);
-  $fechaPassword = date('Y-m-d');
+  // Se manda un LINK (mismo mecanismo Token/TokenExpira que usa el "olvidé mi
+  // contraseña" self-service de plataforma.caddy.com.ar), no una contraseña
+  // temporal en texto plano por mail. La contraseña vieja sigue funcionando
+  // hasta que el cliente efectivamente entra por el link y elige una nueva -
+  // si nunca lo abre, no queda con una clave que nunca recibió.
+  $token = bin2hex(random_bytes(24));
+  $expira = date('Y-m-d H:i:s', strtotime('+1 hour'));
 
-  $stmt = $mysqli->prepare("UPDATE usuarios SET PASSWORD=?, FechaPassword=? WHERE id=? AND NIVEL=4 LIMIT 1");
-  $stmt->bind_param("ssi", $passwordHash, $fechaPassword, $usuarioId);
+  $stmt = $mysqli->prepare("UPDATE usuarios SET Token=?, TokenExpira=? WHERE id=? AND NIVEL=4 LIMIT 1");
+  $stmt->bind_param("ssi", $token, $expira, $usuarioId);
   $stmt->execute();
   $stmt->close();
 
-  $resultado = notificarAccesoSistema(
-    $mysqli,
-    $usuarioId,
-    $mail,
-    $usuario['Nombre'],
-    $usuario['Usuario'],
-    $passwordTemporalPlano,
-    'Portal de Clientes Caddy',
-    'https://plataforma.caddy.com.ar/pages-login.html'
-  );
+  $link = 'https://plataforma.caddy.com.ar/pages-resetpw.html?token=' . urlencode($token);
+  $nombreEsc = htmlspecialchars($usuario['Nombre'] ?: $usuario['Usuario'], ENT_QUOTES, 'UTF-8');
+  $linkEsc = htmlspecialchars($link, ENT_QUOTES, 'UTF-8');
+  $cuerpo = "
+      <p style=\"color:#333333; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; margin:0 0 16px 0;\">
+          Recibimos un pedido para restablecer tu contraseña del Portal de Clientes Caddy.
+      </p>
+      <p style=\"color:#333333; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; margin:0 0 16px 0;\">
+          <a href=\"{$linkEsc}\">Hacé click acá para elegir una nueva contraseña</a>
+      </p>
+      <p style=\"color:#333333; font-family:Arial, Helvetica, sans-serif; font-size:16px; line-height:1.5; margin:0;\">
+          Este link vence en 1 hora. Si no fuiste vos, ignorá este mail.
+      </p>
+  ";
+  $htmlMail = plantillaMailCaddy('¡Hola ' . $nombreEsc . '!', 'Restablecer tu contraseña', $cuerpo);
+  $resultado = enviarMail($mail, $usuario['Nombre'], 'Restablecer tu contraseña - Portal de Clientes Caddy', $htmlMail);
 
   $enviado = (isset($resultado['success']) && $resultado['success'] == 1);
+  $fecha = $enviado ? date('Y-m-d H:i:s') : null;
+  $stmtNotif = $mysqli->prepare("UPDATE usuarios SET NotificacionAccesoEnviada=?, NotificacionAccesoFecha=? WHERE id=? LIMIT 1");
+  $enviadoInt = $enviado ? 1 : 0;
+  $stmtNotif->bind_param("isi", $enviadoInt, $fecha, $usuarioId);
+  $stmtNotif->execute();
+  $stmtNotif->close();
+
   echo json_encode([
     'success' => $enviado,
     'error' => $enviado ? null : ($resultado['msg'] ?? 'No se pudo enviar el mail.'),

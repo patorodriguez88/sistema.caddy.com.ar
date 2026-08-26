@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 
 // Verificar la conexión con la base de datos

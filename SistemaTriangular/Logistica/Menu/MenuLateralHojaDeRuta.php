@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../Conexion/Conexioni.php";
 // include_once "../ConexionBD.php";
 ?>

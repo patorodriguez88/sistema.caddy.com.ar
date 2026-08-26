@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 
 $sql=$mysqli->query("SELECT Logistica.id,Logistica.NumerodeOrden,Logistica.Recorrido,

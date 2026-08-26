@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 
 $result=$mysqli->query("SELECT Fecha,COUNT(v.id) AS Total,SUM(Flex)as Flex FROM TransClientes v 

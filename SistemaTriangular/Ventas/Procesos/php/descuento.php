@@ -1,5 +1,4 @@
 <?php
-session_start();
 include('../../../Conexion/Conexioni.php');
 mysqli_set_charset($mysqli,"utf8"); 
 header('Content-Type: application/json');

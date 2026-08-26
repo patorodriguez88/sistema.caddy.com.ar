@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 include_once "../../../Empleados/Procesos/php/asana_api.php";
 $dominio='AA523RS';

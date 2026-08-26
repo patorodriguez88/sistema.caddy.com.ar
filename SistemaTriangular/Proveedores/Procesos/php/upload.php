@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 // Verificar si hay un usuario en sesión
 if (!isset($_SESSION['Usuario'])) {

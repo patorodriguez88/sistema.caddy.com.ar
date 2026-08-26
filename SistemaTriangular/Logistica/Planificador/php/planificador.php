@@ -56,7 +56,7 @@ if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
     // en planificador.js), mismo criterio que ya usa orden_automatico.php.
     $stmt = $mysqli->prepare("
         SELECT ts.id, ts.CodigoSeguimiento, cs.nombrecliente, cs.Latitud, cs.Longitud,
-               COALESCE(ts.HorarioEntregaSolicitado, cs.HorarioEntregaSolicitado) AS HorarioEntregaSolicitado
+               COALESCE(ts.HorarioEntregaSolicitado, cs.HorarioEntregaDesde) AS HorarioEntregaSolicitado
         FROM TransClientes AS ts
         LEFT JOIN Clientes AS cs ON ts.idClienteDestino = cs.id
         WHERE ts.Eliminado = 0

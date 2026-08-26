@@ -96,7 +96,7 @@ if (isset($_POST['id_servicio'])) {
 
 if (isset($_POST['id_origen'])) {
   $id = $_POST['id_origen'];
-  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,Retiro,Direccion1,HorarioEntregaSolicitado FROM Clientes WHERE id='$id' AND Eliminado=0");
+  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,Retiro,Direccion1,HorarioEntregaDesde FROM Clientes WHERE id='$id' AND Eliminado=0");
   $datoclientes = $sqlclientes->fetch_array(MYSQLI_ASSOC);
 
 
@@ -104,7 +104,10 @@ if (isset($_POST['id_origen'])) {
   $Direccion = $datoclientes['Direccion'];
   $Direccion1 = $datoclientes['Direccion1'];
   $Retiro = $datoclientes['Retiro'];
-  $HorarioEntregaSolicitado = $datoclientes['HorarioEntregaSolicitado'];
+  // Sugerencia para la venta puntual (que sigue siendo un solo horario, no
+  // ventana) - se usa el Desde del cliente como antes se usaba el único
+  // horario que tenía.
+  $HorarioEntregaSolicitado = $datoclientes['HorarioEntregaDesde'];
   $_SESSION['idOrigen'] = $id;
   $_SESSION['NombreClienteA'] = $Nombre;
 
@@ -142,12 +145,12 @@ if (isset($_POST['id_origen'])) {
 
 if (isset($_POST['id_destino'])) {
   $id = $_POST['id_destino'];
-  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,HorarioEntregaSolicitado FROM Clientes WHERE id='$id'");
+  $sqlclientes = $mysqli->query("SELECT nombrecliente,Direccion,HorarioEntregaDesde FROM Clientes WHERE id='$id'");
   $datoclientes = $sqlclientes->fetch_array(MYSQLI_ASSOC);
   $_SESSION['idDestino'] = $id;
   $Nombre = $datoclientes['nombrecliente'];
   $Direccion = $datoclientes['Direccion'];
-  $HorarioEntregaSolicitado = $datoclientes['HorarioEntregaSolicitado'];
+  $HorarioEntregaSolicitado = $datoclientes['HorarioEntregaDesde'];
   echo json_encode(array('success' => 1, 'Nombre' => $Nombre, 'Direccion' => $Direccion, 'HorarioEntregaSolicitado' => $HorarioEntregaSolicitado));
 }
 

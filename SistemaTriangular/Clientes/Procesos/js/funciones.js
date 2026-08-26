@@ -2051,7 +2051,8 @@ $("#buscarcliente").change(function () {
         $("#email").val(jsonData.Mail);
         $("#web").val(jsonData.Web);
         $("#observaciones").val(jsonData.Observaciones);
-        $("#horario_entrega_cliente").val(jsonData.HorarioEntregaSolicitado);
+        $("#horario_entrega_cliente").val(jsonData.HorarioEntregaDesde);
+        $("#horario_entrega_cliente_hasta").val(jsonData.HorarioEntregaHasta);
         $("#ingresosbrutos").val(jsonData.IngresosBrutos);
         //FACTURACION
         $("#razonsocial_facturacion").val(jsonData.RazonSocial_f);
@@ -2810,7 +2811,7 @@ $("#accesos_web_lista").on("click", ".btn-resetear-acceso-web", function () {
   Swal.fire({
     icon: "warning",
     title: "Resetear Contraseña",
-    html: "Se va a generar una contraseña nueva y notificarla por mail; la actual dejará de funcionar.",
+    html: "Le vamos a mandar un mail con un link para que elija una contraseña nueva. La actual sigue funcionando hasta que la cambie desde ese link.",
     showCancelButton: true,
     confirmButtonText: "Sí, resetear",
     cancelButtonText: "Cancelar",
@@ -2824,7 +2825,7 @@ $("#accesos_web_lista").on("click", ".btn-resetear-acceso-web", function () {
       dataType: "json",
       success: function (jsonData) {
         if (jsonData.success) {
-          toast("success", "Listo !", "Contraseña reseteada y notificada por mail.");
+          toast("success", "Listo !", "Le mandamos el link para restablecer la contraseña por mail.");
         } else {
           toast("error", "Error", jsonData.error || "No se pudo resetear la contraseña.");
         }
@@ -2989,6 +2990,7 @@ $("#guardar_botton").click(function () {
   var web = document.getElementById("web").value;
   var obs = document.getElementById("observaciones").value;
   var horario = document.getElementById("horario_entrega_cliente").value;
+  var horarioHasta = document.getElementById("horario_entrega_cliente_hasta").value;
   var retiro = document.getElementById("retira").value;
   //FACTURACION
   var razonsocial_f = document.getElementById("razonsocial_facturacion").value;
@@ -3038,6 +3040,7 @@ $("#guardar_botton").click(function () {
     web: web,
     obs: obs,
     horario: horario,
+    horarioHasta: horarioHasta,
     retiro: retiro,
     razonsocial_f: razonsocial_f,
     direccion_f: direccion_f,

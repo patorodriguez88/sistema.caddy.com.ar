@@ -2162,7 +2162,7 @@
                                                         </div>
                                                     </div>
                                                     <div class="row">
-                                                        <div class="col-lg-9 mt-3">
+                                                        <div class="col-lg-6 mt-3">
                                                             <div class="form-group">
                                                                 <label for="observaciones">Observaciones</label>
                                                                 <input type="text" id="observaciones" class="form-control">
@@ -2170,8 +2170,14 @@
                                                         </div>
                                                         <div class="col-lg-3 mt-3">
                                                             <div class="form-group">
-                                                                <label for="horario_entrega_cliente">Horario de Entrega Preferido</label>
+                                                                <label for="horario_entrega_cliente">Horario Entrega Preferido Desde</label>
                                                                 <input type="time" id="horario_entrega_cliente" class="form-control" title="Opcional: se sugiere solo al crear una venta nueva para este cliente, no obliga a cumplirlo.">
+                                                            </div>
+                                                        </div>
+                                                        <div class="col-lg-3 mt-3">
+                                                            <div class="form-group">
+                                                                <label for="horario_entrega_cliente_hasta">Horario Entrega Preferido Hasta</label>
+                                                                <input type="time" id="horario_entrega_cliente_hasta" class="form-control" title="Opcional: se sugiere solo al crear una venta nueva para este cliente, no obliga a cumplirlo.">
                                                             </div>
                                                         </div>
                                                     </div>

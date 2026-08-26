@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 // $Recorrido=$_SESSION[Recorrido];
 $Recorrido=$_POST[Recorrido];

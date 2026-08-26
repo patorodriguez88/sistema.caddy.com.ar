@@ -1,5 +1,4 @@
 <?php
-session_start();
 
         include_once "../Conexion/Conexioni.php";
         $mostrarBoton = true; // Establece esta variable según tu lógica para decidir si mostrar o no el botón

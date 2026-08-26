@@ -1,5 +1,4 @@
 <?php
-session_start();
 require_once('../../../Conexion/Conexioni.php');
     
     // $query = "SELECT Latitud,Longitud,nombrecliente,Logistica.Recorrido,HojaDeRuta.Posicion FROM Clientes 

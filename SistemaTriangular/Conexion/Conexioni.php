@@ -1,4 +1,22 @@
 <?php
+// Mismo motivo que en plataforma.caddy.com.ar/Conexion/Conexioni.php: los dos
+// sistemas viven en el mismo cPanel y usaban el nombre de cookie por default
+// de PHP (PHPSESSID) sin fijar dominio/path - eso puede hacer que el
+// navegador mande la misma cookie a ambos subdominios (o que compartan
+// session.save_path) y que un login acá termine mezclado con la sesión de
+// plataforma.caddy.com.ar, ya que las dos usan las mismas claves de
+// $_SESSION (Usuario, NCliente, etc.). Nombre de cookie propio + dominio
+// explícito (host-only) corta el cruce sin depender de la config del
+// hosting.
+session_name('CADDY_SISTEMA_SESSID');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '', // host-only: nunca .caddy.com.ar
+    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
 session_start();
 
 // Evita que el navegador guarde en caché (o restaure con el botón "atrás"/bfcache)

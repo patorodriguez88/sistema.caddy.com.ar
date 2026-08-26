@@ -1,5 +1,17 @@
 <?php
 if (session_status() === PHP_SESSION_NONE) {
+    // Mismo nombre/params que Conexion/Conexioni.php - este es el login, si
+    // acá se arranca la sesión con otro nombre que el resto del sitio, el
+    // usuario queda logueado en una sesión que ninguna otra página ve.
+    session_name('CADDY_SISTEMA_SESSID');
+    session_set_cookie_params([
+        'lifetime' => 0,
+        'path' => '/',
+        'domain' => '',
+        'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 // Conexión rápida directa (evita Conexioni)

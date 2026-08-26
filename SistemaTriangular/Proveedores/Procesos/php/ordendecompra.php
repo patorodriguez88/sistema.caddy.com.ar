@@ -1,5 +1,4 @@
 <?php
-session_start();
 include_once "../../../Conexion/Conexioni.php";
 $Usuario = $_SESSION['Usuario'];
 $Nivel = $_SESSION['Nivel'];

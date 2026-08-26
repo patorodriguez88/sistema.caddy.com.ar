@@ -1,5 +1,4 @@
 <?php
-session_start();
 require("../../../Conexion/Conexioni.php");
 function geolocalizar($direccion){
     // urlencode codifica datos de texto modificando simbolos como acentos
