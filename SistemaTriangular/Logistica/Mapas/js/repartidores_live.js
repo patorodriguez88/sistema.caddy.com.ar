@@ -37,28 +37,39 @@ function cargarRepartidores() {
   });
 }
 
+var MOTIVOS_PAUSA_TEXTO = {
+  mecanico: "Mecánico / Rotura",
+  descanso: "Descanso",
+  transito: "Tránsito / Accidente",
+  otro: "Otro",
+};
+
 function pintarMapa(repartidores) {
   var vistos = {};
 
   repartidores.forEach(function (r) {
     vistos[r.usuario] = true;
     var sinSenal = minutosDesde(r.timestamp) > MINUTOS_SIN_SENAL;
+    var pausado = !!r.pausaMotivo;
     var pos = { lat: r.lat, lng: r.lng };
 
     if (marcadoresRepartidores[r.usuario]) {
       marcadoresRepartidores[r.usuario].setPosition(pos);
-      marcadoresRepartidores[r.usuario].setIcon(iconoRepartidor(sinSenal));
+      marcadoresRepartidores[r.usuario].setIcon(iconoRepartidor(sinSenal, pausado));
     } else {
       marcadoresRepartidores[r.usuario] = new google.maps.Marker({
         position: pos,
         map: mapaRepartidores,
         title: r.nombre,
-        icon: iconoRepartidor(sinSenal),
+        icon: iconoRepartidor(sinSenal, pausado),
       });
     }
 
+    var motivoTxt = pausado ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo : "";
     marcadoresRepartidores[r.usuario].setTitle(
-      r.nombre + (r.recorrido ? " - Recorrido " + r.recorrido : "")
+      r.nombre +
+        (r.recorrido ? " - Recorrido " + r.recorrido : "") +
+        (pausado ? " - ⏸ PAUSADO: " + motivoTxt + (r.pausaDetalle ? " (" + r.pausaDetalle + ")" : "") : "")
     );
   });
 
@@ -72,14 +83,18 @@ function pintarMapa(repartidores) {
   });
 }
 
-function iconoRepartidor(sinSenal) {
+function iconoRepartidor(sinSenal, pausado) {
+  var color = "#0acf97"; // verde: en movimiento, ok
+  if (pausado) color = "#fa5c7c"; // rojo: parado por algún inconveniente
+  else if (sinSenal) color = "#98a6ad"; // gris: sin señal reciente
+
   return {
     path: google.maps.SymbolPath.CIRCLE,
-    scale: 8,
-    fillColor: sinSenal ? "#98a6ad" : "#0acf97",
+    scale: pausado ? 10 : 8,
+    fillColor: color,
     fillOpacity: 1,
     strokeColor: "#ffffff",
-    strokeWeight: 2,
+    strokeWeight: pausado ? 3 : 2,
   };
 }
 
@@ -96,6 +111,8 @@ function pintarLista(repartidores) {
     var mins = minutosDesde(r.timestamp);
     var sinSenal = mins > MINUTOS_SIN_SENAL;
     var haceCuanto = mins < 1 ? "recién" : mins + " min";
+    var pausado = !!r.pausaMotivo;
+    var motivoTxt = pausado ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo : "";
 
     html +=
       '<div class="d-flex align-items-center justify-content-between py-2 border-bottom">' +
@@ -104,9 +121,15 @@ function pintarLista(repartidores) {
       '<div class="text-muted" style="font-size:12px;">' +
       (r.recorrido ? "Recorrido " + r.recorrido : "Sin recorrido asignado") +
       "</div>" +
+      (pausado
+        ? '<div class="text-danger fw-semibold" style="font-size:12px;">⏸ ' +
+          motivoTxt +
+          (r.pausaDetalle ? " - " + r.pausaDetalle : "") +
+          "</div>"
+        : "") +
       "</div>" +
-      '<span class="badge ' + (sinSenal ? "bg-secondary" : "bg-success") + '">' +
-      (sinSenal ? "Sin señal (" + haceCuanto + ")" : "Hace " + haceCuanto) +
+      '<span class="badge ' + (pausado ? "bg-danger" : sinSenal ? "bg-secondary" : "bg-success") + '">' +
+      (pausado ? "Pausado" : sinSenal ? "Sin señal (" + haceCuanto + ")" : "Hace " + haceCuanto) +
       "</span>" +
       "</div>";
   });
