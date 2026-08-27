@@ -33,8 +33,35 @@ try {
     $res = $mysqli->query($sql);
 }
 
+// Entregados/total de paquetes del recorrido de cada repartidor (para el
+// "5/6" que se muestra al lado del nombre en la lista). Una consulta chica
+// por repartidor (son pocos por día) en vez de una sola con GROUP BY, para
+// no complicar el query principal de arriba.
+function contarPaquetesRecorrido(mysqli $mysqli, string $recorrido): array
+{
+    if ($recorrido === '') {
+        return ['total' => null, 'entregados' => null];
+    }
+    $recorridoEsc = $mysqli->real_escape_string($recorrido);
+    $res = $mysqli->query(
+        "SELECT COUNT(*) AS total, SUM(TransClientes.Entregado = 1) AS entregados
+         FROM HojaDeRuta
+         INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento = HojaDeRuta.Seguimiento
+         WHERE HojaDeRuta.Recorrido = '{$recorridoEsc}'
+           AND HojaDeRuta.Eliminado = 0
+           AND HojaDeRuta.Devuelto = 0
+           AND TransClientes.Eliminado = 0"
+    );
+    $row = $res ? $res->fetch_assoc() : null;
+    return [
+        'total'      => $row ? (int) $row['total'] : null,
+        'entregados' => $row ? (int) $row['entregados'] : null,
+    ];
+}
+
 $repartidores = [];
 while ($row = $res->fetch_assoc()) {
+    $paquetes = contarPaquetesRecorrido($mysqli, (string) $row['Recorrido']);
     $repartidores[] = [
         'nombre'         => $row['Nombre'],
         'usuario'        => $row['Usuario'],
@@ -46,6 +73,8 @@ while ($row = $res->fetch_assoc()) {
         'pausaMotivo'    => $row['PausaMotivo'],
         'pausaDetalle'   => $row['PausaDetalle'],
         'pausaInicio'    => $row['PausaInicio'],
+        'totalPaquetes'  => $paquetes['total'],
+        'entregados'     => $paquetes['entregados'],
     ];
 }
 

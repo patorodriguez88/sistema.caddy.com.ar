@@ -66,9 +66,14 @@ function pintarMapa(repartidores) {
     }
 
     var motivoTxt = pausado ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo : "";
+    var conteoTxt =
+      r.totalPaquetes != null && r.entregados != null
+        ? " - " + r.entregados + "/" + r.totalPaquetes + " entregados"
+        : "";
     marcadoresRepartidores[r.usuario].setTitle(
       r.nombre +
         (r.recorrido ? " - Recorrido " + r.recorrido : "") +
+        conteoTxt +
         (pausado ? " - ⏸ PAUSADO: " + motivoTxt + (r.pausaDetalle ? " (" + r.pausaDetalle + ")" : "") : "")
     );
   });
@@ -114,6 +119,17 @@ function pintarLista(repartidores) {
     var pausado = !!r.pausaMotivo;
     var motivoTxt = pausado ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo : "";
 
+    var tieneConteo = r.totalPaquetes != null && r.entregados != null;
+    var pendientes = tieneConteo ? r.totalPaquetes - r.entregados : null;
+    var conteoHtml = tieneConteo
+      ? '<div style="font-size:12px;">' +
+        '<span class="text-success fw-semibold">' + r.entregados + " entregados</span>" +
+        (pendientes > 0
+          ? ' &middot; <span class="text-danger fw-semibold">' + pendientes + " pendientes</span>"
+          : "") +
+        "</div>"
+      : "";
+
     html +=
       '<div class="d-flex align-items-center justify-content-between py-2 border-bottom">' +
       '<div>' +
@@ -121,6 +137,7 @@ function pintarLista(repartidores) {
       '<div class="text-muted" style="font-size:12px;">' +
       (r.recorrido ? "Recorrido " + r.recorrido : "Sin recorrido asignado") +
       "</div>" +
+      conteoHtml +
       (pausado
         ? '<div class="text-danger fw-semibold" style="font-size:12px;">⏸ ' +
           motivoTxt +
