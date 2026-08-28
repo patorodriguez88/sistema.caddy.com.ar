@@ -8,6 +8,7 @@
     mysqli_set_charset($mysqli,"utf8");
     date_default_timezone_set('America/Argentina/Buenos_Aires');
     $Fecha=date('Y-m-d');
+    $Response=null;
 
  for($i=0;$i<count($dato1);$i++){   
 
@@ -15,8 +16,15 @@
     $rowPreVenta= $ResultadoPreVenta->fetch_array(MYSQLI_ASSOC);
     $idClienteOrigen=$rowPreVenta['NCliente'];
 
-    $Resultado= $mysqli->query("SELECT * FROM Webhook WHERE idCliente='".$idClienteOrigen."'");   
+    // Solo webhooks ACTIVOS y con endpoint cargado. Sin este filtro, cualquier
+    // fila vieja/de prueba en `Webhook` (Activo NULL/0) generaba un POST a una
+    // URL fantasma y un registro basura en Webhook_notifications.
+    $Resultado= $mysqli->query("SELECT * FROM Webhook WHERE idCliente='".$idClienteOrigen."' AND Activo=1 AND Endpoint IS NOT NULL AND Endpoint<>'' LIMIT 1");
     $row = $Resultado->fetch_array(MYSQLI_ASSOC);
+
+    if(!$row){
+        continue; // este cliente no tiene webhook activo: no se notifica ni se registra
+    }
 
     $sql= $mysqli->query("SELECT DiaSalida,Localidad FROM Localidades WHERE Cp = '" . $rowPreVenta[cpdestino] . "'");   
     $rowDia= $sql->fetch_array(MYSQLI_ASSOC);    
