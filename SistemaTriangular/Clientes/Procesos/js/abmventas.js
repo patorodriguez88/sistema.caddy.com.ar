@@ -75,7 +75,16 @@ var id= $('#id_modificar').val();
         },
         columns: [
           {data:"idPedido"},
-          {data:"FechaPedido"},
+          {data:"FechaPedido",
+           render: function (data, type, row) {
+            if (type !== 'display' || !data) { return data; }
+            // Espera 'YYYY-MM-DD' (con o sin hora). Se parsea el string para
+            // evitar corrimientos por zona horaria de new Date().
+            var m = String(data).match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (!m) { return data; }
+            return parseInt(m[3], 10) + '.' + parseInt(m[2], 10) + '.' + m[1];
+           }
+          },
           {data:"Codigo"},
           {data:"Titulo"},
           {data:"Total",
