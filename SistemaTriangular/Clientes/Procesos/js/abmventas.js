@@ -64,9 +64,11 @@ var id= $('#id_modificar').val();
          processing: true,
          type:'post'
         },
-        createdRow: function (row, data) {
+        rowCallback: function (row, data, index) {
           // Línea de cobranza integrada que NO se factura (se liquida por
           // rendición): se muestra en rojo y no suma al total del servicio.
+          // Igual que el sistema viejo: rowCallback (corre en cada dibujado),
+          // no createdRow (corre una sola vez y el tema pisaba el color).
           if (data.not_invoice == 1) {
             $(row).css('color', 'red');
           }
