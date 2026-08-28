@@ -423,11 +423,11 @@
                                 <div class="col-xl-12  col-lg-6">
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="dropdown float-right">
-                                                <a href="#" class="dropdown-toggle arrow-none card-drop p-0" data-bs-toggle="dropdown" aria-expanded="true">
+                                            <div class="dropdown float-end">
+                                                <a href="#" class="dropdown-toggle arrow-none card-drop p-0" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="mdi mdi-dots-vertical"></i>
                                                 </a>
-                                                <div class="dropdown-menu dropdown-menu-right" x-placement="bottom-end" style="position: absolute; transform: translate3d(-140px, 22px, 0px); top: 0px; left: 0px; will-change: transform;">
+                                                <div class="dropdown-menu dropdown-menu-end">
                                                     <a role="button" id="enter_registration" class="dropdown-item">Agregar Registro</a>
                                                 </div>
                                             </div>
@@ -466,14 +466,14 @@
                                 </div> <!-- end col -->
 
                                 <!-- end row -->
-                                <div class="col-xl-12  col-lg-6">
+                                <div class="col-xl-12  col-lg-6" id="webhook_card" style="display:none">
                                     <div class="card">
                                         <div class="card-body">
-                                            <div class="dropdown float-right">
-                                                <a href="#" class="dropdown-toggle arrow-none card-drop p-0" data-bs-toggle="dropdown" aria-expanded="true">
+                                            <div class="dropdown float-end">
+                                                <a href="#" class="dropdown-toggle arrow-none card-drop p-0" data-bs-toggle="dropdown" aria-expanded="false">
                                                     <i class="mdi mdi-dots-vertical"></i>
                                                 </a>
-                                                <div class="dropdown-menu dropdown-menu-right" x-placement="bottom-end" style="position: absolute; transform: translate3d(-140px, 22px, 0px); top: 0px; left: 0px; will-change: transform;">
+                                                <div class="dropdown-menu dropdown-menu-end">
                                                     <!-- <a role="button" id="enter_registration" class="dropdown-item">Agregar Registro</a>                                                 -->
                                                 </div>
                                             </div>

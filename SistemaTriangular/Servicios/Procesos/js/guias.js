@@ -2,6 +2,14 @@ var button_ver = 0;
 var state = 0;
 var colorestado = "primary";
 
+// Formatea 'YYYY-MM-DD' (con o sin hora) como 'd.m.yyyy'. Solo para mostrar;
+// para ordenar/filtrar DataTables sigue usando el valor crudo.
+function fechaDMY(data, type) {
+  if (type !== "display" || !data) return data;
+  var m = String(data).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? parseInt(m[3], 10) + "." + parseInt(m[2], 10) + "." + m[1] : data;
+}
+
 $(document).ready(function () {
   $("#inputcodigo").val("");
   $("#inputcodigoproveedor").val("");
@@ -662,51 +670,51 @@ function seguimiento(cs) {
             "</p>" +
             //'<p class="mb-1"><b>Forma de Pago : </b>'+ jsonData.data[0].FormaDePago + '  <i class="mdi mdi-reload text-warning"/> </i></p>'+
 
-            '<div class="custom-control custom-switch">' +
-            '<input type="checkbox" class="custom-control-input" id="formadepago_c" ' +
+            '<div class="form-check form-switch mb-1">' +
+            '<input type="checkbox" role="switch" class="form-check-input" id="formadepago_c" ' +
             formadepagochecked +
             ' value="' +
             jsonData.data[0].FormaDePago +
             '" ' +
             dis +
             ">" +
-            '<label class="custom-control-label" for="formadepago_c"><p class="mb-1"><b id="formadepago_b">Forma De Pago : ' +
+            '<label class="form-check-label" for="formadepago_c"><p class="mb-1"><b id="formadepago_b">Forma De Pago : ' +
             formadepago +
             "</b></p></label>" +
             "</div>" +
-            '<div class="custom-control custom-switch">' +
-            '<input type="checkbox" class="custom-control-input" id="cobrarenvio_c" ' +
+            '<div class="form-check form-switch mb-1">' +
+            '<input type="checkbox" role="switch" class="form-check-input" id="cobrarenvio_c" ' +
             cobrarenviochecked +
             ' value="' +
             jsonData.data[0].CobrarEnvio +
             '" ' +
             dis +
             ">" +
-            '<label class="custom-control-label" for="cobrarenvio_c"><p class="mb-1"><b id="cobrarenvio_b">Cobrar Envio : ' +
+            '<label class="form-check-label" for="cobrarenvio_c"><p class="mb-1"><b id="cobrarenvio_b">Cobrar Envio : ' +
             cobrarenvio +
             "</b></p></label>" +
             "</div>" +
-            '<div class="custom-control custom-switch">' +
-            '<input type="checkbox" class="custom-control-input" id="cobrarcaddy_c" ' +
+            '<div class="form-check form-switch mb-1">' +
+            '<input type="checkbox" role="switch" class="form-check-input" id="cobrarcaddy_c" ' +
             cobrarcaddychecked +
             ' value="' +
             jsonData.data[0].CobrarCaddy +
             '" ' +
             dis +
             ">" +
-            '<label class="custom-control-label" for="cobrarcaddy_c"><p class="mb-1"><b id="cobrarcaddy_b">Cobrar Caddy : ' +
+            '<label class="form-check-label" for="cobrarcaddy_c"><p class="mb-1"><b id="cobrarcaddy_b">Cobrar Caddy : ' +
             cobrarcaddy +
             "</b></p></label>" +
             "</div>" +
-            '<div class="custom-control custom-switch">' +
-            '<input type="checkbox" class="custom-control-input" id="estadohdr_c" ' +
+            '<div class="form-check form-switch mb-1">' +
+            '<input type="checkbox" role="switch" class="form-check-input" id="estadohdr_c" ' +
             estadochecked +
             ' value="' +
             jsonData[1].Estado +
             '" ' +
             dis +
             ">" +
-            '<label class="custom-control-label" for="estadohdr_c" ><p class="mb-1"><b id="estadohdr_b">Estado en HDR : ' +
+            '<label class="form-check-label" for="estadohdr_c" ><p class="mb-1"><b id="estadohdr_b">Estado en HDR : ' +
             jsonData[1].Estado +
             "</b></p></label>" +
             "</div>" +
@@ -1011,7 +1019,7 @@ function seguimiento(cs) {
             type: "post",
           },
           columns: [
-            { data: "Fecha" },
+            { data: "Fecha", render: fechaDMY },
             { data: "Hora" },
             { data: "Usuario" },
             { data: "Observaciones" },
@@ -1036,8 +1044,14 @@ function seguimiento(cs) {
             data: { Webhook: 1, CodigoSeguimiento: id },
             type: "post",
           },
+          // Si el envío no tiene webhooks, no ensuciamos la pantalla: se oculta
+          // toda la card. Se muestra sólo cuando hay al menos una notificación.
+          drawCallback: function (settings) {
+            var hay = settings.json && settings.json.data && settings.json.data.length > 0;
+            $("#webhook_card").toggle(!!hay);
+          },
           columns: [
-            { data: "Fecha" },
+            { data: "Fecha", render: fechaDMY },
             { data: "Hora" },
             { data: "User" },
             { data: "Servidor" },
