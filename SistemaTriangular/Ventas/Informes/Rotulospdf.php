@@ -1,250 +1,343 @@
 <?php
-session_start();
-require('../../fpdf/fpdf.php');
-require('../../../conexion.php');
+/**
+ * Rotulospdf.php  ─  Etiqueta / rótulo de envío (Seguimiento → Rótulos)
+ *
+ * Reescrito para usar EXACTAMENTE el mismo diseño que la etiqueta que el
+ * API entrega a los clientes (api.caddy.com.ar/etiqueta.php → dibujarEtiquetaPDF):
+ * label térmica 10×15 cm, logo, bloque origen, QR, bloque destino, bulto X/Y,
+ * marco punteado. Una página por bulto (según Cantidad del envío).
+ *
+ * Parámetros:
+ *   ?CS=<CodigoSeguimiento>   (uso normal desde Seguimiento / SeguimientoRecorridos)
+ *   ?NR=<NumeroComprobante>   (fallback histórico desde VentasMensuales)
+ */
 
-class PDF extends FPDF
-{
-var $widths;
-var $aligns;
+require_once __DIR__ . '/../../Conexion/Conexioni.php';   // $mysqli + sesión + auth
+require_once __DIR__ . '/../../fpdf/fpdf.php';
+require_once __DIR__ . '/../../phpqrcode/qrlib.php';
 
-function SetWidths($w)
+date_default_timezone_set('America/Buenos_Aires');
+
+
+class EtiquetaPDF extends FPDF
 {
-	//Set the array of column widths
-	$this->widths=$w;
+    public function pdfTxt(string $txt): string
+    {
+        // FPDF core usa ISO-8859-1
+        return mb_convert_encoding($txt, 'ISO-8859-1', 'UTF-8');
+    }
+
+    public function dashedLine($x1, $y1, $x2, $y2, $dash = 1, $gap = 1): void
+    {
+        $this->SetLineWidth(0.2);
+        $this->SetDrawColor(0, 0, 0);
+
+        $dx = $x2 - $x1;
+        $dy = $y2 - $y1;
+        $dist = sqrt($dx * $dx + $dy * $dy);
+        if ($dist == 0) {
+            return;
+        }
+        $dashGapCount = $dist / ($dash + $gap);
+        $dashX = $dx / $dashGapCount;
+        $dashY = $dy / $dashGapCount;
+
+        for ($i = 0; $i < $dashGapCount; $i += 2) {
+            $this->Line(
+                $x1 + ($dashX * $i),
+                $y1 + ($dashY * $i),
+                $x1 + ($dashX * ($i + 1)),
+                $y1 + ($dashY * ($i + 1))
+            );
+        }
+    }
 }
 
-function SetAligns($a)
+
+/**
+ * Trae los datos del envío. Misma lógica que el API (TransClientes → PreVenta),
+ * pero SIN el filtro por dueño (IngBrutosOrigen/NCliente): esta pantalla es
+ * interna y el operador ya está autenticado.
+ */
+function obtenerDatosEnvio(mysqli $mysqli, string $cs, string $nr): ?array
 {
-	//Set the array of column alignments
-	$this->aligns=$a;
+    $cs = $mysqli->real_escape_string($cs);
+    $nr = $mysqli->real_escape_string($nr);
+
+    $where = $cs !== ''
+        ? "tc.CodigoSeguimiento = '$cs'"
+        : "tc.NumeroComprobante = '$nr'";
+
+    // 1) TransClientes
+    $sql = "
+        SELECT
+            tc.id,
+            tc.Fecha,
+            tc.RazonSocial        AS OrigenNombre,
+            tc.DomicilioOrigen    AS OrigenDireccion,
+            tc.LocalidadOrigen    AS OrigenLocalidad,
+            tc.ClienteDestino,
+            tc.DomicilioDestino,
+            tc.LocalidadDestino,
+            tc.ProvinciaDestino,
+            c.CodigoPostal        AS cpdestino,
+            tc.TelefonoDestino    AS Telefono,
+            tc.Cantidad,
+            tc.ValorDeclarado,
+            tc.CobrarEnvio        AS Cobranza,
+            tc.CodigoSeguimiento,
+            tc.CodigoProveedor    AS idProveedor,
+            tc.Recorrido,
+            tc.Usuario,
+            tc.Observaciones
+        FROM TransClientes AS tc
+        LEFT JOIN Clientes AS c ON tc.idClienteDestino = c.id
+        WHERE $where
+          AND tc.Eliminado = '0'
+        LIMIT 1";
+
+    $res = $mysqli->query($sql);
+    if ($res && ($row = $res->fetch_assoc())) {
+        return $row;
+    }
+
+    // 2) PreVenta (solo si vino CS)
+    if ($cs !== '') {
+        $sql = "
+            SELECT
+                id, Fecha,
+                RazonSocial      AS OrigenNombre,
+                DomicilioOrigen  AS OrigenDireccion,
+                LocalidadOrigen  AS OrigenLocalidad,
+                ClienteDestino, DomicilioDestino, LocalidadDestino,
+                cpdestino,
+                Telefono,
+                Cantidad, ValorDeclarado, Cobranza,
+                CodigoSeguimiento,
+                idProveedor,
+                Observaciones
+            FROM PreVenta
+            WHERE CodigoSeguimiento = '$cs'
+              AND Eliminado = '0'
+            LIMIT 1";
+        $res = $mysqli->query($sql);
+        if ($res && ($row = $res->fetch_assoc())) {
+            return $row;
+        }
+    }
+
+    return null;
 }
 
-function Row($data)
+
+/**
+ * Dibuja una etiqueta (una página). Copia fiel de dibujarEtiquetaPDF() del API.
+ */
+function dibujarEtiqueta(EtiquetaPDF $pdf, array $d, int $nroBulto, int $totalBultos): void
 {
-	//Calculate the height of the row
-	$nb=0;
-	for($i=0;$i<count($data);$i++)
-		$nb=max($nb,$this->NbLines($this->widths[$i],$data[$i]));
-	$h=5*$nb;
-	//Issue a page break first if needed
-	$this->CheckPageBreak($h);
-	//Draw the cells of the row
-	for($i=0;$i<count($data);$i++)
-	{
-		$w=$this->widths[$i];
-		$a=isset($this->aligns[$i]) ? $this->aligns[$i] : 'L';
-		//Save the current position
-		$x=$this->GetX();
-		$y=$this->GetY();
-		//Draw the border
-		
-		$this->Rect($x,$y,$w,$h);
+    $margin = 5;
+    $pdf->SetAutoPageBreak(false);
+    $pdf->AddPage();
+    $pdf->SetMargins($margin, $margin, $margin);
+    $pdf->SetXY($margin, $margin);
 
-		$this->MultiCell($w,5,$data[$i],0,$a,'true');
-		//Put the position to the right of the cell
-		$this->SetXY($x+$w,$y);
-	}
-	//Go to the next line
-	$this->Ln($h);
+    $origen        = $d['OrigenNombre']      ?? '';
+    $o_dir         = $d['OrigenDireccion']   ?? '';
+    $o_loc         = $d['OrigenLocalidad']   ?? '';
+    $dest          = $d['ClienteDestino']    ?? '';
+    $d_dir         = $d['DomicilioDestino']  ?? '';
+    $d_loc         = $d['LocalidadDestino']  ?? '';
+    $cp            = $d['cpdestino']         ?? '';
+    $provDest      = $d['ProvinciaDestino']  ?? '';
+    $recorrido     = $d['Recorrido']         ?? '';
+    $tel           = $d['Telefono']          ?? '';
+    $codigoBase    = $d['CodigoSeguimiento'] ?? 'SIN-CODIGO';
+    $usuario       = $d['Usuario']           ?? '';
+    $fechaImp      = date('d/m/Y H:i');
+    $idProveedor   = $d['idProveedor']       ?? '';
+    $id            = $d['id']                ?? '';
+    $observaciones = $d['Observaciones']     ?? '';
+
+    $codigoEtiqueta = $d['CodigoSeguimiento'] ?? 'SIN-CODIGO';
+
+    $pageWidth = $pdf->GetPageWidth();
+    $usableW   = $pageWidth - 2 * $margin;
+
+    /* ===== BLOQUE SUPERIOR: LOGO + ORIGEN ===== */
+    $logoPath   = __DIR__ . '/../../images/LogoCaddy.png';
+    $logoWidth  = 28;
+    $logoHeight = 22;
+
+    $yTop  = $pdf->GetY();
+    $xLogo = $margin;
+
+    if (file_exists($logoPath)) {
+        $pdf->Image($logoPath, $xLogo, $yTop, $logoWidth, 0);
+    }
+
+    $xOrigen = $xLogo + $logoWidth + 3;
+    $wOrigen = $usableW - ($logoWidth + 3);
+
+    $pdf->SetXY($xOrigen, $yTop);
+
+    $nombre = $pdf->pdfTxt($origen);
+    $pdf->SetFont('Arial', 'B', 11);
+    $wNombre = $pdf->GetStringWidth($nombre) + 1;
+    $pdf->Cell($wNombre, 5, $nombre, 0, 0, 'L');
+
+    $pdf->SetFont('Arial', '', 8);
+    $pdf->Cell(0, 5, ' #' . $idProveedor, 0, 1, 'L');
+
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetX($xOrigen);
+    $pdf->Cell($wOrigen, 4, $pdf->pdfTxt($o_dir), 0, 1, 'L');
+    $pdf->SetX($xOrigen);
+    $pdf->Cell($wOrigen, 4, $pdf->pdfTxt($o_loc), 0, 1, 'L');
+    $pdf->SetX($xOrigen);
+    $pdf->Cell($wOrigen, 4, 'Venta: ' . $pdf->pdfTxt((string) $id), 0, 1, 'L');
+
+    $yAfterTop = max($yTop + $logoHeight, $pdf->GetY());
+
+    /* ===== BULTO X/Y DEBAJO DEL LOGO ===== */
+    if ($totalBultos >= 1) {
+        $pdf->SetFont('Arial', 'B', 20);
+        $alturaFraccion = $yTop + $logoHeight - 2;
+        $pdf->SetXY($margin, $alturaFraccion);
+        $pdf->Cell(0, 10, $nroBulto . '/' . $totalBultos, 0, 1, 'L');
+        $yAfterTop = max($alturaFraccion + 10, $pdf->GetY());
+    }
+
+    $pdf->SetY($yAfterTop + 3);
+    $y = $pdf->GetY();
+    $pdf->Line($margin, $y, $pageWidth - $margin, $y);
+    $pdf->Ln(2);
+
+    /* ===== CÓDIGO GRANDE (centrado) ===== */
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->Cell(0, 5, $codigoEtiqueta, 0, 1, 'C');
+    $pdf->Ln(3);
+
+    $y = $pdf->GetY();
+    $pdf->Line($margin, $y, $pageWidth - $margin, $y);
+    $pdf->Ln(3);
+
+    /* ===== BLOQUE QR + DATOS ===== */
+    $qrSize = 30;
+    $qrX    = $margin;
+    $qrY    = $pdf->GetY();
+
+    if (!empty($codigoEtiqueta)) {
+        $tmpQR = sys_get_temp_dir() . '/qr_' . md5($codigoEtiqueta . '|' . $nroBulto) . '.png';
+        QRcode::png($codigoEtiqueta, $tmpQR, QR_ECLEVEL_L, 4);
+        if (file_exists($tmpQR)) {
+            $pdf->Image($tmpQR, $qrX, $qrY, $qrSize, $qrSize);
+            @unlink($tmpQR);
+        }
+    }
+
+    $xDatosQR = $qrX + $qrSize + 4;
+    $wDatosQR = $usableW - ($qrSize + 4);
+
+    $pdf->SetXY($xDatosQR, $qrY);
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Cell($wDatosQR, 5, $codigoEtiqueta, 0, 1, 'L');
+
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetX($xDatosQR);
+    $pdf->Cell($wDatosQR, 5, 'CP: ' . $cp, 0, 1, 'L');
+    $pdf->SetX($xDatosQR);
+    $pdf->Cell($wDatosQR, 5, $pdf->pdfTxt($d_loc), 0, 1, 'L');
+
+    if (!empty($provDest)) {
+        $pdf->SetX($xDatosQR);
+        $pdf->Cell($wDatosQR, 5, 'Prov: ' . $pdf->pdfTxt($provDest), 0, 1, 'L');
+    }
+    if (!empty($recorrido)) {
+        $pdf->SetX($xDatosQR);
+        $pdf->Cell($wDatosQR, 5, 'Recorrido: ' . $recorrido, 0, 1, 'L');
+    }
+
+    $yAfterQR = max($qrY + $qrSize, $pdf->GetY());
+    $pdf->SetY($yAfterQR + 3);
+
+    $y = $pdf->GetY();
+    $pdf->Line($margin, $y, $pageWidth - $margin, $y);
+    $pdf->Ln(3);
+
+    /* ===== DESTINO ===== */
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->Cell(0, 5, 'DESTINO', 0, 1, 'L');
+
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->Cell(0, 4, $pdf->pdfTxt($dest), 0, 1, 'L');
+    $pdf->Cell(0, 4, $pdf->pdfTxt($d_dir), 0, 1, 'L');
+    $pdf->Cell(0, 4, $pdf->pdfTxt($d_loc . ' (' . $cp . ')'), 0, 1, 'L');
+
+    $pdf->SetFont('Arial', '', 9);
+    $pdf->MultiCell(0, 4, 'REFERENCIAS: ' . $pdf->pdfTxt($observaciones), 0, 'L');
+    $pdf->Ln(2);
+    $pdf->Ln(2);
+
+    /* ===== PIE ===== */
+    $pdf->SetFont('Arial', '', 7);
+    $pdf->Cell(0, 4, 'Usuario: ' . $usuario . '  |  Fecha: ' . $fechaImp, 0, 1, 'R');
+
+    /* ===== Marco punteado ===== */
+    $x = 2;
+    $y = 2;
+    $w = 96;
+    $h = 146;
+    $pdf->dashedLine($x, $y, $x + $w, $y);
+    $pdf->dashedLine($x, $y + $h, $x + $w, $y + $h);
+    $pdf->dashedLine($x, $y, $x, $y + $h);
+    $pdf->dashedLine($x + $w, $y, $x + $w, $y + $h);
 }
 
-function CheckPageBreak($h)
-{
-	//If the height h would cause an overflow, add a new page immediately
-	if($this->GetY()+$h>$this->PageBreakTrigger)
-		$this->AddPage($this->CurOrientation);
+
+/* =========================== CONTROLADOR =========================== */
+
+$cs = isset($_GET['CS']) ? trim((string) $_GET['CS']) : '';
+$nr = isset($_GET['NR']) ? trim((string) $_GET['NR']) : '';
+
+if ($cs === '' && $nr === '') {
+    header('Content-Type: text/plain; charset=UTF-8');
+    echo 'Falta el parámetro CS (Código de Seguimiento) o NR.';
+    exit;
 }
 
-function NbLines($w,$txt)
-{
-	//Computes the number of lines a MultiCell of width w will take
-	$cw=&$this->CurrentFont['cw'];
-	if($w==0)
-		$w=$this->w-$this->rMargin-$this->x;
-	$wmax=($w-2*$this->cMargin)*1000/$this->FontSize;
-	$s=str_replace("\r",'',$txt);
-	$nb=strlen($s);
-	if($nb>0 and $s[$nb-1]=="\n")
-		$nb--;
-	$sep=-1;
-	$i=0;
-	$j=0;
-	$l=0;
-	$nl=1;
-	while($i<$nb)
-	{
-		$c=$s[$i];
-		if($c=="\n")
-		{
-			$i++;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-			continue;
-		}
-		if($c==' ')
-			$sep=$i;
-		$l+=$cw[$c];
-		if($l>$wmax)
-		{
-			if($sep==-1)
-			{
-				if($i==$j)
-					$i++;
-			}
-			else
-				$i=$sep+1;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-		}
-		else
-			$i++;
-	}
-	return $nl;
+$datos = obtenerDatosEnvio($mysqli, $cs, $nr);
+
+if (ob_get_length()) {
+    ob_end_clean();
 }
 
+$pdf = new EtiquetaPDF('P', 'mm', [100, 150]);
+
+if (!$datos) {
+    $pdf->SetAutoPageBreak(false);
+    $pdf->AddPage();
+    $pdf->SetFont('Arial', 'B', 12);
+    $pdf->SetXY(8, 20);
+    $pdf->MultiCell(84, 6, $pdf->pdfTxt('No se encontró ningún envío para ' . ($cs !== '' ? "CS=$cs" : "NR=$nr") . '.'), 0, 'L');
+} else {
+    $totalBultos = max(1, (int) ($datos['Cantidad'] ?? 1));
+    $codigoBase  = $datos['CodigoSeguimiento'] ?? $cs;
+
+    for ($i = 1; $i <= $totalBultos; $i++) {
+        $d = $datos;
+        // El código por bulto: igual que el API cuando hay más de un bulto
+        if ($totalBultos > 1) {
+            $d['CodigoSeguimiento'] = $codigoBase . '_' . $i;
+        }
+        dibujarEtiqueta($pdf, $d, $i, $totalBultos);
+    }
 }
-$cliente= $_SESSION['ClienteActivo'];
-$NumeroRepo=$_GET['NR'];
-$CodigoSeguimiento=$_GET[CS];
-	$con = new DB;
-	$pacientes = $con->conectar();	
-	$strConsulta = "SELECT * FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento'";
-	$pacientes = mysql_query($strConsulta);
-	$fila = mysql_fetch_array($pacientes);
 
-$bulto='1';
-$bultototal='5';
-$numfilas=$fila['Cantidad'];
+$filename = ($cs !== '' ? $cs : $nr) . '.pdf';
+header('Content-Type: application/pdf');
+header('Content-Disposition: inline; filename="' . $filename . '"');
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
+header('Expires: 0');
 
-//DESDE ACA EL GENERADOR DE CODIGO QR 
-$PNG_TEMP_DIR = dirname(__FILE__).DIRECTORY_SEPARATOR.'temp'.DIRECTORY_SEPARATOR;
-//html PNG location prefix
-$PNG_WEB_DIR = 'temp/';
-include "../../phpqrcode/qrlib.php";    
-//ofcourse we need rights to create temp dir
-if (!file_exists($PNG_TEMP_DIR))
-    mkdir($PNG_TEMP_DIR);
-$filename = $PNG_TEMP_DIR.'test.png';
-$matrixPointSize = 10;
-$errorCorrectionLevel = 'L';
-
-$filename = $PNG_TEMP_DIR.'test'.md5($_REQUEST['data'].'|'.$errorCorrectionLevel.'|'.$matrixPointSize).'.png';
-QRcode::png('https://www.caddy.com.ar/seguimiento.html?codigo='.$fila['CodigoSeguimiento'], $filename, $errorCorrectionLevel, $matrixPointSize, 2); 
-	//HASTA ACA EL GENERADOR DE CODIGO QR	
-$a=21;
-
-//desde aca 
-	$pdf=new PDF('P','mm','Letter');
-	$pdf->Open();
-	$pdf->AddPage();
-	$pdf->SetMargins(20,20,20);
-
-// for ($i=1; $i<=$numfilas; $i++){
-// $pdf->Image($PNG_WEB_DIR.basename($filename),175 ,$a, 16 , 16,'png','');
-// // $a=$a+60; 
-//  	if ($i==5){
-// 	$a=20;
-// 	}else{	
-// 	$a=$a+72; 
-// 	}
-// }
-for ($i=1; $i<=$numfilas; $i++)
-	{
-		
- 	$pdf->Ln(5);
-	$pdf->SetWidths(array(150));
-	$pdf->SetFont('Arial','B',7);
-	$pdf->SetFillColor(220,220,220);
-  $pdf->SetTextColor(0);
-//   $pdf->Image('../../images/LogoCaddyNoAlfa.png',16 ,8, 40 , 16,'png','');  
-	$pdf->Row(array('ROTULO REMITO N:  '.$fila['NumeroComprobante'].' | Codigo de Seguimiento:  '.$fila['CodigoSeguimiento'].' | BULTO: '.$i.' DE '.$numfilas.'                          CODIGO QR'));
-
-	$pdf->SetWidths(array(30,80));
-	$pdf->SetFont('Arial','B',6);
-	$pdf->SetFillColor(255,255,255);
-	$pdf->SetTextColor(0);
-	$pdf->Row(array('',' Caddy Yo lo llevo!  |  wwww.caddy.com.ar  |  Reconquista 4986   |   Cordoba'));
-	$pdf->Row(array('',' Cuit: 30-71534494-3      |      Telef Movil: +54 9 3515 69-7188'));
-  $pdf->SetFont('Arial','B',6);
-  $Fecha=explode('-',$fila[Fecha],3);
-  $Fecha0=$Fecha[2].'/'.$Fecha[1].'/'.$Fecha[0];
-  $pdf->Row(array('','Fecha: '.$Fecha0. '  |  Recorrido: '.$fila[Recorrido].'  |  Forma de Pago: '.$fila[FormaDePago]));
-  $pdf->Image($PNG_WEB_DIR.basename($filename),136 ,$a, 28 , 28,'png','');
-//  	$pdf->Image($PNG_WEB_DIR.basename($filename),136 ,$a, 28 , 28,'png','');
-  $b=$a-1;
-  $pdf->Image('../../images/caddy.jpg',20 ,$b, 29.7 , 14.5,'jpg','');
-  
-
-  if ($i==4){
-	$a=26;
-	}elseif($i==8){	
-	$a=26;
-  }elseif($i==12){	
-	$a=26;
-  }elseif($i==16){	
-	$a=26;
-  }elseif($i==20){	
-	$a=26;
-  }elseif($i==24){	
-	$a=26;
-  }elseif($i==28){	
-	$a=26;
-  }elseif($i==32){	
-	$a=26;
-  }elseif($i==36){	
-	$a=26;
-  }elseif($i==40){	
-	$a=26;
-  }elseif($i==44){	
-	$a=26;
-  }elseif($i==48){	
-	$a=26;
-  }elseif($i==52){	
-	$a=26;
-  }elseif($i==56){	
-	$a=26;
-  }elseif($i==60){	
-	$a=26;
-  }elseif($i==64){	
-	$a=26;
-  }elseif($i==68){	
-	$a=26;
-  }else{
-	$a=$a+60; 
-  }
-	
-	
- 	$pdf->Ln(0);
-	$pdf->SetWidths(array(55,55));
-	$pdf->SetFont('Arial','B',10);
-	$pdf->SetFillColor(0,0,0);
-  $pdf->SetTextColor(255,255,255);
-	$pdf->Row(array('Origen:', 'Destino:'));
-
-	$pdf->SetWidths(array(13, 42, 13, 42));
-	$pdf->SetFont('Arial','B',5);
-	$pdf->SetFillColor(255,255,255);
-	$pdf->SetTextColor(0);
-	$pdf->Row(array('Cliente:',$fila['RazonSocial'],'Cliente:',$fila['ClienteDestino']));
-	$pdf->Row(array('Cuit:',$fila['Cuit'],'Cuit:', $fila['DocumentoDestino']));
-	$pdf->SetWidths(array(13, 42, 13, 82 ));
-  $pdf->Row(array('Domicilio:',$fila['DomicilioOrigen'].' | '.$fila['LocalidadOrigen'],'Domicilio:', $fila['DomicilioDestino'].' | ' .$fila['LocalidadDestino']));
-	$pdf->SetFont('Arial','B',5);
-  $pdf->SetWidths(array(13, 42, 13, 82));
-  $pdf->Row(array('Telefono:',$fila['TelefonoOrigen'],'Telefono:',$fila['TelefonoDestino']));
-  $pdf->SetWidths(array(150));
-  $pdf->SetFont('Arial','B',7);
-  $pdf->SetWidths(array(22,128));
-  $pdf->Row(array('Observaciones:',$fila['CodigoProveedor'].' | '.$fila['Observaciones']));
-  $pdf->SetFont('Arial','B',5);
-  $pdf->SetWidths(array(150));
-  $pdf->Row(array('IMPORTANTE: Caddy solo se limita al transporte de la mercaderia y no sera responsable por los articulos entregados y/o contenido en este paquete.'));
-	}
-
-$pdf->Output();
-?>
+$pdf->Output('I', $filename);
