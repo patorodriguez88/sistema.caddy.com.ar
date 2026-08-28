@@ -52,15 +52,15 @@ if(isset($_POST['BuscarDatosVentas']) && $_POST['BuscarDatosVentas']==1){
   
     if(isset($_POST['idPedido']) && $_POST['idPedido']<>''){
     
-        $id=$_POST['idPedido'];  
-        $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Cantidad,Precio,Comentario FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
-    
+        $id=$_POST['idPedido'];
+        $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Cantidad,Precio,Comentario,not_invoice FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
+
     }else{
 
         $sql="SELECT CodigoSeguimiento FROM TransClientes WHERE id='$_POST[id]'";
-        $Resultado=$mysqli->query($sql);  
+        $Resultado=$mysqli->query($sql);
         $row=$Resultado->fetch_array(MYSQLI_ASSOC);
-        $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Cantidad,Precio FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
+        $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Cantidad,Precio,not_invoice FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
 
     }
   
@@ -107,7 +107,7 @@ if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
   '{$_POST['codigoseguimiento']}','{$_POST['totalventa']}','{$row['Cliente']}','{$row['Fecha']}','{$row['Localidad']}','{$row['NumeroComprobante']}','{$Neto}','0',
   '{$iva}','{$_SESSION['Usuario']}','{$row['idCliente']}')")){
   
-  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0'";
+  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0' AND not_invoice=0";
   $ResultadoV=$mysqli->query($sqlV);  
   $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
   $CodigoSeguimiento=$_POST['codigoseguimiento'];
@@ -158,7 +158,7 @@ $info="M: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)');
     infoABM='$info',Cantidad='$_POST[cantidad]',Precio='$_POST[precio]',FechaPedido='$Fecha' WHERE idPedido='$_POST[idPedido]' LIMIT 1"))
   {
     $successventas=1;  
-    $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
+    $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0' AND not_invoice=0";
     $ResultadoV=$mysqli->query($sqlV);  
     $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
     
@@ -260,7 +260,7 @@ if (isset($_POST['EliminarDatosVentas']) && $_POST['EliminarDatosVentas'] == 1) 
         if ($mysqli->query("UPDATE Ventas SET Eliminado=1,infoABM='$info' WHERE idPedido='$idPedido' LIMIT 1")) {
 
             // Obtener información de Ventas
-            $sqlVentas = "SELECT SUM(Total) as Total FROM Ventas WHERE NumPedido='$rowVentas[NumPedido]' AND Eliminado='0'";
+            $sqlVentas = "SELECT SUM(Total) as Total FROM Ventas WHERE NumPedido='$rowVentas[NumPedido]' AND Eliminado='0' AND not_invoice=0";
             $ResultadoVentas = $mysqli->query($sqlVentas);
             $rowVentasTotal = $ResultadoVentas->fetch_array(MYSQLI_ASSOC);
             
