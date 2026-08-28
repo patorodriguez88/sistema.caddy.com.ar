@@ -281,6 +281,43 @@ for ($i = 0; $i <= count($idPreVenta); $i++) {
 
         $mysqli->query($sql);
 
+        // ── COBRANZA INTEGRADA (cobro por cuenta y orden del cliente) ─────────────
+        // Genera la línea del fee (% sobre el monto cobrado). El producto y el %
+        // salen de Clientes.Cod -> Productos (fallback id 178). Si el cliente tiene
+        // el convenio "no se factura" (Clientes.CobranzaIntegradaNoFactura = 1) la
+        // línea se marca not_invoice = 1: no suma a la factura, se liquida por la
+        // rendición de cobranza integrada. Portado de Caddy_produccion (AgregarRepoVentaWeb).
+        if (isset($DatosPreVenta['Cobranza']) && $DatosPreVenta['Cobranza'] != 0) {
+
+            $codigo_cod = (!empty($rowO['Cod']) && $rowO['Cod'] != 0) ? (int) $rowO['Cod'] : 178;
+            $porc_cod   = $mysqli->query("SELECT Codigo,Titulo,PorcentajeVenta,Iva FROM Productos WHERE id='$codigo_cod'")->fetch_array(MYSQLI_ASSOC);
+
+            if ($porc_cod) {
+
+                $cobranzaCI = (float) $DatosPreVenta['Cobranza'];
+                $PorcCobro  = (float) $porc_cod['PorcentajeVenta'];
+                $ivaSimple  = ($porc_cod['Iva'] == 21) ? 1.21 : (($porc_cod['Iva'] == 10.5) ? 1.105 : 1);
+
+                $TotalP       = (($cobranzaCI * $PorcCobro) / 100) * $ivaSimple;
+                $iva3P        = $TotalP - ($TotalP / $ivaSimple);
+                $ImporteNetoP = $TotalP - $iva3P;
+
+                $not_invoice_ci = (int) ($rowO['CobranzaIntegradaNoFactura'] ?? 0);
+
+                $codigoP = $mysqli->real_escape_string($porc_cod['Codigo']);
+                $tituloP = $mysqli->real_escape_string($porc_cod['Titulo']);
+
+                $sql_ci = "INSERT INTO Ventas
+                    (Codigo,FechaPedido,Titulo,Precio,Cantidad,Total,Cliente,NumeroRepo,
+                     ImporteNeto,Iva3,NumPedido,Usuario,Comentario,CobrarEnvio,idCliente,NVentaWeb,idPreVenta,not_invoice)
+                    VALUES('{$codigoP}','{$fecha}','{$tituloP}','{$TotalP}','1','{$TotalP}','{$ClienteOrigen}',
+                    '{$NumeroRepo}','{$ImporteNetoP}','{$iva3P}','{$NumeroPedido}','{$Usuario}','','{$cobranzaCI}',
+                    '{$rowO['id']}','{$NVentaWeb}','{$idPreVenta[$i]}','{$not_invoice_ci}')";
+
+                $mysqli->query($sql_ci);
+            }
+        }
+
         //INGRESA EN TRANSCLIENTES
         $Fecha = date('Y-m-d');
         $CuitClienteA = $_SESSION['NCliente'];    //CUIT
