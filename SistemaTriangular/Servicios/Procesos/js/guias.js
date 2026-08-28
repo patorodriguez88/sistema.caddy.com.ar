@@ -317,7 +317,11 @@ $("#remito").click(function () {
       paging: false,
       searching: true,
       ajax: {
-        url: "../../Funciones/php/tablas.php",
+        // guias.php vive en /SistemaTriangular/Servicios/, asi que la ruta a
+        // Funciones/php/ es "../Funciones/...". Con "../../" se iba a /Funciones/
+        // (404) y la busqueda por nombre nunca devolvia nada. Mismo patron que
+        // el resto de los ajax de este archivo.
+        url: "../Funciones/php/tablas.php",
         data: { Search_Tabla: 1, Variable: name },
         type: "post",
       },
