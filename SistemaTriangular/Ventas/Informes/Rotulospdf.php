@@ -165,8 +165,8 @@ function dibujarEtiqueta(EtiquetaPDF $pdf, array $d, int $nroBulto, int $totalBu
 
     /* ===== BLOQUE SUPERIOR: LOGO + ORIGEN ===== */
     $logoPath   = __DIR__ . '/../../images/LogoCaddy.png';
-    $logoWidth  = 28;
-    $logoHeight = 22;
+    $logoWidth  = 24;
+    $logoHeight = 18;
 
     $yTop  = $pdf->GetY();
     $xLogo = $margin;
@@ -178,51 +178,59 @@ function dibujarEtiqueta(EtiquetaPDF $pdf, array $d, int $nroBulto, int $totalBu
     $xOrigen = $xLogo + $logoWidth + 3;
     $wOrigen = $usableW - ($logoWidth + 3);
 
-    $pdf->SetXY($xOrigen, $yTop);
-
+    // Nombre de origen (se achica si no entra en el ancho disponible)
     $nombre = $pdf->pdfTxt($origen);
-    $pdf->SetFont('Arial', 'B', 11);
-    $wNombre = $pdf->GetStringWidth($nombre) + 1;
-    $pdf->Cell($wNombre, 5, $nombre, 0, 0, 'L');
+    $fsNombre = 9;
+    $pdf->SetFont('Arial', 'B', $fsNombre);
+    while ($fsNombre > 6 && $pdf->GetStringWidth($nombre . '  #' . $idProveedor) > $wOrigen) {
+        $fsNombre -= 0.5;
+        $pdf->SetFont('Arial', 'B', $fsNombre);
+    }
+    $pdf->SetXY($xOrigen, $yTop);
+    $pdf->Cell($pdf->GetStringWidth($nombre) + 1, 4, $nombre, 0, 0, 'L');
+    $pdf->SetFont('Arial', '', 6.5);
+    $pdf->Cell(0, 4, ' #' . $idProveedor, 0, 1, 'L');
 
-    $pdf->SetFont('Arial', '', 8);
-    $pdf->Cell(0, 5, ' #' . $idProveedor, 0, 1, 'L');
-
-    $pdf->SetFont('Arial', '', 9);
+    // Dirección + localidad de origen: MultiCell para que envuelva y no se corte
+    $pdf->SetFont('Arial', '', 7);
+    if ($o_dir !== '') {
+        $pdf->SetX($xOrigen);
+        $pdf->MultiCell($wOrigen, 3.2, $pdf->pdfTxt($o_dir), 0, 'L');
+    }
+    if ($o_loc !== '') {
+        $pdf->SetX($xOrigen);
+        $pdf->MultiCell($wOrigen, 3.2, $pdf->pdfTxt($o_loc), 0, 'L');
+    }
     $pdf->SetX($xOrigen);
-    $pdf->Cell($wOrigen, 4, $pdf->pdfTxt($o_dir), 0, 1, 'L');
-    $pdf->SetX($xOrigen);
-    $pdf->Cell($wOrigen, 4, $pdf->pdfTxt($o_loc), 0, 1, 'L');
-    $pdf->SetX($xOrigen);
-    $pdf->Cell($wOrigen, 4, 'Venta: ' . $pdf->pdfTxt((string) $id), 0, 1, 'L');
+    $pdf->Cell($wOrigen, 3.2, 'Venta: ' . $pdf->pdfTxt((string) $id), 0, 1, 'L');
 
     $yAfterTop = max($yTop + $logoHeight, $pdf->GetY());
 
     /* ===== BULTO X/Y DEBAJO DEL LOGO ===== */
     if ($totalBultos >= 1) {
-        $pdf->SetFont('Arial', 'B', 20);
-        $alturaFraccion = $yTop + $logoHeight - 2;
+        $pdf->SetFont('Arial', 'B', 16);
+        $alturaFraccion = $yTop + $logoHeight;
         $pdf->SetXY($margin, $alturaFraccion);
-        $pdf->Cell(0, 10, $nroBulto . '/' . $totalBultos, 0, 1, 'L');
-        $yAfterTop = max($alturaFraccion + 10, $pdf->GetY());
+        $pdf->Cell(0, 8, $nroBulto . '/' . $totalBultos, 0, 1, 'L');
+        $yAfterTop = max($alturaFraccion + 8, $pdf->GetY());
     }
 
-    $pdf->SetY($yAfterTop + 3);
+    $pdf->SetY($yAfterTop + 2);
+    $y = $pdf->GetY();
+    $pdf->Line($margin, $y, $pageWidth - $margin, $y);
+    $pdf->Ln(1.5);
+
+    /* ===== CÓDIGO GRANDE (centrado) ===== */
+    $pdf->SetFont('Arial', 'B', 11);
+    $pdf->Cell(0, 5, $codigoEtiqueta, 0, 1, 'C');
+    $pdf->Ln(2);
+
     $y = $pdf->GetY();
     $pdf->Line($margin, $y, $pageWidth - $margin, $y);
     $pdf->Ln(2);
 
-    /* ===== CÓDIGO GRANDE (centrado) ===== */
-    $pdf->SetFont('Arial', 'B', 12);
-    $pdf->Cell(0, 5, $codigoEtiqueta, 0, 1, 'C');
-    $pdf->Ln(3);
-
-    $y = $pdf->GetY();
-    $pdf->Line($margin, $y, $pageWidth - $margin, $y);
-    $pdf->Ln(3);
-
     /* ===== BLOQUE QR + DATOS ===== */
-    $qrSize = 30;
+    $qrSize = 26;
     $qrX    = $margin;
     $qrY    = $pdf->GetY();
 
@@ -239,48 +247,58 @@ function dibujarEtiqueta(EtiquetaPDF $pdf, array $d, int $nroBulto, int $totalBu
     $wDatosQR = $usableW - ($qrSize + 4);
 
     $pdf->SetXY($xDatosQR, $qrY);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->Cell($wDatosQR, 5, $codigoEtiqueta, 0, 1, 'L');
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->Cell($wDatosQR, 4.2, $codigoEtiqueta, 0, 1, 'L');
 
-    $pdf->SetFont('Arial', '', 9);
+    $pdf->SetFont('Arial', '', 8);
     $pdf->SetX($xDatosQR);
-    $pdf->Cell($wDatosQR, 5, 'CP: ' . $cp, 0, 1, 'L');
+    $pdf->Cell($wDatosQR, 4.2, 'CP: ' . $cp, 0, 1, 'L');
     $pdf->SetX($xDatosQR);
-    $pdf->Cell($wDatosQR, 5, $pdf->pdfTxt($d_loc), 0, 1, 'L');
+    $pdf->MultiCell($wDatosQR, 4.2, $pdf->pdfTxt($d_loc), 0, 'L');
 
     if (!empty($provDest)) {
         $pdf->SetX($xDatosQR);
-        $pdf->Cell($wDatosQR, 5, 'Prov: ' . $pdf->pdfTxt($provDest), 0, 1, 'L');
+        $pdf->MultiCell($wDatosQR, 4.2, 'Prov: ' . $pdf->pdfTxt($provDest), 0, 'L');
     }
     if (!empty($recorrido)) {
         $pdf->SetX($xDatosQR);
-        $pdf->Cell($wDatosQR, 5, 'Recorrido: ' . $recorrido, 0, 1, 'L');
+        $pdf->Cell($wDatosQR, 4.2, 'Recorrido: ' . $recorrido, 0, 1, 'L');
     }
 
     $yAfterQR = max($qrY + $qrSize, $pdf->GetY());
-    $pdf->SetY($yAfterQR + 3);
+    $pdf->SetY($yAfterQR + 2);
 
     $y = $pdf->GetY();
     $pdf->Line($margin, $y, $pageWidth - $margin, $y);
-    $pdf->Ln(3);
+    $pdf->Ln(2);
 
     /* ===== DESTINO ===== */
-    $pdf->SetFont('Arial', 'B', 10);
-    $pdf->Cell(0, 5, 'DESTINO', 0, 1, 'L');
+    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->Cell(0, 4.5, 'DESTINO', 0, 1, 'L');
 
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->Cell(0, 4, $pdf->pdfTxt($dest), 0, 1, 'L');
-    $pdf->Cell(0, 4, $pdf->pdfTxt($d_dir), 0, 1, 'L');
-    $pdf->Cell(0, 4, $pdf->pdfTxt($d_loc . ' (' . $cp . ')'), 0, 1, 'L');
+    $pdf->SetFont('Arial', 'B', 8);
+    $pdf->MultiCell($usableW, 3.6, $pdf->pdfTxt($dest), 0, 'L');
+    $pdf->SetFont('Arial', '', 8);
+    if ($d_dir !== '') {
+        $pdf->MultiCell($usableW, 3.6, $pdf->pdfTxt($d_dir), 0, 'L');
+    }
+    $locCp = $d_loc;
+    if ($cp !== '') {
+        $locCp = $locCp !== '' ? $locCp . ' (' . $cp . ')' : 'CP ' . $cp;
+    }
+    if ($locCp !== '') {
+        $pdf->MultiCell($usableW, 3.6, $pdf->pdfTxt($locCp), 0, 'L');
+    }
 
-    $pdf->SetFont('Arial', '', 9);
-    $pdf->MultiCell(0, 4, 'REFERENCIAS: ' . $pdf->pdfTxt($observaciones), 0, 'L');
-    $pdf->Ln(2);
+    if ($observaciones !== '') {
+        $pdf->SetFont('Arial', '', 7);
+        $pdf->MultiCell($usableW, 3.4, 'REF: ' . $pdf->pdfTxt($observaciones), 0, 'L');
+    }
     $pdf->Ln(2);
 
     /* ===== PIE ===== */
-    $pdf->SetFont('Arial', '', 7);
-    $pdf->Cell(0, 4, 'Usuario: ' . $usuario . '  |  Fecha: ' . $fechaImp, 0, 1, 'R');
+    $pdf->SetFont('Arial', '', 6.5);
+    $pdf->Cell(0, 3.5, 'Usuario: ' . $usuario . '  |  Fecha: ' . $fechaImp, 0, 1, 'R');
 
     /* ===== Marco punteado ===== */
     $x = 2;
