@@ -78,7 +78,16 @@ var id= $('#id_modificar').val();
           {data:"FechaPedido"},
           {data:"Codigo"},
           {data:"Titulo"},
-          {data:"Total"},
+          {data:"Total",
+           render: function (data, type, row) {
+            // Solo para mostrar: formato $ 1.000,23 (es-AR). Para ordenar/filtrar
+            // DataTables sigue usando el valor numerico crudo.
+            if (type !== 'display') { return data; }
+            var n = parseFloat(data);
+            if (isNaN(n)) { return data; }
+            return '$ ' + n.toLocaleString('es-AR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+           }
+          },
           {data:"idPedido",
            render: function (data, type, row) {
             return '<td class="table-action">'+
