@@ -21,3 +21,7 @@ Thumbs.db
 *.log
 error_log
 /tmp/
+
+# Artefactos temporales de generacion de PDFs/QR
+SistemaTriangular/**/Informes/temp/
+SistemaTriangular/**/temp/*.png
