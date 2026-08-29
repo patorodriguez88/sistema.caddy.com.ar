@@ -1,11 +1,8 @@
 <?php
-session_start();
-global $host,$user,$password,$database;
-$host='localhost';
-$user='dinter6_prodrig';
-$pass='pato@4986';
-$database='dinter6_triangular';
-$conexion=mysqli_connect($host,$user,$pass,$database);
+// Conexión centralizada (Conexioni.php: $mysqli + session_start + set_charset).
+// Antes tenía host/usuario/clave hardcodeados.
+require_once __DIR__ . '/../Conexion/Conexioni.php';
+$conexion = $mysqli;
 //RECORRIDO
 $Recorrido=$_SESSION['Recorrido'];  
 //VARIABLES GOOGLE

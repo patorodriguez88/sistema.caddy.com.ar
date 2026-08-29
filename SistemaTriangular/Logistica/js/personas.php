@@ -1,4 +1,8 @@
 <?php
+// Conexión centralizada (Conexioni.php: $mysqli + sesión + set_charset utf8).
+// Antes tenía host/usuario/clave hardcodeados y apuntaba SIEMPRE a la copia.
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
+
 if( isset($_GET['id']) ) {
     get_persons($_GET['id']);
 } else {
@@ -7,16 +11,10 @@ if( isset($_GET['id']) ) {
 
 function get_persons( $id ) {
 
-    //Cambia por los detalles de tu base datos
-    $dbserver = "localhost";
-    $dbuser = "dinter6_prodrig";
-    $password = "pato@4986";
-    $dbname = "dinter6_triangularcopia";
-    
-    $database = new mysqli($dbserver, $dbuser, $password, $dbname);
-    mysqli_set_charset($database, "utf8");
+    global $mysqli;
+    $database = $mysqli;
 
-    if($database->connect_errno) {
+    if( !$database || $database->connect_errno ) {
         die("No se pudo conectar a la base de datos");
     }
     

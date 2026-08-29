@@ -1,9 +1,8 @@
 <?php
-$host="localhost";
-$user="dinter6_prodrig";
-$pass="pato@4986";
-$db="dinter6_triangular";
-$connection = mysqli_connect($host,$user,$pass,$db) or die(mysqli_error($connection));
+// Conexión centralizada (Conexioni.php: $mysqli + sesión + set_charset utf8).
+// Antes tenía host/usuario/clave hardcodeados.
+require_once __DIR__ . '/../../../Conexion/Conexioni.php';
+$connection = $mysqli;
 date_default_timezone_set('America/Argentina/Cordoba');
 
     
