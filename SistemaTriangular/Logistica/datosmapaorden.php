@@ -3,7 +3,7 @@ ob_start();
 session_start();
 // require("../../phpsqlajax_dbinfo.php");
 $username = "dinter6_prodrig";
-$password = "pato@4986";
+$password = "";
 $database = "dinter6_triangular";
 
 function geolocalizar($direccion){

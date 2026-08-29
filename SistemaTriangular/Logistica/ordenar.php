@@ -1,6 +1,6 @@
 <?php
 session_start();
-$conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
+$conexion = mysql_connect("localhost","dinter6_prodrig","");
 date_default_timezone_set('America/Argentina/Cordoba');
 mysql_select_db("dinter6_triangular",$conexion);  
 //Seteamos el header de "content-type" como "JSON" para que jQuery lo reconozca como tal

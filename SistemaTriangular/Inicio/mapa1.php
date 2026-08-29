@@ -1,7 +1,7 @@
 <?php
 ob_start();
 session_start();
-$conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
+$conexion = mysql_connect("localhost","dinter6_prodrig","");
 mysql_select_db("dinter6_triangular",$conexion);
 function geolocalizar($direccion){
     // urlencode codifica datos de texto modificando simbolos como acentos

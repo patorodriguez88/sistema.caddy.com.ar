@@ -11,7 +11,7 @@ class DB{
     $this->BaseDatos = "dinter6_triangular";
 		$this->Servidor = "localhost";
 		$this->Usuario = "dinter6_prodrig";
-		$this->Clave = "pato@4986";
+		$this->Clave = "";
 		}
 	 function conectar() {
 		if(!($con=@mysql_connect($this->Servidor,$this->Usuario,$this->Clave))){

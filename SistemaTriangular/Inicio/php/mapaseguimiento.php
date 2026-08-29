@@ -1,7 +1,7 @@
 <?php
 ob_start();
 session_start();
-$conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
+$conexion = mysql_connect("localhost","dinter6_prodrig","");
 mysql_select_db("dinter6_triangular",$conexion);
 $CodigoSeguimiento=$_SESSION[cod];
 $Recorrido=$_SESSION[RecorridoMapa];

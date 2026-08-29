@@ -4,7 +4,7 @@ session_start();
 // require('../../Conexion/Conexion.php');
 // $host="localhost";
 // $user="dinter6_prodrig";
-// $pass="pato@4986";
+// $pass="";
 // $db="dinter6_triangularcopia";
 // $mysqli = new mysqli($host,$user,$pass,$db);
 // mysqli_set_charset($mysqli,"utf8"); 

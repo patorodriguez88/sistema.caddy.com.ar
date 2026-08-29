@@ -1,6 +1,6 @@
 <?php
 session_start();
-$conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
+$conexion = mysql_connect("localhost","dinter6_prodrig","");
 mysql_select_db("dinter6_triangular",$conexion);  
 
 header("Content-Type: text/html;charset=utf-8"); 

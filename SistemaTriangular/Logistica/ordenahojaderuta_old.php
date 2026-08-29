@@ -3,7 +3,7 @@ session_start();
 global $host,$user,$password,$database;
 $host='localhost';
 $user='dinter6_prodrig';
-$pass='pato@4986';
+$pass='';
 $database='dinter6_triangular';
 $conexion=mysqli_connect($host,$user,$pass,$database);
 //RECORRIDO

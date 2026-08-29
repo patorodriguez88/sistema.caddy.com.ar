@@ -23,7 +23,7 @@ $_SESSION['tiempo']=time(); //Si hay actividad seteamos el valor al tiempo actua
 if($_SESSION['idusuario']==""){
 header("location:https://www.caddy.com.ar/iniciosesion.php");
 }else{
- $conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
+ $conexion = mysql_connect("localhost","dinter6_prodrig","");
 //  if (($_SESSION['Nivel']=='5')){
  
  if (($_SESSION['Usuario']=='prueba')){

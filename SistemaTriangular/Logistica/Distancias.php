@@ -1,7 +1,7 @@
 <?php
 session_start();
 // include("../ConexionBD.php");
-$conexion = mysql_connect("localhost","dinter6_prodrig","pato@4986");
+$conexion = mysql_connect("localhost","dinter6_prodrig","");
 mysql_select_db("dinter6_triangularcopia",$conexion);  
 
 ?>
