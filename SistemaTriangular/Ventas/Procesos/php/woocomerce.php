@@ -1,14 +1,12 @@
 <?php
-    $dato1=$_POST[id];
-    $host="localhost";
-    $user="dinter6_prodrig";
-    $pass="pato@4986";
-    $db="dinter6_triangular";
-    $mysqli = new mysqli($host,$user,$pass,$db);
-    mysqli_set_charset($mysqli,"utf8");
+    // Conexión centralizada: $mysqli, sesión y set_charset('utf8') salen de
+    // Conexioni.php. Antes tenía host/usuario/clave hardcodeados y ni siquiera
+    // hacía session_start(), así que el User del registro quedaba vacío.
+    require_once __DIR__ . '/../../../Conexion/Conexioni.php';
     date_default_timezone_set('America/Argentina/Buenos_Aires');
-    $Fecha=date('Y-m-d');
-    $Response=null;
+    $dato1 = $_POST['id'] ?? [];
+    $Fecha = date('Y-m-d');
+    $Response = null;
 
  for($i=0;$i<count($dato1);$i++){   
 
