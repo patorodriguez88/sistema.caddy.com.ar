@@ -77,6 +77,23 @@ const table = $("#preventa").DataTable({
     $(row).find(".custom-control-input").prop("checked", !!data.Recorrido);
   },
 });
+
+// El select de Recorrido se auto-inicializa como select2 al cargar la
+// pagina (app.js, [data-toggle="select2"]), sin dropdownParent. Select2
+// por defecto cuelga su desplegable (con el buscador) de <body>, AFUERA
+// del modal - el focus-trap de Bootstrap 5 (que fuerza el foco de vuelta
+// al modal si detecta que se va a un elemento que no es descendiente
+// suyo) le saca el foco al buscador apenas se lo toca: la lista de
+// recorridos se ve bien, pero no se puede escribir para filtrar. Se
+// reinicializa apuntando el dropdown al propio modal cada vez que se abre.
+$("#standard-modal-rec").on("shown.bs.modal", function () {
+  const $sel = $("#recorrido_t");
+  if ($sel.data("select2")) {
+    $sel.select2("destroy");
+  }
+  $sel.select2({ dropdownParent: $("#standard-modal-rec"), width: "100%" });
+});
+
 // Sincroniza el checkbox del encabezado con los de las filas
 table.on("draw", function () {
   const allChecked =
