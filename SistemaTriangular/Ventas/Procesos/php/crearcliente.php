@@ -103,9 +103,25 @@ if(($nombrecliente<>'')||($Direccion<>'')){
     '{$Kilometros}','{$latitud}','{$longitud}','{$types}',0,0,0,0,0,
     0,'','',0,'',0,0)";
   
-$mysqli->query($sql);
+$ok = $mysqli->query($sql);
 
-echo json_encode(array('success' => 1,'id'=> $NdeCliente,'NombreCliente'=>$nombrecliente,'Direccion'=>$_POST['Direccion']));
+if (!$ok) {
+    echo json_encode(array('success' => 0, 'error' => 'No se pudo guardar el cliente: ' . $mysqli->error));
+    exit;
+}
+
+// OJO: el "id" real de la fila (PRIMARY KEY auto_increment) NO es
+// $NdeCliente. NdeCliente se calcula arriba como "MAX(id) FROM Clientes + 1"
+// ANTES del insert, sin ninguna sincronizacion (dos altas casi
+// simultaneas pueden calcular el mismo numero, y ya hay >2800 clientes
+// donde id y NdeCliente no coinciden). Usar $NdeCliente como "id" del
+// cliente recien creado podia mandar la venta a un cliente EXISTENTE
+// distinto (si ese numero ya estaba usado como id) o a ninguno (si no
+// existia -> "Error al obtener datos del cliente"). El id verdadero de
+// esta fila es insert_id.
+$idReal = $mysqli->insert_id;
+
+echo json_encode(array('success' => 1,'id'=> $idReal,'NombreCliente'=>$nombrecliente,'Direccion'=>$_POST['Direccion']));
 
 }else{
 
