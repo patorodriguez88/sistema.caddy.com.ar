@@ -2,6 +2,11 @@ const table = $("#preventa").DataTable({
   paging: false,
   searching: true,
   dom: "frtip", // buscador + tabla + info (sin menu de "mostrar N", no aplica con paging:false)
+  // La tabla tiene la clase "dt-responsive" y se cargan los JS/CSS de
+  // Responsive (ver Pendientes.php), pero acá nunca se prendía la opción:
+  // con 10 columnas + checkbox el ancho no entra, y sin "responsive" no hay
+  // forma de ver lo que queda afuera (ni "+" para desplegarlo, ni scroll).
+  responsive: true,
   ajax: { url: "Procesos/php/preventa.php", data: { datos: 1 }, type: "post" },
   columns: [
     {
@@ -18,7 +23,17 @@ const table = $("#preventa").DataTable({
          <i class="mdi mdi-18px mdi-map-marker text-success"></i>
          <span class="text-muted">${r.DomicilioDestino} ${r.LocalidadDestino}</span>`,
     },
-    { data: "Fecha" },
+    {
+      // La columna se llama "Fecha/Hora" pero solo mostraba Fecha (PreVenta.Fecha
+      // es DATE, sin hora). La hora vive aparte en PreVenta.Hora y no se usaba.
+      data: "Fecha",
+      render: (d, t, r) => {
+        const [y, m, day] = (r.Fecha || "").split("-");
+        const fecha = y && m && day ? `${day}/${m}/${y}` : r.Fecha || "";
+        const hora = (r.Hora || "").slice(0, 5); // HH:MM
+        return hora ? `${fecha} ${hora}` : fecha;
+      },
+    },
     { data: "Observaciones" },
     { data: "Precio" },
     { data: "Cantidad" },
