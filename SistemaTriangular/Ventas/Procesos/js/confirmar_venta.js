@@ -53,6 +53,17 @@ document
             console.log("Si, está success 1");
             $("#success-alert-modal").modal("show");
             // $('#success-alert-modal-text').html('La venta se agrego con exito con el código '+jsonData.data);
+
+            // Abrir la guía recién creada en otra pestaña, sin interrumpir el
+            // flujo de esta pantalla (el operador sigue viendo el modal de
+            // éxito y puede seguir cargando ventas acá).
+            if (jsonData.data) {
+              window.open(
+                "/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" + jsonData.data,
+                "_blank",
+              );
+            }
+
             var segundos = 3;
             var intervalo = setInterval(function () {
               $("#success-alert-modal-text").html(

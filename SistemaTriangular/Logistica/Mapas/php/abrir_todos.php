@@ -1,5 +1,12 @@
-<?php 
-session_start();
+<?php
+// Conexioni.php es quien tiene que llamar a session_start() - fija el nombre
+// propio de cookie (CADDY_SISTEMA_SESSID) antes de arrancarla. El
+// session_start() que estaba acá, suelto y antes del require, arrancaba la
+// sesion por defecto de PHP (PHPSESSID) - como el navegador nunca manda esa
+// cookie, esto siempre creaba una sesion nueva y vacia, y Conexioni.php
+// terminaba viendo "sin sesion" (Usuario vacio) aunque el operador estuviera
+// bien logueado. Eso hacia que "Abrir Todos" tirara al operador afuera del
+// sistema en vez de ejecutar la accion.
 require_once('../../../Conexion/Conexioni.php');
 
 if($_POST['Abrir_todos']==1){

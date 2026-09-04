@@ -1141,9 +1141,26 @@ $("#btn_confirmar_eliminacion").click(function () {
 $("#enter_registration").click(function () {
   const newLocal = "show";
   $("#enter_registration_seguimiento-modal").modal(newLocal);
+});
 
-  // Inicializar el select2
-  $("#enter_registration_user").select2();
+// Los selects de Estado y Usuario se auto-inicializan como select2 al cargar
+// la pagina (app.js, [data-toggle="select2"]), sin dropdownParent. Select2
+// por defecto cuelga su desplegable (con el buscador) de <body>, AFUERA del
+// modal - el focus-trap de Bootstrap 5 (que fuerza el foco de vuelta al
+// modal si detecta que se va a un elemento que no es descendiente suyo) le
+// saca el foco al buscador apenas se lo toca: la lista se ve bien, pero no
+// se puede escribir para filtrar. Se reinicializan apuntando el dropdown al
+// propio modal cada vez que se abre.
+$("#enter_registration_seguimiento-modal").on("shown.bs.modal", function () {
+  $(this)
+    .find("select.select2")
+    .each(function () {
+      const $sel = $(this);
+      if ($sel.data("select2")) {
+        $sel.select2("destroy");
+      }
+      $sel.select2({ dropdownParent: $("#enter_registration_seguimiento-modal"), width: "100%" });
+    });
 });
 
 $("#enter_registration_state").change(function () {

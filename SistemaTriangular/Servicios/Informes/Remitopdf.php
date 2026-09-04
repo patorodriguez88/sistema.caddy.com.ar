@@ -460,6 +460,13 @@ $filasDestino = [
     ['Tel.:', (string)($fila['TelefonoDestino'] ?? '')],
 ];
 
+// "1 BULTO" / "2 BULTOS" en vez de un numero pelado en la columna CANT. - el
+// remito solo mostraba la cantidad (ej. "1"), sin la unidad.
+function etiquetaBultos(int $cantidad): string
+{
+    return number_format($cantidad, 0) . ' ' . ($cantidad === 1 ? 'BULTO' : 'BULTOS');
+}
+
 // Mensaje de forma de pago - misma matriz de casos que la version anterior
 // (Origen/Destino de facturacion cruzado con si ya se retiro o no).
 function mensajeFormaDePago(string $formaDePago, int $retirado): string
@@ -569,7 +576,9 @@ function renderPagina(
     );
 
     $pdf->Ln(3);
-    $pdf->SetWidths($pdf->anchosEscalados([18, 45, 42, 12, 15, 15, 15]));
+    // CANT. paso de mostrar solo el numero a "N BULTO(S)" - necesita mas
+    // ancho, se lo saco a SERVICIO/OBSERV. que sobraban.
+    $pdf->SetWidths($pdf->anchosEscalados([18, 40, 39, 20, 15, 15, 15]));
     $pdf->SetAligns(['C', 'L', 'L', 'C', 'R', 'R', 'R']);
     $pdf->SetFont('Arial', 'B', 7.5);
     $pdf->SetFillColor(...$p['primaryC']);
@@ -613,7 +622,7 @@ function renderPagina(
             (string)$item['Codigo'],
             (string)$item['Titulo'],
             (string)$item['Comentario'],
-            number_format($cantidad, 0),
+            etiquetaBultos((int)$cantidad),
             '$ ' . number_format($importeNeto, 2, ',', '.'),
             '$ ' . number_format($ivaPrecio, 2, ',', '.'),
             $precioLabel !== '' ? '$ ' . $precioLabel : '',
@@ -621,7 +630,7 @@ function renderPagina(
     }
 
     $pdf->SetFont('Arial', 'B', 7);
-    $pdf->Row(['', '', 'TOTAL:', number_format($TotalCant, 0), '', '$ ' . $IvaTotalLabel, '$ ' . $TotalFinalLabel], $p['grayBg']);
+    $pdf->Row(['', '', 'TOTAL:', etiquetaBultos((int)$TotalCant), '', '$ ' . $IvaTotalLabel, '$ ' . $TotalFinalLabel], $p['grayBg']);
 
     bloqueFirmas($pdf, $tipo === 'RETIRO' ? 'Firma de Caddy' : 'Firma del Cliente', $dobleFirma);
 }
