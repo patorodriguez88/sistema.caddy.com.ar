@@ -58,18 +58,30 @@ document
                 location.reload();
               }
             }, 1000);
-          } else if (jsonData.error == 1) {
+          } else if (jsonData.error) {
+            // ConfirmarVenta.php no siempre manda error:1 - varias validaciones
+            // (falta codigo de seguimiento, error al obtener datos del cliente,
+            // fallo al insertar en HojaDeRuta) mandan error como STRING con el
+            // motivo. Con "== 1" esos casos no matcheaban ni acá ni en el "if"
+            // de arriba: no pasaba nada, sin avisar por qué no se confirmó.
+            var motivo =
+              jsonData.message ||
+              (typeof jsonData.error === "string" ? jsonData.error : "No se pudo confirmar la venta.");
             $("#warning-redespacho-modal").modal("show");
-            $("#warning-redespacho-text").html(jsonData.message);
+            $("#warning-redespacho-text").html(motivo);
+          } else {
+            console.warn("Respuesta inesperada de ConfirmarVenta.php:", jsonData);
           }
         } catch (e) {
-          console.error(
-            "Error al parsear JSON:",
-            e,
-            "Respuesta recibida:",
-            respuesta,
-          );
+          console.error("Error al procesar la respuesta:", e, "Respuesta recibida:", jsonData);
         }
+      },
+      error: function (xhr) {
+        console.error("Error de red/parseo en ConfirmarVenta.php:", xhr.status, xhr.responseText);
+        $("#warning-redespacho-modal").modal("show");
+        $("#warning-redespacho-text").html(
+          "No se pudo confirmar la venta (error de servidor). Probá de nuevo o avisá a sistemas.",
+        );
       },
     });
   });
