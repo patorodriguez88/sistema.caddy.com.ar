@@ -385,13 +385,13 @@ include_once "../Conexion/Conexion.php";
                                        </select>
                                         </div>
                                           </div>
+                                      </div><!-- /.modal-body -->
                                       </form>
-                                         </div>
                                       <div class="modal-footer">
                                           <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                           <button id="AgregarCliente" type="button" class="btn btn-primary">Agregar Cliente</button>
                                       </div>
-                                  </div><!-- /.modal-content -->
+                                         </div><!-- /.modal-content -->
                               </div><!-- /.modal-dialog -->
                           </div><!-- /.modal -->
                         <div class="row">

@@ -59,7 +59,12 @@ if (isset($_POST['ActualizaRecorrido'])) {
 if (isset($_POST['ActualizaRecorrido_all'])) {
   $id = $_POST['id'];
 
-  for ($i = 0; $i <= count($id); $i++) {
+  // OJO: era "<= count($id)" -> 1 vuelta de mas accediendo a $id[count($id)]
+  // (fuera de rango). Con display_errors=1 eso imprimia un Warning "Undefined
+  // array key" ANTES del json_encode, y el JS reventaba en JSON.parse()
+  // (la tabla no se actualizaba, el modal no cerraba) aunque el UPDATE de
+  // los registros validos ya se habia hecho.
+  for ($i = 0; $i < count($id); $i++) {
 
     $sql = "UPDATE PreVenta SET Recorrido='$_POST[r]' WHERE id='$id[$i]'";
     $mysqli->query($sql);
