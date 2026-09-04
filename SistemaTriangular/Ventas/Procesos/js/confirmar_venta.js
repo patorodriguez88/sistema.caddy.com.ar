@@ -22,8 +22,18 @@ document
       observaciones: document.getElementById("observaciones").value,
       cobranzadelenvio_t: document.getElementById("cobranzadelenvio_t").value,
       codigo_seguimiento: document.getElementById("seguimiento").textContent,
-      cliente_origen: document.getElementById("id_origen").value,
-      cliente_destino: document.getElementById("id_destino").value,
+      // Si el cliente se eligio del select2 normal, el id esta en id_origen/
+      // id_destino. Si se creo nuevo con el modal "Crear", ese select queda
+      // vacio (se oculta y se muestra el campo "...2" con el id del cliente
+      // recien creado) - sin este fallback, crear un cliente nuevo mandaba
+      // cliente_origen/destino vacio y ConfirmarVenta.php respondia "Error
+      // al obtener datos del cliente".
+      cliente_origen:
+        document.getElementById("id_origen").value ||
+        document.getElementById("id_origen2").value,
+      cliente_destino:
+        document.getElementById("id_destino").value ||
+        document.getElementById("id_destino2").value,
     };
 
     console.log("Datos enviados:", data);
