@@ -43,8 +43,11 @@ if (isset($_POST['MarcaRetirado'])) {
 
 if (isset($_POST['BuscarDatosClienteDestino'])) {
 
-  $sql = "SELECT b.ActivarCoordenadas,a.DomicilioDestino,a.ClienteDestino,a.idClienteDestino,a.CodigoSeguimiento,b.Latitud,b.Longitud,b.Observaciones 
-    FROM TransClientes a 
+  // LocalidadDestino se habia perdido en la migracion (ver ciudad_nc_view
+  // en HojaDeRuta2.php/HojaDeRuta3.php) - sin este campo el modal de
+  // "Modificar Direccion" no tiene de donde mostrar la Ciudad.
+  $sql = "SELECT b.ActivarCoordenadas,a.DomicilioDestino,a.LocalidadDestino,a.ClienteDestino,a.idClienteDestino,a.CodigoSeguimiento,b.Latitud,b.Longitud,b.Observaciones
+    FROM TransClientes a
     INNER JOIN Clientes b ON a.idClienteDestino=b.id WHERE a.id='$_POST[id]'";
   $Resultado = $mysqli->query($sql);
   $rows = array();

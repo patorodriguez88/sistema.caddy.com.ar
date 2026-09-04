@@ -220,6 +220,8 @@
                                     <input type='hidden' name='cp_nc' id='cp_nc'>
                                     <input type='hidden' name='id_nc' id='id_nc'>
                                     <input type='hidden' name='cs_nc' id='cs_nc'>
+                                    <label class="mt-2">Ciudad:</label>
+                                    <a id="ciudad_nc_view"></a>
                                 </div>
 
                                 <div class="col-lg-6 mt-3">

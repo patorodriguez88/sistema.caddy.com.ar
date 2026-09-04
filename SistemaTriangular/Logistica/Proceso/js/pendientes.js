@@ -189,6 +189,7 @@ function modificardir(e) {
         "Modificar Direccion a " + jsonData.data[0].ClienteDestino
       );
       $("#direccion_nc").val(jsonData.data[0].DomicilioDestino);
+      $("#ciudad_nc_view").html(jsonData.data[0].LocalidadDestino);
       $("#id_nc").val(jsonData.data[0].idClienteDestino);
       $("#cs_nc").val(jsonData.data[0].CodigoSeguimiento);
       $("#latitud_nc").val(jsonData.data[0].Latitud);
