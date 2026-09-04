@@ -131,8 +131,11 @@ $new_p=$Posicion+1;
 // misma sesion de orden manual - se actualiza en cada click para que el
 // timestamp siempre refleje el ultimo movimiento real.
 if ($Recorrido !== '') {
-    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Manual' WHERE Numero = ?");
-    $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+    // NOW() es la hora del servidor MySQL, no la de Argentina - ver nota
+    // completa en orden_automatico.php.
+    $fechaOrdenLocal = (new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('Y-m-d H:i:s');
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = ?, UltimoOrdenMetodo = 'Manual' WHERE Numero = ?");
+    $stmtTraza->bind_param('sss', $Usuario, $fechaOrdenLocal, $Recorrido);
     $stmtTraza->execute();
 }
 
@@ -296,9 +299,10 @@ if(($_POST['CalcularHorariosManual'] ?? null) == 1){
         }
     }
 
-    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Manual', UltimoOrdenKm = ?, UltimoOrdenMinutos = ? WHERE Numero = ?");
+    $fechaOrdenLocal = (new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('Y-m-d H:i:s');
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = ?, UltimoOrdenMetodo = 'Manual', UltimoOrdenKm = ?, UltimoOrdenMinutos = ? WHERE Numero = ?");
     $minutosTotalRedondeado = (int) round($minutosTotal);
-    $stmtTraza->bind_param('sdis', $Usuario, $kmTotalManual, $minutosTotalRedondeado, $Recorrido);
+    $stmtTraza->bind_param('ssdis', $Usuario, $fechaOrdenLocal, $kmTotalManual, $minutosTotalRedondeado, $Recorrido);
     $stmtTraza->execute();
 
     echo json_encode(['resultado' => 1, 'actualizadas' => $actualizadas]);
@@ -338,8 +342,9 @@ if(isset($_POST['Posiciones_order']) && $_POST['Posiciones_order']==1){
     }
 
     if ($Recorrido !== '') {
-        $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Gestya' WHERE Numero = ?");
-        $stmtTraza->bind_param('ss', $Usuario, $Recorrido);
+        $fechaOrdenLocal = (new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('Y-m-d H:i:s');
+        $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = ?, UltimoOrdenMetodo = 'Gestya' WHERE Numero = ?");
+        $stmtTraza->bind_param('sss', $Usuario, $fechaOrdenLocal, $Recorrido);
         $stmtTraza->execute();
     }
 

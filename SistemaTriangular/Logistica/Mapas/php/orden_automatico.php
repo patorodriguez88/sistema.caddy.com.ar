@@ -504,8 +504,14 @@ if (($_POST['Orden_Automatic_Confirmar'] ?? null) == 1) {
     // TRAZABILIDAD: quien/cuando/con que metodo se ordeno este recorrido, y
     // el trazo real de la ruta (para dibujar la linea en el mapa de Hoja de
     // Ruta, igual que ya se hace en el Planificador).
-    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Automatico', UltimoOrdenKm = ?, UltimoOrdenMinutos = ?, Polyline = ? WHERE Numero = ?");
-    $stmtTraza->bind_param('sdiss', $preview['Usuario'], $preview['kmTotal'], $preview['duracionTotalMin'], $preview['polyline'], $Recorrido);
+    // NOW() usa la hora del SERVIDOR MYSQL, no la de Argentina (PHP
+    // date_default_timezone_set no le pega a NOW() para nada) - por eso
+    // "Ordenado por... el DD/MM HH:MM" salia con la hora del server de la
+    // base (medido: ~4hs adelantado a la hora real de Cordoba). Se arma la
+    // fecha en PHP con el timezone correcto y se manda como parametro.
+    $fechaOrdenLocal = (new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('Y-m-d H:i:s');
+    $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = ?, UltimoOrdenMetodo = 'Automatico', UltimoOrdenKm = ?, UltimoOrdenMinutos = ?, Polyline = ? WHERE Numero = ?");
+    $stmtTraza->bind_param('ssdiss', $preview['Usuario'], $fechaOrdenLocal, $preview['kmTotal'], $preview['duracionTotalMin'], $preview['polyline'], $Recorrido);
     $stmtTraza->execute();
 
     unset($_SESSION['PreviewOrden'][$Recorrido]);

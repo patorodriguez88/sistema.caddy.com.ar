@@ -184,14 +184,17 @@ if (isset($_POST['AsignarRecorrido'])) {
         exit;
     }
 
+    // NOW() es la hora del servidor MySQL, no la de Argentina - ver nota
+    // completa en orden_automatico.php.
+    $fechaOrdenLocal = (new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('Y-m-d H:i:s');
     $stmtUpd = $mysqli->prepare("
         UPDATE Recorridos
         SET Nombre = ?, Zona = ?, Kilometros = ?, Activo = 1, Color = ?, DiaSalida = ?, Servicios = ?, Polyline = ?,
-            UltimoOrdenUsuario = ?, UltimoOrdenFecha = NOW(), UltimoOrdenMetodo = 'Planificador', UltimoOrdenKm = ?, UltimoOrdenMinutos = ?
+            UltimoOrdenUsuario = ?, UltimoOrdenFecha = ?, UltimoOrdenMetodo = 'Planificador', UltimoOrdenKm = ?, UltimoOrdenMinutos = ?
         WHERE Numero = ?
     ");
     $stmtUpd->bind_param(
-        "ssdssissdis",
+        "ssdssisssdis",
         $nombreRecorrido,
         $zona,
         $km,
@@ -200,6 +203,7 @@ if (isset($_POST['AsignarRecorrido'])) {
         $puntos,
         $polyline,
         $Usuario,
+        $fechaOrdenLocal,
         $km,
         $tiempoTotal,
         $recorrido_destino
