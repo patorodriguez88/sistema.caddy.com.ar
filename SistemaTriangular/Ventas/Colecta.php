@@ -95,9 +95,9 @@
                             <div class="card">
                                 <div class="card-body">
                                     <form action="Procesos/php/ConfirmarVenta.php" class="needs-validation" data-toggle="validator" data-disable="false" method="POST">
-                                        <h2 class="header-title">Colectas <a id="nventa" class="badge badge-primary"></a> <a id="seguimiento" class="badge badge-success"></a>
-                                            <a id="distancia" class="badge badge-danger"></a> <a id="duration" class="badge badge-danger"></a>
-                                            <a id="redespacho" class="badge badge-warning text-white"></a>
+                                        <h2 class="header-title">Colectas <a id="nventa" class="badge bg-primary"></a> <a id="seguimiento" class="badge bg-success"></a>
+                                            <a id="distancia" class="badge bg-danger"></a> <a id="duration" class="badge bg-danger"></a>
+                                            <a id="redespacho" class="badge bg-warning text-white"></a>
                                         </h2>
                                         <div class="tab-content" data-select2-id="7">
                                             <div class="tab-pane show active" id="select2-preview" data-select2-id="select2-preview">

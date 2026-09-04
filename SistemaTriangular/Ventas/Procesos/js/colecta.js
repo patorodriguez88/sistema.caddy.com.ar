@@ -86,9 +86,9 @@ function abrir_tabla(){
                 }
             if(row.CodigoSeguimiento){
                 if(row.Eliminado==1){
-                return '<span class="badge badge-danger">Eliminado</span>';
+                return '<span class="badge bg-danger">Eliminado</span>';
                 }else{
-                return '<span class="badge badge-success">Cargado</span>';
+                return '<span class="badge bg-success">Cargado</span>';
                 }
             }else{
 

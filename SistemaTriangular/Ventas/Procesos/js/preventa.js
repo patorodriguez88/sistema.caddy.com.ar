@@ -27,7 +27,11 @@ const table = $("#preventa").DataTable({
       data: "Recorrido",
       render: (d, t, r) => {
         const label = r.Recorrido ? r.Recorrido : "Ingrese un Recorrido";
-        return `<h5><a onclick="modificarrecorrido(${r.id});" class="badge badge-primary">${label}</a></h5>`;
+        // "badge-primary" es clase de Bootstrap 4 y no existe en Bootstrap 5
+        // (este proyecto usa 5.3.6): sin fondo, el texto quedaba blanco
+        // sobre blanco (.badge define color:#fff por default). "bg-primary"
+        // es el equivalente actual.
+        return `<h5><a onclick="modificarrecorrido(${r.id});" class="badge bg-primary">${label}</a></h5>`;
       },
     },
     { data: "Cobranza" },
