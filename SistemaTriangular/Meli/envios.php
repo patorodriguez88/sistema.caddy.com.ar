@@ -106,7 +106,7 @@
                                     <div class="row mb-2">
                                         <div class="col-sm-12 text-right">
                                             <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#forzador-modal">Forzador Meli</button> -->
-                                            <!-- <a href="https://www.caddy.com.ar/SistemaTriangular/Ventas/Colecta.php" class="btn btn-success">Colectas</a> -->
+                                            <a href="/SistemaTriangular/Ventas/Colecta.php" class="btn btn-success">Colectas</a>
                                         </div><!-- end col-->
                                     </div>
 
