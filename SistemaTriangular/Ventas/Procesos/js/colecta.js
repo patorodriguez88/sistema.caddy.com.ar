@@ -16,6 +16,9 @@ function abrir_tabla(){
     var datatable = $('#colecta').DataTable({
     paging: false,
     searching: true,
+    responsive: true, // misma correccion que Pendientes.php: la tabla tiene
+                       // dt-responsive + CSS/JS de Responsive cargados pero
+                       // nunca se prendia la opcion.
     ajax: {
          url:"Procesos/php/colecta.php",
          data:{'datos':1,'date':date},
@@ -231,7 +234,9 @@ function abrir_tabla(){
         }
 
             //BOTON GUARDAR CAMBIOS EN MODIFICAR RECORRIDOS _ ALL
-            $('#modificarrecorrido_all_ok').click(function(){   
+            // .off().on() para no acumular un handler nuevo (con su propio
+            // "checked" viejo en el closure) cada vez que se abre el modal.
+            $('#modificarrecorrido_all_ok').off('click').on('click', function(){
                 // Obtengo el recorrdido seleccionado
                 var r = $('#recorrido_t').val();
                 

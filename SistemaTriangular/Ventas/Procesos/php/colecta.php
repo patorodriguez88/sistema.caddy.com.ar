@@ -323,7 +323,10 @@ if ($_POST['ActualizaRecorrido'] == 1) {
     $recorrido = $_POST['r'];
     $id = $_POST['id'];
 
-    for ($i = 0; $i <= count($id); $i++) {
+    // Mismo off-by-one que en Ventas/Procesos/php/preventa.php
+    // (ActualizaRecorrido_all): "<= count($id)" hace una vuelta de mas
+    // accediendo a $id[count($id)], fuera de rango.
+    for ($i = 0; $i < count($id); $i++) {
 
         $SQL_COLECTA = $mysqli->query("UPDATE Colecta SET Recorrido='$recorrido' WHERE id='$id[$i]'");
     }
