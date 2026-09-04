@@ -1,6 +1,7 @@
 const table = $("#preventa").DataTable({
   paging: false,
-  searching: false,
+  searching: true,
+  dom: "frtip", // buscador + tabla + info (sin menu de "mostrar N", no aplica con paging:false)
   ajax: { url: "Procesos/php/preventa.php", data: { datos: 1 }, type: "post" },
   columns: [
     {
@@ -233,7 +234,13 @@ $("#modificar_recorrido_all").click(function () {
       "Cambiar de Recorrido " + checked.length + " registros seleccionados"
     );
 
-    const el = document.getElementById("standard-moda-rec");
+    // OJO: el modal es "standard-modal-rec" (con "l"). El typo hacía que
+    // getElementById devolviera null y bootstrap.Modal tirara una excepción
+    // acá mismo, cortando el handler antes de mostrar el botón "Guardar
+    // Cambios" de la tanda (#modificarrecorrido_all_ok) y de engancharle el
+    // click - por eso "Cambiar de Recorrido a Seleccionados" no actualizaba
+    // nada (quedaba visible el botón de un solo registro, con id vacío).
+    const el = document.getElementById("standard-modal-rec");
     const modal = bootstrap.Modal.getOrCreateInstance(el, {
       backdrop: true,
       keyboard: true,

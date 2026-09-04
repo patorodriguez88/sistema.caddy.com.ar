@@ -161,6 +161,24 @@
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
 
+                    <!-- Confirmar eliminación de Seguimiento -->
+                    <div id="modal_confirmar_eliminacion" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-sm modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-body p-4">
+                                    <div class="text-center">
+                                        <i class="dripicons-warning h1 text-danger"></i>
+                                        <h4 class="mt-2">¿Eliminar este registro?</h4>
+                                        <p class="mt-3 mb-0">Seguimiento #<b id="id_seguimiento_a_eliminar"></b></p>
+                                        <p class="text-muted">No se puede deshacer.</p>
+                                        <button type="button" class="btn btn-light my-2" data-bs-dismiss="modal">Cancelar</button>
+                                        <button id="btn_confirmar_eliminacion" type="button" class="btn btn-danger my-2" data-bs-dismiss="modal">Sí, eliminar</button>
+                                    </div>
+                                </div>
+                            </div><!-- /.modal-content -->
+                        </div><!-- /.modal-dialog -->
+                    </div><!-- /.modal -->
+
 
                     <!-- Start Content-->
                     <div class="container-fluid">

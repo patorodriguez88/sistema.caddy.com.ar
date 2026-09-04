@@ -1116,7 +1116,11 @@ $("#btn_confirmar_eliminacion").click(function () {
   $.ajax({
     data: { EliminarSeguimiento: 1, id: id_seguimiento_a_eliminar },
     type: "POST",
-    url: "../../Funciones/php/tablas.php",
+    // guias.php vive en /SistemaTriangular/Servicios/, asi que la ruta a
+    // Funciones/php/ es "../Funciones/..." (con "../../" se iba a /Funciones/,
+    // fuera de SistemaTriangular, y la request daba 404 -> el borrado no
+    // hacia nada porque JSON.parse tiraba sobre el HTML del error).
+    url: "../Funciones/php/tablas.php",
     success: function (response) {
       var jsonData = JSON.parse(response);
 
@@ -1127,6 +1131,9 @@ $("#btn_confirmar_eliminacion").click(function () {
       } else {
         toast("error", "Error!", "No se pudo eliminar el seguimiento");
       }
+    },
+    error: function () {
+      toast("error", "Error!", "No se pudo eliminar el seguimiento");
     },
   });
 });
