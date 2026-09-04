@@ -829,7 +829,7 @@ $("#AgregarCliente").click(function () {
             "block";
           $("#id_destino2_label").val(NombreCliente);
           $("#id_destino2_label").prop("disabled", true);
-          $("id_destino2").val(id);
+          $("#id_destino2").val(id);
           document.getElementById("destino2_ok").style.display = "block";
           document.getElementById("destino2_ok").innerHTML =
             "Direccion: " + jsonData.Direccion;
