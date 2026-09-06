@@ -269,6 +269,7 @@ include_once('../Conexion/Conexioni.php');
 
     <script src="../Menu/js/funciones.js"></script>
     <script src="../Funciones/js/facturacion_status.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     <script src="Procesos/js/sales_control.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

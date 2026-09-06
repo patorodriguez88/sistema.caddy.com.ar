@@ -13,7 +13,7 @@ $.ajax({
 
         var datatable = $('#seguimiento').DataTable({
             dom: 'Bfrtip',
-            buttons: ['pageLength', 'copy', 'excel', 'pdf'],
+            buttons: buildDtButtons(['pageLength', 'copy', 'excel', 'pdf']),
             paging: true,
             searching: true,
             lengthMenu: [

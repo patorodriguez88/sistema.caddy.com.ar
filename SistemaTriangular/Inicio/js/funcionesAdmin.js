@@ -222,7 +222,7 @@ function cpanel() {
 
   var datatable = $("#clientes").DataTable({
     dom: "Bfrtip",
-    buttons: ["copy", "csv", "excel", "pdf"],
+    buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf"]),
     paging: true,
     searching: true,
     lengthMenu: [

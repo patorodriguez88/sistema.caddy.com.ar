@@ -143,6 +143,7 @@
     <!-- Funciones -->
     <script src="Procesos/js/funciones_saldos.js"></script>
     <script src="../Menu/js/funciones.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 

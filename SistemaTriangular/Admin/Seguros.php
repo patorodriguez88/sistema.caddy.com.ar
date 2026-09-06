@@ -353,6 +353,7 @@ session_start();
 
     <!-- Menu -->
     <script src="../Menu/js/funciones.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
 </body>
 </html>

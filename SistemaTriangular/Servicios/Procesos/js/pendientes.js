@@ -42,8 +42,8 @@
 })();
 
 var datatable = $("#seguimiento").DataTable({
-  dom: "Blfrtip",
-  buttons: ["copy", "csv", "excel", "pdf", "print"],
+  dom: "Bfrtip",
+  buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
   paging: true,
   searching: true,
   lengthMenu: [

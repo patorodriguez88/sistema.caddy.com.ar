@@ -473,7 +473,7 @@ function access_services() {
     paging: false,
     searching: false,
     dom: "Bfrtip",
-    buttons: ["excel", "pdf"],
+    buttons: buildDtButtons(["pageLength", "excel", "pdf"]),
     ajax: {
       url: "Proceso/php/vehiculos.php",
       data: { Service: 1, Patent: id },

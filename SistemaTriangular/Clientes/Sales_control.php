@@ -196,6 +196,7 @@ include_once('../Conexion/Conexioni.php');
               <!-- end demo js-->              
               <script src="../hyper/dist/saas/assets/js/vendor/apexcharts.min.js"></script>
               <script src="../Menu/js/funciones.js"></script>
+              <script src="../Funciones/js/alertas.js"></script>
               <script src="Procesos/js/sales_control.js"></script>
 
               <!-- <script src="https://apexcharts.com/samples/assets/stock-prices.js"></script> -->

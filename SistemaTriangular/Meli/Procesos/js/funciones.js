@@ -184,6 +184,168 @@
 
 // });
 
+// ============================================================
+// CARGAR POR CODIGO (Meli): buscar un shipment puntual con el token
+// del cliente origen y, si el operador confirma, cargarlo a Importaciones
+// igual que si hubiese entrado por la importacion automatica de ordenes
+// (BuscarOrdenes en orders.php). Reemplaza al viejo "Forzador Meli"
+// (comentado arriba), que dependia de dos servicios externos que ya no
+// controlamos (notifications.travelsupport.tur.ar y caddy.com.ar/api) -
+// esta version pega directo a la API de Meli con el token propio del
+// cliente, mismo mecanismo que ya usa la importacion automatica.
+// ============================================================
+
+// Traduce el codigo de error del backend a algo accionable - antes todo lo
+// que no fuera YA_CARGADO/NO_ENCONTRADO caia en un generico "no se pudo
+// buscar", y CLIENTE_SIN_TOKEN vs REFRESH_TOKEN_FALLO son causas bien
+// distintas para el operador (una es "elegiste mal el cliente", la otra es
+// "hay que re-vincular Meli con ese cliente").
+function motivoForzadorError(jsonData) {
+  switch (jsonData.error) {
+    case "YA_CARGADO":
+      return "Este shipments_id ya está cargado en Importaciones.";
+    case "NO_ENCONTRADO":
+      return "No se encontró ese envío en Meli para el cliente elegido (¿es el cliente correcto?).";
+    case "CLIENTE_SIN_TOKEN":
+      return "Ese cliente no tiene un token de Meli vinculado.";
+    case "REFRESH_TOKEN_FALLO":
+      return "El token de Meli de ese cliente venció y no se pudo renovar - hay que re-vincular la cuenta de Meli desde la ficha del cliente.";
+    default:
+      return jsonData.message || "No se pudo buscar el envío.";
+  }
+}
+
+function resetForzadorModal() {
+  $("#forzador_card").hide();
+  $("#forzador_alert_error").hide().text("");
+  $("#forzador_alert_success").hide().text("");
+  $("#wait_id").text("");
+  $("#button_ok_forzador").prop("disabled", true);
+}
+
+$("#forzador-modal").on("shown.bs.modal", function () {
+  resetForzadorModal();
+  $("#forzador_shipments_id").val("").trigger("focus");
+
+  var $sel = $("#opciones");
+  if ($sel.data("select2")) {
+    $sel.select2("destroy");
+  }
+  $sel.empty();
+  // Elegir el cliente es obligatorio: existe meliShipmentAutoDetect() en
+  // meli_api.php para probar el token de todos los clientes en paralelo,
+  // pero eso son ~56 llamados a Meli por cada escaneo - probamos la idea y
+  // se descartó por gasto de recursos innecesario, se pide el cliente
+  // primero como cualquier busqueda con token puntual.
+  $sel.append($("<option>", { value: "", text: "Seleccioná un cliente..." }));
+  $sel.select2({ dropdownParent: $("#forzador-modal"), width: "100%" });
+
+  $.ajax({
+    data: { MeliClientesToken: 1 },
+    url: "Procesos/php/funciones.php",
+    type: "POST",
+    dataType: "json",
+    success: function (data) {
+      $.each(data, function (index, item) {
+        $sel.append($("<option>", { value: item.id, text: item.nombrecliente }));
+      });
+      $sel.val("").trigger("change");
+    },
+    error: function (error) {
+      console.error("Error al traer clientes con Meli:", error.statusText);
+    },
+  });
+});
+
+$("#button_buscar_forzador").click(function () {
+  var customer_id = $("#opciones").val();
+  var raw = $("#forzador_shipments_id").val();
+
+  resetForzadorModal();
+
+  if (!customer_id) {
+    $("#forzador_alert_error").text("Elegi el cliente origen primero.").show();
+    return;
+  }
+  if (!raw) {
+    $("#forzador_alert_error").text("Escaneá o escribí el codigo del envio.").show();
+    return;
+  }
+
+  $("#wait_id").removeClass("text-danger").addClass("text-success").text("Buscando en Meli...");
+
+  $.ajax({
+    data: { MeliForzarBuscar: 1, customer_id: customer_id, raw: raw },
+    type: "POST",
+    url: "Procesos/php/funciones.php",
+    dataType: "json",
+    success: function (jsonData) {
+      $("#wait_id").text("");
+
+      if (jsonData.success == 1) {
+        var d = jsonData.data;
+        $("#fc_nombre").text(d.nombre || "-");
+        $("#fc_telefono").text(d.telefono || "-");
+        $("#fc_direccion").text(d.direccion || "-");
+        $("#fc_ciudad").text(d.ciudad || "-");
+        $("#fc_cp").text(d.cp || "-");
+        $("#fc_estado").text(d.estado || "-");
+        $("#fc_logistic").text(d.logistic_type || "-");
+        $("#fc_shipment_id").text(d.shipments_id || "-");
+        $("#fc_valor").text(d.valor_declarado || "0");
+        $("#forzador_card").show();
+        $("#button_ok_forzador").prop("disabled", false);
+      } else {
+        var motivo = motivoForzadorError(jsonData);
+        $("#forzador_alert_error").text(motivo).show();
+      }
+    },
+    error: function (xhr) {
+      $("#wait_id").text("");
+      $("#forzador_alert_error").text("Error de conexión buscando en Meli. Probá de nuevo.").show();
+      console.error("MeliForzarBuscar error:", xhr.status, xhr.responseText);
+    },
+  });
+});
+
+$("#button_ok_forzador").click(function () {
+  var customer_id = $("#opciones").val();
+  var raw = $("#forzador_shipments_id").val();
+
+  $("#wait_id").removeClass("text-danger").addClass("text-success").text("Importando...");
+  $(this).prop("disabled", true);
+
+  $.ajax({
+    data: { MeliForzarConfirmar: 1, customer_id: customer_id, raw: raw },
+    type: "POST",
+    url: "Procesos/php/funciones.php",
+    dataType: "json",
+    success: function (jsonData) {
+      $("#wait_id").text("");
+
+      if (jsonData.success == 1) {
+        toast("success", "Éxito!", "Envío importado correctamente.");
+        var datatable = $("#envios").DataTable();
+        datatable.ajax.reload();
+        $("#forzador-modal").modal("hide");
+      } else {
+        var motivo =
+          jsonData.error === "YA_CARGADO"
+            ? "Este shipments_id ya se cargó (lo importó otro operador mientras tanto)."
+            : motivoForzadorError(jsonData);
+        $("#forzador_alert_error").text(motivo).show();
+        $("#button_ok_forzador").prop("disabled", false);
+      }
+    },
+    error: function (xhr) {
+      $("#wait_id").text("");
+      $("#forzador_alert_error").text("Error de conexión importando el envío. Probá de nuevo.").show();
+      $("#button_ok_forzador").prop("disabled", false);
+      console.error("MeliForzarConfirmar error:", xhr.status, xhr.responseText);
+    },
+  });
+});
+
 //ELIMINAR
 function showmodal(i){
     
@@ -252,7 +414,7 @@ $(document).ready(function() {
     //MUESTRO LA TABLA
     var datatable = $('#envios').DataTable({
         dom: 'Bfrtip',
-        buttons: ['pageLength', 'copy', 'excel', 'pdf'],
+        buttons: buildDtButtons(['pageLength', 'copy', 'excel', 'pdf']),
         paging: true,
         searching: true,
         lengthMenu: [

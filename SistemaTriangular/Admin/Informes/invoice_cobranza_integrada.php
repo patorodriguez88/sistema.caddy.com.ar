@@ -225,6 +225,7 @@ header('location:https://www.caddy.com.ar/sistema');
         <!-- <script src="Procesos/js/cobranza_integrada.js"></script> -->
         <script src="../Procesos/js/cobranza_integrada_invoice.js"></script>
         <script src="../../Funciones/js/datosempresa.js"></script>
+        <script src="../../Funciones/js/alertas.js"></script>
         <!-- <script src="../Menu/js/funciones.js"></script> -->
         <!-- Funciones Imprimir Rotulos -->
   </body>

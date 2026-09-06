@@ -235,6 +235,7 @@ if (isset($_GET['token']) && $_GET['token'] != '') {
       <script src="/SistemaTriangular/Menu/js/funciones.js"></script>
       <script src="/SistemaTriangular/Clientes/Procesos/js/recibo.js"></script>
       <script src="/SistemaTriangular/Funciones/js/datosempresa.js"></script>
+      <script src="/SistemaTriangular/Funciones/js/alertas.js"></script>
 </body>
 
 </html>

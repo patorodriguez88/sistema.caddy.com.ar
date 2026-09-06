@@ -199,6 +199,7 @@
 
     <!-- Funciones -->
     <script src="../Menu/js/funciones.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     <script src="Procesos/js/plandecuentas.js"></script>
 
 </body>

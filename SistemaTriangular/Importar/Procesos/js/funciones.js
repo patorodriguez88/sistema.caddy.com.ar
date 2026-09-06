@@ -85,7 +85,7 @@ console.log('relacion',relacion);
 $(document).ready(function() {
 var datatable = $('#seguimiento').DataTable({
   dom: 'Bfrtip',
-  buttons: ['pageLength'],
+  buttons: buildDtButtons(["pageLength"]),
   paging: true,
   searching: true,
   lengthMenu: [

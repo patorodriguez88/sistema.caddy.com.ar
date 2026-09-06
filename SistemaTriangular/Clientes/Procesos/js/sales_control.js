@@ -137,9 +137,7 @@ console.log('fechas',fecha);
 
 var datatable = $('#sales_control').DataTable({
     dom: 'Bfrtip',
-    buttons: [
-      'copy', 'csv', 'excel', 'pdf', 'print'
-    ],
+    buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
     paging: true,
     searching: true,
 ajax: {
@@ -186,9 +184,7 @@ ajax: {
 
     var datatable = $('#sales_view').DataTable({
         dom: 'Bfrtip',
-        buttons: [
-          'copy', 'csv', 'excel', 'pdf', 'print'
-        ],
+        buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
         paging: true,
         searching: true,
     ajax: {

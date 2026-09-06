@@ -58,31 +58,45 @@
                         <div class="modal-content">
 
                             <div class="modal-header">
-                                <h4 class="modal-title" id="standard-modalLabel">Buscar en Mercado Libre</h4>
+                                <h4 class="modal-title" id="standard-modalLabel">Cargar Envio de Mercado Libre</h4>
                                 <!-- Botón de cierre correcto -->
                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                             </div>
 
                             <div class="modal-body">
                                 <div class="form-group mb-3 mt-3">
-                                    <label>Cliente Integrado con Mercado Libre</label>
+                                    <label>Cliente Origen (Integrado con Mercado Libre)</label>
                                     <select class="form-control select2" data-bs-toggle="select2" id="opciones" name="opciones">
                                         <!-- Opciones cargadas por Ajax -->
                                     </select>
                                 </div>
 
                                 <div class="form-group mb-3 mt-3">
-                                    <label>Shipments id</label>
-                                    <input type="number" class="form-control" id="forzador_shipments_id">
-                                    <span class="font-13 text-muted">Ej.: 42673578431</span>
+                                    <label>Codigo (escaneado con pistola/QR de Meli, o tipeado a mano)</label>
+                                    <input type="text" class="form-control" id="forzador_shipments_id" autocomplete="off" placeholder="Escaneá el QR o escribí el shipments_id">
+                                    <span class="font-13 text-muted">Ej.: 42673578431, o el QR completo de Meli</span>
                                 </div>
 
-                                <div class="alert alert-danger" role="alert" style="display:none">
-                                    <strong>Error - </strong> El shipments id consultado ya se encuentra cargado o no existe!
-                                </div>
+                                <div id="forzador_alert_error" class="alert alert-danger" role="alert" style="display:none"></div>
 
-                                <div class="alert alert-success" role="alert" style="display:none">
-                                    <strong>Success - </strong> A simple success alert—check it out!
+                                <div id="forzador_alert_success" class="alert alert-success" role="alert" style="display:none"></div>
+
+                                <!-- Card con los datos traidos de Meli, antes de confirmar la importacion -->
+                                <div id="forzador_card" class="card border" style="display:none">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-3">Datos del envio</h5>
+                                        <div class="row" style="font-size:13px">
+                                            <div class="col-6 mb-2"><strong>Destinatario:</strong> <span id="fc_nombre"></span></div>
+                                            <div class="col-6 mb-2"><strong>Telefono:</strong> <span id="fc_telefono"></span></div>
+                                            <div class="col-12 mb-2"><strong>Direccion:</strong> <span id="fc_direccion"></span></div>
+                                            <div class="col-6 mb-2"><strong>Ciudad:</strong> <span id="fc_ciudad"></span></div>
+                                            <div class="col-6 mb-2"><strong>CP:</strong> <span id="fc_cp"></span></div>
+                                            <div class="col-6 mb-2"><strong>Estado Meli:</strong> <span id="fc_estado"></span></div>
+                                            <div class="col-6 mb-2"><strong>Tipo Logistico:</strong> <span id="fc_logistic"></span></div>
+                                            <div class="col-6 mb-2"><strong>Shipment id:</strong> <span id="fc_shipment_id"></span></div>
+                                            <div class="col-6 mb-2"><strong>Valor Declarado:</strong> $ <span id="fc_valor"></span></div>
+                                        </div>
+                                    </div>
                                 </div>
 
                                 <a id="wait_id" class="text-success"></a>
@@ -90,7 +104,8 @@
 
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                                <button id="button_ok_forzador" type="button" class="btn btn-primary">Aceptar</button>
+                                <button id="button_buscar_forzador" type="button" class="btn btn-secondary">Buscar</button>
+                                <button id="button_ok_forzador" type="button" class="btn btn-primary" disabled>Confirmar e Importar</button>
                             </div>
 
                         </div><!-- /.modal-content -->
@@ -104,9 +119,9 @@
                                 <div class="card-body">
                                     <h4 id="seguimiento_header" class="header-title mt-2">INTEGRACION MERCADO LIBRE <-> CADDY LOGISTICA </h4>
                                     <div class="row mb-2">
-                                        <div class="col-sm-12 text-right">
-                                            <!-- <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#forzador-modal">Forzador Meli</button> -->
-                                            <a href="/SistemaTriangular/Ventas/Colecta.php" class="btn btn-success">Colectas</a>
+                                        <div class="col-sm-12 text-end">
+                                            <button type="button" class="btn btn-primary me-1" data-bs-toggle="modal" data-bs-target="#forzador-modal"><i class="mdi mdi-qrcode-scan me-1"></i>Cargar por Codigo</button>
+                                            <a href="/SistemaTriangular/Ventas/Colecta.php" class="btn btn-success"><i class="mdi mdi-package-variant-closed me-1"></i>Colectas</a>
                                         </div><!-- end col-->
                                     </div>
 

@@ -42,7 +42,7 @@ $.ajax({
         //TABLA WEBHOOKS NOTIFICATIONS
         var datatable_webhooks = $('#webhook_tabla').DataTable({
             dom: 'Bfrtip',
-            buttons: ['copy', 'excel', 'pdf'],
+            buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
             paging: true,
             searching: true,
             ajax: {

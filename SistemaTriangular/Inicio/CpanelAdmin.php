@@ -537,6 +537,7 @@
     <script src="js/funcionesAdmin.js"></script>
     <script src="js/mapagestya.js"></script>
     <script src="../Menu/js/funciones.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
     <script src="js/demo.apex-line.js"></script>
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />

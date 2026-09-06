@@ -357,8 +357,7 @@ $(document).ready(function () {
           var datatable = $("#basic").DataTable({
             order: [[0, "desc"]],
             dom: "Bfrtip",
-            // buttons: obtenerBotonesExportacion(),
-            buttons: ["copy", "csv", "excel", "pdf", "print"],
+            buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
             paging: true,
             searching: true,
             // footerCallback: function (row, data, start, end, display) {

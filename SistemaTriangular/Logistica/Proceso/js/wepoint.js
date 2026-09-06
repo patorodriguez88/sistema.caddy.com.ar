@@ -154,7 +154,7 @@ function showAjaxError(http, body, orden) {
 $(function () {
   var datatable = $("#colectas_tabla").DataTable({
     dom: "Bfrtip",
-    buttons: ["copy", "csv", "excel", "pdf", "print"],
+    buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
     paging: true,
     searching: true,
     lengthMenu: [

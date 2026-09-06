@@ -96,13 +96,17 @@ function buildDT(tableId, columns, rows) {
         $('#' + tableId + ' tbody').empty();
     }
     return $('#' + tableId).DataTable({
-        dom: 'Blfrtip',
-        buttons: [
-            { extend: 'excel', text: '<i class="mdi mdi-file-excel-outline"></i> Excel', title: 'Seguros Caddy' },
-            { extend: 'pdf',   text: '<i class="mdi mdi-file-pdf-box"></i> PDF', title: 'Seguros Caddy', orientation: 'landscape', pageSize: 'A4' },
-            { extend: 'print', text: '<i class="mdi mdi-printer"></i> Imprimir' },
-            { extend: 'copy',  text: '<i class="mdi mdi-content-copy"></i> Copiar' }
-        ],
+        dom: 'Bfrtip',
+        buttons: {
+            dom: { button: { className: '' } },
+            buttons: [
+                dtButtonConfig('pageLength', true),
+                dtButtonConfig({ extend: 'excel', title: 'Seguros Caddy' }, true),
+                dtButtonConfig({ extend: 'pdf', title: 'Seguros Caddy', orientation: 'landscape', pageSize: 'A4' }, true),
+                dtButtonConfig('print', true),
+                dtButtonConfig('copy'),
+            ],
+        },
         data: rows,
         columns: columns,
         paging: true,

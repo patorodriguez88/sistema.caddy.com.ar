@@ -5,7 +5,7 @@ $("#dates").change(function () {
 
 var datatable = $("#recorridos").DataTable({
   dom: "Bfrtip",
-  buttons: ["pageLength", "copy", "excel", "pdf"],
+  buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
   destroy: true, // evita doble init al volver a la vista
   processing: true,
   deferRender: true,

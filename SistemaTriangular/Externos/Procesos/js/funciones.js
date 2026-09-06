@@ -133,7 +133,7 @@ $(document).on("click", "#imprimir", function () {
 //MUESTRO LA TABLA
 var datatable = $("#externos").DataTable({
   dom: "Bfrtip",
-  buttons: ["pageLength", "copy", "excel", "pdf"],
+  buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
   responsive: true,
   paging: true,
   searching: true,

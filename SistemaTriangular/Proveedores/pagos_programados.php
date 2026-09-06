@@ -286,6 +286,7 @@
 
     <!-- Funciones generales -->
     <script src="../Menu/js/funciones.js"></script>
+    <script src="../Funciones/js/alertas.js"></script>
 
     <!-- JS propio -->
     <script src="Procesos/js/pagos_programados.js"></script>

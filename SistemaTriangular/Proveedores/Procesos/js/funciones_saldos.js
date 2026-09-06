@@ -1,9 +1,7 @@
 $(document).ready(function(){
         var datatable = $('#proveedores-saldos').DataTable({
             dom: 'Bfrtip',
-            buttons: [
-            'copy', 'csv', 'excel', 'pdf', 'print'
-            ],
+            buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
             ajax: {
               url:"../Proveedores/Procesos/php/tablas.php",
               data:{'Saldos':1},

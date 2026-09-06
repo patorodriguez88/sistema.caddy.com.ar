@@ -332,6 +332,7 @@
 
         <script src="Proceso/js/wepoint.js"></script>
         <script src="../Menu/js/funciones.js"></script>
+        <script src="../Funciones/js/alertas.js"></script>
 </body>
 
 </html>

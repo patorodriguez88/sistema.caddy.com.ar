@@ -26,9 +26,7 @@ datatable.destroy();
 
         var datatable = $('#seguimiento').DataTable({
           dom: 'Bfrtip',
-          buttons: [
-            'pageLength','copy', 'csv', 'excel', 'pdf', 'print'
-          ],
+          buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
           lengthMenu: [
             [10, 25, 50, -1],
             [10, 25, 50, 'All']

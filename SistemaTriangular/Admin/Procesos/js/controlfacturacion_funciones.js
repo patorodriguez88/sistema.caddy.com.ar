@@ -228,40 +228,41 @@ $(document).ready(function () {
     var ciclo = ciclo;
     var datatable1 = $("#tablactasctes").DataTable({
       dom: "Bfrtip",
-      buttons: [
-        "copy",
-        "csv",
-        {
-          extend: "pdf",
-          text: "PDF",
-          orientation: "landscape",
-          title: "Titulo",
-          filename:
-            "Ventas Desde: " + desde_file_name + " Hasta: " + hasta_file_name,
-          header: true,
-          pageSize: "A4",
-          customize: function (doc) {
-            ((doc.styles.tableHeader = {
-              fillColor: "#525659",
-              color: "#FFF",
-              fontSize: "7",
-              alignment: "left",
-              bold: true,
-            }), //para cambiar el backgorud del escabezado
-              (doc.defaultStyle.fontSize = 6));
-            doc.pageMargins = [50, 50, 30, 30]; //left,top,right,bottom
-            doc.content[1].margin = [5, 0, 0, 5]; // margenes para la datables
-          },
-        },
-        {
-          extend: "excel",
-          text: "Excel",
-          exportOptions: {
-            columns: [0, 1, 2, 3, 4, 5, 6, 7], // Aquí indicamos las columnas que se exportarán (0 para ID y 1 para Nombre)
-          },
-        },
-        "print",
-      ],
+      buttons: {
+        dom: { button: { className: "" } },
+        buttons: [
+          dtButtonConfig("copy", true),
+          dtButtonConfig("csv", true),
+          dtButtonConfig({
+            extend: "pdf",
+            orientation: "landscape",
+            title: "Titulo",
+            filename:
+              "Ventas Desde: " + desde_file_name + " Hasta: " + hasta_file_name,
+            header: true,
+            pageSize: "A4",
+            customize: function (doc) {
+              ((doc.styles.tableHeader = {
+                fillColor: "#525659",
+                color: "#FFF",
+                fontSize: "7",
+                alignment: "left",
+                bold: true,
+              }), //para cambiar el backgorud del escabezado
+                (doc.defaultStyle.fontSize = 6));
+              doc.pageMargins = [50, 50, 30, 30]; //left,top,right,bottom
+              doc.content[1].margin = [5, 0, 0, 5]; // margenes para la datables
+            },
+          }, true),
+          dtButtonConfig({
+            extend: "excel",
+            exportOptions: {
+              columns: [0, 1, 2, 3, 4, 5, 6, 7], // Aquí indicamos las columnas que se exportarán (0 para ID y 1 para Nombre)
+            },
+          }, true),
+          dtButtonConfig("print"),
+        ],
+      },
 
       columnDefs: [
         {

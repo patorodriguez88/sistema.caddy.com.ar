@@ -621,17 +621,20 @@
         },
       ],
       dom: "Bfrtip",
-      buttons: [
-        {
-          extend: "excelHtml5",
-          text: '<i class="mdi mdi-file-excel-outline"></i> Exportar Excel',
-          className: "btn btn-success btn-sm ms-0 mt-3",
-          title: "Resultados_Caddy_" + new Date().toISOString().slice(0, 10),
-          exportOptions: {
-            columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+      buttons: {
+        dom: { button: { className: "" } },
+        buttons: [
+          {
+            extend: "excelHtml5",
+            text: '<i class="mdi mdi-file-excel-outline"></i> Exportar Excel',
+            className: "btn btn-success btn-sm ms-0 mt-3",
+            title: "Resultados_Caddy_" + new Date().toISOString().slice(0, 10),
+            exportOptions: {
+              columns: [0, 1, 2, 3, 4, 5, 6, 7, 8],
+            },
           },
-        },
-      ],
+        ],
+      },
     });
     dt.on("draw", function () {
       actualizarResumenTabla();

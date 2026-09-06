@@ -87,37 +87,40 @@ $(document).ready(function () {
     if (libro == 1) {
       var datatable = $("#libroiva").DataTable({
         dom: "Bfrtip",
-        buttons: [
-          "copy",
-          "csv",
-          "excel",
-          {
-            extend: "pdf",
-            text: "PDF",
-            orientation: "landscape",
-            title: Titulo,
-            filename: "LibroIvaCompras",
-            header: true,
-            pageSize: "A4",
-            //             exportOptions : {
-            //               columns : [0,1,2,3,4,5,6],
-            //                 stripHtml : false
-            //                 },
-            customize: function (doc) {
-              (doc.styles.tableHeader = {
-                fillColor: "#525659",
-                color: "#FFF",
-                fontSize: "7",
-                alignment: "left",
-                bold: true,
-              }), //para cambiar el backgorud del escabezado
-                (doc.defaultStyle.fontSize = 6);
-              doc.pageMargins = [50, 50, 30, 30]; //left,top,right,bottom
-              doc.content[1].margin = [5, 0, 0, 5]; // margenes para la datables
-            },
-          },
-          "print",
-        ],
+        buttons: {
+          dom: { button: { className: "" } },
+          buttons: [
+            dtButtonConfig("pageLength", true),
+            dtButtonConfig("copy", true),
+            dtButtonConfig("csv", true),
+            dtButtonConfig("excel", true),
+            dtButtonConfig({
+              extend: "pdf",
+              orientation: "landscape",
+              title: Titulo,
+              filename: "LibroIvaCompras",
+              header: true,
+              pageSize: "A4",
+              //             exportOptions : {
+              //               columns : [0,1,2,3,4,5,6],
+              //                 stripHtml : false
+              //                 },
+              customize: function (doc) {
+                (doc.styles.tableHeader = {
+                  fillColor: "#525659",
+                  color: "#FFF",
+                  fontSize: "7",
+                  alignment: "left",
+                  bold: true,
+                }), //para cambiar el backgorud del escabezado
+                  (doc.defaultStyle.fontSize = 6);
+                doc.pageMargins = [50, 50, 30, 30]; //left,top,right,bottom
+                doc.content[1].margin = [5, 0, 0, 5]; // margenes para la datables
+              },
+            }, true),
+            dtButtonConfig("print"),
+          ],
+        },
         ajax: {
           url: "../Admin/Procesos/php/tablas.php",
           data: { Iva: 1, desde: Desde, hasta: Hasta },
@@ -199,39 +202,41 @@ $(document).ready(function () {
     } else if (libro == 2) {
       var datatable1 = $("#libroivaventas").DataTable({
         dom: "Bfrtip",
-        buttons: [
-          "pageLength",
-          "copy",
-          "csv",
-          "excel",
-          {
-            extend: "pdf",
-            text: "PDF",
-            orientation: "landscape",
-            title: "Libro Iva Triangular S.A. " + Titulo,
-            filename: "LibroIvaCompras",
-            header: true,
-            pageSize: "A4",
-            //             exportOptions : {
-            //               columns : [0,1,2,3,4,5,6],
-            //                 stripHtml : false
-            //                 },
+        buttons: {
+          dom: { button: { className: "" } },
+          buttons: [
+            dtButtonConfig("pageLength", true),
+            dtButtonConfig("copy", true),
+            dtButtonConfig("csv", true),
+            dtButtonConfig("excel", true),
+            dtButtonConfig({
+              extend: "pdf",
+              orientation: "landscape",
+              title: "Libro Iva Triangular S.A. " + Titulo,
+              filename: "LibroIvaCompras",
+              header: true,
+              pageSize: "A4",
+              //             exportOptions : {
+              //               columns : [0,1,2,3,4,5,6],
+              //                 stripHtml : false
+              //                 },
 
-            // customize: function (doc) {
-            //      doc.styles.tableHeader = {
-            //          fillColor:'#525659',
-            //          color:'#FFF',
-            //          fontSize: '7',
-            //          alignment: 'left',
-            //          bold: true
-            //      }, //para cambiar el backgorud del escabezado
-            //      doc.defaultStyle.fontSize = 6;
-            //      doc.pageMargins = [50,50,30,30];//left,top,right,bottom
-            //      doc.content[1].margin = [ 5, 0, 0, 5] // margenes para la datables
-            //   }
-          },
-          // ,'print'
-        ],
+              // customize: function (doc) {
+              //      doc.styles.tableHeader = {
+              //          fillColor:'#525659',
+              //          color:'#FFF',
+              //          fontSize: '7',
+              //          alignment: 'left',
+              //          bold: true
+              //      }, //para cambiar el backgorud del escabezado
+              //      doc.defaultStyle.fontSize = 6;
+              //      doc.pageMargins = [50,50,30,30];//left,top,right,bottom
+              //      doc.content[1].margin = [ 5, 0, 0, 5] // margenes para la datables
+              //   }
+            }),
+            // ,'print'
+          ],
+        },
         lengthMenu: [
           [10, 25, 50, -1],
           [10, 25, 50, "All"],

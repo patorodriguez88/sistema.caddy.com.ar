@@ -1,6 +1,193 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
+include_once __DIR__ . "/meli_api.php";
 date_default_timezone_set("America/Argentina/Cordoba");
+
+// ============================================================
+// CARGAR POR CODIGO (Meli): busca un shipment puntual pegando directo a la
+// API de Meli con el token propio del cliente origen elegido (meliShipmentLookup,
+// en meli_api.php) - mismo mecanismo que ya usa la importacion automatica
+// (orders.php, BuscarOrdenes). No es el viejo "Forzador" (comentado mas
+// abajo), que dependia de dos servicios externos (notifications.travelsupport.tur.ar
+// y caddy.com.ar/api) que ya no controlamos ni podemos garantizar que sigan
+// vivos.
+// ============================================================
+
+/** Extrae el shipments_id de lo escaneado: puede venir como numero pelado
+ * (tipeado a mano o leido por una pistola) o como el JSON que trae el QR de
+ * Meli (con un campo "id"). Mismo criterio que colecta_scan.php del sistema
+ * de reparto usa para sus QR de Meli. */
+function meliParseShipmentId(string $raw): string
+{
+    $raw = trim($raw);
+    if ($raw === '') return '';
+
+    if ($raw[0] === '{') {
+        $j = json_decode($raw, true);
+        if (is_array($j) && isset($j['id']) && $j['id'] !== '') {
+            $raw = (string)$j['id'];
+        }
+    }
+
+    // Solo digitos - un shipments_id de Meli siempre es numerico.
+    return preg_replace('/\D/', '', $raw);
+}
+
+/** Arma los datos "planos" para mostrar en la card del modal, a partir de la
+ * respuesta cruda de /shipments/{id}. */
+function meliShipmentToCard(array $shipment): array
+{
+    $ra = $shipment['receiver_address'] ?? [];
+    return [
+        'shipments_id' => (string)($shipment['id'] ?? ''),
+        'nombre' => (string)($ra['receiver_name'] ?? ''),
+        'telefono' => (string)($ra['receiver_phone'] ?? ''),
+        'direccion' => (string)($ra['address_line'] ?? ''),
+        'ciudad' => (string)($ra['city']['name'] ?? ''),
+        'cp' => (string)($ra['zip_code'] ?? ''),
+        'estado' => (string)($shipment['status'] ?? ''),
+        'logistic_type' => (string)($shipment['logistic_type'] ?? ''),
+        'valor_declarado' => (string)($shipment['declared_value'] ?? '0'),
+        'comment' => (string)($ra['comment'] ?? ''),
+        'provincia' => (string)($ra['state']['name'] ?? ''),
+        'order_id' => (string)($shipment['order_id'] ?? ''),
+    ];
+}
+
+function meliYaCargado(mysqli $mysqli, string $shipmentsId): bool
+{
+    $st = $mysqli->prepare("SELECT id FROM Importaciones WHERE idProveedor=? AND Eliminado=0 LIMIT 1");
+    $st->bind_param("s", $shipmentsId);
+    $st->execute();
+    return $st->get_result()->num_rows > 0;
+}
+
+if (isset($_POST['MeliClientesToken'])) {
+    $sql = $mysqli->query("SELECT id, nombrecliente FROM Clientes WHERE user_id<>'' ORDER BY nombrecliente ASC");
+    $datos = [];
+    while ($fila = $sql->fetch_assoc()) {
+        $datos[] = $fila;
+    }
+    echo json_encode($datos);
+    exit;
+}
+
+if (isset($_POST['MeliForzarBuscar'])) {
+    $customerId = (int)($_POST['customer_id'] ?? 0);
+    $shipmentsId = meliParseShipmentId((string)($_POST['raw'] ?? ''));
+
+    if ($shipmentsId === '') {
+        echo json_encode(['success' => 0, 'message' => 'Escaneá o escribí el código del envío.']);
+        exit;
+    }
+
+    if (meliYaCargado($mysqli, $shipmentsId)) {
+        echo json_encode(['success' => 0, 'error' => 'YA_CARGADO']);
+        exit;
+    }
+
+    // Sin cliente elegido: no sabemos de quien es el envio todavia, probamos
+    // el token de todos los clientes en paralelo (meliShipmentAutoDetect).
+    // Si nada abre (tokens vencidos, por ejemplo) el operador cae al
+    // selector manual, que si intenta refrescar el token.
+    $resultado = $customerId > 0
+        ? meliShipmentLookup($mysqli, $customerId, $shipmentsId)
+        : meliShipmentAutoDetect($mysqli, $shipmentsId);
+
+    if (!$resultado['ok']) {
+        echo json_encode(['success' => 0, 'error' => $resultado['error']]);
+        exit;
+    }
+
+    $data = meliShipmentToCard($resultado['shipment']);
+    $data['customer_id'] = (string)$resultado['customer']['id'];
+    $data['customer_nombre'] = (string)$resultado['customer']['nombrecliente'];
+    $data['auto_detectado'] = $customerId <= 0 ? 1 : 0;
+
+    echo json_encode(['success' => 1, 'data' => $data]);
+    exit;
+}
+
+if (isset($_POST['MeliForzarConfirmar'])) {
+    $customerId = (int)($_POST['customer_id'] ?? 0);
+    $shipmentsId = meliParseShipmentId((string)($_POST['raw'] ?? ''));
+
+    if ($shipmentsId === '') {
+        echo json_encode(['success' => 0, 'message' => 'Falta el código del envío.']);
+        exit;
+    }
+
+    // Recheck anti-duplicado justo antes de insertar (por si otro operador lo
+    // cargo en el rato entre "Buscar" y "Confirmar").
+    if (meliYaCargado($mysqli, $shipmentsId)) {
+        echo json_encode(['success' => 0, 'error' => 'YA_CARGADO']);
+        exit;
+    }
+
+    // El JS ya manda el customer_id que devolvio el "Buscar" (elegido a mano
+    // o auto-detectado) - si por algun motivo no vino, se reintenta
+    // autodetectar en vez de fallar.
+    $resultado = $customerId > 0
+        ? meliShipmentLookup($mysqli, $customerId, $shipmentsId)
+        : meliShipmentAutoDetect($mysqli, $shipmentsId);
+
+    if (!$resultado['ok']) {
+        echo json_encode(['success' => 0, 'error' => $resultado['error']]);
+        exit;
+    }
+
+    $cliente = $resultado['customer'];
+    $card = meliShipmentToCard($resultado['shipment']);
+
+    // Tarifa vigente de Flex (183), mismo criterio que orders.php.
+    $sqlTarifa = $mysqli->query("SELECT PrecioVenta FROM Productos WHERE Codigo='183'");
+    $tarifa = $sqlTarifa->fetch_assoc();
+    $precio = (float)($tarifa['PrecioVenta'] ?? 0);
+    $cantidad = 1;
+    $total = $cantidad * $precio;
+
+    $fecha = date('Y-m-d');
+    $descripcion = 'Cargado manualmente por codigo (Meli) - ' . ($_SESSION['Usuario'] ?? '');
+
+    $stmt = $mysqli->prepare("INSERT INTO Importaciones
+        (TipoDeComprobante, NumeroComprobante, Fecha, RazonSocial, NCliente, Cantidad, Precio, Total,
+         ClienteDestino, DomicilioDestino, LocalidadDestino, ProvinciaDestino, Telefono, cpdestino,
+         Usuario, Eliminado, Observaciones, idProveedor, ValorDeclarado, Meli, Status, order_id,
+         logistic_type, shipments_id, description, Latitud, Longitud, Receptor)
+        VALUES ('API_MELI', '188', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'API_MELI', 0, ?, ?, ?, 1, ?, ?, ?, ?, ?, 0, 0, ?)");
+
+    $stmt->bind_param(
+        "sssidddsssssssdsssss",
+        $fecha,
+        $cliente['nombrecliente'],
+        $cliente['id'],
+        $cantidad,
+        $precio,
+        $total,
+        $card['nombre'],
+        $card['direccion'],
+        $card['ciudad'],
+        $card['provincia'],
+        $card['telefono'],
+        $card['cp'],
+        $card['comment'],
+        $card['shipments_id'],
+        $card['valor_declarado'],
+        $card['estado'],
+        $card['order_id'],
+        $card['logistic_type'],
+        $card['shipments_id'],
+        $descripcion,
+        $card['nombre']
+    );
+
+    if ($stmt->execute()) {
+        echo json_encode(['success' => 1, 'id' => $mysqli->insert_id]);
+    } else {
+        echo json_encode(['success' => 0, 'message' => 'Error al guardar en Importaciones: ' . $mysqli->error]);
+    }
+    exit;
+}
 
 // if($_POST['forzador_pending']==1){
 

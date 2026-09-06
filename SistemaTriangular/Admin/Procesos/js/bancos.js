@@ -145,21 +145,23 @@ function buildDataTable() {
 
   datatable1 = $("#tabla_conciliacion").DataTable({
     dom: "Bfrtip",
-    buttons: [
-      "pageLength",
-      "copy",
-      "csv",
-      "excel",
-      {
-        extend: "pdf",
-        text: "PDF",
-        orientation: "landscape",
-        title: "Conciliación Bancaria",
-        filename: "ConciliacionBancariaCaddy",
-        header: true,
-        pageSize: "A4",
-      },
-    ],
+    buttons: {
+      dom: { button: { className: "" } },
+      buttons: [
+        dtButtonConfig("pageLength", true),
+        dtButtonConfig("copy", true),
+        dtButtonConfig("csv", true),
+        dtButtonConfig("excel", true),
+        dtButtonConfig({
+          extend: "pdf",
+          orientation: "landscape",
+          title: "Conciliación Bancaria",
+          filename: "ConciliacionBancariaCaddy",
+          header: true,
+          pageSize: "A4",
+        }),
+      ],
+    },
     lengthMenu: [
       [10, 25, 50, -1],
       [10, 25, 50, "Todos"],

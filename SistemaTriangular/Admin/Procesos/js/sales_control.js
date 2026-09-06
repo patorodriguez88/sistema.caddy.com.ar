@@ -394,18 +394,23 @@ function ver_tabla(filtro){
 var datatable1 = $('#librocontrolventas').DataTable({
     dom: 'Bfrtip',
     pageLength: '50',
-    buttons: [
-        'pageLength','copy', 'csv', 'excel',
-      {
-        extend: 'pdf',
-        text: 'PDF',
-        orientation: 'landscape',
-        title: 'Control Ventas Triangular S.A. ',
-        filename: 'ControlVentas', 
-        header: true,
-        pageSize: 'A4',
-    }
-    ],
+    buttons: {
+      dom: { button: { className: '' } },
+      buttons: [
+        dtButtonConfig('pageLength', true),
+        dtButtonConfig('copy', true),
+        dtButtonConfig('csv', true),
+        dtButtonConfig('excel', true),
+        dtButtonConfig({
+          extend: 'pdf',
+          orientation: 'landscape',
+          title: 'Control Ventas Triangular S.A. ',
+          filename: 'ControlVentas',
+          header: true,
+          pageSize: 'A4',
+        }),
+      ],
+    },
     lengthMenu: [
         [10, 25, 50, -1],
         [10, 25, 50, 'All']

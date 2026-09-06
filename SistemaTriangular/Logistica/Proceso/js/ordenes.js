@@ -677,7 +677,7 @@ function init_datatable(fechas = "") {
 
   $("#ordenes").DataTable({
     dom: "Bfrtip",
-    buttons: ["pageLength", "copy", "excel", "pdf"],
+    buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
     paging: true,
     searching: true,
     lengthMenu: [

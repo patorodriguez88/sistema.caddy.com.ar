@@ -268,7 +268,7 @@ $("#singledaterange").change(function () {
 
       var datatable = $("#basic").DataTable({
         dom: "Bfrtip",
-        buttons: ["copy", "csv", "excel", "print"],
+        buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "print"]),
         lengthMenu: [
           [10, 25, 50, -1],
           [10, 25, 50, "All"],

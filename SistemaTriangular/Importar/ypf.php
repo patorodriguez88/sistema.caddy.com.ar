@@ -405,6 +405,7 @@ $allowedFileType = ['application/vnd.ms-excel','text/xls','text/xlsx','applicati
         <script src="../hyper/dist/saas/assets/js/vendor/dataTables.keyTable.min.js"></script>
         <script src="../hyper/dist/saas/assets/js/vendor/dataTables.select.min.js"></script>
         <script src="../Menu/js/funciones.js"></script>
+        <script src="../Funciones/js/alertas.js"></script>
 
 
   </body>

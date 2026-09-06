@@ -21,21 +21,21 @@ $(document).ready(function () {
         dom: 'Bfrtip',       // 👈 muestra los botones arriba de la tabla
         paging: false, 
         ordering:false,
-        buttons: [
-            {
-                extend: 'excelHtml5',
-                text: '<i class="mdi mdi-file-excel"></i> Exportar a Excel',
-                className: 'btn btn-success btn-sm mr-1'
-            },
-            {
-                extend: 'print',
-                text: '<i class="mdi mdi-printer"></i> Imprimir',
-                titleAttr: 'Imprimir reporte',
-                title: 'Libro Diario - Triangular S.A.',
-                className: 'btn btn-info btn-sm'
-                
-            }
-        ],
+        buttons: {
+            dom: { button: { className: '' } },
+            buttons: [
+                {
+                    extend: 'excelHtml5',
+                    text: '<i class="mdi mdi-file-excel-outline me-1"></i>Excel',
+                    className: 'btn btn-sm btn-soft-success me-1'
+                },
+                dtButtonConfig({
+                    extend: 'print',
+                    titleAttr: 'Imprimir reporte',
+                    title: 'Libro Diario - Triangular S.A.'
+                })
+            ],
+        },
         ajax: {
             url: '../Admin/Procesos/php/plandecuentas.php',
             method: 'POST',

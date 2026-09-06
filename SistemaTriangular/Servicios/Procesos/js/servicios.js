@@ -35,7 +35,7 @@ var datatable = $("#incrementos_table").DataTable({
 
 var datatable = $("#servicios").DataTable({
   dom: "Bfrtip",
-  buttons: ["pageLength", "copy", "excel", "pdf"],
+  buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
   paging: true,
   searching: true,
   lengthMenu: [

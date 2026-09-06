@@ -660,7 +660,7 @@ $("#btn_un_ctas").click(function () {
 
   $("#basic").DataTable({
     dom: "Bfrtip",
-    buttons: ["copy", "csv", "excel", "pdf", "print"],
+    buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
     paging: true,
     searching: true,
     footerCallback: function (row, data, start, end, display) {
@@ -2127,7 +2127,7 @@ $("#buscarcliente").change(function () {
 
         $("#basic").DataTable({
           dom: "Bfrtip",
-          buttons: ["copy", "csv", "excel", "pdf", "print"],
+          buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
           paging: true,
           searching: true,
           footerCallback: function (row, data, start, end, display) {
@@ -2306,7 +2306,7 @@ $("#buscarcliente").change(function () {
         //TABLA RELACIONES
         $("#relaciones_tabla").DataTable({
           dom: "Bfrtip",
-          buttons: ["copy", "excel", "pdf"],
+          buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
           paging: true,
           searching: true,
           ajax: {
@@ -3208,7 +3208,7 @@ $("#botonfacturacion").click(function () {
 
     var datatable_facturacion = $("#facturacion_tabla").DataTable({
       dom: "Bfrtip",
-      buttons: ["pageLength", "copy", "excel", "pdf"],
+      buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
       paging: false,
       searching: true,
       footerCallback: function (row, data, start, end, display) {
@@ -3550,7 +3550,7 @@ $("#recorridos_boton").click(function () {
 
   var datatable_recorridos = $("#recorridos_tabla").DataTable({
     dom: "Bfrtip",
-    buttons: ["pageLength", "copy", "excel", "pdf"],
+    buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
     paging: true,
     searching: true,
     lengthMenu: [
@@ -3706,7 +3706,7 @@ $("#guias_recibidas_boton").click(function () {
 
   var datatable_recibidas = $("#guias_recibidas_tabla").DataTable({
     dom: "Bfrtip",
-    buttons: ["pageLength", "copy", "excel", "pdf"],
+    buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
     paging: true,
     searching: true,
     lengthMenu: [
@@ -3862,7 +3862,7 @@ $("#guias_enviadas_boton").click(function () {
 
   var datatable_enviadas = $("#guias_enviadas_tabla").DataTable({
     dom: "Bfrtip",
-    buttons: ["pageLength", "copy", "excel", "pdf"],
+    buttons: buildDtButtons(["pageLength", "copy", "excel", "pdf"]),
     paging: true,
     searching: true,
     lengthMenu: [
