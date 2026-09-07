@@ -177,11 +177,22 @@ $("#cargar_factura_btn_ok").click(function () {
         $("#modal_cargar_factura").modal("hide");
         $("#success-alert-modal").modal("show");
         $("#success-alert-modal-text").html(
-          "Se cargo el comprobante correctamente."
+          jsonData.aviso
+            ? "Se cargó el comprobante. " + jsonData.aviso
+            : "Se cargo el comprobante correctamente."
         );
 
         var table = $("#basic").DataTable();
         table.ajax.reload();
+      } else if (jsonData.error == "SIN_CUENTA" || jsonData.error == "SIN_PROVEEDOR") {
+        // No se pudo imputar el gasto a una cuenta contable -> no se cargó nada.
+        // El modal queda abierto para que se pueda corregir sin recargar.
+        swal.fire({
+          title: "No se cargó el comprobante",
+          text: jsonData.msg,
+          icon: "warning",
+          confirmButtonText: "Entendido",
+        });
       } else if (jsonData.error == 1) {
         //SI EL LIBRO IVA YA ESTA CERRADO
         $("#modal_cargar_factura").modal("hide");

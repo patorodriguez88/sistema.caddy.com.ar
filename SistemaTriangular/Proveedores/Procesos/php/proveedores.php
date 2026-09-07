@@ -96,6 +96,85 @@ if (isset($_POST['datos_chequera'])) {
 
 $Usuario = $_SESSION['Usuario'];
 
+/**
+ * Resuelve la cuenta contable con la que se imputa el gasto de un comprobante
+ * de compra. Orden de preferencia:
+ *   1) Proveedores.CtaAsignada, si existe y es una cuenta imputable (Nivel >= 4).
+ *   2) Cuenta histórica: la cuenta Nivel >= 4 más usada por ese proveedor
+ *      (por CUIT o RazonSocial) en IvaCompras no eliminadas.
+ *   3) Si no se resuelve nada -> devuelve ['error' => ...] y el llamador ABORTA
+ *      la carga. Antes se cargaba igual con Cuenta vacía / 0 y descuadraba el
+ *      balance de Sumas y Saldos (caso agosto 2026).
+ *
+ * @return array ['cuenta'=>..,'nombre'=>..,'origen'=>'asignada'|'historica','aviso'=>string]
+ *               o ['error'=>'SIN_CUENTA','msg'=>string]
+ */
+if (!function_exists('resolverCuentaContable')) {
+    function resolverCuentaContable(mysqli $mysqli, $ctaAsignada, $cuitEsc, $razonEsc): array
+    {
+        $ctaAsignada = trim((string) $ctaAsignada);
+
+        // 1) Cuenta asignada, si es imputable (Nivel >= 4)
+        if ($ctaAsignada !== '' && (int) $ctaAsignada !== 0) {
+            $ctaEsc = $mysqli->real_escape_string($ctaAsignada);
+            $r = $mysqli->query(
+                "SELECT NombreCuenta, Cuenta FROM PlanDeCuentas
+                 WHERE CAST(Cuenta AS UNSIGNED) = CAST('$ctaEsc' AS UNSIGNED)
+                   AND CAST(Nivel AS UNSIGNED) >= 4
+                 LIMIT 1"
+            );
+            if ($r && $row = $r->fetch_assoc()) {
+                return [
+                    'cuenta' => $row['Cuenta'],
+                    'nombre' => $row['NombreCuenta'],
+                    'origen' => 'asignada',
+                    'aviso'  => '',
+                ];
+            }
+        }
+
+        // 2) Fallback: cuenta histórica más usada por el proveedor
+        $cond = [];
+        if ($cuitEsc !== '')  $cond[] = "ic.Cuit = '$cuitEsc'";
+        if ($razonEsc !== '') $cond[] = "ic.RazonSocial = '$razonEsc'";
+        if (!empty($cond)) {
+            $where = implode(' OR ', $cond);
+            $r = $mysqli->query(
+                "SELECT pc.Cuenta AS Cuenta, pc.NombreCuenta AS NombreCuenta, COUNT(*) AS usos
+                 FROM IvaCompras ic
+                 INNER JOIN PlanDeCuentas pc
+                         ON CAST(pc.Cuenta AS UNSIGNED) = CAST(ic.Cuenta AS UNSIGNED)
+                        AND CAST(pc.Nivel  AS UNSIGNED) >= 4
+                 WHERE ic.Eliminado = 0
+                   AND ic.Cuenta IS NOT NULL
+                   AND CAST(ic.Cuenta AS UNSIGNED) > 0
+                   AND ($where)
+                 GROUP BY pc.Cuenta, pc.NombreCuenta
+                 ORDER BY usos DESC
+                 LIMIT 1"
+            );
+            if ($r && $row = $r->fetch_assoc()) {
+                return [
+                    'cuenta' => $row['Cuenta'],
+                    'nombre' => $row['NombreCuenta'],
+                    'origen' => 'historica',
+                    'aviso'  => 'El proveedor no tiene una Cuenta Asignada imputable. Se usó su cuenta '
+                        . 'contable histórica: ' . $row['Cuenta'] . ' - ' . $row['NombreCuenta']
+                        . '. Revisá / asigná la cuenta en ABM Proveedores.',
+                ];
+            }
+        }
+
+        // 3) Nada -> se bloquea la carga
+        return [
+            'error' => 'SIN_CUENTA',
+            'msg'   => 'El proveedor no tiene una Cuenta Contable asignada ni cuentas históricas para '
+                . 'imputar el gasto. Asignale una Cuenta Asignada en ABM Proveedores antes de cargar '
+                . 'el comprobante.',
+        ];
+    }
+}
+
 function cargarfactura()
 {
     global $mysqli;
@@ -103,7 +182,7 @@ function cargarfactura()
     $Fecha = $_POST['Fecha'] ?? date('Y-m-d');
     $TipoDeComprobante = $_POST['tipodecomprobante_t'] ?? '';
     $NumeroComprobante = $_POST['numerocomprobante_t'] ?? '';
-    $Cuit = $_POST['Cuit'] ?? '';
+    $Cuit = $_POST['Cuit'] ?? ($_POST['cuit_t'] ?? '');   // el modal envía "cuit_t"
     $RazonSocial = $_POST['razonsocial_t'] ?? '';
     $Codigodeaprobacion = $_POST['codigodeaprobacion'];
     $Usuario = $_SESSION['Usuario'];
@@ -166,16 +245,60 @@ function cargarfactura()
     $TotalSinIva0 = $_POST['totalSiniva_t'] * $Valor;
     $TotalSinIva = number_format($TotalSinIva0, 2, '.', '');
 
-    //BUSCO LA CUENTA ASIGNADA
-    $resultado = $mysqli->query("SELECT CtaAsignada,TareasAsana,TareasAsana_gid,Pago_comprobantes FROM Proveedores WHERE Cuit='$Cuit'");
-    $row = $resultado->fetch_array(MYSQLI_ASSOC);
-    $CtaAsignada = $row['CtaAsignada'];
-    $TareasAsana = $row['TareasAsana'];
-    $TareasAsana_gid = $row['TareasAsana_gid'];
-    $PagoComprobantes = $row['Pago_comprobantes'];
+    //-------------------------------------------------------------------
+    // RESUELVO PROVEEDOR + CUENTA CONTABLE ANTES DE ESCRIBIR NADA.
+    // El modal siempre manda idproveedor; el CUIT puede venir vacío.
+    // Si el gasto no se puede imputar a una cuenta, se ABORTA la carga
+    // (antes se cargaba igual con Cuenta vacía y descuadraba Sumas y Saldos).
+    //-------------------------------------------------------------------
+    $idProveedor = (int) ($_POST['idproveedor'] ?? 0);
+    $RazonSocialEsc = $mysqli->real_escape_string($RazonSocial);
+    $CuitEsc = $mysqli->real_escape_string($Cuit);
+    $colsProv = "id,Cuit,CtaAsignada,TareasAsana,TareasAsana_gid,Pago_comprobantes,SolicitaVehiculo,SolicitaCombustible";
 
-    //INSERT EN TRANS PROVEEDORES 
-    $idProveedor = $_POST['idproveedor'];
+    $prov = null;
+    if ($idProveedor > 0) {
+        $rp = $mysqli->query("SELECT $colsProv FROM Proveedores WHERE id='$idProveedor' LIMIT 1");
+        $prov = $rp ? $rp->fetch_assoc() : null;
+    }
+    if (!$prov && $CuitEsc !== '') {
+        $rp = $mysqli->query("SELECT $colsProv FROM Proveedores WHERE Cuit='$CuitEsc' LIMIT 1");
+        $prov = $rp ? $rp->fetch_assoc() : null;
+    }
+    if (!$prov && $RazonSocialEsc !== '') {
+        $rp = $mysqli->query("SELECT $colsProv FROM Proveedores WHERE RazonSocial='$RazonSocialEsc' LIMIT 1");
+        $prov = $rp ? $rp->fetch_assoc() : null;
+    }
+
+    if (!$prov) {
+        echo json_encode(array('error' => 'SIN_PROVEEDOR', 'msg' => 'No se encontró el proveedor. Cerrá el modal y volvé a elegirlo de la lista.'));
+        return;
+    }
+
+    // Si el CUIT no vino del form, lo tomo del proveedor.
+    if ($Cuit === '' && !empty($prov['Cuit'])) {
+        $Cuit = $prov['Cuit'];
+        $CuitEsc = $mysqli->real_escape_string($Cuit);
+    }
+
+    $TareasAsana         = $prov['TareasAsana'];
+    $TareasAsana_gid     = $prov['TareasAsana_gid'];
+    $PagoComprobantes    = $prov['Pago_comprobantes'];
+    $SolicitaVehiculo    = $prov['SolicitaVehiculo'];
+    $SolicitaCombustible = $prov['SolicitaCombustible'];
+
+    // Cuenta contable: 1) CtaAsignada imputable  2) histórica del proveedor  3) abortar.
+    $cta = resolverCuentaContable($mysqli, $prov['CtaAsignada'], $CuitEsc, $RazonSocialEsc);
+    if (isset($cta['error'])) {
+        echo json_encode(array('error' => 'SIN_CUENTA', 'msg' => $cta['msg']));
+        return;
+    }
+    $CtaAsignada  = $cta['cuenta'];
+    $Cuenta       = $cta['cuenta'];
+    $NombreCuenta = $cta['nombre'];
+    $avisoCuenta  = $cta['aviso'];
+
+    //INSERT EN TRANS PROVEEDORES
 
     $sqlTransacciones = "INSERT INTO TransProveedores(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Debe,Concepto,Descripcion,NoOperativo,CodigoAprobacion,idProveedor,usuario,gid_asana)VALUES
     ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Total}','{$Concepto}','{$Descripcion}','{$NoOperativo}','{$Codigodeaprobacion}','{$idProveedor}','{$Usuario}','{$TareasAsana_gid}')";
@@ -210,16 +333,8 @@ function cargarfactura()
 
 
     //--------------------DESDE ACA PARA CARGAR EL ASIENTO CONTABLE EN TESORERIA--------------------
-    $BuscaCuentaProv = $mysqli->query("SELECT CtaAsignada,Cuit,SolicitaVehiculo,SolicitaCombustible FROM Proveedores WHERE Cuit='$Cuit'");
-    $row = $BuscaCuentaProv->fetch_array(MYSQLI_ASSOC);
-    $CuentaEncontrada = $row['CtaAsignada'];
-    $SolicitaVehiculo = $row['SolicitaVehiculo'];
-    $SolicitaCombustible = $row['SolicitaCombustible'];
-
-    $BuscaCuenta = $mysqli->query("SELECT NombreCuenta,Cuenta FROM PlanDeCuentas WHERE Cuenta='$CuentaEncontrada'");
-    $row = $BuscaCuenta->fetch_array(MYSQLI_ASSOC);
-    $NombreCuenta = $row['NombreCuenta'];
-    $Cuenta = $row['Cuenta'];
+    // $Cuenta / $NombreCuenta / $SolicitaVehiculo / $SolicitaCombustible ya fueron
+    // resueltos al principio de la función (resolverCuentaContable).
 
 
     $Combustible = $_POST['combustible_t'] ?? '';
@@ -325,7 +440,9 @@ function cargarfactura()
     // ('{$Fecha}','{$Concepto_OC}','{$NombreCuenta}','{$Descripcion}','{$Total}','{$Fecha}','Cargada','0','{$Dominio}',
     // '{$Usuario}','{$Codigodeaprobacion}','{$id_ivacompras}','{$IdTransProvCompraH}')");        
 
-    if (isset($TareasAsana)) {
+    $asana_gid = null;
+    $due_on = null;
+    if (!empty($TareasAsana) && (string) $TareasAsana === '1') {
 
         include_once "../../../Empleados/Procesos/php/asana_api.php";
 
@@ -353,7 +470,7 @@ function cargarfactura()
 
     $_SESSION['Rubro'] = '';
 
-    echo json_encode(array('success' => 1, 'asana' => $asana_gid, 'PagoComprobante' => $PagoComprobantes, 'due_on' => $due_on));
+    echo json_encode(array('success' => 1, 'asana' => $asana_gid, 'PagoComprobante' => $PagoComprobantes, 'due_on' => $due_on, 'aviso' => $avisoCuenta ?? ''));
 }
 
 
