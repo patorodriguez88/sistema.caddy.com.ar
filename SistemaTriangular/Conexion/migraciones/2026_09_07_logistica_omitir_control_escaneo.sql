@@ -13,12 +13,18 @@
 -- + 2026_09_06_omitir_control_escaneo_auditoria.sql (mismas columnas, misma base).
 --
 -- Correr a mano contra producción (no forma parte del deploy automático por FTP).
--- Idempotente-ish: si las columnas ya existen, MySQL tira error 1060 y listo.
+-- Idempotente: cada columna va por separado con IF NOT EXISTS (MariaDB), así que
+-- se puede correr aunque OmitirControlEscaneo ya exista (la crea la migración de
+-- reparto del 2026-09-03) sin tirar #1060.
 
 ALTER TABLE Logistica
-  ADD COLUMN OmitirControlEscaneo TINYINT(1) NOT NULL DEFAULT 0
-    COMMENT 'App reparto: 1 = permite entregar sin escaneo previo (warehouse/retiro/colecta)',
-  ADD COLUMN OmitirControlEscaneo_Por VARCHAR(80) NULL
-    COMMENT 'App reparto: operador que cambió OmitirControlEscaneo por última vez',
-  ADD COLUMN OmitirControlEscaneo_Fecha DATETIME NULL
+  ADD COLUMN IF NOT EXISTS OmitirControlEscaneo TINYINT(1) NOT NULL DEFAULT 0
+    COMMENT 'App reparto: 1 = permite entregar sin escaneo previo (warehouse/retiro/colecta)';
+
+ALTER TABLE Logistica
+  ADD COLUMN IF NOT EXISTS OmitirControlEscaneo_Por VARCHAR(80) NULL
+    COMMENT 'App reparto: operador que cambió OmitirControlEscaneo por última vez';
+
+ALTER TABLE Logistica
+  ADD COLUMN IF NOT EXISTS OmitirControlEscaneo_Fecha DATETIME NULL
     COMMENT 'App reparto: fecha/hora del último cambio de OmitirControlEscaneo';
