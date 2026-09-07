@@ -311,6 +311,8 @@ window.onload = () => {
       }
 
       const warnings = result.data?.warnings || [];
+      const sinRutear = result.data?.sinRutear || [];
+      const sinRutearHTML = htmlSinRutear(sinRutear);
       let warningsHTML = "";
 
       if (warnings.length > 0) {
@@ -322,11 +324,9 @@ window.onload = () => {
         if (warnings.length === 1) {
           toast("warning", "Advertencia", warnings[0].replace(/\n/g, " "));
         }
-
-        document.getElementById("summary").innerHTML = warningsHTML;
-      } else {
-        document.getElementById("summary").innerHTML = "";
       }
+
+      document.getElementById("summary").innerHTML = warningsHTML + sinRutearHTML;
 
       if (
         (result.status === "success" || result.status === "partial_success") &&
@@ -337,6 +337,7 @@ window.onload = () => {
         clearMap();
         const bounds = new google.maps.LatLngBounds();
         result.data.routes.forEach((route, index) => drawRoute(route, index, bounds));
+        dibujarSinRutear(sinRutear, bounds);
         map.fitBounds(bounds);
 
         // Clustering real (agrupado por pixeles en pantalla, se reagrupa
@@ -352,12 +353,25 @@ window.onload = () => {
         renderLeyendaColores(result.data.summary);
 
         Swal.fire({
-          icon: "success",
+          icon: sinRutear.length > 0 ? "warning" : "success",
           title: "Rutas generadas",
           html: `
-            Se calcularon <strong>${result.data.routes.length}</strong> rutas válidas.
+            Se calcularon <strong>${result.data.routes.length}</strong> ruta${result.data.routes.length > 1 ? "s" : ""}.
             ${warnings.length > 1 ? warningsHTML : ""}
+            ${sinRutearHTML}
           `,
+        });
+      } else if (sinRutear.length > 0) {
+        // No salió ninguna traza pero hay servicios: mostrarlos igual en el
+        // mapa y en la lista para que el operador no se quede a ciegas.
+        clearMap();
+        const bounds = new google.maps.LatLngBounds();
+        dibujarSinRutear(sinRutear, bounds);
+        if (!bounds.isEmpty()) map.fitBounds(bounds);
+        Swal.fire({
+          icon: "warning",
+          title: "No se pudo trazar ninguna ruta",
+          html: warningsHTML + sinRutearHTML,
         });
       } else if (result.status === "partial_success" && warnings.length > 1) {
         Swal.fire({
@@ -530,6 +544,55 @@ function drawRoute(route, index, bounds) {
     markers.push(marker);
     bounds.extend(marker.getPosition());
   });
+}
+
+// Paradas que el backend no pudo meter en ninguna ruta (cluster vacío, error
+// de Google, límite de 25 paradas, tope de km/min). Se dibujan como pines
+// grises con guión, para que el operador vea TODOS los servicios y sepa cuáles
+// resolver a mano — antes desaparecían del mapa sin dejar rastro.
+function dibujarSinRutear(lista, bounds) {
+  if (!Array.isArray(lista) || lista.length === 0) return;
+  lista.forEach((p) => {
+    const lat = parseFloat(p.lat);
+    const lng = parseFloat(p.lng);
+    if (isNaN(lat) || isNaN(lng)) return;
+
+    const info = new google.maps.InfoWindow({
+      content: `<strong>SIN RUTEAR</strong><br>${p.nombrecliente || "Cliente"}<br>Código: ${p.CodigoSeguimiento || "Sin código"}`,
+    });
+    const pos = offsetCoincidentMarker(lat, lng);
+    const marker = new google.maps.Marker({
+      position: pos,
+      label: "–",
+      map,
+      icon: {
+        path: google.maps.SymbolPath.CIRCLE,
+        scale: 11,
+        fillColor: "#9aa0a6",
+        fillOpacity: 1,
+        strokeColor: "#000",
+        strokeWeight: 1,
+      },
+    });
+    marker.addListener("mouseover", () => info.open(map, marker));
+    marker.addListener("mouseout", () => info.close());
+    markers.push(marker);
+    if (bounds) bounds.extend(marker.getPosition());
+  });
+}
+
+function htmlSinRutear(lista) {
+  if (!Array.isArray(lista) || lista.length === 0) return "";
+  const items = lista
+    .map(
+      (p) =>
+        `<li>${p.CodigoSeguimiento || "Sin código"} — ${p.nombrecliente || "Cliente"}</li>`,
+    )
+    .join("");
+  return (
+    `<h5 class="text-danger mt-2">${lista.length} servicio${lista.length > 1 ? "s" : ""} SIN RUTEAR</h5>` +
+    `<ul style="max-height:160px;overflow:auto;color:#b00020;">${items}</ul>`
+  );
 }
 
 document.getElementById("driversCount").addEventListener("change", function () {

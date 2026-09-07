@@ -204,16 +204,99 @@ if ($departureTimestamp < $currentTimestamp) {
 }
 $departureTimeISO = gmdate("Y-m-d\TH:i:s\Z", $departureTimestamp);
 
+// Sin ningún tope explícito de paradas, repartir parejo: un cupo por vehículo
+// de ceil(total / vehículos). Sin esto, el K-Means por cercanía pura podía
+// dejar un centroide con 0 puntos y esa ruta se perdía entera (se pedían 4
+// rutas y salían 3).
+$hayTopeExplicito = false;
+foreach ($capacidades as $c) {
+    if ($c !== null) { $hayTopeExplicito = true; break; }
+}
+if (!$hayTopeExplicito && count($waypoints) > $driversCount) {
+    $cupoParejo = (int)ceil(count($waypoints) / $driversCount);
+    $capacidades = array_fill(0, $driversCount, $cupoParejo);
+}
+
 $clusters = kMeansCapacitado($waypoints, $driversCount, $capacidades);
+
+// Garantía: si quedó algún cluster vacío teniendo puntos de sobra, se le pasa
+// el punto más "outlier" del cluster más grande. Evita devolver menos rutas
+// que las pedidas.
+$centroideDe = function (array $g) {
+    $n = count($g);
+    if ($n === 0) return null;
+    return [
+        'lat' => array_sum(array_column($g, 'lat')) / $n,
+        'lng' => array_sum(array_column($g, 'lng')) / $n,
+    ];
+};
+for ($pasada = 0; $pasada < $driversCount * 2; $pasada++) {
+    $vacioCi = null;
+    foreach ($clusters as $ci => $g) {
+        if (count($g) === 0) { $vacioCi = $ci; break; }
+    }
+    if ($vacioCi === null) break;
+
+    $maxCi = 0;
+    $maxN = 0;
+    foreach ($clusters as $j => $g) {
+        if (count($g) > $maxN) { $maxN = count($g); $maxCi = $j; }
+    }
+    if ($maxN <= 1) break;
+
+    $cen = $centroideDe($clusters[$maxCi]);
+    $outIdx = 0;
+    $outD = -1;
+    foreach ($clusters[$maxCi] as $pk => $p) {
+        $d = haversineDistance($p['lat'], $p['lng'], $cen['lat'], $cen['lng']);
+        if ($d > $outD) { $outD = $d; $outIdx = $pk; }
+    }
+    $clusters[$vacioCi][] = $clusters[$maxCi][$outIdx];
+    array_splice($clusters[$maxCi], $outIdx, 1);
+}
+
 $routeColors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997'];
-$routes = [];
-$routeSummary = [];
+$routes = [];         // keyed por índice de cluster
+$routeSummary = [];    // keyed por índice de cluster
+$routedPoints = [];    // keyed por índice de cluster: puntos que sí entraron a la ruta, EN ORDEN
 $warnings = [];
+$sinRutear = [];       // TODOS los puntos que no quedaron en ninguna ruta (con cliente/CS)
+
+// Google Routes API (computeRoutes) admite hasta 25 paradas intermedias por
+// request. Un cluster más grande se rutea con las primeras 25 y el resto va a
+// "sin rutear" con aviso.
+$LIMITE_INTERMEDIAS = 25;
+
+// Registra puntos como "sin rutear" (con datos de cliente/CS) para devolverlos
+// igual y que el operador vea exactamente qué quedó afuera.
+$marcarSinRutear = function (array $grupo, string $motivo) use (&$sinRutear, &$warnings, $originalData) {
+    foreach ($grupo as $p) {
+        $wd = findWaypointData($p['lat'], $p['lng'], $originalData);
+        $sinRutear[] = [
+            'lat'               => (float)$p['lat'],
+            'lng'               => (float)$p['lng'],
+            'nombrecliente'     => $wd['nombrecliente'] ?? 'Cliente',
+            'CodigoSeguimiento' => $wd['CodigoSeguimiento'] ?? 'Sin código',
+        ];
+    }
+    if ($motivo !== '') $warnings[] = $motivo;
+};
 
 foreach ($clusters as $index => $group) {
     if (count($group) < 1) continue;
 
+    $grupoOriginal = $group; // antes de sacar destino / excedente
+    $nParadas = count($group);
+
     $destination = array_pop($group);
+
+    $excedente = [];
+    if (count($group) > $LIMITE_INTERMEDIAS) {
+        $excedente = array_splice($group, $LIMITE_INTERMEDIAS);
+    }
+
+    $routedPoints[$index] = array_merge($group, [$destination]); // en el mismo orden que las legs
+
     $intermediates = [];
     foreach ($group as $p) {
         $intermediates[] = [
@@ -248,15 +331,20 @@ foreach ($clusters as $index => $group) {
     curl_close($ch);
 
     if ($error) {
-        $warnings[] = "❌ Ruta " . ($index + 1) . ": error de conexión con Google (" . $error . ").";
+        $marcarSinRutear($grupoOriginal, "❌ Ruta " . ($index + 1) . " ({$nParadas} paradas): error de conexión con Google (" . $error . "). Quedaron sin rutear.");
         continue;
     }
 
     $data = json_decode($respuesta, true);
     if (!isset($data['routes'][0])) {
         $motivo = $data['error']['message'] ?? 'la API no devolvió una ruta válida';
-        $warnings[] = "❌ Ruta " . ($index + 1) . ": " . $motivo;
+        $marcarSinRutear($grupoOriginal, "❌ Ruta " . ($index + 1) . " ({$nParadas} paradas): " . $motivo . ". Quedaron sin rutear.");
         continue;
+    }
+
+    // Ruta OK: si hubo excedente por el límite de 25, esos van aparte.
+    if (!empty($excedente)) {
+        $marcarSinRutear($excedente, "⚠️ Ruta " . ($index + 1) . ": {$nParadas} paradas y Google permite " . $LIMITE_INTERMEDIAS . " por ruta. Se rutearon " . $LIMITE_INTERMEDIAS . ", " . count($excedente) . " quedaron sin rutear — subí la cantidad de vehículos o poné tope de paradas.");
     }
 
     $route = $data['routes'][0];
@@ -272,8 +360,8 @@ foreach ($clusters as $index => $group) {
     $durationMin = round($duration / 60);
     $formattedTime = sprintf("%02d:%02d", floor($durationMin / 60), $durationMin % 60);
 
-    $routes[] = $route;
-    $routeSummary[] = [
+    $routes[$index] = $route;
+    $routeSummary[$index] = [
         "routeIndex" => $index + 1,
         "color" => $routeColors[$index % count($routeColors)],
         "distance_km" => $distanceKm,
@@ -285,9 +373,9 @@ foreach ($clusters as $index => $group) {
 $responseRoutes = [];
 $responseSummary = [];
 
-foreach ($routeSummary as $i => $summary) {
-    if (!isset($routes[$i]) || !isset($clusters[$i])) {
-        $warnings[] = "❗ Datos incompletos para la ruta " . ($i + 1) . ", no se puede procesar.";
+foreach ($routeSummary as $ci => $summary) {
+    if (!isset($routes[$ci]) || !isset($routedPoints[$ci])) {
+        $warnings[] = "❗ Datos incompletos para la ruta " . ($ci + 1) . ", no se puede procesar.";
         continue;
     }
 
@@ -298,8 +386,8 @@ foreach ($routeSummary as $i => $summary) {
 
     $limiteKm = null;
     if (is_array($maxKm)) {
-        if (isset($maxKm[$i]) && is_numeric($maxKm[$i])) {
-            $limiteKm = floatval($maxKm[$i]);
+        if (isset($maxKm[$ci]) && is_numeric($maxKm[$ci])) {
+            $limiteKm = floatval($maxKm[$ci]);
         }
     } elseif (is_numeric($maxKm)) {
         $limiteKm = floatval($maxKm);
@@ -315,20 +403,20 @@ foreach ($routeSummary as $i => $summary) {
         if ($limiteMin !== null && $durationMin > $limiteMin) {
             $motivos[] = "⏱️ tiempo permitido: {$limiteMin} min, pero se necesitan {$durationMin} min";
         }
-        $warnings[] = "⚠️ Ruta {$summary['routeIndex']} no se pudo generar:\n" . implode("\n", $motivos);
+        $marcarSinRutear($routedPoints[$ci], "⚠️ Ruta {$summary['routeIndex']} excede los límites y quedó sin rutear:\n" . implode("\n", $motivos));
         continue;
     }
 
     try {
         $waypointsEnriquecidos = array_map(function ($punto) use ($originalData) {
             return findWaypointData($punto['lat'], $punto['lng'], $originalData);
-        }, $clusters[$i]);
+        }, $routedPoints[$ci]);
 
-        $routes[$i]['waypointsData'] = array_values($waypointsEnriquecidos);
-        $responseRoutes[] = $routes[$i];
+        $routes[$ci]['waypointsData'] = array_values($waypointsEnriquecidos);
+        $responseRoutes[] = $routes[$ci];
         $responseSummary[] = $summary;
     } catch (Exception $e) {
-        $warnings[] = "❌ Error al enriquecer ruta {$summary['routeIndex']}: " . $e->getMessage();
+        $marcarSinRutear($routedPoints[$ci], "❌ Error al enriquecer ruta {$summary['routeIndex']}: " . $e->getMessage());
         continue;
     }
 }
@@ -338,6 +426,8 @@ if (count($responseRoutes) === 0) {
         'routes' => [],
         'summary' => [],
         'warnings' => $warnings,
+        'sinRutear' => $sinRutear,
+        'sinRutearCount' => count($sinRutear),
     ]);
 }
 
@@ -345,4 +435,6 @@ response(count($warnings) > 0 ? 'partial_success' : 'success', 'Rutas calculadas
     'routes' => $responseRoutes,
     'summary' => $responseSummary,
     'warnings' => $warnings,
+    'sinRutear' => $sinRutear,
+    'sinRutearCount' => count($sinRutear),
 ]);

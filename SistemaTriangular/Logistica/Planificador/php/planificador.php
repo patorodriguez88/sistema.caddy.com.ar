@@ -116,15 +116,17 @@ if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
 }
 
 if (isset($_POST['BuscarOrdenesDisponibles'])) {
-    // Ordenes de Salida ya cargadas por el operador (Logistica.Estado Alta/Pendiente)
-    // que todavía no tienen paradas asignadas a su Recorrido — son los "choferes en
-    // blanco" que se arrastran una ruta calculada encima en el Planificador.
+    // Ordenes de Salida a las que se les puede arrastrar una ruta calculada:
+    // Alta/Pendiente (recién creadas) y Cargada (chofer ya cargado en Warehouse
+    // pero todavía sin servicios asignados). AsignarRecorrido igual rechaza las
+    // que ya tengan paradas 'Abierto', así que sumar 'Cargada' solo habilita las
+    // que están en blanco.
     $res = $mysqli->query("
         SELECT l.NumerodeOrden, l.Patente, l.NombreChofer, l.Recorrido, l.Estado,
                v.Marca, v.Modelo
         FROM Logistica l
         LEFT JOIN Vehiculos v ON v.Dominio = l.Patente
-        WHERE l.Eliminado = 0 AND l.Estado IN ('Alta', 'Pendiente')
+        WHERE l.Eliminado = 0 AND l.Estado IN ('Alta', 'Pendiente', 'Cargada')
         ORDER BY l.NumerodeOrden ASC
     ");
 
