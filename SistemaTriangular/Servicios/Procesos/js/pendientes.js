@@ -215,7 +215,7 @@ var datatable = $("#seguimiento").DataTable({
           var badget = "Simple";
         }
 
-        return `<td class="table-action col-xs-3"><a style="cursor:pointer" class="text-primary" data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="${row.CodigoSeguimiento}" data-title="${data.ClienteDestino}" data-fieldname="${data}"><b>${row.CodigoSeguimiento}</b></a></br><a><b>${servicio}</b></a></br><span class="badge bg-dark text-white"> \$ ${row.Debe}</span></br><a onclick="filter(${row.id})" class="badge bg-${color_flex} text-white" style="cursor:pointer">${badget}</a></td>`;
+        return `<td class="table-action col-xs-3"><a style="cursor:pointer" class="text-primary" data-tracking-panel data-id="${row.CodigoSeguimiento}" data-title="${data.ClienteDestino}" data-fieldname="${data}"><b>${row.CodigoSeguimiento}</b></a></br><a><b>${servicio}</b></a></br><span class="badge bg-dark text-white"> \$ ${row.Debe}</span></br><a onclick="filter(${row.id})" class="badge bg-${color_flex} text-white" style="cursor:pointer">${badget}</a></td>`;
       },
     },
     //           {data:"Recorrido"},
@@ -234,10 +234,6 @@ var datatable = $("#seguimiento").DataTable({
       render: function (data, type, row) {
         return (
           '<td class="table-action">' +
-          // Guia de Carga (remito) - version modernizada de Servicios/Informes/Remitopdf.php
-          '<a href="Informes/Remitopdf.php?CS=' +
-          row.CodigoSeguimiento +
-          '" target="_blank" class="action-icon" title="Abrir guía"> <i class="mdi mdi-file-document text-info"></i></a>' +
           '<a data-id="' +
           row.id +
           '" id="' +

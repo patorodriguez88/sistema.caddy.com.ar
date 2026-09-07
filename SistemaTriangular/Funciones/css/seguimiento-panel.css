@@ -1,0 +1,329 @@
+#modal_seguimiento.tracking-panel {
+  --tracking-surface: #ffffff;
+  --tracking-surface-soft: #fbf7f5;
+  --tracking-line: #ece2dd;
+  --tracking-ink: #2a2230;
+  --tracking-soft: #6c6070;
+  --tracking-mute: #9a8f98;
+  --tracking-accent: #e24f30;
+  --tracking-ok: #1c8f61;
+  --tracking-ok-bg: #e4f2ea;
+  --tracking-warn: #b97d16;
+  --tracking-warn-bg: #f6ecd7;
+  --tracking-shadow: 0 1px 2px rgba(42, 34, 48, 0.06), 0 8px 22px -12px rgba(42, 34, 48, 0.16);
+  display: block !important;
+  position: fixed;
+  inset: 0 0 0 auto;
+  width: min(620px, 100vw);
+  max-width: 100%;
+  height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow: hidden auto;
+  background: var(--tracking-surface-soft);
+  color: var(--tracking-ink);
+  opacity: 1;
+  pointer-events: none;
+  transform: translateX(100%);
+  transition: transform 0.28s ease;
+  z-index: 1060;
+}
+
+#modal_seguimiento.tracking-panel.is-open {
+  pointer-events: auto;
+  transform: translateX(0) !important;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-dialog,
+#modal_seguimiento.tracking-panel .modal-dialog {
+  width: 100%;
+  max-width: none;
+  min-height: 100%;
+  margin: 0;
+  pointer-events: auto;
+}
+
+#modal_seguimiento.tracking-panel .modal-content {
+  min-height: 100vh;
+  border: 0;
+  border-radius: 0;
+  background: var(--tracking-surface-soft) !important;
+  box-shadow: -12px 0 35px rgba(42, 34, 48, 0.16);
+}
+
+#modal_seguimiento.tracking-panel .modal-header {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  border: 0;
+  display: flex;
+  align-items: center;
+  padding: 0.75rem 0.9rem;
+  background: var(--tracking-surface) !important;
+  border-bottom: 1px solid var(--tracking-line);
+  color: var(--tracking-ink) !important;
+}
+
+#modal_seguimiento.tracking-panel .modal-title {
+  color: var(--tracking-ink);
+  font-size: 0.98rem;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+#modal_seguimiento.tracking-panel .modal-title::before {
+  content: "●";
+  display: inline-block;
+  margin-right: 0.55rem;
+  color: var(--tracking-accent);
+  font-size: 0.7rem;
+  vertical-align: 0.1em;
+}
+
+#modal_seguimiento.tracking-panel .btn-close {
+  opacity: 0.65;
+  filter: none;
+}
+
+#modal_seguimiento.tracking-panel .modal-body {
+  padding: 0.7rem;
+}
+
+#modal_seguimiento.tracking-panel .modal-body > .row {
+  --bs-gutter-x: 0.6rem;
+  --bs-gutter-y: 0.6rem;
+}
+
+#modal_seguimiento.tracking-panel .card {
+  height: 100%;
+  border: 1px solid var(--tracking-line);
+  border-radius: 14px;
+  background: var(--tracking-surface);
+  box-shadow: var(--tracking-shadow);
+}
+
+#modal_seguimiento.tracking-panel .card-body {
+  padding: 0.7rem;
+}
+
+#modal_seguimiento.tracking-panel .header-title {
+  margin-bottom: 0.45rem !important;
+  color: var(--tracking-mute);
+  font-size: 0.64rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#modal_seguimiento.tracking-panel h5:not(.modal-title) {
+  margin-bottom: 0.35rem !important;
+  color: var(--tracking-ink);
+  font-size: 0.9rem;
+  font-weight: 900;
+}
+
+#modal_seguimiento.tracking-panel ul {
+  color: var(--tracking-soft);
+  font-size: 0.76rem;
+  line-height: 1.35;
+}
+
+#modal_seguimiento.tracking-panel ul li {
+  margin-top: 0.1rem;
+}
+
+#modal_seguimiento.tracking-panel ul li p {
+  margin-bottom: 0;
+  color: var(--tracking-soft);
+}
+
+#modal_seguimiento.tracking-panel ul li span {
+  color: var(--tracking-mute);
+  font-weight: 800;
+}
+
+#modal_seguimiento.tracking-panel #info_guia_seguimiento {
+  width: 100%;
+  margin: 0;
+  border: 0;
+}
+
+.tracking-guide-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.35rem 0.7rem;
+}
+
+.tracking-guide-item,
+.tracking-guide-note {
+  display: flex;
+  min-width: 0;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--tracking-line);
+}
+
+.tracking-guide-item span,
+.tracking-guide-note span {
+  min-width: 0;
+  color: var(--tracking-mute);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.tracking-guide-item strong,
+.tracking-guide-note strong {
+  min-width: 0;
+  color: var(--tracking-ink);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.tracking-guide-note {
+  grid-column: 1 / -1;
+  align-items: flex-start;
+  border-bottom: 0;
+}
+
+.tracking-guide-note strong {
+  flex: 1;
+}
+
+#modal_seguimiento.tracking-panel #seguimiento_tabla {
+  min-width: 520px;
+  color: var(--tracking-soft);
+  font-size: 0.68rem !important;
+}
+
+#modal_seguimiento.tracking-panel #seguimiento_tabla thead th {
+  color: var(--tracking-mute);
+  font-size: 0.6rem;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+#modal_seguimiento.tracking-panel #seguimiento_tabla tbody tr {
+  border-bottom: 1px solid var(--tracking-line);
+}
+
+#modal_seguimiento.tracking-panel #seguimiento_tabla tbody td {
+  padding: 0.4rem 0.3rem;
+  vertical-align: middle;
+}
+
+#modal_seguimiento.tracking-panel .modal-footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.45rem;
+  padding: 0.55rem 0.7rem;
+  border-top: 1px solid var(--tracking-line);
+  background: var(--tracking-surface);
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-actions {
+  display: contents;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-action,
+#modal_seguimiento.tracking-panel .tracking-panel-close {
+  border: 0;
+  border-radius: 12px;
+  font-weight: 900;
+  text-decoration: none;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-action {
+  min-width: 0;
+  padding: 0.5rem 0.25rem;
+  font-size: 0.7rem;
+  text-align: center;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-action i {
+  margin-right: 0.25rem;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-action-label {
+  background: var(--tracking-warn-bg);
+  color: var(--tracking-warn);
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-action-guide {
+  background: var(--tracking-ok-bg);
+  color: var(--tracking-ok);
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-close {
+  min-width: 0;
+  border: 0;
+  background: var(--tracking-surface-2);
+  color: var(--tracking-ink);
+  padding: 0.5rem 0.45rem;
+  font-size: 0.7rem;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-close i {
+  margin-right: 0.2rem;
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-action:hover,
+#modal_seguimiento.tracking-panel .tracking-panel-close:hover {
+  background: var(--tracking-line);
+}
+
+#tracking-panel-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1055;
+  background: rgba(42, 34, 48, 0.42);
+  opacity: 0;
+  transition: opacity 0.28s ease;
+}
+
+#tracking-panel-backdrop.is-visible {
+  opacity: 1 !important;
+}
+
+body.tracking-panel-open {
+  overflow: hidden;
+}
+
+@media (max-width: 576px) {
+  #modal_seguimiento.tracking-panel .modal-body {
+    padding: 0.55rem;
+  }
+
+  .tracking-guide-grid {
+    gap: 0.3rem 0.55rem;
+  }
+
+  .tracking-guide-item,
+  .tracking-guide-note {
+    display: block;
+  }
+
+  .tracking-guide-item strong,
+  .tracking-guide-note strong {
+    display: block;
+    margin-top: 0.15rem;
+    text-align: left;
+  }
+
+  #modal_seguimiento.tracking-panel .tracking-panel-actions {
+    margin-bottom: 0;
+  }
+
+  #modal_seguimiento.tracking-panel .tracking-panel-close {
+    width: auto;
+  }
+}

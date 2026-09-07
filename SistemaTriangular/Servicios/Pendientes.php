@@ -35,6 +35,7 @@
 
     <!-- App css -->
     <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
+    <link href="../Funciones/css/seguimiento-panel.css?v=202609071220" rel="stylesheet" type="text/css" />
 
     <!-- Icons css -->
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
@@ -277,17 +278,17 @@
                 </div><!-- /.modal -->
 
 
-                <!-- SEGUIIENTO MODAL -->
-                <div class="modal fade" id="modal_seguimiento" tabindex="-1" aria-hidden="true">
-                    <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                <!-- PANEL LATERAL DE SEGUIMIENTO -->
+                <div id="modal_seguimiento" class="tracking-panel" aria-hidden="true">
+                    <div class="tracking-panel-dialog">
                         <div id="modal_seguimiento_content" class="modal-content bg-primary text-white">
 
                             <div id="modal_seguimiento_header" class="modal-header py-2">
                                 <h5 class="modal-title" id="myCenterModalLabel">Seguimiento</h5>
-                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                <button type="button" class="btn-close btn-close-white" data-panel-close aria-label="Cerrar"></button>
                             </div>
 
-                            <div class="modal-body text-body"> <!-- text-body para que adentro sea negro si querés -->
+                            <div class="modal-body text-body">
                                 <div class="row g-3">
 
                                     <div class="col-lg-6">
@@ -329,8 +330,7 @@
                                                     <table class="table table-sm table-centered mb-0" style="font-size:10px" id="seguimiento_tabla">
                                                         <thead class="table-light">
                                                             <tr>
-                                                                <th>Fecha</th>
-                                                                <th>Hora</th>
+                                                                <th>Fecha | Hora</th>
                                                                 <th>Usuario</th>
                                                                 <th>Observaciones</th>
                                                                 <th>Estado</th>
@@ -338,7 +338,6 @@
                                                         </thead>
                                                         <tbody>
                                                             <tr id="tr_seguimiento">
-                                                                <td></td>
                                                                 <td></td>
                                                                 <td></td>
                                                                 <td></td>
@@ -356,7 +355,18 @@
                             </div>
 
                             <div class="modal-footer py-2">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">
+                                <div class="tracking-panel-actions">
+                                    <a id="tracking-label-link" class="btn tracking-panel-action tracking-panel-action-label" href="#" target="_blank" rel="noopener">
+                                        <i class="mdi mdi-barcode-scan"></i>
+                                        Ver etiqueta
+                                    </a>
+                                    <a id="tracking-guide-link" class="btn tracking-panel-action tracking-panel-action-guide" href="#" target="_blank" rel="noopener">
+                                        <i class="mdi mdi-file-document-outline"></i>
+                                        Ver guía
+                                    </a>
+                                </div>
+                                <button type="button" class="btn tracking-panel-close" data-panel-close>
+                                    <i class="mdi mdi-close-circle-outline"></i>
                                     Cerrar
                                 </button>
                             </div>
@@ -364,7 +374,7 @@
                         </div>
                     </div>
                 </div>
-                <!--END SEGUIMIENTO MODAL-->
+                <!-- FIN PANEL LATERAL DE SEGUIMIENTO -->
 
                 <!-- </div> -->
                 <div class="row">
@@ -465,8 +475,8 @@
     <?php include '../Menu/php/script_datatables.php'; ?>
 
     <!-- Funciones -->
-    <script src="Procesos/js/pendientes.js"></script>
-    <script src="../Funciones/js/seguimiento.js"></script>
+    <script src="Procesos/js/pendientes.js?v=202609071224"></script>
+    <script src="../Funciones/js/seguimiento.js?v=202609071223"></script>
     <script src="../Menu/js/funciones.js"></script>
 
 
