@@ -1023,8 +1023,23 @@ header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);
   } 
   $sql3="UPDATE HojaDeRuta SET Posicion='$posicionbuscada',TramoMapa='$TramoMapa' WHERE id='$id'";
 	$mysqli->query($sql3);
-	header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);	
-	
+	header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$Recorrido);
+
+	}elseif($_GET['accion']=='ToggleOmitirEscaneo'){
+	// Override del control de escaneo en Warehouse (app de reparto).
+	// Prende/apaga Logistica.OmitirControlEscaneo del recorrido activo
+	// (Estado='Cargada') y deja registrado qué operador lo tocó.
+	// La app de reparto lo lee en Funciones/control_escaneo.php::overrideEscaneo().
+	$RecTgl = $mysqli->real_escape_string($_GET['recorrido_t']);
+	$ValTgl = ($_GET['valor']=='1') ? 1 : 0;
+	$OpTgl  = $mysqli->real_escape_string($_SESSION['NombreUsuario']);
+	$mysqli->query("UPDATE Logistica
+		SET OmitirControlEscaneo='$ValTgl',
+		    OmitirControlEscaneo_Por='$OpTgl',
+		    OmitirControlEscaneo_Fecha=NOW()
+		WHERE Recorrido='$RecTgl' AND Estado='Cargada'");
+	header('location:HojaDeRuta.php?id=Buscar&recorrido_t='.$_GET['recorrido_t']);
+	exit;
 	}
 	if($_GET['recorrido_t']==''){
 		$Grupo="SELECT * FROM Recorridos";
@@ -1065,7 +1080,56 @@ echo "<div><label>Chofer:</label><input name='chofer_t' type='text' value='$Chof
 echo "<div><label>Acompañante:</label><input name='acompanante_t' type='text' value='$Acompanante' style='width:180px;'readonly/></div>";
 echo "<div><input class='submit' name='id' type='submit' value='Agregar'></div>";
 echo "</fieldset>";	
-echo "</div></form>";	
+echo "</div></form>";
+}
+
+// ============================================================================
+// CONTROL DE ESCANEO EN WAREHOUSE (app de reparto)
+// El recorrido, por default, no puede arrancar en la app de reparto si quedan
+// bultos sin escanear en Warehouse. Acá el operador puede omitir ese control
+// para este recorrido (Logistica.OmitirControlEscaneo), por ejemplo si falló
+// un escáner o los paquetes no tienen etiqueta. Queda registrado quién lo tocó.
+// La app lo lee en Funciones/control_escaneo.php::overrideEscaneo().
+// ============================================================================
+$colEsc = $mysqli->query("SHOW COLUMNS FROM Logistica LIKE 'OmitirControlEscaneo'");
+if (!$colEsc || $colEsc->num_rows == 0) {
+	echo "<div style='margin:12px 0;padding:10px 14px;border:1px solid #e0c36a;background:#fbf3d6;border-radius:8px;color:#7a5c00;'>";
+	echo "Control de escaneo en Warehouse: falta correr la migración <b>OmitirControlEscaneo</b> en esta base.";
+	echo "</div>";
+} else {
+	$RecEsc = $mysqli->real_escape_string($Recorrido);
+	$qEsc = $mysqli->query("SELECT OmitirControlEscaneo, OmitirControlEscaneo_Por, OmitirControlEscaneo_Fecha
+		FROM Logistica WHERE Recorrido='$RecEsc' AND Estado='Cargada' LIMIT 1");
+	$rEsc = $qEsc ? $qEsc->fetch_assoc() : null;
+
+	if (!$rEsc) {
+		echo "<div style='margin:12px 0;padding:9px 14px;color:#888;font-size:13px;'>";
+		echo "Control de escaneo en Warehouse: se puede habilitar/omitir cuando el recorrido tenga una orden en estado <i>Cargada</i>.";
+		echo "</div>";
+	} else {
+		$escOn = ((int)$rEsc['OmitirControlEscaneo'] === 1);
+		$bg  = $escOn ? '#fdecea' : '#eef6ee';
+		$brd = $escOn ? '#e0b4b4' : '#c5d9c5';
+		echo "<div style='margin:12px 0;padding:11px 15px;border:1px solid $brd;background:$bg;border-radius:8px;font-size:14px;'>";
+		echo "<b>Control de escaneo en Warehouse:</b> ";
+		if ($escOn) {
+			echo "<span style='color:#b03030;font-weight:bold;'>OMITIDO</span> &mdash; este recorrido puede arrancar sin escanear en Warehouse.";
+			if (!empty($rEsc['OmitirControlEscaneo_Por'])) {
+				echo " <small style='color:#666;'>(habilitado por ".htmlspecialchars($rEsc['OmitirControlEscaneo_Por']);
+				if (!empty($rEsc['OmitirControlEscaneo_Fecha'])) echo " el ".htmlspecialchars($rEsc['OmitirControlEscaneo_Fecha']);
+				echo ")</small>";
+			}
+			echo "<br><a href='HojaDeRuta.php?id=Buscar&accion=ToggleOmitirEscaneo&valor=0&recorrido_t=".urlencode($Recorrido)."'"
+				." onclick=\"return confirm('¿Volver a EXIGIR escaneo en Warehouse para este recorrido?')\""
+				." style='display:inline-block;margin-top:7px;padding:5px 12px;background:#2e7d32;color:#fff;text-decoration:none;border-radius:5px;'>Volver a exigir escaneo</a>";
+		} else {
+			echo "<span style='color:#2e7d32;font-weight:bold;'>OBLIGATORIO</span> (por default). ";
+			echo "<br><a href='HojaDeRuta.php?id=Buscar&accion=ToggleOmitirEscaneo&valor=1&recorrido_t=".urlencode($Recorrido)."'"
+				." onclick=\"return confirm('¿Permitir que este recorrido ARRANQUE SIN escanear en Warehouse?')\""
+				." style='display:inline-block;margin-top:7px;padding:5px 12px;background:#b03030;color:#fff;text-decoration:none;border-radius:5px;'>Permitir arrancar sin escanear</a>";
+		}
+		echo "</div>";
+	}
 }
 //--MUESTRA LOS DATOS CARGADOS
 $color='#B8C6DE';
