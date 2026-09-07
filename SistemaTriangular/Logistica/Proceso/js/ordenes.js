@@ -569,26 +569,20 @@ $("#agregar_orden").click(function () {
         "Próximo Recorrido: " + respuesta.proximo_recorrido,
       );
 
+      const hoy = new Date();
+      $("#orden_date").val(hoy.toISOString().split("T")[0]);
+      $("#orden_time").val(
+        hoy.toLocaleTimeString("es-AR", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+      );
+
+      let $select = $("#select_recorridos");
+      $select.empty().append('<option value="">Seleccione un recorrido</option>');
+
       //recorrido
       if (respuesta.success) {
-        // Fecha en formato dd/mm/yyyy
-        const hoy = new Date();
-        const fechaFormateada = hoy.toISOString().split("T")[0]; // formato: "2025-06-17"
-        $("#orden_date").val(fechaFormateada);
-
-        // Hora en formato HH:MM
-        $("#orden_time").val(
-          hoy.toLocaleTimeString("es-AR", {
-            hour: "2-digit",
-            minute: "2-digit",
-          }),
-        );
-
-        let $select = $("#select_recorridos");
-        $select
-          .empty()
-          .append('<option value="">Seleccione un recorrido</option>');
-
         respuesta.recorridos.forEach(function (recorrido) {
           $select.append(
             `<option value="${recorrido.Numero}">Recorrido ${recorrido.Numero} - ${recorrido.Nombre}</option>`,
@@ -596,17 +590,25 @@ $("#agregar_orden").click(function () {
         });
         // nombre_recorrido_new();
       } else {
-        $("#select_recorridos")
+        $select
           .append(
             $("<option>", {
               value: respuesta.proximo_recorrido,
               text: "Recorrido " + respuesta.proximo_recorrido,
             }),
           )
-          .val(respuesta.proximo_recorrido)
-          .trigger("change");
+          .val(respuesta.proximo_recorrido);
         nombre_recorrido_new(respuesta.proximo_recorrido);
       }
+      $select.trigger("change");
+    },
+    error: function (xhr) {
+      console.error("No se pudieron cargar los recorridos:", xhr.responseText);
+      Swal.fire(
+        "Error",
+        "No se pudieron cargar los recorridos. Revisá la conexión e intentá nuevamente.",
+        "error",
+      );
     },
   });
 
