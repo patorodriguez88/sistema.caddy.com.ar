@@ -151,6 +151,64 @@ function kMeansCapacitado(array $waypoints, int $k, array $capacidades, int $max
     return $clusters;
 }
 
+// ---------------------------------------------------------------------------
+// Orden de visita dentro de una ruta. El K-Means arma los clusters iterando
+// pares punto-centroide por distancia: el orden en que quedan NO es un orden
+// de recorrido. Sin esto (y sin optimizeWaypointOrder de Google) salían rutas
+// que iban al sur y volvían al norte.
+// ---------------------------------------------------------------------------
+function ordenNearestNeighbor(array $puntos, array $origen): array
+{
+    $orden = [];
+    $restante = $puntos;
+    $actual = $origen;
+    while (!empty($restante)) {
+        $mejorI = 0;
+        $mejorD = INF;
+        foreach ($restante as $i => $p) {
+            $d = haversineDistance($actual['lat'], $actual['lng'], $p['lat'], $p['lng']);
+            if ($d < $mejorD) { $mejorD = $d; $mejorI = $i; }
+        }
+        $orden[] = $restante[$mejorI];
+        $actual = $restante[$mejorI];
+        array_splice($restante, $mejorI, 1);
+    }
+    return $orden;
+}
+
+// 2-opt: mientras invertir un segmento acorte el total, lo invierte. Acotado
+// en pasadas para no disparar el tiempo con clusters grandes (O(n^2) por pasada).
+function dosOpt(array $orden, array $origen, int $maxPasadas = 8): array
+{
+    $n = count($orden);
+    if ($n < 4) return $orden;
+    for ($pasada = 0; $pasada < $maxPasadas; $pasada++) {
+        $mejoro = false;
+        for ($i = 0; $i < $n - 1; $i++) {
+            for ($k = $i + 1; $k < $n; $k++) {
+                $a = ($i === 0) ? $origen : $orden[$i - 1];
+                $b = $orden[$i];
+                $c = $orden[$k];
+                $d = ($k === $n - 1) ? null : $orden[$k + 1];
+
+                $antes  = haversineDistance($a['lat'], $a['lng'], $b['lat'], $b['lng']);
+                $despues = haversineDistance($a['lat'], $a['lng'], $c['lat'], $c['lng']);
+                if ($d !== null) {
+                    $antes   += haversineDistance($c['lat'], $c['lng'], $d['lat'], $d['lng']);
+                    $despues += haversineDistance($b['lat'], $b['lng'], $d['lat'], $d['lng']);
+                }
+                if ($despues + 1e-9 < $antes) {
+                    $seg = array_reverse(array_slice($orden, $i, $k - $i + 1));
+                    array_splice($orden, $i, $k - $i + 1, $seg);
+                    $mejoro = true;
+                }
+            }
+        }
+        if (!$mejoro) break;
+    }
+    return $orden;
+}
+
 function findWaypointData($lat, $lng, $originalData, $tolerance = 0.0001)
 {
     foreach ($originalData as $item) {
@@ -255,6 +313,15 @@ for ($pasada = 0; $pasada < $driversCount * 2; $pasada++) {
     array_splice($clusters[$maxCi], $outIdx, 1);
 }
 
+// Orden de visita de cada cluster: nearest-neighbor desde el depósito + 2-opt.
+// Deja el recorrido "prolijo" y su último punto pasa a ser el destino natural
+// de la ruta (sin volver sobre los pasos). Google después reordena las
+// intermedias con optimizeWaypointOrder.
+foreach ($clusters as $ci => $grp) {
+    if (count($grp) < 2) continue;
+    $clusters[$ci] = dosOpt(ordenNearestNeighbor($grp, $fixedOrigin), $fixedOrigin);
+}
+
 $routeColors = ['#007bff', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997'];
 $routes = [];         // keyed por índice de cluster
 $routeSummary = [];    // keyed por índice de cluster
@@ -288,14 +355,14 @@ foreach ($clusters as $index => $group) {
     $grupoOriginal = $group; // antes de sacar destino / excedente
     $nParadas = count($group);
 
+    // Destino = último punto del recorrido ya ordenado (NN + 2-opt): la punta
+    // natural de la ruta, sin volver sobre los pasos.
     $destination = array_pop($group);
 
     $excedente = [];
     if (count($group) > $LIMITE_INTERMEDIAS) {
         $excedente = array_splice($group, $LIMITE_INTERMEDIAS);
     }
-
-    $routedPoints[$index] = array_merge($group, [$destination]); // en el mismo orden que las legs
 
     $intermediates = [];
     foreach ($group as $p) {
@@ -314,6 +381,9 @@ foreach ($clusters as $index => $group) {
         "travelMode" => "DRIVE",
         "routingPreference" => "TRAFFIC_AWARE_OPTIMAL",
         "departureTime" => $departureTimeISO,
+        // Google reordena las paradas intermedias para el mejor recorrido
+        // (esto es lo que evita "va al sur y vuelve al norte").
+        "optimizeWaypointOrder" => true,
     ];
 
     $ch = curl_init();
@@ -323,7 +393,7 @@ foreach ($clusters as $index => $group) {
     curl_setopt($ch, CURLOPT_HTTPHEADER, [
         'Content-Type: application/json',
         'X-Goog-Api-Key: ' . GOOGLE_API_KEY_SERVER,
-        'X-Goog-FieldMask: routes.legs,routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline',
+        'X-Goog-FieldMask: routes.legs,routes.duration,routes.distanceMeters,routes.polyline.encodedPolyline,routes.optimizedIntermediateWaypointIndex',
     ]);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
     $respuesta = curl_exec($ch);
@@ -348,6 +418,18 @@ foreach ($clusters as $index => $group) {
     }
 
     $route = $data['routes'][0];
+
+    // Google devolvió el orden óptimo de las intermedias: reordenamos los
+    // puntos para que waypointsData quede alineado con las legs.
+    $optIdx = $route['optimizedIntermediateWaypointIndex'] ?? null;
+    if (is_array($optIdx) && count($optIdx) === count($group)) {
+        $reordenado = [];
+        foreach ($optIdx as $origPos) {
+            if (isset($group[$origPos])) $reordenado[] = $group[$origPos];
+        }
+        if (count($reordenado) === count($group)) $group = $reordenado;
+    }
+    $routedPoints[$index] = array_merge($group, [$destination]);
     $distance = 0;
     $duration = 0;
     foreach ($route['legs'] as $leg) {
