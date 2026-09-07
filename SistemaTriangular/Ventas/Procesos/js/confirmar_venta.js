@@ -4,6 +4,24 @@ document
     event.preventDefault();
     console.log("Submit prevenido y datos siendo enviados por AJAX");
 
+    // Abrimos la pestaña de la GUÍA DE CARGA ahora mismo, dentro del gesto del
+    // usuario (el submit), para que el navegador no la bloquee como popup.
+    // Le ponemos la URL real recién cuando el server confirma la venta; si
+    // falla, se cierra. (window.open() desde el callback AJAX = popup blocker.)
+    var guiaWin = window.open("", "_blank");
+    if (guiaWin) {
+      try {
+        guiaWin.document.write(
+          "<title>Guía de carga</title><p style='font-family:sans-serif;padding:20px'>Generando guía de carga…</p>",
+        );
+      } catch (e) {}
+    }
+    var cerrarGuia = function () {
+      try {
+        if (guiaWin && !guiaWin.closed) guiaWin.close();
+      } catch (e) {}
+    };
+
     const data = {
       SolicitaEnvio: 1,
       retiro_t: document.getElementById("retiro_t").value,
@@ -54,14 +72,20 @@ document
             $("#success-alert-modal").modal("show");
             // $('#success-alert-modal-text').html('La venta se agrego con exito con el código '+jsonData.data);
 
-            // Abrir la guía recién creada en otra pestaña, sin interrumpir el
-            // flujo de esta pantalla (el operador sigue viendo el modal de
-            // éxito y puede seguir cargando ventas acá).
+            // Cargar la GUÍA DE CARGA en la pestaña que ya abrimos al enviar.
+            // El operador sigue viendo el modal de éxito acá y puede seguir
+            // cargando ventas.
             if (jsonData.data) {
-              window.open(
-                "/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" + jsonData.data,
-                "_blank",
-              );
+              var guiaUrl =
+                "/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" +
+                jsonData.data;
+              if (guiaWin && !guiaWin.closed) {
+                guiaWin.location.href = guiaUrl;
+              } else {
+                window.open(guiaUrl, "_blank");
+              }
+            } else {
+              cerrarGuia();
             }
 
             var segundos = 3;
@@ -85,19 +109,23 @@ document
             // fallo al insertar en HojaDeRuta) mandan error como STRING con el
             // motivo. Con "== 1" esos casos no matcheaban ni acá ni en el "if"
             // de arriba: no pasaba nada, sin avisar por qué no se confirmó.
+            cerrarGuia();
             var motivo =
               jsonData.message ||
               (typeof jsonData.error === "string" ? jsonData.error : "No se pudo confirmar la venta.");
             $("#warning-redespacho-modal").modal("show");
             $("#warning-redespacho-text").html(motivo);
           } else {
+            cerrarGuia();
             console.warn("Respuesta inesperada de ConfirmarVenta.php:", jsonData);
           }
         } catch (e) {
+          cerrarGuia();
           console.error("Error al procesar la respuesta:", e, "Respuesta recibida:", jsonData);
         }
       },
       error: function (xhr) {
+        cerrarGuia();
         console.error("Error de red/parseo en ConfirmarVenta.php:", xhr.status, xhr.responseText);
         $("#warning-redespacho-modal").modal("show");
         $("#warning-redespacho-text").html(
