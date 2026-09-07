@@ -69,7 +69,7 @@ function cargarRepartidores() {
     success: function (resp) {
       if (!resp || resp.success !== 1) return;
       pintarMapa(resp.repartidores || []);
-      pintarLista(resp.repartidores || [], resp.sinOrden || []);
+      pintarLista(resp.repartidores || []);
     },
   });
 }
@@ -265,10 +265,10 @@ function itemLista(r) {
   );
 }
 
-function pintarLista(repartidores, sinOrden) {
+function pintarLista(repartidores) {
   var $lista = $("#lista_repartidores");
 
-  if (repartidores.length === 0 && sinOrden.length === 0) {
+  if (repartidores.length === 0) {
     $lista.html(
       '<div class="text-center text-muted py-4">Ninguna orden cargada hoy.</div>',
     );
@@ -276,38 +276,8 @@ function pintarLista(repartidores, sinOrden) {
   }
 
   var html = "";
-
-  if (repartidores.length === 0) {
-    html +=
-      '<div class="text-muted small py-2">Ninguna orden cargada hoy.</div>';
-  } else {
-    repartidores.forEach(function (r) {
-      html += itemLista(r);
-    });
-  }
-
-  if (sinOrden.length > 0) {
-    html +=
-      '<div class="text-muted text-uppercase fw-semibold mt-3 mb-1" style="font-size:11px;letter-spacing:.5px;">' +
-      "Con app abierta, sin orden asignada</div>";
-    sinOrden.forEach(function (r) {
-      var mins = minutosDesde(r.timestamp);
-      html +=
-        '<div class="d-flex align-items-center justify-content-between py-2 border-bottom text-muted">' +
-        "<div>" +
-        '<div class="fw-semibold">' +
-        (r.nombre || "Repartidor") +
-        "</div>" +
-        '<div style="font-size:12px;">' +
-        (r.recorrido ? "Último recorrido " + r.recorrido : "Sin recorrido") +
-        "</div>" +
-        "</div>" +
-        '<span class="badge bg-light text-dark">' +
-        textoHaceCuanto(mins) +
-        "</span>" +
-        "</div>";
-    });
-  }
-
+  repartidores.forEach(function (r) {
+    html += itemLista(r);
+  });
   $lista.html(html);
 }

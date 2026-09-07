@@ -11,9 +11,8 @@
 // orden -- NO por número de recorrido: el nº de recorrido se reusa entre
 // órdenes y antes sumaba meses de entregas ("6457 entregados").
 //
-// Aparte, en "sinOrden": repartidores que mandaron posición en las últimas
-// ~18 h pero no tienen orden Cargada hoy (app abierta sin reparto asignado).
-// Solo se listan en el panel, no van al mapa.
+// Es un panel en vivo: solo repartidores con orden Cargada hoy. Los que tienen
+// la app abierta sin reparto asignado no se muestran acá.
 require_once __DIR__ . '/../../../Conexion/Conexioni.php';
 
 header('Content-Type: application/json; charset=utf-8');
@@ -57,10 +56,8 @@ $sql = "
 $res = $mysqli->query($sql);
 
 $repartidores = [];
-$choferIds    = [];
 $ordenIds     = [];
 while ($row = $res->fetch_assoc()) {
-    $choferIds[] = (int) $row['idUsuarioChofer'];
     $ordenIds[]  = (int) $row['NumerodeOrden'];
     $tienePos = $row['Latitud'] !== null && $row['Longitud'] !== null;
     $repartidores[] = [
@@ -113,30 +110,7 @@ if ($ordenIds) {
     unset($rep);
 }
 
-// Repartidores con posición reciente (~18 h) pero sin orden Cargada hoy.
-$idsExcl = $choferIds ? implode(',', array_map('intval', $choferIds)) : '0';
-$sqlSin = "
-    SELECT u.idUsuario, u.Usuario, u.Recorrido, u.TimeStamp,
-           COALESCE(us.Nombre, u.Usuario) AS Nombre
-    FROM UbicacionRepartidor u
-    LEFT JOIN usuarios us ON us.id = u.idUsuario
-    WHERE u.idUsuario NOT IN ({$idsExcl})
-      AND u.TimeStamp >= (NOW() - INTERVAL 18 HOUR)
-    ORDER BY u.TimeStamp DESC
-";
-$resSin  = $mysqli->query($sqlSin);
-$sinOrden = [];
-while ($row = $resSin->fetch_assoc()) {
-    $sinOrden[] = [
-        'nombre'    => trim((string) $row['Nombre']),
-        'usuario'   => $row['Usuario'],
-        'recorrido' => $row['Recorrido'],
-        'timestamp' => $row['TimeStamp'],
-    ];
-}
-
 echo json_encode([
     'success'      => 1,
     'repartidores' => $repartidores,
-    'sinOrden'     => $sinOrden,
 ]);
