@@ -1,81 +1,142 @@
 <?php
-// Posición en vivo de los repartidores, alimentada por SistemaReparto/Proceso/php/ubicacion.php
-// (guarda solo la última posición conocida por usuario, no un historial).
+// Repartidores en vivo.
+//
+// Criterio: una fila por ORDEN de salida activa de hoy
+// (Logistica.Estado='Cargada' AND Fecha = CURDATE()). La posición sale de
+// UbicacionRepartidor (1 fila por usuario, última posición conocida que manda
+// la PWA de reparto vía SistemaReparto/Proceso/php/ubicacion.php) uniendo por
+// idUsuarioChofer.
+//
+// Los conteos entregados/pendientes van scopeados al NumerodeOrden de esa
+// orden -- NO por número de recorrido: el nº de recorrido se reusa entre
+// órdenes y antes sumaba meses de entregas ("6457 entregados").
+//
+// Aparte, en "sinOrden": repartidores que mandaron posición en las últimas
+// ~18 h pero no tienen orden Cargada hoy (app abierta sin reparto asignado).
+// Solo se listan en el panel, no van al mapa.
 require_once __DIR__ . '/../../../Conexion/Conexioni.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-$sql = "
-    SELECT u.idUsuario, u.Latitud, u.Longitud, u.Precision_, u.TimeStamp, u.Recorrido,
-           COALESCE(us.Nombre, u.Usuario) AS Nombre, u.Usuario,
-           p.Motivo AS PausaMotivo, p.Detalle AS PausaDetalle, p.Inicio AS PausaInicio
-    FROM UbicacionRepartidor u
-    LEFT JOIN usuarios us ON us.id = u.idUsuario
-    LEFT JOIN PausasRecorrido p ON p.idUsuario = u.idUsuario AND p.Fin IS NULL
-    ORDER BY u.TimeStamp DESC
-";
-// La tabla PausasRecorrido es nueva (feature de "Parar Ruta" en la app de
-// reparto) - si todavía no existe en algún ambiente, no debe tirar abajo
-// todo el mapa de repartidores en vivo, solo queda sin el dato de pausa.
-// (mysqli tira excepción en vez de devolver false ante un error SQL, así
-// que hace falta try/catch - un @ no alcanza para atajar una excepción.)
+// La tabla PausasRecorrido (feature "Parar Ruta" de la app de reparto) puede
+// no existir en todos los ambientes; si falta, el mapa sigue andando sin el
+// dato de pausa.
+$tienePausas = false;
 try {
-    $res = $mysqli->query($sql);
+    $chk = $mysqli->query("SHOW TABLES LIKE 'PausasRecorrido'");
+    $tienePausas = $chk && $chk->num_rows > 0;
 } catch (Throwable $e) {
-    $sql = "
-        SELECT u.idUsuario, u.Latitud, u.Longitud, u.Precision_, u.TimeStamp, u.Recorrido,
-               COALESCE(us.Nombre, u.Usuario) AS Nombre, u.Usuario,
-               NULL AS PausaMotivo, NULL AS PausaDetalle, NULL AS PausaInicio
-        FROM UbicacionRepartidor u
-        LEFT JOIN usuarios us ON us.id = u.idUsuario
-        ORDER BY u.TimeStamp DESC
-    ";
-    $res = $mysqli->query($sql);
+    $tienePausas = false;
 }
 
-// Entregados/total de paquetes del recorrido de cada repartidor (para el
-// "5/6" que se muestra al lado del nombre en la lista). Una consulta chica
-// por repartidor (son pocos por día) en vez de una sola con GROUP BY, para
-// no complicar el query principal de arriba.
-function contarPaquetesRecorrido(mysqli $mysqli, string $recorrido): array
-{
-    if ($recorrido === '') {
-        return ['total' => null, 'entregados' => null];
-    }
-    $recorridoEsc = $mysqli->real_escape_string($recorrido);
-    $res = $mysqli->query(
-        "SELECT COUNT(*) AS total, SUM(TransClientes.Entregado = 1) AS entregados
-         FROM HojaDeRuta
-         INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento = HojaDeRuta.Seguimiento
-         WHERE HojaDeRuta.Recorrido = '{$recorridoEsc}'
-           AND HojaDeRuta.Eliminado = 0
-           AND HojaDeRuta.Devuelto = 0
-           AND TransClientes.Eliminado = 0"
-    );
-    $row = $res ? $res->fetch_assoc() : null;
-    return [
-        'total'      => $row ? (int) $row['total'] : null,
-        'entregados' => $row ? (int) $row['entregados'] : null,
-    ];
-}
+$joinPausa = $tienePausas
+    ? "LEFT JOIN PausasRecorrido p ON p.idUsuario = l.idUsuarioChofer AND p.Fin IS NULL"
+    : "";
+$selPausa = $tienePausas
+    ? "p.Motivo AS PausaMotivo, p.Detalle AS PausaDetalle, p.Inicio AS PausaInicio"
+    : "NULL AS PausaMotivo, NULL AS PausaDetalle, NULL AS PausaInicio";
+
+$sql = "
+    SELECT
+        l.NumerodeOrden, l.Recorrido, l.idUsuarioChofer,
+        COALESCE(us.Nombre, l.NombreChofer, u.Usuario) AS Nombre,
+        u.Usuario,
+        r.Nombre AS RecorridoNombre,
+        r.Color  AS RecorridoColor,
+        u.Latitud, u.Longitud, u.Precision_, u.TimeStamp,
+        {$selPausa}
+    FROM Logistica l
+    LEFT JOIN Recorridos r          ON r.Numero = l.Recorrido
+    LEFT JOIN UbicacionRepartidor u ON u.idUsuario = l.idUsuarioChofer
+    LEFT JOIN usuarios us           ON us.id = l.idUsuarioChofer
+    {$joinPausa}
+    WHERE l.Estado = 'Cargada' AND l.Eliminado = 0 AND l.Fecha = CURDATE()
+    ORDER BY l.NumerodeOrden
+";
+
+$res = $mysqli->query($sql);
 
 $repartidores = [];
+$choferIds    = [];
+$ordenIds     = [];
 while ($row = $res->fetch_assoc()) {
-    $paquetes = contarPaquetesRecorrido($mysqli, (string) $row['Recorrido']);
+    $choferIds[] = (int) $row['idUsuarioChofer'];
+    $ordenIds[]  = (int) $row['NumerodeOrden'];
+    $tienePos = $row['Latitud'] !== null && $row['Longitud'] !== null;
     $repartidores[] = [
-        'nombre'         => $row['Nombre'],
-        'usuario'        => $row['Usuario'],
-        'recorrido'      => $row['Recorrido'],
-        'lat'            => (float)$row['Latitud'],
-        'lng'            => (float)$row['Longitud'],
-        'precision'      => $row['Precision_'] !== null ? (int)$row['Precision_'] : null,
-        'timestamp'      => $row['TimeStamp'],
-        'pausaMotivo'    => $row['PausaMotivo'],
-        'pausaDetalle'   => $row['PausaDetalle'],
-        'pausaInicio'    => $row['PausaInicio'],
-        'totalPaquetes'  => $paquetes['total'],
-        'entregados'     => $paquetes['entregados'],
+        'nombre'          => trim((string) $row['Nombre']),
+        'usuario'         => $row['Usuario'],
+        'orden'           => (int) $row['NumerodeOrden'],
+        'recorrido'       => $row['Recorrido'],
+        'recorridoNombre' => $row['RecorridoNombre'],
+        'color'           => $row['RecorridoColor'],
+        'lat'             => $tienePos ? (float) $row['Latitud'] : null,
+        'lng'             => $tienePos ? (float) $row['Longitud'] : null,
+        'precision'       => $row['Precision_'] !== null ? (int) $row['Precision_'] : null,
+        'timestamp'       => $row['TimeStamp'], // null si nunca mandó posición
+        'pausaMotivo'     => $row['PausaMotivo'],
+        'pausaDetalle'    => $row['PausaDetalle'],
+        'pausaInicio'     => $row['PausaInicio'],
+        'totalPaquetes'   => 0,
+        'entregados'      => 0,
     ];
 }
 
-echo json_encode(['success' => 1, 'repartidores' => $repartidores]);
+// Entregados/total por orden, en una sola consulta acotada a las órdenes
+// activas de hoy (rápida, ~pocas órdenes por día).
+if ($ordenIds) {
+    $inOrden = implode(',', array_map('intval', $ordenIds));
+    $sqlPaq = "
+        SELECT h.NumerodeOrden,
+               COUNT(*)                 AS Total,
+               SUM(tc.Entregado = 1)    AS Entregados
+        FROM HojaDeRuta h
+        INNER JOIN TransClientes tc ON tc.CodigoSeguimiento = h.Seguimiento
+        WHERE h.NumerodeOrden IN ({$inOrden})
+          AND h.Eliminado = 0 AND h.Devuelto = 0 AND tc.Eliminado = 0
+        GROUP BY h.NumerodeOrden
+    ";
+    $resPaq = $mysqli->query($sqlPaq);
+    $porOrden = [];
+    while ($row = $resPaq->fetch_assoc()) {
+        $porOrden[(int) $row['NumerodeOrden']] = [
+            'total'      => (int) $row['Total'],
+            'entregados' => (int) $row['Entregados'],
+        ];
+    }
+    foreach ($repartidores as &$rep) {
+        if (isset($porOrden[$rep['orden']])) {
+            $rep['totalPaquetes'] = $porOrden[$rep['orden']]['total'];
+            $rep['entregados']    = $porOrden[$rep['orden']]['entregados'];
+        }
+    }
+    unset($rep);
+}
+
+// Repartidores con posición reciente (~18 h) pero sin orden Cargada hoy.
+$idsExcl = $choferIds ? implode(',', array_map('intval', $choferIds)) : '0';
+$sqlSin = "
+    SELECT u.idUsuario, u.Usuario, u.Recorrido, u.TimeStamp,
+           COALESCE(us.Nombre, u.Usuario) AS Nombre
+    FROM UbicacionRepartidor u
+    LEFT JOIN usuarios us ON us.id = u.idUsuario
+    WHERE u.idUsuario NOT IN ({$idsExcl})
+      AND u.TimeStamp >= (NOW() - INTERVAL 18 HOUR)
+    ORDER BY u.TimeStamp DESC
+";
+$resSin  = $mysqli->query($sqlSin);
+$sinOrden = [];
+while ($row = $resSin->fetch_assoc()) {
+    $sinOrden[] = [
+        'nombre'    => trim((string) $row['Nombre']),
+        'usuario'   => $row['Usuario'],
+        'recorrido' => $row['Recorrido'],
+        'timestamp' => $row['TimeStamp'],
+    ];
+}
+
+echo json_encode([
+    'success'      => 1,
+    'repartidores' => $repartidores,
+    'sinOrden'     => $sinOrden,
+]);
