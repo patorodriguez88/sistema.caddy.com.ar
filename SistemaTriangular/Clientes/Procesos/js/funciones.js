@@ -3372,7 +3372,7 @@ $("#botonfacturacion").click(function () {
             }
             return (
               '<td class="table-action">' +
-              '<a style="cursor:pointer"  data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="' +
+              '<a style="cursor:pointer" data-tracking-panel data-id="' +
               row.CodigoSeguimiento +
               '"' +
               'data-title="' +
@@ -3832,7 +3832,7 @@ $("#guias_recibidas_boton").click(function () {
         render: function (data, type, row) {
           return (
             '<td class="table-action">' +
-            '<a style="cursor:pointer"  data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="' +
+            '<a style="cursor:pointer" data-tracking-panel data-id="' +
             row.CodigoSeguimiento +
             '"' +
             'data-title="' +
@@ -3985,7 +3985,7 @@ $("#guias_enviadas_boton").click(function () {
         render: function (data, type, row) {
           return (
             '<td class="table-action">' +
-            '<a style="cursor:pointer" class="text-primary" data-bs-toggle="modal" data-bs-target="#modal_seguimiento" data-id="' +
+            '<a style="cursor:pointer" class="text-primary" data-tracking-panel data-id="' +
             row.CodigoSeguimiento +
             '"' +
             'data-title="' +

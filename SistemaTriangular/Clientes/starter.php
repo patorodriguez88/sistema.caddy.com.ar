@@ -386,14 +386,14 @@ header("location:https://www.caddy.com.ar/sistema");
             </div>              
         
         <!-- SEGUIIENTO MODAL -->
-            <div class="modal fade" id="modal_seguimiento" tabindex="-1" role="dialog" aria-hidden="true" style="display:none">
-                <div class="modal-dialog modal-lg">
+            <div class="tracking-panel" id="modal_seguimiento" aria-hidden="true">
+                <div class="tracking-panel-dialog">
                     <div id="modal_seguimiento_content" class="modal-content bg-primary">
                         <div id="modal_seguimiento_header" class="modal-header">
                             <h4 class="modal-title" id="myCenterModalLabel">Seguimiento</h4>
                             <div class="text-sm-right">
                                 <button id="cambiar_estado" type="button" class="btn btn-light" aria-hidden="true">Cambiar Estado</button>
-                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            <button type="button" class="btn-close" data-panel-close aria-label="Cerrar"></button>
                             </div>
                         </div>
                         <div class="modal-body">
@@ -442,8 +442,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                             <table class="table table-sm table-centered mb-0" style="font-size:10px" id="seguimiento_tabla">
                                                 <thead class="thead-light">
                                                 <tr>
-                                                    <th>Fecha</th>
-                                                    <th>Hora</th>
+                                                    <th>Fecha | Hora</th>
                                                     <th>Usuario</th>
                                                     <th>Observaciones</th>
                                                     <th>Estado</th>
@@ -451,7 +450,6 @@ header("location:https://www.caddy.com.ar/sistema");
                                                 </thead>
                                                 <tbody>
                                                 <tr id="tr_seguimiento">
-                                                    <td></td>
                                                     <td></td>
                                                     <td></td>
                                                     <td></td>
@@ -466,9 +464,25 @@ header("location:https://www.caddy.com.ar/sistema");
                         </div>
                         <!-- end row -->
                         </div>
+                        <div class="modal-footer">
+                            <div class="tracking-panel-actions">
+                                <a id="tracking-label-link" class="btn tracking-panel-action tracking-panel-action-label" href="#" target="_blank" rel="noopener">
+                                    <i class="mdi mdi-barcode-scan"></i>
+                                    Ver etiqueta
+                                </a>
+                                <a id="tracking-guide-link" class="btn tracking-panel-action tracking-panel-action-guide" href="#" target="_blank" rel="noopener">
+                                    <i class="mdi mdi-file-document-outline"></i>
+                                    Ver guía
+                                </a>
+                            </div>
+                            <button type="button" class="btn tracking-panel-close" data-panel-close>
+                                <i class="mdi mdi-close-circle-outline"></i>
+                                Cerrar
+                            </button>
+                        </div>
                     </div><!-- /.modal-content -->
                 </div><!-- /.modal-dialog -->
-            </div><!-- /.modal -->
+            </div>
       <!--END SEGUIMIENTO MODAL-->
         
         <div id="fill-warning-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fill-warning-modalLabel" aria-hidden="true">
@@ -2018,7 +2032,7 @@ header("location:https://www.caddy.com.ar/sistema");
               <script src="../Menu/js/funciones.js"></script>
               <script src="../Funciones/js/datosempresa.js"></script>
               <script src="Procesos/js/cargarpago.js"></script>
-              <script src="../Funciones/js/seguimiento.js"></script>
+              <script src="../Funciones/js/seguimiento.js?v=<?php echo filemtime(__DIR__ . '/../Funciones/js/seguimiento.js'); ?>"></script>
               <script src="Procesos/js/descuento.js"></script>
               <script src="Procesos/js/abmventas.js"></script>
               <script src="Procesos/js/flash.js"></script>

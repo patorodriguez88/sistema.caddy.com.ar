@@ -410,8 +410,38 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
         return ['success' => 0, 'message' => 'La orden destino no está disponible para asignación: ' . motivoOrdenBloqueada($mysqli, $NO)];
     }
 
+    // El chequeo de "orden anterior no cerrada/no facturada" sólo tiene sentido
+    // si esa orden realmente gobierna la ruta viva del servicio. NO aplica si:
+    //  - el servicio viene del recorrido DEPOSITO (limbo donde se estacionan los
+    //    servicios que no salieron: su NumerodeOrden apunta a la orden vieja del
+    //    recorrido del que se lo sacó), o
+    //  - la orden anterior pertenece a OTRO recorrido (la referencia quedó vieja
+    //    tras cerrar o vaciar esa ruta).
+    // En esos casos re-rutear es justamente lo que se quiere y no hay ruta viva
+    // que proteger — antes esto tiraba "La orden N está 'Cerrada'..." y dejaba
+    // el servicio trabado en Deposito.
     if ($ordenAnterior !== '' && $ordenAnterior !== '0' && $ordenAnterior != $NO) {
-        if (!ordenNoFacturada($mysqli, $ordenAnterior)) {
+        $refAnteriorVieja = false;
+
+        if ($stmtDep = $mysqli->prepare("SELECT 1 FROM Recorridos WHERE Numero = ? AND Nombre = 'DEPOSITO' LIMIT 1")) {
+            $stmtDep->bind_param('s', $recorridoAnterior);
+            $stmtDep->execute();
+            $stmtDep->store_result();
+            $refAnteriorVieja = ($stmtDep->num_rows > 0);
+            $stmtDep->close();
+        }
+
+        if (!$refAnteriorVieja && $stmtRecOrd = $mysqli->prepare("SELECT Recorrido FROM Logistica WHERE NumerodeOrden = ? AND Eliminado = 0 LIMIT 1")) {
+            $stmtRecOrd->bind_param('s', $ordenAnterior);
+            $stmtRecOrd->execute();
+            $stmtRecOrd->bind_result($recOrdenAnterior);
+            if ($stmtRecOrd->fetch() && (string)$recOrdenAnterior !== (string)$recorridoAnterior) {
+                $refAnteriorVieja = true;
+            }
+            $stmtRecOrd->close();
+        }
+
+        if (!$refAnteriorVieja && !ordenNoFacturada($mysqli, $ordenAnterior)) {
             return ['success' => 0, 'message' => motivoOrdenBloqueada($mysqli, $ordenAnterior)];
         }
     }
