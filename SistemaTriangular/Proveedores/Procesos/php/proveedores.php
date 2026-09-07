@@ -462,23 +462,46 @@ if (isset($_POST['Borrar_Factura'])) {
 
 if (isset($_POST['Borrar_Factura_ok'])) {
     $Info = ' B ' . $_SESSION['Usuario'] . ' ' . date('d-m-Y H:i');
-    $idTransProveedores = $_POST['id'];
+    $idTransProveedores = (int)($_POST['id'] ?? 0);
+    $InfoEsc = $mysqli->real_escape_string($Info);
 
-    if ($idTransProveedores <> '' || $idTransProveedores <> 0) {
+    if ($idTransProveedores <= 0) {
+        echo json_encode(array('success' => 0, 'error' => 2));
+    } else {
 
-        if ($mysqli->query("UPDATE TransProveedores SET Eliminado=1,InfoABM=CONCAT(InfoABM,'$Info') WHERE id='$idTransProveedores' LIMIT 1")) {
+        // Nros de asiento del comprobante: hay que anular TODAS las lineas de
+        // esos asientos en Tesoreria, no solo las linkeadas por idTransProvee.
+        // La contrapartida (ACREEDORES / Haber) suele quedar con idTransProvee=0
+        // y antes se quedaba viva y huerfana -> el balance (Sumas y Saldos) no
+        // cuadraba. Ademas puede haber varias lineas de IVA, por eso se saca el
+        // LIMIT 1 de IvaCompras.
+        $asientos = [];
+        $sqlAs = "SELECT DISTINCT NumeroAsiento FROM Tesoreria
+                   WHERE idTransProvee = $idTransProveedores AND NumeroAsiento > 0
+                  UNION
+                  SELECT DISTINCT NumeroAsiento FROM IvaCompras
+                   WHERE idTransProveedores = $idTransProveedores AND NumeroAsiento > 0";
+        if ($resAs = $mysqli->query($sqlAs)) {
+            while ($fa = $resAs->fetch_row()) {
+                $asientos[] = (int)$fa[0];
+            }
+        }
 
-            $mysqli->query("UPDATE `IvaCompras` SET Eliminado=1,InfoABM=CONCAT(InfoABM,'$Info') WHERE idTransProveedores='$idTransProveedores' LIMIT 1");
-            $mysqli->query("UPDATE `Tesoreria` SET Eliminado=1,InfoABM=CONCAT(InfoABM,'$Info') WHERE idTransProvee='$idTransProveedores'");
+        if ($mysqli->query("UPDATE TransProveedores SET Eliminado=1, InfoABM=CONCAT(InfoABM,'$InfoEsc') WHERE id = $idTransProveedores LIMIT 1")) {
+
+            $mysqli->query("UPDATE `IvaCompras` SET Eliminado=1, InfoABM=CONCAT(InfoABM,'$InfoEsc') WHERE idTransProveedores = $idTransProveedores");
+
+            $condTes = "idTransProvee = $idTransProveedores";
+            if (!empty($asientos)) {
+                $condTes .= " OR NumeroAsiento IN (" . implode(',', $asientos) . ")";
+            }
+            $mysqli->query("UPDATE `Tesoreria` SET Eliminado=1, InfoABM=CONCAT(InfoABM,'$InfoEsc') WHERE $condTes");
 
             echo json_encode(array('success' => 1));
         } else {
 
             echo json_encode(array('success' => 0, 'error' => 1));
         }
-    } else {
-
-        echo json_encode(array('success' => 0, 'error' => 2));
     }
 }
 
