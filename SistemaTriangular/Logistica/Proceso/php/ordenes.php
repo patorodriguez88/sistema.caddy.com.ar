@@ -255,7 +255,7 @@ function handleOrdenCargar(mysqli $mysqli)
   ChapasPatentes=?, LucesPosicion=?, LucesBajas=?, LucesAltas=?, LucesFreno=?,
   GNCFuncionando=?, TarjetaCombustible=?, Observaciones=?, Estado=?,
   TotalFacturado=?, CombustibleSalida=?
-  WHERE NumerodeOrden=? AND Eliminado=0 LIMIT 1";
+  WHERE NumerodeOrden=? AND Eliminado=0 AND Estado IN ('Alta','Pendiente') LIMIT 1";
 
     if ($stmt = $mysqli->prepare($sql)) {
       $stmt->bind_param(
@@ -284,6 +284,9 @@ function handleOrdenCargar(mysqli $mysqli)
         $Orden              // s (WHERE)
       );
       $stmt->execute();
+      if ($stmt->affected_rows !== 1) {
+        throw new Exception('La orden ya fue cargada o no está disponible para cargar.');
+      }
       if ($stmt->errno) throw new Exception('Error al actualizar Logistica: ' . $stmt->error);
       $stmt->close();
     } else {

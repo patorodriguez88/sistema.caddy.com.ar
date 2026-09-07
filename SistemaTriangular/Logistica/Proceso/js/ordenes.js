@@ -839,13 +839,17 @@ function init_datatable(fechas = "") {
                     title="Click para permitir que este recorrido arranque sin escanear en Warehouse.">
                    <span class="badge bg-light text-dark border"><i class="mdi mdi-barcode-scan"></i> ESCANEO OBLIGATORIO</span>
                  </a>`;
+            const btnCargar =
+              row.Estado === "Alta" || row.Estado === "Pendiente"
+                ? `<a href="#" class="btn-cargar-orden" data-no="${row.NumerodeOrden}" title="Cargar Orden">
+                     <i class="mdi mdi-18px mdi-upload ms-2 text-success"></i>
+                   </a>`
+                : "";
             return `
               <a target="_blank" href="Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
                 <i class="mdi mdi-18px mdi-file-chart-outline ms-2"></i>
               </a>
-              <a href="#" class="btn-cargar-orden" data-no="${row.NumerodeOrden}" title="Cargar Orden">
-                <i class="mdi mdi-18px mdi-upload ms-2 text-success"></i>
-              </a>
+              ${btnCargar}
               <a href="#" onclick="cerrarOrden('${row.NumerodeOrden}'); return false;" title="Cerrar Orden">
                 <i class="mdi mdi-18px mdi-lock-check ms-2 text-danger"></i>
               </a>
