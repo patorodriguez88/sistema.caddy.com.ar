@@ -90,11 +90,14 @@ if ($ordenIds) {
     // vez en el día, queda el último motivo cargado.
     $sqlMot = "
         SELECT h.NumerodeOrden, s.CodigoSeguimiento, h.Cliente,
+               tc.RazonSocial AS Origen,
                s.Observaciones, s.Hora
         FROM HojaDeRuta h
         INNER JOIN Seguimiento s ON s.CodigoSeguimiento = h.Seguimiento
+        INNER JOIN TransClientes tc ON tc.CodigoSeguimiento = h.Seguimiento
         WHERE h.NumerodeOrden IN ({$inOrden})
           AND h.Eliminado = 0 AND h.Devuelto = 0
+          AND tc.Eliminado = 0
           AND s.Estado = 'No se pudo entregar'
           AND s.Fecha = CURDATE()
         ORDER BY h.NumerodeOrden, s.CodigoSeguimiento, s.Hora
@@ -105,6 +108,7 @@ if ($ordenIds) {
         $cs = $row['CodigoSeguimiento'];
         $motPorCs[$no][$cs] = [
             'cs'      => $cs,
+            'origen'  => trim((string) $row['Origen']),
             'cliente' => trim((string) $row['Cliente']),
             'motivo'  => trim((string) $row['Observaciones']),
             'hora'    => substr((string) $row['Hora'], 0, 5),

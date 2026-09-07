@@ -326,38 +326,8 @@ function pintarLista(repartidores) {
 // vehículos quedan sin finalizar (en ruta, pausados o sin arrancar) y los
 // motivos de no entrega del día. Datos: php/cierre_turno.php.
 // ===========================================================================
-function plural(n, sing, plur) {
-  return n + " " + (n === 1 ? sing : plur);
-}
-
 function lineaSinFinalizar(r) {
-  var base = "▪ " + r.recorrido + " " + r.chofer + " — ";
-  if (r.estado === "sin_arrancar") {
-    return base + "sin arrancar (cargado, no inició el recorrido)";
-  }
-  if (r.estado === "pausado") {
-    return (
-      base +
-      "PAUSADO" +
-      (r.pausaMotivo ? " (" + r.pausaMotivo + ")" : "") +
-      ", " +
-      plural(r.pendientes, "pendiente", "pendientes")
-    );
-  }
-  // en_ruta
-  var senal =
-    r.ultSenalMin === null
-      ? "sin señal"
-      : r.appActiva
-        ? "app activa (señal hace " + r.ultSenalMin + " min)"
-        : "última señal hace " + r.ultSenalMin + " min";
-  return (
-    base +
-    "en ruta, " +
-    plural(r.pendientes, "pendiente", "pendientes") +
-    " · " +
-    senal
-  );
+  return "▪ " + r.recorrido + " " + r.chofer;
 }
 
 function construirTextoCierre(data) {
@@ -442,7 +412,11 @@ function construirTextoCierre(data) {
       L.push("▪ " + r.recorrido + " " + r.chofer);
       r.motivos.forEach(function (m) {
         L.push(
-          "   • " +
+          "   [" +
+            (m.origen || "-") +
+            "] [" +
+            m.cs +
+            "]->" +
             (m.cliente ? m.cliente + ": " : "") +
             (m.motivo || "(sin detalle)"),
         );
