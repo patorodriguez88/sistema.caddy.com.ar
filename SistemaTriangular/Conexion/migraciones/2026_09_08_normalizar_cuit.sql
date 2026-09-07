@@ -17,8 +17,20 @@
 --   * 0 proveedores con RazonSocial -> 2 CUIT distintos (match siempre unico).
 --
 -- Criterio: el CUIT de Proveedores manda (se valida una vez en ABM). Se empuja
--- a IvaCompras/TransProveedores por RazonSocial (exacta, sin distinguir
--- mayusculas/espacios). Formato canonico: 11 digitos, SIN guiones.
+-- a IvaCompras/TransProveedores/AnticiposProveedores por RazonSocial (exacta, sin
+-- distinguir mayusculas/espacios). Formato canonico: 11 digitos, SIN guiones.
+--
+-- TABLAS que guardan CUIT de PROVEEDOR (todas se tocan aca):
+--   Proveedores, IvaCompras, TransProveedores, AnticiposProveedores.
+-- NO se tocan (son del lado CLIENTES/VENTAS, otra limpieza aparte):
+--   Clientes, Ctasctes(_1..9), TransClientes(*), IvaVentas, Ventas(*),
+--   Facturacion (factura electronica de ventas), DatosEmpresa (CUIT propio).
+-- Avisar a contaduria:
+--   * Si ya bajaron/presentaron el Libro IVA Compras (IvaCompraspdf.php) de
+--     algun mes 2023-2026, re-exportarlo: los CUIT van a salir corregidos.
+--   * 34 entidades son proveedor Y cliente con el mismo CUIT; aca solo se
+--     corrige el lado proveedor.
+-- No hay integracion con AFIP/SICORE/retenciones que dependa de estos CUIT.
 --
 -- >>> ANTES de correr esto: arreglar a mano los 38 proveedores con CUIT mal    <<<
 -- >>> formado (ver PASO 0). Si no, se propaga la basura.                       <<<
@@ -116,6 +128,29 @@ SET tp.Cuit   = p.cuit,
     tp.InfoABM = CONCAT(IFNULL(tp.InfoABM,''), ' CUIT norm<-Proveedores ', DATE_FORMAT(NOW(),'%d-%m-%Y %H:%i'))
 WHERE tp.Eliminado = 0
   AND REPLACE(REPLACE(TRIM(IFNULL(tp.Cuit,'')),'-',''),' ','') <> p.cuit;
+
+-- --- PASO 3b: idem AnticiposProveedores (anticipos / pagos a cuenta a proveedor).
+--             Se matchea con las facturas por Cuit -> tiene que quedar igual que
+--             IvaCompras / TransProveedores o la pantalla de aplicar pagos deja
+--             de encontrar las filas.
+UPDATE AnticiposProveedores ap
+JOIN (
+    SELECT LOWER(TRIM(RazonSocial)) rs, REPLACE(REPLACE(MAX(NULLIF(TRIM(Cuit),'')),'-',''),' ','') cuit
+    FROM Proveedores
+    WHERE RazonSocial IS NOT NULL AND TRIM(RazonSocial) <> ''
+    GROUP BY LOWER(TRIM(RazonSocial))
+    HAVING COUNT(DISTINCT NULLIF(TRIM(Cuit),'')) = 1
+       AND MAX(NULLIF(TRIM(Cuit),'')) IS NOT NULL
+) p ON p.rs = LOWER(TRIM(ap.RazonSocial))
+SET ap.Cuit = p.cuit
+WHERE ap.Eliminado = 0
+  AND REPLACE(REPLACE(TRIM(IFNULL(ap.Cuit,'')),'-',''),' ','') <> p.cuit;
+
+-- --- PASO 3c: quitar guiones/espacios en AnticiposProveedores sin match de prov
+UPDATE AnticiposProveedores
+SET Cuit = REPLACE(REPLACE(TRIM(Cuit),'-',''),' ','')
+WHERE Eliminado = 0 AND TRIM(IFNULL(Cuit,'')) NOT IN ('','0')
+  AND Cuit <> REPLACE(REPLACE(TRIM(Cuit),'-',''),' ','');
 
 -- --- PASO 4: quitar guiones/espacios en las filas SIN match de proveedor (deja
 --            toda la columna en el mismo formato). No cambia digitos.
