@@ -443,8 +443,8 @@ if (isset($_POST['Logistica'])) {
     $sql .= " AND l.Fecha >= '$FechaI' AND l.Fecha <= '$FechaF'";
   } else {
 
-    // Si NO hay fecha → mostrar pendientes
-    $sql .= " AND l.Estado IN ('Pendiente','Cargada')";
+    // Si NO hay fecha → mostrar órdenes pendientes de gestión
+    $sql .= " AND l.Estado IN ('Alta','Pendiente','Cargada')";
   }
 
   $Resultado = $mysqli->query($sql);
