@@ -318,3 +318,199 @@ function pintarLista(repartidores) {
   });
   $lista.html(html);
 }
+
+// ===========================================================================
+// CIERRE DE TURNO
+// Arma un resumen de la jornada en texto plano para pegar en un grupo de
+// WhatsApp: por recorrido entregados / no entregados / pendientes, qué
+// vehículos quedan sin finalizar (en ruta, pausados o sin arrancar) y los
+// motivos de no entrega del día. Datos: php/cierre_turno.php.
+// ===========================================================================
+function plural(n, sing, plur) {
+  return n + " " + (n === 1 ? sing : plur);
+}
+
+function lineaSinFinalizar(r) {
+  var base = "▪ " + r.recorrido + " " + r.chofer + " — ";
+  if (r.estado === "sin_arrancar") {
+    return base + "sin arrancar (cargado, no inició el recorrido)";
+  }
+  if (r.estado === "pausado") {
+    return (
+      base +
+      "PAUSADO" +
+      (r.pausaMotivo ? " (" + r.pausaMotivo + ")" : "") +
+      ", " +
+      plural(r.pendientes, "pendiente", "pendientes")
+    );
+  }
+  // en_ruta
+  var senal =
+    r.ultSenalMin === null
+      ? "sin señal"
+      : r.appActiva
+        ? "app activa (señal hace " + r.ultSenalMin + " min)"
+        : "última señal hace " + r.ultSenalMin + " min";
+  return (
+    base +
+    "en ruta, " +
+    plural(r.pendientes, "pendiente", "pendientes") +
+    " · " +
+    senal
+  );
+}
+
+function construirTextoCierre(data) {
+  var L = [];
+  L.push("*CIERRE DE TURNO*");
+  L.push("📅 " + data.fecha + "   🕒 " + data.hora);
+  L.push("👤 Operador: " + data.operador);
+  L.push("");
+
+  var rs = data.recorridos || [];
+  var tE = 0,
+    tNE = 0,
+    tP = 0,
+    tT = 0;
+  rs.forEach(function (r) {
+    tE += r.entregados;
+    tNE += r.noEntregados;
+    tP += r.pendientes;
+    tT += r.total;
+  });
+
+  L.push("*RESUMEN POR RECORRIDO*");
+  if (rs.length === 0) {
+    L.push("— Ninguna orden cargada hoy —");
+  } else {
+    rs.forEach(function (r) {
+      L.push(
+        "▪ " +
+          r.recorrido +
+          " — " +
+          r.chofer +
+          (r.arranco ? "  (salió " + r.horaSalida + ")" : "  (sin arrancar)"),
+      );
+      L.push(
+        "   Entregados: " +
+          r.entregados +
+          " | No entregados: " +
+          r.noEntregados +
+          " | Pendientes: " +
+          r.pendientes +
+          "  (de " +
+          r.total +
+          ")",
+      );
+    });
+    L.push("");
+    L.push(
+      "TOTAL: " +
+        tE +
+        " entregados · " +
+        tNE +
+        " no entregados · " +
+        tP +
+        " pendientes  (de " +
+        tT +
+        ")",
+    );
+  }
+
+  var sinFin = rs.filter(function (r) {
+    return r.estado !== "terminado";
+  });
+  L.push("");
+  L.push("⚠️ *VEHÍCULOS SIN FINALIZAR*");
+  if (sinFin.length === 0) {
+    L.push("— Todos los recorridos finalizados —");
+  } else {
+    sinFin.forEach(function (r) {
+      L.push(lineaSinFinalizar(r));
+    });
+  }
+
+  var conMotivos = rs.filter(function (r) {
+    return r.motivos && r.motivos.length > 0;
+  });
+  L.push("");
+  L.push("📝 *OBSERVACIONES (no entregas)*");
+  if (conMotivos.length === 0) {
+    L.push("— Sin no entregas —");
+  } else {
+    conMotivos.forEach(function (r) {
+      L.push("▪ " + r.recorrido + " " + r.chofer);
+      r.motivos.forEach(function (m) {
+        L.push(
+          "   • " +
+            (m.cliente ? m.cliente + ": " : "") +
+            (m.motivo || "(sin detalle)"),
+        );
+      });
+    });
+  }
+
+  return L.join("\n");
+}
+
+var modalCierreTurno = null;
+
+$(document).on("click", "#btn_cierre_turno", function () {
+  if (!modalCierreTurno) {
+    modalCierreTurno = new bootstrap.Modal(
+      document.getElementById("modal_cierre_turno"),
+    );
+  }
+  $("#cierre_texto").text("Generando...");
+  modalCierreTurno.show();
+
+  $.ajax({
+    url: "php/cierre_turno.php",
+    type: "GET",
+    dataType: "json",
+    success: function (data) {
+      if (!data || data.success !== 1) {
+        $("#cierre_texto").text("No se pudo generar el cierre.");
+        return;
+      }
+      $("#cierre_texto").text(construirTextoCierre(data));
+    },
+    error: function () {
+      $("#cierre_texto").text("Error de red al generar el cierre.");
+    },
+  });
+});
+
+$(document).on("click", "#btn_copiar_cierre", function () {
+  var texto = $("#cierre_texto").text();
+  var $btn = $(this);
+  var ok = function () {
+    $btn.html('<i class="mdi mdi-check me-1"></i>Copiado');
+    setTimeout(function () {
+      $btn.html('<i class="mdi mdi-content-copy me-1"></i>Copiar');
+    }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(ok, function () {
+      copiarFallback(texto, ok);
+    });
+  } else {
+    copiarFallback(texto, ok);
+  }
+});
+
+function copiarFallback(texto, ok) {
+  var ta = document.createElement("textarea");
+  ta.value = texto;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    ok();
+  } catch (e) {
+    /* no-op */
+  }
+  document.body.removeChild(ta);
+}

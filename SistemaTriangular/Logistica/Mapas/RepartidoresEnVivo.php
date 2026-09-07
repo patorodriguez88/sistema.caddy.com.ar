@@ -67,10 +67,39 @@ require_once __DIR__ . '/../../Conexion/google_config.php';
                         <div class="col-xl-4">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title mb-3">Repartidores</h5>
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
+                                        <h5 class="card-title mb-0">Repartidores</h5>
+                                        <button type="button" class="btn btn-sm btn-outline-primary" id="btn_cierre_turno">
+                                            <i class="mdi mdi-clipboard-check-outline me-1"></i>Cierre de Turno
+                                        </button>
+                                    </div>
                                     <div id="lista_repartidores">
                                         <div class="text-center text-muted py-4">Cargando...</div>
                                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Cierre de Turno -->
+                    <div class="modal fade" id="modal_cierre_turno" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Cierre de Turno</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-muted small mb-2">
+                                        Resumen de la jornada para pegar en el grupo de WhatsApp. Revisá y copiá.
+                                    </p>
+                                    <pre id="cierre_texto" style="white-space:pre-wrap;word-break:break-word;background:#f8f9fa;border:1px solid #e9ecef;border-radius:.35rem;padding:12px;font-size:12.5px;max-height:55vh;overflow:auto;">Generando...</pre>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                                    <button type="button" class="btn btn-primary" id="btn_copiar_cierre">
+                                        <i class="mdi mdi-content-copy me-1"></i>Copiar
+                                    </button>
                                 </div>
                             </div>
                         </div>
