@@ -37,7 +37,7 @@ $selPausa = $tienePausas
 
 $sql = "
     SELECT
-        l.NumerodeOrden, l.Recorrido, l.idUsuarioChofer,
+        l.NumerodeOrden, l.Recorrido, l.idUsuarioChofer, l.HoraSalidaReal,
         COALESCE(us.Nombre, l.NombreChofer, u.Usuario) AS Nombre,
         u.Usuario,
         r.Nombre AS RecorridoNombre,
@@ -50,7 +50,7 @@ $sql = "
     LEFT JOIN usuarios us           ON us.id = l.idUsuarioChofer
     {$joinPausa}
     WHERE l.Estado = 'Cargada' AND l.Eliminado = 0 AND l.Fecha = CURDATE()
-    ORDER BY l.NumerodeOrden
+    ORDER BY (l.HoraSalidaReal IS NULL), l.HoraSalidaReal DESC, l.NumerodeOrden
 ";
 
 $res = $mysqli->query($sql);
@@ -67,6 +67,8 @@ while ($row = $res->fetch_assoc()) {
         'recorrido'       => $row['Recorrido'],
         'recorridoNombre' => $row['RecorridoNombre'],
         'color'           => $row['RecorridoColor'],
+        'horaSalida'      => $row['HoraSalidaReal'],           // null = no inició el recorrido
+        'arranco'         => !empty($row['HoraSalidaReal']),
         'lat'             => $tienePos ? (float) $row['Latitud'] : null,
         'lng'             => $tienePos ? (float) $row['Longitud'] : null,
         'precision'       => $row['Precision_'] !== null ? (int) $row['Precision_'] : null,
@@ -76,6 +78,7 @@ while ($row = $res->fetch_assoc()) {
         'pausaInicio'     => $row['PausaInicio'],
         'totalPaquetes'   => 0,
         'entregados'      => 0,
+        'noEntregados'    => 0,
     ];
 }
 
@@ -85,8 +88,9 @@ if ($ordenIds) {
     $inOrden = implode(',', array_map('intval', $ordenIds));
     $sqlPaq = "
         SELECT h.NumerodeOrden,
-               COUNT(*)                 AS Total,
-               SUM(tc.Entregado = 1)    AS Entregados
+               COUNT(*)              AS Total,
+               SUM(tc.Entregado = 1) AS Entregados,
+               SUM(tc.Entregado = 0 AND tc.Estado = 'No se pudo entregar') AS NoEntregados
         FROM HojaDeRuta h
         INNER JOIN TransClientes tc ON tc.CodigoSeguimiento = h.Seguimiento
         WHERE h.NumerodeOrden IN ({$inOrden})
@@ -97,14 +101,16 @@ if ($ordenIds) {
     $porOrden = [];
     while ($row = $resPaq->fetch_assoc()) {
         $porOrden[(int) $row['NumerodeOrden']] = [
-            'total'      => (int) $row['Total'],
-            'entregados' => (int) $row['Entregados'],
+            'total'        => (int) $row['Total'],
+            'entregados'   => (int) $row['Entregados'],
+            'noEntregados' => (int) $row['NoEntregados'],
         ];
     }
     foreach ($repartidores as &$rep) {
         if (isset($porOrden[$rep['orden']])) {
             $rep['totalPaquetes'] = $porOrden[$rep['orden']]['total'];
             $rep['entregados']    = $porOrden[$rep['orden']]['entregados'];
+            $rep['noEntregados']  = $porOrden[$rep['orden']]['noEntregados'];
         }
     }
     unset($rep);

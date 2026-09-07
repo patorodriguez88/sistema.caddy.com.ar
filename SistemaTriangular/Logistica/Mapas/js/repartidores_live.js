@@ -74,22 +74,36 @@ function cargarRepartidores() {
   });
 }
 
-function iconoRepartidor(color, sinSenal, pausado) {
+function iconoRepartidor(color, sinSenal, pausado, noArranco) {
   var hex = "#" + normalizarColorRecorrido(color);
+  var stroke = "#ffffff";
+  if (pausado) stroke = "#fa5c7c";
+  else if (noArranco) stroke = "#f7b84b"; // ámbar: cargado pero no inició
   return {
     path: google.maps.SymbolPath.CIRCLE,
     scale: pausado ? 11 : 9,
     fillColor: sinSenal ? "#98a6ad" : hex,
-    fillOpacity: sinSenal ? 0.5 : 1,
-    strokeColor: pausado ? "#fa5c7c" : "#ffffff",
-    strokeWeight: pausado ? 4 : 2,
+    fillOpacity: sinSenal ? 0.5 : noArranco ? 0.65 : 1,
+    strokeColor: stroke,
+    strokeWeight: pausado || noArranco ? 4 : 2,
   };
+}
+
+// "2026-09-07 09:44:35" -> "09:44"
+function horaCorta(dtStr) {
+  if (!dtStr) return "";
+  var m = String(dtStr).match(/(\d{2}):(\d{2})/);
+  return m ? m[1] + ":" + m[2] : "";
 }
 
 function fichaRepartidor(r) {
   var mins = minutosDesde(r.timestamp);
   var pausado = !!r.pausaMotivo;
-  var pend = Math.max(0, (r.totalPaquetes || 0) - (r.entregados || 0));
+  var noEnt = r.noEntregados || 0;
+  var pend = Math.max(
+    0,
+    (r.totalPaquetes || 0) - (r.entregados || 0) - noEnt,
+  );
   var motivoTxt = pausado
     ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo
     : "";
@@ -111,11 +125,19 @@ function fichaRepartidor(r) {
     '<div style="color:#5f6368;">Orden #' +
     (r.orden || "-") +
     "</div>" +
+    (r.arranco
+      ? '<div style="color:#5f6368;">▶ Inició ' + horaCorta(r.horaSalida) + "</div>"
+      : '<div style="color:#f7b84b;font-weight:700;">● No inició el recorrido</div>') +
     '<div style="margin-top:4px;">' +
     '<span style="color:#0acf97;font-weight:700;">' +
     (r.entregados || 0) +
     " entregados</span> &middot; " +
-    '<span style="color:#fa5c7c;font-weight:700;">' +
+    (noEnt > 0
+      ? '<span style="color:#fa5c7c;font-weight:700;">' +
+        noEnt +
+        " no entregados</span> &middot; "
+      : "") +
+    '<span style="color:#98a6ad;font-weight:700;">' +
     pend +
     " pendientes</span>" +
     ' <span style="color:#98a6ad;">/ ' +
@@ -153,7 +175,7 @@ function pintarMapa(repartidores) {
     var pos = { lat: r.lat, lng: r.lng };
     bounds.extend(pos);
 
-    var icono = iconoRepartidor(r.color, sinSenal, pausado);
+    var icono = iconoRepartidor(r.color, sinSenal, pausado, !r.arranco);
 
     if (marcadoresRepartidores[r.usuario]) {
       marcadoresRepartidores[r.usuario].setPosition(pos);
@@ -207,12 +229,19 @@ function itemLista(r) {
   var motivoTxt = pausado
     ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo
     : "";
-  var pend = Math.max(0, (r.totalPaquetes || 0) - (r.entregados || 0));
+  var noEnt = r.noEntregados || 0;
+  var pend = Math.max(
+    0,
+    (r.totalPaquetes || 0) - (r.entregados || 0) - noEnt,
+  );
   var colorHex = "#" + normalizarColorRecorrido(r.color);
 
   var badgeClase = "bg-success";
   var badgeTxt = textoHaceCuanto(mins);
-  if (r.timestamp == null) {
+  if (!r.arranco) {
+    badgeClase = "bg-warning text-dark";
+    badgeTxt = "Sin arrancar";
+  } else if (r.timestamp == null) {
     badgeClase = "bg-secondary";
     badgeTxt = "Sin ubicación";
   } else if (pausado) {
@@ -238,13 +267,21 @@ function itemLista(r) {
     "</div>" +
     '<div class="text-muted" style="font-size:12px;">Orden #' +
     (r.orden || "-") +
+    (r.arranco
+      ? " &middot; inició " + horaCorta(r.horaSalida)
+      : "") +
     "</div>" +
     '<div style="font-size:12px;">' +
     '<span class="text-success fw-semibold">' +
     (r.entregados || 0) +
     " entregados</span>" +
-    (pend > 0
+    (noEnt > 0
       ? ' &middot; <span class="text-danger fw-semibold">' +
+        noEnt +
+        " no entregados</span>"
+      : "") +
+    (pend > 0
+      ? ' &middot; <span class="text-muted fw-semibold">' +
         pend +
         " pendientes</span>"
       : "") +
