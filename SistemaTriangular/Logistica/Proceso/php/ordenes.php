@@ -588,8 +588,13 @@ if (isset($_POST['BuscoEmpleados'])) {
 
 if (isset($_POST['BuscoVehiculos'])) {
 
-  $vechiculos = [];
-  $sql = "SELECT * FROM Vehiculos WHERE VehiculoOperativo=1";
+  $vehiculos = [];
+  $sql = "SELECT v.*, e.NombreCompleto AS Propietario
+          FROM Vehiculos v
+          LEFT JOIN Empleados e
+            ON e.Usuario = v.id_usuario
+           AND e.Aliados = 1
+          WHERE v.VehiculoOperativo = 1";
   $res = $mysqli->query($sql);
 
 

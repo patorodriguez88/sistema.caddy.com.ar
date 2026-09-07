@@ -664,7 +664,16 @@ $("#agregar_orden").click(function () {
           let marca = capitalizar(vehiculo.Marca);
           let modelo = capitalizar(vehiculo.Modelo);
           let nombre = `${marca} ${modelo} ${vehiculo.Dominio}`;
-          let option = `<option value="${vehiculo.id}" data-aliado="${vehiculo.Aliados}">${nombre}</option>`;
+          if (vehiculo.Aliados == 1 && vehiculo.Propietario) {
+            nombre += ` - Propietario: ${capitalizar(vehiculo.Propietario)}`;
+          }
+          let option = $("<option>", {
+            value: vehiculo.id,
+            text: nombre,
+          }).attr({
+            "data-aliado": vehiculo.Aliados,
+            "data-propietario": vehiculo.Propietario || "",
+          });
 
           if (vehiculo.Aliados == 1) {
             externosGroup.append(option);
