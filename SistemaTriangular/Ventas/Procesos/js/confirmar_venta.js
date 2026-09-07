@@ -1,8 +1,25 @@
+var enviandoVenta = false;
+
 document
   .getElementById("VentaSimple")
   .addEventListener("submit", function (event) {
     event.preventDefault();
     console.log("Submit prevenido y datos siendo enviados por AJAX");
+
+    // Anti doble-envío: si ya hay una confirmación en curso, ignorar el click.
+    // Sin esto, un doble clic (o clicks mientras el server tarda con webhooks/
+    // mail) disparaba varios POST y se duplicaba el servicio entero.
+    if (enviandoVenta) {
+      console.warn("Confirmación ya en curso, se ignora el reenvío.");
+      return;
+    }
+    enviandoVenta = true;
+    var $btnConfirmar = $(this).find("[type=submit]");
+    $btnConfirmar.prop("disabled", true);
+    var _liberarEnvio = function () {
+      enviandoVenta = false;
+      $btnConfirmar.prop("disabled", false);
+    };
 
     // Abrimos la pestaña de la GUÍA DE CARGA ahora mismo, dentro del gesto del
     // usuario (el submit), para que el navegador no la bloquee como popup.
@@ -110,6 +127,7 @@ document
             // motivo. Con "== 1" esos casos no matcheaban ni acá ni en el "if"
             // de arriba: no pasaba nada, sin avisar por qué no se confirmó.
             cerrarGuia();
+            _liberarEnvio();
             var motivo =
               jsonData.message ||
               (typeof jsonData.error === "string" ? jsonData.error : "No se pudo confirmar la venta.");
@@ -117,15 +135,18 @@ document
             $("#warning-redespacho-text").html(motivo);
           } else {
             cerrarGuia();
+            _liberarEnvio();
             console.warn("Respuesta inesperada de ConfirmarVenta.php:", jsonData);
           }
         } catch (e) {
           cerrarGuia();
+          _liberarEnvio();
           console.error("Error al procesar la respuesta:", e, "Respuesta recibida:", jsonData);
         }
       },
       error: function (xhr) {
         cerrarGuia();
+        _liberarEnvio();
         console.error("Error de red/parseo en ConfirmarVenta.php:", xhr.status, xhr.responseText);
         $("#warning-redespacho-modal").modal("show");
         $("#warning-redespacho-text").html(

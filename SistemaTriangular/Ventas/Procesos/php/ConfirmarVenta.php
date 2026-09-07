@@ -83,6 +83,23 @@ $ClienteOrigen = $_POST['cliente_origen'] ?? null;
 $ClienteDestino = $_POST['cliente_destino'] ?? null;
 $Seguimiento = $_POST['codigo_seguimiento'] ?? null;
 
+// Idempotencia. El "consumo" de la venta (Ventas.terminado=1) recién ocurre al
+// final del script, después de webhooks y mail, así que si el operador vuelve a
+// enviar (doble clic, o reintento porque la primera tardó) el segundo request
+// todavía ve la venta sin terminar y duplicaba TODO: TransClientes + HojaDeRuta
+// + Ctasctes + Seguimiento. Se corta acá: si ya hay un TransClientes vivo con
+// este CodigoSeguimiento, se responde como éxito (para que el front abra la
+// guía igual) sin volver a insertar nada.
+if ($Seguimiento !== null && $Seguimiento !== '') {
+    $segEsc = $mysqli->real_escape_string($Seguimiento);
+    $yaConf = $mysqli->query("SELECT id FROM TransClientes WHERE CodigoSeguimiento='$segEsc' AND Eliminado=0 LIMIT 1");
+    if ($yaConf && $yaConf->num_rows > 0) {
+        $GLOBALS['cv_ok'] = true;
+        echo json_encode(['success' => 1, 'message' => 'Este envío ya estaba confirmado', 'data' => $Seguimiento, 'duplicado' => 1]);
+        exit();
+    }
+}
+
 // Función para ejecutar una consulta y devolver un array asociativo
 function fetch_single_row($mysqli, $query)
 {
