@@ -1,7 +1,49 @@
 <?php
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
+// La respuesta SIEMPRE tiene que ser JSON limpio. Antes, con display_errors=1,
+// cualquier warning/notice (p.ej. un $_POST['...'] o $row['...'] inexistente)
+// se imprimía dentro del body y rompía el JSON.parse del front -> el operador
+// veía "error de servidor" aunque la venta se hubiera creado, y volvía a
+// intentar. Ahora los errores se loguean y nunca salen por pantalla.
+ini_set('display_errors', '0');
+ini_set('display_startup_errors', '0');
+ini_set('log_errors', '1');
 error_reporting(E_ALL);
+
+header('Content-Type: application/json; charset=utf-8');
+
+$GLOBALS['cv_ok'] = false;
+
+function cv_error_json(string $mensajeUsuario, string $detalleLog = ''): void
+{
+    if ($detalleLog !== '') {
+        error_log('ConfirmarVenta: ' . $detalleLog . ' | POST=' . json_encode($_POST));
+    }
+    if (!headers_sent()) {
+        http_response_code(200);
+    }
+    echo json_encode(['error' => $mensajeUsuario]);
+    $GLOBALS['cv_ok'] = true; // ya respondimos, que el shutdown no pise
+    exit;
+}
+
+set_exception_handler(function (Throwable $e) {
+    cv_error_json(
+        'No se pudo confirmar la venta (error interno). Avisá a sistemas.',
+        'EXCEPCION ' . $e->getMessage() . ' @ ' . $e->getFile() . ':' . $e->getLine()
+    );
+});
+
+register_shutdown_function(function () {
+    if (!empty($GLOBALS['cv_ok'])) return;
+    $e = error_get_last();
+    if ($e && in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        error_log('ConfirmarVenta: FATAL ' . $e['message'] . ' @ ' . $e['file'] . ':' . $e['line'] . ' | POST=' . json_encode($_POST));
+        if (!headers_sent()) {
+            http_response_code(200);
+        }
+        echo json_encode(['error' => 'No se pudo confirmar la venta (error interno). Avisá a sistemas.']);
+    }
+});
 
 include_once "../../../Conexion/Conexioni.php";
 mysqli_set_charset($mysqli, "utf8");
@@ -60,6 +102,10 @@ if (empty($row) || empty($rowB)) {
 
 // Verificar existencia de ventas sin terminar
 $Vacio = $mysqli->query("SELECT * FROM Ventas WHERE idCliente='$ClienteOrigen' AND fechaPedido='$FechaActual' AND terminado=0 AND Usuario='$Usuario'");
+
+if (!$Vacio) {
+    cv_error_json('No se pudo confirmar la venta (error de base). Avisá a sistemas.', 'query Ventas falló: ' . $mysqli->error);
+}
 
 if ($Vacio->num_rows == 0) {
     echo json_encode(['error' => 1, 'message' => 'No hay servicios cargados para la venta que intenta confirmar. Recuerde agregrar la venta haciendo click en botón subir.']);
@@ -139,8 +185,7 @@ $Largo = 0;
 $Peso = 0;
 
 if (!$stmt) {
-    // Error en la preparación de la consulta
-    die("Error en la preparación de la consulta: " . $mysqli->error);
+    cv_error_json('No se pudo confirmar la venta (error al preparar el registro). Avisá a sistemas.', 'prepare TransClientes falló: ' . $mysqli->error);
 }
 
 // Enlace de parámetros
@@ -199,14 +244,12 @@ if (!$stmt->bind_param(
     $idClienteOrigen,
     $horarioEntregaSolicitado
 )) {
-    // Error en el enlace de parámetros
-    die("Error en bind_param: " . $stmt->error);
+    cv_error_json('No se pudo confirmar la venta (error al armar el registro). Avisá a sistemas.', 'bind_param TransClientes falló: ' . $stmt->error);
 }
 
 // Ejecutar la consulta
 if (!$stmt->execute()) {
-    // Error en la ejecución de la consulta
-    die("Error en la ejecución: " . $stmt->error);
+    cv_error_json('No se pudo confirmar la venta (no se pudo guardar el registro). Avisá a sistemas.', 'execute TransClientes falló: ' . $stmt->error);
 }
 
 // Cerrar la declaración
@@ -241,6 +284,9 @@ $HojaDeRutaQuery = "INSERT IGNORE INTO HojaDeRuta (Fecha, Recorrido, Localizacio
 
 // Preparación y asociación de parámetros
 $stmt2 = $mysqli->prepare($HojaDeRutaQuery);
+if (!$stmt2) {
+    cv_error_json('No se pudo confirmar la venta (error al preparar la hoja de ruta). Avisá a sistemas.', 'prepare HojaDeRuta falló: ' . $mysqli->error);
+}
 $stmt2->bind_param(
     "ssssssssssssssiiii",
     $FechaActual,
@@ -265,8 +311,7 @@ $stmt2->bind_param(
 
 // Ejecutar y manejar errores
 if (!$stmt2->execute()) {
-    echo json_encode(['error' => 'Error al insertar en HojaDeRuta: ' . $stmt2->error]);
-    exit();
+    cv_error_json('No se pudo confirmar la venta (no se pudo guardar la hoja de ruta). Avisá a sistemas.', 'execute HojaDeRuta falló: ' . $stmt2->error);
 }
 
 // INGRESA MOVIMIENTO EN TABLA CTA CTE
@@ -316,10 +361,10 @@ $sqlSeg = "INSERT INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento
     VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$Seguimiento}','{$Observaciones}','{$Entregado}','{$Estado}','{$Retirado}','{$idTransClientes}','{$_POST['recorrido_t']}')";
 $mysqli->query($sqlSeg);
 
-// Comprobamos si hay una orden abierta  
+// Comprobamos si hay una orden abierta
 $sql = $mysqli->query("SELECT * FROM Logistica WHERE Estado='Cargada' AND Recorrido='$recorrido' AND Eliminado=0");
 
-if (($sql->num_rows) <> 0) {
+if ($sql && ($sql->num_rows) <> 0) {
 
     $Estado = 'En Transito';
 
@@ -493,6 +538,9 @@ unset($_SESSION['NumeroPedido']);
 unset($_SESSION['NCliente']);
 unset($_SESSION['NClienteDestino_t']);
 
-// header("location:/SistemaTriangular/Ventas/Ventas_e.php?UltimoPaso=Si&Repo=$Seguimiento");		
+// header("location:/SistemaTriangular/Ventas/Ventas_e.php?UltimoPaso=Si&Repo=$Seguimiento");
 
+// La venta ya quedó registrada: marcamos la respuesta como enviada para que el
+// shutdown handler no pise el JSON aunque falle algo del bloque de mail/webhooks.
+$GLOBALS['cv_ok'] = true;
 echo json_encode(['success' => 1, 'message' => 'Registro exitoso', 'data' => $Seguimiento]);

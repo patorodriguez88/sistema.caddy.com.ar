@@ -74,22 +74,36 @@ function cargarRepartidores() {
   });
 }
 
-function iconoRepartidor(color, sinSenal, pausado) {
+function iconoRepartidor(color, sinSenal, pausado, noArranco) {
   var hex = "#" + normalizarColorRecorrido(color);
+  var stroke = "#ffffff";
+  if (pausado) stroke = "#fa5c7c";
+  else if (noArranco) stroke = "#f7b84b"; // ámbar: cargado pero no inició
   return {
     path: google.maps.SymbolPath.CIRCLE,
     scale: pausado ? 11 : 9,
     fillColor: sinSenal ? "#98a6ad" : hex,
-    fillOpacity: sinSenal ? 0.5 : 1,
-    strokeColor: pausado ? "#fa5c7c" : "#ffffff",
-    strokeWeight: pausado ? 4 : 2,
+    fillOpacity: sinSenal ? 0.5 : noArranco ? 0.65 : 1,
+    strokeColor: stroke,
+    strokeWeight: pausado || noArranco ? 4 : 2,
   };
+}
+
+// "2026-09-07 09:44:35" -> "09:44"
+function horaCorta(dtStr) {
+  if (!dtStr) return "";
+  var m = String(dtStr).match(/(\d{2}):(\d{2})/);
+  return m ? m[1] + ":" + m[2] : "";
 }
 
 function fichaRepartidor(r) {
   var mins = minutosDesde(r.timestamp);
   var pausado = !!r.pausaMotivo;
-  var pend = Math.max(0, (r.totalPaquetes || 0) - (r.entregados || 0));
+  var noEnt = r.noEntregados || 0;
+  var pend = Math.max(
+    0,
+    (r.totalPaquetes || 0) - (r.entregados || 0) - noEnt,
+  );
   var motivoTxt = pausado
     ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo
     : "";
@@ -111,11 +125,19 @@ function fichaRepartidor(r) {
     '<div style="color:#5f6368;">Orden #' +
     (r.orden || "-") +
     "</div>" +
+    (r.arranco
+      ? '<div style="color:#5f6368;">▶ Inició ' + horaCorta(r.horaSalida) + "</div>"
+      : '<div style="color:#f7b84b;font-weight:700;">● No inició el recorrido</div>') +
     '<div style="margin-top:4px;">' +
     '<span style="color:#0acf97;font-weight:700;">' +
     (r.entregados || 0) +
     " entregados</span> &middot; " +
-    '<span style="color:#fa5c7c;font-weight:700;">' +
+    (noEnt > 0
+      ? '<span style="color:#fa5c7c;font-weight:700;">' +
+        noEnt +
+        " no entregados</span> &middot; "
+      : "") +
+    '<span style="color:#98a6ad;font-weight:700;">' +
     pend +
     " pendientes</span>" +
     ' <span style="color:#98a6ad;">/ ' +
@@ -153,7 +175,7 @@ function pintarMapa(repartidores) {
     var pos = { lat: r.lat, lng: r.lng };
     bounds.extend(pos);
 
-    var icono = iconoRepartidor(r.color, sinSenal, pausado);
+    var icono = iconoRepartidor(r.color, sinSenal, pausado, !r.arranco);
 
     if (marcadoresRepartidores[r.usuario]) {
       marcadoresRepartidores[r.usuario].setPosition(pos);
@@ -207,12 +229,19 @@ function itemLista(r) {
   var motivoTxt = pausado
     ? MOTIVOS_PAUSA_TEXTO[r.pausaMotivo] || r.pausaMotivo
     : "";
-  var pend = Math.max(0, (r.totalPaquetes || 0) - (r.entregados || 0));
+  var noEnt = r.noEntregados || 0;
+  var pend = Math.max(
+    0,
+    (r.totalPaquetes || 0) - (r.entregados || 0) - noEnt,
+  );
   var colorHex = "#" + normalizarColorRecorrido(r.color);
 
   var badgeClase = "bg-success";
   var badgeTxt = textoHaceCuanto(mins);
-  if (r.timestamp == null) {
+  if (!r.arranco) {
+    badgeClase = "bg-warning text-dark";
+    badgeTxt = "Sin arrancar";
+  } else if (r.timestamp == null) {
     badgeClase = "bg-secondary";
     badgeTxt = "Sin ubicación";
   } else if (pausado) {
@@ -238,13 +267,21 @@ function itemLista(r) {
     "</div>" +
     '<div class="text-muted" style="font-size:12px;">Orden #' +
     (r.orden || "-") +
+    (r.arranco
+      ? " &middot; inició " + horaCorta(r.horaSalida)
+      : "") +
     "</div>" +
     '<div style="font-size:12px;">' +
     '<span class="text-success fw-semibold">' +
     (r.entregados || 0) +
     " entregados</span>" +
-    (pend > 0
+    (noEnt > 0
       ? ' &middot; <span class="text-danger fw-semibold">' +
+        noEnt +
+        " no entregados</span>"
+      : "") +
+    (pend > 0
+      ? ' &middot; <span class="text-muted fw-semibold">' +
         pend +
         " pendientes</span>"
       : "") +
@@ -280,4 +317,174 @@ function pintarLista(repartidores) {
     html += itemLista(r);
   });
   $lista.html(html);
+}
+
+// ===========================================================================
+// CIERRE DE TURNO
+// Arma un resumen de la jornada en texto plano para pegar en un grupo de
+// WhatsApp: por recorrido entregados / no entregados / pendientes, qué
+// vehículos quedan sin finalizar (en ruta, pausados o sin arrancar) y los
+// motivos de no entrega del día. Datos: php/cierre_turno.php.
+// ===========================================================================
+function lineaSinFinalizar(r) {
+  return "▪ " + r.recorrido + " " + r.chofer;
+}
+
+function construirTextoCierre(data) {
+  var L = [];
+  L.push("*CIERRE DE TURNO*");
+  L.push("📅 " + data.fecha + "   🕒 " + data.hora);
+  L.push("👤 Operador: " + data.operador);
+  L.push("");
+
+  var rs = data.recorridos || [];
+  var tE = 0,
+    tNE = 0,
+    tP = 0,
+    tT = 0;
+  rs.forEach(function (r) {
+    tE += r.entregados;
+    tNE += r.noEntregados;
+    tP += r.pendientes;
+    tT += r.total;
+  });
+
+  L.push("*RESUMEN POR RECORRIDO*");
+  if (rs.length === 0) {
+    L.push("— Ninguna orden cargada hoy —");
+  } else {
+    rs.forEach(function (r) {
+      L.push(
+        "▪ " +
+          r.recorrido +
+          " — " +
+          r.chofer +
+          (r.arranco ? "  (salió " + r.horaSalida + ")" : "  (sin arrancar)"),
+      );
+      L.push(
+        "   Entregados: " +
+          r.entregados +
+          " | No entregados: " +
+          r.noEntregados +
+          " | Pendientes: " +
+          r.pendientes +
+          "  (de " +
+          r.total +
+          ")",
+      );
+    });
+    L.push("");
+    L.push(
+      "TOTAL: " +
+        tE +
+        " entregados · " +
+        tNE +
+        " no entregados · " +
+        tP +
+        " pendientes  (de " +
+        tT +
+        ")",
+    );
+  }
+
+  var sinFin = rs.filter(function (r) {
+    return r.estado !== "terminado";
+  });
+  L.push("");
+  L.push("⚠️ *VEHÍCULOS SIN FINALIZAR*");
+  if (sinFin.length === 0) {
+    L.push("— Todos los recorridos finalizados —");
+  } else {
+    sinFin.forEach(function (r) {
+      L.push(lineaSinFinalizar(r));
+    });
+  }
+
+  var conMotivos = rs.filter(function (r) {
+    return r.motivos && r.motivos.length > 0;
+  });
+  L.push("");
+  L.push("📝 *OBSERVACIONES (no entregas)*");
+  if (conMotivos.length === 0) {
+    L.push("— Sin no entregas —");
+  } else {
+    conMotivos.forEach(function (r) {
+      L.push("▪ " + r.recorrido + " " + r.chofer);
+      r.motivos.forEach(function (m) {
+        L.push(
+          "   [" +
+            (m.origen || "-") +
+            "] [" +
+            m.cs +
+            "]->" +
+            (m.cliente ? m.cliente + ": " : "") +
+            (m.motivo || "(sin detalle)"),
+        );
+      });
+    });
+  }
+
+  return L.join("\n");
+}
+
+var modalCierreTurno = null;
+
+$(document).on("click", "#btn_cierre_turno", function () {
+  if (!modalCierreTurno) {
+    modalCierreTurno = new bootstrap.Modal(
+      document.getElementById("modal_cierre_turno"),
+    );
+  }
+  $("#cierre_texto").text("Generando...");
+  modalCierreTurno.show();
+
+  $.ajax({
+    url: "php/cierre_turno.php",
+    type: "GET",
+    dataType: "json",
+    success: function (data) {
+      if (!data || data.success !== 1) {
+        $("#cierre_texto").text("No se pudo generar el cierre.");
+        return;
+      }
+      $("#cierre_texto").text(construirTextoCierre(data));
+    },
+    error: function () {
+      $("#cierre_texto").text("Error de red al generar el cierre.");
+    },
+  });
+});
+
+$(document).on("click", "#btn_copiar_cierre", function () {
+  var texto = $("#cierre_texto").text();
+  var $btn = $(this);
+  var ok = function () {
+    $btn.html('<i class="mdi mdi-check me-1"></i>Copiado');
+    setTimeout(function () {
+      $btn.html('<i class="mdi mdi-content-copy me-1"></i>Copiar');
+    }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(texto).then(ok, function () {
+      copiarFallback(texto, ok);
+    });
+  } else {
+    copiarFallback(texto, ok);
+  }
+});
+
+function copiarFallback(texto, ok) {
+  var ta = document.createElement("textarea");
+  ta.value = texto;
+  ta.style.position = "fixed";
+  ta.style.opacity = "0";
+  document.body.appendChild(ta);
+  ta.select();
+  try {
+    document.execCommand("copy");
+    ok();
+  } catch (e) {
+    /* no-op */
+  }
+  document.body.removeChild(ta);
 }
