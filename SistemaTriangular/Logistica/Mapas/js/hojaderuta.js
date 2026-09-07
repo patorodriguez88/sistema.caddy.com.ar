@@ -344,6 +344,16 @@ function decodePolyline(encoded) {
 // vuelve a dibujar cada vez que se abre un recorrido).
 var hdrRoutePolyline = null;
 
+// Traza "de visualizacion": se recalcula EN VIVO con Google Directions al
+// abrir el recorrido, a partir del orden actual de las paradas
+// (HojaDeRuta.Posicion). Es solo para mostrar: NO escribe nada, NO toca
+// Posicion ni la trazabilidad (Recorridos.Polyline / UltimoOrden*). El
+// Polyline guardado se dejo de usar para pintar porque queda viejo apenas
+// cambian las paradas del recorrido (mismo criterio que el mapa de
+// reparto.caddy.com.ar, que siempre recalcula en vivo).
+var hdrRouteRenderer = null;
+var hdrRouteDirService = null;
+
 // Traza "en progreso" de Ordenar Manual: se va armando tramo por tramo (por
 // calles reales, via Routes API - no linea recta) a medida que el operador
 // clickea cada parada. Se resetea al entrar a modo Ordenar Manual, arranca
@@ -556,25 +566,79 @@ function initMap(c) {
         return crearMarkerPunto(punto.i, pos);
       });
 
-      // Traza real de la ruta (si el recorrido tiene un Polyline guardado -
-      // desde el Planificador, o desde "Ordenar segun Reparto") - antes el
-      // mapa solo mostraba los puntos sueltos, sin la traza real entre ellos.
+      // Traza de la ruta: se recalcula EN VIVO (Google Directions, siguiendo
+      // calles) con el orden actual de las paradas. NO usa el Polyline
+      // guardado (queda viejo apenas cambia una parada). Es solo visual: no
+      // altera Posicion ni la trazabilidad.
       if (hdrRoutePolyline) {
         hdrRoutePolyline.setMap(null);
         hdrRoutePolyline = null;
       }
-      if (objeto_json.Polyline) {
-        var path = decodePolyline(objeto_json.Polyline);
-        if (path.length > 0) {
-          hdrRoutePolyline = new google.maps.Polyline({
-            path: path,
-            geodesic: true,
-            strokeColor: "#E24F30",
-            strokeOpacity: 1.0,
-            strokeWeight: 4,
-          });
-          hdrRoutePolyline.setMap(map);
+      if (hdrRouteRenderer) {
+        hdrRouteRenderer.setMap(null);
+        hdrRouteRenderer = null;
+      }
+
+      // Solo las paradas ya ordenadas (Posicion > 0), en orden. Las que
+      // todavia no entraron al plan (Posicion 0) se ven como pin pero no
+      // se enhebran en la linea, para no dibujar una ruta enganosa. Si el
+      // recorrido no se ordeno nunca, no se dibuja traza (igual que antes).
+      var paradasRuta = objeto_json.data
+        .map(function (d) {
+          var ll = String(d.coordenadas || "").split(",");
+          return { lat: Number(ll[0]), lng: Number(ll[1]), pos: Number(d.Posicion) };
+        })
+        .filter(function (p) {
+          return (
+            isFinite(p.lat) &&
+            isFinite(p.lng) &&
+            !(p.lat === 0 && p.lng === 0) &&
+            isFinite(p.pos) &&
+            p.pos > 0
+          );
+        })
+        .sort(function (a, b) {
+          return a.pos - b.pos;
+        });
+
+      // Limite Directions API: origen + destino + hasta 23 intermedios.
+      if (paradasRuta.length > 1 && paradasRuta.length <= 25) {
+        if (!hdrRouteDirService) {
+          hdrRouteDirService = new google.maps.DirectionsService();
         }
+        hdrRouteRenderer = new google.maps.DirectionsRenderer({
+          map: map,
+          suppressMarkers: true, // los markers los pone crearMarkerPunto()
+          preserveViewport: true, // el encuadre lo maneja fitBounds() de abajo
+          polylineOptions: { strokeColor: "#E24F30", strokeOpacity: 1.0, strokeWeight: 4 },
+        });
+        hdrRouteDirService.route(
+          {
+            origin: { lat: paradasRuta[0].lat, lng: paradasRuta[0].lng },
+            destination: {
+              lat: paradasRuta[paradasRuta.length - 1].lat,
+              lng: paradasRuta[paradasRuta.length - 1].lng,
+            },
+            waypoints: paradasRuta.slice(1, -1).map(function (p) {
+              return { location: { lat: p.lat, lng: p.lng }, stopover: true };
+            }),
+            optimizeWaypoints: false, // respetar el orden planificado (Posicion)
+            travelMode: google.maps.TravelMode.DRIVING,
+          },
+          function (result, status) {
+            if (status === "OK" && hdrRouteRenderer) {
+              hdrRouteRenderer.setDirections(result);
+            } else {
+              console.warn("Hoja de Ruta: Directions no devolvio ruta:", status);
+            }
+          },
+        );
+      } else if (paradasRuta.length > 25) {
+        console.warn(
+          "Hoja de Ruta: " +
+            paradasRuta.length +
+            " paradas, supera el limite de Directions - se muestran los pines sin traza.",
+        );
       }
 
       // El mapa arrancaba siempre centrado en el mismo punto fijo con zoom
