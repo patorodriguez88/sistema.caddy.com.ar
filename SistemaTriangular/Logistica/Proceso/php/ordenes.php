@@ -589,11 +589,13 @@ if (isset($_POST['BuscoEmpleados'])) {
 if (isset($_POST['BuscoVehiculos'])) {
 
   $vehiculos = [];
-  $sql = "SELECT v.*, e.NombreCompleto AS Propietario
+  $sql = "SELECT v.*,
+                 (SELECT e.NombreCompleto
+                    FROM Empleados e
+                   WHERE e.Usuario = v.id_usuario
+                     AND e.Aliados = 1
+                   LIMIT 1) AS Propietario
           FROM Vehiculos v
-          LEFT JOIN Empleados e
-            ON e.Usuario = v.id_usuario
-           AND e.Aliados = 1
           WHERE v.VehiculoOperativo = 1";
   $res = $mysqli->query($sql);
 

@@ -664,18 +664,19 @@ $("#agregar_orden").click(function () {
           let marca = capitalizar(vehiculo.Marca);
           let modelo = capitalizar(vehiculo.Modelo);
           let nombre = `${marca} ${modelo} ${vehiculo.Dominio}`;
-          if (vehiculo.Aliados == 1 && vehiculo.Propietario) {
+          const esAliado = Number(vehiculo.Aliados) === 1;
+          if (esAliado && vehiculo.Propietario) {
             nombre += ` - Propietario: ${capitalizar(vehiculo.Propietario)}`;
           }
           let option = $("<option>", {
             value: vehiculo.id,
             text: nombre,
           }).attr({
-            "data-aliado": vehiculo.Aliados,
+            "data-aliado": esAliado ? 1 : 0,
             "data-propietario": vehiculo.Propietario || "",
           });
 
-          if (vehiculo.Aliados == 1) {
+          if (esAliado) {
             externosGroup.append(option);
           } else {
             caddyGroup.append(option);
