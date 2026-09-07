@@ -6,6 +6,54 @@ $("#ordenes").on("click", ".btn-cargar-orden", function (e) {
   abrirModalCargar(no);
 });
 
+// CONTROL DE ESCANEO EN WAREHOUSE
+// Prende/apaga Logistica.OmitirControlEscaneo de la orden. Con 1, el recorrido
+// puede arrancar en la app de reparto sin escanear los bultos en Warehouse.
+$("#ordenes").on("click", ".btn-toggle-escaneo", function (e) {
+  e.preventDefault();
+  const no = $(this).data("no");
+  const valor = String($(this).data("valor")) === "1" ? 1 : 0;
+
+  const texto = valor
+    ? "¿Permitir que la orden #" +
+      no +
+      " ARRANQUE SIN escanear los bultos en Warehouse?"
+    : "¿Volver a EXIGIR escaneo en Warehouse para la orden #" + no + "?";
+
+  Swal.fire({
+    icon: "warning",
+    title: "Control de escaneo",
+    text: texto,
+    showCancelButton: true,
+    confirmButtonText: valor ? "Sí, permitir" : "Sí, exigir",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+  }).then((r) => {
+    if (!r.isConfirmed) return;
+    $.ajax({
+      url: "Proceso/php/ordenes.php",
+      type: "POST",
+      dataType: "json",
+      data: { ToggleOmitirEscaneo: 1, NumerodeOrden: no, valor: valor },
+      success: function (json) {
+        if (Number(json.success) === 1) {
+          toast("success", "Listo", json.message || "OK");
+          $("#ordenes").DataTable().ajax.reload(null, false);
+        } else {
+          Swal.fire(
+            "Error",
+            json.message || "No se pudo cambiar el control de escaneo.",
+            "error",
+          );
+        }
+      },
+      error: function () {
+        Swal.fire("Error", "Falló la comunicación con el servidor.", "error");
+      },
+    });
+  });
+});
+
 // Si llamás desde un onclick en el ícono, pasá también "this": abrirModalCargar(row.NumerodeOrden, this)
 // O mejor: usá delegación y pasá el elemento en el handler.
 async function abrirModalCargar(no, el) {
@@ -768,6 +816,17 @@ function init_datatable(fechas = "") {
                       <i class="mdi mdi-18px mdi-file-chart-outline"></i>
                     </a>`;
           } else {
+            // Control de escaneo en Warehouse (override para la app de reparto)
+            var omitir = Number(row.OmitirControlEscaneo) === 1;
+            var escChip = omitir
+              ? `<a href="#" class="btn-toggle-escaneo d-inline-block mt-1" data-no="${row.NumerodeOrden}" data-valor="0"
+                    title="Habilitado por ${row.OmitirControlEscaneo_Por || "-"}${row.OmitirControlEscaneo_Fecha ? " el " + row.OmitirControlEscaneo_Fecha : ""}. Click para volver a exigir escaneo.">
+                   <span class="badge bg-danger"><i class="mdi mdi-barcode-off"></i> ESCANEO OMITIDO</span>
+                 </a>`
+              : `<a href="#" class="btn-toggle-escaneo d-inline-block mt-1" data-no="${row.NumerodeOrden}" data-valor="1"
+                    title="Click para permitir que este recorrido arranque sin escanear en Warehouse.">
+                   <span class="badge bg-light text-dark border"><i class="mdi mdi-barcode-scan"></i> ESCANEO OBLIGATORIO</span>
+                 </a>`;
             return `
               <a target="_blank" href="Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
                 <i class="mdi mdi-18px mdi-file-chart-outline ms-2"></i>
@@ -778,6 +837,7 @@ function init_datatable(fechas = "") {
               <a href="#" onclick="cerrarOrden('${row.NumerodeOrden}'); return false;" title="Cerrar Orden">
                 <i class="mdi mdi-18px mdi-lock-check ms-2 text-danger"></i>
               </a>
+              <br>${escChip}
             `;
           }
         },

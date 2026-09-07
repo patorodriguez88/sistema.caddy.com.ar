@@ -4,6 +4,18 @@ ini_set('display_errors', 1);
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
+/** ¿La tabla tiene esa columna? (cacheado por request) */
+function ordColExiste(mysqli $mysqli, string $tabla, string $col): bool
+{
+  static $cache = [];
+  $key = $tabla . '.' . $col;
+  if (isset($cache[$key])) return $cache[$key];
+  $t = str_replace('`', '', $tabla);
+  $c = $mysqli->real_escape_string($col);
+  $res = $mysqli->query("SHOW COLUMNS FROM `{$t}` LIKE '{$c}'");
+  return $cache[$key] = ($res && $res->num_rows > 0);
+}
+
 //ESTO SE EJECUTAL AL ABRIR EL MODAL PARA CARGAR LA ORDEN
 
 if (isset($_POST['MonetizarRecorrido'])) {
@@ -382,6 +394,17 @@ function handleOrdenCargar(mysqli $mysqli)
 
 if (isset($_POST['Logistica'])) {
 
+  // Override del control de escaneo en Warehouse (lo lee la app de reparto en
+  // control_escaneo.php::overrideEscaneo). Las columnas pueden no existir en
+  // bases sin migrar, así que se arma el SELECT según lo que haya.
+  if (ordColExiste($mysqli, 'Logistica', 'OmitirControlEscaneo')) {
+    $selEscaneo = ordColExiste($mysqli, 'Logistica', 'OmitirControlEscaneo_Por')
+      ? "l.OmitirControlEscaneo, l.OmitirControlEscaneo_Por, l.OmitirControlEscaneo_Fecha,"
+      : "l.OmitirControlEscaneo, NULL AS OmitirControlEscaneo_Por, NULL AS OmitirControlEscaneo_Fecha,";
+  } else {
+    $selEscaneo = "0 AS OmitirControlEscaneo, NULL AS OmitirControlEscaneo_Por, NULL AS OmitirControlEscaneo_Fecha,";
+  }
+
   $sql = "SELECT r.Nombre,
                  l.NumerodeOrden,
                  l.Fecha,
@@ -397,6 +420,7 @@ if (isset($_POST['Logistica'])) {
                  l.Facturado,
                  l.TotalFacturado,
                  l.TotalRecorrido,
+                 {$selEscaneo}
                  v.Marca,
                  v.Modelo,
                  v.Dominio
@@ -432,6 +456,66 @@ if (isset($_POST['Logistica'])) {
   }
 
   echo json_encode(array('data' => $rows));
+}
+
+// TOGGLE del control de escaneo en Warehouse para una orden.
+// Prende/apaga Logistica.OmitirControlEscaneo: 1 => ese recorrido puede
+// arrancar en la app de reparto sin escanear los bultos (escáner roto,
+// paquetes sin etiqueta, etc.). La app lo lee en overrideEscaneo() por la
+// orden en Estado='Cargada' del chofer; cada bypass del chofer queda en
+// SistemaReparto/logs/control_escaneo_bypass.log.
+if (isset($_POST['ToggleOmitirEscaneo'])) {
+
+  header('Content-Type: application/json; charset=utf-8');
+
+  $NO    = trim($_POST['NumerodeOrden'] ?? '');
+  $Valor = (($_POST['valor'] ?? '0') === '1') ? 1 : 0;
+  $Oper  = $_SESSION['Usuario'] ?? 'sistema';
+
+  if ($NO === '') {
+    echo json_encode(['success' => 0, 'message' => 'Falta el número de orden.']);
+    exit;
+  }
+
+  if (!ordColExiste($mysqli, 'Logistica', 'OmitirControlEscaneo')) {
+    echo json_encode(['success' => 0, 'message' => 'Falta correr la migración OmitirControlEscaneo en esta base.']);
+    exit;
+  }
+
+  $sets   = ["OmitirControlEscaneo = ?"];
+  $tipos  = "i";
+  $params = [$Valor];
+
+  if (ordColExiste($mysqli, 'Logistica', 'OmitirControlEscaneo_Por')) {
+    $sets[]   = "OmitirControlEscaneo_Por = ?";
+    $sets[]   = "OmitirControlEscaneo_Fecha = NOW()";
+    $tipos   .= "s";
+    $params[] = $Oper;
+  }
+
+  $sql = "UPDATE Logistica SET " . implode(', ', $sets) . " WHERE NumerodeOrden = ? AND Eliminado = 0 LIMIT 1";
+  $tipos   .= "s";
+  $params[] = $NO;
+
+  if (!($stmt = $mysqli->prepare($sql))) {
+    echo json_encode(['success' => 0, 'message' => 'No se pudo preparar el cambio.']);
+    exit;
+  }
+  $stmt->bind_param($tipos, ...$params);
+  $ok = $stmt->execute();
+  $stmt->close();
+
+  echo json_encode([
+    'success' => $ok ? 1 : 0,
+    'valor'   => $Valor,
+    'por'     => $Oper,
+    'message' => $ok
+      ? ($Valor
+        ? 'La orden #' . $NO . ' puede arrancar sin escanear en Warehouse.'
+        : 'Escaneo en Warehouse vuelve a ser obligatorio para la orden #' . $NO . '.')
+      : 'No se pudo guardar el cambio.',
+  ]);
+  exit;
 }
 
 if (isset($_POST['BuscoRecorridos'])) {
