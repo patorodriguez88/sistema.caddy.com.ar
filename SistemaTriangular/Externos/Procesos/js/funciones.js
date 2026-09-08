@@ -243,6 +243,17 @@ function desempeno(a, b) {
   $("#desempeno_header").html("Listado de Ordenes de " + a);
   $("#id_desempeno").val(b);
   $("#name_desempeno").val(a);
+
+  // Prefill: del 1ro del mes a hoy (rango tipico de liquidacion), solo si estan vacios.
+  const hoy = new Date();
+  const iso = (d) =>
+    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if (!$("#desempeno_desde").val()) {
+    $("#desempeno_desde").val(iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1)));
+  }
+  if (!$("#desempeno_hasta").val()) {
+    $("#desempeno_hasta").val(iso(hoy));
+  }
 }
 
 //BOTON PARA ABRIR EL MODAL DE AGREGAR EXTERNOS
@@ -545,19 +556,22 @@ $("#crear_externo").click(function () {
 
 $("#desempeno_button").click(function () {
   $("#desempeno_tabla").css("display", "table");
-  var datatable = $("#desempeno_tabla").DataTable();
-  datatable.destroy();
+  if ($.fn.DataTable.isDataTable("#desempeno_tabla")) {
+    $("#desempeno_tabla").DataTable().clear().destroy();
+  }
 
-  var desde = $("#desempeno_desde").val();
-  var hasta = $("#desempeno_hasta").val();
-  var desde_ = desde.split("-");
-  var Desde = desde_[2] + "-" + desde_[1] + "-" + desde_[0];
-  var hasta_ = hasta.split("-");
-  var Hasta = hasta_[2] + "-" + hasta_[1] + "-" + hasta_[0];
+  // inputs type=date -> ya vienen en YYYY-MM-DD (formato SQL)
+  var Desde = $("#desempeno_desde").val();
+  var Hasta = $("#desempeno_hasta").val();
   var id = $("#id_desempeno").val();
+  if (!Desde || !Hasta) {
+    Swal.fire({ icon: "warning", title: "Elegí las dos fechas." });
+    return;
+  }
 
   var datatable = $("#desempeno_tabla").DataTable({
     paging: true,
+    autoWidth: false,
     searching: true,
     ajax: {
       url: "Procesos/php/funciones.php",
@@ -843,7 +857,23 @@ function formatearFechaDMY(fechaStr) {
   if (partes.length !== 3) return fechaStr;
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
+// Wrapper: (re)arma el informe recien cuando el modal esta visible. Dentro de un
+// modal display:none DataTables no puede calcular anchos y tira error la 1ra vez
+// (habia que abrir/cerrar y volver a abrir). Con esto anda de una.
 function report(a, b, c, d, f) {
+  const $m = $("#full-width-modal");
+  $m.off("shown.bs.modal.rep").one("shown.bs.modal.rep", function () {
+    _reportBody(a, b, c, d, f);
+  });
+  if ($m.hasClass("show")) {
+    $m.off("shown.bs.modal.rep");
+    _reportBody(a, b, c, d, f);
+  } else {
+    $m.modal("show");
+  }
+}
+
+function _reportBody(a, b, c, d, f) {
   const fechaFormateada = formatearFechaDMY(c);
   $("#report_fechaS").html(fechaFormateada);
 
@@ -859,7 +889,6 @@ function report(a, b, c, d, f) {
       .addClass("bg-danger");
   }
 
-  $("#full-width-modal").modal("show");
   $("#reporte_header").html($("#desempeno_header").html());
   $("#report_name").html(
     $("#name_desempeno")
@@ -877,6 +906,7 @@ function report(a, b, c, d, f) {
   }
   var datatable = $("#reporte_tabla").DataTable({
     paging: false,
+    autoWidth: false,
     // pageLength: 17,
     searching: true,
     ajax: {

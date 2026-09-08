@@ -74,7 +74,7 @@
         <div class="content-page">
             <div class="content">
                 <div class="modal fade" id="desempeno_modal" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title text-uppercase d-print-none" id="desempeno_header"></h4>
@@ -91,27 +91,19 @@
                                             <!-- <h4 id="desempeno_header" class="header-title mt-2">Listado de Repartidores Externos </h4> -->
                                             <input type="hidden" id="id_desempeno">
                                             <input type="hidden" id="name_desempeno">
-                                            <div class="row align-items-end">
-                                                <div class="col-md-4">
-                                                    <div class="form-group mb-3">
-                                                        <label>Desde</label>
-                                                        <input id="desempeno_desde" type="text" class="form-control" data-provide="datepicker" data-date-format="d-m-yyyy" autocomplete="off">
-                                                    </div>
+                                            <div class="row g-2 align-items-end mb-2">
+                                                <div class="col-5">
+                                                    <label class="form-label mb-1 small">Desde</label>
+                                                    <input id="desempeno_desde" type="date" class="form-control form-control-sm" autocomplete="off">
                                                 </div>
-
-                                                <div class="col-md-4">
-                                                    <div class="form-group mb-3">
-                                                        <label>Hasta</label>
-                                                        <input id="desempeno_hasta" type="text" class="form-control" data-provide="datepicker" data-date-format="d-m-yyyy" autocomplete="off">
-                                                    </div>
+                                                <div class="col-5">
+                                                    <label class="form-label mb-1 small">Hasta</label>
+                                                    <input id="desempeno_hasta" type="date" class="form-control form-control-sm" autocomplete="off">
                                                 </div>
-
-                                                <div class="col-md-2">
-                                                    <div class="form-group mb-3">
-                                                        <button id="desempeno_button" type="button" class="btn btn-success w-100">
-                                                            Buscar
-                                                        </button>
-                                                    </div>
+                                                <div class="col-2">
+                                                    <button id="desempeno_button" type="button" class="btn btn-sm btn-success w-100">
+                                                        <i class="mdi mdi-magnify"></i>
+                                                    </button>
                                                 </div>
                                             </div>
 
@@ -322,13 +314,6 @@
                                     <!-- end buttons -->
 
                                 </div>
-
-
-                                <?php
-
-                                // Example usage
-                                echo "Usuario: $usuario, Fecha: $fecha, Hora: $hora";
-                                ?>
                             </div>
                         </div><!-- /.modal-content -->
 
