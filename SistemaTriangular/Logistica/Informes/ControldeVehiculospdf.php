@@ -274,28 +274,50 @@ foreach ([
 }
 $pdf->Ln(4);
 
-$pdf->CheckPageBreak(55);
-$pdf->sectionTitle('Observaciones de Chapa y Pintura');
+// El esquema del auto (auto.png) es una vista superior alta (88x166): a 55mm de
+// ancho quedaba de ~104mm de alto, pero el codigo solo reservaba 48mm y despues
+// "Retorno del Vehiculo" se dibujaba ENCIMA de la imagen (y esta se desbordaba a
+// la pagina siguiente). Ahora se calcula el alto real segun el ancho y el cursor
+// avanza por debajo de la imagen o de la caja de notas, la que sea mas alta.
 $autoImg = __DIR__ . '/../../images/auto.png';
+$imgW = 40.0;
+$imgH = 76.0;
+if (file_exists($autoImg)) {
+    $info = @getimagesize($autoImg);
+    if ($info && (int)$info[0] > 0) {
+        $imgH = $imgW * (int)$info[1] / (int)$info[0];
+    }
+}
+
+$pdf->CheckPageBreak($imgH + 16);
+$pdf->sectionTitle('Observaciones de Chapa y Pintura');
+
 $imgY = $pdf->GetY();
 if (file_exists($autoImg)) {
-    $pdf->Image($autoImg, $pdf->leftMargin(), $imgY, 55);
+    $pdf->Image($autoImg, $pdf->leftMargin(), $imgY, $imgW);
 }
-$pdf->SetXY($pdf->leftMargin() + 62, $imgY);
+
+$boxX = $pdf->leftMargin() + $imgW + 8;
+$boxW = $pdf->contentWidth() - $imgW - 8;
+
+$pdf->SetXY($boxX, $imgY);
 $pdf->SetFont('Arial', 'I', 8);
 $pdf->SetTextColor(...$paleta['mutedC']);
 $pdf->MultiCell(
-    $pdf->contentWidth() - 62,
+    $boxW,
     4.5,
     pdf_text('Marque en el esquema y detalle abajo cualquier golpe, raspón o daño visible en la carrocería.'),
     0,
     'L'
 );
-$pdf->SetXY($pdf->leftMargin() + 62, $imgY + 12);
+
+$boxY = $imgY + 14;
+$boxH = max(24.0, $imgH - 14);
 $pdf->SetDrawColor(...$paleta['borderC']);
 $pdf->SetFillColor(...$paleta['whiteC']);
-$pdf->Rect($pdf->leftMargin() + 62, $imgY + 12, $pdf->contentWidth() - 62, 28, 'D');
-$pdf->SetY(max($pdf->GetY(), $imgY + 48));
+$pdf->Rect($boxX, $boxY, $boxW, $boxH, 'D');
+
+$pdf->SetY($imgY + max($imgH, ($boxY - $imgY) + $boxH) + 4);
 $pdf->Ln(4);
 
 $pdf->CheckPageBreak(30);
