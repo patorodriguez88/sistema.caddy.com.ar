@@ -31,6 +31,24 @@ function teJson(array $arr): void
     exit;
 }
 
+// Red de seguridad: si algo revienta (ej. una columna que falta en un entorno
+// sin migrar) devolvemos 200 + JSON de error, no un 500 crudo.
+register_shutdown_function(function () {
+    $e = error_get_last();
+    if (!$e || !in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+        return;
+    }
+    error_log('tarifas_externos fatal: ' . ($e['message'] ?? '') . ' @ ' . ($e['file'] ?? '') . ':' . ($e['line'] ?? ''));
+    if (!headers_sent()) {
+        http_response_code(200);
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    if (ob_get_length() !== false) {
+        ob_clean();
+    }
+    echo json_encode(['data' => [], 'success' => 0, 'msg' => 'Error interno (revisá el log). Puede faltar correr la migración.']);
+});
+
 $usuario = $_SESSION['Usuario'] ?? 'sistema';
 
 /**

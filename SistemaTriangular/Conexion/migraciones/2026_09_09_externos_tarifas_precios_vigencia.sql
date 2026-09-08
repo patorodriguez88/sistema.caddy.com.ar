@@ -53,6 +53,11 @@ SELECT et.id, et.Precio, '2020-01-01', 'migracion', 'Backfill precio inicial (mi
 ALTER TABLE Externos_rendicion
   ADD COLUMN IF NOT EXISTS TipoLiquidacion CHAR(50) NOT NULL DEFAULT 'VISITA';
 
+-- Idem: Externos_tarifas.Observaciones existe en prod; en copias viejas no, y
+-- el form de Datos > Tarifas Externos lo necesita.
+ALTER TABLE Externos_tarifas
+  ADD COLUMN IF NOT EXISTS Observaciones TEXT NULL;
+
 -- Verificacion:
 -- SELECT et.id, et.Nombre, et.Precio AS precio_catalogo,
 --        (SELECT p.Precio FROM Externos_tarifas_precios p
