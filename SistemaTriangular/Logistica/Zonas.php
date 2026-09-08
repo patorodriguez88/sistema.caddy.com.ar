@@ -147,6 +147,20 @@
             flex: 0 0 auto;
         }
 
+        .zona-legend-destino {
+            font-size: .65rem;
+            font-weight: 600;
+            padding: .1rem .4rem;
+            border-radius: .25rem;
+            background: rgba(77, 26, 80, .1);
+            color: #4D1A50;
+            white-space: nowrap;
+            flex: 0 0 auto;
+            max-width: 130px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         .zona-legend-body {
             padding: .3rem .5rem .5rem;
             border-top: 1px solid rgba(0, 0, 0, .06);

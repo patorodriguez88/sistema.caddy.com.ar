@@ -165,6 +165,7 @@ function cargarZonasAccordion() {
               String(nombre).replace(/"/g, "&quot;") + '">' +
               '<span class="zona-swatch" style="background:' + color + '"></span>' +
               '<span class="zona-legend-nombre" title="' + String(nombre).replace(/"/g, "&quot;") + '">' + nombre + "</span>" +
+              '<span class="zona-legend-destino" data-idzona="' + idZona + '" hidden></span>' +
               '<span class="badge bg-light text-dark border zona-legend-count" data-idzona="' + idZona + '">0</span>' +
               '<i class="mdi mdi-chevron-down"></i>' +
             "</div>" +
@@ -186,6 +187,7 @@ function cargarZonasAccordion() {
         );
 
         contenedor.append(item);
+        pintarDestinoEnHead(idZona);
       });
 
       actualizarConteosLegend();
@@ -198,6 +200,24 @@ function cargarZonasAccordion() {
       );
     },
   });
+}
+
+// Muestra el Recorrido destino elegido al lado del nombre de la zona en la fila
+// del panel (ej. "Zona 1  → Rec 1517"), sin necesidad de abrir el cuerpo.
+function pintarDestinoEnHead(idZona) {
+  const $chip = $('.zona-legend-destino[data-idzona="' + idZona + '"]');
+  const num = zonaDestino[idZona];
+  if (!num) {
+    $chip.prop("hidden", true).text("");
+    return;
+  }
+  const rec = recorridosActivos.find((r) => String(r.Numero) === String(num));
+  let txt = "→ Rec " + num;
+  if (rec && rec.Nombre) {
+    const corto = rec.Nombre.length > 16 ? rec.Nombre.slice(0, 15) + "…" : rec.Nombre;
+    txt = "→ " + num + " " + corto;
+  }
+  $chip.text(txt).prop("hidden", false);
 }
 
 // Refresca solo los badges de conteo del panel (sin re-armar el DOM), a partir
@@ -402,7 +422,7 @@ function generarZonasBalanceadas(nRaw) {
           cargarRecorridosActivos(function () {
             cargarZonasAccordion();
           });
-          if (map) renderTodasLasZonas();
+          if (map) renderTodasLasZonasConWaypoints();
         } else {
           Swal.fire({ icon: "error", title: "No se pudo generar", text: (j && j.error) || "" });
         }
@@ -1003,6 +1023,7 @@ $(document).on("click", "#zonas_accordion .zona-legend-head", function () {
     resaltarZonaEnMapa(idz);
   } else {
     renderTodasLasZonas(function () {
+      if (Array.isArray(selected) && selected.length > 0) cargarWaypointsZona();
       resaltarZonaEnMapa(idz);
     });
   }
@@ -1031,6 +1052,7 @@ $(document).on("change", ".zona-destino-select", function () {
   } else {
     zonaDestino[idz] = val;
   }
+  pintarDestinoEnHead(idz);
   refrescarBotonRedistribuir();
 });
 
@@ -1179,6 +1201,7 @@ function renderTodasLasZonas(callback, mostrarFormas) {
     success: function (zonas) {
       if (!Array.isArray(zonas) || zonas.length === 0) {
         Swal.fire({ icon: "info", title: "No hay zonas para mostrar" });
+        if (typeof callback === "function") callback();
         return;
       }
 
@@ -1261,6 +1284,17 @@ function renderTodasLasZonas(callback, mostrarFormas) {
       refrescarBotonRedistribuir();
       if (typeof callback === "function") callback();
     },
+  });
+}
+
+// renderTodasLasZonas() hace clearMarkers() y NO recarga los waypoints. Cuando
+// se repinta el mapa despues de generar/importar/borrar zonas hay que volver a
+// traer los pines de los Recorridos elegidos, si hay.
+function renderTodasLasZonasConWaypoints() {
+  renderTodasLasZonas(function () {
+    if (Array.isArray(selected) && selected.length > 0) {
+      cargarWaypointsZona();
+    }
   });
 }
 
@@ -1509,7 +1543,7 @@ function moverZonaARecorrido(payload, cardDestino) {
 }
 
 $(document).on("click", "#ver_todas_zonas", function () {
-  renderTodasLasZonas();
+  renderTodasLasZonasConWaypoints();
 });
 
 // =========================
@@ -1754,7 +1788,7 @@ $(document).on("click", ".btnEliminarZona", function () {
           }
           // Refrescar la capa de "todas las zonas" para que la borrada
           // desaparezca del mapa sin recargar la pagina.
-          if (map) renderTodasLasZonas();
+          if (map) renderTodasLasZonasConWaypoints();
         } else {
           Swal.fire({
             icon: "error",
@@ -1998,7 +2032,7 @@ $("#importar_poligono_ok").click(function () {
           });
         }
         cargarZonasAccordion();
-        if (map) renderTodasLasZonas();
+        if (map) renderTodasLasZonasConWaypoints();
       } else {
         Swal.fire({ icon: "error", title: "No se pudo importar", text: r.message || "" });
       }
