@@ -274,6 +274,54 @@ function servicio_mod(i, v) {
   $("#servicio_retirado").val(Retirado);
 }
 
+// Confirmar en oficina los bultos de una colecta que el chofer cerro sin
+// escanear. Pasa esos Seguimiento de 'pickup_not_scanned' a 'pickup_scanned'
+// dejando el usuario de oficina y una observacion opcional (sin motivo
+// obligatorio, para no trabar el circuito).
+function confirmar_colecta(idColecta) {
+  idColecta = parseInt(idColecta, 10) || 0;
+  if (!idColecta) return;
+
+  Swal.fire({
+    title: "Confirmar colecta",
+    html:
+      "Vas a marcar los bultos sin escanear como <b>colectados</b> " +
+      "(retiro confirmado en oficina).<br/>" +
+      "<textarea id='obs_confirmar_colecta' class='form-control mt-2' rows='2' " +
+      "placeholder='Observación (opcional)'></textarea>",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Confirmar colecta",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#1c8f61",
+  }).then(function (r) {
+    if (!r.isConfirmed) return;
+    var obs = ($("#obs_confirmar_colecta").val() || "").trim();
+
+    $.ajax({
+      type: "POST",
+      url: "Proceso/php/pendientes.php",
+      data: { ConfirmarColecta: 1, idColecta: idColecta, obs: obs },
+      dataType: "json",
+      success: function (res) {
+        if (res && res.success) {
+          toast(
+            "success",
+            "Colecta confirmada",
+            res.confirmados + " bulto(s) marcados como colectados."
+          );
+          $("#seguimiento").DataTable().ajax.reload(null, false);
+        } else {
+          toast("error", "No se pudo confirmar", (res && res.msg) || "Error.");
+        }
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo confirmar la colecta.");
+      },
+    });
+  });
+}
+
 $("#ok_servicio_modal").click(function () {
   let i = $("#servicio_id_trans").val();
   let Retirado = $("#servicio_retirado").val();
@@ -517,17 +565,35 @@ $(document).ready(function () {
       {
         data: "CodigoSeguimiento",
         render: function (data, type, row) {
+          // Bootstrap 5: los badges se pintan con `bg-*`, no con `badge-*`
+          // (BS4). Con `badge badge-success` el badge quedaba sin fondo.
+          var esColecta = row.idClienteDestino == 18587;
           if (row.Retirado == 1) {
             var color = "success";
-            var servicio = "Entrega";
+            var servicio = esColecta ? "Colecta" : "Entrega";
           } else {
-            var color = "warning";
-            var servicio = "Retiro";
+            var color = esColecta ? "dark" : "warning";
+            var servicio = esColecta ? "Colecta" : "Retiro";
           }
+
+          // Colecta cerrada por el chofer con bultos sin escanear: la oficina
+          // los confirma desde aca (pasa Seguimiento a 'pickup_scanned').
+          var sinEscanear = parseInt(row.ColectaSinEscanear, 10) || 0;
+          var colectaAlert = "";
+          if (esColecta && sinEscanear > 0) {
+            colectaAlert =
+              `<br/><a href='#' class='badge bg-danger mt-1' style='font-size:10px' ` +
+              `onclick='confirmar_colecta(${row.idColecta}); return false;'>` +
+              `&#9888; COLECTA ${sinEscanear} sin escanear &middot; Confirmar</a>`;
+          }
+
+          var badgeServicio =
+            `<a value='${servicio}' href='#' class='badge bg-${color} mb-1 mt-1' style='font-size:10px' onclick='servicio_mod(${row.id},${row.Retirado})'>${servicio}</a>`;
+
           if (row.Retirado == 1) {
-            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b><a value='${servicio}' href='#' class='badge badge-${color} mb-1 mt-1' style='font-size:10px' onclick='servicio_mod(${row.id},${row.Retirado})'>${servicio}</a></b></a><br/><a href='#' class='badge badge-success' style='font-size:10px'>${row.Hora}</a></td></td>`;
+            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-success' style='font-size:10px'>${row.Hora}</a>${colectaAlert}</td></td>`;
           } else {
-            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b><a value='${servicio}' href='#' class='badge badge-${color} mb-1 mt-1' style='font-size:10px' onclick='servicio_mod(${row.id},${row.Retirado})'>${servicio}</a></b></a><br/><a href='#' class='badge badge-warning' style='font-size:10px'>${row.Hora_retiro}</a><br/><a href='#' class='badge badge-success mt-1' style='font-size:10px'>${row.Hora}</a></td></td>`;
+            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-warning' style='font-size:10px'>${row.Hora_retiro}</a><br/><a href='#' class='badge bg-success mt-1' style='font-size:10px'>${row.Hora}</a>${colectaAlert}</td></td>`;
           }
         },
       },

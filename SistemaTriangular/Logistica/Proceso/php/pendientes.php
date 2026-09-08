@@ -5,6 +5,107 @@ require_once('../../../Google/geolocalizar.php');
 
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
+// Para una parada de COLECTA (idClienteDestino = 18587 Wepoint + idColecta),
+// cuenta los bultos hijos que el chofer cerro sin escanear y todavia no
+// fueron confirmados en oficina. En cualquier otra fila da 0.
+const SQL_COLECTA_SIN_ESCANEAR = "IF(TransClientes.idClienteDestino = 18587 AND IFNULL(TransClientes.idColecta,0) > 0,
+                       (SELECT COUNT(DISTINCT h.id)
+                          FROM TransClientes h
+                         WHERE h.idColecta = TransClientes.idColecta
+                           AND h.id <> TransClientes.id
+                           AND h.Eliminado = 0
+                           AND EXISTS (SELECT 1 FROM Seguimiento s
+                                        WHERE s.CodigoSeguimiento = h.CodigoSeguimiento
+                                          AND s.status = 'pickup_not_scanned' AND s.Eliminado = 0)
+                           AND NOT EXISTS (SELECT 1 FROM Seguimiento s2
+                                            WHERE s2.CodigoSeguimiento = h.CodigoSeguimiento
+                                              AND s2.status = 'pickup_scanned' AND s2.Eliminado = 0)),
+                       0)";
+
+// ---------------------------------------------------------------------------
+// Confirmar colecta desde oficina.
+// El chofer puede cerrar una colecta con bultos sin escanear (ni a mano ni
+// confirmados por ML). Esos servicios quedan en Seguimiento.status =
+// 'pickup_not_scanned'. Desde Hoja de Ruta la oficina los revisa y con este
+// endpoint los pasa a 'pickup_scanned', dejando quien/cuando/como en las
+// columnas que Seguimiento ya tiene (Usuario, TimeStamp, Observaciones).
+// ---------------------------------------------------------------------------
+if (isset($_POST['ConfirmarColecta'])) {
+
+  $idColecta = (int)($_POST['idColecta'] ?? 0);
+  $obs       = trim($_POST['obs'] ?? '');
+
+  if ($idColecta <= 0) {
+    echo json_encode(['success' => 0, 'msg' => 'Falta idColecta.']);
+    exit;
+  }
+
+  $usuario  = $_SESSION['Usuario'] ?? ($_SESSION['Transportista'] ?? 'oficina');
+  $sucursal = $_SESSION['Sucursal'] ?? '';
+
+  $estRes = $mysqli->query("SELECT id, Estado FROM Estados WHERE Slug='pickup_scanned' LIMIT 1");
+  $est    = $estRes ? $estRes->fetch_assoc() : null;
+  if (!$est) {
+    echo json_encode(['success' => 0, 'msg' => "Falta el estado 'pickup_scanned' en la tabla Estados."]);
+    exit;
+  }
+  $estId  = (int)$est['id'];
+  $estTxt = $mysqli->real_escape_string($est['Estado']);
+
+  // Hijos de la colecta que quedaron sin escanear y todavia no fueron
+  // confirmados (idempotente: si ya tiene un pickup_scanned, se saltea).
+  $hijos = $mysqli->query(
+    "SELECT h.id, h.CodigoSeguimiento, h.idClienteDestino, h.ClienteDestino,
+            h.Recorrido, h.NumerodeOrden
+       FROM TransClientes h
+      WHERE h.idColecta = $idColecta
+        AND h.Eliminado = 0
+        AND EXISTS (SELECT 1 FROM Seguimiento s
+                     WHERE s.CodigoSeguimiento = h.CodigoSeguimiento
+                       AND s.status = 'pickup_not_scanned' AND s.Eliminado = 0)
+        AND NOT EXISTS (SELECT 1 FROM Seguimiento s2
+                         WHERE s2.CodigoSeguimiento = h.CodigoSeguimiento
+                           AND s2.status = 'pickup_scanned' AND s2.Eliminado = 0)"
+  );
+
+  if (!$hijos) {
+    echo json_encode(['success' => 0, 'msg' => 'Error al buscar los bultos: ' . $mysqli->error]);
+    exit;
+  }
+
+  $obsTxt = 'Colecta confirmada en oficina por ' . $usuario . ($obs !== '' ? ' - ' . $obs : '');
+  $obsEsc = $mysqli->real_escape_string($obsTxt);
+  $usuEsc = $mysqli->real_escape_string($usuario);
+  $sucEsc = $mysqli->real_escape_string($sucursal);
+
+  $n = 0;
+  while ($h = $hijos->fetch_assoc()) {
+    $cs    = $mysqli->real_escape_string($h['CodigoSeguimiento']);
+    $idCli = (int)$h['idClienteDestino'];
+    $idTr  = (int)$h['id'];
+    $dest  = $mysqli->real_escape_string($h['ClienteDestino'] ?? '');
+    $rec   = $mysqli->real_escape_string($h['Recorrido'] ?? '');
+    $nro   = (int)($h['NumerodeOrden'] ?? 0);
+
+    $ins = $mysqli->query(
+      "INSERT INTO Seguimiento
+         (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones,
+          Entregado, Estado, Destino, Avisado, idCliente, Retirado, Visitas,
+          idTransClientes, TimeStamp, Recorrido, Devuelto, Webhook, state_id,
+          NumerodeOrden, status, Eliminado, Estado_id)
+       VALUES
+         (CURDATE(), CURTIME(), '$usuEsc', '$sucEsc', '$cs', '$obsEsc',
+          0, '$estTxt', '$dest', 0, $idCli, 1, 0,
+          $idTr, NOW(), '$rec', 0, 0, $estId,
+          '$nro', 'pickup_scanned', 0, $estId)"
+    );
+    if ($ins) $n++;
+  }
+
+  echo json_encode(['success' => 1, 'confirmados' => $n]);
+  exit;
+}
+
 if (isset($_POST['MarcaRetirado'])) {
 
   // if (isset($_POST['Retirado'], $_POST['id_trans']) && !empty($_POST['Retirado']) && !empty($_POST['id_trans'])) {
@@ -140,7 +241,8 @@ if (isset($_POST['Pendientes'])) {
                    IF(TransClientes.Retirado=1, HojaDeRuta.Posicion, HojaDeRuta.Posicion_retiro) AS Posicion,
                    HojaDeRuta.Estado AS HdrEstado,
                    HojaDeRuta.Hora,
-                   HojaDeRuta.Hora_retiro
+                   HojaDeRuta.Hora_retiro,
+                   " . SQL_COLECTA_SIN_ESCANEAR . " AS ColectaSinEscanear
             FROM TransClientes
             INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes
             INNER JOIN Clientes ON Clientes.id=TransClientes.idClienteDestino
@@ -164,7 +266,8 @@ if (isset($_POST['Pendientes'])) {
                    HojaDeRuta.Posicion_retiro,
                    HojaDeRuta.Estado AS HdrEstado,
                    HojaDeRuta.Hora,
-                   HojaDeRuta.Hora_retiro
+                   HojaDeRuta.Hora_retiro,
+                   " . SQL_COLECTA_SIN_ESCANEAR . " AS ColectaSinEscanear
             FROM TransClientes
             INNER JOIN HojaDeRuta ON TransClientes.id=HojaDeRuta.idTransClientes
             INNER JOIN Clientes ON Clientes.id=TransClientes.idClienteDestino
