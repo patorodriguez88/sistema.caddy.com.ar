@@ -269,6 +269,149 @@ function refrescarBotonRedistribuir() {
     const zc = Object.keys(zonaDestino).length;
     $hint.text(zc + (zc === 1 ? " zona" : " zonas") + " con destino asignado. Listo para redistribuir.");
   }
+
+  // Generador de zonas balanceadas: necesita waypoints (no movidos) cargados.
+  const wpVivos = waypointsData.filter((w) => !w.movido).length;
+  $("#btn_generar_zonas").prop("disabled", redistribuyendo || wpVivos === 0);
+  $("#gen_zonas_hint").text(
+    wpVivos === 0
+      ? "Elegí Recorridos primero; parte los waypoints en N zonas de carga pareja."
+      : wpVivos + " waypoints → se parten en N zonas de carga pareja (reemplaza las zonas actuales)."
+  );
+}
+
+// =========================
+// Generador de zonas balanceadas por carga del dia
+// =========================
+
+// Biseccion recursiva PROPORCIONAL: para partir en k celdas, se divide k en dos
+// mitades lo mas parejas posible (kA, kB) y se reparten los puntos en esa misma
+// proporcion, cortando por el lado mas largo del rectangulo en el punto medio
+// entre los dos puntos que quedan a cada lado del corte. Recursivo. Da N celdas
+// rectangulares que TESELAN el bbox (con margen) sin huecos ni solape, con
+// cantidad de puntos ~pareja para cualquier N (no solo potencias de 2).
+function biseccionEquitativa(pts, n) {
+  const lats = pts.map((p) => p.lat);
+  const lngs = pts.map((p) => p.lng);
+  let minLat = Math.min.apply(null, lats), maxLat = Math.max.apply(null, lats);
+  let minLng = Math.min.apply(null, lngs), maxLng = Math.max.apply(null, lngs);
+  const padLat = (maxLat - minLat) * 0.12 || 0.02;
+  const padLng = (maxLng - minLng) * 0.12 || 0.02;
+  minLat -= padLat; maxLat += padLat; minLng -= padLng; maxLng += padLng;
+
+  const raiz = { n: maxLat, s: minLat, e: maxLng, o: minLng };
+
+  function particion(subPts, rect, k) {
+    if (k <= 1 || subPts.length === 0) {
+      return [{ rect: rect, count: subPts.length }];
+    }
+    const kA = Math.ceil(k / 2);
+    const kB = k - kA;
+
+    const cortaLng = (rect.e - rect.o) >= (rect.n - rect.s);
+    const coord = (p) => (cortaLng ? p.lng : p.lat);
+    const ord = subPts.slice().sort((a, b) => coord(a) - coord(b));
+
+    let nA = Math.round((subPts.length * kA) / k);
+    nA = Math.max(kA, Math.min(nA, subPts.length - kB)); // deja al menos 1 punto por celda futura
+    const izq = ord.slice(0, nA);
+    const der = ord.slice(nA);
+
+    let corte;
+    if (izq.length && der.length) {
+      corte = (coord(izq[izq.length - 1]) + coord(der[0])) / 2;
+    } else {
+      corte = cortaLng ? (rect.o + rect.e) / 2 : (rect.s + rect.n) / 2;
+    }
+
+    let rectA, rectB;
+    if (cortaLng) {
+      rectA = { n: rect.n, s: rect.s, e: corte, o: rect.o };
+      rectB = { n: rect.n, s: rect.s, e: rect.e, o: corte };
+    } else {
+      rectA = { n: corte, s: rect.s, e: rect.e, o: rect.o };
+      rectB = { n: rect.n, s: corte, e: rect.e, o: rect.o };
+    }
+    return particion(izq, rectA, kA).concat(particion(der, rectB, kB));
+  }
+
+  return particion(pts.slice(), raiz, n);
+}
+
+function generarZonasBalanceadas(nRaw) {
+  const n = Math.max(1, Math.min(10, parseInt(nRaw, 10) || 1));
+  const pts = waypointsData.filter((w) => !w.movido).map((w) => ({ lat: w.lat, lng: w.lng }));
+
+  if (pts.length < n) {
+    Swal.fire({
+      icon: "warning",
+      title: "Pocos waypoints",
+      text: "Hacen falta al menos " + n + " servicios cargados para generar " + n + " zonas (hay " + pts.length + ").",
+    });
+    return;
+  }
+
+  const celdas = biseccionEquitativa(pts, n);
+  const payload = celdas.map((c, i) => {
+    const r = c.rect;
+    const ring = [
+      { lat: r.n, lng: r.o }, { lat: r.n, lng: r.e },
+      { lat: r.s, lng: r.e }, { lat: r.s, lng: r.o },
+    ];
+    return {
+      Nombre: "Zona " + (i + 1),
+      Poligono: JSON.stringify(ring),
+      LatitudN: r.n, LatitudS: r.s, LongitudE: r.e, LongitudO: r.o,
+      Color: PALETA_ZONAS[i % PALETA_ZONAS.length],
+      _count: c.count,
+    };
+  });
+
+  const resumen = payload
+    .map((z) => '<div class="rd-linea"><span class="rd-swatch" style="background:' + z.Color + '"></span>' +
+      z.Nombre + ": ~<b>" + z._count + "</b> serv.</div>")
+    .join("");
+
+  Swal.fire({
+    title: "Generar " + n + (n === 1 ? " zona" : " zonas"),
+    html: "<div style='text-align:left'>Se <b>reemplazan todas las zonas actuales</b> por " + n +
+      " de carga pareja:<br><br>" + resumen + "</div>",
+    icon: "warning",
+    showCancelButton: true,
+    confirmButtonText: "Sí, generar y reemplazar",
+    cancelButtonText: "Cancelar",
+  }).then((res) => {
+    if (!res.isConfirmed) return;
+    $.ajax({
+      url: "Mapas/php/zonas.php",
+      type: "POST",
+      dataType: "json",
+      data: {
+        GenerarZonasSet: 1,
+        zonas: payload.map((z) => ({
+          Nombre: z.Nombre, Poligono: z.Poligono,
+          LatitudN: z.LatitudN, LatitudS: z.LatitudS,
+          LongitudE: z.LongitudE, LongitudO: z.LongitudO, Color: z.Color,
+        })),
+      },
+      success: function (j) {
+        if (j && j.success == 1) {
+          toast("success", "Zonas generadas", j.creadas + (j.creadas === 1 ? " zona nueva." : " zonas nuevas."));
+          zonaDestino = {}; // los ids de zona cambiaron
+          zonaLegendActivaId = null;
+          cargarRecorridosActivos(function () {
+            cargarZonasAccordion();
+          });
+          if (map) renderTodasLasZonas();
+        } else {
+          Swal.fire({ icon: "error", title: "No se pudo generar", text: (j && j.error) || "" });
+        }
+      },
+      error: function () {
+        Swal.fire({ icon: "error", title: "Error del servidor", text: "No se pudieron generar las zonas." });
+      },
+    });
+  });
 }
 
 // =========================
@@ -1376,6 +1519,10 @@ $(document).on("click", "#ver_todas_zonas", function () {
 // =========================
 $(document).on("click", "#btn_redistribuir_zonas", function () {
   redistribuirPorZonas();
+});
+
+$(document).on("click", "#btn_generar_zonas", function () {
+  generarZonasBalanceadas($("#gen_zonas_n").val());
 });
 
 function redistribuirPorZonas() {

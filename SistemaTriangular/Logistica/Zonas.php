@@ -311,6 +311,23 @@
                                         </div>
                                     </div>
 
+                                    <!-- Generador de zonas: parte los waypoints del dia en N zonas
+                                         de carga pareja (biseccion) que cubren todo. Reemplaza el
+                                         set de zonas actual. -->
+                                    <div class="col-lg-12 mt-2">
+                                        <label class="mb-1 small text-muted d-block">Generar zonas balanceadas (carga del día)</label>
+                                        <div class="input-group input-group-sm">
+                                            <span class="input-group-text">N</span>
+                                            <input type="number" id="gen_zonas_n" class="form-control" min="1" max="10" value="4" style="max-width:64px;">
+                                            <button type="button" class="btn btn-outline-primary flex-grow-1" id="btn_generar_zonas" disabled>
+                                                <i class="mdi mdi-shape-outline"></i> Generar y reemplazar
+                                            </button>
+                                        </div>
+                                        <div id="gen_zonas_hint" class="text-muted small mt-1">
+                                            Elegí Recorridos primero; parte los waypoints en N zonas de carga pareja.
+                                        </div>
+                                    </div>
+
                                     <!-- Redistribucion automatica: cada zona manda sus waypoints
                                          al Recorrido destino elegido, todo de una. -->
                                     <div class="col-lg-12 mt-2">

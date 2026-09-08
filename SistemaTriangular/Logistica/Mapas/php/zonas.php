@@ -466,6 +466,75 @@ if (isset($_POST['eliminarZona'])) {
   exit;
 }
 
+// Reemplaza TODAS las zonas activas por un "set" nuevo de N zonas que el
+// frontend genero balanceando la carga del dia (biseccion recursiva de los
+// waypoints, ver generarZonasBalanceadas() en zonas.js). Un set por vez: se
+// borran (soft) las que habia y se insertan las nuevas, en una transaccion.
+// $_POST['zonas'] = [ { Nombre, Poligono(JSON), LatitudN, LatitudS, LongitudE,
+// LongitudO, Color }, ... ].
+if (isset($_POST['GenerarZonasSet'])) {
+  $nuevas = $_POST['zonas'] ?? [];
+  if (!is_array($nuevas) || count($nuevas) < 1) {
+    echo json_encode(['success' => 0, 'error' => 'No se recibieron zonas para generar.']);
+    exit;
+  }
+  if (count($nuevas) > 20) {
+    echo json_encode(['success' => 0, 'error' => 'Demasiadas zonas (max 20).']);
+    exit;
+  }
+
+  $mysqli->begin_transaction();
+  try {
+    $mysqli->query("UPDATE ZonasMapa SET Eliminado = 1 WHERE Eliminado = 0");
+
+    $stmt = $mysqli->prepare(
+      "INSERT INTO ZonasMapa (Nombre, LatitudN, LatitudS, LongitudE, LongitudO, Poligono, Color, Eliminado)
+       VALUES (?, ?, ?, ?, ?, ?, ?, 0)"
+    );
+    if (!$stmt) {
+      throw new Exception('prepare: ' . $mysqli->error);
+    }
+
+    $creadas = 0;
+    foreach ($nuevas as $z) {
+      $nombre = mb_substr(trim((string)($z['Nombre'] ?? '')), 0, 60);
+      if ($nombre === '') {
+        $nombre = 'Zona ' . ($creadas + 1);
+      }
+      $latN = (float)($z['LatitudN'] ?? 0);
+      $latS = (float)($z['LatitudS'] ?? 0);
+      $lngE = (float)($z['LongitudE'] ?? 0);
+      $lngO = (float)($z['LongitudO'] ?? 0);
+      $poli = (string)($z['Poligono'] ?? '');
+      // Validacion minima: JSON con >=3 puntos {lat,lng}.
+      $dec = json_decode($poli, true);
+      if (!is_array($dec) || count($dec) < 3) {
+        throw new Exception("Poligono invalido en \"{$nombre}\".");
+      }
+      $color = trim((string)($z['Color'] ?? ''));
+      if (!preg_match('/^#?[0-9A-Fa-f]{6}$/', $color)) {
+        $color = '#4D1A50';
+      } elseif ($color[0] !== '#') {
+        $color = '#' . $color;
+      }
+
+      $stmt->bind_param('sddddss', $nombre, $latN, $latS, $lngE, $lngO, $poli, $color);
+      if (!$stmt->execute()) {
+        throw new Exception('insert: ' . $stmt->error);
+      }
+      $creadas++;
+    }
+    $stmt->close();
+
+    $mysqli->commit();
+    echo json_encode(['success' => 1, 'creadas' => $creadas]);
+  } catch (Exception $e) {
+    $mysqli->rollback();
+    echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
+  }
+  exit;
+}
+
 // Chequea que todos los servicios abiertos de los Recorridos seleccionados
 // tengan coordenadas validas antes de trabajar con zonas - hoy quedaban
 // silenciosamente afuera del mapa (Clientes.Latitud<>'' no detecta '0' ni
