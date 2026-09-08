@@ -56,7 +56,8 @@ class ResumenVehiculoPDF extends HdrPdfBase
             [
                 ['N. de Orden:', $headerDatos['numeroOrden']],
                 ['Fecha:', $headerDatos['fecha']],
-                ['Hora:', $headerDatos['hora']],
+                ['Hora carga:', $headerDatos['hora']],
+                ['Salida chofer:', $headerDatos['salidaReal']],
                 ['Controla:', $headerDatos['controla']],
                 ['Estado:', $headerDatos['estado']],
             ]
@@ -91,7 +92,7 @@ $logistica = mysqli_fetch_one(
     "SELECT NumerodeOrden, Fecha, Hora, Controla, Patente, Kilometros,
             NombreChofer, NombreChofer2, Recorrido, FechaVencRegistro,
             Observaciones, Estado, KilometrosRecorridos, HoraRetorno,
-            CombustibleSalida, CombustibleRegreso
+            HoraSalidaReal, CombustibleSalida, CombustibleRegreso
        FROM Logistica
       WHERE NumerodeOrden = ?
         AND Eliminado = 0
@@ -163,13 +164,33 @@ if (!empty($logistica['FechaVencRegistro'])) {
     }
 }
 
-$servicios = db_fetch_all(
+// Hora real en que el chofer arrancó el recorrido (botón "Iniciar Recorrido" en
+// la app de reparto). NULL = nunca inició. Ver Logistica.HoraSalidaReal, que
+// setea/limpia Proceso/php/ordenes.php.
+$horaSalidaRealTexto = trim((string)($logistica['HoraSalidaReal'] ?? ''));
+if ($horaSalidaRealTexto !== '' && $horaSalidaRealTexto !== '0000-00-00 00:00:00') {
+    $tsSalida = strtotime($horaSalidaRealTexto);
+    $horaSalidaRealTexto = $tsSalida !== false ? date('d/m/Y H:i', $tsSalida) : $horaSalidaRealTexto;
+} else {
+    $horaSalidaRealTexto = 'No iniciada';
+}
+
+// Fuente de la lista de servicios: Seguimiento, NO HojaDeRuta.
+// HojaDeRuta tiene una sola fila por envío y su NumerodeOrden se REESCRIBE cuando
+// un envío no entregado se reasigna a una orden posterior (ordenes.php ->
+// handleOrdenCargar: "UPDATE HojaDeRuta SET NumerodeOrden=? WHERE ... Estado='Abierto'").
+// Filtrar HojaDeRuta por NumerodeOrden dejaba afuera todo lo que salió en esta
+// orden pero terminó entregándose (o sigue pendiente) en otra. Seguimiento, en
+// cambio, guarda una fila permanente por cada envío en el momento en que se
+// cargó la orden ("Cargado en la Hoja de Ruta") y nunca se pisa.
+$codigos = db_fetch_all(
     $mysqli,
-    "SELECT id, Cliente, Localizacion, KmO, Seguimiento
-       FROM HojaDeRuta
+    "SELECT CodigoSeguimiento, MIN(id) AS primerId
+       FROM Seguimiento
       WHERE NumerodeOrden = ?
-        AND Eliminado = 0
-      ORDER BY Posicion",
+        AND CodigoSeguimiento <> ''
+      GROUP BY CodigoSeguimiento
+      ORDER BY primerId",
     's',
     [$NumeroOrden]
 );
@@ -178,6 +199,7 @@ $headerDatos = [
     'numeroOrden' => $NumeroOrden,
     'fecha'       => $fechaTexto,
     'hora'        => (string)($logistica['Hora'] ?? ''),
+    'salidaReal'  => $horaSalidaRealTexto,
     'controla'    => (string)($logistica['Controla'] ?? ''),
     'estado'      => (string)($logistica['Estado'] ?? ''),
     'dominio'     => (string)($logistica['Patente'] ?? ''),
@@ -187,7 +209,9 @@ $headerDatos = [
 // --------------------------------------------------
 // Render
 // --------------------------------------------------
-$pdf = new ResumenVehiculoPDF('P', 'mm', 'Letter');
+// Apaisado: la tabla de servicios ahora lleva origen + destino (con dirección),
+// horario prometido y horario real de entrega — no entra en vertical.
+$pdf = new ResumenVehiculoPDF('L', 'mm', 'Letter');
 $pdf->AliasNbPages();
 $pdf->footerLeft = 'Control de Vehiculo - Orden ' . $NumeroOrden;
 $pdf->SetMargins(12, 12, 12);
@@ -211,52 +235,133 @@ $pdf->filaCampos($colW, [
     ['Recorrido', $logistica['Recorrido'] . ' - ' . ($rec['Nombre'] ?? '')],
 ]);
 $pdf->filaCampos($colW, [
+    ['Hora de arranque (chofer)', $horaSalidaRealTexto],
     ['Venc. Registro', $vencRegistroTexto],
 ]);
 $pdf->Ln(4);
 
-$pdf->sectionTitle('Servicios (' . count($servicios) . ')');
-$pdf->SetWidths($pdf->anchosEscalados([12, 70, 76, 16, 32]));
-$pdf->SetAligns(['C', 'L', 'L', 'C', 'C']);
+$pdf->sectionTitle('Servicios (' . count($codigos) . ')');
+$pdf->SetWidths($pdf->anchosEscalados([8, 24, 58, 58, 18, 22, 12, 40]));
+$pdf->SetAligns(['C', 'C', 'L', 'L', 'C', 'C', 'C', 'L']);
 $pdf->SetFont('Arial', 'B', 7.5);
 $pdf->SetFillColor(...$paleta['primaryC']);
 $pdf->SetTextColor(...$paleta['whiteC']);
 $pdf->SetDrawColor(...$paleta['primaryC']);
-foreach (['#', 'Cliente', 'Localizacion', 'Km', 'Estado'] as $i => $label) {
+foreach (['#', 'Seguimiento', 'Origen', 'Destino', 'Prometido', 'Entrega', 'Km', 'Estado'] as $i => $label) {
     $w = $pdf->widths[$i];
-    $pdf->Cell($w, 6.5, pdf_text($label), 0, 0, $i === 1 || $i === 2 ? 'L' : 'C', true);
+    $pdf->Cell($w, 6.5, pdf_text($label), 0, 0, in_array($i, [2, 3, 7], true) ? 'L' : 'C', true);
 }
 $pdf->Ln();
 $pdf->SetTextColor(...$paleta['darkText']);
+$pdf->SetFont('Arial', '', 7.5);
 
 $fill = false;
-foreach ($servicios as $s) {
-    $seg = (string)($s['Seguimiento'] ?? '');
-    $entregadoTexto = 'Sin datos';
-    if ($seg !== '') {
-        $trans = mysqli_fetch_one(
-            $mysqli,
-            "SELECT Entregado FROM TransClientes WHERE CodigoSeguimiento = ? AND Eliminado = 0 LIMIT 1",
-            's',
-            [$seg]
-        );
-        $entregadoTexto = ((int)($trans['Entregado'] ?? 0) === 1) ? 'Entregado' : 'No entregado';
+$nro  = 0;
+foreach ($codigos as $c) {
+    $cod = (string)$c['CodigoSeguimiento'];
+    $nro++;
+
+    // Fila de HojaDeRuta de este envío. Si sigue en esta orden se prefiere esa;
+    // si ya se mudó a otra, se toma la más reciente (su Hora/KmO serán del plan
+    // de la orden nueva, aproximados para esta).
+    $hdr = mysqli_fetch_one(
+        $mysqli,
+        "SELECT Hora, KmO, NumerodeOrden
+           FROM HojaDeRuta
+          WHERE Seguimiento = ? AND Eliminado = 0
+          ORDER BY (NumerodeOrden = ?) DESC, id DESC
+          LIMIT 1",
+        'ss',
+        [$cod, $NumeroOrden]
+    ) ?? [];
+
+    $tc = mysqli_fetch_one(
+        $mysqli,
+        "SELECT RazonSocial, DomicilioOrigen, LocalidadOrigen,
+                ClienteDestino, DomicilioDestino, LocalidadDestino,
+                Entregado, Estado, NumerodeOrden
+           FROM TransClientes
+          WHERE CodigoSeguimiento = ? AND Eliminado = 0
+          ORDER BY id DESC LIMIT 1",
+        's',
+        [$cod]
+    ) ?? [];
+
+    // Momento real de entrega: fila de Seguimiento marcada Entregado=1.
+    $ent = mysqli_fetch_one(
+        $mysqli,
+        "SELECT Fecha, Hora, NumerodeOrden
+           FROM Seguimiento
+          WHERE CodigoSeguimiento = ? AND Entregado = 1
+          ORDER BY id DESC LIMIT 1",
+        's',
+        [$cod]
+    ) ?? [];
+
+    // La dirección suele venir con la localidad ya incluida; solo se agrega si
+    // falta, para no repetir "..., Villa Maria, Cordoba, Villa Maria".
+    $dirCompleta = static function (?string $dom, ?string $loc): string {
+        $dom = trim((string)$dom);
+        $loc = trim((string)$loc);
+        if ($loc !== '' && stripos($dom, $loc) === false) {
+            $dom = trim($dom . ', ' . $loc, ', ');
+        }
+        return $dom;
+    };
+
+    $origen  = trim((string)($tc['RazonSocial'] ?? ''));
+    $dirO    = $dirCompleta($tc['DomicilioOrigen'] ?? '', $tc['LocalidadOrigen'] ?? '');
+    $celOrig = $origen . ($dirO !== '' ? "\n" . $dirO : '');
+
+    $destino = trim((string)($tc['ClienteDestino'] ?? ''));
+    $dirD    = $dirCompleta($tc['DomicilioDestino'] ?? '', $tc['LocalidadDestino'] ?? '');
+    $celDest = $destino . ($dirD !== '' ? "\n" . $dirD : '');
+
+    $eta      = (string)($hdr['Hora'] ?? '');
+    $etaTexto = ($eta !== '' && $eta !== '00:00:00') ? substr($eta, 0, 5) : '-';
+
+    $entregaTexto = '-';
+    if (!empty($ent['Fecha'])) {
+        $tsE = strtotime((string)$ent['Fecha']);
+        $fE  = $tsE !== false ? date('d/m', $tsE) : '';
+        $hE  = substr((string)($ent['Hora'] ?? ''), 0, 5);
+        $entregaTexto = trim($fE . ' ' . $hE);
+    }
+
+    $ordenEntrega = (string)($ent['NumerodeOrden'] ?? '');
+    $ordenTc      = (string)($tc['NumerodeOrden'] ?? '');
+    if ((int)($tc['Entregado'] ?? 0) === 1) {
+        $estadoTexto = 'Entregado';
+        if ($ordenEntrega !== '' && $ordenEntrega !== '0' && $ordenEntrega !== $NumeroOrden) {
+            $estadoTexto = 'Entregado en orden ' . $ordenEntrega;
+        }
+    } else {
+        $estadoTexto = (string)($tc['Estado'] ?? '');
+        if ($estadoTexto === '') {
+            $estadoTexto = 'Pendiente';
+        }
+        if ($ordenTc !== '' && $ordenTc !== '0' && $ordenTc !== $NumeroOrden) {
+            $estadoTexto .= ' (reprog. orden ' . $ordenTc . ')';
+        }
     }
 
     $pdf->Row([
-        (string)$s['id'],
-        (string)($s['Cliente'] ?? ''),
-        (string)($s['Localizacion'] ?? ''),
-        (string)($s['KmO'] ?? ''),
-        $entregadoTexto,
+        (string)$nro,
+        $cod,
+        $celOrig,
+        $celDest,
+        $etaTexto,
+        $entregaTexto,
+        (string)($hdr['KmO'] ?? ''),
+        $estadoTexto,
     ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
     $fill = !$fill;
 }
 
-if (empty($servicios)) {
+if (empty($codigos)) {
     $pdf->SetFont('Arial', 'I', 9);
     $pdf->SetTextColor(...$paleta['mutedC']);
-    $pdf->Cell(0, 7, pdf_text('No hay servicios cargados para esta orden.'), 0, 1);
+    $pdf->Cell(0, 7, pdf_text('No hay servicios registrados para esta orden.'), 0, 1);
 }
 
 $pdf->Ln(6);
