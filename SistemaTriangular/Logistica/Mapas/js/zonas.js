@@ -91,6 +91,34 @@ function poligonoDeCache(z) {
   }
 }
 
+// Puntos [{lat,lng}] de la zona TAL COMO ESTA EN EL MAPA AHORA: prioriza la
+// forma real del overlay (Polygon dibujado, que refleja cualquier arrastre /
+// edicion) y cae al Poligono cacheado si no hay overlay. Es la unica fuente de
+// verdad que compartimos entre el badge del legend, la previsualizacion y el
+// traspaso real, para que los 3 numeros coincidan siempre (antes la previa
+// miraba el cache y el traspaso el poligono guardado en ZonasMapa por idZona).
+function puntosZonaVigentes(z) {
+  const shape = z && z.id != null ? overlaysTodasPorId[z.id] : null;
+  if (shape) {
+    if (typeof shape.getPath === "function") {
+      const arr = [];
+      shape.getPath().forEach((p) => arr.push({ lat: p.lat(), lng: p.lng() }));
+      if (arr.length >= 3) return arr;
+    } else if (typeof shape.getBounds === "function" && shape.getBounds()) {
+      const b = shape.getBounds();
+      const ne = b.getNorthEast();
+      const sw = b.getSouthWest();
+      return [
+        { lat: ne.lat(), lng: sw.lng() },
+        { lat: ne.lat(), lng: ne.lng() },
+        { lat: sw.lat(), lng: ne.lng() },
+        { lat: sw.lat(), lng: sw.lng() },
+      ];
+    }
+  }
+  return poligonoDeCache(z);
+}
+
 // Waypoints (no movidos) que caen dentro de un poligono.
 function contarWaypointsEnPoligono(pts) {
   if (!Array.isArray(pts) || pts.length < 3) return 0;
@@ -240,9 +268,27 @@ function pintarDestinoEnHead(idZona) {
 // de zonasCache + waypointsData. Se llama cuando cambian los waypoints cargados
 // o despues de redistribuir.
 function actualizarConteosLegend() {
+  // Conteo EXCLUSIVO: si dos zonas se superponen, cada waypoint cuenta una
+  // sola vez, en la PRIMERA zona (orden de zonasCache) que lo contiene - el
+  // mismo criterio que usa la previsualizacion y el traspaso real. Antes cada
+  // badge contaba todo lo que caia en su poligono, asi que en zonas
+  // superpuestas la suma de badges era mayor que lo que realmente se movia
+  // (ej. Zona1=7 + Zona2=11 pero "Confirmar traspaso" decia 13).
+  const polys = zonasCache
+    .map((z) => ({ id: z.id, pts: puntosZonaVigentes(z) }))
+    .filter((o) => Array.isArray(o.pts) && o.pts.length >= 3);
+
+  const conteo = {};
+  polys.forEach((o) => (conteo[o.id] = 0));
+
+  (Array.isArray(waypointsData) ? waypointsData : []).forEach(function (w) {
+    if (w.movido) return;
+    const hit = polys.find((o) => pointInPolygon({ lat: w.lat, lng: w.lng }, o.pts));
+    if (hit) conteo[hit.id] = (conteo[hit.id] || 0) + 1;
+  });
+
   zonasCache.forEach(function (z) {
-    const pts = poligonoDeCache(z);
-    const n = pts ? contarWaypointsEnPoligono(pts) : 0;
+    const n = conteo[z.id] || 0;
     const $badge = $('.zona-legend-count[data-idzona="' + z.id + '"]');
     $badge.text(n);
     $badge.toggleClass("bg-light text-dark", n === 0);
@@ -277,7 +323,7 @@ function resaltarZonaEnMapa(idZona) {
       const gb = shape.getBounds();
       if (gb) { b.extend(gb.getNorthEast()); b.extend(gb.getSouthWest()); }
     }
-    if (!b.isEmpty()) map.fitBounds(b);
+    if (!b.isEmpty()) fitBoundsConPanel(b);
   }
 }
 
@@ -492,7 +538,73 @@ $(document).ready(function () {
       setTimeout(pintarTodasCuandoHayaMapa, 300);
     }
   })();
+
+  initZonasFullscreen();
 });
+
+// --- Mapa a pantalla completa (estilo Google Maps) ---
+// Fuera del $(document).ready de arriba a proposito: aunque algo falle en ese
+// bloque, el panel se tiene que poder ocultar/mostrar igual.
+let zonasFSInit = false;
+function initZonasFullscreen() {
+  if (zonasFSInit) return;
+  const row = document.getElementById("zonas_layout_row");
+  if (!row) return;
+  zonasFSInit = true;
+
+  function mapResize() {
+    if (window.google && map) google.maps.event.trigger(map, "resize");
+  }
+
+  // reencuadra a los waypoints actuales (o deja que el proximo fit lo haga)
+  function reencuadrarActual() {
+    if (!window.google || !map || !Array.isArray(waypointsData) || !waypointsData.length) return;
+    const b = new google.maps.LatLngBounds();
+    waypointsData.forEach((w) => b.extend({ lat: w.lat, lng: w.lng }));
+    fitBoundsConPanel(b);
+  }
+
+  function ajustarTop() {
+    let top = 0;
+    document.querySelectorAll(".navbar-custom, .topnav").forEach(function (el) {
+      const r = el.getBoundingClientRect();
+      if (r.height && r.top < 200) top = Math.max(top, r.bottom);
+    });
+    row.style.top = (top > 0 ? Math.round(top) : 120) + "px";
+    mapResize();
+  }
+
+  ajustarTop();
+  setTimeout(ajustarTop, 300);
+  setTimeout(ajustarTop, 1200);
+  window.addEventListener("resize", function () {
+    ajustarTop();
+    setTimeout(reencuadrarActual, 60);
+  });
+
+  function setPanel(off) {
+    row.classList.toggle("zonas-panel-off", off);
+    setTimeout(function () {
+      mapResize();
+      reencuadrarActual();
+    }, 230);
+  }
+
+  // Listeners directos (los botones son estaticos) + delegado por si acaso.
+  const bHide = document.getElementById("zonas_panel_hide");
+  const bShow = document.getElementById("zonas_panel_toggle");
+  if (bHide) bHide.addEventListener("click", function () { setPanel(true); });
+  if (bShow) bShow.addEventListener("click", function () { setPanel(false); });
+  $(document).on("click", "#zonas_panel_hide", function () { setPanel(true); });
+  $(document).on("click", "#zonas_panel_toggle", function () { setPanel(false); });
+}
+
+// Por si el $(document).ready ya paso o falla antes de llamarnos.
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initZonasFullscreen);
+} else {
+  initZonasFullscreen();
+}
 
 // =========================
 // Helpers para limpiar mapa
@@ -619,6 +731,23 @@ function computeBBox(points) {
     LongitudE: maxLng,
     LongitudO: minLng,
   };
+}
+
+// fitBounds que reserva lugar para el panel flotante de la izquierda: los
+// pines nunca quedan tapados detras del form (mismo criterio que Google Maps
+// cuando abris el panel de indicaciones). Si el panel esta colapsado, casi no
+// reserva nada.
+function fitBoundsConPanel(b) {
+  if (!map || !b || (b.isEmpty && b.isEmpty())) return;
+  try {
+    const row = document.getElementById("zonas_layout_row");
+    const panel = row ? row.querySelector(".col-xl-4") : null;
+    const off = !row || row.classList.contains("zonas-panel-off");
+    const w = panel && !off ? Math.round(panel.getBoundingClientRect().width) : 0;
+    map.fitBounds(b, { top: 40, right: 40, bottom: 40, left: w + 32 });
+  } catch (e) {
+    map.fitBounds(b);
+  }
 }
 
 // =========================
@@ -934,7 +1063,7 @@ function renderZona(id) {
 
             // centrar en el polígono
             const polyBounds = computeBoundsFromPoints(polyPoints);
-            map.fitBounds(polyBounds);
+            fitBoundsConPanel(polyBounds);
             cargarWaypointsZona();
             return; // 👈 no dibujar rectángulo si hay polígono
           }
@@ -958,7 +1087,7 @@ function renderZona(id) {
         { lat: bounds.south, lng: bounds.west },
         { lat: bounds.north, lng: bounds.east }
       );
-      map.fitBounds(gBounds);
+      fitBoundsConPanel(gBounds);
       cargarWaypointsZona();
     },
   });
@@ -1021,6 +1150,16 @@ function cargarWaypointsZona() {
 
         markers.push(marker);
         waypointsData.push({ lat: myLatLng.lat, lng: myLatLng.lng, marker, movido: false });
+      }
+
+      // A medida que se agregan/quitan Recorridos: reencuadrar para que TODOS
+      // los waypoints entren en la parte visible del mapa (sin quedar detras
+      // del form flotante). Si hay una zona puntual abierta, el encuadre del
+      // poligono ya se hizo antes; igual esto lo ajusta a los pines reales.
+      if (waypointsData.length) {
+        const wb = new google.maps.LatLngBounds();
+        waypointsData.forEach((w) => wb.extend({ lat: w.lat, lng: w.lng }));
+        fitBoundsConPanel(wb);
       }
 
       renderCardsAsignacion();
@@ -1441,7 +1580,7 @@ function renderTodasLasZonas(callback, mostrarFormas) {
           overlaysTodasPorId[z.id] = shape;
         });
 
-        map.fitBounds(bounds);
+        fitBoundsConPanel(bounds);
         $("#zonas_map_title").html("Zonas google Maps (todas)");
         $("#cantidad").html(zonas.length + " zona(s)");
       }
@@ -1524,10 +1663,12 @@ function redistribuirPorZonas() {
     return;
   }
 
-  // Poligonos parseados una sola vez.
+  // Poligonos VIGENTES (forma real en el mapa) parseados una sola vez. El
+  // traspaso va a usar EXACTAMENTE estos puntos (PoligonoManual), no el
+  // poligono guardado en ZonasMapa, asi la previa y lo que se mueve coinciden.
   const polys = zonasCache
-    .map((z, i) => ({ z: z, pts: poligonoDeCache(z), color: colorDeZona(z, i) }))
-    .filter((o) => o.pts);
+    .map((z, i) => ({ z: z, pts: puntosZonaVigentes(z), color: colorDeZona(z, i) }))
+    .filter((o) => Array.isArray(o.pts) && o.pts.length >= 3);
 
   // Preview: a que zona cae cada waypoint no movido, recoloreando el pin.
   const porZona = {};
@@ -1544,6 +1685,7 @@ function redistribuirPorZonas() {
       porZona[id] = {
         nombre: hit.z.Nombre || "Zona",
         color: hit.color,
+        pts: hit.pts, // los puntos que uso la previa == los que va a filtrar el backend
         destinoNum: String(zonaDestino[id]),
         destinoNombre: rec ? rec.Nombre : "",
         destinoColor: rec ? normalizarColor(rec.Color) || "#666666" : "#666666",
@@ -1680,6 +1822,11 @@ function ejecutarRedistribucion(tareas) {
       return;
     }
 
+    // Mando el POLIGONO que uso la previsualizacion (PoligonoManual), no idZona:
+    // asi el backend filtra contra la forma exacta que vio el operador, aunque
+    // la zona en ZonasMapa este vieja / haya sido arrastrada sin guardar.
+    const ptsZona = (t.dest && Array.isArray(t.dest.pts)) ? t.dest.pts : [];
+
     $.ajax({
       url: "Mapas/php/zonas.php",
       type: "POST",
@@ -1688,7 +1835,8 @@ function ejecutarRedistribucion(tareas) {
         CambiarRecorridos: 1,
         Recnew: destino,
         Recorridos: recorridosParaEsta,
-        idZona: t.idZona,
+        idZona: ptsZona.length >= 3 ? 0 : t.idZona,
+        PoligonoManual: ptsZona.length >= 3 ? JSON.stringify(ptsZona) : "",
       },
       success: function (j) {
         if (j && j.success == 1) {

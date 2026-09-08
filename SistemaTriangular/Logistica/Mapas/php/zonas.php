@@ -19,12 +19,17 @@ function contarServiciosEnZona(mysqli $mysqli, array $bbox, ?array $poligono, st
     // dibujado) - la comparacion de abajo estaba invertida desde antes de
     // esta sesion (Latitud>N AND Latitud<S, imposible si N>S siempre) y
     // esta funcion devolvia 0 candidatos para cualquier zona real.
+    //
+    // Clientes.Latitud/Longitud es TEXT: sin el "+ 0" la comparacion es
+    // lexicografica y se rompe con negativos de distinta cantidad de digitos
+    // ('-31.4181639' < '-31.417' da FALSE), => 0 candidatos siempre. El "+ 0"
+    // fuerza comparacion numerica en los dos lados.
     $sql = $mysqli->query(
         "SELECT Clientes.Latitud, Clientes.Longitud FROM Clientes
          INNER JOIN HojaDeRuta ON Clientes.id = HojaDeRuta.idCliente
          WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
-           AND Clientes.Latitud>'{$bbox['LatitudS']}' AND Clientes.Latitud<'{$bbox['LatitudN']}'
-           AND Clientes.Longitud>'{$bbox['LongitudO']}' AND Clientes.Longitud<'{$bbox['LongitudE']}'
+           AND (Clientes.Latitud + 0) > ('{$bbox['LatitudS']}' + 0) AND (Clientes.Latitud + 0) < ('{$bbox['LatitudN']}' + 0)
+           AND (Clientes.Longitud + 0) > ('{$bbox['LongitudO']}' + 0) AND (Clientes.Longitud + 0) < ('{$bbox['LongitudE']}' + 0)
            AND HojaDeRuta.Recorrido IN($exito)"
     );
 
@@ -344,10 +349,15 @@ if (isset($_POST['CambiarRecorridos'])) {
   // siempre el valor mas grande (norte/este), la comparacion va con el
   // mayor arriba - ver comentario ahi para el detalle del bug que tenia
   // esto antes (invertido, 0 candidatos siempre para cualquier zona real).
+  // "+ 0": Clientes.Latitud/Longitud es TEXT; sin forzar numerico la
+  // comparacion es lexicografica y con negativos da 0 filas (la previa
+  // contaba bien pero el traspaso movia 0).
   $query = "SELECT HojaDeRuta.id,HojaDeRuta.Seguimiento,Clientes.Latitud,Clientes.Longitud
     FROM HojaDeRuta INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
-    WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>'' AND Clientes.Latitud>'$bbox[LatitudS]' AND
-    Clientes.Latitud<'$bbox[LatitudN]' AND Clientes.Longitud>'$bbox[LongitudO]' AND Clientes.Longitud<'$bbox[LongitudE]' AND HojaDeRuta.Recorrido IN($exito)";
+    WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
+      AND (Clientes.Latitud + 0) > ('$bbox[LatitudS]' + 0) AND (Clientes.Latitud + 0) < ('$bbox[LatitudN]' + 0)
+      AND (Clientes.Longitud + 0) > ('$bbox[LongitudO]' + 0) AND (Clientes.Longitud + 0) < ('$bbox[LongitudE]' + 0)
+      AND HojaDeRuta.Recorrido IN($exito)";
 
   $result = $mysqli->query($query);
   $cuento = 0;
@@ -365,18 +375,27 @@ if (isset($_POST['CambiarRecorridos'])) {
       }
     }
 
+    $seMovio = false;
+
     if ($fila['Seguimiento'] <> '') {
       // Paquete real: TransClientes + HojaDeRuta + Seguimiento + webhook, todo vía la función unificada.
-      cambiarRecorrido($mysqli, $fila['Seguimiento'], $NuevoRecorrido);
+      $rCambio = cambiarRecorrido($mysqli, $fila['Seguimiento'], $NuevoRecorrido);
+      // Solo cuenta como movido si realmente cambió (no si ya estaba en ese
+      // recorrido o si la función lo rechazó): así "se movieron N" es honesto.
+      $seMovio = is_array($rCambio) && (int)($rCambio['success'] ?? 0) === 1;
     } else {
       // Parada de HojaDeRuta sin paquete asociado todavía: no hay nada que cambiarRecorrido() pueda tocar.
-      $query = $mysqli->query("SELECT NumerodeOrden FROM Logistica WHERE Eliminado='0' AND Estado IN('Alta','Cargada') AND Recorrido='$NuevoRecorrido'");
-      $DatoLogistica = $query->fetch_array(MYSQLI_ASSOC);
-      $mysqli->query("UPDATE HojaDeRuta SET Recorrido='$NuevoRecorrido',NumerodeOrden='$DatoLogistica[NumerodeOrden]' WHERE id='$fila[id]' LIMIT 1");
+      $qOrd = $mysqli->query("SELECT NumerodeOrden FROM Logistica WHERE Eliminado='0' AND Estado IN('Alta','Cargada') AND Recorrido='$NuevoRecorrido'");
+      $DatoLogistica = $qOrd ? $qOrd->fetch_array(MYSQLI_ASSOC) : null;
+      $noDest = $DatoLogistica['NumerodeOrden'] ?? '';
+      $mysqli->query("UPDATE HojaDeRuta SET Recorrido='$NuevoRecorrido',NumerodeOrden='$noDest' WHERE id='$fila[id]' LIMIT 1");
+      $seMovio = $mysqli->affected_rows > 0;
     }
 
-    $movidos[] = ['lat' => (float)$fila['Latitud'], 'lng' => (float)$fila['Longitud']];
-    $cuento = $cuento + 1;
+    if ($seMovio) {
+      $movidos[] = ['lat' => (float)$fila['Latitud'], 'lng' => (float)$fila['Longitud']];
+      $cuento = $cuento + 1;
+    }
   }
 
   echo json_encode(array('success' => 1, 'cuenta' => $cuento, 'movidos' => $movidos));

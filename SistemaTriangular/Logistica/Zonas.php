@@ -158,16 +158,188 @@
             line-height: 1.5;
         }
 
-        /* Mapa a (casi) pantalla completa: ocupa el alto del viewport menos el
-           topnav + titulo, y el panel de la izquierda scrollea aparte. */
-        #map {
-            height: calc(100vh - 150px);
-            min-height: 460px;
+        /* ===== Zonas: mapa a PANTALLA COMPLETA (estilo Google Maps) =====
+           El mapa ocupa todo el viewport debajo del header + topnav; el form
+           queda flotando a la izquierda, POR DELANTE del mapa. El top lo ajusta
+           zonas.js al alto real del header. */
+        #zonas_layout_row {
+            position: fixed !important;
+            top: 120px;
+            /* fallback; JS lo ajusta al alto real del header */
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: auto !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            z-index: 1;
+        }
+
+        /* --- pane del mapa: ocupa todo --- */
+        #zonas_map_col {
+            position: absolute !important;
+            inset: 0;
+            width: 100% !important;
+            max-width: 100% !important;
+            padding: 0 !important;
+        }
+
+        #zonas_map_col>.card,
+        #zonas_map_col>.card>.card-body {
+            height: 100%;
+            margin: 0;
+            border: 0;
+            border-radius: 0;
+            box-shadow: none;
+            background: transparent;
+        }
+
+        #zonas_map_col>.card>.card-body {
+            padding: 0;
+            position: relative;
+        }
+
+        #map,
+        #map.gmaps {
+            position: absolute;
+            inset: 0;
+            height: 100% !important;
+            width: 100%;
+            min-height: 0 !important;
+        }
+
+        /* pastilla flotante: titulo + menu (Cambiar Recorrido / Ver Todas). Va
+           arriba a la izq., al lado del panel, para no tapar los controles
+           nativos de Google (zoom / pantalla completa, arriba a la derecha). */
+        #zonas_map_col .dropdown.text-end {
+            position: absolute;
+            top: 10px;
+            left: 384px;
+            right: auto;
+            z-index: 4;
+            background: rgba(255, 255, 255, .93);
+            border-radius: .35rem;
+            padding: .15rem .45rem;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, .28);
+        }
+
+        #zonas_map_title {
+            position: absolute;
+            top: 12px;
+            left: 440px;
+            z-index: 4;
+            margin: 0;
+            background: rgba(255, 255, 255, .93);
+            border-radius: .35rem;
+            padding: .2rem .65rem;
+            box-shadow: 0 1px 6px rgba(0, 0, 0, .28);
+            font-size: .8rem;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+
+        #zonas_layout_row.zonas-panel-off #zonas_map_col .dropdown.text-end {
+            left: 118px;
+        }
+
+        #zonas_layout_row.zonas-panel-off #zonas_map_title {
+            left: 174px;
+        }
+
+        /* --- panel (form) flotante a la izquierda, POR DELANTE del mapa --- */
+        #zonas_form_col {
+            position: absolute !important;
+            top: 12px;
+            left: 12px;
+            bottom: 12px;
+            width: 360px !important;
+            max-width: calc(100vw - 24px);
+            padding: 0 !important;
+            z-index: 5;
+            transition: transform .2s ease;
+            font-size: .8125rem;
+        }
+
+        #zonas_form_col>.card {
+            height: 100%;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 3px 20px rgba(0, 0, 0, .32);
+        }
+
+        #zonas_form_col>.card>.card-header {
+            flex: 0 0 auto;
+        }
+
+        /* footer del confirmar: SIN alto propio cuando el boton esta oculto
+           (nada de barra vacia). El padding lo pone el propio boton. */
+        #zonas_form_col>.card>.card-footer {
+            flex: 0 0 auto;
+            padding: 0;
+            border-top: 0;
+            background: transparent;
+        }
+
+        #zonas_form_col #btn_confirmar_traspaso:not([hidden]) {
+            display: block;
+            width: calc(100% - 24px);
+            margin: 8px 12px;
         }
 
         #zonas_panel_scroll {
-            max-height: calc(100vh - 120px);
+            flex: 1 1 auto;
             overflow-y: auto;
+            min-height: 0;
+            max-height: none;
+        }
+
+        /* apretar un poco el legend de zonas dentro del panel chico */
+        #zonas_form_col .zona-legend-head {
+            padding: .3rem .4rem;
+        }
+
+        #zonas_form_col .zona-legend-body {
+            padding: .25rem .4rem .4rem;
+        }
+
+        /* panel colapsado: sale de pantalla y aparece la lengueta de la izquierda */
+        #zonas_layout_row.zonas-panel-off #zonas_form_col {
+            transform: translateX(calc(-100% - 24px));
+            pointer-events: none;
+        }
+
+        /* Lengueta (marcador) pegada al borde izquierdo para reabrir el panel.
+           width:auto !important vence al ".row > * { width:100% }" de Bootstrap
+           que la hacia una barra de lado a lado. */
+        #zonas_panel_toggle {
+            position: absolute;
+            left: 0;
+            top: 76px;
+            width: auto !important;
+            max-width: none !important;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 16px 7px !important;
+            border-radius: 0 10px 10px 0 !important;
+            box-shadow: 2px 2px 10px rgba(0, 0, 0, .35);
+            z-index: 6;
+        }
+
+        #zonas_panel_toggle i {
+            font-size: 22px;
+            line-height: 1;
+        }
+
+        #zonas_layout_row.zonas-panel-off #zonas_panel_toggle {
+            display: inline-flex;
+        }
+
+        @media (max-width: 640px) {
+            #zonas_form_col {
+                width: calc(100vw - 24px) !important;
+            }
         }
 
         /* Boton nativo de pantalla completa de Google Maps: dejarlo mas visible. */
@@ -268,8 +440,8 @@
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
-                    <!-- start page title -->
-                    <div class="row">
+                    <!-- start page title (oculto: el mapa va a pantalla completa) -->
+                    <div class="row d-none">
                         <div class="col-12">
                             <div class="page-title-box">
                                 <div class="page-title-right">
@@ -288,86 +460,84 @@
                     </div>
                     <!-- end page title -->
                     <div class="row" id="zonas_layout_row">
-                        <div class="col-xl-4">
+                        <div class="col-xl-4" id="zonas_form_col">
                             <div class="card">
-                                <div class="card-body" id="zonas_panel_scroll">
-                                    <h4 class="header-title mb-3">Geolocalizacion Zonas </h4>
-                                    <div class="tab-content">
-                                        <div class="tab-pane show active mb-3" id="default-buttons-preview">
-                                            <div class="d-flex flex-wrap gap-2">
-                                                <button type="button" class="btn btn-sm btn-primary" data-bs-toggle="modal" data-bs-target="#zona-modal">Agregar Zona</button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#importar-poligono-modal">Importar KML/KMZ</button>
-                                                <button type="button" class="btn btn-sm btn-outline-dark" id="dibujar_zona_manual_btn">
-                                                    <i class="mdi mdi-vector-polygon"></i> Dibujar Zona
-                                                </button>
-                                            </div>
-                                        </div>
+                                <div class="card-header d-flex justify-content-between align-items-center py-2 px-3">
+                                    <h4 class="header-title mb-0">Zonas</h4>
+                                    <button type="button" class="btn btn-sm btn-light border" id="zonas_panel_hide" title="Ocultar panel">
+                                        <i class="mdi mdi-chevron-left"></i> Ocultar
+                                    </button>
+                                </div>
+                                <div class="card-body py-2 px-3" id="zonas_panel_scroll">
+                                    <!-- acciones de zona: 1 sola fila -->
+                                    <div class="d-flex gap-1 mb-2">
+                                        <button type="button" class="btn btn-sm btn-primary flex-fill px-1" data-bs-toggle="modal" data-bs-target="#zona-modal" title="Agregar Zona">
+                                            <i class="mdi mdi-plus"></i> Zona
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-dark flex-fill px-1" id="dibujar_zona_manual_btn" title="Dibujar Zona">
+                                            <i class="mdi mdi-vector-polygon"></i> Dibujar
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-outline-primary flex-fill px-1" data-bs-toggle="modal" data-bs-target="#importar-poligono-modal" title="Importar KML/KMZ">
+                                            <i class="mdi mdi-upload"></i> KML
+                                        </button>
                                     </div>
 
-                                    <!-- Multiple Select -->
-                                    <div class="col-lg-12 mt-3">
-                                        <div class="selector-recorrido1 form-group">
-                                            <label for="select_rec_mapa">Seleccionar Recorridos</label>
-
-                                            <select
-                                                id="select_rec_mapa"
-                                                name="recorridos[]"
-                                                class="select2 form-control select2-multiple"
-                                                data-toggle="select2"
-                                                multiple="multiple"
-                                                data-placeholder="Seleccionar Recorridos ...">
-                                            </select>
-                                            <span id="geo-warning-badge" class="badge bg-warning text-dark mt-2" style="display:none;cursor:pointer;"></span>
-                                        </div>
+                                    <!-- Seleccionar Recorridos -->
+                                    <div class="form-group mb-2 selector-recorrido1">
+                                        <label for="select_rec_mapa" class="mb-1 small text-muted d-block">Seleccionar Recorridos</label>
+                                        <select
+                                            id="select_rec_mapa"
+                                            name="recorridos[]"
+                                            class="select2 form-control select2-multiple"
+                                            data-toggle="select2"
+                                            multiple="multiple"
+                                            data-placeholder="Recorridos ...">
+                                        </select>
+                                        <span id="geo-warning-badge" class="badge bg-warning text-dark mt-1" style="display:none;cursor:pointer;"></span>
                                     </div>
 
-                                    <!-- Generador de zonas: parte los waypoints del dia en N zonas
-                                         de carga pareja (biseccion) que cubren todo. Reemplaza el
-                                         set de zonas actual. -->
-                                    <div class="col-lg-12 mt-2">
+                                    <!-- Generar zonas balanceadas por carga del dia -->
+                                    <div class="mb-2">
                                         <label class="mb-1 small text-muted d-block">Generar zonas balanceadas (carga del día)</label>
                                         <div class="input-group input-group-sm">
                                             <span class="input-group-text">N</span>
-                                            <input type="number" id="gen_zonas_n" class="form-control" min="1" max="10" value="4" style="max-width:64px;">
+                                            <input type="number" id="gen_zonas_n" class="form-control" min="1" max="10" value="4" style="max-width:54px;">
                                             <button type="button" class="btn btn-outline-primary flex-grow-1" id="btn_generar_zonas" disabled>
                                                 <i class="mdi mdi-shape-outline"></i> Generar y reemplazar
                                             </button>
                                         </div>
-                                        <div id="gen_zonas_hint" class="text-muted small mt-1">
-                                            Elegí Recorridos primero; parte los waypoints en N zonas de carga pareja.
-                                        </div>
+                                        <div id="gen_zonas_hint" class="text-muted small mt-1">Elegí Recorridos primero.</div>
                                     </div>
 
-                                    <!-- Redistribucion en 2 pasos: (1) previsualizar (recolorea
-                                         los pines por zona + arma el resumen, no toca nada);
-                                         (2) confirmar traspaso (aplica los CambiarRecorridos). -->
-                                    <div class="col-lg-12 mt-2">
-                                        <button type="button" class="btn btn-outline-primary w-100" id="btn_redistribuir_zonas" disabled>
-                                            <i class="mdi mdi-eye-outline"></i> Previsualizar por zonas
-                                        </button>
-                                        <div id="redistribuir_hint" class="text-muted small mt-1">
-                                            Elegí uno o más Recorridos y asigná un Recorrido destino a cada zona.
-                                        </div>
-                                        <div id="redistribuir_resumen" class="mt-2"></div>
-                                        <button type="button" class="btn btn-success w-100 mt-2" id="btn_confirmar_traspaso" hidden>
-                                            <i class="mdi mdi-check-bold"></i> Confirmar traspaso
-                                        </button>
-                                    </div>
-
-                                    <div class="mt-3">
-                                        <label class="mb-1 d-flex justify-content-between align-items-center">
+                                    <!-- Zonas (legend: swatch de color, conteo, Recorrido destino) -->
+                                    <div class="mb-2">
+                                        <label class="mb-1 d-flex justify-content-between align-items-center small text-muted">
                                             <span>Zonas</span>
                                             <span id="zonas_total_badge" class="badge bg-light text-muted border"></span>
                                         </label>
-                                        <!-- Legend de zonas: todas visibles a la vez, swatch de color,
-                                             conteo de waypoints y selector de Recorrido destino. -->
                                         <div id="zonas_accordion"></div>
                                     </div>
+
+                                    <!-- Paso 1: previsualizar (va DEBAJO de las zonas, no toca nada) -->
+                                    <div class="mb-1">
+                                        <button type="button" class="btn btn-sm btn-outline-primary w-100" id="btn_redistribuir_zonas" disabled>
+                                            <i class="mdi mdi-eye-outline"></i> Previsualizar por zonas
+                                        </button>
+                                        <div id="redistribuir_hint" class="text-muted small mt-1">Asigná un Recorrido destino a cada zona.</div>
+                                        <div id="redistribuir_resumen" class="mt-2"></div>
+                                    </div>
                                 </div> <!-- end card-body-->
+
+                                <!-- Paso 2: confirmar traspaso, fijo abajo de todo -->
+                                <div class="card-footer py-2 px-3">
+                                    <button type="button" class="btn btn-sm btn-success w-100" id="btn_confirmar_traspaso" hidden>
+                                        <i class="mdi mdi-check-bold"></i> Confirmar traspaso
+                                    </button>
+                                </div>
                             </div> <!-- end card-->
                         </div> <!-- end col-->
 
-                        <div class="col-xl-8">
+                        <div class="col-xl-8" id="zonas_map_col">
                             <div class="card">
                                 <div class="card-body">
                                     <div class="dropdown text-end">
@@ -394,6 +564,11 @@
                                 </div> <!-- end card-body-->
                             </div> <!-- end card-->
                         </div> <!-- end col-->
+
+                        <!-- lengueta al borde izquierdo para reabrir el panel -->
+                        <button type="button" class="btn btn-primary" id="zonas_panel_toggle" title="Mostrar panel de zonas" aria-label="Mostrar panel de zonas">
+                            <i class="mdi mdi-chevron-right"></i>
+                        </button>
                     </div>
                     <!-- end row-->
 
