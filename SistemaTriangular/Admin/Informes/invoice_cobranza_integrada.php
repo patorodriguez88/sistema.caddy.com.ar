@@ -86,7 +86,7 @@ header('location:https://www.caddy.com.ar/sistema');
                                                             <a id="NumeroComprobante"> 00000000000</a><br>
                                                             <strong>Fecha: <a id="FechaComprobante"></a></strong><br>
                                                             <strong>Id de Cliente: </strong><a id="factura_codigo"></a><br>
-                                                            <strong>Estado del Coprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span><br>
+                                                            <strong>Estado del Coprobante: </strong><span id="estado" class="badge bg-success">Pendiente</span><br>
                                                             <strong class="mt-2" id="surrender_name_label" style="display:none">Receptor: </strong><a id="surrender_name"></a><br>
                                                             <strong id="surrender_time_label" style="display:none">Fecha Rendicion: </strong><a id="surrender_time"></a><br>
 

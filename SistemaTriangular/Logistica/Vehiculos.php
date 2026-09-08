@@ -420,7 +420,7 @@
                                         <!-- File Upload -->
                                         <form action="" method="post">
                                             <div class="form-row">
-                                                <h2><span id="mantenimiento_estado-asana_badge" class="badge badge-primary"></span></h2>
+                                                <h2><span id="mantenimiento_estado-asana_badge" class="badge bg-primary"></span></h2>
 
                                                 <div class="form-group col-md-6">
 
@@ -741,11 +741,11 @@
                                                         <!-- Product description -->
                                                         <div class="mt-4">
                                                             <h6 class="font-14">Observaciones:</h6>
-                                                            <span id="mantenimiento_fecha_obs" class="badge badge-dark">Fecha</span>
+                                                            <span id="mantenimiento_fecha_obs" class="badge bg-dark">Fecha</span>
                                                             <!-- Bool Switch-->
-                                                            <span id="mantenimiento_recorrido_obs" class="badge badge-dark">Recorrido</span>
+                                                            <span id="mantenimiento_recorrido_obs" class="badge bg-dark">Recorrido</span>
                                                             <!-- Primary Switch-->
-                                                            <span id="mantenimiento_chofer_obs" class="badge badge-dark">Chofer</span>
+                                                            <span id="mantenimiento_chofer_obs" class="badge bg-dark">Chofer</span>
                                                             <p id="vehicle_obs"></p>
                                                         </div>
 

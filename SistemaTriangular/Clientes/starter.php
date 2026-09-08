@@ -1049,7 +1049,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                     <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Promedio Mensual</h5>
                                     <h3 class="mt-3 mb-3" id="ventas_mes"></h3>
                                     <p class="mb-0 text-muted">
-                                      <span class="badge badge-info mr-1">
+                                      <span class="badge bg-info mr-1">
                                                                 <i class="mdi mdi-arrow-down-bold" id="ventas_mes_ant"></i> %</span>
                                       <span class="text-nowrap">Compara año anterior</span>
                                     </p>
@@ -1066,7 +1066,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                     <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Ventas Este Año</h5>
                                     <h3 class="mt-3 mb-3" id="ventas_ano"></h3>
                                     <p class="mb-0 text-muted">
-                                      <span class="badge badge-info mr-1">
+                                      <span class="badge bg-info mr-1">
                                                                 <i class="mdi mdi-arrow-down-bold" id="ventas_ano_ant"></i> %</span>
                                       <span class="text-nowrap">Comprara año anterior</span>
                                     </p>
@@ -1084,7 +1084,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                     <h3 class="mt-3 mb-3" id="debe"></h3>
 
                                     <p class="mb-0 text-muted">
-                                      <span class="badge badge-info mr-1">
+                                      <span class="badge bg-info mr-1">
                                                                 <i class="mdi mdi-arrow-down-bold" id="tipo"></i> % </span>
                                       <span class="text-nowrap" id="numero"></span>
                                     </p>
@@ -1101,7 +1101,7 @@ header("location:https://www.caddy.com.ar/sistema");
                                     <h5 class="text-white font-weight-normal mt-0" title="Revenue">Saldo Actual</h5>
                                     <h3 class="mt-3 mb-1" id="saldo"></h3>
                                     <p class="mb-0 text-white">
-                                      <!--                                                             <span class="badge badge-info mr-1">
+                                      <!--                                                             <span class="badge bg-info mr-1">
                                                               <i id="fecha_ult_pago"></i> </span> -->
                                       <a id="fecha_ult_pago"></a>
                                       <span class="text-nowrap text-white" id="importe_ult_pago">Último Pago</span>

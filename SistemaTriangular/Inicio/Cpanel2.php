@@ -69,7 +69,7 @@
                                     <h3 class="mt-3 mb-3" id="entregas_dia"></h3>
                                     <span class="text-nowrap" id="entregas_mes"></span>
                                     <p class="mb-0 text-muted">
-                                        <span class="badge badge-info mr-1">
+                                        <span class="badge bg-info mr-1">
                                             <i id="entregas_porc"></i> </span>
                                         <span class="text-nowrap" id="entregas_mesant"></span>
                                     </p>
@@ -87,7 +87,7 @@
                                     <h3 class="mt-3 mb-3" id="entregasr_dia"></h3>
                                     <span class="text-nowrap" id="entregasr_mes"></span>
                                     <p class="mb-0 text-muted">
-                                        <span class="badge badge-info mr-1">
+                                        <span class="badge bg-info mr-1">
                                             <i id="entregasr_porc"></i> </span>
                                         <span class="text-nowrap" id="entregasr_mesant"></span>
                                     </p>
@@ -104,7 +104,7 @@
                                     <h3 class="mt-3 mb-3" id="clientes_dia"></h3>
                                     <span class="text-nowrap" id="clientes_mes"></span>
                                     <p class="mb-0 text-muted">
-                                        <span class="badge badge-info mr-1">
+                                        <span class="badge bg-info mr-1">
                                             <i id="clientes_porc"></i> </span>
                                         <span class="text-nowrap" id="clientes_mesant"></span>
                                     </p>
@@ -122,7 +122,7 @@
                                     <h3 class="mt-3 mb-3" id="kilometros_dia"></h3>
                                     <span class="text-nowrap" id="kilometros_mes"></span>
                                     <p class="mb-0 text-muted">
-                                        <span class="badge badge-info mr-1">
+                                        <span class="badge bg-info mr-1">
                                             <i id="kilometros_porc"></i> </span>
                                         <span class="text-nowrap" id="kilometros_mesant"></span>
                                     </p>

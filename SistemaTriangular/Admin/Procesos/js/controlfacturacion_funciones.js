@@ -59,7 +59,7 @@ $(document).ready(function () {
     var Hasta = Hasta0[2] + "-" + Hasta0[0] + "-" + Hasta0[1];
 
     if (facturado == 1) {
-      $("#ongoing").removeClass("badge-danger").addClass("badge-success");
+      $("#ongoing").removeClass("bg-danger").addClass("bg-success");
       $("#ongoing").html("Facturados");
       var nombre =
         "Servicios Facturados " +
@@ -75,7 +75,7 @@ $(document).ready(function () {
         "/" +
         Hasta0[2];
     } else if (facturado == 0) {
-      $("#ongoing").removeClass("badge-success").addClass("badge-danger");
+      $("#ongoing").removeClass("bg-success").addClass("bg-danger");
       $("#ongoing").html("Sin Facturar");
       var nombre =
         "Servicios Sin Facturar " +
@@ -426,10 +426,10 @@ $(document).ready(function () {
               vencida_color = "success";
             }
             if (row.Facturado == "1") {
-              return `<td><a class='badge badge-success' value='Facturado'>Facturado</a>`;
+              return `<td><a class='badge bg-success' value='Facturado'>Facturado</a>`;
             } else {
               return (
-                `<td><a class='badge badge-danger' value='Sin Facturar'>Sin Facturar</a></td>` +
+                `<td><a class='badge bg-danger' value='Sin Facturar'>Sin Facturar</a></td>` +
                 `<br><a class='badge badge-${vencida_color}' value='Vencida'>${vencida_label} </a></n></td>`
               );
             }
@@ -461,9 +461,9 @@ $(document).ready(function () {
             }
 
             if (row.Flex != 1) {
-              var flex = `<br/><td><a class='badge badge-warning text-white'>Simple</a></td>`;
+              var flex = `<br/><td><a class='badge bg-warning text-white'>Simple</a></td>`;
             } else {
-              flex = `<br/><td><a class='badge badge-success text-white'>Flex</a></td>`;
+              flex = `<br/><td><a class='badge bg-success text-white'>Flex</a></td>`;
             }
 
             return (

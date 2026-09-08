@@ -111,7 +111,7 @@ var datatable = $("#seguimiento").DataTable({
           } else {
             color = "success"; // futura
           }
-          var FechaPrometida = `<span class="badge badge-${color} badge-pill">Prometida: ${row.FechaPrometida.split(
+          var FechaPrometida = `<span class="badge bg-${color} text-white rounded-pill">Prometida: ${row.FechaPrometida.split(
             "-",
           )
             .reverse()
@@ -128,7 +128,7 @@ var datatable = $("#seguimiento").DataTable({
             color_respuesta = "warning";
           }
 
-          var Respuesta = `<span class="badge badge-${color_respuesta} text-white badge-pill">Respuesta Wp.: ${row.Respuesta}</span>`;
+          var Respuesta = `<span class="badge bg-${color_respuesta} text-white rounded-pill">Respuesta Wp.: ${row.Respuesta}</span>`;
         } else {
           Respuesta = "";
         }
@@ -225,7 +225,7 @@ var datatable = $("#seguimiento").DataTable({
         if (row.Redespacho == 0) {
           return `<td class="table-action"><a style="cursor:pointer" data-id="${row.CodigoSeguimiento}" id="${row.CodigoSeguimiento}" onclick="modificarrecorrido(this.id);" ><b class="text-primary">${row.Recorrido}</b></a></td>`;
         } else {
-          return `<td class="table-action"><a style="cursor:pointer" data-id="${row.CodigoSeguimiento}" id="${row.CodigoSeguimiento}" onclick="modificarrecorrido(this.id);" ><b class="text-primary">${row.Recorrido}</b></a><br/><span class="badge badge-warning text-white"><i class="mdi mdi-alpha-r-box"></i> Redespacho</span></td>`;
+          return `<td class="table-action"><a style="cursor:pointer" data-id="${row.CodigoSeguimiento}" id="${row.CodigoSeguimiento}" onclick="modificarrecorrido(this.id);" ><b class="text-primary">${row.Recorrido}</b></a><br/><span class="badge bg-warning text-white"><i class="mdi mdi-alpha-r-box"></i> Redespacho</span></td>`;
         }
       },
     },

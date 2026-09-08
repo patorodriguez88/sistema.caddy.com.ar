@@ -132,7 +132,7 @@ include_once "../Conexion/Conexion.php";
                                       <strong>Fecha Prometida: <a id="fecha_prommise"></a></strong><br>  
                                       <strong>Fecha Entrega: <a id="FechaEntrega"></a></strong><br>
                                       <strong>Cliente Origen: </strong><a id="id_cliente"></a><br>
-                                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge badge-success">Pendiente</span>
+                                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge bg-success">Pendiente</span>
                                   </address>
                                     </div>
                                   </div>

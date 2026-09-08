@@ -441,7 +441,7 @@ function add_pres(id) {
                     {data: "Fecha",
                         render: function(data, type, row) {
                             var Fecha = row.Fecha.split('-').reverse().join('.');
-                            return `<td><span style="display: none;">${row.Fecha}</span>${Fecha}<br><span class="badge badge-primary">${row.Usuario}</span></td></td>`;
+                            return `<td><span style="display: none;">${row.Fecha}</span>${Fecha}<br><span class="badge bg-primary">${row.Usuario}</span></td></td>`;
                         }
                     },
                     {data: "Proveedor"},
@@ -644,7 +644,7 @@ $(document).ready(function(){
             {data: "Fecha",              
                 render: function(data, type, row) {
                     var Fecha = row.Fecha.split('-').reverse().join('.');
-                    return `<td><span style="display: none;">${row.Fecha}</span>${Fecha}<br><span class="badge badge-primary">${row.UsuarioCarga}</span></td>`;
+                    return `<td><span style="display: none;">${row.Fecha}</span>${Fecha}<br><span class="badge bg-primary">${row.UsuarioCarga}</span></td>`;
                 }
             },
             {data: "TipoDeOrden"},
@@ -672,15 +672,15 @@ $(document).ready(function(){
             {data: "Estado",
                 render: function(data, type, row){
                     if(row.Estado == 'Aceptada') {
-                        return '<td><span class="badge badge-info">Aceptada</span><br>'+
-                                '<span class="badge badge-info">'+row.Presupuestos+' Presupuestos </span></td>';
+                        return '<td><span class="badge bg-info">Aceptada</span><br>'+
+                                '<span class="badge bg-info">'+row.Presupuestos+' Presupuestos </span></td>';
                     } else if(row.Estado == 'Aprobada') {
-                        return '<td><span class="badge badge-success text-white">Aprobada</span><br>'+
-                        '<td><span style="cursor:pointer" class="badge badge-dark text-white">'+row.CodigoAprobacion+'</span></td>';
+                        return '<td><span class="badge bg-success text-white">Aprobada</span><br>'+
+                        '<td><span style="cursor:pointer" class="badge bg-dark text-white">'+row.CodigoAprobacion+'</span></td>';
                     } else if(row.Estado == 'Rechazada') {
-                        return '<td><span class="badge badge-danger">Rechazada</span></td>';
+                        return '<td><span class="badge bg-danger">Rechazada</span></td>';
                     } else if(row.Estado == 'Cargada') {
-                        return '<td><span class="badge badge-secondary">Cargada</span></td>';
+                        return '<td><span class="badge bg-secondary">Cargada</span></td>';
                     } else {
                         return '<td></td>';
                     }

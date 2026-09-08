@@ -211,10 +211,10 @@ $('#mes').html('Panel de Control');
             document.getElementById('entregas_porc').className='mdi-arrow-left-right-bold';  
             }else if(jsonData.Tendencia==1){
             document.getElementById('entregas_porc').className='mdi mdi-arrow-up-bold';  
-            document.getElementById('entregas_porc_color').className='badge badge-success mr-1';  
+            document.getElementById('entregas_porc_color').className='badge bg-success mr-1';  
             }else if(jsonData.Tendencia==2){
             document.getElementById('entregas_porc').className='mdi mdi-arrow-down-bold';  
-            document.getElementById('entregas_porc_color').className='badge badge-danger mr-1';  
+            document.getElementById('entregas_porc_color').className='badge bg-danger mr-1';  
             }
             
           $('#entregasr_dia').html(jsonData.Totalr+' envíos hoy');              
@@ -225,10 +225,10 @@ $('#mes').html('Panel de Control');
             document.getElementById('entregasr_porc').className='mdi-arrow-left-right-bold';  
             }else if(jsonData.Tendenciar==1){
             document.getElementById('entregasr_porc').className='mdi mdi-arrow-up-bold';
-            document.getElementById('entregasr_porc_color').className='badge badge-success mr-1';  
+            document.getElementById('entregasr_porc_color').className='badge bg-success mr-1';  
             }else if(jsonData.Tendenciar==2){
             document.getElementById('entregasr_porc').className='mdi mdi-arrow-down-bold';  
-            document.getElementById('entregasr_porc_color').className='badge badge-danger mr-1';  
+            document.getElementById('entregasr_porc_color').className='badge bg-danger mr-1';  
             }
 
           }else{
@@ -275,10 +275,10 @@ $('#mes').html('Panel de Control');
             document.getElementById('clientes_porc').className='mdi-arrow-left-right-bold';  
             }else if(jsonData.Tendencia==1){
             document.getElementById('clientes_porc').className='mdi mdi-arrow-up-bold'; 
-            document.getElementById('clientes_porc_color').className='badge badge-success mr-1';  
+            document.getElementById('clientes_porc_color').className='badge bg-success mr-1';  
             }else if(jsonData.Tendencia==2){
             document.getElementById('clientes_porc').className='mdi mdi-arrow-down-bold';  
-            document.getElementById('clientes_porc_color').className='badge badge-danger mr-1';  
+            document.getElementById('clientes_porc_color').className='badge bg-danger mr-1';  
             }
             }else{
           }
@@ -305,10 +305,10 @@ $('#mes').html('Panel de Control');
             document.getElementById('kilometros').className='mdi-arrow-left-right-bold';  
             }else if(jsonData.Tendencia==1){
             document.getElementById('kilometros_porc').className='mdi mdi-arrow-up-bold';
-            document.getElementById('kilometros_porc_color').className='badge badge-success mr-1';  
+            document.getElementById('kilometros_porc_color').className='badge bg-success mr-1';  
            }else if(jsonData.Tendencia==2){
             document.getElementById('kilometros_porc').className='mdi mdi-arrow-down-bold';  
-            document.getElementById('kilometros_porc_color').className='badge badge-danger mr-1';  
+            document.getElementById('kilometros_porc_color').className='badge bg-danger mr-1';  
            }
             }else{
           }

@@ -140,7 +140,7 @@
                                     <h3 class="mt-3 mb-3" id="total_dashboard"></h3>
                                     <h6 class="mt-1 mb-1" id="total_dashboard2"></h6>
                                     <p class="mb-0 text-muted">
-                                        <span class="badge badge-info mr-1">
+                                        <span class="badge bg-info mr-1">
                                             <i class="mdi mdi-arrow-down-bold"></i> 7.00%</span>
                                         <span class="text-nowrap">Since last month</span>
                                     </p>
@@ -177,7 +177,7 @@
                                             <h4 class="mt-0">
                                                 <a href="apps-projects-details.html" class="text-title" id="title_guias">CONTROL VENTAS</a>
                                             </h4>
-                                            <div id="ongoing" class="badge badge-secondary mb-3"></div>
+                                            <div id="ongoing" class="badge bg-secondary mb-3"></div>
 
                                             <p class="text-muted font-13 mb-3" id="page-title1"><a class="font-weight-bold text-muted">view more</a>
                                             </p>

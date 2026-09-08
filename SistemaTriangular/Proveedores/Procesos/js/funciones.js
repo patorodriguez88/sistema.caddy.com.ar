@@ -496,10 +496,10 @@ $(document).ready(function () {
                   if (row.Debe != 0) {
                     if (row.Saldo == 0) {
                       var status =
-                        '<span class="badge badge-success">Pagada</span>';
+                        '<span class="badge bg-success">Pagada</span>';
                     } else {
                       status =
-                        '<span class="badge badge-warning text-white">Pendiente</span>';
+                        '<span class="badge bg-warning text-white">Pendiente</span>';
                     }
                   } else {
                     status = "";

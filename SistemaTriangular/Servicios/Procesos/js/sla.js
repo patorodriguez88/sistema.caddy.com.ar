@@ -78,7 +78,7 @@ $.ajax({
                     if(row.Redespacho==0){
                     return `<td class="table-action"><a data-id="${row.CodigoSeguimiento}" id="${row.CodigoSeguimiento}" ><b class="text-primary">${row.Recorrido}</b></a></td>`;
                     }else{
-                    return `<td class="table-action"><a data-id="${row.CodigoSeguimiento}" id="${row.CodigoSeguimiento}" ><b class="text-primary">${row.Recorrido}</b></a><br/><span class="badge badge-warning text-white"><i class="mdi mdi-alpha-r-box"></i> Redespacho</span></td>`;   
+                    return `<td class="table-action"><a data-id="${row.CodigoSeguimiento}" id="${row.CodigoSeguimiento}" ><b class="text-primary">${row.Recorrido}</b></a><br/><span class="badge bg-warning text-white"><i class="mdi mdi-alpha-r-box"></i> Redespacho</span></td>`;   
                     }
                 }
                 },

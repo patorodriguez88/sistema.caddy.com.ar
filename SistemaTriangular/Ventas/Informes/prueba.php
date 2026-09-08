@@ -53,7 +53,7 @@
                         <li class="side-nav-item">
                             <a href="javascript: void(0);" class="side-nav-link">
                                 <i class="uil-home-alt"></i>
-                                <span class="badge badge-success float-right">4</span>
+                                <span class="badge bg-success float-right">4</span>
                                 <span> Dashboards </span>
                             </a>
                             <ul class="side-nav-second-level" aria-expanded="false">
@@ -152,10 +152,10 @@
                                     <a href="apps-projects-details.html">Details</a>
                                 </li>
                                 <li>
-                                    <a href="apps-projects-gantt.html">Gantt <span class="badge badge-pill badge-light-lighten font-10 float-right">New</span></a>
+                                    <a href="apps-projects-gantt.html">Gantt <span class="badge rounded-pill badge-light-lighten font-10 float-right">New</span></a>
                                 </li>
                                 <li>
-                                    <a href="apps-projects-add.html">Create Project <span class="badge badge-pill badge-success-lighten font-10 float-right">New</span></a>
+                                    <a href="apps-projects-add.html">Create Project <span class="badge rounded-pill badge-success-lighten font-10 float-right">New</span></a>
                                 </li>
                             </ul>
                         </li>
@@ -294,7 +294,7 @@
                         <li class="side-nav-item">
                             <a href="landing.html" target="_blank" class="side-nav-link">
                                 <i class="uil-globe"></i>
-                                <span class="badge badge-light float-right">New</span>
+                                <span class="badge bg-light float-right">New</span>
                                 <span> Landing </span>
                             </a>
                         </li>
@@ -1010,7 +1010,7 @@
                                             <div class="col-sm-4 offset-sm-2">
                                                 <div class="mt-3 float-sm-right">
                                                     <p class="font-13"><strong>Order Date: </strong> &nbsp;&nbsp;&nbsp; Jan 17, 2018</p>
-                                                    <p class="font-13"><strong>Order Status: </strong> <span class="badge badge-success float-right">Paid</span></p>
+                                                    <p class="font-13"><strong>Order Status: </strong> <span class="badge bg-success float-right">Paid</span></p>
                                                     <p class="font-13"><strong>Order ID: </strong> <span class="float-right">#123456</span></p>
                                                 </div>
                                             </div><!-- end col -->

@@ -41,9 +41,9 @@ function ver(id, name) {
         console.log("Colecta:", colecta);
         // Mostrar colecta en el DOM según sea necesario
         if (colecta == 0) {
-          colecta = '<span class="ml-3 badge badge-danger">Sin Colecta</span>';
+          colecta = '<span class="ml-3 badge bg-danger">Sin Colecta</span>';
         } else {
-          colecta = '<span class="ml-3 badge badge-success">Con Colecta</span>';
+          colecta = '<span class="ml-3 badge bg-success">Con Colecta</span>';
         }
         $("#colectaDisplay").html(colecta);
 
@@ -106,9 +106,9 @@ function ver(id, name) {
         data: "Condicion",
         render: function (data, type, row, meta) {
           if (row.Condicion === "true") {
-            return `<span class="badge badge-success"><i class="mdi mdi-18px mdi-checkbox-marked-circle"></i></span>`;
+            return `<span class="badge bg-success"><i class="mdi mdi-18px mdi-checkbox-marked-circle"></i></span>`;
           } else {
-            return '<span class="badge badge-danger"><i class="mdi mdi-18px mdi-close-circle"></i></span>';
+            return '<span class="badge bg-danger"><i class="mdi mdi-18px mdi-close-circle"></i></span>';
             // return '<i class="mdi mdi-18px mdi-close-circle text-danger"></i>';
           }
         },

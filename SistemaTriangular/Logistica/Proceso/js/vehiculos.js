@@ -127,21 +127,21 @@ function open_mantenimiento_asana(gid_task) {
       });
 
       if (data.data.memberships[0].section.name == "En Progreso") {
-        $("#mantenimiento_estado-asana_badge").addClass("badge-warning");
+        $("#mantenimiento_estado-asana_badge").addClass("bg-warning");
         $("#mantenimiento_estado-asana_badge").html(
           data.data.memberships[0].section.name
         );
       }
 
       if (data.data.memberships[0].section.name == "Solicitud nueva") {
-        $("#mantenimiento_estado-asana_badge").addClass("badge-primary");
+        $("#mantenimiento_estado-asana_badge").addClass("bg-primary");
         $("#mantenimiento_estado-asana_badge").html(
           data.data.memberships[0].section.name
         );
       }
 
       if (data.data.memberships[0].section.name == "Finalizado") {
-        $("#mantenimiento_estado-asana_badge").addClass("badge-success");
+        $("#mantenimiento_estado-asana_badge").addClass("bg-success");
         $("#mantenimiento_estado-asana_badge").html(
           data.data.memberships[0].section.name
         );
@@ -996,9 +996,9 @@ $("#access_tax").click(function () {
         data: "Pagado",
         render: function (data, type, row) {
           if (row.Pagado == 1) {
-            return "<span class='badge badge-success'>Pagado</span>";
+            return "<span class='badge bg-success'>Pagado</span>";
           } else {
-            return "<span class='badge badge-danger'>Pendiente</span>";
+            return "<span class='badge bg-danger'>Pendiente</span>";
           }
         },
       },

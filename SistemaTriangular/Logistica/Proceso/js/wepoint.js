@@ -214,7 +214,7 @@ $(function () {
             (data || "") +
             "</b></a>";
           if (Number(row.Redespacho) === 1) {
-            // Si preferís el estilo B5 antiguo: 'badge badge-warning text-white'
+            // Si preferís el estilo B5 antiguo: 'badge bg-warning text-white'
             html +=
               '<br/><span class="badge bg-warning text-white">' +
               '<i class="mdi mdi-alpha-r-box"></i> Redespacho</span>';

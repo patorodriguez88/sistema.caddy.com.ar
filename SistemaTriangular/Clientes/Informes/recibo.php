@@ -104,7 +104,7 @@ if (isset($_GET['token']) && $_GET['token'] != '') {
                       <a id="NumeroComprobante">00000000000</a><br>
                       <strong>Fecha Pago: <a id="FechaComprobante"></a></strong><br>
                       <strong>Id de Cliente: </strong><a id="factura_codigo"></a><br>
-                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge badge-success">Acreditado</span>
+                      <strong>Estado del Coprobante: </strong><span id="estado" class="badge bg-success">Acreditado</span>
                     </address>
                   </div>
                 </div>

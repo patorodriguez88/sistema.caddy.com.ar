@@ -209,8 +209,8 @@
                                         <div class="col-sm-4 offset-sm-2">
                                             <div class="mt-3 float-sm-right">
                                                 <p class="font-13"><strong>Fecha: </strong> <span id="report_fechaS"></span></p>
-                                                <p class="font-13"><strong>Recorrido: </strong> <span id="report_recorrido" class="badge badge-success float-right">&nbsp; </span></p>
-                                                <p class="font-13"><strong>Orden Status: </strong> <span id="report_status" class="badge badge-success float-right"> &nbsp; </span></p>
+                                                <p class="font-13"><strong>Recorrido: </strong> <span id="report_recorrido" class="badge bg-success float-right">&nbsp; </span></p>
+                                                <p class="font-13"><strong>Orden Status: </strong> <span id="report_status" class="badge bg-success float-right"> &nbsp; </span></p>
                                                 <p class="font-13"><strong>Orden ID: </strong> <span class="float-right ml-2" id="report_id">&nbsp; </span></p>
                                             </div>
                                         </div><!-- end col -->

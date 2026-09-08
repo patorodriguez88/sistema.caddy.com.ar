@@ -50,13 +50,13 @@ function changeservice(f) {
       if (jsonData.success == 1) {
         if (jsonData.value == 1) {
           $("#" + f)
-            .removeClass("badge-warning")
-            .addClass("badge-success");
+            .removeClass("bg-warning")
+            .addClass("bg-success");
           $("#" + f).html("Flex");
         } else {
           $("#" + f)
-            .removeClass("badge-success")
-            .addClass("badge-warning");
+            .removeClass("bg-success")
+            .addClass("bg-warning");
           $("#" + f).html("Simple");
         }
       }

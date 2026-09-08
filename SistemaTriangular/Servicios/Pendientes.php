@@ -475,7 +475,7 @@
     <?php include '../Menu/php/script_datatables.php'; ?>
 
     <!-- Funciones -->
-    <script src="Procesos/js/pendientes.js?v=202609071224"></script>
+    <script src="Procesos/js/pendientes.js?v=202609090900"></script>
     <script src="../Funciones/js/seguimiento.js?v=202609071223"></script>
     <script src="../Menu/js/funciones.js"></script>
 

@@ -75,7 +75,7 @@
                                 <div class="modal-header">
                                     <h4 class="modal-title" id="myLargeModalLabel">Control de Facturación</h4>
                                     <div id="colectaDisplay"></div>
-                                    <span id="copyNoEntregados" class="ml-3 badge badge-warning" style="cursor:pointer;">Copiar Códigos NE</span>
+                                    <span id="copyNoEntregados" class="ml-3 badge bg-warning" style="cursor:pointer;">Copiar Códigos NE</span>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
                                 <div class="modal-body">

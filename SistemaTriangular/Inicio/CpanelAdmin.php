@@ -189,7 +189,7 @@
                                                     <h3 class="mt-3 mb-3 text-white" id="TotalIngresos"></h3>
                                                     <!-- <span class="text-nowrap" id="entregas_mes"></span> -->
                                                     <!-- <p class="mb-0 text-muted"> -->
-                                                    <!-- <span class="badge badge-info mr-1"> -->
+                                                    <!-- <span class="badge bg-info mr-1"> -->
                                                     <!-- <i  id="entregas_porc"></i> </span> -->
                                                     <!-- <span class="text-nowrap" id="entregas_mesant"></span> -->
                                                     <!-- </p> -->
@@ -206,7 +206,7 @@
                                                     <h3 class="mt-3 mb-3" id="entregasr_dia"></h3>
                                                     <span class="text-nowrap" id="entregasr_mes"></span>
                                                     <p class="mb-0 text-muted">
-                                                        <span class="badge badge-info mr-1">
+                                                        <span class="badge bg-info mr-1">
                                                             <i id="entregasr_porc"></i> </span>
                                                         <span class="text-nowrap" id="entregasr_mesant"></span>
                                                     </p>
@@ -235,7 +235,7 @@
                                                     <h3 class="mt-3 mb-3 text-white" id="TotalGastos"></h3>
                                                     <!-- <span class="text-nowrap" id="gastos_mes"></span> -->
                                                     <!-- <p class="mb-0 text-muted"> -->
-                                                    <!-- <span class="badge badge-info mr-1"> -->
+                                                    <!-- <span class="badge bg-info mr-1"> -->
                                                     <!-- <i  id="gastos_porc"></i> </span> -->
                                                     <!-- <span class="text-nowrap" id="gastos_mesant"></span> -->
                                                     <!-- </p> -->
@@ -252,7 +252,7 @@
                                                     <h3 class="mt-3 mb-3" id="resultado_mes"></h3>
                                                     <!-- <span class="text-nowrap" id="_mes"></span> -->
                                                     <!-- <p class="mb-0 text-muted"> -->
-                                                    <!-- <span class="badge badge-info mr-1"> -->
+                                                    <!-- <span class="badge bg-info mr-1"> -->
                                                     <!-- <i  id="entregast_porc"></i> </span> -->
                                                     <!-- <span class="text-nowrap" id="entregast_mesant"></span> -->
                                                     <!-- </p> -->

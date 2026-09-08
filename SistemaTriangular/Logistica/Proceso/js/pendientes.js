@@ -566,7 +566,7 @@ $(document).ready(function () {
         data: "CodigoSeguimiento",
         render: function (data, type, row) {
           // Bootstrap 5: los badges se pintan con `bg-*`, no con `badge-*`
-          // (BS4). Con `badge badge-success` el badge quedaba sin fondo.
+          // (BS4). Con `badge bg-success` el badge quedaba sin fondo.
           var esColecta = row.idClienteDestino == 18587;
           if (row.Retirado == 1) {
             var color = "success";
