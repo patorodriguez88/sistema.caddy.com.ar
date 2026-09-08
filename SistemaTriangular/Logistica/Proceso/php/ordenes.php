@@ -415,7 +415,8 @@ if (isset($_POST['Logistica'])) {
                  l.HoraRetorno,
                  l.HoraSalidaReal,
                  (SELECT COUNT(*) FROM HojaDeRuta hr
-                   WHERE hr.Recorrido = l.Recorrido AND hr.Eliminado = 0 AND hr.Estado = 'Cerrado') AS ParadasCerradas,
+                   WHERE l.NumerodeOrden > 0 AND hr.NumerodeOrden = l.NumerodeOrden
+                     AND hr.Eliminado = 0 AND hr.Estado = 'Cerrado') AS ParadasCerradas,
                  l.Kilometros,
                  l.KilometrosRegreso,
                  l.KilometrosRecorridos,
@@ -563,6 +564,9 @@ if (isset($_POST['ReiniciarSalida'])) {
 
   $idLog = (int) $log['id'];
   $recEsc = $mysqli->real_escape_string((string) $log['Recorrido']);
+  // El numero de recorrido se REUSA entre ordenes/dias: para tocar solo las
+  // paradas de ESTA orden hay que filtrar por NumerodeOrden, no por Recorrido.
+  $noOrden = (int) $NO;
 
   // 1) Blanquear el inicio real
   $mysqli->query(
@@ -580,7 +584,7 @@ if (isset($_POST['ReiniciarSalida'])) {
   // 3) Limpiar las ETAs que calcula recalcularEtas() al iniciar
   $mysqli->query(
     "UPDATE HojaDeRuta SET Hora = NULL, Tiempo = NULL, KmO = NULL
-     WHERE Recorrido = '{$recEsc}' AND Estado = 'Abierto' AND Eliminado = 0"
+     WHERE NumerodeOrden = {$noOrden} AND Estado = 'Abierto' AND Eliminado = 0"
   );
 
   // 4) Constancia en Observaciones si la columna existe (sin columnas nuevas)
@@ -595,12 +599,14 @@ if (isset($_POST['ReiniciarSalida'])) {
   }
 
   $paradasCerradas = 0;
-  $rc = $mysqli->query(
-    "SELECT COUNT(*) AS n FROM HojaDeRuta
-     WHERE Recorrido = '{$recEsc}' AND Eliminado = 0 AND Estado = 'Cerrado'"
-  );
-  if ($rc && ($r = $rc->fetch_assoc())) {
-    $paradasCerradas = (int) $r['n'];
+  if ($noOrden > 0) {
+    $rc = $mysqli->query(
+      "SELECT COUNT(*) AS n FROM HojaDeRuta
+       WHERE NumerodeOrden = {$noOrden} AND Eliminado = 0 AND Estado = 'Cerrado'"
+    );
+    if ($rc && ($r = $rc->fetch_assoc())) {
+      $paradasCerradas = (int) $r['n'];
+    }
   }
 
   echo json_encode([
