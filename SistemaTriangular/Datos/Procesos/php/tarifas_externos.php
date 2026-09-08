@@ -13,7 +13,23 @@
 
 include_once __DIR__ . "/../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
+
+// Que la respuesta sea SIEMPRE JSON limpio: si algo (un warning, un BOM, etc.)
+// se colo antes, se descarta. Si no, DataTables corta con "Invalid JSON".
+while (ob_get_level() > 0) {
+    ob_end_clean();
+}
+ob_start();
 header('Content-Type: application/json; charset=utf-8');
+
+function teJson(array $arr): void
+{
+    if (ob_get_length() !== false) {
+        ob_clean();
+    }
+    echo json_encode($arr);
+    exit;
+}
 
 $usuario = $_SESSION['Usuario'] ?? 'sistema';
 
@@ -70,8 +86,7 @@ if (isset($_POST['Listar'])) {
     while ($r = $res->fetch_assoc()) {
         $data[] = $r;
     }
-    echo json_encode(['data' => $data]);
-    exit;
+    teJson(['data' => $data]);
 }
 
 // ---------------------------------------------------------------------------
@@ -80,8 +95,7 @@ if (isset($_POST['Listar'])) {
 if (isset($_POST['Historial'])) {
     $id = (int) ($_POST['id'] ?? 0);
     if ($id <= 0) {
-        echo json_encode(['data' => []]);
-        exit;
+        teJson(['data' => []]);
     }
     $st = $mysqli->prepare("
         SELECT id, Precio, VigenciaDesde, Usuario, Observaciones, Timestamp
@@ -104,8 +118,7 @@ if (isset($_POST['Historial'])) {
         if ($row['vigente'] == 1) { $row['rige_hoy'] = 1; break; }
     }
     unset($row);
-    echo json_encode(['data' => $data]);
-    exit;
+    teJson(['data' => $data]);
 }
 
 // ---------------------------------------------------------------------------
@@ -117,8 +130,7 @@ if (isset($_POST['GuardarTarifa'])) {
     $obs     = trim($_POST['Observaciones'] ?? '');
 
     if ($nombre === '') {
-        echo json_encode(['success' => 0, 'msg' => 'El nombre es obligatorio.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'El nombre es obligatorio.']);
     }
 
     if ($id > 0) {
@@ -126,16 +138,14 @@ if (isset($_POST['GuardarTarifa'])) {
         $st->bind_param('ssi', $nombre, $obs, $id);
         $ok = $st->execute();
         $st->close();
-        echo json_encode(['success' => $ok ? 1 : 0, 'id' => $id, 'msg' => $ok ? 'Tarifa actualizada.' : 'No se pudo actualizar.']);
-        exit;
+        teJson(['success' => $ok ? 1 : 0, 'id' => $id, 'msg' => $ok ? 'Tarifa actualizada.' : 'No se pudo actualizar.']);
     }
 
     // Alta: catalogo + precio inicial (obligatorio para que la tarifa sea usable)
     $precio   = (float) str_replace(',', '.', (string) ($_POST['PrecioInicial'] ?? '0'));
     $vigencia = trim($_POST['VigenciaInicial'] ?? '');
     if ($precio <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $vigencia)) {
-        echo json_encode(['success' => 0, 'msg' => 'Para una tarifa nueva hace falta un precio inicial y su fecha de vigencia.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'Para una tarifa nueva hace falta un precio inicial y su fecha de vigencia.']);
     }
 
     $mysqli->begin_transaction();
@@ -158,10 +168,10 @@ if (isset($_POST['GuardarTarifa'])) {
 
         $mysqli->commit();
         refrescarPrecioEspejo($mysqli, (int) $nuevoId);
-        echo json_encode(['success' => 1, 'id' => $nuevoId, 'msg' => 'Tarifa creada.']);
+        teJson(['success' => 1, 'id' => $nuevoId, 'msg' => 'Tarifa creada.']);
     } catch (Exception $e) {
         $mysqli->rollback();
-        echo json_encode(['success' => 0, 'msg' => 'No se pudo crear la tarifa: ' . $e->getMessage()]);
+        teJson(['success' => 0, 'msg' => 'No se pudo crear la tarifa: ' . $e->getMessage()]);
     }
     exit;
 }
@@ -176,8 +186,7 @@ if (isset($_POST['GuardarPrecio'])) {
     $obs      = trim($_POST['Observaciones'] ?? '');
 
     if ($idTarifa <= 0 || $precio <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $vigencia)) {
-        echo json_encode(['success' => 0, 'msg' => 'Faltan datos: tarifa, precio (> 0) y fecha de vigencia.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'Faltan datos: tarifa, precio (> 0) y fecha de vigencia.']);
     }
 
     // la tarifa tiene que existir
@@ -188,8 +197,7 @@ if (isset($_POST['GuardarPrecio'])) {
     $existe = $chk->num_rows > 0;
     $chk->close();
     if (!$existe) {
-        echo json_encode(['success' => 0, 'msg' => 'La tarifa no existe.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'La tarifa no existe.']);
     }
 
     // si ya hay un tramo con esa misma VigenciaDesde, se pisa (no acumular duplicados)
@@ -206,8 +214,7 @@ if (isset($_POST['GuardarPrecio'])) {
     if ($ok) {
         refrescarPrecioEspejo($mysqli, $idTarifa);
     }
-    echo json_encode(['success' => $ok ? 1 : 0, 'msg' => $ok ? 'Precio guardado.' : 'No se pudo guardar el precio.']);
-    exit;
+    teJson(['success' => $ok ? 1 : 0, 'msg' => $ok ? 'Precio guardado.' : 'No se pudo guardar el precio.']);
 }
 
 // ---------------------------------------------------------------------------
@@ -216,8 +223,7 @@ if (isset($_POST['GuardarPrecio'])) {
 if (isset($_POST['EliminarPrecio'])) {
     $idPrecio = (int) ($_POST['id'] ?? 0);
     if ($idPrecio <= 0) {
-        echo json_encode(['success' => 0, 'msg' => 'Falta el id.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'Falta el id.']);
     }
 
     $st = $mysqli->prepare("SELECT idExternos_tarifas FROM Externos_tarifas_precios WHERE id = ? LIMIT 1");
@@ -227,8 +233,7 @@ if (isset($_POST['EliminarPrecio'])) {
     $found = $st->fetch();
     $st->close();
     if (!$found) {
-        echo json_encode(['success' => 0, 'msg' => 'El precio no existe.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'El precio no existe.']);
     }
 
     $cnt = $mysqli->prepare("SELECT COUNT(*) FROM Externos_tarifas_precios WHERE idExternos_tarifas = ?");
@@ -238,8 +243,7 @@ if (isset($_POST['EliminarPrecio'])) {
     $cnt->fetch();
     $cnt->close();
     if ((int) $n <= 1) {
-        echo json_encode(['success' => 0, 'msg' => 'No se puede borrar el único precio de la tarifa. Cargá otro antes.']);
-        exit;
+        teJson(['success' => 0, 'msg' => 'No se puede borrar el único precio de la tarifa. Cargá otro antes.']);
     }
 
     $del = $mysqli->prepare("DELETE FROM Externos_tarifas_precios WHERE id = ? LIMIT 1");
@@ -250,8 +254,7 @@ if (isset($_POST['EliminarPrecio'])) {
     if ($ok) {
         refrescarPrecioEspejo($mysqli, (int) $idTarifa);
     }
-    echo json_encode(['success' => $ok ? 1 : 0, 'msg' => $ok ? 'Precio eliminado.' : 'No se pudo eliminar.']);
-    exit;
+    teJson(['success' => $ok ? 1 : 0, 'msg' => $ok ? 'Precio eliminado.' : 'No se pudo eliminar.']);
 }
 
-echo json_encode(['success' => 0, 'msg' => 'Acción inválida.']);
+teJson(['success' => 0, 'msg' => 'Acción inválida.']);

@@ -18,6 +18,9 @@ function teHoyISO() {
 
 let tablaTarifas = null;
 
+// Sin popup de "DataTables warning": lo mostramos nosotros.
+if (window.jQuery && $.fn.dataTable) $.fn.dataTable.ext.errMode = "none";
+
 function cargarTarifas() {
   if ($.fn.DataTable.isDataTable("#tabla_tarifas")) {
     $("#tabla_tarifas").DataTable().ajax.reload(null, false);
@@ -28,7 +31,13 @@ function cargarTarifas() {
     info: false,
     autoWidth: false,
     order: [[0, "asc"]],
-    language: { url: "https://cdn.datatables.net/plug-ins/1.13.6/i18n/es-ES.json" },
+    // idioma inline (sin fetch a CDN: evita el "DataTables warning" si no carga)
+    language: {
+      emptyTable: "No hay tarifas cargadas.",
+      zeroRecords: "Sin resultados.",
+      search: "Buscar:",
+      paginate: { first: "«", previous: "‹", next: "›", last: "»" },
+    },
     ajax: { url: TE_URL, type: "post", data: { Listar: 1 } },
     columns: [
       { data: "id" },
@@ -68,6 +77,15 @@ function cargarTarifas() {
 }
 
 $(document).ready(function () {
+  $("#tabla_tarifas").on("error.dt", function (e, settings, techNote, message) {
+    console.error("DataTable tarifas:", message);
+    Swal.fire({
+      icon: "error",
+      title: "No se pudo cargar la tabla",
+      text: "Revisá la sesión / conexión y recargá la página.",
+    });
+  });
+
   cargarTarifas();
 
   // ---- nueva tarifa ----

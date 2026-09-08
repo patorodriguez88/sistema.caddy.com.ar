@@ -44,6 +44,23 @@
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
 </head>
 <style>
+    /* Modal "Listado de Ordenes": tabla compacta para que entre todo */
+    #desempeno_tabla,
+    #desempeno_tabla td,
+    #desempeno_tabla th {
+        font-size: 11px;
+    }
+
+    #desempeno_tabla td,
+    #desempeno_tabla th {
+        padding: .3rem .4rem;
+        vertical-align: middle;
+    }
+
+    #desempeno_modal .modal-body {
+        padding: .75rem;
+    }
+
     @media print {
         .resumen-imprimir {
             font-size: 14px;
@@ -108,21 +125,23 @@
                                             </div>
 
 
-                                            <table id="desempeno_tabla" class="table table-striped dt-responsive nowrap w-100; white-space: nowrap;font-size: 10px;vertical-align: middle;" style="display:none">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Recorrido</th>
-                                                        <th>N.Orden</th>
-                                                        <th>Servicios</th>
-                                                        <th>Estado</th>
-                                                        <th>Informe</th>
-                                                        <th>Accion</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                </tbody>
-                                            </table>
+                                            <div class="table-responsive">
+                                                <table id="desempeno_tabla" class="table table-striped table-sm w-100" style="display:none;font-size:11px;white-space:nowrap;vertical-align:middle">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Fecha</th>
+                                                            <th>Recorrido</th>
+                                                            <th>N.Orden</th>
+                                                            <th>Serv.</th>
+                                                            <th>Estado</th>
+                                                            <th>Informe</th>
+                                                            <th>Accion</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                                    </tbody>
+                                                </table>
+                                            </div>
 
                                             <!-- Formulario de factura (visible solo si hay checkboxes marcados) -->
                                             <div id="formulario_factura" class="mt-4 d-none border-top pt-3 d-print-none">
