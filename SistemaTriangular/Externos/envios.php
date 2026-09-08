@@ -61,6 +61,45 @@
         padding: .75rem;
     }
 
+    /* Modal del informe: mas compacto, menos ancho */
+    #full-width-modal .modal-body {
+        padding: 1rem 1.25rem;
+    }
+
+    #full-width-modal #reporte_tabla,
+    #full-width-modal #reporte_tabla td,
+    #full-width-modal #reporte_tabla th {
+        font-size: 10.5px;
+    }
+
+    #full-width-modal #reporte_tabla td,
+    #full-width-modal #reporte_tabla th {
+        padding: .3rem .4rem;
+        vertical-align: middle;
+    }
+
+    /* la barra "Search:" de DataTables ocupaba media pantalla (DT1 y DT2) */
+    #full-width-modal .dataTables_filter,
+    #full-width-modal .dt-search {
+        text-align: right;
+        font-size: 12px;
+        margin-bottom: .4rem;
+    }
+
+    #full-width-modal .dataTables_filter input,
+    #full-width-modal .dt-search input {
+        width: 170px;
+        max-width: 60%;
+        font-size: 12px;
+        padding: .2rem .4rem;
+        display: inline-block;
+    }
+
+    #full-width-modal .dt-length,
+    #full-width-modal .dataTables_length {
+        display: none;
+    }
+
     @media print {
         .resumen-imprimir {
             font-size: 14px;
@@ -188,7 +227,7 @@
 
                 <!-- REPORTE -->
                 <div id="full-width-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="fullWidthModalLabel" aria-hidden="true">
-                    <div class="modal-dialog modal-full-width">
+                    <div class="modal-dialog modal-xl modal-dialog-scrollable modal-dialog-centered">
                         <div class="modal-content">
                             <div class="modal-header">
                                 <h4 class="modal-title text-uppercase" id="reporte_header"></h4>

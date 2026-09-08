@@ -77,58 +77,21 @@ $("#form_multiple-two_cancel").click(function () {
 });
 
 $(document).on("click", "#imprimir", function () {
-  // Setear los valores
-  const servicios = $("#total_servicios").text().split("<")[0].trim();
-  const tarifas = $("#total_servicios").html().split("<br>")[1] || "";
-  const subtotal = $("#subtotal_precio").text();
-  const iva = $("#iva_precio").text();
-  const total = $("#total_final").text().replace("Total Rendición: ", "");
-  const observaciones = $("#observaciones_rendicion").val().trim();
-  // const contenido = document.querySelector(
-  //   "#full-width-modal .modal-body"
-  // ).innerHTML;
+  // PDF con el diseno del sistema (HdrPdfBase). Antes: window.open() que copiaba
+  // el HTML del modal (sin membrete, sin paginado).
   const nroOrden = $("#report_id").text().trim();
-  const contenido = document.querySelector(
-    "#full-width-modal .modal-body",
-  ).innerHTML;
-  const titulo = `Liquidación Orden #${nroOrden}`;
-
-  const printWindow = window.open("", "_blank", "width=800,height=600");
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>${titulo}</title>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-          body { padding: 20px; font-size: 12px; }
-          @media print {
-            .text-muted { color: #555 !important; }
-            .resumen-imprimir { font-size: 14px; color: #000; page-break-inside: avoid; }
-            .resumen-imprimir strong { font-weight: bold; }
-            .dataTables_filter { display: none !important; }
-          }
-        </style>
-      </head>
-      <body>
-      <h3 class="text-center mb-4">${titulo}</h3>
-        ${contenido}
-        <hr>
-      </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-
-  // Aseguramos que imprima solo cuando el contenido haya cargado
-  printWindow.onload = function () {
-    printWindow.focus();
-    printWindow.print();
-
-    printWindow.onafterprint = function () {
-      printWindow.close(); // Cerramos automáticamente después de imprimir
-    };
-  };
+  const idRep = $("#id_desempeno").val();
+  if (!nroOrden || !idRep) {
+    Swal.fire({ icon: "warning", title: "Faltan datos para el informe." });
+    return;
+  }
+  window.open(
+    "Informes/RendicionExternoPdf.php?NOrden=" +
+      encodeURIComponent(nroOrden) +
+      "&id=" +
+      encodeURIComponent(idRep),
+    "_blank",
+  );
 });
 //MUESTRO LA TABLA
 var datatable = $("#externos").DataTable({
