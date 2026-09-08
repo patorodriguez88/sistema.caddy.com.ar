@@ -78,6 +78,15 @@ if (isset($_POST['ConfirmarColecta'])) {
   $usuEsc = $mysqli->real_escape_string($usuario);
   $sucEsc = $mysqli->real_escape_string($sucursal);
 
+  // El server MySQL del hosting corre en horario de EE.UU. (system_time_zone=PDT),
+  // asi que CURDATE()/CURTIME()/NOW() daban la hora ~4hs atrasada respecto de
+  // Cordoba (ej. 12:37 se guardaba como 08:37). El resto del sistema toma la
+  // hora de PHP con el timezone seteado arriba (date_default_timezone_set), asi
+  // que se hace lo mismo aca en vez de las funciones de MySQL.
+  $ahoraFecha = date('Y-m-d');
+  $ahoraHora  = date('H:i:s');
+  $ahoraTs    = date('Y-m-d H:i:s');
+
   $n = 0;
   while ($h = $hijos->fetch_assoc()) {
     $cs    = $mysqli->real_escape_string($h['CodigoSeguimiento']);
@@ -94,9 +103,9 @@ if (isset($_POST['ConfirmarColecta'])) {
           idTransClientes, TimeStamp, Recorrido, Devuelto, Webhook, state_id,
           NumerodeOrden, status, Eliminado, Estado_id)
        VALUES
-         (CURDATE(), CURTIME(), '$usuEsc', '$sucEsc', '$cs', '$obsEsc',
+         ('$ahoraFecha', '$ahoraHora', '$usuEsc', '$sucEsc', '$cs', '$obsEsc',
           0, '$estTxt', '$dest', 0, $idCli, 1, 0,
-          $idTr, NOW(), '$rec', 0, 0, $estId,
+          $idTr, '$ahoraTs', '$rec', 0, 0, $estId,
           '$nro', 'pickup_scanned', 0, $estId)"
     );
     if ($ins) $n++;
