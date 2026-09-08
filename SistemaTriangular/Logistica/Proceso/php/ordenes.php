@@ -413,6 +413,9 @@ if (isset($_POST['Logistica'])) {
                  l.Fecha,
                  l.Hora,
                  l.HoraRetorno,
+                 l.HoraSalidaReal,
+                 (SELECT COUNT(*) FROM HojaDeRuta hr
+                   WHERE hr.Recorrido = l.Recorrido AND hr.Eliminado = 0 AND hr.Estado = 'Cerrado') AS ParadasCerradas,
                  l.Kilometros,
                  l.KilometrosRegreso,
                  l.KilometrosRecorridos,
@@ -517,6 +520,94 @@ if (isset($_POST['ToggleOmitirEscaneo'])) {
         ? 'La orden #' . $NO . ' puede arrancar sin escanear en Warehouse.'
         : 'Escaneo en Warehouse vuelve a ser obligatorio para la orden #' . $NO . '.')
       : 'No se pudo guardar el cambio.',
+  ]);
+  exit;
+}
+
+// REINICIAR la salida de un recorrido ya iniciado.
+// Caso: el chofer apreto "Iniciar Recorrido" por error y necesita volver a
+// arrancar bien. Se limpia Logistica.HoraSalidaReal (+ Lat/LngInicio), se
+// cierran las pausas abiertas y se borran las ETAs calculadas. La app de
+// reparto, que decide "Iniciar Recorrido" vs "En ruta" solo por
+// HoraSalidaReal, vuelve a mostrar el boton de iniciar en el proximo poll.
+// No cambia el Estado de la orden (sigue 'Cargada').
+if (isset($_POST['ReiniciarSalida'])) {
+
+  header('Content-Type: application/json; charset=utf-8');
+
+  $NO   = trim($_POST['numero_orden'] ?? '');
+  $Oper = $_SESSION['Usuario'] ?? 'sistema';
+
+  if ($NO === '') {
+    echo json_encode(['success' => 0, 'message' => 'Falta el número de orden.']);
+    exit;
+  }
+
+  $stmt = $mysqli->prepare(
+    "SELECT id, Recorrido, HoraSalidaReal FROM Logistica
+     WHERE NumerodeOrden = ? AND Estado = 'Cargada' AND Eliminado = 0 LIMIT 1"
+  );
+  $stmt->bind_param('s', $NO);
+  $stmt->execute();
+  $log = $stmt->get_result()->fetch_assoc();
+  $stmt->close();
+
+  if (!$log) {
+    echo json_encode(['success' => 0, 'message' => 'No hay una orden cargada (activa) con ese número.']);
+    exit;
+  }
+  if (empty($log['HoraSalidaReal'])) {
+    echo json_encode(['success' => 0, 'message' => 'Esa orden todavía no fue iniciada, no hay nada que reiniciar.']);
+    exit;
+  }
+
+  $idLog = (int) $log['id'];
+  $recEsc = $mysqli->real_escape_string((string) $log['Recorrido']);
+
+  // 1) Blanquear el inicio real
+  $mysqli->query(
+    "UPDATE Logistica
+     SET HoraSalidaReal = NULL, LatInicio = NULL, LngInicio = NULL
+     WHERE id = {$idLog} LIMIT 1"
+  );
+
+  // 2) Cerrar pausas abiertas de ese recorrido
+  $mysqli->query(
+    "UPDATE PausasRecorrido SET Fin = NOW()
+     WHERE Recorrido = '{$recEsc}' AND Fin IS NULL"
+  );
+
+  // 3) Limpiar las ETAs que calcula recalcularEtas() al iniciar
+  $mysqli->query(
+    "UPDATE HojaDeRuta SET Hora = NULL, Tiempo = NULL, KmO = NULL
+     WHERE Recorrido = '{$recEsc}' AND Estado = 'Abierto' AND Eliminado = 0"
+  );
+
+  // 4) Constancia en Observaciones si la columna existe (sin columnas nuevas)
+  if (ordColExiste($mysqli, 'Logistica', 'Observaciones')) {
+    $nota = 'Salida reiniciada por ' . $Oper . ' el ' . date('d-m-Y H:i');
+    $notaEsc = $mysqli->real_escape_string($nota);
+    $mysqli->query(
+      "UPDATE Logistica
+       SET Observaciones = TRIM(CONCAT_WS(' | ', NULLIF(Observaciones, ''), '{$notaEsc}'))
+       WHERE id = {$idLog} LIMIT 1"
+    );
+  }
+
+  $paradasCerradas = 0;
+  $rc = $mysqli->query(
+    "SELECT COUNT(*) AS n FROM HojaDeRuta
+     WHERE Recorrido = '{$recEsc}' AND Eliminado = 0 AND Estado = 'Cerrado'"
+  );
+  if ($rc && ($r = $rc->fetch_assoc())) {
+    $paradasCerradas = (int) $r['n'];
+  }
+
+  echo json_encode([
+    'success'          => 1,
+    'por'              => $Oper,
+    'paradas_cerradas' => $paradasCerradas,
+    'message'          => 'Salida de la orden #' . $NO . ' reiniciada. El chofer puede volver a iniciar el recorrido desde la app.',
   ]);
   exit;
 }

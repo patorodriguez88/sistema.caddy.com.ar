@@ -300,6 +300,48 @@ $("#formCargarOrden").on("submit", function (e) {
   });
 });
 
+// REINICIAR SALIDA: el chofer apreto "Iniciar Recorrido" por error.
+// Limpia HoraSalidaReal/ETAs/pausas de la orden; la app vuelve a mostrar
+// "Iniciar Recorrido" en el proximo refresco. No cambia el Estado.
+function reiniciarSalida(numero, paradasCerradas) {
+  paradasCerradas = Number(paradasCerradas) || 0;
+  var aviso =
+    paradasCerradas > 0
+      ? `<div class="alert alert-warning mb-0 mt-2">Esta orden ya tiene <b>${paradasCerradas}</b> parada(s) cerrada(s). Se va a perder la hora de salida y las estimaciones; los tiempos del recorrido van a quedar mal.</div>`
+      : "";
+  Swal.fire({
+    title: "Reiniciar salida de la orden #" + numero,
+    html:
+      "El chofer va a poder volver a apretar <b>Iniciar Recorrido</b> desde la app.<br>" +
+      "Se limpian la hora de salida real, las ETAs y las pausas abiertas. La orden sigue <b>Cargada</b>." +
+      aviso,
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Reiniciar salida",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#f1a417",
+  }).then(function (r) {
+    if (!r.isConfirmed) return;
+    $.ajax({
+      url: "Proceso/php/ordenes.php",
+      type: "post",
+      dataType: "json",
+      data: { ReiniciarSalida: 1, numero_orden: numero },
+      success: function (res) {
+        if (res && res.success == 1) {
+          Swal.fire("Listo", res.message, "success");
+          $("#ordenes").DataTable().ajax.reload(null, false);
+        } else {
+          Swal.fire("No se pudo", (res && res.message) || "Error.", "error");
+        }
+      },
+      error: function () {
+        Swal.fire("Error", "No se pudo reiniciar la salida.", "error");
+      },
+    });
+  });
+}
+
 //CERRAR ORDEN
 function cerrarOrden(numero) {
   $.ajax({
@@ -845,11 +887,20 @@ function init_datatable(fechas = "") {
                      <i class="mdi mdi-18px mdi-upload ms-2 text-success"></i>
                    </a>`
                 : "";
+            // "Reiniciar salida": solo si la orden esta cargada y el chofer ya
+            // apreto "Iniciar Recorrido" (HoraSalidaReal cargada).
+            const btnReiniciar =
+              row.Estado === "Cargada" && row.HoraSalidaReal
+                ? `<a href="#" onclick="reiniciarSalida('${row.NumerodeOrden}', ${Number(row.ParadasCerradas) || 0}); return false;" title="Reiniciar salida (el chofer arranco por error)">
+                     <i class="mdi mdi-18px mdi-restart ms-2 text-warning"></i>
+                   </a>`
+                : "";
             return `
               <a target="_blank" href="Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
                 <i class="mdi mdi-18px mdi-file-chart-outline ms-2"></i>
               </a>
               ${btnCargar}
+              ${btnReiniciar}
               <a href="#" onclick="cerrarOrden('${row.NumerodeOrden}'); return false;" title="Cerrar Orden">
                 <i class="mdi mdi-18px mdi-lock-check ms-2 text-danger"></i>
               </a>

@@ -564,7 +564,8 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- funciones -->
-    <script src="Proceso/js/ordenes.js"></script>
+    <?php $ordJs = __DIR__ . '/Proceso/js/ordenes.js'; ?>
+    <script src="Proceso/js/ordenes.js?v=<?php echo file_exists($ordJs) ? filemtime($ordJs) : time(); ?>"></script>
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
     <!-- SweetAlert2 CSS -->
