@@ -385,14 +385,15 @@ if (isset($_POST['CambiarRecorridos'])) {
 
 // TODOS los Recorridos activos (no solo los "en alta") para poblar el <select>
 // "Recorrido destino" de cada zona en el panel de redistribucion. Se marca
-// EnAlta / NombreChofer si hay una orden Alta/Pendiente/Cargada abierta, solo
-// para mostrarlo en la opcion - el destino puede ser cualquier recorrido activo
-// (decidido con el usuario).
+// EnAlta / NombreChofer si hay una orden Alta/Pendiente/Cargada abierta, e
+// Iniciado si el chofer ya arranco el recorrido (Logistica.HoraSalidaReal), para
+// avisar antes de mandarle paquetes.
 if (isset($_POST['TodosLosRecorridosActivos'])) {
   $res = $mysqli->query("
     SELECT r.Numero, r.Nombre, r.Color,
            MAX(l.NombreChofer) AS NombreChofer,
-           MAX(l.NumerodeOrden IS NOT NULL) AS EnAlta
+           MAX(l.NumerodeOrden IS NOT NULL) AS EnAlta,
+           MAX(l.HoraSalidaReal IS NOT NULL) AS Iniciado
       FROM Recorridos r
       LEFT JOIN Logistica l
         ON l.Recorrido = r.Numero
@@ -409,6 +410,7 @@ if (isset($_POST['TodosLosRecorridosActivos'])) {
       'Nombre'       => $row['Nombre'],
       'Color'        => $row['Color'] ?: '666666',
       'EnAlta'       => (int)$row['EnAlta'] === 1,
+      'Iniciado'     => (int)$row['Iniciado'] === 1,
       'NombreChofer' => $row['NombreChofer'] ?: '',
     ];
   }

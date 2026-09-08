@@ -157,6 +157,23 @@
             margin-top: .35rem;
             line-height: 1.5;
         }
+
+        /* Mapa a (casi) pantalla completa: ocupa el alto del viewport menos el
+           topnav + titulo, y el panel de la izquierda scrollea aparte. */
+        #map {
+            height: calc(100vh - 150px);
+            min-height: 460px;
+        }
+
+        #zonas_panel_scroll {
+            max-height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        /* Boton nativo de pantalla completa de Google Maps: dejarlo mas visible. */
+        #map .gm-fullscreen-control {
+            box-shadow: 0 1px 4px rgba(0, 0, 0, .3) !important;
+        }
     </style>
 </head>
 
@@ -270,10 +287,10 @@
                         </div>
                     </div>
                     <!-- end page title -->
-                    <div class="row">
+                    <div class="row" id="zonas_layout_row">
                         <div class="col-xl-4">
                             <div class="card">
-                                <div class="card-body">
+                                <div class="card-body" id="zonas_panel_scroll">
                                     <h4 class="header-title mb-3">Geolocalizacion Zonas </h4>
                                     <div class="tab-content">
                                         <div class="tab-pane show active mb-3" id="default-buttons-preview">
@@ -321,16 +338,20 @@
                                         </div>
                                     </div>
 
-                                    <!-- Redistribucion automatica: cada zona manda sus waypoints
-                                         al Recorrido destino elegido, todo de una. -->
+                                    <!-- Redistribucion en 2 pasos: (1) previsualizar (recolorea
+                                         los pines por zona + arma el resumen, no toca nada);
+                                         (2) confirmar traspaso (aplica los CambiarRecorridos). -->
                                     <div class="col-lg-12 mt-2">
-                                        <button type="button" class="btn btn-primary w-100" id="btn_redistribuir_zonas" disabled>
-                                            <i class="mdi mdi-shuffle-variant"></i> Redistribuir por zonas
+                                        <button type="button" class="btn btn-outline-primary w-100" id="btn_redistribuir_zonas" disabled>
+                                            <i class="mdi mdi-eye-outline"></i> Previsualizar por zonas
                                         </button>
                                         <div id="redistribuir_hint" class="text-muted small mt-1">
                                             Elegí uno o más Recorridos y asigná un Recorrido destino a cada zona.
                                         </div>
                                         <div id="redistribuir_resumen" class="mt-2"></div>
+                                        <button type="button" class="btn btn-success w-100 mt-2" id="btn_confirmar_traspaso" hidden>
+                                            <i class="mdi mdi-check-bold"></i> Confirmar traspaso
+                                        </button>
                                     </div>
 
                                     <div class="mt-3">
@@ -369,7 +390,7 @@
                                         </div>
                                     </div>
                                     <h4 id="zonas_map_title" class="header-title mb-3">Zonas Google Map </h4>
-                                    <div id="map" class="gmaps" style="min-height: 640px;"></div>
+                                    <div id="map" class="gmaps"></div>
                                 </div> <!-- end card-body-->
                             </div> <!-- end card-->
                         </div> <!-- end col-->

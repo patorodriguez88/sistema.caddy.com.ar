@@ -107,15 +107,23 @@ function opcionesRecorridosDestino(seleccion) {
   recorridosActivos.forEach(function (r) {
     const num = String(r.Numero);
     const marca = num === sel ? " selected" : "";
-    const extra = r.EnAlta
-      ? " · en alta" + (r.NombreChofer ? " (" + r.NombreChofer + ")" : "")
-      : "";
+    let extra = "";
+    if (r.Iniciado) {
+      extra = " · ⚠ YA INICIÓ" + (r.NombreChofer ? " (" + r.NombreChofer + ")" : "");
+    } else if (r.EnAlta) {
+      extra = " · en alta" + (r.NombreChofer ? " (" + r.NombreChofer + ")" : "");
+    }
     html +=
-      '<option value="' + num + '"' + marca + ">" +
+      '<option value="' + num + '"' + marca + ' data-iniciado="' + (r.Iniciado ? 1 : 0) + '">' +
       num + " - " + (r.Nombre || "s/nombre") + extra +
       "</option>";
   });
   return html;
+}
+
+// Recorrido activo por numero (helper).
+function recorridoPorNumero(num) {
+  return recorridosActivos.find((r) => String(r.Numero) === String(num)) || null;
 }
 
 function cargarRecorridosActivos(cb) {
@@ -284,9 +292,11 @@ function refrescarBotonRedistribuir() {
 
   const ok = hayRec && hayWp && hayDestino && !redistribuyendo;
   $btn.prop("disabled", !ok);
+  if (redistribuyendo) $("#btn_confirmar_traspaso").prop("disabled", true);
+  else $("#btn_confirmar_traspaso").prop("disabled", false);
 
   if (redistribuyendo) {
-    $hint.text("Redistribuyendo…");
+    $hint.text("Aplicando el traspaso…");
   } else if (!hayRec) {
     $hint.text("Elegí uno o más Recorridos arriba.");
   } else if (!hayWp) {
@@ -295,7 +305,7 @@ function refrescarBotonRedistribuir() {
     $hint.text("Asigná un Recorrido destino a por lo menos una zona.");
   } else {
     const zc = Object.keys(zonaDestino).length;
-    $hint.text(zc + (zc === 1 ? " zona" : " zonas") + " con destino asignado. Listo para redistribuir.");
+    $hint.text(zc + (zc === 1 ? " zona" : " zonas") + " con destino. Previsualizá y después confirmá el traspaso.");
   }
 
   // Generador de zonas balanceadas: necesita waypoints (no movidos) cargados.
@@ -427,6 +437,7 @@ function generarZonasBalanceadas(nRaw) {
           toast("success", "Zonas generadas", j.creadas + (j.creadas === 1 ? " zona nueva." : " zonas nuevas."));
           zonaDestino = {}; // los ids de zona cambiaron
           zonaLegendActivaId = null;
+          invalidarPreviewTraspaso();
           cargarRecorridosActivos(function () {
             cargarZonasAccordion();
           });
@@ -619,7 +630,10 @@ function initMap() {
 
   map = new google.maps.Map(document.getElementById("map"), {
     center: { lat: -31.4448988, lng: -64.177743 },
-    zoom: 10,
+    zoom: 11,
+    fullscreenControl: true, // boton nativo "pantalla completa" (esq. sup. der.)
+    gestureHandling: "greedy", // scroll = zoom sin tener que apretar Ctrl
+    mapTypeControl: false,
   });
 
   infoWindow = new google.maps.InfoWindow();
@@ -1070,6 +1084,7 @@ $(document).on("change", ".zona-destino-select", function () {
     zonaDestino[idz] = val;
   }
   pintarDestinoEnHead(idz);
+  invalidarPreviewTraspaso();
   refrescarBotonRedistribuir();
 });
 
@@ -1095,6 +1110,7 @@ $("#select_rec_mapa").change(function () {
     cargarWaypointsZona();
   }
   verificarGeolocalizacion();
+  invalidarPreviewTraspaso();
   refrescarBotonRedistribuir();
 });
 
@@ -1318,6 +1334,7 @@ function guardarFormaZonaEnMapa(idZona, nombre, shape) {
           }
         }
         actualizarConteosLegend();
+        invalidarPreviewTraspaso(); // la forma cambio: la previa quedo vieja
       },
       error: function (x) {
         console.error("Guardar forma de zona", x && x.responseText);
@@ -1463,13 +1480,33 @@ $(document).on("click", "#ver_todas_zonas", function () {
 // Recorrido elegido, todo de una. Reusa la accion CambiarRecorridos (ya
 // resuelve contencion en poligono real + cambiarRecorrido() con webhook).
 // =========================
+// Paso 1: previsualizar (no toca nada). Paso 2: "Confirmar traspaso".
 $(document).on("click", "#btn_redistribuir_zonas", function () {
-  redistribuirPorZonas();
+  previsualizarRedistribucion();
+});
+
+$(document).on("click", "#btn_confirmar_traspaso", function () {
+  confirmarTraspaso();
 });
 
 $(document).on("click", "#btn_generar_zonas", function () {
   generarZonasBalanceadas($("#gen_zonas_n").val());
 });
+
+// El plan calculado en la previsualizacion, a la espera de "Confirmar traspaso".
+let _planTraspaso = null;
+
+// Invalida la previa (cambio de recorridos, de destinos, o se genero/edito una
+// zona): esconde el boton de confirmar y limpia el resumen.
+function invalidarPreviewTraspaso() {
+  _planTraspaso = null;
+  $("#btn_confirmar_traspaso").prop("hidden", true);
+  $("#redistribuir_resumen").empty();
+}
+
+function previsualizarRedistribucion() {
+  redistribuirPorZonas();
+}
 
 function redistribuirPorZonas() {
   if (redistribuyendo) return;
@@ -1503,13 +1540,14 @@ function redistribuirPorZonas() {
     const id = hit.z.id;
     if (!zonaDestino[id]) return; // cae en zona sin destino: no se toca
     if (!porZona[id]) {
-      const rec = recorridosActivos.find((r) => String(r.Numero) === String(zonaDestino[id]));
+      const rec = recorridoPorNumero(zonaDestino[id]);
       porZona[id] = {
         nombre: hit.z.Nombre || "Zona",
         color: hit.color,
         destinoNum: String(zonaDestino[id]),
         destinoNombre: rec ? rec.Nombre : "",
         destinoColor: rec ? normalizarColor(rec.Color) || "#666666" : "#666666",
+        destinoIniciado: !!(rec && rec.Iniciado),
         cant: 0,
       };
     }
@@ -1525,10 +1563,15 @@ function redistribuirPorZonas() {
       text: "Ningún waypoint cae en una zona con Recorrido destino asignado.",
     });
     cargarWaypointsZona(); // restaura colores originales de los pines
+    invalidarPreviewTraspaso();
     return;
   }
 
   const total = ids.reduce((acc, id) => acc + porZona[id].cant, 0);
+  const iniciados = ids
+    .filter((id) => porZona[id].destinoIniciado)
+    .map((id) => "Rec " + porZona[id].destinoNum);
+
   const resumenHtml =
     '<div style="text-align:left">' +
     ids
@@ -1538,6 +1581,7 @@ function redistribuirPorZonas() {
           '<div class="rd-linea"><span class="rd-swatch" style="background:' + p.color + '"></span>' +
           "<b>" + p.nombre + "</b> → Rec " + p.destinoNum +
           (p.destinoNombre ? " (" + p.destinoNombre + ")" : "") +
+          (p.destinoIniciado ? ' <span style="color:#d9822b">⚠ ya inició</span>' : "") +
           ": <b>" + p.cant + "</b></div>"
         );
       })
@@ -1545,25 +1589,51 @@ function redistribuirPorZonas() {
     (sinZona
       ? '<div class="rd-linea text-muted">Fuera de toda zona (no se mueven): <b>' + sinZona + "</b></div>"
       : "") +
+    (iniciados.length
+      ? '<div class="rd-linea" style="color:#d9822b;font-weight:600;margin-top:.3rem">' +
+        "⚠ " + iniciados.join(", ") + " ya arrancaron el recorrido." +
+        "</div>"
+      : "") +
+    '<div class="text-muted mt-1" style="font-size:.7rem">Previsualización — todavía no se movió nada.</div>' +
     "</div>";
 
   $("#redistribuir_resumen").html(resumenHtml);
 
+  _planTraspaso = {
+    tareas: ids.map((id) => ({ idZona: id, dest: porZona[id] })),
+    total: total,
+    iniciados: iniciados,
+  };
+  $("#btn_confirmar_traspaso")
+    .prop("hidden", false)
+    .html('<i class="mdi mdi-check-bold"></i> Confirmar traspaso de ' + total + " servicio(s)");
+}
+
+function confirmarTraspaso() {
+  if (redistribuyendo || !_planTraspaso) return;
+  const plan = _planTraspaso;
+
   confirmarSiFaltanGeo(function () {
-    Swal.fire({
-      title: "Redistribuir " + total + " servicio(s)",
-      html: resumenHtml,
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Sí, redistribuir",
-      cancelButtonText: "Cancelar",
-    }).then(function (result) {
-      if (!result.isConfirmed) {
-        cargarWaypointsZona(); // restaura colores si cancela
-        return;
-      }
-      ejecutarRedistribucion(ids.map((id) => ({ idZona: id, dest: porZona[id] })));
-    });
+    const seguir = function () {
+      ejecutarRedistribucion(plan.tareas);
+    };
+    if (plan.iniciados.length) {
+      Swal.fire({
+        title: "Ojo: recorrido(s) ya iniciado(s)",
+        html:
+          "<p>" + plan.iniciados.join(", ") +
+          " ya arrancaron. Los paquetes que les mandes pueden no aparecerle al chofer hasta que refresque la app.</p>" +
+          "<p>¿Traspasar igual los " + plan.total + " servicio(s)?</p>",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Traspasar igual",
+        cancelButtonText: "Cancelar",
+      }).then(function (r) {
+        if (r.isConfirmed) seguir();
+      });
+    } else {
+      seguir();
+    }
   });
 }
 
@@ -1589,9 +1659,13 @@ function ejecutarRedistribucion(tareas) {
         }
       });
 
-      toast("success", "Redistribución lista", "Se movieron " + totalMovidos + " servicio(s).");
+      toast("success", "Traspaso listo", "Se movieron " + totalMovidos + " servicio(s).");
+      _planTraspaso = null;
+      $("#btn_confirmar_traspaso").prop("hidden", true);
+      $("#redistribuir_resumen").html(
+        '<div class="text-success small">✓ Traspaso confirmado: ' + totalMovidos + " servicio(s) movidos.</div>"
+      );
       actualizarConteosLegend();
-      renderCardsAsignacion();
       refrescarBotonRedistribuir();
       return;
     }
