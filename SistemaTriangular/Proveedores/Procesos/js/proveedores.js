@@ -184,7 +184,11 @@ $("#cargar_factura_btn_ok").click(function () {
 
         var table = $("#basic").DataTable();
         table.ajax.reload();
-      } else if (jsonData.error == "SIN_CUENTA" || jsonData.error == "SIN_PROVEEDOR") {
+      } else if (
+        jsonData.error == "SIN_CUENTA" ||
+        jsonData.error == "SIN_PROVEEDOR" ||
+        jsonData.error == "SIN_TRANSPROVEEDOR"
+      ) {
         // No se pudo imputar el gasto a una cuenta contable -> no se cargó nada.
         // El modal queda abierto para que se pueda corregir sin recargar.
         swal.fire({

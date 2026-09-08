@@ -304,18 +304,20 @@ function cargarfactura()
     ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Total}','{$Concepto}','{$Descripcion}','{$NoOperativo}','{$Codigodeaprobacion}','{$idProveedor}','{$Usuario}','{$TareasAsana_gid}')";
     $mysqli->query($sqlTransacciones);
 
-    $IdTransProvD = $mysqli->query("SELECT id FROM TransProveedores WHERE Cuit='$Cuit' AND NumeroComprobante='$NumeroComprobante' AND Debe>0 AND Eliminado=0");
-    $row = $IdTransProvD->fetch_array(MYSQLI_ASSOC);
-    $IdTransProvCompraD = $row['id'];
-
-    $IdTransProvH = $mysqli->query("SELECT id FROM TransProveedores WHERE Cuit='$Cuit' AND NumeroComprobante='$NumeroComprobante' AND Haber>0 AND Eliminado=0");
-
-    if ($IdTransProvH && $row = $IdTransProvH->fetch_array(MYSQLI_ASSOC)) {
-        $IdTransProvCompraH = $row['id'];
-    } else {
-        // echo "⚠️ No se encontró el comprobante en TransProveedores para el CUIT $Cuit y número $NumeroComprobante.";
-        $IdTransProvCompraH = 0; // o el valor que prefieras por defecto
+    // Un comprobante = UNA fila en TransProveedores (con Debe). Tomamos su id
+    // directo del INSERT. Antes se re-SELECTeaba "WHERE ... Debe>0", que para
+    // las NOTAS DE CREDITO (Debe negativo por $Valor=-1) NUNCA matcheaba => todas
+    // las lineas de Tesoreria y el IvaCompras de una NC quedaban con
+    // idTransProvee=0 (huerfanas: "Borrar Factura" solo borra por idTransProvee y
+    // dejaba vivas las lineas de la NC, descuadrando Sumas y Saldos). El bloque
+    // "Haber>0" ademas era codigo muerto: nunca se inserta una fila con Haber.
+    $IdTransProvCompra = (int) $mysqli->insert_id;
+    if ($IdTransProvCompra <= 0) {
+        echo json_encode(array('error' => 'SIN_TRANSPROVEEDOR', 'msg' => 'No se pudo registrar el comprobante en TransProveedores. No se cargo nada.'));
+        return;
     }
+    $IdTransProvCompraD = $IdTransProvCompra;
+    $IdTransProvCompraH = $IdTransProvCompra;
 
     //INSERT EN IVA COMPRAS
     $sql = "INSERT INTO IvaCompras(
