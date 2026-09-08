@@ -700,6 +700,13 @@
                 >Kilometros</a
               >
               <?php endif; ?>
+              <?php if (tieneMenuPermiso('Datos', 'Tarifas Externos')): ?>
+              <a
+                href="/SistemaTriangular/Datos/TarifasExternos.php"
+                class="dropdown-item"
+                >Tarifas Externos</a
+              >
+              <?php endif; ?>
               <?php if (tieneMenuPermiso('Datos', 'Notificaciones Webhook')): ?>
               <a
                 href="/SistemaTriangular/Datos/webhook_server"

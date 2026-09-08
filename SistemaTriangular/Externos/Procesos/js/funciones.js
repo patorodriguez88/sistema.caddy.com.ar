@@ -77,58 +77,21 @@ $("#form_multiple-two_cancel").click(function () {
 });
 
 $(document).on("click", "#imprimir", function () {
-  // Setear los valores
-  const servicios = $("#total_servicios").text().split("<")[0].trim();
-  const tarifas = $("#total_servicios").html().split("<br>")[1] || "";
-  const subtotal = $("#subtotal_precio").text();
-  const iva = $("#iva_precio").text();
-  const total = $("#total_final").text().replace("Total Rendición: ", "");
-  const observaciones = $("#observaciones_rendicion").val().trim();
-  // const contenido = document.querySelector(
-  //   "#full-width-modal .modal-body"
-  // ).innerHTML;
+  // PDF con el diseno del sistema (HdrPdfBase). Antes: window.open() que copiaba
+  // el HTML del modal (sin membrete, sin paginado).
   const nroOrden = $("#report_id").text().trim();
-  const contenido = document.querySelector(
-    "#full-width-modal .modal-body",
-  ).innerHTML;
-  const titulo = `Liquidación Orden #${nroOrden}`;
-
-  const printWindow = window.open("", "_blank", "width=800,height=600");
-
-  printWindow.document.write(`
-    <html>
-      <head>
-        <title>${titulo}</title>
-        <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-        <style>
-          body { padding: 20px; font-size: 12px; }
-          @media print {
-            .text-muted { color: #555 !important; }
-            .resumen-imprimir { font-size: 14px; color: #000; page-break-inside: avoid; }
-            .resumen-imprimir strong { font-weight: bold; }
-            .dataTables_filter { display: none !important; }
-          }
-        </style>
-      </head>
-      <body>
-      <h3 class="text-center mb-4">${titulo}</h3>
-        ${contenido}
-        <hr>
-      </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-
-  // Aseguramos que imprima solo cuando el contenido haya cargado
-  printWindow.onload = function () {
-    printWindow.focus();
-    printWindow.print();
-
-    printWindow.onafterprint = function () {
-      printWindow.close(); // Cerramos automáticamente después de imprimir
-    };
-  };
+  const idRep = $("#id_desempeno").val();
+  if (!nroOrden || !idRep) {
+    Swal.fire({ icon: "warning", title: "Faltan datos para el informe." });
+    return;
+  }
+  window.open(
+    "Informes/RendicionExternoPdf.php?NOrden=" +
+      encodeURIComponent(nroOrden) +
+      "&id=" +
+      encodeURIComponent(idRep),
+    "_blank",
+  );
 });
 //MUESTRO LA TABLA
 var datatable = $("#externos").DataTable({
@@ -243,6 +206,17 @@ function desempeno(a, b) {
   $("#desempeno_header").html("Listado de Ordenes de " + a);
   $("#id_desempeno").val(b);
   $("#name_desempeno").val(a);
+
+  // Prefill: del 1ro del mes a hoy (rango tipico de liquidacion), solo si estan vacios.
+  const hoy = new Date();
+  const iso = (d) =>
+    d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  if (!$("#desempeno_desde").val()) {
+    $("#desempeno_desde").val(iso(new Date(hoy.getFullYear(), hoy.getMonth(), 1)));
+  }
+  if (!$("#desempeno_hasta").val()) {
+    $("#desempeno_hasta").val(iso(hoy));
+  }
 }
 
 //BOTON PARA ABRIR EL MODAL DE AGREGAR EXTERNOS
@@ -545,19 +519,22 @@ $("#crear_externo").click(function () {
 
 $("#desempeno_button").click(function () {
   $("#desempeno_tabla").css("display", "table");
-  var datatable = $("#desempeno_tabla").DataTable();
-  datatable.destroy();
+  if ($.fn.DataTable.isDataTable("#desempeno_tabla")) {
+    $("#desempeno_tabla").DataTable().clear().destroy();
+  }
 
-  var desde = $("#desempeno_desde").val();
-  var hasta = $("#desempeno_hasta").val();
-  var desde_ = desde.split("-");
-  var Desde = desde_[2] + "-" + desde_[1] + "-" + desde_[0];
-  var hasta_ = hasta.split("-");
-  var Hasta = hasta_[2] + "-" + hasta_[1] + "-" + hasta_[0];
+  // inputs type=date -> ya vienen en YYYY-MM-DD (formato SQL)
+  var Desde = $("#desempeno_desde").val();
+  var Hasta = $("#desempeno_hasta").val();
   var id = $("#id_desempeno").val();
+  if (!Desde || !Hasta) {
+    Swal.fire({ icon: "warning", title: "Elegí las dos fechas." });
+    return;
+  }
 
   var datatable = $("#desempeno_tabla").DataTable({
     paging: true,
+    autoWidth: false,
     searching: true,
     ajax: {
       url: "Procesos/php/funciones.php",
@@ -607,12 +584,10 @@ $("#desempeno_button").click(function () {
             }
           } else {
             const comprobante =
-              row.TipoComprobanteDescripcion && row.NumeroComprobante
-                ? `<br>
-       <span class="badge bg-dark text-white mt-1 px-2 py-1" 
-             style="font-size: 10px;">
-         ${row.TipoComprobanteDescripcion} ${row.NumeroComprobante}
-       </span>`
+              row.NumeroComprobante
+                ? `<br><span class="text-muted d-inline-block text-truncate" style="font-size:9.5px;max-width:150px" title="${row.TipoComprobanteDescripcion || ""} ${row.NumeroComprobante}">
+                     <i class="mdi mdi-receipt-text-outline"></i> ${row.NumeroComprobante}
+                   </span>`
                 : "";
 
             return `<span class="badge bg-primary">Facturado</span>${comprobante}`;
@@ -843,7 +818,23 @@ function formatearFechaDMY(fechaStr) {
   if (partes.length !== 3) return fechaStr;
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
+// Wrapper: (re)arma el informe recien cuando el modal esta visible. Dentro de un
+// modal display:none DataTables no puede calcular anchos y tira error la 1ra vez
+// (habia que abrir/cerrar y volver a abrir). Con esto anda de una.
 function report(a, b, c, d, f) {
+  const $m = $("#full-width-modal");
+  $m.off("shown.bs.modal.rep").one("shown.bs.modal.rep", function () {
+    _reportBody(a, b, c, d, f);
+  });
+  if ($m.hasClass("show")) {
+    $m.off("shown.bs.modal.rep");
+    _reportBody(a, b, c, d, f);
+  } else {
+    $m.modal("show");
+  }
+}
+
+function _reportBody(a, b, c, d, f) {
   const fechaFormateada = formatearFechaDMY(c);
   $("#report_fechaS").html(fechaFormateada);
 
@@ -859,7 +850,6 @@ function report(a, b, c, d, f) {
       .addClass("bg-danger");
   }
 
-  $("#full-width-modal").modal("show");
   $("#reporte_header").html($("#desempeno_header").html());
   $("#report_name").html(
     $("#name_desempeno")
@@ -877,6 +867,7 @@ function report(a, b, c, d, f) {
   }
   var datatable = $("#reporte_tabla").DataTable({
     paging: false,
+    autoWidth: false,
     // pageLength: 17,
     searching: true,
     ajax: {
@@ -889,6 +880,9 @@ function report(a, b, c, d, f) {
     //   marcarDuplicados(); // <-- se asegura que se ejecute cada vez que se dibuje
     // },
     initComplete: function (settings, json) {
+      if (json && json.error) {
+        Swal.fire({ icon: "warning", title: "Informe", text: json.error });
+      }
       actualizarTotales();
       construirResumenPorFecha();
       actualizarResumenDesempeno();

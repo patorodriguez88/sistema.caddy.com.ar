@@ -113,6 +113,10 @@ function obtenerDistanciaORS($lat1, $lon1, $lat2, $lon2, $apiKey)
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    // Sin timeout, si ORS tarda/no responde el informe se cuelga varios minutos
+    // (un curl por cada waypoint sin km cacheado).
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
 
     $response = curl_exec($ch);
 
@@ -179,23 +183,16 @@ function obtenerCobranzaIntegrada($mysqli, $codigoSeguimiento, $entregado)
         return 0;
     }
 
-    $porcentaje = 0;
-
-    $stmtPorcentaje = $mysqli->prepare("
-        SELECT Precio 
-        FROM Externos_tarifas 
-        WHERE id = 9 
-        LIMIT 1
-    ");
-
-    if (!$stmtPorcentaje) {
-        return 0;
+    // El % de cobranza integrada (Externos_tarifas id 9) es fijo para toda la
+    // corrida del informe: se cachea una vez, no por fila.
+    static $porcentaje = null;
+    if ($porcentaje === null) {
+        $porcentaje = 0;
+        $rp = $mysqli->query("SELECT Precio FROM Externos_tarifas WHERE id = 9 LIMIT 1");
+        if ($rp && ($rowp = $rp->fetch_assoc())) {
+            $porcentaje = (float)$rowp['Precio'];
+        }
     }
-
-    $stmtPorcentaje->execute();
-    $stmtPorcentaje->bind_result($porcentaje);
-    $stmtPorcentaje->fetch();
-    $stmtPorcentaje->close();
 
     $cobrarEnvio = 0;
 
@@ -701,10 +698,100 @@ if (isset($_POST['Desempeno'])) {
 
 if (isset($_POST['Reporte'])) {
 
+    // Respuesta SIEMPRE JSON limpio: si algun notice/warning se cuela, se
+    // descarta (si no, DataTables corta con "Invalid JSON response").
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    ob_start();
+
+    // Emite el JSON dado descartando cualquier salida previa del buffer.
+    $reporteJson = function ($payload) {
+        if (ob_get_length() !== false) {
+            ob_clean();
+        }
+        echo json_encode($payload);
+        exit;
+    };
+
+    // Red de seguridad: si algo revienta (ej. una columna que falta en un
+    // entorno sin migrar), en vez de un 500 que DataTables muestra como "Ajax
+    // error", devolvemos 200 + JSON con 'error' (tabla vacia + aviso).
+    register_shutdown_function(function () {
+        $e = error_get_last();
+        if (!$e || !in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+            return;
+        }
+        error_log('Externos Reporte fatal: ' . ($e['message'] ?? '') . ' @ ' . ($e['file'] ?? '') . ':' . ($e['line'] ?? ''));
+        if (!headers_sent()) {
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        if (ob_get_length() !== false) {
+            ob_clean();
+        }
+        echo json_encode([
+            'data' => [],
+            'resumen' => ['entregados' => 0, 'no_entregados' => 0, 'total' => 0, 'desempeno' => 0],
+            'error' => 'No se pudo generar el informe (error interno). Revisá el log del servidor.',
+        ]);
+    });
+
+    // --- Tarifas: catalogo (nombre + precio ESPEJO vigente hoy = fallback) y
+    // timeline de precios con vigencia por fecha (Externos_tarifas_precios).
+    // Compartido por los dos modos del reporte (controlado 0 y 1). El precio de
+    // cada servicio se resuelve por SU fecha con $precioTarifa($id, $fecha).
+    $tarifas = array();
+    $tarifas_nombres = array();
+    $qCat = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
+    if ($qCat) {
+        while ($r = $qCat->fetch_assoc()) {
+            $tarifas[$r['id']] = $r['Precio'];
+            $tarifas_nombres[$r['id']] = $r['Nombre'];
+        }
+    }
+
+    $tarifas_timeline = array(); // [idTarifa] => [ ['desde'=>'YYYY-MM-DD','precio'=>float], ... ] ASC
+    $qTl = $mysqli->query("SELECT idExternos_tarifas, Precio, VigenciaDesde
+                           FROM Externos_tarifas_precios ORDER BY idExternos_tarifas, VigenciaDesde ASC");
+    if ($qTl) {
+        while ($r = $qTl->fetch_assoc()) {
+            $tarifas_timeline[(int)$r['idExternos_tarifas']][] = [
+                'desde'  => substr((string)$r['VigenciaDesde'], 0, 10),
+                'precio' => (float)$r['Precio'],
+            ];
+        }
+    }
+
+    // Precio de la tarifa $id para un servicio de fecha $fecha: ultimo tramo con
+    // VigenciaDesde <= fecha; si es anterior a todo, el mas viejo; si no hay
+    // timeline (no deberia tras la migracion), cae al espejo del catalogo.
+    $precioTarifa = function ($id, $fecha) use ($tarifas_timeline, $tarifas) {
+        $id = (int)$id;
+        $fecha = substr((string)$fecha, 0, 10);
+        if (empty($tarifas_timeline[$id])) {
+            return isset($tarifas[$id]) ? (float)$tarifas[$id] : 0.0;
+        }
+        $elegido = $tarifas_timeline[$id][0]['precio']; // fallback: el mas viejo
+        foreach ($tarifas_timeline[$id] as $tramo) {
+            if ($tramo['desde'] <= $fecha) {
+                $elegido = $tramo['precio'];
+            } else {
+                break; // ordenado ASC
+            }
+        }
+        return (float)$elegido;
+    };
+
     if ($_POST['controlado'] == 0) {
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
+        // Endpoint JSON: los errores van al log, NO a la salida (rompian el JSON
+        // del informe). Antes estaba en display_errors=1 (debug).
+        ini_set('display_errors', 0);
+        ini_set('log_errors', 1);
+        error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING);
 
         $numeroOrden = intval($_POST['NOrden']);
 
@@ -748,15 +835,6 @@ if (isset($_POST['Reporte'])) {
         $lngOrigen = -64.17790870319338;
         $apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ2N2MyOGNjMTI0ZjQxY2VhMTQ0NzZkYzU2NWUzYThlIiwiaCI6Im11cm11cjY0In0=';
 
-        $tarifas = array();
-        $tarifas_nombres = array();
-        $q = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
-
-        while ($r = $q->fetch_assoc()) {
-            $tarifas[$r['id']] = $r['Precio'];
-            $tarifas_nombres[$r['id']] = $r['Nombre'];
-        }
-
         $conteoServicios = array();
         $tempRows = array();
 
@@ -785,7 +863,12 @@ if (isset($_POST['Reporte'])) {
             $km = floatval($row['Kilometros']);
             $dentro = puntoDentroDelAnillo($lat2, $lng2, $poligono);
 
-            if ($km == 0 && $lat2 && $lng2) {
+            // ORS: 1 request por waypoint sin km cacheado. Es lo que hace lento
+            // el informe la primera vez. Circuit-breaker: si un pedido falla
+            // (timeout / caido), no se intenta con el resto de las filas (km
+            // queda en 0 y el tramo >25/>50km no se detecta hasta la proxima
+            // corrida, pero el informe carga).
+            if ($km == 0 && $lat2 && $lng2 && empty($orsCaido)) {
                 $distancia = obtenerDistanciaORS($latOrigen, $lngOrigen, $lat2, $lng2, $apiKey);
                 if (is_array($distancia)) {
                     $km = $distancia['km'];
@@ -796,13 +879,15 @@ if (isset($_POST['Reporte'])) {
                         $stmtKm->execute();
                         $stmtKm->close();
                     }
+                } else {
+                    $orsCaido = true; // string de error -> no seguir golpeando la API
                 }
             }
 
             // COLECTA
             if (intval($row['idClienteDestino']) == 18587) {
                 $row['TarifaID'] = 6;
-                $row['Precio'] = isset($tarifas[6]) ? floatval($tarifas[6]) : 0;
+                $row['Precio'] = $precioTarifa(6, $row['Fecha']);
                 $row['NombreTarifa'] = isset($tarifas_nombres[6]) ? $tarifas_nombres[6] : "Colecta";
                 $row['Kilometros'] = $km;
                 $row['DentroAnillo'] = $dentro;
@@ -839,7 +924,7 @@ if (isset($_POST['Reporte'])) {
                 $row['DentroAnillo'] = $dentro;
                 $row['TarifaID'] = $idTarifa;
 
-                $precioBase = isset($tarifas[$idTarifa]) ? floatval($tarifas[$idTarifa]) : 0;
+                $precioBase = $precioTarifa($idTarifa, $row['Fecha']);
                 $nombreTarifa = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
 
                 if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
@@ -920,7 +1005,34 @@ if (isset($_POST['Reporte'])) {
 
                 $row['idExternoRendicion'] = intval($existente['id']);
 
+                // Precio: por defecto queda el congelado (PrecioPagado). PERO si
+                // la rendicion NO esta liquidada (Rendido=0) y NO tiene ajuste
+                // manual de esa fila puntual, se re-precia con la tarifa vigente
+                // a la FECHA del servicio (Externos_tarifas_precios). Asi un
+                // cambio de tarifa "desde tal dia" impacta solo en lo que
+                // corresponde y no en lo ya liquidado ni en overrides manuales.
                 $row['Precio'] = floatval($existente['PrecioPagado']);
+
+                $noLiquidada  = intval($existente['Rendido']) === 0;
+                $sinOverride  = ($existente['TarifaAnteriorId'] === null || $existente['TarifaAnteriorId'] === '')
+                    && ($existente['UsuarioModifico'] === null || $existente['UsuarioModifico'] === '');
+
+                if ($noLiquidada && $sinOverride) {
+                    $tarifaFila  = (int)$existente['idExternos_tarifas'];
+                    $precioLive  = $precioTarifa($tarifaFila, $row['Fecha']);
+                    if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
+                        $precioLive = round($precioLive * 0.5, 2);
+                    }
+                    if ($precioLive > 0 && (float)$precioLive !== (float)$existente['PrecioPagado']) {
+                        $stmtReprecio = $mysqli->prepare("UPDATE Externos_rendicion SET PrecioPagado = ? WHERE id = ? AND Rendido = 0 LIMIT 1");
+                        if ($stmtReprecio) {
+                            $stmtReprecio->bind_param("di", $precioLive, $row['idExternoRendicion']);
+                            $stmtReprecio->execute();
+                            $stmtReprecio->close();
+                        }
+                        $row['Precio'] = $precioLive;
+                    }
+                }
 
                 $cobranzaCalculada = obtenerCobranzaIntegrada(
 
@@ -985,23 +1097,24 @@ if (isset($_POST['Reporte'])) {
                 $tipoLiquidacion = isset($row['TipoLiquidacion']) ? $row['TipoLiquidacion'] : 'VISITA';
 
                 $stmtIns = $mysqli->prepare("
-                INSERT INTO Externos_rendicion 
+                INSERT INTO Externos_rendicion
                 (
-                    CodigoSeguimiento, 
-                    IdEmpleado, 
+                    CodigoSeguimiento,
+                    IdEmpleado,
                     PrecioPagado,
                     CobranzaIntegrada,
-                    PrecioCobrado, 
-                    Timestamp, 
-                    Usuario, 
-                    Observaciones, 
-                    idRendicion, 
-                    Kilometros, 
-                    idExternos_tarifas, 
+                    PrecioCobrado,
+                    Timestamp,
+                    Usuario,
+                    Observaciones,
+                    idRendicion,
+                    Kilometros,
+                    idExternos_tarifas,
                     TipoLiquidacion,
+                    TipoComprobante,
                     Rendido
                 )
-                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0, 0)
             ");
 
                 if ($stmtIns) {
@@ -1051,25 +1164,15 @@ if (isset($_POST['Reporte'])) {
             ? round(($entregados / $totalPedidos) * 100, 2)
             : 0;
 
-        // echo json_encode(array('data' => $ROWS));
-        echo json_encode([
-
+        $reporteJson([
             'data' => $ROWS,
-
             'resumen' => [
-
                 'entregados' => $entregados,
-
                 'no_entregados' => $noEntregados,
-
                 'total' => $totalPedidos,
-
-                'desempeno' => $desempeno
-
-            ]
-
+                'desempeno' => $desempeno,
+            ],
         ]);
-        exit;
     } elseif ($_POST['controlado'] == 1) {
 
         $numeroOrden = intval($_POST['NOrden']);
@@ -1128,6 +1231,29 @@ if (isset($_POST['Reporte'])) {
         $ROWS = array();
 
         while ($row = $SQL->fetch_array(MYSQLI_ASSOC)) {
+
+            // Re-precio de rendiciones NO liquidadas y SIN ajuste manual con la
+            // tarifa vigente a la fecha del servicio (Externos_tarifas_precios).
+            // Las liquidadas (Rendido=1) y los overrides manuales no se tocan.
+            $sinOverride = ($row['TarifaAnteriorId'] === null || $row['TarifaAnteriorId'] === '')
+                && ($row['UsuarioModifico'] === null || $row['UsuarioModifico'] === '');
+
+            if (intval($row['Rendido']) === 0 && $sinOverride) {
+                $precioLive = $precioTarifa((int)$row['TarifaID'], $row['Fecha']);
+                if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
+                    $precioLive = round($precioLive * 0.5, 2);
+                }
+                if ($precioLive > 0 && (float)$precioLive !== (float)$row['Precio']) {
+                    $stmtReprecio = $mysqli->prepare("UPDATE Externos_rendicion SET PrecioPagado = ? WHERE id = ? AND Rendido = 0 LIMIT 1");
+                    if ($stmtReprecio) {
+                        $stmtReprecio->bind_param("di", $precioLive, $row['idExternoRendicion']);
+                        $stmtReprecio->execute();
+                        $stmtReprecio->close();
+                    }
+                    $row['Precio'] = $precioLive;
+                }
+            }
+
             $ROWS[] = $row;
         }
 
@@ -1144,11 +1270,10 @@ if (isset($_POST['Reporte'])) {
             $sql->close();
         }
 
-        echo json_encode(array(
+        $reporteJson(array(
             'data' => $ROWS,
             'total_verificacion' => $total
         ));
-        exit;
     }
 }
 $input = json_decode(file_get_contents("php://input"), true);
