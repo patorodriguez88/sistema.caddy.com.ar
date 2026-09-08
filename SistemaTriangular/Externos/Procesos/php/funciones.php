@@ -113,6 +113,10 @@ function obtenerDistanciaORS($lat1, $lon1, $lat2, $lon2, $apiKey)
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, $body);
     curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
+    // Sin timeout, si ORS tarda/no responde el informe se cuelga varios minutos
+    // (un curl por cada waypoint sin km cacheado).
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 8);
 
     $response = curl_exec($ch);
 
@@ -179,23 +183,16 @@ function obtenerCobranzaIntegrada($mysqli, $codigoSeguimiento, $entregado)
         return 0;
     }
 
-    $porcentaje = 0;
-
-    $stmtPorcentaje = $mysqli->prepare("
-        SELECT Precio 
-        FROM Externos_tarifas 
-        WHERE id = 9 
-        LIMIT 1
-    ");
-
-    if (!$stmtPorcentaje) {
-        return 0;
+    // El % de cobranza integrada (Externos_tarifas id 9) es fijo para toda la
+    // corrida del informe: se cachea una vez, no por fila.
+    static $porcentaje = null;
+    if ($porcentaje === null) {
+        $porcentaje = 0;
+        $rp = $mysqli->query("SELECT Precio FROM Externos_tarifas WHERE id = 9 LIMIT 1");
+        if ($rp && ($rowp = $rp->fetch_assoc())) {
+            $porcentaje = (float)$rowp['Precio'];
+        }
     }
-
-    $stmtPorcentaje->execute();
-    $stmtPorcentaje->bind_result($porcentaje);
-    $stmtPorcentaje->fetch();
-    $stmtPorcentaje->close();
 
     $cobrarEnvio = 0;
 
@@ -866,7 +863,12 @@ if (isset($_POST['Reporte'])) {
             $km = floatval($row['Kilometros']);
             $dentro = puntoDentroDelAnillo($lat2, $lng2, $poligono);
 
-            if ($km == 0 && $lat2 && $lng2) {
+            // ORS: 1 request por waypoint sin km cacheado. Es lo que hace lento
+            // el informe la primera vez. Circuit-breaker: si un pedido falla
+            // (timeout / caido), no se intenta con el resto de las filas (km
+            // queda en 0 y el tramo >25/>50km no se detecta hasta la proxima
+            // corrida, pero el informe carga).
+            if ($km == 0 && $lat2 && $lng2 && empty($orsCaido)) {
                 $distancia = obtenerDistanciaORS($latOrigen, $lngOrigen, $lat2, $lng2, $apiKey);
                 if (is_array($distancia)) {
                     $km = $distancia['km'];
@@ -877,6 +879,8 @@ if (isset($_POST['Reporte'])) {
                         $stmtKm->execute();
                         $stmtKm->close();
                     }
+                } else {
+                    $orsCaido = true; // string de error -> no seguir golpeando la API
                 }
             }
 
