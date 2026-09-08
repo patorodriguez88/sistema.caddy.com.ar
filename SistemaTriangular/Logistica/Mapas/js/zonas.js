@@ -32,12 +32,104 @@ let vistaTodasActiva = false;
 let zonasManuales = [];
 let manualZonaContador = 0;
 
-let milat;
-let milng;
+// Redistribucion por zonas: todas las zonas visibles a la vez, cada una con un
+// Recorrido destino elegido en su <select>. El mapa idZona -> Numero de
+// Recorrido vive SOLO en memoria (decidido con el usuario, sin columna nueva);
+// se pierde al recargar. recorridosActivos alimenta esos <select> y el color
+// para recolorear los pines. overlaysTodasPorId permite resaltar una zona sin
+// ocultar el resto.
+let recorridosActivos = [];
+let zonaDestino = {}; // { [idZona]: "NumeroRecorrido" }
+let overlaysTodasPorId = {};
+let zonaLegendActivaId = null;
+let redistribuyendo = false;
 
 // =========================
-// Accordion de zonas
+// Legend de zonas (todas visibles a la vez)
 // =========================
+
+// Misma paleta que usa la importacion KML en zonas.php, para que una zona sin
+// Color en la base tenga igual un color estable (por posicion) y coincida el
+// swatch del panel con la forma pintada en el mapa.
+const PALETA_ZONAS = [
+  "#1E6FD1", "#28a745", "#ffc107", "#dc3545", "#6f42c1",
+  "#20c997", "#fd7e14", "#e83e8c", "#17a2b8", "#6610f2",
+];
+
+function normalizarColor(c) {
+  if (!c) return null;
+  c = String(c).trim();
+  if (c === "") return null;
+  return c[0] === "#" ? c : "#" + c;
+}
+
+function colorDeZona(z, index) {
+  return normalizarColor(z && z.Color) || PALETA_ZONAS[(index || 0) % PALETA_ZONAS.length];
+}
+
+// Parseo de ZonasMapa.Poligono -> [{lat,lng}] (>=3) o null. Unifica el mismo
+// bloque try/catch repetido en renderTodasLasZonas() y renderCardsAsignacion().
+function poligonoDeCache(z) {
+  if (!z || !z.Poligono) return null;
+  try {
+    const parsed = typeof z.Poligono === "string" ? JSON.parse(z.Poligono) : z.Poligono;
+    if (!Array.isArray(parsed) || parsed.length < 3) return null;
+    const pts = parsed
+      .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
+      .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
+    return pts.length >= 3 ? pts : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Waypoints (no movidos) que caen dentro de un poligono.
+function contarWaypointsEnPoligono(pts) {
+  if (!Array.isArray(pts) || pts.length < 3) return 0;
+  return waypointsData.filter(
+    (w) => !w.movido && pointInPolygon({ lat: w.lat, lng: w.lng }, pts)
+  ).length;
+}
+
+// <option>s del <select> "Recorrido destino" a partir de recorridosActivos
+// (los "en alta" primero, ya vienen ordenados asi del backend).
+function opcionesRecorridosDestino(seleccion) {
+  const sel = seleccion == null ? "" : String(seleccion);
+  let html = '<option value="">— sin asignar —</option>';
+  recorridosActivos.forEach(function (r) {
+    const num = String(r.Numero);
+    const marca = num === sel ? " selected" : "";
+    const extra = r.EnAlta
+      ? " · en alta" + (r.NombreChofer ? " (" + r.NombreChofer + ")" : "")
+      : "";
+    html +=
+      '<option value="' + num + '"' + marca + ">" +
+      num + " - " + (r.Nombre || "s/nombre") + extra +
+      "</option>";
+  });
+  return html;
+}
+
+function cargarRecorridosActivos(cb) {
+  $.ajax({
+    url: "Mapas/php/zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: { TodosLosRecorridosActivos: 1 },
+    success: function (resp) {
+      recorridosActivos = (resp && resp.data) || [];
+      if (typeof cb === "function") cb();
+    },
+    error: function () {
+      recorridosActivos = [];
+      if (typeof cb === "function") cb();
+    },
+  });
+}
+
+// Dibuja el panel-legend de la izquierda: una fila por zona con swatch de
+// color, conteo de waypoints y <select> de Recorrido destino. NO oculta ni
+// aisla nada del mapa (eso lo hace renderTodasLasZonas / resaltarZonaEnMapa).
 function cargarZonasAccordion() {
   $.ajax({
     url: "Mapas/php/zonas.php",
@@ -52,54 +144,52 @@ function cargarZonasAccordion() {
         contenedor.html(
           '<div class="alert alert-warning mb-0">No se encontraron zonas registradas.</div>'
         );
+        zonasCache = [];
+        $("#zonas_total_badge").text("");
+        refrescarBotonRedistribuir();
         return;
       }
+
+      zonasCache = zonas;
+      $("#zonas_total_badge").text(zonas.length + (zonas.length === 1 ? " zona" : " zonas"));
 
       zonas.forEach(function (z, index) {
         const nombre = z.Nombre || "Zona " + (index + 1);
         const idZona = z.id;
+        const color = colorDeZona(z, index);
+        const destino = zonaDestino[idZona] || "";
 
-        // ✅ IDs únicos aunque se repita el nombre
-        const idCol = "collapse_zona_" + idZona;
-        const safeHeaderId = "zona_header_" + idZona;
+        const item = $(
+          '<div class="zona-legend-item" data-idzona="' + idZona + '">' +
+            '<div class="zona-legend-head" data-idzona="' + idZona + '" data-nombre="' +
+              String(nombre).replace(/"/g, "&quot;") + '">' +
+              '<span class="zona-swatch" style="background:' + color + '"></span>' +
+              '<span class="zona-legend-nombre" title="' + String(nombre).replace(/"/g, "&quot;") + '">' + nombre + "</span>" +
+              '<span class="badge bg-light text-dark border zona-legend-count" data-idzona="' + idZona + '">0</span>' +
+              '<i class="mdi mdi-chevron-down"></i>' +
+            "</div>" +
+            '<div class="zona-legend-body" hidden>' +
+              '<label class="mb-1 small text-muted d-block">Recorrido destino</label>' +
+              '<select class="form-select form-select-sm zona-destino-select" data-idzona="' + idZona + '">' +
+                opcionesRecorridosDestino(destino) +
+              "</select>" +
+              '<div class="zona-legend-bbox">N ' + (z.LatitudN || "-") + "  ·  S " + (z.LatitudS || "-") +
+                "<br>E " + (z.LongitudE || "-") + "  ·  O " + (z.LongitudO || "-") + "</div>" +
+              '<div class="d-flex gap-1 mt-2">' +
+                '<button type="button" class="btn btn-outline-secondary btn-sm btnEditarFormaZona" data-idzona="' + idZona + '">' +
+                  '<i class="mdi mdi-vector-polygon"></i> Editar forma</button>' +
+                '<button type="button" class="btn btn-outline-danger btn-sm btnEliminarZona" data-idzona="' + idZona +
+                  '" data-nombre="' + String(nombre).replace(/"/g, "&quot;") + '"><i class="mdi mdi-delete"></i></button>' +
+              "</div>" +
+            "</div>" +
+          "</div>"
+        );
 
-        const card = `
-          <div class="card mb-0">
-            <div class="card-header" id="${safeHeaderId}" data-zona="${nombre}" data-idzona="${idZona}">
-              <h5 class="m-0">
-                <a class="custom-accordion-title d-block py-1"
-                  data-bs-toggle="collapse" href="#${idCol}"
-                  aria-expanded="false" aria-controls="${idCol}">
-                  <i class="uil-location-point"></i> ${nombre}
-                  <i class="mdi mdi-chevron-down accordion-arrow"></i>
-                </a>
-              </h5>
-            </div>
-
-            <div id="${idCol}" class="collapse"
-              aria-labelledby="${safeHeaderId}"
-              data-bs-parent="#zonas_accordion">
-              <div class="card-body">
-                <div><b>Latitud Norte:</b> ${z.LatitudN || "-"} </div>
-                <div><b>Latitud Sur:</b> ${z.LatitudS || "-"} </div>
-                <div><b>Longitud Este:</b> ${z.LongitudE || "-"} </div>
-                <div><b>Longitud Oeste:</b> ${z.LongitudO || "-"} </div>
-
-                <hr class="my-2">
-
-                <button
-                  type="button"
-                  class="btn btn-danger btn-sm btnEliminarZona"
-                  data-idzona="${idZona}"
-                  data-nombre="${nombre}">
-                  <i class="mdi mdi-delete mdi-18px ms-1"></i> Eliminar zona
-                </button>
-              </div>
-            </div>
-          </div>`;
-
-        contenedor.append(card);
+        contenedor.append(item);
       });
+
+      actualizarConteosLegend();
+      refrescarBotonRedistribuir();
     },
     error: function (xhr, status, err) {
       console.error("Error al cargar zonas:", err);
@@ -108,6 +198,77 @@ function cargarZonasAccordion() {
       );
     },
   });
+}
+
+// Refresca solo los badges de conteo del panel (sin re-armar el DOM), a partir
+// de zonasCache + waypointsData. Se llama cuando cambian los waypoints cargados
+// o despues de redistribuir.
+function actualizarConteosLegend() {
+  zonasCache.forEach(function (z) {
+    const pts = poligonoDeCache(z);
+    const n = pts ? contarWaypointsEnPoligono(pts) : 0;
+    const $badge = $('.zona-legend-count[data-idzona="' + z.id + '"]');
+    $badge.text(n);
+    $badge.toggleClass("bg-light text-dark", n === 0);
+    $badge.toggleClass("bg-primary text-white", n > 0);
+  });
+}
+
+// Resalta una zona en el mapa SIN ocultar el resto: sube su relleno/borde y
+// baja el de las demas, centra en ella, y marca su fila en el panel.
+function resaltarZonaEnMapa(idZona) {
+  zonaLegendActivaId = idZona;
+  $(".zona-legend-item").removeClass("zona-activa");
+  $('.zona-legend-item[data-idzona="' + idZona + '"]').addClass("zona-activa");
+
+  Object.keys(overlaysTodasPorId).forEach(function (id) {
+    const shape = overlaysTodasPorId[id];
+    if (!shape) return;
+    const activa = String(id) === String(idZona);
+    shape.setOptions({
+      fillOpacity: activa ? 0.5 : 0.12,
+      strokeWeight: activa ? 3 : 1,
+      zIndex: activa ? 10 : 1,
+    });
+  });
+
+  const shape = overlaysTodasPorId[idZona];
+  if (shape && map) {
+    const b = new google.maps.LatLngBounds();
+    if (typeof shape.getPath === "function") {
+      shape.getPath().forEach((p) => b.extend(p));
+    } else if (typeof shape.getBounds === "function") {
+      const gb = shape.getBounds();
+      if (gb) { b.extend(gb.getNorthEast()); b.extend(gb.getSouthWest()); }
+    }
+    if (!b.isEmpty()) map.fitBounds(b);
+  }
+}
+
+// Habilita/inhabilita el boton "Redistribuir por zonas" y actualiza el texto de
+// ayuda segun lo que falte.
+function refrescarBotonRedistribuir() {
+  const $btn = $("#btn_redistribuir_zonas");
+  const $hint = $("#redistribuir_hint");
+  const hayRec = Array.isArray(selected) && selected.length > 0;
+  const hayWp = waypointsData.length > 0;
+  const hayDestino = Object.keys(zonaDestino).length > 0;
+
+  const ok = hayRec && hayWp && hayDestino && !redistribuyendo;
+  $btn.prop("disabled", !ok);
+
+  if (redistribuyendo) {
+    $hint.text("Redistribuyendo…");
+  } else if (!hayRec) {
+    $hint.text("Elegí uno o más Recorridos arriba.");
+  } else if (!hayWp) {
+    $hint.text("No hay waypoints cargados para los Recorridos elegidos.");
+  } else if (!hayDestino) {
+    $hint.text("Asigná un Recorrido destino a por lo menos una zona.");
+  } else {
+    const zc = Object.keys(zonaDestino).length;
+    $hint.text(zc + (zc === 1 ? " zona" : " zonas") + " con destino asignado. Listo para redistribuir.");
+  }
 }
 
 // =========================
@@ -133,8 +294,22 @@ $(document).ready(function () {
     },
   });
 
-  // Cargar zonas
-  cargarZonasAccordion();
+  // Recorridos activos para los <select> "Recorrido destino" del panel; cuando
+  // termina, se arma el legend de zonas (necesita las opciones ya cargadas).
+  cargarRecorridosActivos(function () {
+    cargarZonasAccordion();
+  });
+
+  // Landing = todas las zonas visibles a la vez (antes no se veia nada hasta
+  // abrir una del acordeon, y abrir una ocultaba el resto). Si el mapa todavia
+  // no cargo (initMap corre por callback de Google), se reintenta.
+  (function pintarTodasCuandoHayaMapa() {
+    if (map) {
+      renderTodasLasZonas();
+    } else {
+      setTimeout(pintarTodasCuandoHayaMapa, 300);
+    }
+  })();
 });
 
 // =========================
@@ -658,6 +833,8 @@ function cargarWaypointsZona() {
       }
 
       renderCardsAsignacion();
+      actualizarConteosLegend();
+      refrescarBotonRedistribuir();
     },
   });
 }
@@ -666,17 +843,52 @@ function cargarWaypointsZona() {
 // Eventos
 // =========================
 
-// Click header zona => render
-$(document).on("click", "#zonas_accordion .card-header", function () {
-  const z = $(this).data("zona");
-  const idz = $(this).data("idzona");
+// Click en una fila del panel de zonas => resaltar esa zona en el mapa SIN
+// ocultar las demas, y abrir/cerrar su cuerpo (select destino + acciones).
+$(document).on("click", "#zonas_accordion .zona-legend-head", function () {
+  const idz = Number($(this).data("idzona"));
   if (!idz) return;
 
-  zona = z || zona || null;
-  zonaId = Number(idz);
+  const $item = $(this).closest(".zona-legend-item");
+  const $body = $item.find(".zona-legend-body");
+  $body.prop("hidden", !$body.prop("hidden"));
 
-  if (zona) $("#zonas_map_title").html("Zonas google Maps " + zona);
+  // Si venimos de "Ver Todas las Zonas" / landing, las formas ya estan en el
+  // mapa; solo se resalta. Si alguien entro a "Editar forma" antes, se
+  // reconstruye la vista de todas primero.
+  if (vistaTodasActiva && overlaysTodasPorId[idz]) {
+    resaltarZonaEnMapa(idz);
+  } else {
+    renderTodasLasZonas(function () {
+      resaltarZonaEnMapa(idz);
+    });
+  }
+});
+
+// "Editar forma" => modo edicion de una sola zona (poligono editable/draggable),
+// el flujo viejo de renderZona(). Al salir con "Ver Todas las Zonas" vuelve la
+// vista completa.
+$(document).on("click", ".btnEditarFormaZona", function (e) {
+  e.stopPropagation();
+  const idz = Number($(this).data("idzona"));
+  if (!idz) return;
+  const zc = zonasCache.find((z) => String(z.id) === String(idz));
+  zona = zc ? zc.Nombre : null;
+  zonaId = idz;
+  if (zona) $("#zonas_map_title").html("Editando forma: " + zona);
   renderZona(zonaId);
+});
+
+// Cambio del <select> "Recorrido destino" de una zona (solo en memoria).
+$(document).on("change", ".zona-destino-select", function () {
+  const idz = Number($(this).data("idzona"));
+  const val = String($(this).val() || "");
+  if (val === "") {
+    delete zonaDestino[idz];
+  } else {
+    zonaDestino[idz] = val;
+  }
+  refrescarBotonRedistribuir();
 });
 
 // Cambio recorrido => recalcular zona actual
@@ -701,6 +913,7 @@ $("#select_rec_mapa").change(function () {
     cargarWaypointsZona();
   }
   verificarGeolocalizacion();
+  refrescarBotonRedistribuir();
 });
 
 // =========================
@@ -788,6 +1001,8 @@ function clearOverlaysTodas() {
     o.setMap(null);
   });
   overlaysTodas = [];
+  overlaysTodasPorId = {};
+  zonaLegendActivaId = null;
 }
 
 // callback (opcional): se ejecuta recien cuando terminan de dibujarse las
@@ -830,8 +1045,8 @@ function renderTodasLasZonas(callback, mostrarFormas) {
         let infowindowActivo = null;
         const bounds = new google.maps.LatLngBounds();
 
-        zonas.forEach(function (z) {
-          const color = z.Color || "#4D1A50";
+        zonas.forEach(function (z, index) {
+          const color = colorDeZona(z, index);
           let shape = null;
           let poligonoPts = null;
 
@@ -884,9 +1099,13 @@ function renderTodasLasZonas(callback, mostrarFormas) {
             iw.setPosition(e.latLng);
             iw.open(map);
             infowindowActivo = iw;
+            resaltarZonaEnMapa(z.id);
           });
 
+          shape._zonaId = z.id;
+          shape._baseFill = 0.25;
           overlaysTodas.push(shape);
+          overlaysTodasPorId[z.id] = shape;
         });
 
         map.fitBounds(bounds);
@@ -895,6 +1114,8 @@ function renderTodasLasZonas(callback, mostrarFormas) {
       }
 
       renderCardsAsignacion();
+      actualizarConteosLegend();
+      refrescarBotonRedistribuir();
       if (typeof callback === "function") callback();
     },
   });
@@ -1148,6 +1369,179 @@ $(document).on("click", "#ver_todas_zonas", function () {
   renderTodasLasZonas();
 });
 
+// =========================
+// Redistribuir por zonas: cada zona con destino manda sus waypoints al
+// Recorrido elegido, todo de una. Reusa la accion CambiarRecorridos (ya
+// resuelve contencion en poligono real + cambiarRecorrido() con webhook).
+// =========================
+$(document).on("click", "#btn_redistribuir_zonas", function () {
+  redistribuirPorZonas();
+});
+
+function redistribuirPorZonas() {
+  if (redistribuyendo) return;
+
+  if (!Array.isArray(selected) || selected.length === 0) {
+    Swal.fire({ icon: "warning", title: "Elegí uno o más Recorridos primero" });
+    return;
+  }
+  if (Object.keys(zonaDestino).length === 0) {
+    Swal.fire({ icon: "warning", title: "Asigná un Recorrido destino a alguna zona" });
+    return;
+  }
+  if (waypointsData.length === 0) {
+    Swal.fire({ icon: "warning", title: "No hay waypoints cargados para los Recorridos elegidos" });
+    return;
+  }
+
+  // Poligonos parseados una sola vez.
+  const polys = zonasCache
+    .map((z, i) => ({ z: z, pts: poligonoDeCache(z), color: colorDeZona(z, i) }))
+    .filter((o) => o.pts);
+
+  // Preview: a que zona cae cada waypoint no movido, recoloreando el pin.
+  const porZona = {};
+  let sinZona = 0;
+
+  waypointsData.forEach(function (w) {
+    if (w.movido) return;
+    const hit = polys.find((o) => pointInPolygon({ lat: w.lat, lng: w.lng }, o.pts));
+    if (!hit) { sinZona++; return; }
+    const id = hit.z.id;
+    if (!zonaDestino[id]) return; // cae en zona sin destino: no se toca
+    if (!porZona[id]) {
+      const rec = recorridosActivos.find((r) => String(r.Numero) === String(zonaDestino[id]));
+      porZona[id] = {
+        nombre: hit.z.Nombre || "Zona",
+        color: hit.color,
+        destinoNum: String(zonaDestino[id]),
+        destinoNombre: rec ? rec.Nombre : "",
+        destinoColor: rec ? normalizarColor(rec.Color) || "#666666" : "#666666",
+        cant: 0,
+      };
+    }
+    porZona[id].cant++;
+    w.marker.setIcon(pinSymbol(String(hit.color).replace("#", "")));
+  });
+
+  const ids = Object.keys(porZona).filter((id) => porZona[id].cant > 0);
+  if (ids.length === 0) {
+    Swal.fire({
+      icon: "info",
+      title: "Nada para mover",
+      text: "Ningún waypoint cae en una zona con Recorrido destino asignado.",
+    });
+    cargarWaypointsZona(); // restaura colores originales de los pines
+    return;
+  }
+
+  const total = ids.reduce((acc, id) => acc + porZona[id].cant, 0);
+  const resumenHtml =
+    '<div style="text-align:left">' +
+    ids
+      .map(function (id) {
+        const p = porZona[id];
+        return (
+          '<div class="rd-linea"><span class="rd-swatch" style="background:' + p.color + '"></span>' +
+          "<b>" + p.nombre + "</b> → Rec " + p.destinoNum +
+          (p.destinoNombre ? " (" + p.destinoNombre + ")" : "") +
+          ": <b>" + p.cant + "</b></div>"
+        );
+      })
+      .join("") +
+    (sinZona
+      ? '<div class="rd-linea text-muted">Fuera de toda zona (no se mueven): <b>' + sinZona + "</b></div>"
+      : "") +
+    "</div>";
+
+  $("#redistribuir_resumen").html(resumenHtml);
+
+  confirmarSiFaltanGeo(function () {
+    Swal.fire({
+      title: "Redistribuir " + total + " servicio(s)",
+      html: resumenHtml,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Sí, redistribuir",
+      cancelButtonText: "Cancelar",
+    }).then(function (result) {
+      if (!result.isConfirmed) {
+        cargarWaypointsZona(); // restaura colores si cancela
+        return;
+      }
+      ejecutarRedistribucion(ids.map((id) => ({ idZona: id, dest: porZona[id] })));
+    });
+  });
+}
+
+function ejecutarRedistribucion(tareas) {
+  redistribuyendo = true;
+  refrescarBotonRedistribuir();
+
+  let totalMovidos = 0;
+  const movidosTodos = [];
+
+  (function siguiente(i) {
+    if (i >= tareas.length) {
+      redistribuyendo = false;
+
+      const TOL = 0.0001;
+      movidosTodos.forEach(function (m) {
+        const w = waypointsData.find(
+          (x) => !x.movido && Math.abs(x.lat - m.lat) < TOL && Math.abs(x.lng - m.lng) < TOL
+        );
+        if (w) {
+          w.marker.setIcon(pinSymbol(String(m.color).replace("#", "")));
+          w.movido = true;
+        }
+      });
+
+      toast("success", "Redistribución lista", "Se movieron " + totalMovidos + " servicio(s).");
+      actualizarConteosLegend();
+      renderCardsAsignacion();
+      refrescarBotonRedistribuir();
+      return;
+    }
+
+    const t = tareas[i];
+    const destino = String(t.dest.destinoNum);
+    // Excluir el propio destino de la lista para no re-tocar lo que ya estaba ahi.
+    const recorridosParaEsta = selected.filter((r) => String(r) !== destino);
+
+    if (recorridosParaEsta.length === 0) {
+      siguiente(i + 1);
+      return;
+    }
+
+    $.ajax({
+      url: "Mapas/php/zonas.php",
+      type: "POST",
+      dataType: "json",
+      data: {
+        CambiarRecorridos: 1,
+        Recnew: destino,
+        Recorridos: recorridosParaEsta,
+        idZona: t.idZona,
+      },
+      success: function (j) {
+        if (j && j.success == 1) {
+          totalMovidos += Number(j.cuenta || 0);
+          (j.movidos || []).forEach(function (p) {
+            movidosTodos.push({ lat: p.lat, lng: p.lng, color: t.dest.destinoColor });
+          });
+        } else {
+          toast("error", "Zona " + t.dest.nombre, (j && j.error) || "No se pudo mover.");
+        }
+        siguiente(i + 1);
+      },
+      error: function () {
+        toast("error", "Zona " + t.dest.nombre, "Error de servidor.");
+        siguiente(i + 1);
+      },
+    });
+  })(0);
+}
+
 // Restaurar el trigger de "Cambiar Recorrido" (dropdown de tres puntos del
 // mapa) - hoy no disparaba nada, el modal #renderizar-modal quedaba sin
 // forma de abrirse.
@@ -1200,6 +1594,7 @@ $(document).on("click", ".btnEliminarZona", function () {
       data: { eliminarZona: 1, idZona: idZona },
       success: function (res) {
         if (res && res.success == 1) {
+          delete zonaDestino[idZona];
           cargarZonasAccordion();
 
           // Si borraste la zona que estabas viendo, limpio mapa
@@ -1210,6 +1605,9 @@ $(document).on("click", ".btnEliminarZona", function () {
             clearPolygon();
             clearMarkers();
           }
+          // Refrescar la capa de "todas las zonas" para que la borrada
+          // desaparezca del mapa sin recargar la pagina.
+          if (map) renderTodasLasZonas();
         } else {
           Swal.fire({
             icon: "error",
@@ -1453,6 +1851,7 @@ $("#importar_poligono_ok").click(function () {
           });
         }
         cargarZonasAccordion();
+        if (map) renderTodasLasZonas();
       } else {
         Swal.fire({ icon: "error", title: "No se pudo importar", text: r.message || "" });
       }

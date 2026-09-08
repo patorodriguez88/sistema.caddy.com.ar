@@ -77,6 +77,93 @@
             background-color: rgba(77, 26, 80, .08);
             border-color: #4D1A50 !important;
         }
+
+        /* Panel "Redistribuir por zonas" + legend de zonas (todas visibles a la
+           vez, cada una con su color y su recorrido destino). */
+        #btn_redistribuir_zonas:disabled {
+            opacity: .55;
+        }
+
+        #redistribuir_resumen .rd-linea {
+            display: flex;
+            align-items: center;
+            gap: .4rem;
+            font-size: .75rem;
+            padding: .1rem 0;
+        }
+
+        #redistribuir_resumen .rd-swatch {
+            width: 11px;
+            height: 11px;
+            border-radius: 2px;
+            flex: 0 0 auto;
+            border: 1px solid rgba(0, 0, 0, .25);
+        }
+
+        .zona-legend-item {
+            border: 1px solid rgba(0, 0, 0, .08);
+            border-radius: .35rem;
+            margin-bottom: .4rem;
+            overflow: hidden;
+            transition: box-shadow .15s, border-color .15s;
+        }
+
+        .zona-legend-item.zona-activa {
+            border-color: #4D1A50;
+            box-shadow: 0 0 0 2px rgba(77, 26, 80, .15);
+        }
+
+        .zona-legend-head {
+            display: flex;
+            align-items: center;
+            gap: .45rem;
+            padding: .4rem .5rem;
+            cursor: pointer;
+        }
+
+        .zona-legend-head:hover {
+            background: rgba(0, 0, 0, .03);
+        }
+
+        .zona-swatch {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+            flex: 0 0 auto;
+            border: 1px solid rgba(0, 0, 0, .25);
+        }
+
+        .zona-legend-nombre {
+            font-weight: 600;
+            font-size: .8125rem;
+            flex: 1 1 auto;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .zona-legend-count {
+            font-size: .6875rem;
+            flex: 0 0 auto;
+        }
+
+        .zona-legend-body {
+            padding: .3rem .5rem .5rem;
+            border-top: 1px solid rgba(0, 0, 0, .06);
+        }
+
+        .zona-destino-select {
+            font-size: .75rem;
+            padding: .2rem .4rem;
+            height: auto;
+        }
+
+        .zona-legend-bbox {
+            font-size: .6875rem;
+            color: #98a6ad;
+            margin-top: .35rem;
+            line-height: 1.5;
+        }
     </style>
 </head>
 
@@ -223,11 +310,27 @@
                                             <span id="geo-warning-badge" class="badge bg-warning text-dark mt-2" style="display:none;cursor:pointer;"></span>
                                         </div>
                                     </div>
-                                    <div class="accordion custom-accordion" id="custom-accordion-one">
-                                        <!-- Contenedor para el acordeón de zonas -->
-                                        <div id="zonas_accordion" class="custom-accordion"></div>
 
+                                    <!-- Redistribucion automatica: cada zona manda sus waypoints
+                                         al Recorrido destino elegido, todo de una. -->
+                                    <div class="col-lg-12 mt-2">
+                                        <button type="button" class="btn btn-primary w-100" id="btn_redistribuir_zonas" disabled>
+                                            <i class="mdi mdi-shuffle-variant"></i> Redistribuir por zonas
+                                        </button>
+                                        <div id="redistribuir_hint" class="text-muted small mt-1">
+                                            Elegí uno o más Recorridos y asigná un Recorrido destino a cada zona.
+                                        </div>
+                                        <div id="redistribuir_resumen" class="mt-2"></div>
+                                    </div>
 
+                                    <div class="mt-3">
+                                        <label class="mb-1 d-flex justify-content-between align-items-center">
+                                            <span>Zonas</span>
+                                            <span id="zonas_total_badge" class="badge bg-light text-muted border"></span>
+                                        </label>
+                                        <!-- Legend de zonas: todas visibles a la vez, swatch de color,
+                                             conteo de waypoints y selector de Recorrido destino. -->
+                                        <div id="zonas_accordion"></div>
                                     </div>
                                 </div> <!-- end card-body-->
                             </div> <!-- end card-->

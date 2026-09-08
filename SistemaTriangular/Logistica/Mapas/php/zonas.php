@@ -411,6 +411,40 @@ if (isset($_POST['RecorridosEnAlta'])) {
   exit;
 }
 
+// TODOS los Recorridos activos (no solo los "en alta") para poblar el <select>
+// "Recorrido destino" de cada zona en el panel de redistribucion. Se marca
+// EnAlta / NombreChofer si hay una orden Alta/Pendiente/Cargada abierta, solo
+// para mostrarlo en la opcion - el destino puede ser cualquier recorrido activo
+// (decidido con el usuario). Endpoint aparte de RecorridosEnAlta para no
+// cambiar el criterio de aquel, que usa el drag&drop.
+if (isset($_POST['TodosLosRecorridosActivos'])) {
+  $res = $mysqli->query("
+    SELECT r.Numero, r.Nombre, r.Color,
+           MAX(l.NombreChofer) AS NombreChofer,
+           MAX(l.NumerodeOrden IS NOT NULL) AS EnAlta
+      FROM Recorridos r
+      LEFT JOIN Logistica l
+        ON l.Recorrido = r.Numero
+       AND l.Eliminado = 0
+       AND l.Estado IN ('Alta','Pendiente','Cargada')
+     WHERE r.Activo = 1 AND r.Numero > 0
+     GROUP BY r.Numero, r.Nombre, r.Color
+     ORDER BY EnAlta DESC, r.Nombre ASC
+  ");
+  $recorridos = [];
+  while ($row = $res->fetch_assoc()) {
+    $recorridos[] = [
+      'Numero'       => (int)$row['Numero'],
+      'Nombre'       => $row['Nombre'],
+      'Color'        => $row['Color'] ?: '666666',
+      'EnAlta'       => (int)$row['EnAlta'] === 1,
+      'NombreChofer' => $row['NombreChofer'] ?: '',
+    ];
+  }
+  echo json_encode(['status' => 'success', 'data' => $recorridos]);
+  exit;
+}
+
 if (isset($_POST['eliminarZona'])) {
 
   $idZona = isset($_POST['idZona']) ? (int)$_POST['idZona'] : 0;
