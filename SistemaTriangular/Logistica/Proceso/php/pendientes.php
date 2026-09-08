@@ -115,6 +115,133 @@ if (isset($_POST['ConfirmarColecta'])) {
   exit;
 }
 
+// ---------------------------------------------------------------------------
+// Resolver desde oficina bultos de COLECTA que quedaron trabados (Entregado=0,
+// HdR cerrada, sin poder cerrar el recorrido). 3 acciones:
+//   - EntregarColectaEnDeposito : el bulto SI llego al deposito, el chofer no
+//        lo confirmo -> Entregado=1, status 'delivered'.
+//   - MarcarNoRetirada          : nunca se retiro -> Estado='No se Pudo Retirar',
+//        Retirado=0, se mueve a Recorrido 80 (sale del gate de finalizar_recorrido).
+//   - DevolverColecta           : Devuelto=1, status 'returned_to_origin'.
+// Input: idColecta (todos los hijos abiertos) o ids[] (TransClientes.id puntuales).
+// ---------------------------------------------------------------------------
+function _colectaBultosObjetivo(mysqli $mysqli): array
+{
+  $ids = array_values(array_filter(array_map('intval', (array)($_POST['ids'] ?? []))));
+  $idColecta = (int)($_POST['idColecta'] ?? 0);
+
+  if ($ids) {
+    $in = implode(',', $ids);
+    $where = "h.id IN ($in)";
+  } elseif ($idColecta > 0) {
+    $where = "h.idColecta = $idColecta AND h.Entregado = 0 AND h.Devuelto = 0";
+  } else {
+    return [];
+  }
+
+  $rows = [];
+  $res = $mysqli->query(
+    "SELECT h.id, h.CodigoSeguimiento, h.idClienteDestino, h.ClienteDestino,
+            h.Recorrido, h.NumerodeOrden
+       FROM TransClientes h
+      WHERE $where AND h.Eliminado = 0"
+  );
+  while ($res && $r = $res->fetch_assoc()) $rows[] = $r;
+  return $rows;
+}
+
+function _resolverBultoColecta(mysqli $mysqli, array $h, string $status, string $estadoTxt, int $estadoId, array $setTc, string $obsTxt): bool
+{
+  $fecha = date('Y-m-d');
+  $hora  = date('H:i:s');
+  $ts    = date('Y-m-d H:i:s');
+
+  $cs     = $mysqli->real_escape_string($h['CodigoSeguimiento']);
+  $idCli  = (int)$h['idClienteDestino'];
+  $idTr   = (int)$h['id'];
+  $dest   = $mysqli->real_escape_string($h['ClienteDestino'] ?? '');
+  $recSeg = $mysqli->real_escape_string((string)($setTc['Recorrido'] ?? $h['Recorrido'] ?? ''));
+  $nro    = (int)($h['NumerodeOrden'] ?? 0);
+  $obsEsc = $mysqli->real_escape_string($obsTxt);
+  $stEsc  = $mysqli->real_escape_string($status);
+  $etEsc  = $mysqli->real_escape_string($estadoTxt);
+  $entregado = (int)($setTc['Entregado'] ?? 0);
+  $retirado  = (int)($setTc['Retirado'] ?? 1);
+  $devuelto  = (int)($setTc['Devuelto'] ?? 0);
+
+  $mysqli->query(
+    "INSERT INTO Seguimiento
+       (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones,
+        Entregado, Estado, Destino, Avisado, idCliente, Retirado, Visitas,
+        idTransClientes, TimeStamp, Recorrido, Devuelto, Webhook, state_id,
+        NumerodeOrden, status, Eliminado, Estado_id)
+     VALUES
+       ('$fecha', '$hora', '" . $mysqli->real_escape_string($_SESSION['Usuario'] ?? 'oficina') . "',
+        '" . $mysqli->real_escape_string($_SESSION['Sucursal'] ?? '') . "', '$cs', '$obsEsc',
+        $entregado, '$etEsc', '$dest', 0, $idCli, $retirado, 0,
+        $idTr, '$ts', '$recSeg', $devuelto, 0, $estadoId,
+        '$nro', '$stEsc', 0, $estadoId)"
+  );
+
+  // TransClientes
+  $sets = ["Estado = '$etEsc'", "Entregado = $entregado", "Retirado = $retirado", "Devuelto = $devuelto"];
+  if (isset($setTc['Recorrido']))    $sets[] = "Recorrido = '" . $mysqli->real_escape_string((string)$setTc['Recorrido']) . "'";
+  if (!empty($setTc['FechaEntrega'])) $sets[] = "FechaEntrega = '$fecha'";
+  $mysqli->query("UPDATE TransClientes SET " . implode(', ', $sets) . " WHERE id = $idTr LIMIT 1");
+
+  // Cerrar la parada
+  $mysqli->query("UPDATE HojaDeRuta SET Estado = 'Cerrado' WHERE idTransClientes = $idTr AND Eliminado = 0 LIMIT 1");
+  $mysqli->query("UPDATE Roadmap SET Estado = 'Cerrado' WHERE Seguimiento = '$cs' AND Eliminado = 0 LIMIT 1");
+
+  return true;
+}
+
+if (isset($_POST['EntregarColectaEnDeposito']) || isset($_POST['MarcarNoRetirada']) || isset($_POST['DevolverColecta'])) {
+
+  $bultos = _colectaBultosObjetivo($mysqli);
+  if (!$bultos) {
+    echo json_encode(['success' => 0, 'msg' => 'No se encontraron bultos (falta idColecta o ids[]).']);
+    exit;
+  }
+
+  $usuario = $_SESSION['Usuario'] ?? 'oficina';
+  $obsUser = trim((string)($_POST['obs'] ?? ''));
+
+  if (isset($_POST['EntregarColectaEnDeposito'])) {
+    $e = $mysqli->query("SELECT id, Estado FROM Estados WHERE Slug='delivered' LIMIT 1");
+    $e = $e ? $e->fetch_assoc() : null;
+    $status = 'delivered';
+    $estadoTxt = $e['Estado'] ?? 'Entregado al Cliente';
+    $estadoId  = (int)($e['id'] ?? 7);
+    $setTc = ['Entregado' => 1, 'Retirado' => 1, 'Devuelto' => 0, 'FechaEntrega' => 1];
+    $obsTxt = 'Entrega en deposito confirmada en oficina por ' . $usuario . ($obsUser !== '' ? ' - ' . $obsUser : '');
+  } elseif (isset($_POST['MarcarNoRetirada'])) {
+    $e = $mysqli->query("SELECT id, Estado FROM Estados WHERE Estado='No se Pudo Retirar' LIMIT 1");
+    $e = $e ? $e->fetch_assoc() : null;
+    $status = 'pickup_failed';
+    $estadoTxt = $e['Estado'] ?? 'No se Pudo Retirar';
+    $estadoId  = (int)($e['id'] ?? 4);
+    $setTc = ['Entregado' => 0, 'Retirado' => 0, 'Devuelto' => 0, 'Recorrido' => '80'];
+    $obsTxt = 'Marcado "no se pudo retirar" en oficina por ' . $usuario . ($obsUser !== '' ? ' - ' . $obsUser : '');
+  } else { // DevolverColecta
+    $e = $mysqli->query("SELECT id, Estado FROM Estados WHERE Slug='returned_to_origin' LIMIT 1");
+    $e = $e ? $e->fetch_assoc() : null;
+    $status = 'returned_to_origin';
+    $estadoTxt = $e['Estado'] ?? 'Devuelto al Cliente';
+    $estadoId  = (int)($e['id'] ?? 9);
+    $setTc = ['Entregado' => 0, 'Retirado' => 1, 'Devuelto' => 1];
+    $obsTxt = 'Devuelto al cliente (colecta) desde oficina por ' . $usuario . ($obsUser !== '' ? ' - ' . $obsUser : '');
+  }
+
+  $n = 0;
+  foreach ($bultos as $h) {
+    if (_resolverBultoColecta($mysqli, $h, $status, $estadoTxt, $estadoId, $setTc, $obsTxt)) $n++;
+  }
+
+  echo json_encode(['success' => 1, 'resueltos' => $n]);
+  exit;
+}
+
 if (isset($_POST['MarcaRetirado'])) {
 
   // if (isset($_POST['Retirado'], $_POST['id_trans']) && !empty($_POST['Retirado']) && !empty($_POST['id_trans'])) {
