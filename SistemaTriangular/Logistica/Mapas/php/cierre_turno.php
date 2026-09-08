@@ -67,11 +67,14 @@ if ($ordenIds) {
     $inOrden = implode(',', array_map('intval', $ordenIds));
 
     // Conteos por orden.
+    // "No se Pudo Retirar" (colectas que el chofer no pudo levantar) cuenta como
+    // resuelto-negativo igual que "No se pudo entregar": sale del contador de
+    // pendientes, va a Observaciones para operaciones.
     $sqlPaq = "
         SELECT h.NumerodeOrden,
                COUNT(*)              AS Total,
                SUM(tc.Entregado = 1) AS Entregados,
-               SUM(tc.Entregado = 0 AND tc.Estado = 'No se pudo entregar') AS NoEntregados
+               SUM(tc.Entregado = 0 AND tc.Estado IN ('No se pudo entregar','No se Pudo Retirar')) AS NoEntregados
         FROM HojaDeRuta h
         INNER JOIN TransClientes tc ON tc.CodigoSeguimiento = h.Seguimiento
         WHERE h.NumerodeOrden IN ({$inOrden})
@@ -98,7 +101,7 @@ if ($ordenIds) {
         WHERE h.NumerodeOrden IN ({$inOrden})
           AND h.Eliminado = 0 AND h.Devuelto = 0
           AND tc.Eliminado = 0
-          AND s.Estado = 'No se pudo entregar'
+          AND s.Estado IN ('No se pudo entregar','No se Pudo Retirar')
           AND s.Fecha = CURDATE()
         ORDER BY h.NumerodeOrden, s.CodigoSeguimiento, s.Hora
     ";

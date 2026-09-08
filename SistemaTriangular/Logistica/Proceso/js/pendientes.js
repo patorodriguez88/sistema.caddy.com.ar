@@ -322,6 +322,52 @@ function confirmar_colecta(idColecta) {
   });
 }
 
+// Resuelve un bulto de colecta que quedó trabado (Retirado, sin entregar en
+// depósito, HdR ya cerrada): entregada en depósito / no se pudo retirar /
+// devolver. Ver acciones EntregarColectaEnDeposito / MarcarNoRetirada /
+// DevolverColecta en Proceso/php/pendientes.php.
+function resolver_colecta_bulto(id, accion) {
+  id = parseInt(id, 10) || 0;
+  if (!id) return;
+  var titulos = {
+    EntregarColectaEnDeposito: "Marcar entregada en depósito",
+    MarcarNoRetirada: "Marcar “no se pudo retirar”",
+    DevolverColecta: "Devolver al cliente",
+  };
+  Swal.fire({
+    title: titulos[accion] || "Resolver colecta",
+    html:
+      "<textarea id='obs_resolver_colecta' class='form-control mt-2' rows='2' " +
+      "placeholder='Observación (opcional)'></textarea>",
+    icon: "question",
+    showCancelButton: true,
+    confirmButtonText: "Confirmar",
+    cancelButtonText: "Cancelar",
+  }).then(function (r) {
+    if (!r.isConfirmed) return;
+    var obs = ($("#obs_resolver_colecta").val() || "").trim();
+    var data = { obs: obs, "ids[]": id };
+    data[accion] = 1;
+    $.ajax({
+      type: "POST",
+      url: "Proceso/php/pendientes.php",
+      data: data,
+      dataType: "json",
+      success: function (res) {
+        if (res && res.success) {
+          toast("success", "Listo", (res.resueltos || 0) + " bulto(s) resueltos.");
+          $("#seguimiento").DataTable().ajax.reload(null, false);
+        } else {
+          toast("error", "No se pudo", (res && res.msg) || "Error.");
+        }
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo resolver el bulto.");
+      },
+    });
+  });
+}
+
 $("#ok_servicio_modal").click(function () {
   let i = $("#servicio_id_trans").val();
   let Retirado = $("#servicio_retirado").val();
@@ -587,13 +633,25 @@ $(document).ready(function () {
               `&#9888; COLECTA ${sinEscanear} sin escanear &middot; Confirmar</a>`;
           }
 
+          // Bulto de colecta retirado del cliente, sin entregar en depósito y con
+          // la parada ya cerrada = trabado (traba el cierre del recorrido y no
+          // aparece como card en ningún lado). Se resuelve desde acá.
+          var colectaTrabada = "";
+          if (esColecta && row.Retirado == 1 && row.Entregado == 0 && row.HdrEstado == "Cerrado") {
+            colectaTrabada =
+              `<br/><span class='badge bg-warning text-dark mt-1' style='font-size:9px'>&#9888; colecta sin resolver</span>` +
+              `<br/><a href='#' class='badge bg-success mt-1' style='font-size:9px' onclick='resolver_colecta_bulto(${row.id},"EntregarColectaEnDeposito"); return false;'>Entregada en depósito</a>` +
+              `<a href='#' class='badge bg-secondary mt-1 ms-1' style='font-size:9px' onclick='resolver_colecta_bulto(${row.id},"MarcarNoRetirada"); return false;'>No se pudo retirar</a>` +
+              `<a href='#' class='badge bg-danger mt-1 ms-1' style='font-size:9px' onclick='resolver_colecta_bulto(${row.id},"DevolverColecta"); return false;'>Devolver</a>`;
+          }
+
           var badgeServicio =
             `<a value='${servicio}' href='#' class='badge bg-${color} mb-1 mt-1' style='font-size:10px' onclick='servicio_mod(${row.id},${row.Retirado})'>${servicio}</a>`;
 
           if (row.Retirado == 1) {
-            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-success' style='font-size:10px'>${row.Hora}</a>${colectaAlert}</td></td>`;
+            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-success' style='font-size:10px'>${row.Hora}</a>${colectaAlert}${colectaTrabada}</td></td>`;
           } else {
-            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-warning' style='font-size:10px'>${row.Hora_retiro}</a><br/><a href='#' class='badge bg-success mt-1' style='font-size:10px'>${row.Hora}</a>${colectaAlert}</td></td>`;
+            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-warning' style='font-size:10px'>${row.Hora_retiro}</a><br/><a href='#' class='badge bg-success mt-1' style='font-size:10px'>${row.Hora}</a>${colectaAlert}${colectaTrabada}</td></td>`;
           }
         },
       },
