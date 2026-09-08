@@ -46,6 +46,13 @@ SELECT et.id, et.Precio, '2020-01-01', 'migracion', 'Backfill precio inicial (mi
    SELECT 1 FROM Externos_tarifas_precios p WHERE p.idExternos_tarifas = et.id
  );
 
+-- Defensivo: en produccion Externos_rendicion.TipoLiquidacion ya existe, pero
+-- algunas copias (sandbox / local) quedaron sin esa columna y el informe de
+-- Externos revienta con "Unknown column 'TipoLiquidacion'". IF NOT EXISTS ->
+-- no-op donde ya esta.
+ALTER TABLE Externos_rendicion
+  ADD COLUMN IF NOT EXISTS TipoLiquidacion CHAR(50) NOT NULL DEFAULT 'VISITA';
+
 -- Verificacion:
 -- SELECT et.id, et.Nombre, et.Precio AS precio_catalogo,
 --        (SELECT p.Precio FROM Externos_tarifas_precios p

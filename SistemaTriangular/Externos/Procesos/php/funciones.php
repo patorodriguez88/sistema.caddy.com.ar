@@ -720,6 +720,29 @@ if (isset($_POST['Reporte'])) {
         exit;
     };
 
+    // Red de seguridad: si algo revienta (ej. una columna que falta en un
+    // entorno sin migrar), en vez de un 500 que DataTables muestra como "Ajax
+    // error", devolvemos 200 + JSON con 'error' (tabla vacia + aviso).
+    register_shutdown_function(function () {
+        $e = error_get_last();
+        if (!$e || !in_array($e['type'], [E_ERROR, E_PARSE, E_CORE_ERROR, E_COMPILE_ERROR], true)) {
+            return;
+        }
+        error_log('Externos Reporte fatal: ' . ($e['message'] ?? '') . ' @ ' . ($e['file'] ?? '') . ':' . ($e['line'] ?? ''));
+        if (!headers_sent()) {
+            http_response_code(200);
+            header('Content-Type: application/json; charset=utf-8');
+        }
+        if (ob_get_length() !== false) {
+            ob_clean();
+        }
+        echo json_encode([
+            'data' => [],
+            'resumen' => ['entregados' => 0, 'no_entregados' => 0, 'total' => 0, 'desempeno' => 0],
+            'error' => 'No se pudo generar el informe (error interno). Revisá el log del servidor.',
+        ]);
+    });
+
     // --- Tarifas: catalogo (nombre + precio ESPEJO vigente hoy = fallback) y
     // timeline de precios con vigencia por fecha (Externos_tarifas_precios).
     // Compartido por los dos modos del reporte (controlado 0 y 1). El precio de

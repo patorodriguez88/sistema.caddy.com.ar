@@ -917,6 +917,9 @@ function _reportBody(a, b, c, d, f) {
     //   marcarDuplicados(); // <-- se asegura que se ejecute cada vez que se dibuje
     // },
     initComplete: function (settings, json) {
+      if (json && json.error) {
+        Swal.fire({ icon: "warning", title: "Informe", text: json.error });
+      }
       actualizarTotales();
       construirResumenPorFecha();
       actualizarResumenDesempeno();
