@@ -558,7 +558,7 @@ $("#desempeno_button").click(function () {
       {
         data: "Fecha",
         render: function (data, type, row) {
-          var Fecha = row.Fecha.split("-").reverse().join(".");
+          var Fecha = fechaDMYpunto(row.Fecha);
           return `<td><b> ${Fecha}</b></br></td>`;
         },
       },
@@ -813,15 +813,37 @@ function marcarDuplicados() {
   });
 }
 function formatearFechaDMY(fechaStr) {
-  if (!fechaStr || typeof fechaStr !== "string") return "";
-  const partes = fechaStr.split("-");
-  if (partes.length !== 3) return fechaStr;
+  const s = String(fechaStr || "").slice(0, 10);
+  if (!s || s === "0000-00-00" || s.startsWith("0000")) return "—";
+  const partes = s.split("-");
+  if (partes.length !== 3 || partes[0].length !== 4) return "—";
   return `${partes[2]}/${partes[1]}/${partes[0]}`;
 }
-// Wrapper: (re)arma el informe recien cuando el modal esta visible. Dentro de un
-// modal display:none DataTables no puede calcular anchos y tira error la 1ra vez
-// (habia que abrir/cerrar y volver a abrir). Con esto anda de una.
+// Igual pero con separador punto (para las celdas de fecha de las tablas).
+function fechaDMYpunto(fechaStr) {
+  const f = formatearFechaDMY(fechaStr);
+  return f === "—" ? "—" : f.replace(/\//g, ".");
+}
+// report(): pinta el encabezado del informe YA (no depende del modal) y arma la
+// tabla recien cuando el modal esta visible (dentro de un modal display:none
+// DataTables no puede calcular anchos y tiraba error la 1ra vez).
 function report(a, b, c, d, f) {
+  // --- encabezado, sincronico ---
+  $("#report_fechaS").html(formatearFechaDMY(c));
+  if (f === 1) {
+    $("#report_status").html("Controlado").removeClass("bg-danger").addClass("bg-success");
+  } else {
+    $("#report_status").html("No Controlado").removeClass("bg-success").addClass("bg-danger");
+  }
+  $("#reporte_header").html($("#desempeno_header").html());
+  $("#report_name").html(
+    ($("#name_desempeno").val() || "").replace(/(?:^|\s)\S/g, (ch) => ch.toUpperCase()),
+  );
+  $("#report_id").html(a);
+  $("#report_fecha").html(c);
+  $("#report_recorrido").html(d);
+
+  // --- tabla, cuando el modal ya esta visible ---
   const $m = $("#full-width-modal");
   $m.off("shown.bs.modal.rep").one("shown.bs.modal.rep", function () {
     _reportBody(a, b, c, d, f);
@@ -831,37 +853,17 @@ function report(a, b, c, d, f) {
     _reportBody(a, b, c, d, f);
   } else {
     $m.modal("show");
+    // fallback: si por algun motivo shown.bs.modal no dispara
+    setTimeout(function () {
+      if (!$.fn.DataTable.isDataTable("#reporte_tabla")) {
+        $m.off("shown.bs.modal.rep");
+        _reportBody(a, b, c, d, f);
+      }
+    }, 600);
   }
 }
 
 function _reportBody(a, b, c, d, f) {
-  const fechaFormateada = formatearFechaDMY(c);
-  $("#report_fechaS").html(fechaFormateada);
-
-  if (f === 1) {
-    $("#report_status")
-      .html("Controlado")
-      .removeClass("bg-danger")
-      .addClass("bg-success");
-  } else {
-    $("#report_status")
-      .html("No Controlado")
-      .removeClass("bg-success")
-      .addClass("bg-danger");
-  }
-
-  $("#reporte_header").html($("#desempeno_header").html());
-  $("#report_name").html(
-    $("#name_desempeno")
-      .val()
-      .replace(/(?:^|\s)\S/g, function (a) {
-        return a.toUpperCase();
-      }),
-  );
-  $("#report_id").html(a);
-  $("#report_fecha").html(c);
-  $("#report_recorrido").html(d);
-
   if ($.fn.DataTable.isDataTable("#reporte_tabla")) {
     $("#reporte_tabla").DataTable().clear().destroy();
   }
@@ -903,7 +905,7 @@ function _reportBody(a, b, c, d, f) {
       {
         data: "Fecha",
         render: function (data, type, row) {
-          var Fecha = row.Fecha.split("-").reverse().join(".");
+          var Fecha = fechaDMYpunto(row.Fecha);
           return `<td><b> ${Fecha}</b></br></td>`;
         },
       },

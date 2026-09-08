@@ -34,6 +34,17 @@ function reMoneda(float $n): string
     return '$ ' . number_format($n, 2, ',', '.');
 }
 
+// Fecha segura: hay ordenes viejas con Fecha '0000-00-00' en Seguimiento/Logistica.
+function reFecha($valor): string
+{
+    $s = substr((string)$valor, 0, 10);
+    if ($s === '' || $s === '0000-00-00' || strpos($s, '0000') === 0) {
+        return '-';
+    }
+    $ts = strtotime($s);
+    return $ts ? date('d/m/Y', $ts) : '-';
+}
+
 // --------------------------------------------------
 // Columnas
 // --------------------------------------------------
@@ -173,7 +184,7 @@ $controlada = $logi && (float)($logi['Costo_rendicion'] ?? 0) != 0.0;
 
 $headerDatos = [
     'repartidor' => ucwords(mb_strtolower($nombreCompleto)),
-    'fecha'      => $logi && !empty($logi['Fecha']) ? date('d/m/Y', strtotime((string)$logi['Fecha'])) : '-',
+    'fecha'      => $logi ? reFecha($logi['Fecha']) : '-',
     'recorrido'  => $logi ? trim(($logi['Recorrido'] ?? '') . '  ' . ($logi['RecorridoNombre'] ?? '')) : '-',
     'orden'      => $nOrden,
     'estado'     => $controlada ? 'Controlado' : 'No controlado',
@@ -208,7 +219,7 @@ if ($nServicios === 0) {
             $estado .= "\n(liquidada)";
         }
         $pdf->Row([
-            date('d/m/Y', strtotime((string)$f['Fecha'])),
+            reFecha($f['Fecha']),
             (string)$f['Origen'],
             $destino,
             (string)$f['CodigoSeguimiento'],
