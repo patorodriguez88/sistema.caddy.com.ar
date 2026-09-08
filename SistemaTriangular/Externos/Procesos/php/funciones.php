@@ -1093,23 +1093,24 @@ if (isset($_POST['Reporte'])) {
                 $tipoLiquidacion = isset($row['TipoLiquidacion']) ? $row['TipoLiquidacion'] : 'VISITA';
 
                 $stmtIns = $mysqli->prepare("
-                INSERT INTO Externos_rendicion 
+                INSERT INTO Externos_rendicion
                 (
-                    CodigoSeguimiento, 
-                    IdEmpleado, 
+                    CodigoSeguimiento,
+                    IdEmpleado,
                     PrecioPagado,
                     CobranzaIntegrada,
-                    PrecioCobrado, 
-                    Timestamp, 
-                    Usuario, 
-                    Observaciones, 
-                    idRendicion, 
-                    Kilometros, 
-                    idExternos_tarifas, 
+                    PrecioCobrado,
+                    Timestamp,
+                    Usuario,
+                    Observaciones,
+                    idRendicion,
+                    Kilometros,
+                    idExternos_tarifas,
                     TipoLiquidacion,
+                    TipoComprobante,
                     Rendido
                 )
-                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0)
+                VALUES (?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?, ?, 0, 0)
             ");
 
                 if ($stmtIns) {
