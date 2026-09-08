@@ -44,6 +44,14 @@ let overlaysTodasPorId = {};
 let zonaLegendActivaId = null;
 let redistribuyendo = false;
 
+// Edicion de una zona EN la vista de todas: se toca "Editar zona" en el popup
+// del mapa, ese poligono pasa a editable/draggable (el resto sigue visible), se
+// guarda solo y se sale al clickear afuera o "Terminar".
+let zonaEnEdicionId = null;
+let _zonaEditListeners = [];
+let _zonaEditSaveTimer = null;
+let _iwZona = null; // InfoWindow reusable de "click en zona"
+
 // =========================
 // Legend de zonas (todas visibles a la vez)
 // =========================
@@ -616,6 +624,12 @@ function initMap() {
 
   infoWindow = new google.maps.InfoWindow();
 
+  // Click en el fondo del mapa (fuera de cualquier zona) => salir de la edicion
+  // de zona en curso ("cuando salgo de la zona se deja de editar").
+  map.addListener("click", function () {
+    if (zonaEnEdicionId != null) terminarEdicionZonaEnMapa();
+  });
+
   // Si ya hay zona seleccionada al cargar maps
   if (zonaId) renderZona(zonaId);
 }
@@ -1029,18 +1043,21 @@ $(document).on("click", "#zonas_accordion .zona-legend-head", function () {
   }
 });
 
-// "Editar forma" => modo edicion de una sola zona (poligono editable/draggable),
-// el flujo viejo de renderZona(). Al salir con "Ver Todas las Zonas" vuelve la
-// vista completa.
+// "Editar forma" del panel => mismo modo de edicion en la vista de todas
+// (editable/draggable en su lugar, el resto de las zonas sigue visible).
 $(document).on("click", ".btnEditarFormaZona", function (e) {
   e.stopPropagation();
   const idz = Number($(this).data("idzona"));
   if (!idz) return;
-  const zc = zonasCache.find((z) => String(z.id) === String(idz));
-  zona = zc ? zc.Nombre : null;
-  zonaId = idz;
-  if (zona) $("#zonas_map_title").html("Editando forma: " + zona);
-  renderZona(zonaId);
+
+  if (vistaTodasActiva && overlaysTodasPorId[idz]) {
+    iniciarEdicionZonaEnMapa(idz);
+  } else {
+    renderTodasLasZonas(function () {
+      if (Array.isArray(selected) && selected.length > 0) cargarWaypointsZona();
+      iniciarEdicionZonaEnMapa(idz);
+    });
+  }
 });
 
 // Cambio del <select> "Recorrido destino" de una zona (solo en memoria).
@@ -1161,6 +1178,13 @@ function confirmarSiFaltanGeo(onContinuar) {
 let overlaysTodas = [];
 
 function clearOverlaysTodas() {
+  // Corta cualquier edicion en curso: las formas se van a recrear.
+  _zonaEditListeners.forEach((l) => google.maps.event.removeListener(l));
+  _zonaEditListeners = [];
+  if (_zonaEditSaveTimer) { clearTimeout(_zonaEditSaveTimer); _zonaEditSaveTimer = null; }
+  zonaEnEdicionId = null;
+  if (_iwZona) { _iwZona.close(); }
+
   overlaysTodas.forEach((o) => {
     google.maps.event.clearInstanceListeners(o);
     o.setMap(null);
@@ -1168,6 +1192,138 @@ function clearOverlaysTodas() {
   overlaysTodas = [];
   overlaysTodasPorId = {};
   zonaLegendActivaId = null;
+}
+
+// ==========================================================================
+// Editar una zona SIN salir de la vista de todas.
+// ==========================================================================
+
+// Popup al clickear una zona en el mapa: nombre + boton "Editar zona"
+// (o "Terminar edicion" si ya se esta editando esa).
+function abrirPopupZona(idZona, latLng) {
+  // Pasar a otra zona corta la edicion de la anterior.
+  if (zonaEnEdicionId != null && String(zonaEnEdicionId) !== String(idZona)) {
+    terminarEdicionZonaEnMapa();
+  }
+
+  const zc = zonasCache.find((z) => String(z.id) === String(idZona));
+  const nombre = zc && zc.Nombre ? zc.Nombre : "Zona";
+  const editando = String(zonaEnEdicionId) === String(idZona);
+
+  if (!_iwZona) _iwZona = new google.maps.InfoWindow();
+  _iwZona.setContent(
+    '<div style="min-width:150px;font-size:13px;line-height:1.4">' +
+      "<b>" + nombre + "</b><br>" +
+      (editando
+        ? '<span style="color:#0a7d33">Movés vértices y arrastrás la forma. Se guarda solo.</span><br>' +
+          '<button class="btn btn-sm btn-outline-secondary mt-1" onclick="terminarEdicionZonaEnMapa()">Terminar edición</button>'
+        : '<button class="btn btn-sm btn-primary mt-1" onclick="iniciarEdicionZonaEnMapa(' + Number(idZona) + ')">' +
+          '<i class="mdi mdi-pencil"></i> Editar zona</button>') +
+    "</div>"
+  );
+  if (latLng) _iwZona.setPosition(latLng);
+  _iwZona.open(map);
+  resaltarZonaEnMapa(idZona);
+}
+
+function iniciarEdicionZonaEnMapa(idZona) {
+  const shape = overlaysTodasPorId[idZona];
+  if (!shape) return;
+
+  if (zonaEnEdicionId != null && String(zonaEnEdicionId) !== String(idZona)) {
+    terminarEdicionZonaEnMapa();
+  }
+
+  const zc = zonasCache.find((z) => String(z.id) === String(idZona));
+  const nombre = zc && zc.Nombre ? zc.Nombre : "";
+  zonaEnEdicionId = idZona;
+
+  shape.setOptions({ editable: true, draggable: true, fillOpacity: 0.45, strokeWeight: 3, zIndex: 30 });
+
+  const guardar = function () { guardarFormaZonaEnMapa(idZona, nombre, shape); };
+
+  if (typeof shape.getPath === "function") {
+    const path = shape.getPath();
+    _zonaEditListeners.push(path.addListener("set_at", guardar));
+    _zonaEditListeners.push(path.addListener("insert_at", guardar));
+    _zonaEditListeners.push(path.addListener("remove_at", guardar));
+    _zonaEditListeners.push(shape.addListener("dragend", guardar));
+  } else if (typeof shape.getBounds === "function") {
+    _zonaEditListeners.push(shape.addListener("bounds_changed", guardar));
+    _zonaEditListeners.push(shape.addListener("dragend", guardar));
+  }
+
+  abrirPopupZona(idZona); // reabre el popup ya en modo "editando"
+}
+
+// Global para el onclick del popup y para el boton del panel.
+function terminarEdicionZonaEnMapa() {
+  if (_zonaEditSaveTimer) { clearTimeout(_zonaEditSaveTimer); _zonaEditSaveTimer = null; }
+  _zonaEditListeners.forEach((l) => google.maps.event.removeListener(l));
+  _zonaEditListeners = [];
+
+  const shape = zonaEnEdicionId != null ? overlaysTodasPorId[zonaEnEdicionId] : null;
+  if (shape) shape.setOptions({ editable: false, draggable: false });
+
+  zonaEnEdicionId = null;
+  if (_iwZona) _iwZona.close();
+}
+
+// Guardado con debounce: SubirPoligono para poligonos, Subir para rectangulos.
+// Misma logica que showNewPoly/showNewRect pero apuntada a una zona puntual de
+// la vista de todas (sin tocar los globals polygon/zona/zonaId).
+function guardarFormaZonaEnMapa(idZona, nombre, shape) {
+  if (_zonaEditSaveTimer) clearTimeout(_zonaEditSaveTimer);
+  _zonaEditSaveTimer = setTimeout(function () {
+    let data;
+    let nuevoPoli = null;
+
+    if (typeof shape.getPath === "function") {
+      const pts = serializePolygonPath(shape).filter(
+        (p) => Number.isFinite(p.lat) && Number.isFinite(p.lng)
+      );
+      if (pts.length < 3) return;
+      const bb = computeBBox(pts);
+      nuevoPoli = JSON.stringify(pts);
+      data = {
+        SubirPoligono: 1, idZona: idZona, zona: nombre, Poligono: nuevoPoli,
+        LatitudN: bb.LatitudN, LatitudS: bb.LatitudS,
+        LongitudE: bb.LongitudE, LongitudO: bb.LongitudO,
+        rec: Array.isArray(selected) ? selected : [],
+      };
+    } else if (typeof shape.getBounds === "function") {
+      const b = shape.getBounds();
+      if (!b) return;
+      const ne = b.getNorthEast(), sw = b.getSouthWest();
+      data = {
+        Subir: 1, idZona: idZona, zona: nombre,
+        nelat: ne.lat(), swlat: sw.lat(), nelng: ne.lng(), swlng: sw.lng(),
+        rec: Array.isArray(selected) ? selected : [],
+      };
+    } else {
+      return;
+    }
+
+    $.ajax({
+      url: "Mapas/php/zonas.php", type: "POST", dataType: "json", data: data,
+      success: function () {
+        // Actualiza la cache local para que los conteos y el redistribuir usen
+        // la forma nueva sin recargar todo.
+        const zc = zonasCache.find((z) => String(z.id) === String(idZona));
+        if (zc) {
+          if (nuevoPoli) zc.Poligono = nuevoPoli;
+          if (data.LatitudN !== undefined) {
+            zc.LatitudN = data.LatitudN; zc.LatitudS = data.LatitudS;
+            zc.LongitudE = data.LongitudE; zc.LongitudO = data.LongitudO;
+          }
+        }
+        actualizarConteosLegend();
+      },
+      error: function (x) {
+        console.error("Guardar forma de zona", x && x.responseText);
+      },
+    });
+  }, 400);
 }
 
 // callback (opcional): se ejecuta recien cuando terminan de dibujarse las
@@ -1208,7 +1364,6 @@ function renderTodasLasZonas(callback, mostrarFormas) {
       zonasCache = zonas;
 
       if (mostrarFormas) {
-        let infowindowActivo = null;
         const bounds = new google.maps.LatLngBounds();
 
         zonas.forEach(function (z, index) {
@@ -1259,13 +1414,8 @@ function renderTodasLasZonas(callback, mostrarFormas) {
             bounds.extend({ lat: rectBounds.south, lng: rectBounds.west });
           }
 
-          const iw = new google.maps.InfoWindow({ content: `<b>${z.Nombre}</b>` });
           shape.addListener("click", function (e) {
-            if (infowindowActivo) infowindowActivo.close();
-            iw.setPosition(e.latLng);
-            iw.open(map);
-            infowindowActivo = iw;
-            resaltarZonaEnMapa(z.id);
+            abrirPopupZona(z.id, e.latLng);
           });
 
           shape._zonaId = z.id;
@@ -1298,249 +1448,11 @@ function renderTodasLasZonasConWaypoints() {
   });
 }
 
-// =========================
-// Cards de asignacion por drag & drop: zonas (con conteo de waypoints, a la
-// izquierda) sobre Recorridos "en alta" (destino, a la derecha) - solo
-// tiene sentido en la vista "Ver Todas las Zonas" con Recorridos elegidos y
-// waypoints ya cargados en el mapa.
-// =========================
-function renderCardsAsignacion() {
-  const $fila = $("#fila_asignacion_zonas");
-
-  if (!vistaTodasActiva || !Array.isArray(selected) || selected.length === 0 || waypointsData.length === 0) {
-    $fila.addClass("d-none");
-    return;
-  }
-
-  const contenedor = $("#contenedorZonasDrag");
-  contenedor.empty();
-
-  let huboAlguna = false;
-
-  zonasCache.forEach(function (z) {
-    let poligonoPts = null;
-    if (z.Poligono) {
-      try {
-        const parsed = typeof z.Poligono === "string" ? JSON.parse(z.Poligono) : z.Poligono;
-        if (Array.isArray(parsed) && parsed.length >= 3) {
-          poligonoPts = parsed
-            .map((p) => ({ lat: Number(p.lat), lng: Number(p.lng) }))
-            .filter((p) => Number.isFinite(p.lat) && Number.isFinite(p.lng));
-        }
-      } catch (e) {
-        poligonoPts = null;
-      }
-    }
-    if (!poligonoPts || poligonoPts.length < 3) return; // sin poligono real no hay forma de contar
-
-    const cantidad = waypointsData.filter(
-      (w) => !w.movido && pointInPolygon({ lat: w.lat, lng: w.lng }, poligonoPts)
-    ).length;
-    if (cantidad === 0) return;
-
-    huboAlguna = true;
-    const color = z.Color ? "#" + String(z.Color).replace("#", "") : "#4D1A50";
-
-    const card = $(
-      '<div class="zona-drag-card border rounded p-2 mb-2" draggable="true" style="border-left:4px solid ' +
-        color +
-        ' !important;">' +
-        '<div class="d-flex justify-content-between align-items-center">' +
-        "<strong>" + z.Nombre + "</strong>" +
-        '<span class="badge bg-light text-dark border">' + cantidad + (cantidad === 1 ? " waypoint" : " waypoints") + "</span>" +
-        "</div>" +
-        '<div class="mt-1"><span class="badge bg-light text-muted border"><i class="mdi mdi-cursor-move"></i> Arrastrar a un Recorrido</span></div>' +
-        "</div>"
-    );
-    card.attr("data-idzona", z.id);
-    contenedor.append(card);
-  });
-
-  // Zonas dibujadas a mano ("Dibujar Zona") - mismo calculo de conteo, pero
-  // el poligono ya esta en memoria (no hace falta parsear JSON de la DB) y
-  // la card lleva data-manualid en vez de data-idzona.
-  zonasManuales.forEach(function (zm) {
-    const cantidad = waypointsData.filter(
-      (w) => !w.movido && pointInPolygon({ lat: w.lat, lng: w.lng }, zm.poligono)
-    ).length;
-    if (cantidad === 0) return;
-
-    huboAlguna = true;
-
-    const card = $(
-      '<div class="zona-drag-card border rounded p-2 mb-2" draggable="true" style="border-left:4px dashed ' +
-        zm.color +
-        ' !important;">' +
-        '<div class="d-flex justify-content-between align-items-center">' +
-        "<strong>" + zm.nombre + "</strong>" +
-        '<span class="badge bg-light text-dark border">' + cantidad + (cantidad === 1 ? " waypoint" : " waypoints") + "</span>" +
-        "</div>" +
-        '<div class="mt-1"><span class="badge bg-light text-muted border"><i class="mdi mdi-cursor-move"></i> Arrastrar a un Recorrido</span></div>' +
-        "</div>"
-    );
-    card.attr("data-manualid", zm.id);
-    contenedor.append(card);
-  });
-
-  if (!huboAlguna) {
-    contenedor.html(
-      '<div class="text-muted small">No hay waypoints geolocalizados dentro de ninguna zona con los Recorridos seleccionados.</div>'
-    );
-  }
-
-  $fila.removeClass("d-none");
-  cargarRecorridosEnAlta();
-}
-
-function cargarRecorridosEnAlta() {
-  const contenedor = $("#contenedorRecorridosDrop");
-  contenedor.html('<div class="col-12 text-muted small"><i class="mdi mdi-dots-circle mdi-spin"></i> Buscando Recorridos en alta...</div>');
-
-  $.ajax({
-    url: "Mapas/php/zonas.php",
-    type: "POST",
-    dataType: "json",
-    data: { RecorridosEnAlta: 1 },
-    success: function (r) {
-      contenedor.empty();
-
-      if (r.status !== "success" || !r.data || r.data.length === 0) {
-        contenedor.html('<div class="col-12 text-muted small">No hay Recorridos en alta disponibles.</div>');
-        return;
-      }
-
-      r.data.forEach(function (o) {
-        const color = "#" + String(o.Color || "666666").replace("#", "");
-        // col-12: esta card ya vive anidada dos niveles adentro de una
-        // columna angosta (col-xl-8 > col-md-6) - partir en col-md-6 de
-        // nuevo aca dejaba media card vacia con 1-2 Recorridos, que es lo
-        // usual (son pocos los "en alta" a la vez).
-        const col = $('<div class="col-12"></div>');
-        const card = $(
-          '<div class="recorrido-drop-card border rounded p-2" style="border-left:4px solid ' +
-            color +
-            ' !important;">' +
-            '<div class="d-flex align-items-center gap-2">' +
-            '<i class="mdi mdi-truck font-20" style="color:' + color + '"></i>' +
-            '<div class="flex-grow-1">' +
-            "<strong>Recorrido " + o.Recorrido + "</strong>" +
-            '<div class="text-muted small">' +
-            (o.NombreRecorrido || "") +
-            (o.NombreChofer ? " · " + o.NombreChofer : "") +
-            "</div>" +
-            "</div>" +
-            "</div>" +
-            "</div>"
-        );
-        card.attr("data-recorrido", o.Recorrido);
-        card.attr("data-color", color);
-        col.append(card);
-        contenedor.append(col);
-      });
-
-      activarDragAndDropZonas();
-    },
-    error: function () {
-      contenedor.html('<div class="col-12 text-danger small">No se pudo cargar la lista de Recorridos en alta.</div>');
-    },
-  });
-}
-
-function activarDragAndDropZonas() {
-  document.querySelectorAll(".zona-drag-card").forEach((card) => {
-    card.addEventListener("dragstart", function (e) {
-      // Payload chico con el tipo de zona - persistida (idZona, va contra
-      // ZonasMapa) o manual (el poligono dibujado, nunca se guarda en la DB).
-      const idZona = card.getAttribute("data-idzona");
-      const manualId = card.getAttribute("data-manualid");
-      const payload = idZona ? { tipo: "persistida", idZona: idZona } : { tipo: "manual", manualId: manualId };
-      e.dataTransfer.setData("text/plain", JSON.stringify(payload));
-      e.dataTransfer.effectAllowed = "move";
-    });
-  });
-
-  document.querySelectorAll(".recorrido-drop-card").forEach((card) => {
-    card.addEventListener("dragover", function (e) {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = "move";
-      card.classList.add("recorrido-dragover");
-    });
-    card.addEventListener("dragleave", function () {
-      card.classList.remove("recorrido-dragover");
-    });
-    card.addEventListener("drop", function (e) {
-      e.preventDefault();
-      card.classList.remove("recorrido-dragover");
-      let payload;
-      try {
-        payload = JSON.parse(e.dataTransfer.getData("text/plain"));
-      } catch (err) {
-        return;
-      }
-      if (!payload || !payload.tipo) return;
-      moverZonaARecorrido(payload, card);
-    });
-  });
-}
-
-// Al soltar: reasignacion REAL e inmediata (confirmado con el usuario, a
-// diferencia de Planificador que arma todo en pantalla y graba recien con
-// un boton "Guardar" al final) - se llama a CambiarRecorridos ahi mismo y,
-// si funciona, se recolorean puntualmente los markers que se movieron
-// (match por lat/lng) en vez de recargar todo el mapa.
-function moverZonaARecorrido(payload, cardDestino) {
-  const recorridoDestino = cardDestino.getAttribute("data-recorrido");
-  const colorDestino = (cardDestino.getAttribute("data-color") || "#666666").replace("#", "");
-
-  const dataAjax = {
-    CambiarRecorridos: 1,
-    Recnew: recorridoDestino,
-    Recorridos: selected,
-  };
-  if (payload.tipo === "manual") {
-    const zm = zonasManuales.find((z) => z.id === payload.manualId);
-    if (!zm) return;
-    dataAjax.PoligonoManual = JSON.stringify(zm.poligono);
-  } else {
-    dataAjax.idZona = payload.idZona;
-  }
-
-  cardDestino.style.opacity = "0.5";
-
-  $.ajax({
-    url: "Mapas/php/zonas.php",
-    type: "POST",
-    dataType: "json",
-    data: dataAjax,
-    success: function (jsonData) {
-      cardDestino.style.opacity = "1";
-
-      if (jsonData.success != 1) {
-        Swal.fire({ icon: "error", title: "Error", text: jsonData.error || "No se pudo mover el recorrido." });
-        return;
-      }
-
-      toast("success", "Listo", "Se movieron " + jsonData.cuenta + " servicio(s) al Recorrido " + recorridoDestino + ".");
-
-      const TOLERANCIA = 0.0001;
-      (jsonData.movidos || []).forEach(function (p) {
-        const w = waypointsData.find(
-          (x) => !x.movido && Math.abs(x.lat - p.lat) < TOLERANCIA && Math.abs(x.lng - p.lng) < TOLERANCIA
-        );
-        if (w) {
-          w.marker.setIcon(pinSymbol(colorDestino));
-          w.movido = true;
-        }
-      });
-
-      renderCardsAsignacion();
-    },
-    error: function () {
-      cardDestino.style.opacity = "1";
-      Swal.fire({ icon: "error", title: "Error del servidor", text: "No se pudo mover. Reintentá de nuevo." });
-    },
-  });
-}
+// El bloque de cards drag&drop "zonas -> Recorridos en alta" debajo del mapa se
+// saco (2026-09-08): la redistribucion ahora se hace con el <select> de destino
+// por zona + el boton "Redistribuir por zonas". renderCardsAsignacion() queda
+// como no-op para no tocar sus ~5 puntos de llamada.
+function renderCardsAsignacion() {}
 
 $(document).on("click", "#ver_todas_zonas", function () {
   renderTodasLasZonasConWaypoints();

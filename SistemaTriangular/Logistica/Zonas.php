@@ -57,27 +57,6 @@
             word-break: break-word;
         }
 
-        /* Drag & drop de zonas sobre Recorridos - mismo patron visual que
-           Planificador (cards con borde de color), agregando feedback de
-           hover que ahi no tenia (la clase se togglea pero no tenia estilo). */
-        .zona-drag-card {
-            cursor: grab;
-            transition: box-shadow .15s;
-        }
-
-        .zona-drag-card:active {
-            cursor: grabbing;
-        }
-
-        .recorrido-drop-card {
-            transition: background-color .15s, border-color .15s;
-        }
-
-        .recorrido-drop-card.recorrido-dragover {
-            background-color: rgba(77, 26, 80, .08);
-            border-color: #4D1A50 !important;
-        }
-
         /* Panel "Redistribuir por zonas" + legend de zonas (todas visibles a la
            vez, cada una con su color y su recorrido destino). */
         #btn_redistribuir_zonas:disabled {
@@ -390,35 +369,9 @@
                                         </div>
                                     </div>
                                     <h4 id="zonas_map_title" class="header-title mb-3">Zonas Google Map </h4>
-                                    <div id="map" class="gmaps" style="min-height: 400px;"></div>
+                                    <div id="map" class="gmaps" style="min-height: 640px;"></div>
                                 </div> <!-- end card-body-->
                             </div> <!-- end card-->
-
-                            <!-- Cards de asignacion por drag & drop: zonas (con conteo de
-                                 waypoints) a la izquierda, Recorridos en alta (destino) a la
-                                 derecha - debajo del mapa, en la misma columna (antes quedaba
-                                 como fila aparte al final de la pagina, empujada abajo del
-                                 todo por el acordeon de zonas de la izquierda que es mas alto).
-                                 Se muestra solo en la vista "Ver Todas las Zonas" con
-                                 Recorridos seleccionados. -->
-                            <div class="row mt-3 d-none" id="fila_asignacion_zonas">
-                                <div class="col-md-6">
-                                    <div class="card mb-0">
-                                        <div class="card-body">
-                                            <h4 class="header-title mb-3">Zonas <span class="text-muted small">(arrastrar a un Recorrido)</span></h4>
-                                            <div id="contenedorZonasDrag"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="card mb-0">
-                                        <div class="card-body">
-                                            <h4 class="header-title mb-3">Recorridos en Alta</h4>
-                                            <div id="contenedorRecorridosDrop" class="row g-2"></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div> <!-- end col-->
                     </div>
                     <!-- end row-->

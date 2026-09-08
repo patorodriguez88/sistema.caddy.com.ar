@@ -383,40 +383,11 @@ if (isset($_POST['CambiarRecorridos'])) {
   exit;
 }
 
-// Recorridos "en alta" disponibles como destino para asignar zonas
-// arrastrando (ver drag&drop en Zonas.php) - mismo criterio que
-// BuscarOrdenesDisponibles de Planificador/php/planificador.php, pero
-// duplicado aca (con Recorridos.Color agregado y filtrando Recorrido>0,
-// que Planificador no necesita) para no acoplar ambos subsistemas.
-if (isset($_POST['RecorridosEnAlta'])) {
-  $res = $mysqli->query("
-    SELECT l.NumerodeOrden, l.Patente, l.NombreChofer, l.Recorrido, r.Nombre AS NombreRecorrido, r.Color
-      FROM Logistica l
-      LEFT JOIN Recorridos r ON r.Numero = l.Recorrido
-     WHERE l.Eliminado = 0 AND l.Estado IN ('Alta','Pendiente') AND l.Recorrido > 0
-     ORDER BY l.NumerodeOrden ASC
-  ");
-  $ordenes = [];
-  while ($row = $res->fetch_assoc()) {
-    $ordenes[] = [
-      'NumerodeOrden' => (int)$row['NumerodeOrden'],
-      'Recorrido' => (int)$row['Recorrido'],
-      'NombreRecorrido' => $row['NombreRecorrido'],
-      'NombreChofer' => $row['NombreChofer'],
-      'Patente' => $row['Patente'],
-      'Color' => $row['Color'] ?: '666666',
-    ];
-  }
-  echo json_encode(['status' => 'success', 'data' => $ordenes]);
-  exit;
-}
-
 // TODOS los Recorridos activos (no solo los "en alta") para poblar el <select>
 // "Recorrido destino" de cada zona en el panel de redistribucion. Se marca
 // EnAlta / NombreChofer si hay una orden Alta/Pendiente/Cargada abierta, solo
 // para mostrarlo en la opcion - el destino puede ser cualquier recorrido activo
-// (decidido con el usuario). Endpoint aparte de RecorridosEnAlta para no
-// cambiar el criterio de aquel, que usa el drag&drop.
+// (decidido con el usuario).
 if (isset($_POST['TodosLosRecorridosActivos'])) {
   $res = $mysqli->query("
     SELECT r.Numero, r.Nombre, r.Color,
