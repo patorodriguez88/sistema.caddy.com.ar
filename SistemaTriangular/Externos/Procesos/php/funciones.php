@@ -701,6 +701,52 @@ if (isset($_POST['Desempeno'])) {
 
 if (isset($_POST['Reporte'])) {
 
+    // --- Tarifas: catalogo (nombre + precio ESPEJO vigente hoy = fallback) y
+    // timeline de precios con vigencia por fecha (Externos_tarifas_precios).
+    // Compartido por los dos modos del reporte (controlado 0 y 1). El precio de
+    // cada servicio se resuelve por SU fecha con $precioTarifa($id, $fecha).
+    $tarifas = array();
+    $tarifas_nombres = array();
+    $qCat = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
+    if ($qCat) {
+        while ($r = $qCat->fetch_assoc()) {
+            $tarifas[$r['id']] = $r['Precio'];
+            $tarifas_nombres[$r['id']] = $r['Nombre'];
+        }
+    }
+
+    $tarifas_timeline = array(); // [idTarifa] => [ ['desde'=>'YYYY-MM-DD','precio'=>float], ... ] ASC
+    $qTl = $mysqli->query("SELECT idExternos_tarifas, Precio, VigenciaDesde
+                           FROM Externos_tarifas_precios ORDER BY idExternos_tarifas, VigenciaDesde ASC");
+    if ($qTl) {
+        while ($r = $qTl->fetch_assoc()) {
+            $tarifas_timeline[(int)$r['idExternos_tarifas']][] = [
+                'desde'  => substr((string)$r['VigenciaDesde'], 0, 10),
+                'precio' => (float)$r['Precio'],
+            ];
+        }
+    }
+
+    // Precio de la tarifa $id para un servicio de fecha $fecha: ultimo tramo con
+    // VigenciaDesde <= fecha; si es anterior a todo, el mas viejo; si no hay
+    // timeline (no deberia tras la migracion), cae al espejo del catalogo.
+    $precioTarifa = function ($id, $fecha) use ($tarifas_timeline, $tarifas) {
+        $id = (int)$id;
+        $fecha = substr((string)$fecha, 0, 10);
+        if (empty($tarifas_timeline[$id])) {
+            return isset($tarifas[$id]) ? (float)$tarifas[$id] : 0.0;
+        }
+        $elegido = $tarifas_timeline[$id][0]['precio']; // fallback: el mas viejo
+        foreach ($tarifas_timeline[$id] as $tramo) {
+            if ($tramo['desde'] <= $fecha) {
+                $elegido = $tramo['precio'];
+            } else {
+                break; // ordenado ASC
+            }
+        }
+        return (float)$elegido;
+    };
+
     if ($_POST['controlado'] == 0) {
         ini_set('display_errors', 1);
         ini_set('display_startup_errors', 1);
@@ -748,15 +794,6 @@ if (isset($_POST['Reporte'])) {
         $lngOrigen = -64.17790870319338;
         $apiKey = 'eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6IjQ2N2MyOGNjMTI0ZjQxY2VhMTQ0NzZkYzU2NWUzYThlIiwiaCI6Im11cm11cjY0In0=';
 
-        $tarifas = array();
-        $tarifas_nombres = array();
-        $q = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
-
-        while ($r = $q->fetch_assoc()) {
-            $tarifas[$r['id']] = $r['Precio'];
-            $tarifas_nombres[$r['id']] = $r['Nombre'];
-        }
-
         $conteoServicios = array();
         $tempRows = array();
 
@@ -802,7 +839,7 @@ if (isset($_POST['Reporte'])) {
             // COLECTA
             if (intval($row['idClienteDestino']) == 18587) {
                 $row['TarifaID'] = 6;
-                $row['Precio'] = isset($tarifas[6]) ? floatval($tarifas[6]) : 0;
+                $row['Precio'] = $precioTarifa(6, $row['Fecha']);
                 $row['NombreTarifa'] = isset($tarifas_nombres[6]) ? $tarifas_nombres[6] : "Colecta";
                 $row['Kilometros'] = $km;
                 $row['DentroAnillo'] = $dentro;
@@ -839,7 +876,7 @@ if (isset($_POST['Reporte'])) {
                 $row['DentroAnillo'] = $dentro;
                 $row['TarifaID'] = $idTarifa;
 
-                $precioBase = isset($tarifas[$idTarifa]) ? floatval($tarifas[$idTarifa]) : 0;
+                $precioBase = $precioTarifa($idTarifa, $row['Fecha']);
                 $nombreTarifa = isset($tarifas_nombres[$idTarifa]) ? $tarifas_nombres[$idTarifa] : "Tarifa " . $idTarifa;
 
                 if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
@@ -920,7 +957,34 @@ if (isset($_POST['Reporte'])) {
 
                 $row['idExternoRendicion'] = intval($existente['id']);
 
+                // Precio: por defecto queda el congelado (PrecioPagado). PERO si
+                // la rendicion NO esta liquidada (Rendido=0) y NO tiene ajuste
+                // manual de esa fila puntual, se re-precia con la tarifa vigente
+                // a la FECHA del servicio (Externos_tarifas_precios). Asi un
+                // cambio de tarifa "desde tal dia" impacta solo en lo que
+                // corresponde y no en lo ya liquidado ni en overrides manuales.
                 $row['Precio'] = floatval($existente['PrecioPagado']);
+
+                $noLiquidada  = intval($existente['Rendido']) === 0;
+                $sinOverride  = ($existente['TarifaAnteriorId'] === null || $existente['TarifaAnteriorId'] === '')
+                    && ($existente['UsuarioModifico'] === null || $existente['UsuarioModifico'] === '');
+
+                if ($noLiquidada && $sinOverride) {
+                    $tarifaFila  = (int)$existente['idExternos_tarifas'];
+                    $precioLive  = $precioTarifa($tarifaFila, $row['Fecha']);
+                    if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
+                        $precioLive = round($precioLive * 0.5, 2);
+                    }
+                    if ($precioLive > 0 && (float)$precioLive !== (float)$existente['PrecioPagado']) {
+                        $stmtReprecio = $mysqli->prepare("UPDATE Externos_rendicion SET PrecioPagado = ? WHERE id = ? AND Rendido = 0 LIMIT 1");
+                        if ($stmtReprecio) {
+                            $stmtReprecio->bind_param("di", $precioLive, $row['idExternoRendicion']);
+                            $stmtReprecio->execute();
+                            $stmtReprecio->close();
+                        }
+                        $row['Precio'] = $precioLive;
+                    }
+                }
 
                 $cobranzaCalculada = obtenerCobranzaIntegrada(
 
@@ -1128,6 +1192,29 @@ if (isset($_POST['Reporte'])) {
         $ROWS = array();
 
         while ($row = $SQL->fetch_array(MYSQLI_ASSOC)) {
+
+            // Re-precio de rendiciones NO liquidadas y SIN ajuste manual con la
+            // tarifa vigente a la fecha del servicio (Externos_tarifas_precios).
+            // Las liquidadas (Rendido=1) y los overrides manuales no se tocan.
+            $sinOverride = ($row['TarifaAnteriorId'] === null || $row['TarifaAnteriorId'] === '')
+                && ($row['UsuarioModifico'] === null || $row['UsuarioModifico'] === '');
+
+            if (intval($row['Rendido']) === 0 && $sinOverride) {
+                $precioLive = $precioTarifa((int)$row['TarifaID'], $row['Fecha']);
+                if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
+                    $precioLive = round($precioLive * 0.5, 2);
+                }
+                if ($precioLive > 0 && (float)$precioLive !== (float)$row['Precio']) {
+                    $stmtReprecio = $mysqli->prepare("UPDATE Externos_rendicion SET PrecioPagado = ? WHERE id = ? AND Rendido = 0 LIMIT 1");
+                    if ($stmtReprecio) {
+                        $stmtReprecio->bind_param("di", $precioLive, $row['idExternoRendicion']);
+                        $stmtReprecio->execute();
+                        $stmtReprecio->close();
+                    }
+                    $row['Precio'] = $precioLive;
+                }
+            }
+
             $ROWS[] = $row;
         }
 
