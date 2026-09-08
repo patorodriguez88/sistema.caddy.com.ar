@@ -701,6 +701,25 @@ if (isset($_POST['Desempeno'])) {
 
 if (isset($_POST['Reporte'])) {
 
+    // Respuesta SIEMPRE JSON limpio: si algun notice/warning se cuela, se
+    // descarta (si no, DataTables corta con "Invalid JSON response").
+    if (!headers_sent()) {
+        header('Content-Type: application/json; charset=utf-8');
+    }
+    while (ob_get_level() > 0) {
+        ob_end_clean();
+    }
+    ob_start();
+
+    // Emite el JSON dado descartando cualquier salida previa del buffer.
+    $reporteJson = function ($payload) {
+        if (ob_get_length() !== false) {
+            ob_clean();
+        }
+        echo json_encode($payload);
+        exit;
+    };
+
     // --- Tarifas: catalogo (nombre + precio ESPEJO vigente hoy = fallback) y
     // timeline de precios con vigencia por fecha (Externos_tarifas_precios).
     // Compartido por los dos modos del reporte (controlado 0 y 1). El precio de
@@ -748,9 +767,11 @@ if (isset($_POST['Reporte'])) {
     };
 
     if ($_POST['controlado'] == 0) {
-        ini_set('display_errors', 1);
-        ini_set('display_startup_errors', 1);
-        error_reporting(E_ALL);
+        // Endpoint JSON: los errores van al log, NO a la salida (rompian el JSON
+        // del informe). Antes estaba en display_errors=1 (debug).
+        ini_set('display_errors', 0);
+        ini_set('log_errors', 1);
+        error_reporting(E_ALL & ~E_DEPRECATED & ~E_NOTICE & ~E_WARNING);
 
         $numeroOrden = intval($_POST['NOrden']);
 
@@ -1115,25 +1136,15 @@ if (isset($_POST['Reporte'])) {
             ? round(($entregados / $totalPedidos) * 100, 2)
             : 0;
 
-        // echo json_encode(array('data' => $ROWS));
-        echo json_encode([
-
+        $reporteJson([
             'data' => $ROWS,
-
             'resumen' => [
-
                 'entregados' => $entregados,
-
                 'no_entregados' => $noEntregados,
-
                 'total' => $totalPedidos,
-
-                'desempeno' => $desempeno
-
-            ]
-
+                'desempeno' => $desempeno,
+            ],
         ]);
-        exit;
     } elseif ($_POST['controlado'] == 1) {
 
         $numeroOrden = intval($_POST['NOrden']);
@@ -1231,11 +1242,10 @@ if (isset($_POST['Reporte'])) {
             $sql->close();
         }
 
-        echo json_encode(array(
+        $reporteJson(array(
             'data' => $ROWS,
             'total_verificacion' => $total
         ));
-        exit;
     }
 }
 $input = json_decode(file_get_contents("php://input"), true);

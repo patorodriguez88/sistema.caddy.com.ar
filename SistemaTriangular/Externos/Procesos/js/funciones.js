@@ -621,12 +621,10 @@ $("#desempeno_button").click(function () {
             }
           } else {
             const comprobante =
-              row.TipoComprobanteDescripcion && row.NumeroComprobante
-                ? `<br>
-       <span class="badge bg-dark text-white mt-1 px-2 py-1" 
-             style="font-size: 10px;">
-         ${row.TipoComprobanteDescripcion} ${row.NumeroComprobante}
-       </span>`
+              row.NumeroComprobante
+                ? `<br><span class="text-muted d-inline-block text-truncate" style="font-size:9.5px;max-width:150px" title="${row.TipoComprobanteDescripcion || ""} ${row.NumeroComprobante}">
+                     <i class="mdi mdi-receipt-text-outline"></i> ${row.NumeroComprobante}
+                   </span>`
                 : "";
 
             return `<span class="badge bg-primary">Facturado</span>${comprobante}`;
