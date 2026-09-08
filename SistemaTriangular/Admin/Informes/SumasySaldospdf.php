@@ -95,6 +95,12 @@ function ssTipoCuentaOrden(string $label): int
     return $orden[$label] ?? 6;
 }
 
+// Formato de moneda AR con signo: $1.000.000,00
+function ssMoneda(float $n): string
+{
+    return '$' . number_format($n, 2, ',', '.');
+}
+
 // --------------------------------------------------
 // Columnas
 // --------------------------------------------------
@@ -110,12 +116,12 @@ class SumasYSaldosPDF extends HdrPdfBase
         $anchos = $this->anchosEscalados(SS_WIDTHS);
         $this->SetWidths($anchos);
         $this->SetAligns(SS_ALIGNS);
-        $this->SetFont('Arial', 'B', 8);
+        $this->SetFont('Arial', 'B', 7);
         $this->SetFillColor(...$p['primaryC']);
         $this->SetTextColor(...$p['whiteC']);
         $this->SetDrawColor(...$p['primaryC']);
         foreach (SS_COLS as $i => $label) {
-            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, SS_ALIGNS[$i] === 'L' ? 'L' : 'C', true);
+            $this->Cell($anchos[$i], 6, pdf_text($label), 0, 0, SS_ALIGNS[$i] === 'L' ? 'L' : 'C', true);
         }
         $this->Ln();
         $this->SetTextColor(...$p['darkText']);
@@ -130,9 +136,9 @@ class SumasYSaldosPDF extends HdrPdfBase
         $this->SetFillColor(...$p['grayBg']);
         $this->SetDrawColor(...$p['borderC']);
         $this->SetTextColor(...$p['darkText']);
-        $this->SetFont('Arial', 'B', 8.5);
+        $this->SetFont('Arial', 'B', 8);
         $this->resetX();
-        $this->Cell($this->contentWidth(), 6.5, pdf_text($titulo), 0, 1, 'L', true);
+        $this->Cell($this->contentWidth(), 5.6, pdf_text($titulo), 0, 1, 'L', true);
     }
 
     public function Header(): void
@@ -229,8 +235,8 @@ foreach ($items as $fila) {
 $headerDatos = [
     'fechaDesde'          => date('d/m/Y', strtotime($fechaDesde)),
     'fechaHasta'          => date('d/m/Y', strtotime($fechaHasta)),
-    'totalDebe'           => number_format($totalDebe, 2, ',', '.'),
-    'totalHaber'          => number_format($totalHaber, 2, ',', '.'),
+    'totalDebe'           => ssMoneda($totalDebe),
+    'totalHaber'          => ssMoneda($totalHaber),
     'incluyeNoOperativo'  => $incluyeNoOperativo ? 'Si' : 'No',
 ];
 
@@ -252,6 +258,7 @@ if (count($items) === 0) {
 } else {
     foreach ($grupos as $nombreGrupo => $cuentas) {
         $pdf->grupoRow($nombreGrupo);
+        $pdf->SetFont('Arial', '', 7);
 
         $fill = false;
         foreach ($cuentas as $fila) {
@@ -263,23 +270,23 @@ if (count($items) === 0) {
             $pdf->Row([
                 (string)$fila['Cuenta'],
                 (string)$fila['NombreCuenta'],
-                number_format($debe, 2, ',', '.'),
-                number_format($haber, 2, ',', '.'),
-                $saldoDeudor > 0 ? number_format($saldoDeudor, 2, ',', '.') : '',
-                $saldoAcreedor > 0 ? number_format($saldoAcreedor, 2, ',', '.') : '',
+                ssMoneda($debe),
+                ssMoneda($haber),
+                $saldoDeudor > 0 ? ssMoneda($saldoDeudor) : '',
+                $saldoAcreedor > 0 ? ssMoneda($saldoAcreedor) : '',
             ], $fill ? $paleta['grayBg'] : $paleta['whiteC']);
             $fill = !$fill;
         }
     }
 
     // Fila de totales, remarcada.
-    $pdf->SetFont('Arial', 'B', 9);
+    $pdf->SetFont('Arial', 'B', 8);
     $pdf->Row([
         '', 'TOTALES',
-        number_format($totalDebe, 2, ',', '.'),
-        number_format($totalHaber, 2, ',', '.'),
-        number_format($totalSaldoDeudor, 2, ',', '.'),
-        number_format($totalSaldoAcreedor, 2, ',', '.'),
+        ssMoneda($totalDebe),
+        ssMoneda($totalHaber),
+        ssMoneda($totalSaldoDeudor),
+        ssMoneda($totalSaldoAcreedor),
     ], $paleta['grayBg']);
 
     // Un balance de sumas y saldos correcto tiene que cuadrar en los DOS
@@ -294,17 +301,17 @@ if (count($items) === 0) {
     $pdf->resetX();
     if ($balanceado) {
         $pdf->SetTextColor(...$paleta['greenC']);
-        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFont('Arial', 'B', 8);
         $pdf->Cell(0, 6, pdf_text('OK - Balance cuadrado (Sumas Debe = Sumas Haber, Saldos Deudores = Saldos Acreedores)'), 0, 1);
     } else {
         $pdf->SetTextColor(...$paleta['redC']);
-        $pdf->SetFont('Arial', 'B', 9);
+        $pdf->SetFont('Arial', 'B', 8);
         $msg = 'ATENCION - No cuadra: ';
         if (abs($diferenciaSumas) >= 0.005) {
-            $msg .= 'diferencia de ' . number_format(abs($diferenciaSumas), 2, ',', '.') . ' entre Sumas Debe y Sumas Haber. ';
+            $msg .= 'diferencia de ' . ssMoneda(abs($diferenciaSumas)) . ' entre Sumas Debe y Sumas Haber. ';
         }
         if (abs($diferenciaSaldos) >= 0.005) {
-            $msg .= 'diferencia de ' . number_format(abs($diferenciaSaldos), 2, ',', '.') . ' entre Saldos Deudores y Saldos Acreedores.';
+            $msg .= 'diferencia de ' . ssMoneda(abs($diferenciaSaldos)) . ' entre Saldos Deudores y Saldos Acreedores.';
         }
         $pdf->MultiCell(0, 6, pdf_text($msg), 0, 'L');
     }

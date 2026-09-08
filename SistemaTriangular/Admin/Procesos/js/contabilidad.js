@@ -182,6 +182,14 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
+  // Monto con signo $ y formato AR ($1.000.000,00). hideZero=true deja la
+  // celda vacia cuando el valor es 0 (columnas Saldo Deudor / Acreedor).
+  function montoAR(valor, hideZero) {
+    const num = parseFloat(valor) || 0;
+    if (hideZero && num === 0) return "";
+    return "$" + formatearMonto(num);
+  }
+
   function bloquearCajaSiFechaEsHoy() {
     const hoy = new Date();
     const fechaInput = new Date(document.getElementById("example-date").value);
@@ -879,19 +887,18 @@ document.addEventListener("DOMContentLoaded", function () {
               .checked
               ? 1
               : 0;
-            $("#titulo_informes").html("Sumas y Saldos");
-            document.getElementById("visor_pdf").style.display = "block";
-            // Antes esto apuntaba hardcodeado a www.caddy.com.ar
-            // (producción) incluso probando en localhost - con ruta
-            // relativa apunta siempre al mismo servidor donde corre la
-            // pantalla, sea cual sea.
-            document.getElementById("iframe_pdf").src =
+            // El PDF se abre en una pestaña nueva. Antes se incrustaba en un
+            // iframe (#visor_pdf) al final de la pantalla y quedaba feo.
+            // Ruta relativa: apunta siempre al mismo servidor donde corre la
+            // pantalla (antes estaba hardcodeado a www.caddy.com.ar).
+            var url =
               "../Admin/Informes/SumasySaldospdf.php?Desde=" +
               encodeURIComponent(desde) +
               "&Hasta=" +
               encodeURIComponent(hasta) +
               "&NoOperativo=" +
               noOperativo;
+            window.open(url, "_blank");
           },
         },
         {
@@ -915,18 +922,32 @@ document.addEventListener("DOMContentLoaded", function () {
         { data: "TipoCuenta" },
         { data: "Cuenta" },
         { data: "NombreCuenta" },
-        { data: "SumaDebe" },
-        { data: "SumaHaber" },
+        {
+          data: "SumaDebe",
+          className: "text-end",
+          render: function (data) {
+            return montoAR(data, false);
+          },
+        },
+        {
+          data: "SumaHaber",
+          className: "text-end",
+          render: function (data) {
+            return montoAR(data, false);
+          },
+        },
         {
           data: "SaldoDeudor",
+          className: "text-end",
           render: function (data) {
-            return parseFloat(data) > 0 ? data : "";
+            return montoAR(data, true);
           },
         },
         {
           data: "SaldoAcreedor",
+          className: "text-end",
           render: function (data) {
-            return parseFloat(data) > 0 ? data : "";
+            return montoAR(data, true);
           },
         },
       ],
@@ -941,10 +962,10 @@ document.addEventListener("DOMContentLoaded", function () {
           totalSaldoDeudor += parseFloat(row.SaldoDeudor) || 0;
           totalSaldoAcreedor += parseFloat(row.SaldoAcreedor) || 0;
         });
-        $("#total-debe-syc").html(totalDebe.toFixed(2));
-        $("#total-haber-syc").html(totalHaber.toFixed(2));
-        $("#total-saldo-deudor-syc").html(totalSaldoDeudor.toFixed(2));
-        $("#total-saldo-acreedor-syc").html(totalSaldoAcreedor.toFixed(2));
+        $("#total-debe-syc").html(montoAR(totalDebe, false));
+        $("#total-haber-syc").html(montoAR(totalHaber, false));
+        $("#total-saldo-deudor-syc").html(montoAR(totalSaldoDeudor, false));
+        $("#total-saldo-acreedor-syc").html(montoAR(totalSaldoAcreedor, false));
       },
     });
   }

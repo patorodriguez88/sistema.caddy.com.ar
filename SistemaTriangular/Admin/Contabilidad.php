@@ -344,6 +344,16 @@
                                     <div class="tab-content">
                                         <div class="tab-pane show active p-3">
                                             <h5 class="mb-3">Sumas y Saldos</h5>
+                                            <style>
+                                                /* Tabla mas compacta: mas filas a la vista sin scroll vertical */
+                                                #tabla-sumas-y-saldos { font-size: 11px; }
+                                                #tabla-sumas-y-saldos th,
+                                                #tabla-sumas-y-saldos td { padding: .2rem .45rem !important; line-height: 1.15; white-space: nowrap; }
+                                                #tabla-sumas-y-saldos td.text-end,
+                                                #tabla-sumas-y-saldos th:nth-child(n+4),
+                                                #tabla-sumas-y-saldos tfoot th { text-align: right; font-variant-numeric: tabular-nums; }
+                                                #div_tabla_sumas_y_saldos { overflow-x: auto; }
+                                            </style>
                                             <div class="row align-items-end">
                                                 <div class="col-md-6 mb-2">
                                                     <label for="date-informes-desde" class="form-label">Desde</label>
