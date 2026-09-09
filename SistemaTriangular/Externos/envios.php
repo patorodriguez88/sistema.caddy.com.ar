@@ -119,6 +119,12 @@
             display: none !important;
         }
     }
+
+    /* SweetAlert2 abierto desde adentro de un modal Bootstrap: que quede encima
+       (modal BS5 = z-index 1055/1065; el default de swal2 no siempre gana). */
+    .swal2-container {
+        z-index: 20000 !important;
+    }
 </style>
 
 <body>
