@@ -83,12 +83,23 @@
 
                                     <div id="enter_registration_user_id" class="row row-cols-lg-auto g-3 align-items-center mb-3" style="display:none">
                                         <div class="col-12">
-                                            <label for="enter_registration_user">Usuario</label>
+                                            <label for="enter_registration_user">Repartidor (titular del movimiento)</label>
                                             <select id="enter_registration_user" class="form-control select2" data-toggle="select2">
                                                 <option value="">Seleccione un Usuario</option>
                                                 <optgroup label="Nombre de Usuario">
                                                 </optgroup>
                                             </select>
+                                        </div>
+                                    </div>
+
+                                    <div id="enter_registration_datetime" class="row g-3 align-items-center mb-3" style="display:none">
+                                        <div class="col-6">
+                                            <label for="fecha_entrega" class="form-label">Fecha real del movimiento</label>
+                                            <input type="date" class="form-control" id="fecha_entrega" />
+                                        </div>
+                                        <div class="col-6">
+                                            <label for="hora_entrega" class="form-label">Hora real del movimiento</label>
+                                            <input type="time" class="form-control" id="hora_entrega" />
                                         </div>
                                     </div>
 
@@ -576,7 +587,7 @@
         <?php include '../Menu/php/script_datatables.php'; ?>
 
         <!-- funciones -->
-        <script src="Procesos/js/guias.js"></script>
+        <script src="Procesos/js/guias.js?v=<?php echo @filemtime(__DIR__ . '/Procesos/js/guias.js') ?: time(); ?>"></script>
         <script src="../Menu/js/funciones.js"></script>
 
         <!-- SweetAlert2 CSS -->

@@ -1164,31 +1164,41 @@ $("#enter_registration_seguimiento-modal").on("shown.bs.modal", function () {
 });
 
 $("#enter_registration_state").change(function () {
-  if ($("#enter_registration_state").val() == "Entregado al Cliente") {
-    $("#enter_registration_user_id").css("display", "block");
-    // Hacer la solicitud Ajax para obtener usuarios
-    $.ajax({
-      data: { usuarios_registration: 1 },
-      url: "Procesos/php/funciones.php",
-      type: "POST",
-      dataType: "json",
-      success: function (data) {
-        // Agregar opciones al select
-        var $optgroup = $("#enter_registration_user optgroup");
-        $.each(data, function (index, user) {
-          var $option = $("<option>", { value: user.id, text: user.text });
-          $optgroup.append($option);
-        });
+  const st = $("#enter_registration_state").val();
+  const conRepartidor = st == "Entregado al Cliente" || st == "No se pudo entregar";
 
-        // Actualizar el select2 después de agregar opciones
-        $("#enter_registration_user").trigger("change");
-      },
-      error: function (error) {
-        console.error("Error al obtener usuarios:", error);
-      },
-    });
+  if (conRepartidor) {
+    $("#enter_registration_user_id").css("display", "block");
+    $("#enter_registration_datetime").css("display", "flex");
+    // Prellenar fecha/hora con ahora (el operador ajusta si el movimiento fue antes)
+    if (!$("#fecha_entrega").val()) {
+      const n = new Date();
+      const p = (x) => String(x).padStart(2, "0");
+      $("#fecha_entrega").val(`${n.getFullYear()}-${p(n.getMonth() + 1)}-${p(n.getDate())}`);
+      $("#hora_entrega").val(`${p(n.getHours())}:${p(n.getMinutes())}`);
+    }
+    // Cargar usuarios sólo una vez
+    if ($("#enter_registration_user optgroup option").length === 0) {
+      $.ajax({
+        data: { usuarios_registration: 1 },
+        url: "Procesos/php/funciones.php",
+        type: "POST",
+        dataType: "json",
+        success: function (data) {
+          var $optgroup = $("#enter_registration_user optgroup");
+          $.each(data, function (index, user) {
+            $optgroup.append($("<option>", { value: user.id, text: user.text }));
+          });
+          $("#enter_registration_user").trigger("change");
+        },
+        error: function (error) {
+          console.error("Error al obtener usuarios:", error);
+        },
+      });
+    }
   } else {
     $("#enter_registration_user_id").css("display", "none");
+    $("#enter_registration_datetime").css("display", "none");
   }
 });
 
@@ -1198,7 +1208,13 @@ $("#enter_registration_save").click(function () {
   let id = $("#inputcodigo").val();
   let obs = $("#enter_registration_obs").val();
   let user = $("#enter_registration_user").val();
-  console.log("usuario", $("#enter_registration_user").val());
+  let fecha_entrega = $("#fecha_entrega").val();
+  let hora_entrega = $("#hora_entrega").val();
+  const conRepartidor = state == "Entregado al Cliente" || state == "No se pudo entregar";
+  if (conRepartidor && !user) {
+    toast("error", "Falta el repartidor", "Elegí el repartidor titular del movimiento.");
+    return;
+  }
   $.ajax({
     data: {
       enter_registration: 1,
@@ -1206,6 +1222,8 @@ $("#enter_registration_save").click(function () {
       state: state,
       obs: obs,
       user: user,
+      fecha_entrega: fecha_entrega,
+      hora_entrega: hora_entrega,
     },
     type: "POST",
     url: "Procesos/php/funciones.php",

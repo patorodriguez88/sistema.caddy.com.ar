@@ -433,6 +433,37 @@ if (isset($_POST['enter_registration'])) {
   $Fecha = date("Y-m-d");
   $Hora = date("H:i");
 
+  // Fecha / hora reales del movimiento (el form las manda para "Entregado al
+  // Cliente" / "No se pudo entregar"; si vienen vacías o mal, se usa ahora).
+  $fechaPost = isset($_POST['fecha_entrega']) ? trim((string)$_POST['fecha_entrega']) : '';
+  $horaPost  = isset($_POST['hora_entrega'])  ? trim((string)$_POST['hora_entrega'])  : '';
+  if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaPost)) {
+    $Fecha = $fechaPost;
+  }
+  if (preg_match('/^\d{2}:\d{2}$/', $horaPost)) {
+    $Hora = $horaPost;
+  }
+
+  // Titular del movimiento: si el operador eligió un repartidor, ESE es el
+  // Seguimiento.Usuario (si no, nunca se le puede atribuir/pagar). El usuario
+  // de oficina que lo cargó queda en Observaciones. Nunca vacío.
+  $usuarioOficina = trim((string)($_SESSION['Usuario'] ?? ''));
+  $UsuarioTitular = $usuarioOficina;
+  $idRepartidorSel = isset($_POST['user']) && $_POST['user'] !== '' ? (int)$_POST['user'] : 0;
+  if ($idRepartidorSel > 0) {
+    $rRep = $mysqli->query("SELECT Usuario FROM usuarios WHERE id = " . $idRepartidorSel . " LIMIT 1");
+    if ($rRep && ($xRep = $rRep->fetch_assoc()) && trim((string)($xRep['Usuario'] ?? '')) !== '') {
+      $UsuarioTitular = $xRep['Usuario'];
+    }
+  }
+  if ($UsuarioTitular === '') {
+    $UsuarioTitular = 'OFICINA';
+  }
+  $UsuarioTitularEsc = $mysqli->real_escape_string($UsuarioTitular);
+  // usado por el INSERT a Roadmap del branch "Retirado del Cliente" (antes
+  // quedaba indefinido -> '').
+  $Usuario = $UsuarioTitular;
+
   $Visitas = $dato['Visitas'] + 1;
   $idCliente = $dato['idCliente'];
   $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
@@ -505,37 +536,61 @@ if (isset($_POST['enter_registration'])) {
     $Estadohdr = "Abierto";
   }
 
-  //OBSERVACIONES LE AGREGO CMS(CARGA MANUAL SISTEMA)
+  //OBSERVACIONES LE AGREGO CMS(CARGA MANUAL SISTEMA) + quién lo cargó a mano
   $Observaciones = 'CMS-' . $Obs;
+  if ($usuarioOficina !== '' && $usuarioOficina !== $UsuarioTitular) {
+    $Observaciones .= ' (cargado en oficina por ' . $usuarioOficina . ')';
+  }
+  $Observaciones = $mysqli->real_escape_string($Observaciones);
 
   //BUSCO EL ULTIMO RECORRIDO
-  $sqlbuscotrans = $mysqli->query("SELECT MAX(id)as id,Recorrido,ClienteDestino FROM `TransClientes` WHERE CodigoSeguimiento ='$CodigoSeguimiento' AND Eliminado=0");
+  $sqlbuscotrans = $mysqli->query("SELECT MAX(id)as id,Recorrido,ClienteDestino,NumerodeOrden FROM `TransClientes` WHERE CodigoSeguimiento ='$CodigoSeguimiento' AND Eliminado=0");
   $datosqlbuscotrans = $sqlbuscotrans->fetch_array(MYSQLI_ASSOC);
 
-  //BUSCRO EL NUMERO DE ORDEN
-  $sqlNumerodeOrden = $mysqli->query("SELECT NumerodeOrden FROM `HojaDeRuta` WHERE Seguimiento='$CodigoSeguimiento'");
-  $datosNumerodeOrden = $sqlNumerodeOrden->fetch_array(MYSQLI_ASSOC);
-
+  // NUMERO DE ORDEN - con criterio:
+  // 1) el de la HojaDeRuta actual del código (no eliminada, la más nueva, > 0);
+  // 2) si no hay, y se eligió repartidor: el de Logistica de ese chofer para la
+  //    fecha del movimiento (Cargada/Cerrada, la más nueva);
+  // 3) si no, 0.
+  $NumOrden = 0;
+  $rHdr = $mysqli->query("SELECT NumerodeOrden FROM `HojaDeRuta`
+                          WHERE Seguimiento='$CodigoSeguimiento' AND Eliminado=0 AND NumerodeOrden > 0
+                          ORDER BY id DESC LIMIT 1");
+  if ($rHdr && ($xHdr = $rHdr->fetch_assoc())) {
+    $NumOrden = (int)$xHdr['NumerodeOrden'];
+  }
+  if ($NumOrden === 0 && $idRepartidorSel > 0) {
+    $fEsc = $mysqli->real_escape_string($Fecha);
+    $rLog = $mysqli->query("SELECT NumerodeOrden FROM `Logistica`
+                            WHERE Fecha='$fEsc' AND idUsuarioChofer=" . $idRepartidorSel . "
+                              AND Eliminado=0 AND Estado IN ('Cargada','Cerrada')
+                            ORDER BY id DESC LIMIT 1");
+    if ($rLog && ($xLog = $rLog->fetch_assoc())) {
+      $NumOrden = (int)$xLog['NumerodeOrden'];
+    }
+  }
 
   //EJECUTO LOS SQL
 
   $sqlseguimiento = "INSERT INTO `Seguimiento`(`Fecha`, `Hora`, `Usuario`, `Sucursal`, `CodigoSeguimiento`, `Observaciones`, `Entregado`, `Estado`, `Destino`,
-`Avisado`, `idCliente`, `Retirado`, `Visitas`, `idTransClientes`, `Recorrido`,`NombreCompleto`,`state_id`,`NumerodeOrden`)VALUES('{$Fecha}','{$Hora}','{$_SESSION['Usuario']}',
+`Avisado`, `idCliente`, `Retirado`, `Visitas`, `idTransClientes`, `Recorrido`,`NombreCompleto`,`state_id`,`NumerodeOrden`)VALUES('{$Fecha}','{$Hora}','{$UsuarioTitularEsc}',
 '{$_SESSION['Sucursal']}','{$CodigoSeguimiento}','{$Observaciones}','{$Entregado}','{$EstadoSeguimiento}','{$dato['Destino']}','{$dato['Avisado']}','{$idCliente}',
-'{$Retirado}','{$Visitas}','{$datosqlbuscotrans['id']}','{$datosqlbuscotrans['Recorrido']}','{$datosqlbuscotrans['ClienteDestino']}','{$id_state['id']}','{$datosNumerodeOrden['NumerodeOrden']}')";
+'{$Retirado}','{$Visitas}','{$datosqlbuscotrans['id']}','{$datosqlbuscotrans['Recorrido']}','{$datosqlbuscotrans['ClienteDestino']}','{$id_state['id']}','{$NumOrden}')";
 
   if ($mysqli->query($sqlseguimiento)) {
-    //ACTUALIZO TRANSCLIENTES  
-    if ($_POST['user']) {
-      $new_user = $_POST['user'];
-      $Usuario = $_SESSION['Usuario'];
-      // $dato_act_x_sistema=$Usuario.' '.date('Y-m-d H:i');  
-      $Notas = date('Y-m-d H:i') . ' ' . $Usuario . ' modifico el idABM desde Seguimiento';
-      $mysqli->query("UPDATE TransClientes SET Estado='$EstadoSeguimiento',Entregado='$Entregado',Devuelto='$Devuelto',idABM='$new_user',Notas =  CONCAT(Notas, '$Notas'),NumerodeOrden='$datosNumerodeOrden[NumerodeOrden]' WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0 AND Haber=0 LIMIT 1");
+    // Propago el N° de orden a TransClientes si estaba en blanco (colectas que
+    // se generan sin orden y recién la tienen al asignarse a un recorrido).
+    $setOrden = ($NumOrden > 0 && (int)($datosqlbuscotrans['NumerodeOrden'] ?? 0) === 0)
+      ? ",NumerodeOrden='$NumOrden'" : '';
+    //ACTUALIZO TRANSCLIENTES
+    if ($idRepartidorSel > 0) {
+      $new_user = $idRepartidorSel;
+      $Notas = date('Y-m-d H:i') . ' ' . $usuarioOficina . ' cargo mov. "' . $EstadoSeguimiento . '" (titular ' . $UsuarioTitular . ') desde Seguimiento; ';
+      $NotasEsc = $mysqli->real_escape_string($Notas);
+      $mysqli->query("UPDATE TransClientes SET Estado='$EstadoSeguimiento',Entregado='$Entregado',Devuelto='$Devuelto',idABM='$new_user',Notas = CONCAT(IFNULL(Notas,''), '$NotasEsc')$setOrden WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0 AND Haber=0 LIMIT 1");
     } else {
-      $Usuario = $_SESSION['Usuario'];
-      $dato_act_x_sistema = $Usuario . ' ' . date('Y-m-d H:i');
-      $mysqli->query("UPDATE TransClientes SET Estado='$EstadoSeguimiento',Entregado='$Entregado',Devuelto='$Devuelto',infoABM='$dato_act_x_sistema' WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0 AND Haber=0 LIMIT 1");
+      $dato_act_x_sistema = $usuarioOficina . ' ' . date('Y-m-d H:i');
+      $mysqli->query("UPDATE TransClientes SET Estado='$EstadoSeguimiento',Entregado='$Entregado',Devuelto='$Devuelto',infoABM='$dato_act_x_sistema'$setOrden WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0 AND Haber=0 LIMIT 1");
     }
 
 
