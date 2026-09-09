@@ -35,8 +35,9 @@ if ($accion === 'obtener_clientes' && isset($_POST['recorrido'])) {
     FROM twilio_seguimiento
     ) TS ON TS.CodigoSeguimiento = TC.CodigoSeguimiento
     LEFT JOIN (
-    SELECT NumPedido, SUM(CobrarEnvio) AS TotalCobrarEnvio
+    SELECT NumPedido, MAX(CobrarEnvio) AS TotalCobrarEnvio
     FROM Ventas
+    WHERE Eliminado = 0
     GROUP BY NumPedido
     ) VT ON VT.NumPedido = TC.CodigoSeguimiento
     WHERE 

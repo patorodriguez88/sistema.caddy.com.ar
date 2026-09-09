@@ -408,7 +408,12 @@ $items = db_fetch_all(
 
 $totalesFila = mysqli_fetch_one(
     $mysqli,
-    "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad, SUM(CobrarEnvio) AS Cobranza
+    // El contra-reembolso se guarda REPETIDO en CobrarEnvio de cada linea del
+    // pedido (mercaderia + linea de cobranza integrada); un SUM() lo contaba dos
+    // veces y el remito mostraba el doble de lo que dice el paquete. MAX() da el
+    // monto real una sola vez. El Total facturado si es SUM de todas las lineas.
+    "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad,
+            MAX(CobrarEnvio) AS Cobranza
        FROM Ventas WHERE NumPedido = ?",
     's',
     [$CodigoSeguimiento]
