@@ -27,7 +27,8 @@ function contarServiciosEnZona(mysqli $mysqli, array $bbox, ?array $poligono, st
     $sql = $mysqli->query(
         "SELECT Clientes.Latitud, Clientes.Longitud FROM Clientes
          INNER JOIN HojaDeRuta ON Clientes.id = HojaDeRuta.idCliente
-         WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
+         INNER JOIN TransClientes tc ON tc.id = HojaDeRuta.idTransClientes AND tc.Eliminado = 0
+         WHERE HojaDeRuta.Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
            AND (Clientes.Latitud + 0) > ('{$bbox['LatitudS']}' + 0) AND (Clientes.Latitud + 0) < ('{$bbox['LatitudN']}' + 0)
            AND (Clientes.Longitud + 0) > ('{$bbox['LongitudO']}' + 0) AND (Clientes.Longitud + 0) < ('{$bbox['LongitudE']}' + 0)
            AND HojaDeRuta.Recorrido IN($exito)"
@@ -80,6 +81,7 @@ if (isset($_POST['RecorridosConServicios'])) {
     "SELECT DISTINCT Recorridos.Numero, Recorridos.Nombre
        FROM Recorridos
       INNER JOIN HojaDeRuta ON HojaDeRuta.Recorrido = Recorridos.Numero
+      INNER JOIN TransClientes tc ON tc.id = HojaDeRuta.idTransClientes AND tc.Eliminado = 0
       WHERE Recorridos.Activo=1 AND HojaDeRuta.Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0
       ORDER BY Recorridos.Numero"
   );
@@ -354,7 +356,8 @@ if (isset($_POST['CambiarRecorridos'])) {
   // contaba bien pero el traspaso movia 0).
   $query = "SELECT HojaDeRuta.id,HojaDeRuta.Seguimiento,Clientes.Latitud,Clientes.Longitud
     FROM HojaDeRuta INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
-    WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
+    INNER JOIN TransClientes tc ON tc.id = HojaDeRuta.idTransClientes AND tc.Eliminado = 0
+    WHERE HojaDeRuta.Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0 AND Clientes.Latitud<>''
       AND (Clientes.Latitud + 0) > ('$bbox[LatitudS]' + 0) AND (Clientes.Latitud + 0) < ('$bbox[LatitudN]' + 0)
       AND (Clientes.Longitud + 0) > ('$bbox[LongitudO]' + 0) AND (Clientes.Longitud + 0) < ('$bbox[LongitudE]' + 0)
       AND HojaDeRuta.Recorrido IN($exito)";
@@ -538,7 +541,8 @@ if (isset($_POST['VerificarGeolocalizacion'])) {
   $res = $mysqli->query(
     "SELECT Clientes.nombrecliente, HojaDeRuta.Seguimiento, Clientes.Latitud, Clientes.Longitud
        FROM Clientes INNER JOIN HojaDeRuta ON Clientes.id = HojaDeRuta.idCliente
-      WHERE Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0
+       INNER JOIN TransClientes tc ON tc.id = HojaDeRuta.idTransClientes AND tc.Eliminado = 0
+      WHERE HojaDeRuta.Estado='Abierto' AND HojaDeRuta.Eliminado=0 AND HojaDeRuta.Devuelto=0
         AND HojaDeRuta.Recorrido IN($exito)"
   );
 
