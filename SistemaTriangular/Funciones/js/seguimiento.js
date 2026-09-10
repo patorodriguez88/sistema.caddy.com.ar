@@ -17,6 +17,19 @@ function closeTrackingPanel() {
   }
 }
 
+// Formatea el ingreso a Warehouse/WePoint (TransClientes.Wepoint_f/h/status).
+// Devuelve "Sin registro" si el paquete todavia no se pistoleo en deposito.
+function formatWepoint(fecha, hora, status) {
+  const f = String(fecha || "").trim();
+  if (f === "" || f === "0000-00-00") {
+    return "Sin registro";
+  }
+  const fDMY = f.split("-").reverse().join(".");
+  const h = String(hora || "").trim().slice(0, 5);
+  const st = String(status || "").trim() || "Ingreso";
+  return st + " · " + fDMY + (h ? " " + h : "");
+}
+
 function openTrackingPanel(id) {
   const panel = document.getElementById("modal_seguimiento");
   if (!panel || !id) {
@@ -169,9 +182,18 @@ function loadTrackingPanel(id) {
             '<i class="mdi mdi-printer"></i> Rótulo</button>',
         );
       }
+      // Warehouse / WePoint: el ingreso a depósito se pistolea contra
+      // TransClientes.Wepoint_* (no queda como fila de Seguimiento).
+      const whWepoint = formatWepoint(
+        guide.Wepoint_f,
+        guide.Wepoint_h,
+        guide.Wepoint_status,
+      );
+
       $("#info_guia_seguimiento").html(
         '<div class="tracking-guide-grid">' +
           '<div class="tracking-guide-item"><span>Cantidad</span><strong>' + guide.Cantidad + "</strong></div>" +
+          '<div class="tracking-guide-item"><span>Warehouse (WePoint)</span><strong>' + whWepoint + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Entregar en</span><strong>' + guide.EntregaEn + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Cod. proveedor</span><strong>' + guide.CodigoProveedor + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Valor declarado</span><strong>' + guide.ValorDeclarado + "</strong></div>" +

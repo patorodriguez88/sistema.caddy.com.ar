@@ -830,6 +830,24 @@ function seguimiento(cs) {
             '<p class="mb-1"><b>Kilometros : </b>' +
             jsonData.data[0].Kilometros +
             "</p>" +
+            '<p class="mb-1"><b>Warehouse (WePoint) : </b>' +
+            (function (f, h, st) {
+              f = String(f || "").trim();
+              if (f === "" || f === "0000-00-00") return "Sin registro";
+              h = String(h || "").trim().slice(0, 5);
+              st = String(st || "").trim() || "Ingreso";
+              return (
+                st +
+                " · " +
+                f.split("-").reverse().join(".") +
+                (h ? " " + h : "")
+              );
+            })(
+              jsonData.data[0].Wepoint_f,
+              jsonData.data[0].Wepoint_h,
+              jsonData.data[0].Wepoint_status,
+            ) +
+            "</p>" +
             //'<p class="mb-1"><b>Forma de Pago : </b>'+ jsonData.data[0].FormaDePago + '  <i class="mdi mdi-reload text-warning"/> </i></p>'+
 
             '<div class="form-check form-switch mb-1">' +
