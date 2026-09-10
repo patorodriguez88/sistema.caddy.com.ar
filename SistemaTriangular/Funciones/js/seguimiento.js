@@ -166,7 +166,7 @@ function loadTrackingPanel(id) {
       if (!document.getElementById("tracking-rotulo-zebra")) {
         $("#tracking-label-link").after(
           '<button type="button" id="tracking-rotulo-zebra" class="btn tracking-panel-action tracking-panel-action-label" onclick="abrirRotuloZebra()">' +
-            '<i class="mdi mdi-printer"></i> Rótulo (Zebra)</button>',
+            '<i class="mdi mdi-printer"></i> Rótulo</button>',
         );
       }
       $("#info_guia_seguimiento").html(
@@ -268,6 +268,21 @@ function zebraSetup() {
 
 function ensureRotuloZebraModal() {
   if (document.getElementById("modal_rotulo_zebra")) return;
+
+  // estilos: (1) el modal por ENCIMA del panel de seguimiento deslizante;
+  // (2) que los 4 botones del panel entren en una fila.
+  if (!document.getElementById("rotulo-zebra-css")) {
+    var st = document.createElement("style");
+    st.id = "rotulo-zebra-css";
+    st.textContent =
+      "#modal_rotulo_zebra{z-index:20060!important;}" +
+      ".modal-backdrop.rotulo-zebra-back{z-index:20050!important;}" +
+      "#modal_seguimiento.tracking-panel .modal-footer{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:.35rem!important;}" +
+      "#modal_seguimiento.tracking-panel .tracking-panel-action,#modal_seguimiento.tracking-panel .tracking-panel-close{font-size:.58rem!important;padding:.4rem .1rem!important;line-height:1.05;}" +
+      "#modal_seguimiento.tracking-panel .tracking-panel-action i,#modal_seguimiento.tracking-panel .tracking-panel-close i{margin-right:.12rem!important;}";
+    document.head.appendChild(st);
+  }
+
   var html =
     '<div id="modal_rotulo_zebra" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">' +
     '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">' +
@@ -283,6 +298,11 @@ function ensureRotuloZebraModal() {
     '<button id="btn_rotulo_zebra_imprimir" type="button" class="btn btn-primary"><i class="mdi mdi-printer me-1"></i>Imprimir</button>' +
     "</div></div></div></div>";
   document.body.insertAdjacentHTML("beforeend", html);
+
+  // el backdrop de Bootstrap tambien por encima del panel deslizante
+  $("#modal_rotulo_zebra").on("shown.bs.modal", function () {
+    $(".modal-backdrop").last().addClass("rotulo-zebra-back");
+  });
 }
 
 function _recRot(s, n) {
@@ -333,9 +353,10 @@ function _rotuloZPL(x) {
 
 function _rotuloPreviewHTML(x) {
   var esc = function (s) { return $("<div>").text(s == null ? "" : s).html(); };
+  var qr = "/SistemaTriangular/Funciones/php/qr.php?s=4&d=" + encodeURIComponent(x.cs);
   return (
-    '<div style="position:absolute;left:8px;top:8px;width:78px;height:78px;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666;text-align:center;">QR<br>' + esc(x.cs) + "</div>" +
-    '<div style="margin-left:92px;">' +
+    '<img src="' + qr + '" alt="QR" style="position:absolute;left:8px;top:36px;width:84px;height:84px;image-rendering:pixelated;">' +
+    '<div style="margin-left:100px;">' +
     '<div style="font-weight:700;font-size:12px;">' + esc(x.cliente) + "</div>" +
     "<div>" + esc(x.domicilio) + "</div>" +
     "<div>Id: " + esc(x.cs) + "</div>" +

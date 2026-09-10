@@ -233,9 +233,10 @@ function _rotuloPreviewHTML(x) {
   var esc = function (s) {
     return $("<div>").text(s == null ? "" : s).html();
   };
+  var qr = "/SistemaTriangular/Funciones/php/qr.php?s=4&d=" + encodeURIComponent(x.cs);
   return (
-    '<div style="position:absolute;left:8px;top:8px;width:78px;height:78px;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666;text-align:center;">QR<br>' + esc(x.cs) + "</div>" +
-    '<div style="margin-left:92px;">' +
+    '<img src="' + qr + '" alt="QR" style="position:absolute;left:8px;top:36px;width:84px;height:84px;image-rendering:pixelated;">' +
+    '<div style="margin-left:100px;">' +
     '<div style="font-weight:700;font-size:12px;">' + esc(x.cliente) + "</div>" +
     "<div>" + esc(x.domicilio) + "</div>" +
     "<div>Id: " + esc(x.cs) + "</div>" +
