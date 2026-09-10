@@ -476,7 +476,7 @@
 
     <!-- Funciones -->
     <script src="Procesos/js/pendientes.js?v=202609090900"></script>
-    <script src="../Funciones/js/seguimiento.js?v=202609071223"></script>
+    <script src="../Funciones/js/seguimiento.js?v=<?php echo filemtime(__DIR__ . '/../Funciones/js/seguimiento.js'); ?>"></script>
     <script src="../Menu/js/funciones.js"></script>
 
 
