@@ -147,6 +147,156 @@ function verrotulo() {
   );
 }
 
+// Volver del detalle de seguimiento al buscador.
+function cerrarSeguimiento() {
+  document.getElementById("modal_seguimiento").style.display = "none";
+  document.getElementById("form_guias").style.display = "";
+  try {
+    $("#seguimiento_tabla").DataTable().destroy();
+  } catch (e) {}
+}
+
+// ============================================================
+// ROTULO 6x2 cm - impresion directa en Zebra via Browser Print
+// ============================================================
+var zebraDevice = null;
+
+function zebraSetup() {
+  if (typeof BrowserPrint === "undefined") return;
+  BrowserPrint.getDefaultDevice(
+    "printer",
+    function (device) {
+      zebraDevice = device;
+    },
+    function () {
+      /* sin impresora por defecto: se avisa al abrir el modal */
+    },
+  );
+}
+$(function () {
+  zebraSetup();
+});
+
+function zebraErr(msg) {
+  $("#rotulo_zebra_estado").removeClass("text-muted text-success").addClass("text-danger").html(msg);
+}
+
+// Corta un texto a n caracteres para que entre en la etiqueta.
+function _rec(s, n) {
+  s = (s == null ? "" : String(s)).trim();
+  return s.length > n ? s.slice(0, n - 1) + "…" : s;
+}
+
+// Datos del servicio para el rotulo (de window.seguimientoData, cargado al abrir
+// el detalle de seguimiento).
+function _rotuloDatos() {
+  var d = window.seguimientoData || {};
+  var cs = (window.seguimientoCS || $("#inputcodigo").val() || "").trim();
+  var dom = (d.DomicilioDestino || "").trim();
+  var loc = (d.LocalidadDestino || d.CiudadDestino || "").trim();
+  return {
+    cs: cs,
+    cliente: _rec(d.ClienteDestino || "", 30),
+    domicilio: _rec(dom, 34),
+    localidad: _rec(loc, 30),
+    recorrido: (d.Recorrido || "").toString().trim(),
+    origen: _rec(d.RazonSocial || "", 24),
+    guia: (d.NumeroComprobante || "").toString().trim(),
+    codProv: (d.CodigoProveedor || "").toString().trim(),
+    cant: (d.Cantidad || "1").toString().trim(),
+  };
+}
+
+// ZPL para etiqueta 6x2 cm @ 203 dpi (480 x 160 puntos). Texto a la izquierda,
+// QR con el codigo de seguimiento a la derecha.
+function _rotuloZPL(x) {
+  return (
+    "^XA" +
+    "^PW480" +
+    "^LL160" +
+    "^LH0,0" +
+    "^CI28" +
+    "^FO8,6^A0N,26,26^FD" + x.cliente + "^FS" +
+    "^FO8,36^A0N,20,20^FD" + x.domicilio + "^FS" +
+    "^FO8,60^A0N,20,20^FD" + x.localidad + "^FS" +
+    "^FO8,88^A0N,24,24^FDRec: " + (x.recorrido || "-") + "^FS" +
+    "^FO8,116^A0N,18,18^FD" + x.origen + (x.guia ? "  G:" + x.guia : "") + "^FS" +
+    "^FO8,136^A0N,18,18^FDCS: " + x.cs + "   Cant: " + x.cant + "^FS" +
+    "^FO350,14^BQN,2,5^FDQA," + x.cs + "^FS" +
+    "^XZ"
+  );
+}
+
+function _rotuloPreviewHTML(x) {
+  var esc = function (s) {
+    return $("<div>").text(s == null ? "" : s).html();
+  };
+  return (
+    '<div style="font-weight:700;font-size:13px;">' + esc(x.cliente) + "</div>" +
+    "<div>" + esc(x.domicilio) + "</div>" +
+    "<div>" + esc(x.localidad) + "</div>" +
+    '<div style="font-weight:700;margin-top:2px;">Rec: ' + esc(x.recorrido || "-") + "</div>" +
+    '<div style="font-size:10px;">' + esc(x.origen) + (x.guia ? "  G:" + esc(x.guia) : "") + "</div>" +
+    '<div style="font-size:10px;">CS: ' + esc(x.cs) + "   Cant: " + esc(x.cant) + "</div>" +
+    '<div style="position:absolute;top:8px;right:8px;width:56px;height:56px;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666;">QR<br>' + esc(x.cs) + "</div>"
+  );
+}
+
+function abrirRotuloZebra() {
+  var x = _rotuloDatos();
+  if (!x.cs) {
+    toast("error", "Rótulo", "No hay un código de seguimiento cargado.");
+    return;
+  }
+  $("#rotulo_preview").html(_rotuloPreviewHTML(x));
+
+  if (typeof BrowserPrint === "undefined") {
+    zebraErr(
+      "No se detectó Zebra Browser Print en esta PC. Instalá la app 'Zebra Browser Print' o usá el botón 'Etiqueta (PDF)'.",
+    );
+    $("#btn_rotulo_zebra_imprimir").prop("disabled", true);
+  } else if (!zebraDevice) {
+    // reintento de descubrimiento por si la impresora se conectó después
+    zebraSetup();
+    setTimeout(function () {
+      if (zebraDevice) {
+        $("#rotulo_zebra_estado").removeClass("text-danger").addClass("text-success").html("Impresora: " + zebraDevice.name);
+        $("#btn_rotulo_zebra_imprimir").prop("disabled", false);
+      } else {
+        zebraErr("No se encontró ninguna impresora Zebra. Revisá que esté encendida y en Browser Print.");
+        $("#btn_rotulo_zebra_imprimir").prop("disabled", true);
+      }
+    }, 800);
+    $("#rotulo_zebra_estado").removeClass("text-danger text-success").addClass("text-muted").html("Buscando impresora…");
+  } else {
+    $("#rotulo_zebra_estado").removeClass("text-danger").addClass("text-success").html("Impresora: " + zebraDevice.name);
+    $("#btn_rotulo_zebra_imprimir").prop("disabled", false);
+  }
+
+  $("#modal_rotulo_zebra").modal("show");
+}
+
+$(document).on("click", "#btn_rotulo_zebra_imprimir", function () {
+  if (!zebraDevice) {
+    zebraErr("No hay impresora Zebra disponible.");
+    return;
+  }
+  var zpl = _rotuloZPL(_rotuloDatos());
+  var $b = $(this).prop("disabled", true);
+  zebraDevice.send(
+    zpl,
+    function () {
+      $("#modal_rotulo_zebra").modal("hide");
+      $b.prop("disabled", false);
+      toast("success", "Rótulo", "Enviado a la impresora.");
+    },
+    function (err) {
+      $b.prop("disabled", false);
+      zebraErr("Error al imprimir: " + err);
+    },
+  );
+});
+
 // Función para abrir modal, setear código y cargar fotos
 function verFotosYSubir(codigo) {
   $("#codigo_foto_actual").val(codigo);
@@ -482,6 +632,10 @@ function seguimiento(cs) {
       url: "../Funciones/php/tablas.php",
       success: function (response) {
         var jsonData = JSON.parse(response);
+
+        // guardo los datos del servicio para el Rotulo 6x2 (Zebra)
+        window.seguimientoData = jsonData.data[0];
+        window.seguimientoCS = id;
 
         if (jsonData.data[0].Entregado == 1) {
           $("#modal_seguimiento_header").prop(
