@@ -452,7 +452,7 @@
                                                     <i class="mdi mdi-label-outline me-1"></i>Etiqueta (PDF)
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-primary" onclick="abrirRotuloZebra()">
-                                                    <i class="mdi mdi-printer me-1"></i>Rótulo 6x2 (Zebra)
+                                                    <i class="mdi mdi-printer me-1"></i>Rótulo (Zebra)
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-light" onclick="cerrarSeguimiento()">
                                                     <i class="mdi mdi-close me-1"></i>Cerrar
@@ -462,18 +462,18 @@
                                     </div> <!-- end card-->
                                 </div> <!-- end card-body-->
 
-                                <!-- MODAL: preview + impresion directa del Rotulo 6x2 en Zebra (BrowserPrint) -->
+                                <!-- MODAL: preview + impresion directa del Rotulo en Zebra (BrowserPrint) -->
                                 <div id="modal_rotulo_zebra" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
                                     <div class="modal-dialog modal-dialog-centered">
                                         <div class="modal-content">
                                             <div class="modal-header">
-                                                <h5 class="modal-title">Imprimir Rótulo 6&times;2 cm</h5>
+                                                <h5 class="modal-title">Imprimir Rótulo (Zebra)</h5>
                                                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                             </div>
                                             <div class="modal-body">
                                                 <p class="text-muted small mb-2">Vista previa de lo que se va a imprimir en la Zebra:</p>
                                                 <div id="rotulo_preview"
-                                                     style="width:360px;height:120px;max-width:100%;border:1px solid #333;border-radius:3px;padding:6px 8px;font-family:'DejaVu Sans Mono',Consolas,monospace;font-size:11px;line-height:1.25;background:#fff;color:#000;position:relative;overflow:hidden;margin:0 auto;">
+                                                     style="width:390px;height:192px;max-width:100%;border:1px solid #333;border-radius:3px;padding:8px 10px;font-family:'DejaVu Sans Mono',Consolas,monospace;font-size:11px;line-height:1.3;background:#fff;color:#000;position:relative;overflow:hidden;margin:0 auto;">
                                                 </div>
                                                 <div id="rotulo_zebra_estado" class="small mt-2 text-muted"></div>
                                             </div>
@@ -626,7 +626,7 @@
 
         <?php include '../Menu/php/script_datatables.php'; ?>
 
-        <!-- Zebra Browser Print (impresion directa del Rotulo 6x2) -->
+        <!-- Zebra Browser Print (impresion directa del Rotulo) -->
         <script type="text/javascript" src="../Ticket/zebra/BrowserPrint-3.0.216.min.js"></script>
         <script type="text/javascript" src="../Ticket/zebra/BrowserPrint-Zebra-1.0.216.min.js"></script>
 

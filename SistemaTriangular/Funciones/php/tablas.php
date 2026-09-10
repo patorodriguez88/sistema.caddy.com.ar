@@ -66,7 +66,7 @@ if (isset($_POST['Seguimiento_Modal'])) {
   while ($row_seguimiento = $BuscarSeguimiento->fetch_array(MYSQLI_ASSOC)) {
     $rows_seguimiento[] = $row_seguimiento;
   }
-  $BuscarHDR = $mysqli->query("SELECT Estado FROM HojaDeRuta WHERE Seguimiento='$_POST[CodigoSeguimiento]'");
+  $BuscarHDR = $mysqli->query("SELECT Estado, Posicion, Posicion_retiro FROM HojaDeRuta WHERE Seguimiento='$_POST[CodigoSeguimiento]'");
   $row_hdr = $BuscarHDR->fetch_array(MYSQLI_ASSOC);
 
   echo json_encode(array('data' => $rows, $rows_seguimiento, $row_hdr));

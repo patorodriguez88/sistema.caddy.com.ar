@@ -157,14 +157,16 @@ function loadTrackingPanel(id) {
         "Informes/Remitopdf.php?CS=" + trackingCode,
       );
 
-      // datos para el Rotulo 6x2 (Zebra) + boton en la barra de acciones
+      // datos para el Rotulo (Zebra) + boton en la barra de acciones
       window.seguimientoData = guide;
+      // PHP: array('data'=>$rows, $rows_seguimiento, $row_hdr) -> keys "data",0,1
+      window.seguimientoHdr = jsonData[1] || {};
       window.seguimientoCS = String(guide.CodigoSeguimiento || id);
       ensureBrowserPrintSDK();
       if (!document.getElementById("tracking-rotulo-zebra")) {
         $("#tracking-label-link").after(
           '<button type="button" id="tracking-rotulo-zebra" class="btn tracking-panel-action tracking-panel-action-label" onclick="abrirRotuloZebra()">' +
-            '<i class="mdi mdi-printer"></i> Rótulo 6x2 (Zebra)</button>',
+            '<i class="mdi mdi-printer"></i> Rótulo (Zebra)</button>',
         );
       }
       $("#info_guia_seguimiento").html(
@@ -269,11 +271,11 @@ function ensureRotuloZebraModal() {
   var html =
     '<div id="modal_rotulo_zebra" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">' +
     '<div class="modal-dialog modal-dialog-centered"><div class="modal-content">' +
-    '<div class="modal-header"><h5 class="modal-title">Imprimir Rótulo 6&times;2 cm</h5>' +
+    '<div class="modal-header"><h5 class="modal-title">Imprimir Rótulo (Zebra)</h5>' +
     '<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>' +
     '<div class="modal-body">' +
     '<p class="text-muted small mb-2">Vista previa de lo que se va a imprimir en la Zebra:</p>' +
-    '<div id="rotulo_preview" style="width:360px;height:120px;max-width:100%;border:1px solid #333;border-radius:3px;padding:6px 8px;font-family:\'DejaVu Sans Mono\',Consolas,monospace;font-size:11px;line-height:1.25;background:#fff;color:#000;position:relative;overflow:hidden;margin:0 auto;"></div>' +
+    '<div id="rotulo_preview" style="width:390px;height:192px;max-width:100%;border:1px solid #333;border-radius:3px;padding:8px 10px;font-family:\'DejaVu Sans Mono\',Consolas,monospace;font-size:11px;line-height:1.3;background:#fff;color:#000;position:relative;overflow:hidden;margin:0 auto;"></div>' +
     '<div id="rotulo_zebra_estado" class="small mt-2 text-muted"></div>' +
     "</div>" +
     '<div class="modal-footer">' +
@@ -288,44 +290,61 @@ function _recRot(s, n) {
   return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
 
+// Logo Caddy (iso) - GFA, mismo que usa la etiqueta de colecta de WePoint.
+var CADDY_LOGO_ZPL =
+  "^FO15,15^GFA,1675,1675,25,,:::::::::::::M0CJ04J01,L07F8003FCI0FE,L0FFC007FE003FF,K01FFE00IF007FF8,K03FFE01IF007FFC,K03IF01IF80IFC,K03IF81IFC0IFE,K07IF83IFC0IFE,K07IFC1IFE0IFE,K03IFE1JF0F01E,K03IFE1JF0E01C,K03JF1JF8703C,K01JF0JF87C78,L0JF87IFC3FF,L0JFC7IFE0FE,L07IFC3IFE01V07,L07IFE3JFX0F,L03IFE1JFX0F,L01JF0JF8W07J0F,L01JF8JFCgH0F,M0JF87IFCgH0F,M0JFC7IFEI0E3C38FC3FE07F8F73F3FE,M07IFC3IFEI0E3E79FF3FF0FFCF7FFBFF,M03IFE1JFI0E3E7BFF3FF9FFEF7FFBFE,M03IFE1JFI0F7E77C73C79E1EF7C78F,M01IFE0JFI0F7E7787BC3DE1E77878F,N0IFE07IFI077FF7FFBC3DC0FF7838F,N0IFE07IFI07F7E7FFBC3DC0FF7838F,N07FFE03IFI07E7E7803C3DE1EF7838F,N07FFE03IFI03E7E7C13C79E1EF7838F,N03FFC01FFEI03E3C3FF3FF9FFEF7878FE,N01FF800FFCI03E3C1FFBFF0FFCF78787F,O0FFI07F8I01C3C0FF3FE07F0778383F,U08Q03C,gM03C,:::,::::::::::::::^FS";
+
 function _rotuloDatos() {
   var d = window.seguimientoData || {};
+  var hdr = window.seguimientoHdr || {};
   var cs = (window.seguimientoCS || "").trim();
+  var hoy = new Date();
+  var p2 = function (n) { return String(n).padStart(2, "0"); };
   return {
     cs: cs,
-    cliente: _recRot(d.ClienteDestino || "", 30),
-    domicilio: _recRot(d.DomicilioDestino || "", 34),
-    localidad: _recRot(d.LocalidadDestino || d.CiudadDestino || "", 30),
+    cliente: _recRot(d.ClienteDestino || "", 26),
+    domicilio: _recRot(d.DomicilioDestino || "", 30),
+    origen: _recRot(d.RazonSocial || "", 26),
     recorrido: (d.Recorrido || "").toString().trim(),
-    origen: _recRot(d.RazonSocial || "", 24),
-    guia: (d.NumeroComprobante || "").toString().trim(),
+    posicion: (hdr.Posicion || hdr.Posicion_retiro || "").toString().trim(),
     cant: (d.Cantidad || "1").toString().trim(),
+    fecha: p2(hoy.getDate()) + "/" + p2(hoy.getMonth() + 1) + "/" + hoy.getFullYear(),
   };
 }
 
+// Rótulo 6,5 x 3,2 cm @ 203 dpi (520 x 256 pts) - mismo formato que la etiqueta
+// de colecta: logo + QR en columna izquierda, texto a la derecha desde X=200.
 function _rotuloZPL(x) {
   return (
-    "^XA^PW480^LL160^LH0,0^CI28" +
-    "^FO8,6^A0N,26,26^FD" + x.cliente + "^FS" +
-    "^FO8,36^A0N,20,20^FD" + x.domicilio + "^FS" +
-    "^FO8,60^A0N,20,20^FD" + x.localidad + "^FS" +
-    "^FO8,88^A0N,24,24^FDRec: " + (x.recorrido || "-") + "^FS" +
-    "^FO8,116^A0N,18,18^FD" + x.origen + (x.guia ? "  G:" + x.guia : "") + "^FS" +
-    "^FO8,136^A0N,18,18^FDCS: " + x.cs + "   Cant: " + x.cant + "^FS" +
-    "^FO350,14^BQN,2,5^FDQA," + x.cs + "^FS^XZ"
+    "^XA^PW520^LL256^LH0,0^CI28" +
+    CADDY_LOGO_ZPL +
+    "^FO200,10^A0N,20,20^FD" + x.cliente + "^FS" +
+    "^FO200,35^A0N,18,18^FD" + x.domicilio + "^FS" +
+    "^FO200,57^A0N,18,18^FDId: " + x.cs + "^FS" +
+    "^FO200,79^A0N,18,18^FDOrigen: " + x.origen + "^FS" +
+    "^FO200,101^A0N,18,18^FDBulto: 1/" + x.cant + "^FS" +
+    "^FO200,123^A0N,18,18^FDFecha: " + x.fecha + "^FS" +
+    "^FO200,148^A0N,30,30^FDRec: " + (x.recorrido || "-") + "^FS" +
+    "^FO200,185^A0N,26,26^FDPos: " + (x.posicion || "-") + "^FS" +
+    "^FO30,74^BQN,2,7^FDQA," + x.cs + "^FS" +
+    "^XZ"
   );
 }
 
 function _rotuloPreviewHTML(x) {
   var esc = function (s) { return $("<div>").text(s == null ? "" : s).html(); };
   return (
-    '<div style="font-weight:700;font-size:13px;">' + esc(x.cliente) + "</div>" +
+    '<div style="position:absolute;left:8px;top:8px;width:78px;height:78px;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666;text-align:center;">QR<br>' + esc(x.cs) + "</div>" +
+    '<div style="margin-left:92px;">' +
+    '<div style="font-weight:700;font-size:12px;">' + esc(x.cliente) + "</div>" +
     "<div>" + esc(x.domicilio) + "</div>" +
-    "<div>" + esc(x.localidad) + "</div>" +
-    '<div style="font-weight:700;margin-top:2px;">Rec: ' + esc(x.recorrido || "-") + "</div>" +
-    '<div style="font-size:10px;">' + esc(x.origen) + (x.guia ? "  G:" + esc(x.guia) : "") + "</div>" +
-    '<div style="font-size:10px;">CS: ' + esc(x.cs) + "   Cant: " + esc(x.cant) + "</div>" +
-    '<div style="position:absolute;top:8px;right:8px;width:56px;height:56px;border:1px solid #999;display:flex;align-items:center;justify-content:center;font-size:9px;color:#666;text-align:center;">QR<br>' + esc(x.cs) + "</div>"
+    "<div>Id: " + esc(x.cs) + "</div>" +
+    "<div>Origen: " + esc(x.origen) + "</div>" +
+    "<div>Bulto: 1/" + esc(x.cant) + "</div>" +
+    "<div>Fecha: " + esc(x.fecha) + "</div>" +
+    '<div style="font-weight:700;font-size:14px;margin-top:2px;">Rec: ' + esc(x.recorrido || "-") + "</div>" +
+    '<div style="font-weight:700;font-size:12px;">Pos: ' + esc(x.posicion || "-") + "</div>" +
+    "</div>"
   );
 }
 
