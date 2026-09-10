@@ -645,10 +645,11 @@
         return $ruta . '?v=' . (file_exists($abs) ? filemtime($abs) : time());
     };
     ?>
+    <script>window.HDR2_LIVE_CHOFER = true; /* repartidor en vivo en los mapas de recorrido */</script>
+    <script src="<?php echo $verJs('Mapas/js/chofer_vivo.js'); ?>"></script>
     <script src="<?php echo $verJs('Proceso/js/funciones_hdr.js'); ?>"></script>
     <script src="<?php echo $verJs('Mapas/js/hojaderuta.js'); ?>"></script>
     <script src="<?php echo $verJs('Proceso/js/pendientes.js'); ?>"></script>
-    <script>window.HDR2_LIVE_CHOFER = true; /* repartidor en vivo en el mapa de la orden abierta */</script>
     <script src="<?php echo $verJs('Mapas/js/controlrecorridos.js'); ?>"></script>
     <script src="<?php echo $verJs('Proceso/js/funciones_controlrecorridos.js'); ?>"></script>
     <script src="<?php echo $verJs('Mapas/js/datos.js'); ?>"></script>

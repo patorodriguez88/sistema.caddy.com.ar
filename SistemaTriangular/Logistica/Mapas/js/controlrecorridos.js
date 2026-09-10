@@ -1,103 +1,10 @@
-// ===== Repartidor EN VIVO en el mapa de la orden abierta (solo HojaDeRuta2) =====
-// Se activa solo si la pagina prende window.HDR2_LIVE_CHOFER. Poll cada 30 s a
-// Mapas/php/ubicacion_orden.php (fuente: UbicacionRepartidor, la misma que
-// "Repartidores en Vivo").
-var _choferVivoInterval = null;
-var _choferVivoMarker = null;
-var _choferVivoInfo = null;
-
-function _choferVivoLimpiar() {
-    if (_choferVivoInterval) {
-        clearInterval(_choferVivoInterval);
-        _choferVivoInterval = null;
-    }
-    if (_choferVivoMarker) {
-        _choferVivoMarker.setMap(null);
-        _choferVivoMarker = null;
-    }
-    if (_choferVivoInfo) {
-        _choferVivoInfo.close();
-        _choferVivoInfo = null;
-    }
-}
-
-function _choferVivoHace(mins) {
-    if (mins === null || mins === undefined) return 'sin senal';
-    if (mins < 1) return 'recien';
-    if (mins < 60) return 'hace ' + mins + ' min';
-    var h = Math.floor(mins / 60);
-    return 'hace ' + h + ' h ' + (mins % 60) + ' min';
-}
-
-// minutos desde la ultima senal, calculado en el cliente (igual criterio que
-// Mapas/js/repartidores_live.js) para no depender del timezone del server.
-function _choferVivoMinutos(r) {
-    if (r && r.timestamp) {
-        var t = new Date(String(r.timestamp).replace(' ', 'T')).getTime();
-        if (!isNaN(t)) return Math.floor((Date.now() - t) / 60000);
-    }
-    return r && r.minutos !== null && r.minutos !== undefined ? r.minutos : null;
-}
-
-function _choferVivoActualizar(idLogistica, map) {
-    $.ajax({
-        url: 'Mapas/php/ubicacion_orden.php',
-        data: { id: idLogistica },
-        type: 'post',
-        dataType: 'json',
-        success: function (r) {
-            if (!r || r.success !== 1 || r.tienePos !== 1) return;
-
-            var pos = { lat: Number(r.lat), lng: Number(r.lng) };
-            var mins = _choferVivoMinutos(r);
-            var viejo = mins !== null && mins >= 10;
-            var icon = {
-                path: google.maps.SymbolPath.CIRCLE,
-                scale: 9,
-                fillColor: viejo ? '#98a6ad' : '#E24F30',
-                fillOpacity: 1,
-                strokeColor: '#ffffff',
-                strokeWeight: 3,
-            };
-            var titulo =
-                (r.nombre || r.usuario || 'Repartidor') +
-                ' - ' + _choferVivoHace(mins);
-
-            if (!_choferVivoMarker) {
-                _choferVivoMarker = new google.maps.Marker({
-                    position: pos,
-                    map: map,
-                    icon: icon,
-                    zIndex: 9999,
-                    title: titulo,
-                });
-                _choferVivoInfo = new google.maps.InfoWindow();
-                _choferVivoMarker.addListener('click', function () {
-                    _choferVivoInfo.setContent(
-                        '<div style="font-size:12px;line-height:1.4">' +
-                        '<b>' + (r.nombre || r.usuario || 'Repartidor') + '</b><br>' +
-                        'Recorrido ' + (r.recorrido || '-') + ' &middot; Orden ' + (r.orden || '-') + '<br>' +
-                        'Estado: ' + (r.estado || '-') + '<br>' +
-                        'Ultima senal: ' + _choferVivoHace(mins) +
-                        (r.precision ? ' (&plusmn;' + r.precision + ' m)' : '') +
-                        '</div>'
-                    );
-                    _choferVivoInfo.open(map, _choferVivoMarker);
-                });
-            } else {
-                _choferVivoMarker.setPosition(pos);
-                _choferVivoMarker.setIcon(icon);
-                _choferVivoMarker.setTitle(titulo);
-            }
-        },
-    });
-}
+// Repartidor en vivo: helpers en Mapas/js/chofer_vivo.js (compartido con initMap).
 
 function initMap_order(id) {
 
     $('#id_logistica').val(id);
-    _choferVivoLimpiar();
-    
+    if (typeof choferVivoLimpiar === 'function') choferVivoLimpiar();
+
         //ICONO DE COLORES
         function pinSymbol(color) {
             return {
@@ -129,12 +36,9 @@ function initMap_order(id) {
       const flightPlanCoordinates=[];
       const markers=[];
 
-    // Repartidor en vivo (solo si la pagina lo pidio: HojaDeRuta2).
-    if (window.HDR2_LIVE_CHOFER) {
-        _choferVivoActualizar(id, map);
-        _choferVivoInterval = setInterval(function () {
-            _choferVivoActualizar(id, map);
-        }, 30000);
+    // Repartidor en vivo en el mapa de la orden (solo HojaDeRuta2: gate adentro).
+    if (typeof choferVivoMontar === 'function') {
+        choferVivoMontar(map, { id: id });
     }
 
     $.ajax({        
@@ -208,7 +112,9 @@ window.initMap_order = initMap_order;
 
 // al cerrar el modal de la orden, cortar el poll del repartidor en vivo
 $(function () {
-    $('#full-width-modal_order').on('hidden.bs.modal', _choferVivoLimpiar);
+    $('#full-width-modal_order').on('hidden.bs.modal', function () {
+        if (typeof choferVivoLimpiar === 'function') choferVivoLimpiar();
+    });
 });
 
 $('#full-width-modal_order_button').click(function(){

@@ -1,42 +1,62 @@
 <?php
-// Posicion EN VIVO del repartidor de una orden de salida (Logistica.id).
+// Posicion EN VIVO del repartidor de una orden de salida.
 //
-// Fuente: UbicacionRepartidor (1 fila por usuario, ultima posicion que manda la
-// PWA de reparto via SistemaReparto/Proceso/php/ubicacion.php, ~cada 30 s),
-// unida por idUsuario = Logistica.idUsuarioChofer.
+// Se le pasa uno de:
+//   - id        = Logistica.id  (mapa de la orden abierta / initMap_order)
+//   - recorrido = nro de recorrido (mapa "Servicios Pendientes Recorrido N" /
+//                 initMap): se resuelve la orden mas nueva de ese recorrido hoy.
 //
-// Lo usa el mapa de la orden abierta en HojaDeRuta2 (Mapas/js/controlrecorridos.js
-// -> initMap_order), que lo pollea cada 30 s. Mismo dato que la pantalla
-// "Repartidores en Vivo" (datos_repartidores.php) pero acotado a una orden.
+// Fuente de la posicion: UbicacionRepartidor (1 fila por usuario, ultima
+// posicion que manda la PWA de reparto via SistemaReparto/Proceso/php/ubicacion.php,
+// ~cada 30 s), unida por idUsuario = Logistica.idUsuarioChofer. Mismo dato que
+// la pantalla "Repartidores en Vivo" (datos_repartidores.php).
 require_once __DIR__ . '/../../../Conexion/Conexioni.php';
 
 header('Content-Type: application/json; charset=utf-8');
 
-$id = isset($_POST['id']) ? (int) $_POST['id'] : (isset($_GET['id']) ? (int) $_GET['id'] : 0);
-if ($id <= 0) {
-    echo json_encode(['success' => 0, 'error' => 'SIN_ID']);
+$id  = isset($_POST['id']) ? (int) $_POST['id'] : (isset($_GET['id']) ? (int) $_GET['id'] : 0);
+$rec = isset($_POST['recorrido']) ? trim((string) $_POST['recorrido'])
+    : (isset($_GET['recorrido']) ? trim((string) $_GET['recorrido']) : '');
+
+if ($id <= 0 && $rec === '') {
+    echo json_encode(['success' => 0, 'error' => 'SIN_PARAMS']);
     exit;
 }
 
-$sql = "
-    SELECT
+$selCols = "
         l.idUsuarioChofer, l.NumerodeOrden, l.Recorrido, l.Estado, l.HoraSalidaReal,
         COALESCE(us.Nombre, l.NombreChofer, u.Usuario) AS Nombre,
         u.Usuario,
         u.Latitud, u.Longitud, u.Precision_, u.TimeStamp
-    FROM Logistica l
-    LEFT JOIN UbicacionRepartidor u ON u.idUsuario = l.idUsuarioChofer
-    LEFT JOIN usuarios us            ON us.id = l.idUsuarioChofer
-    WHERE l.id = ?
-    LIMIT 1
 ";
 
-$stmt = $mysqli->prepare($sql);
+if ($id > 0) {
+    $sql = "SELECT {$selCols}
+            FROM Logistica l
+            LEFT JOIN UbicacionRepartidor u ON u.idUsuario = l.idUsuarioChofer
+            LEFT JOIN usuarios us            ON us.id = l.idUsuarioChofer
+            WHERE l.id = ?
+            LIMIT 1";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param('i', $id);
+} else {
+    // orden mas nueva del recorrido hoy (Cargada o Cerrada); si no hay de hoy,
+    // la mas nueva sin importar la fecha.
+    $sql = "SELECT {$selCols}
+            FROM Logistica l
+            LEFT JOIN UbicacionRepartidor u ON u.idUsuario = l.idUsuarioChofer
+            LEFT JOIN usuarios us            ON us.id = l.idUsuarioChofer
+            WHERE l.Recorrido = ? AND l.Eliminado = 0
+            ORDER BY (l.Fecha = CURDATE()) DESC, l.id DESC
+            LIMIT 1";
+    $stmt = $mysqli->prepare($sql);
+    $stmt->bind_param('s', $rec);
+}
+
 if (!$stmt) {
     echo json_encode(['success' => 0, 'error' => 'SQL']);
     exit;
 }
-$stmt->bind_param('i', $id);
 $stmt->execute();
 $row = $stmt->get_result()->fetch_assoc();
 

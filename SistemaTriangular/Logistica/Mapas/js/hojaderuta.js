@@ -662,6 +662,16 @@ function initMap(c) {
     center: new google.maps.LatLng(-31.4448988, -64.177743),
     zoom: 10,
   });
+
+  // Repartidor en vivo del recorrido que se esta viendo (solo HojaDeRuta2).
+  if (typeof choferVivoMontar === "function") {
+    var recVivo = ($("#recorrido").text() || "").trim();
+    if (recVivo) {
+      choferVivoMontar(map, { recorrido: recVivo });
+    } else {
+      choferVivoLimpiar();
+    }
+  }
 }
 
 $("#ordenar_recorrido_automatic").click(function () {
