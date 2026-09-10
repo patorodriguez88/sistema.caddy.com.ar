@@ -164,10 +164,23 @@ for ($i = 0; $i <= count($idPreVenta); $i++) {
             require_once('../Google/geolocalizar.php');
 
             $datosmapa = geolocalizar($row['Direccion']);
-            $latitud = $datosmapa[0];
-            $longitud = $datosmapa[1];
+            $latitud = $datosmapa[0] ?? '';
+            $longitud = $datosmapa[1] ?? '';
 
-            $mysqli->query("UPDATE Clientes SET Latitud='$latitud',Longitud='$longitud' WHERE id='$idClienteDestinoPreVenta' LIMIT 1");
+            if ($latitud !== '' && $longitud !== '') {
+                // CP y localidad REALES del geocode (indices 3 y 4). Los sistemas
+                // de origen mandan CP/Ciudad basura (ej. San Francisco como X5016)
+                // -> se corrige con lo que dice Google para esas coordenadas.
+                $cpGeo  = isset($datosmapa[3]) ? trim((string)$datosmapa[3]) : '';
+                $locGeo = isset($datosmapa[4]) ? trim((string)$datosmapa[4]) : '';
+                $sets   = "Latitud='" . $mysqli->real_escape_string($latitud) . "',"
+                        . "Longitud='" . $mysqli->real_escape_string($longitud) . "'";
+                if ($cpGeo !== '')  $sets .= ",CodigoPostal='" . $mysqli->real_escape_string($cpGeo) . "'";
+                if ($locGeo !== '') $sets .= ",Ciudad='" . $mysqli->real_escape_string($locGeo) . "'";
+                $mysqli->query("UPDATE Clientes SET $sets WHERE id='$idClienteDestinoPreVenta' LIMIT 1");
+                // reflejar en la sesion lo que se va a usar en el remito / carga
+                if ($locGeo !== '') $_SESSION['LocalidadDestino_t'] = $locGeo;
+            }
         }
 
         //SEGURO
