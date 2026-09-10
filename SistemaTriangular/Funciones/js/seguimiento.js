@@ -30,6 +30,49 @@ function formatWepoint(fecha, hora, status) {
   return st + " · " + fDMY + (h ? " " + h : "");
 }
 
+// Encabezado del panel: se arma en 2 pasos (Visitas y ultimo estado llegan por
+// ajax separados), asi que guardamos el estado y re-renderizamos.
+var _thState = { id: null, visitas: null, estado: null };
+
+function estadoBadgeClass(e) {
+  switch (String(e || "").trim()) {
+    case "Entregado al Cliente":
+      return "bg-success text-white";
+    case "Devuelto al Cliente":
+    case "No se pudo entregar":
+    case "No se Pudo Retirar":
+      return "bg-danger text-white";
+    case "En Transito":
+      return "bg-info text-white";
+    case "En Origen":
+    case "A Retirar":
+      return "bg-warning text-dark";
+    case "Cargado en Hoja de Ruta":
+      return "bg-primary text-white";
+    default:
+      return "bg-secondary text-white";
+  }
+}
+
+function renderTrackingHeader() {
+  var html = "Seguimiento de código " + (_thState.id || "");
+  if (_thState.visitas !== null) {
+    html +=
+      " <span class='badge bg-light text-primary ms-2'>Visitas: " +
+      _thState.visitas +
+      "</span>";
+  }
+  if (_thState.estado) {
+    html +=
+      " <span class='badge ms-1 " +
+      estadoBadgeClass(_thState.estado) +
+      "'>" +
+      _thState.estado +
+      "</span>";
+  }
+  $("#modal_seguimiento").find("#myCenterModalLabel").html(html);
+}
+
 function openTrackingPanel(id) {
   const panel = document.getElementById("modal_seguimiento");
   if (!panel || !id) {
@@ -61,7 +104,8 @@ function openTrackingPanel(id) {
 
 function loadTrackingPanel(id) {
   const panel = $("#modal_seguimiento");
-  panel.find("#myCenterModalLabel").html("Seguimiento de código " + id);
+  _thState = { id: id, visitas: null, estado: null };
+  renderTrackingHeader();
 
   $.ajax({
     data: { Seguimiento_Visitas: 1, CodigoSeguimiento: id },
@@ -70,11 +114,8 @@ function loadTrackingPanel(id) {
     success: function (response) {
       var jsonData = JSON.parse(response);
       if (jsonData.success == 1) {
-         panel.find("#myCenterModalLabel").html(
-           "Seguimiento de código " + id + " <span class='badge bg-light text-primary ms-2'>Visitas: " +
-             (jsonData.Visitas || 0) +
-             "</span>",
-         );
+        _thState.visitas = jsonData.Visitas || 0;
+        renderTrackingHeader();
       }
     },
   });
@@ -169,6 +210,19 @@ function loadTrackingPanel(id) {
         "href",
         "Informes/Remitopdf.php?CS=" + trackingCode,
       );
+
+      // badge de ultimo estado del paquete en el encabezado (despues de Visitas):
+      // el ultimo movimiento de Seguimiento si hay, sino el estado de TransClientes.
+      var movs = jsonData[0] || [];
+      var ultMov = "";
+      for (var mi = movs.length - 1; mi >= 0; mi--) {
+        if (movs[mi] && String(movs[mi].Estado || "").trim() !== "") {
+          ultMov = movs[mi].Estado;
+          break;
+        }
+      }
+      _thState.estado = ultMov || guide.Estado || "";
+      renderTrackingHeader();
 
       // datos para el Rotulo (Zebra) + boton en la barra de acciones
       window.seguimientoData = guide;
@@ -291,17 +345,14 @@ function zebraSetup() {
 function ensureRotuloZebraModal() {
   if (document.getElementById("modal_rotulo_zebra")) return;
 
-  // estilos: (1) el modal por ENCIMA del panel de seguimiento deslizante;
-  // (2) que los 4 botones del panel entren en una fila.
+  // estilos: el modal de impresion por ENCIMA del panel de seguimiento
+  // deslizante (el layout de los 4 botones ya vive en seguimiento-panel.css).
   if (!document.getElementById("rotulo-zebra-css")) {
     var st = document.createElement("style");
     st.id = "rotulo-zebra-css";
     st.textContent =
       "#modal_rotulo_zebra{z-index:20060!important;}" +
-      ".modal-backdrop.rotulo-zebra-back{z-index:20050!important;}" +
-      "#modal_seguimiento.tracking-panel .modal-footer{grid-template-columns:repeat(4,minmax(0,1fr))!important;gap:.35rem!important;}" +
-      "#modal_seguimiento.tracking-panel .tracking-panel-action,#modal_seguimiento.tracking-panel .tracking-panel-close{font-size:.58rem!important;padding:.4rem .1rem!important;line-height:1.05;}" +
-      "#modal_seguimiento.tracking-panel .tracking-panel-action i,#modal_seguimiento.tracking-panel .tracking-panel-close i{margin-right:.12rem!important;}";
+      ".modal-backdrop.rotulo-zebra-back{z-index:20050!important;}";
     document.head.appendChild(st);
   }
 

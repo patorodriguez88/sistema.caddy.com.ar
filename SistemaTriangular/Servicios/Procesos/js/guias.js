@@ -2,6 +2,39 @@ var button_ver = 0;
 var state = 0;
 var colorestado = "primary";
 
+// Badge de ultimo estado del paquete, al lado de "Visitas" en el encabezado de
+// la ficha de seguimiento. Se puede llamar desde varios ajax (Compruebo trae el
+// ultimo real; Seguimiento_Modal el de TransClientes como fallback).
+function pintarUltimoEstadoBadge(estado) {
+  estado = String(estado || "").trim();
+  if (!estado || estado === "0") return;
+  window.__ultimoEstadoGuia = estado;
+  var cls = "bg-secondary";
+  switch (estado) {
+    case "Entregado al Cliente":
+      cls = "bg-success";
+      break;
+    case "Devuelto al Cliente":
+    case "No se pudo entregar":
+    case "No se Pudo Retirar":
+      cls = "bg-danger";
+      break;
+    case "En Transito":
+      cls = "bg-info";
+      break;
+    case "En Origen":
+    case "A Retirar":
+      cls = "bg-warning";
+      break;
+    case "Cargado en Hoja de Ruta":
+      cls = "bg-primary";
+      break;
+  }
+  $("#ultimo_estado_badge").html(
+    '<span class="badge ' + cls + ' text-white">Estado: ' + estado + "</span>",
+  );
+}
+
 // Formatea 'YYYY-MM-DD' (con o sin hora) como 'd.m.yyyy'. Solo para mostrar;
 // para ordenar/filtrar DataTables sigue usando el valor crudo.
 function fechaDMY(data, type) {
@@ -616,8 +649,12 @@ function seguimiento(cs) {
               colorestado +
               ' text-white"> ' +
               jsonData.Visitas +
-              " </span></h5>",
+              " </span>" +
+              ' <span id="ultimo_estado_badge"></span></h5>',
           );
+          if (window.__ultimoEstadoGuia) {
+            pintarUltimoEstadoBadge(window.__ultimoEstadoGuia);
+          }
           $("#notas").html("Nota Interna: " + jsonData.Notas);
           document.getElementById("modal_seguimiento").style.display = "block";
           document.getElementById("form_guias").style.display = "none";
@@ -757,6 +794,9 @@ function seguimiento(cs) {
           colorestado = "primary";
         }
 
+        // fallback: estado de TransClientes hasta que Compruebo traiga el ultimo real
+        pintarUltimoEstadoBadge(Estado);
+
         //COMPRUEBO ULTIMO ESTADO
         $.ajax({
           data: { Compruebo: 1, CodigoSeguimiento: id },
@@ -767,6 +807,7 @@ function seguimiento(cs) {
             EstadoSeguimiento = jsonDataEstado.data;
 
             state = jsonDataEstado.data;
+            pintarUltimoEstadoBadge(state);
 
             if (jsonDataEstado.data != Estado) {
               $("#alert").css("display", "inline-block");

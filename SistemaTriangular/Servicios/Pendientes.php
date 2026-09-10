@@ -35,7 +35,7 @@
 
     <!-- App css -->
     <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-    <link href="../Funciones/css/seguimiento-panel.css?v=202609071220" rel="stylesheet" type="text/css" />
+    <link href="../Funciones/css/seguimiento-panel.css?v=<?php echo filemtime(__DIR__ . '/../Funciones/css/seguimiento-panel.css'); ?>" rel="stylesheet" type="text/css" />
 
     <!-- Icons css -->
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />

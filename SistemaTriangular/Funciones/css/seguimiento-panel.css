@@ -223,9 +223,9 @@
   bottom: 0;
   z-index: 2;
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 0.45rem;
-  padding: 0.55rem 0.7rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.3rem;
+  padding: 0.5rem 0.55rem;
   border-top: 1px solid var(--tracking-line);
   background: var(--tracking-surface);
 }
@@ -244,13 +244,17 @@
 
 #modal_seguimiento.tracking-panel .tracking-panel-action {
   min-width: 0;
-  padding: 0.5rem 0.25rem;
-  font-size: 0.7rem;
+  padding: 0.45rem 0.15rem;
+  font-size: 0.62rem;
+  line-height: 1.05;
   text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #modal_seguimiento.tracking-panel .tracking-panel-action i {
-  margin-right: 0.25rem;
+  margin-right: 0.15rem;
 }
 
 #modal_seguimiento.tracking-panel .tracking-panel-action-label {
@@ -266,19 +270,27 @@
 #modal_seguimiento.tracking-panel .tracking-panel-close {
   min-width: 0;
   border: 0;
-  background: var(--tracking-surface-2);
-  color: var(--tracking-ink);
-  padding: 0.5rem 0.45rem;
-  font-size: 0.7rem;
+  background: var(--tracking-accent);
+  color: #ffffff;
+  padding: 0.45rem 0.15rem;
+  font-size: 0.62rem;
+  line-height: 1.05;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 #modal_seguimiento.tracking-panel .tracking-panel-close i {
-  margin-right: 0.2rem;
+  margin-right: 0.15rem;
 }
 
-#modal_seguimiento.tracking-panel .tracking-panel-action:hover,
-#modal_seguimiento.tracking-panel .tracking-panel-close:hover {
+#modal_seguimiento.tracking-panel .tracking-panel-action:hover {
   background: var(--tracking-line);
+}
+
+#modal_seguimiento.tracking-panel .tracking-panel-close:hover {
+  background: #c53d22;
+  color: #ffffff;
 }
 
 #tracking-panel-backdrop {
