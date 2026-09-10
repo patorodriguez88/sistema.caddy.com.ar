@@ -141,6 +141,43 @@ function obtenerDistanciaORS($lat1, $lon1, $lat2, $lon2, $apiKey)
     }
 }
 
+// Distancia por ruta real usando el servidor publico de OSRM (gratis, sin API
+// key). Devuelve km (float) o 0.0 si falla / no responde.
+function obtenerKmOSRM($lat1, $lon1, $lat2, $lon2)
+{
+    $url = "https://router.project-osrm.org/route/v1/driving/"
+        . $lon1 . "," . $lat1 . ";" . $lon2 . "," . $lat2 . "?overview=false";
+
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 3);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 4);
+    curl_setopt($ch, CURLOPT_USERAGENT, 'SistemaTriangular/1.0 (caddy.com.ar)');
+    $resp = curl_exec($ch);
+    if ($resp === false || curl_errno($ch)) {
+        curl_close($ch);
+        return 0.0;
+    }
+    curl_close($ch);
+
+    $data = json_decode($resp, true);
+    if (isset($data['routes'][0]['distance'])) {
+        return round(((float)$data['routes'][0]['distance']) / 1000, 2);
+    }
+    return 0.0;
+}
+
+// Distancia en linea recta (Haversine), en km. Sin dependencias externas.
+function haversineKm($lat1, $lon1, $lat2, $lon2)
+{
+    $R = 6371.0;
+    $dLat = deg2rad((float)$lat2 - (float)$lat1);
+    $dLon = deg2rad((float)$lon2 - (float)$lon1);
+    $a = sin($dLat / 2) * sin($dLat / 2)
+        + cos(deg2rad((float)$lat1)) * cos(deg2rad((float)$lat2)) * sin($dLon / 2) * sin($dLon / 2);
+    return $R * 2 * atan2(sqrt($a), sqrt(1 - $a));
+}
+
 function obtenerIdExternoRendicionExistente($mysqli, $codigoSeguimiento, $idRendicion)
 {
     $sql = $mysqli->prepare("
@@ -863,24 +900,33 @@ if (isset($_POST['Reporte'])) {
             $km = floatval($row['Kilometros']);
             $dentro = puntoDentroDelAnillo($lat2, $lng2, $poligono);
 
-            // ORS: 1 request por waypoint sin km cacheado. Es lo que hace lento
-            // el informe la primera vez. Circuit-breaker: si un pedido falla
-            // (timeout / caido), no se intenta con el resto de las filas (km
-            // queda en 0 y el tramo >25/>50km no se detecta hasta la proxima
-            // corrida, pero el informe carga).
-            if ($km == 0 && $lat2 && $lng2 && empty($orsCaido)) {
-                $distancia = obtenerDistanciaORS($latOrigen, $lngOrigen, $lat2, $lng2, $apiKey);
-                if (is_array($distancia)) {
-                    $km = $distancia['km'];
-
-                    $stmtKm = $mysqli->prepare("UPDATE TransClientes SET Kilometros = ? WHERE CodigoSeguimiento = ? LIMIT 1");
-                    if ($stmtKm) {
-                        $stmtKm->bind_param("ds", $km, $row['CodigoSeguimiento']);
-                        $stmtKm->execute();
-                        $stmtKm->close();
+            // KM para elegir el tramo de tarifa (>25 / >50). Antes se pedia a
+            // OpenRouteService 1 request por waypoint; ORS quedo SIN CUOTA
+            // ("Quota exceeded") -> km=0 en casi todo -> la tarifa caia al
+            // poligono anillo -> Villa Allende / San Francisco (200km!) se
+            // liquidaban como "dentro anillo" (tarifa 1).
+            // Ahora: si no hay km real guardado, 1) OSRM (ruta real, gratis, sin
+            // key) con circuit-breaker; 2) fallback aproximado por linea recta
+            // (haversine x 1.25 factor vial). Nunca queda en 0 si hay coords.
+            if ($km <= 0 && $lat2 && $lng2) {
+                if (empty($osrmCaido)) {
+                    $kmOsrm = obtenerKmOSRM($latOrigen, $lngOrigen, (float)$lat2, (float)$lng2);
+                    if ($kmOsrm > 0) {
+                        $km = $kmOsrm;
+                        $stmtKm = $mysqli->prepare("UPDATE TransClientes SET Kilometros = ? WHERE CodigoSeguimiento = ? LIMIT 1");
+                        if ($stmtKm) {
+                            $stmtKm->bind_param("ds", $km, $row['CodigoSeguimiento']);
+                            $stmtKm->execute();
+                            $stmtKm->close();
+                        }
+                    } else {
+                        $osrmCaido = true; // no seguir golpeando OSRM en esta corrida
                     }
-                } else {
-                    $orsCaido = true; // string de error -> no seguir golpeando la API
+                }
+                if ($km <= 0) {
+                    // aproximacion por linea recta * factor vial (no se persiste:
+                    // Kilometros=0 sigue significando "sin ruta real").
+                    $km = round(haversineKm($latOrigen, $lngOrigen, (float)$lat2, (float)$lng2) * 1.25, 2);
                 }
             }
 
@@ -1018,6 +1064,29 @@ if (isset($_POST['Reporte'])) {
                     && ($existente['UsuarioModifico'] === null || $existente['UsuarioModifico'] === '');
 
                 if ($noLiquidada && $sinOverride) {
+                    // Correccion de tarifa: si el km/anillo ahora da OTRO tramo
+                    // que el congelado (tipico: cuando se snapshoteo, ORS estaba
+                    // sin cuota -> km=0 -> "dentro anillo" tarifa 1), se corrige
+                    // la fila NO liquidada y SIN ajuste manual. No toca colecta
+                    // (6) ni tarifas especiales del recorrido.
+                    $tarifaFresca   = (int)$row['TarifaID']; // recalculada arriba por km/anillo
+                    $tarifaCongelada = (int)$existente['idExternos_tarifas'];
+                    if (
+                        !$tieneTarifaEspecial
+                        && $tarifaFresca > 0 && $tarifaCongelada > 0
+                        && $tarifaFresca !== 6 && $tarifaCongelada !== 6
+                        && $tarifaFresca !== $tarifaCongelada
+                    ) {
+                        $kmFila = (float)($row['Kilometros'] ?? 0);
+                        $stmtUpdTar = $mysqli->prepare("UPDATE Externos_rendicion SET idExternos_tarifas = ?, Kilometros = ? WHERE id = ? AND Rendido = 0 LIMIT 1");
+                        if ($stmtUpdTar) {
+                            $stmtUpdTar->bind_param("idi", $tarifaFresca, $kmFila, $row['idExternoRendicion']);
+                            $stmtUpdTar->execute();
+                            $stmtUpdTar->close();
+                        }
+                        $existente['idExternos_tarifas'] = $tarifaFresca;
+                    }
+
                     $tarifaFila  = (int)$existente['idExternos_tarifas'];
                     $precioLive  = $precioTarifa($tarifaFila, $row['Fecha']);
                     if (intval($row['idClienteOrigen']) === 47305 && intval($row['Entregado']) !== 1) {
