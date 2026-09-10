@@ -40,10 +40,11 @@ if (isset($_POST['Limpiar'])) {
 //BUSCO COBRO A CUENTA
 if (isset($_POST['cobro_a_cuenta'])) {
   $cs = $_POST['cs'];
-  // El contra-reembolso se guarda repetido en el CobrarEnvio de cada linea del
-  // pedido (mercaderia + linea de cobranza integrada) -> un SUM() lo duplicaba.
-  // MAX() da el monto real una sola vez.
-  $sql = "SELECT MAX(CobrarEnvio)as CobrarEnvio FROM Ventas WHERE NumPedido='$cs' AND Eliminado='0'";
+  // El contra-reembolso NO es un monto por linea: es UN valor del pedido que
+  // Ventas guarda repetido en el CobrarEnvio de cada linea. Se toma UNA linea
+  // con CobrarEnvio > 0 (mismo criterio que Caddy_produccion); un SUM() lo
+  // duplicaba.
+  $sql = "SELECT CobrarEnvio FROM Ventas WHERE NumPedido='$cs' AND Eliminado='0' AND CobrarEnvio > 0 ORDER BY idPedido DESC LIMIT 1";
   $ResultadoVentas = $mysqli->query($sql);
   $row = $ResultadoVentas->fetch_array(MYSQLI_ASSOC);
   $CobrarEnvio = $row['CobrarEnvio'];

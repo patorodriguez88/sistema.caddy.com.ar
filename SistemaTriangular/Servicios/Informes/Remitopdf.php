@@ -408,16 +408,25 @@ $items = db_fetch_all(
 
 $totalesFila = mysqli_fetch_one(
     $mysqli,
-    // El contra-reembolso se guarda REPETIDO en CobrarEnvio de cada linea del
-    // pedido (mercaderia + linea de cobranza integrada); un SUM() lo contaba dos
-    // veces y el remito mostraba el doble de lo que dice el paquete. MAX() da el
-    // monto real una sola vez. El Total facturado si es SUM de todas las lineas.
-    "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad,
-            MAX(CobrarEnvio) AS Cobranza
+    "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad
        FROM Ventas WHERE NumPedido = ?",
     's',
     [$CodigoSeguimiento]
 ) ?? [];
+
+// El contra-reembolso NO es un monto por linea: es UN valor del pedido que
+// Ventas guarda repetido en el CobrarEnvio de cada linea (mercaderia + linea de
+// cobranza integrada). Se toma UNA linea con CobrarEnvio > 0 (mismo criterio que
+// Caddy_produccion). Un SUM() lo contaba dos veces (el remito mostraba el doble).
+$cobranzaFila = mysqli_fetch_one(
+    $mysqli,
+    "SELECT CobrarEnvio FROM Ventas
+      WHERE NumPedido = ? AND CobrarEnvio > 0
+      ORDER BY idPedido DESC LIMIT 1",
+    's',
+    [$CodigoSeguimiento]
+);
+$totalesFila['Cobranza'] = $cobranzaFila['CobrarEnvio'] ?? 0;
 $TotalCant = (float)($totalesFila['TotalCantidad'] ?? 0);
 $Cobranza = (float)($totalesFila['Cobranza'] ?? 0);
 

@@ -28,19 +28,18 @@ if ($accion === 'obtener_clientes' && isset($_POST['recorrido'])) {
     TC.TelefonoDestino AS Telefono,
     TC.CodigoSeguimiento,
     IFNULL(TS.Estado, '') AS EstadoNotificado,
-    IFNULL(VT.TotalCobrarEnvio, 0) AS CobrarEnvio
+    -- El contra-reembolso es UN valor del pedido que Ventas guarda repetido en
+    -- el CobrarEnvio de cada linea; se toma UNA linea con CobrarEnvio > 0 (mismo
+    -- criterio que Caddy_produccion). Un SUM() lo contaba 2 veces.
+    IFNULL((SELECT v.CobrarEnvio FROM Ventas v
+              WHERE v.NumPedido = TC.CodigoSeguimiento AND v.Eliminado = 0 AND v.CobrarEnvio > 0
+              ORDER BY v.idPedido DESC LIMIT 1), 0) AS CobrarEnvio
     FROM TransClientes TC
     LEFT JOIN (
     SELECT CodigoSeguimiento, Estado
     FROM twilio_seguimiento
     ) TS ON TS.CodigoSeguimiento = TC.CodigoSeguimiento
-    LEFT JOIN (
-    SELECT NumPedido, MAX(CobrarEnvio) AS TotalCobrarEnvio
-    FROM Ventas
-    WHERE Eliminado = 0
-    GROUP BY NumPedido
-    ) VT ON VT.NumPedido = TC.CodigoSeguimiento
-    WHERE 
+    WHERE
     TC.Eliminado = 0 
     AND TC.Entregado = 0 
     AND TC.Devuelto = 0 
