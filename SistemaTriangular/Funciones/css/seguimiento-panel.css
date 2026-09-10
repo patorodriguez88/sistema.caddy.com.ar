@@ -58,7 +58,7 @@
   border: 0;
   display: flex;
   align-items: center;
-  padding: 0.75rem 0.9rem;
+  padding: 0.5rem 0.75rem;
   background: var(--tracking-surface) !important;
   border-bottom: 1px solid var(--tracking-line);
   color: var(--tracking-ink) !important;
@@ -86,50 +86,50 @@
 }
 
 #modal_seguimiento.tracking-panel .modal-body {
-  padding: 0.7rem;
+  padding: 0.45rem;
 }
 
 #modal_seguimiento.tracking-panel .modal-body > .row {
-  --bs-gutter-x: 0.6rem;
-  --bs-gutter-y: 0.6rem;
+  --bs-gutter-x: 0.4rem;
+  --bs-gutter-y: 0.4rem;
 }
 
 #modal_seguimiento.tracking-panel .card {
   height: 100%;
   border: 1px solid var(--tracking-line);
-  border-radius: 14px;
+  border-radius: 11px;
   background: var(--tracking-surface);
-  box-shadow: var(--tracking-shadow);
+  box-shadow: 0 1px 2px rgba(42, 34, 48, 0.05);
 }
 
 #modal_seguimiento.tracking-panel .card-body {
-  padding: 0.7rem;
+  padding: 0.5rem 0.55rem;
 }
 
 #modal_seguimiento.tracking-panel .header-title {
-  margin-bottom: 0.45rem !important;
+  margin-bottom: 0.3rem !important;
   color: var(--tracking-mute);
-  font-size: 0.64rem;
+  font-size: 0.62rem;
   font-weight: 900;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   text-transform: uppercase;
 }
 
 #modal_seguimiento.tracking-panel h5:not(.modal-title) {
-  margin-bottom: 0.35rem !important;
+  margin-bottom: 0.25rem !important;
   color: var(--tracking-ink);
-  font-size: 0.9rem;
+  font-size: 0.86rem;
   font-weight: 900;
 }
 
 #modal_seguimiento.tracking-panel ul {
   color: var(--tracking-soft);
-  font-size: 0.76rem;
-  line-height: 1.35;
+  font-size: 0.74rem;
+  line-height: 1.25;
 }
 
 #modal_seguimiento.tracking-panel ul li {
-  margin-top: 0.1rem;
+  margin-top: 0.05rem;
 }
 
 #modal_seguimiento.tracking-panel ul li p {
@@ -312,7 +312,7 @@ body.tracking-panel-open {
 
 @media (max-width: 576px) {
   #modal_seguimiento.tracking-panel .modal-body {
-    padding: 0.55rem;
+    padding: 0.4rem;
   }
 
   .tracking-guide-grid {
