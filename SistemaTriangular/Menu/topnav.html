@@ -283,10 +283,9 @@
               <?php endif; ?>
               <?php if (tieneMenuPermiso('Ventas', 'Calculador')): ?>
               <a
-                href="/SistemaTriangular/Ventas/Calculador.php"
-                class="dropdown-item disabled"
-                style="color: red"
-                >Calculador</a
+                href="/SistemaTriangular/Ventas/CotizadorEnvios.php"
+                class="dropdown-item"
+                >Cotizador de Envíos</a
               >
               <?php endif; ?>
               <?php if (tieneMenuPermiso('Ventas', 'Importar Ventas')): ?>
@@ -502,6 +501,13 @@
                     >Valor por Kilómetro</a
                   >
                   <?php endif; ?>
+                  <?php if (tieneMenuPermiso('Datos', 'Tarifas Externos')): ?>
+                  <a
+                    href="/SistemaTriangular/Datos/TarifasExternos.php"
+                    class="dropdown-item"
+                    >Tarifas Externos</a
+                  >
+                  <?php endif; ?>
                 </div>
               </div>
 
@@ -700,13 +706,7 @@
                 >Kilometros</a
               >
               <?php endif; ?>
-              <?php if (tieneMenuPermiso('Datos', 'Tarifas Externos')): ?>
-              <a
-                href="/SistemaTriangular/Datos/TarifasExternos.php"
-                class="dropdown-item"
-                >Tarifas Externos</a
-              >
-              <?php endif; ?>
+              <?php /* Tarifas Externos se movió a Admin > Flota / Varios */ ?>
               <?php if (tieneMenuPermiso('Datos', 'Notificaciones Webhook')): ?>
               <a
                 href="/SistemaTriangular/Datos/webhook_server"

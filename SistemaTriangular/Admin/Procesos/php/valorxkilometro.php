@@ -28,7 +28,7 @@ $action = isset($_POST['action']) ? $_POST['action'] : '';
 
 // --------- Listar segmentos ----------
 if ($action === 'listar') {
-    $sql = "SELECT id, Segmento, Nombre, ValorKm, Activo FROM ValorxKilometro ORDER BY Segmento ASC";
+    $sql = "SELECT id, Segmento, Nombre, ValorKm, MaxKg, MaxM3, Activo FROM ValorxKilometro ORDER BY Segmento ASC";
 
     $res = $mysqli->query($sql);
     if (!$res) {
@@ -49,6 +49,8 @@ if ($action === 'guardar') {
     $segmento = isset($_POST['Segmento']) ? (int)$_POST['Segmento'] : 0;
     $nombre   = isset($_POST['Nombre']) ? trim($_POST['Nombre']) : '';
     $valorKm  = isset($_POST['ValorKm']) ? (float)str_replace(',', '.', $_POST['ValorKm']) : 0;
+    $maxKg    = isset($_POST['MaxKg']) ? (float)str_replace(',', '.', $_POST['MaxKg']) : 0;
+    $maxM3    = isset($_POST['MaxM3']) ? (float)str_replace(',', '.', $_POST['MaxM3']) : 0;
     $activo   = isset($_POST['Activo']) ? (int)$_POST['Activo'] : 1;
 
     if ($segmento <= 0 || $nombre === '') {
@@ -56,17 +58,17 @@ if ($action === 'guardar') {
     }
 
     if ($id > 0) {
-        $sql = "UPDATE ValorxKilometro SET Segmento=?, Nombre=?, ValorKm=?, Activo=? WHERE id=? LIMIT 1";
+        $sql = "UPDATE ValorxKilometro SET Segmento=?, Nombre=?, ValorKm=?, MaxKg=?, MaxM3=?, Activo=? WHERE id=? LIMIT 1";
         if (!($stmt = $mysqli->prepare($sql))) {
             jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
         }
-        $stmt->bind_param('isdii', $segmento, $nombre, $valorKm, $activo, $id);
+        $stmt->bind_param('isdddii', $segmento, $nombre, $valorKm, $maxKg, $maxM3, $activo, $id);
     } else {
-        $sql = "INSERT INTO ValorxKilometro (Segmento, Nombre, ValorKm, Activo) VALUES (?, ?, ?, ?)";
+        $sql = "INSERT INTO ValorxKilometro (Segmento, Nombre, ValorKm, MaxKg, MaxM3, Activo) VALUES (?, ?, ?, ?, ?, ?)";
         if (!($stmt = $mysqli->prepare($sql))) {
             jexit(['ok' => false, 'error' => 'Prepare failed: ' . $mysqli->error]);
         }
-        $stmt->bind_param('isdi', $segmento, $nombre, $valorKm, $activo);
+        $stmt->bind_param('isdddi', $segmento, $nombre, $valorKm, $maxKg, $maxM3, $activo);
     }
 
     if (!$stmt->execute()) {

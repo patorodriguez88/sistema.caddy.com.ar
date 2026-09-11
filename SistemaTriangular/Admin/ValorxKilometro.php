@@ -62,6 +62,8 @@
                                                     <th>Segmento</th>
                                                     <th>Nombre</th>
                                                     <th>Valor por Km</th>
+                                                    <th>Máx. kg</th>
+                                                    <th>Máx. m³</th>
                                                     <th>Estado</th>
                                                     <th>Acciones</th>
                                                 </tr>
@@ -98,6 +100,17 @@
                                     <label class="form-label">Valor por Km</label>
                                     <input type="text" id="vkm_valorkm" class="form-control" placeholder="0.00">
                                 </div>
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Máx. kg (capacidad)</label>
+                                        <input type="text" id="vkm_maxkg" class="form-control" placeholder="0">
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Máx. m³ (capacidad)</label>
+                                        <input type="text" id="vkm_maxm3" class="form-control" placeholder="0">
+                                    </div>
+                                </div>
+                                <p class="text-muted small">El cotizador de envíos descarta este vehículo si la carga supera el peso o el volumen. 0 = sin límite.</p>
                                 <div class="form-check form-switch">
                                     <input class="form-check-input" type="checkbox" id="vkm_activo" checked>
                                     <label class="form-check-label" for="vkm_activo">Activo</label>

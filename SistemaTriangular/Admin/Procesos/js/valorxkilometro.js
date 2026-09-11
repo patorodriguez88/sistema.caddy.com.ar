@@ -20,6 +20,8 @@
     $("#vkm_segmento").val(data ? data.Segmento : "");
     $("#vkm_nombre").val(data ? data.Nombre : "");
     $("#vkm_valorkm").val(data ? data.ValorKm : "");
+    $("#vkm_maxkg").val(data ? data.MaxKg : "");
+    $("#vkm_maxm3").val(data ? data.MaxM3 : "");
     $("#vkm_activo").prop("checked", data ? parseInt(data.Activo) === 1 : true);
 
     $("#modalValorxKilometroLabel").text(
@@ -39,6 +41,8 @@
       Segmento: $("#vkm_segmento").val(),
       Nombre: $("#vkm_nombre").val(),
       ValorKm: $("#vkm_valorkm").val(),
+      MaxKg: $("#vkm_maxkg").val(),
+      MaxM3: $("#vkm_maxm3").val(),
       Activo: $("#vkm_activo").is(":checked") ? 1 : 0,
     };
 
@@ -121,6 +125,20 @@
           render: function (data, type) {
             if (type !== "display") return data;
             return formatearMoneda(data);
+          },
+        },
+        {
+          data: "MaxKg",
+          render: function (d, type) {
+            if (type !== "display") return d;
+            return parseFloat(d || 0) > 0 ? parseFloat(d).toLocaleString("es-AR") + " kg" : "—";
+          },
+        },
+        {
+          data: "MaxM3",
+          render: function (d, type) {
+            if (type !== "display") return d;
+            return parseFloat(d || 0) > 0 ? parseFloat(d).toLocaleString("es-AR") + " m³" : "—";
           },
         },
         {

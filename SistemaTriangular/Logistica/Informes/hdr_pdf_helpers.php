@@ -125,7 +125,36 @@ function hdrPaleta(): array
         'greenC'   => [25, 135, 84],
         'redC'     => [220, 53, 69],
         'whiteC'   => [255, 255, 255],
+        'tint'     => [255, 244, 240],   // naranja muy suave (fondos de cajas/pills)
     ];
+}
+
+/**
+ * Nombre completo, mail y telefono del usuario que prepara/emite un documento
+ * (tabla usuarios, por Usuario de login). Devuelve [nombre, mail, telefono];
+ * si no se encuentra, nombre cae al username tal cual.
+ */
+function hdrDatosOperador(mysqli $db, string $usuario): array
+{
+    $nombre = $usuario;
+    $mail = '';
+    $telefono = '';
+    if ($usuario !== '') {
+        $st = $db->prepare('SELECT Nombre, Apellido, Mail, Telefono FROM usuarios WHERE Usuario = ? LIMIT 1');
+        $st->bind_param('s', $usuario);
+        $st->execute();
+        $row = $st->get_result()->fetch_assoc();
+        $st->close();
+        if ($row) {
+            $nombreCompleto = trim(trim((string) ($row['Nombre'] ?? '')) . ' ' . trim((string) ($row['Apellido'] ?? '')));
+            if ($nombreCompleto !== '') {
+                $nombre = $nombreCompleto;
+            }
+            $mail = trim((string) ($row['Mail'] ?? ''));
+            $telefono = trim((string) ($row['Telefono'] ?? ''));
+        }
+    }
+    return [$nombre, $mail, $telefono];
 }
 
 abstract class HdrPdfBase extends FPDF
@@ -133,6 +162,8 @@ abstract class HdrPdfBase extends FPDF
     public array $widths = [];
     public array $aligns = [];
     public string $footerLeft = '';
+    // Si se setea, el pie central dice "Generado por <usuario> dd/mm/yyyy HH:mm".
+    public string $generadoPor = '';
 
     public function SetWidths(array $w): void
     {
@@ -240,6 +271,43 @@ abstract class HdrPdfBase extends FPDF
         $this->_Arc($x + $r - $r * $arc, $y + $h, $x, $y + $h - $r + $r * $arc, $x, $y + $h - $r);
         $this->_out(sprintf('%.2F %.2F l', $x * $k, ($hp - ($y + $r)) * $k));
         $this->_Arc($x, $y + $r - $r * $arc, $x + $r - $r * $arc, $y, $x + $r, $y);
+        $this->_out($op);
+    }
+
+    // Igual que RoundedRect pero eligiendo qué esquinas redondear (para barras
+    // tipo "pill" o con sólo el borde superior curvo). $corners: [tl, tr, br, bl].
+    public function roundedRectPartial(float $x, float $y, float $w, float $h, float $r, string $style, array $corners): void
+    {
+        $r = max(0.0, min($r, $w / 2, $h / 2));
+        [$tl, $tr, $br, $bl] = [$corners[0] ?? false, $corners[1] ?? false, $corners[2] ?? false, $corners[3] ?? false];
+
+        $op = 'S';
+        if ($style === 'F')      $op = 'f';
+        elseif ($style === 'FD') $op = 'B';
+
+        $arc = 4 / 3 * (M_SQRT2 - 1);
+        $k   = $this->k;
+        $hp  = $this->h;
+        $mv  = fn(float $X, float $Y) => $this->_out(sprintf('%.2F %.2F m', $X * $k, ($hp - $Y) * $k));
+        $ln  = fn(float $X, float $Y) => $this->_out(sprintf('%.2F %.2F l', $X * $k, ($hp - $Y) * $k));
+
+        $mv($x + ($tl ? $r : 0), $y);
+        $ln($x + $w - ($tr ? $r : 0), $y);
+        if ($tr) {
+            $this->_Arc($x + $w - $r + $r * $arc, $y, $x + $w, $y + $r - $r * $arc, $x + $w, $y + $r);
+        }
+        $ln($x + $w, $y + $h - ($br ? $r : 0));
+        if ($br) {
+            $this->_Arc($x + $w, $y + $h - $r + $r * $arc, $x + $w - $r + $r * $arc, $y + $h, $x + $w - $r, $y + $h);
+        }
+        $ln($x + ($bl ? $r : 0), $y + $h);
+        if ($bl) {
+            $this->_Arc($x + $r - $r * $arc, $y + $h, $x, $y + $h - $r + $r * $arc, $x, $y + $h - $r);
+        }
+        $ln($x, $y + ($tl ? $r : 0));
+        if ($tl) {
+            $this->_Arc($x, $y + $r - $r * $arc, $x + $r - $r * $arc, $y, $x + $r, $y);
+        }
         $this->_out($op);
     }
 
@@ -367,15 +435,242 @@ abstract class HdrPdfBase extends FPDF
         return $nl;
     }
 
+    // ============================================================
+    // Bloques de contenido "estilo Flex" (numerados, pills, cajas) —
+    // compartidos por los informes con el formato nuevo (cotizacion,
+    // propuesta flex, etc.) para que todos usen el mismo lenguaje visual.
+    // ============================================================
+
+    // Titulo de seccion numerado: badge naranja + texto + regla fina.
+    public function sec(int $n, string $t): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(14);
+        $this->Ln(2.2);
+        $lm = $this->leftMargin();
+        $y = $this->GetY();
+
+        $this->SetFillColor(...$p['primaryC']);
+        $this->RoundedRect($lm, $y, 6.4, 6.4, 1.5, 'F');
+        $this->SetFont('Arial', 'B', 9.5);
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetXY($lm, $y + 0.2);
+        $this->Cell(6.4, 6, (string) $n, 0, 0, 'C');
+
+        $this->SetFont('Arial', 'B', 10.5);
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetXY($lm + 10, $y + 0.4);
+        $this->Cell(0, 6, pdf_text($t), 0, 1);
+
+        $this->SetDrawColor(...$p['borderC']);
+        $this->SetLineWidth(0.3);
+        $this->Line($lm, $y + 7.6, $this->pageWidth() - $this->leftMargin(), $y + 7.6);
+        $this->SetY($y + 9);
+    }
+
+    // Parrafo justificado, gris por defecto (bold = texto normal oscuro).
+    public function parrafo(string $t, bool $bold = false): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(8);
+        $this->SetFont('Arial', $bold ? 'B' : '', 8.5);
+        $this->SetTextColor(...($bold ? $p['darkText'] : $p['mutedC']));
+        $this->MultiCell(0, 4.1, pdf_text($t), 0, 'J');
+        $this->Ln(0.7);
+    }
+
+    // Viñeta con cuadradito naranja.
+    public function bullet(string $t): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(7);
+        $lm = $this->leftMargin();
+        $y = $this->GetY();
+        $this->SetFillColor(...$p['primaryC']);
+        $this->Rect($lm + 0.5, $y + 1.4, 1.6, 1.6, 'F');
+        $this->SetFont('Arial', '', 8.5);
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetXY($lm + 5, $y);
+        $this->MultiCell(0, 3.9, pdf_text($t), 0, 'L');
+        $this->SetX($lm);
+        $this->Ln(0.6);
+    }
+
+    // Fila etiqueta (naranja, caps) / valor (oscuro, puede wrappear) con separador fino.
+    public function dfn(string $label, string $value): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(8);
+        $lm = $this->leftMargin();
+        $w = $this->contentWidth();
+        $labW = 42;
+        $y0 = $this->GetY();
+
+        $this->SetFont('Arial', 'B', 7);
+        $this->SetTextColor(...$p['primaryC']);
+        $this->SetXY($lm, $y0 + 0.5);
+        $this->Cell($labW, 3.9, pdf_text(mb_strtoupper($label, 'UTF-8')), 0, 0);
+
+        $this->SetFont('Arial', '', 8.3);
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetXY($lm + $labW, $y0);
+        $this->MultiCell($w - $labW, 3.9, pdf_text($value), 0, 'L');
+
+        $y1 = $this->GetY();
+        $this->SetDrawColor(...$p['borderC']);
+        $this->SetLineWidth(0.15);
+        $this->Line($lm, $y1 + 0.9, $lm + $w, $y1 + 0.9);
+        $this->SetY($y1 + 1.6);
+    }
+
+    // Fila de precio: concepto (+ detalle chico opcional debajo) a la izquierda,
+    // importe a la derecha en la misma linea. Para cuadros de desglose.
+    public function filaPrecio(string $label, string $valor, ?string $detalle = null, bool $bold = false): void
+    {
+        $p = hdrPaleta();
+        $this->CheckPageBreak(7);
+        $lm = $this->leftMargin();
+        $w = $this->contentWidth();
+        $y0 = $this->GetY();
+
+        $this->SetFont('Arial', $bold ? 'B' : '', $bold ? 9.5 : 8.6);
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetXY($lm, $y0);
+        $this->Cell($w * 0.62, 4.6, pdf_text($label), 0, 0);
+        $this->SetFont('Arial', $bold ? 'B' : '', $bold ? 9.5 : 8.6);
+        $this->Cell($w * 0.38, 4.6, pdf_text($valor), 0, 1, 'R');
+
+        if ($detalle !== null && $detalle !== '') {
+            $this->SetX($lm);
+            $this->SetFont('Arial', '', 7);
+            $this->SetTextColor(...$p['mutedC']);
+            $this->Cell($w, 3.3, pdf_text($detalle), 0, 1);
+        }
+
+        $y1 = $this->GetY();
+        $this->SetDrawColor(...$p['borderC']);
+        $this->SetLineWidth(0.15);
+        $this->Line($lm, $y1 + 0.5, $lm + $w, $y1 + 0.5);
+        $this->SetY($y1 + 1.3);
+    }
+
+    // Barra full-width resaltada (fondo naranja) para el total final.
+    public function totalBar(string $label, string $valor): void
+    {
+        $p = hdrPaleta();
+        $this->Ln(0.6);
+        $this->CheckPageBreak(16);
+        $lm = $this->leftMargin();
+        $w = $this->contentWidth();
+        $h = 12;
+        $y = $this->GetY();
+
+        $this->SetFillColor(...$p['primaryC']);
+        $this->RoundedRect($lm, $y, $w, $h, 2.5, 'F');
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetFont('Arial', 'B', 9.5);
+        $this->SetXY($lm + 6, $y + 3.4);
+        $this->Cell($w * 0.5, 5.5, pdf_text($label), 0, 0, 'L');
+        $this->SetFont('Arial', 'B', 14);
+        $this->SetXY($lm + $w * 0.45, $y + 2.5);
+        $this->Cell($w * 0.55 - 6, 7, pdf_text($valor), 0, 0, 'R');
+        $this->SetY($y + $h + 2.2);
+    }
+
+    // Callout con barra de acento naranja a la izquierda y fondo tenue.
+    public function caja(string $titulo, string $texto): void
+    {
+        $p = hdrPaleta();
+        $this->Ln(1);
+        $this->CheckPageBreak(18);
+        $lm = $this->leftMargin();
+        $w = $this->contentWidth();
+        $this->SetFont('Arial', '', 8);
+        $nl = $this->NbLines($w - 12, pdf_text($texto));
+        $h = 7 + max(1, $nl) * 3.8 + 2;
+        $y = $this->GetY();
+
+        $this->SetFillColor(...$p['tint']);
+        $this->SetDrawColor(...$p['tint']);
+        $this->RoundedRect($lm, $y, $w, $h, 2.2, 'F');
+        $this->SetFillColor(...$p['primaryC']);
+        $this->roundedRectPartial($lm, $y, 3, $h, 2.2, 'F', [true, false, false, true]);
+
+        $this->SetXY($lm + 8, $y + 2.6);
+        $this->SetFont('Arial', 'B', 8.5);
+        $this->SetTextColor(...$p['primaryD']);
+        $this->Cell($w - 12, 4.2, pdf_text($titulo), 0, 2);
+        $this->SetX($lm + 8);
+        $this->SetFont('Arial', '', 8);
+        $this->SetTextColor(...$p['darkText']);
+        $this->MultiCell($w - 12, 3.8, pdf_text($texto), 0, 'L');
+        $this->SetY($y + $h + 1);
+    }
+
+    // Firma de Caddy unicamente: nombre de quien prepara/emite + mail + telefono.
+    public function firma(string $nombre, string $mail, string $telefono): void
+    {
+        $p = hdrPaleta();
+        $lm = $this->leftMargin();
+        $w = 85.0;
+
+        // "Pegada al piso": se ubica pegada al trigger de salto de pagina
+        // (que ya respeta el bMargin de cada documento) menos el alto maximo
+        // real del bloque, en vez de ir pegada al contenido de arriba. Asi
+        // nunca se corta a la mitad por la paginacion automatica de FPDF, y
+        // si el contenido ya paso ese punto en esta hoja, pasa a una hoja
+        // nueva y se pega ahi (siempre al mismo lugar relativo al pie).
+        $blockH = 16.0; // 3-4 lineas (con telefono) + separaciones
+        $targetY = $this->PageBreakTrigger - $blockH;
+        if ($this->GetY() > $targetY) {
+            $this->AddPage($this->CurOrientation);
+            $targetY = $this->PageBreakTrigger - $blockH;
+        }
+        $this->SetXY($lm, $targetY);
+
+        $this->SetFont('Arial', '', 7.5);
+        $this->SetTextColor(...$p['mutedC']);
+        $this->Cell($w, 3.2, pdf_text('Por Caddy - Triangular S.A.'), 0, 1);
+        $this->Ln(0.5);
+
+        $this->SetFont('Arial', 'B', 9);
+        $this->SetTextColor(...$p['darkText']);
+        $this->Cell($w, 3.8, pdf_text($nombre !== '' ? $nombre : '-'), 0, 1);
+        $this->Ln(0.5);
+
+        $this->SetFont('Arial', '', 7.5);
+        $this->SetTextColor(...$p['mutedC']);
+        if ($mail !== '') {
+            $this->Cell($w, 3.2, pdf_text($mail), 0, 1);
+            $this->Ln(0.5);
+        }
+        if ($telefono !== '') {
+            $this->Cell($w, 3.2, pdf_text('Tel: ' . $telefono), 0, 1);
+        }
+    }
+
     // Encabezado con logo + datos de la empresa + card de datos del documento.
     // $filas es una lista de [label, valor] para la card derecha.
-    protected function drawHeaderBase(string $titulo, string $subtitulo, array $filas): void
+    // $tresColumnas: reparte el ancho en 3 partes iguales (logo | titulo | card)
+    // para que quede simetrico; por defecto (false) usa la card ancha de 90mm.
+    protected function drawHeaderBase(string $titulo, string $subtitulo, array $filas, bool $tresColumnas = false): void
     {
         $p = hdrPaleta();
         $marginL = $this->lMargin;
         $pageW = $this->w;
-        $rightW = 90;
-        $rightX = $pageW - $this->rMargin - $rightW;
+
+        if ($tresColumnas) {
+            $col = ($pageW - $this->lMargin - $this->rMargin) / 3;
+            $rightW = $col;
+            $rightX = $pageW - $this->rMargin - $rightW;
+            $tituloX = $marginL + $col;
+            $anchoTitulo = $col;
+        } else {
+            $rightW = 90;
+            $rightX = $pageW - $this->rMargin - $rightW;
+            $tituloX = $marginL + 55;
+            $anchoTitulo = $rightX - $tituloX - 4;
+        }
 
         $logo = __DIR__ . '/../../images/LogoCaddy.png';
         if (file_exists($logo)) {
@@ -401,12 +696,9 @@ abstract class HdrPdfBase extends FPDF
             $ly += 4;
         }
 
-        // Título grande, centrado entre el logo y la card de datos. Si el título
-        // no entra en el ancho disponible a tamaño 16, FPDF igual lo dibuja
-        // completo (Cell no recorta texto) y la card de datos, que se pinta
-        // después, terminaba tapando la parte que sobresalía — se achica la
-        // fuente hasta que el texto entre.
-        $anchoTitulo = $rightX - ($marginL + 55) - 4;
+        // Título grande, centrado en su columna. Si no entra a tamaño 16, FPDF
+        // igual lo dibuja completo (Cell no recorta) y la card lo taparía — se
+        // achica la fuente hasta que entre.
         $tituloTexto = pdf_text($titulo);
         $tamTitulo = 16;
         $this->SetFont('Arial', 'B', $tamTitulo);
@@ -415,7 +707,7 @@ abstract class HdrPdfBase extends FPDF
             $this->SetFont('Arial', 'B', $tamTitulo);
         }
         $this->SetTextColor(...$p['darkText']);
-        $this->SetXY($marginL + 55, 10);
+        $this->SetXY($tituloX, 10);
         $this->Cell($anchoTitulo, 8, $tituloTexto, 0, 1, 'C');
         if ($subtitulo !== '') {
             $subtituloTexto = pdf_text($subtitulo);
@@ -426,7 +718,7 @@ abstract class HdrPdfBase extends FPDF
                 $this->SetFont('Arial', '', $tamSubtitulo);
             }
             $this->SetTextColor(...$p['mutedC']);
-            $this->SetXY($marginL + 55, 18);
+            $this->SetXY($tituloX, 18);
             $this->Cell($anchoTitulo, 5, $subtituloTexto, 0, 1, 'C');
         }
 
@@ -436,15 +728,26 @@ abstract class HdrPdfBase extends FPDF
         $this->SetDrawColor(...$p['borderC']);
         $this->RoundedRect($rightX, 8, $rightW, $cardH, 2.5, 'FD');
 
+        $labelW = $tresColumnas ? 16 : 30;
+        $padIn  = $tresColumnas ? 3 : 4;
+        $valW   = $rightW - $labelW - $padIn * 2;
         $fy = 12;
         foreach ($filas as [$label, $valor]) {
             $this->SetFont('Arial', 'B', 8);
             $this->SetTextColor(...$p['mutedC']);
-            $this->SetXY($rightX + 4, $fy);
-            $this->Cell(30, 5, pdf_text($label), 0, 0);
-            $this->SetFont('Arial', '', 8);
+            $this->SetXY($rightX + $padIn, $fy);
+            $this->Cell($labelW, 5, pdf_text($label), 0, 0);
+
+            // valor: se achica la fuente si no entra en la columna
+            $valTxt = pdf_text((string) $valor);
+            $fs = 8;
+            $this->SetFont('Arial', '', $fs);
+            while ($fs > 6 && $this->GetStringWidth($valTxt) > $valW) {
+                $fs -= 0.25;
+                $this->SetFont('Arial', '', $fs);
+            }
             $this->SetTextColor(...$p['darkText']);
-            $this->Cell($rightW - 34, 5, pdf_text((string)$valor), 0, 1);
+            $this->Cell($valW, 5, $valTxt, 0, 1);
             $fy += 5.2;
         }
 
@@ -473,7 +776,8 @@ abstract class HdrPdfBase extends FPDF
 
         $w = ($this->w - $this->lMargin - $this->rMargin) / 3;
         $this->Cell($w, 6, pdf_text($this->footerLeft), 0, 0, 'L');
-        $this->Cell($w, 6, pdf_text('Generado ' . date('d/m/Y H:i')), 0, 0, 'C');
+        $gen = 'Generado' . ($this->generadoPor !== '' ? ' por ' . $this->generadoPor : '') . ' ' . date('d/m/Y H:i');
+        $this->Cell($w, 6, pdf_text($gen), 0, 0, 'C');
         $this->Cell($w, 6, pdf_text('Hoja ' . $this->PageNo() . ' de {nb}'), 0, 0, 'R');
     }
 }
