@@ -246,11 +246,19 @@
                                                 <input class="form-check-input" type="radio" name="cot_modo" id="cot_modo_km" value="km">
                                                 <label class="form-check-label" for="cot_modo_km">Por km</label>
                                             </div>
-                                            <div id="cot_veh_wrap" class="d-none flex-grow-1">
-                                                <select id="cot_vehiculo" class="form-select form-select-sm"></select>
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="radio" name="cot_modo" id="cot_modo_hora" value="hora">
+                                                <label class="form-check-label" for="cot_modo_hora">Por hora</label>
                                             </div>
                                         </div>
-                                        <div class="small text-muted mb-1">Automático compara "por servicio" vs. cada vehículo y elige el más económico.</div>
+                                        <div id="cot_veh_wrap" class="d-none mb-2">
+                                            <select id="cot_vehiculo" class="form-select form-select-sm"></select>
+                                        </div>
+                                        <div id="cot_horas_wrap" class="d-none mb-2">
+                                            <label class="form-label mb-1">Cantidad de horas contratadas</label>
+                                            <input type="number" class="form-control form-control-sm" id="cot_horas" min="0" step="0.5" value="1">
+                                        </div>
+                                        <div class="small text-muted mb-1">Automático compara "por servicio" vs. cada vehículo por km y elige el más económico (el modo "Por hora" hay que elegirlo a mano).</div>
                                         <div class="small mb-2" id="cot_modo_cordoba_hint">El cálculo "Por km" solo aplica si el envío sale de Córdoba capital (toca otra localidad).</div>
 
                                         <h6 class="text-uppercase text-muted" style="font-size:11px">Adicionales</h6>

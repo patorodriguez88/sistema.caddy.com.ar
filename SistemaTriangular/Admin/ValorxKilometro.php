@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Sistema Caddy | Valor por Kilómetro</title>
+    <title>Sistema Caddy | Tarifas de Flota Propia</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />
@@ -47,7 +47,10 @@
                     <div class="row">
                         <div class="col-12">
                             <div class="d-flex justify-content-between align-items-center mb-3">
-                                <h4 class="mb-0">Valor por Kilómetro (segmentos de flota propia)</h4>
+                                <div>
+                                    <h4 class="mb-0">Tarifas de Flota Propia</h4>
+                                    <p class="text-muted small mb-0">Valor por km y por hora de cada segmento de flota. Lo usa el Cotizador de Envíos en los modos "Por km" y "Por hora".</p>
+                                </div>
                                 <button class="btn btn-primary" id="btnNuevoSegmento">
                                     <i class="mdi mdi-plus me-1"></i> Nuevo segmento
                                 </button>
@@ -62,6 +65,7 @@
                                                     <th>Segmento</th>
                                                     <th>Nombre</th>
                                                     <th>Valor por Km</th>
+                                                    <th>Valor por Hora</th>
                                                     <th>Máx. kg</th>
                                                     <th>Máx. m³</th>
                                                     <th>Estado</th>
@@ -96,10 +100,17 @@
                                     <label class="form-label">Nombre</label>
                                     <input type="text" id="vkm_nombre" class="form-control" placeholder="Ej: Moto">
                                 </div>
-                                <div class="mb-3">
-                                    <label class="form-label">Valor por Km</label>
-                                    <input type="text" id="vkm_valorkm" class="form-control" placeholder="0.00">
+                                <div class="row">
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Valor por Km</label>
+                                        <input type="text" id="vkm_valorkm" class="form-control" placeholder="0.00">
+                                    </div>
+                                    <div class="col-6 mb-3">
+                                        <label class="form-label">Valor por Hora</label>
+                                        <input type="text" id="vkm_valorhora" class="form-control" placeholder="0.00">
+                                    </div>
                                 </div>
+                                <p class="text-muted small">Dejá en 0 la que no aplique para este segmento (ej. una moto puede no tener tarifa por hora cargada).</p>
                                 <div class="row">
                                     <div class="col-6 mb-3">
                                         <label class="form-label">Máx. kg (capacidad)</label>

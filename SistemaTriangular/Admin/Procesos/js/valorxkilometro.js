@@ -20,6 +20,7 @@
     $("#vkm_segmento").val(data ? data.Segmento : "");
     $("#vkm_nombre").val(data ? data.Nombre : "");
     $("#vkm_valorkm").val(data ? data.ValorKm : "");
+    $("#vkm_valorhora").val(data ? data.ValorHora : "");
     $("#vkm_maxkg").val(data ? data.MaxKg : "");
     $("#vkm_maxm3").val(data ? data.MaxM3 : "");
     $("#vkm_activo").prop("checked", data ? parseInt(data.Activo) === 1 : true);
@@ -41,6 +42,7 @@
       Segmento: $("#vkm_segmento").val(),
       Nombre: $("#vkm_nombre").val(),
       ValorKm: $("#vkm_valorkm").val(),
+      ValorHora: $("#vkm_valorhora").val(),
       MaxKg: $("#vkm_maxkg").val(),
       MaxM3: $("#vkm_maxm3").val(),
       Activo: $("#vkm_activo").is(":checked") ? 1 : 0,
@@ -124,7 +126,14 @@
           data: "ValorKm",
           render: function (data, type) {
             if (type !== "display") return data;
-            return formatearMoneda(data);
+            return parseFloat(data || 0) > 0 ? formatearMoneda(data) : "—";
+          },
+        },
+        {
+          data: "ValorHora",
+          render: function (data, type) {
+            if (type !== "display") return data;
+            return parseFloat(data || 0) > 0 ? formatearMoneda(data) : "—";
           },
         },
         {

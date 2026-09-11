@@ -14,6 +14,7 @@
   var ultimoCalculo = null;
   var montoMinimoSeguro = 0; // Variables.MontoMinimoSeguro: cobertura sin cargo incluida en la tarifa
   var cotizacionId = 0;
+  var vehiculosCache = []; // ValorxKilometro: segmentos de flota (id, nombre, valorKm, valorHora, maxKg, maxM3)
   var wpSeq = 0;
 
   function money(n) {
@@ -448,11 +449,38 @@
     return r ? r.value : "servicio";
   }
 
+  // Repuebla el <select> de vehiculo/segmento de flota segun el modo activo:
+  // en "km" solo sirven los que tienen ValorKm cargado, en "hora" los que
+  // tienen ValorHora cargado (deshabilita el resto para no dejar elegir algo
+  // que va a dar $0).
+  function refreshVehiculoOptions() {
+    var m = modo();
+    var campo = m === "hora" ? "valorHora" : "valorKm";
+    var unidad = m === "hora" ? "/h" : "/km";
+    var sel = el("cot_vehiculo");
+    var prev = sel.value;
+    sel.innerHTML = vehiculosCache
+      .map(function (v) {
+        var sinTarifa = !(v[campo] > 0);
+        return '<option value="' + v.id + '"' + (sinTarifa ? " disabled" : "") + ">" +
+          v.nombre + (sinTarifa ? " (sin tarifa por " + (m === "hora" ? "hora" : "km") + " cargada)" : " ($ " + v[campo] + unidad + ")") + "</option>";
+      })
+      .join("");
+    var sigueApto = vehiculosCache.find(function (v) { return String(v.id) === prev && v[campo] > 0; });
+    if (sigueApto) {
+      sel.value = prev;
+    } else {
+      var primerApto = vehiculosCache.find(function (v) { return v[campo] > 0; });
+      if (primerApto) sel.value = String(primerApto.id);
+    }
+  }
+
   function payloadBase() {
     var info = el("cot_ruta_info");
     return {
       modo: modo(),
       km: parseFloat(info.dataset.km || "0"),
+      horas: parseFloat(el("cot_horas").value) || 0,
       tiempo_manejo_min: parseInt(info.dataset.min || "0", 10),
       demoras_min: parseInt(el("cot_demoras_min").value, 10) || 0,
       paquetes: JSON.stringify(leerPaquetes()),
@@ -480,6 +508,10 @@
     if (!paquetes.length) {
       toast2("error", "Cotizador", "Agregá al menos un paquete: no se puede cotizar sin saber qué se envía.");
       irPaso(1);
+      return;
+    }
+    if (modo() === "hora" && (parseFloat(el("cot_horas").value) || 0) <= 0) {
+      toast2("error", "Cotizador", "Ingresá la cantidad de horas contratadas.");
       return;
     }
     var body = new URLSearchParams(Object.assign({ action: "calcular" }, payloadBase()));
@@ -522,6 +554,7 @@
     el("cot_r_titulo").textContent = el("cot_titulo").value.trim() || "Cotización";
     el("cot_r_titulo").title = el("cot_r_titulo").textContent;
     var metaBits = [res.km + " km", res.tiempo.total_txt];
+    if (res.horas) metaBits.push(res.horas + " h contratadas");
     if (res.carga) {
       metaBits.push((res.carga.kg || 0).toLocaleString("es-AR") + " kg", (res.carga.m3 || 0).toLocaleString("es-AR") + " m³");
     }
@@ -535,10 +568,13 @@
         tarifasUsadas.push(b.tarifa_nombre);
       }
     });
-    var transDetalle = (mr === "km" ? "Por km · " + res.vehiculo_nombre : "Por servicio" +
+    var transDetalle = (
+      mr === "km" ? "Por km · " + res.vehiculo_nombre :
+      mr === "hora" ? "Por hora · " + res.vehiculo_nombre + " · " + res.horas + " h" :
+      "Por servicio" +
       (tarifasUsadas.length === 1 ? " · " + tarifasUsadas[0]
-        : tarifasUsadas.length > 1 ? " · " + tarifasUsadas.length + " tarifas" : "")) +
-      (res.modo === "auto" ? " · automático" : "");
+        : tarifasUsadas.length > 1 ? " · " + tarifasUsadas.length + " tarifas" : "")
+    ) + (res.modo === "auto" ? " · automático" : "");
 
     // comparativa (solo en modo automatico)
     if (res.modo === "auto" && res.comparativa && res.comparativa.length) {
@@ -641,6 +677,7 @@
       idVehiculo: ultimoCalculo.elegida_id_vehiculo || parseInt(el("cot_vehiculo").value || "0", 10),
       vehiculoNombre: ultimoCalculo.vehiculo_nombre || "",
       km: ultimoCalculo.km,
+      horas: ultimoCalculo.horas || 0,
       valorDeclarado: parseFloat(el("cot_valordeclarado").value) || 0,
       llevaSeguro: el("cot_lleva_seguro").checked,
       llevaCobranza: el("cot_lleva_cobranza").checked,
@@ -761,10 +798,15 @@
 
         // modo + vehiculo
         var esKm = c.Modo === "km";
+        var esHora = c.Modo === "hora";
         el("cot_modo_km").checked = esKm;
-        el("cot_modo_serv").checked = !esKm;
-        el("cot_veh_wrap").classList.toggle("d-none", !esKm);
-        if (esKm && c.idValorxKilometro) setVal("cot_vehiculo", c.idValorxKilometro);
+        el("cot_modo_hora").checked = esHora;
+        el("cot_modo_serv").checked = !esKm && !esHora;
+        el("cot_veh_wrap").classList.toggle("d-none", !esKm && !esHora);
+        el("cot_horas_wrap").classList.toggle("d-none", !esHora);
+        setVal("cot_horas", c.HorasTotales || 1);
+        if ((esKm || esHora) && c.idValorxKilometro) setVal("cot_vehiculo", c.idValorxKilometro);
+        refreshVehiculoOptions();
 
         // adicionales
         el("cot_lleva_seguro").checked = Number(c.LlevaSeguro) === 1;
@@ -976,17 +1018,8 @@
       .then(function (r) { return r.json(); })
       .then(function (o) {
         if (o && o.ok) {
-          // los vehiculos sin Valor x Km cargado (0) no se pueden usar en "Por km":
-          // se muestran deshabilitados para no dejar elegir algo que va a dar $0.
-          el("cot_vehiculo").innerHTML = o.vehiculos
-            .map(function (v) {
-              var sinTarifa = !(v.valorKm > 0);
-              return '<option value="' + v.id + '"' + (sinTarifa ? " disabled" : "") + ">" +
-                v.nombre + (sinTarifa ? " (sin tarifa cargada)" : " ($ " + v.valorKm + "/km)") + "</option>";
-            })
-            .join("");
-          var primerApto = o.vehiculos.find(function (v) { return v.valorKm > 0; });
-          if (primerApto) el("cot_vehiculo").value = String(primerApto.id);
+          vehiculosCache = o.vehiculos || [];
+          refreshVehiculoOptions();
           montoMinimoSeguro = Number(o.monto_minimo_seguro || 0);
           if (el("cot_seguro_hint")) {
             el("cot_seguro_hint").textContent = montoMinimoSeguro > 0
@@ -1033,7 +1066,10 @@
 
     document.querySelectorAll('input[name="cot_modo"]').forEach(function (r) {
       r.addEventListener("change", function () {
-        el("cot_veh_wrap").classList.toggle("d-none", modo() !== "km");
+        var m = modo();
+        el("cot_veh_wrap").classList.toggle("d-none", m !== "km" && m !== "hora");
+        el("cot_horas_wrap").classList.toggle("d-none", m !== "hora");
+        refreshVehiculoOptions();
       });
     });
 

@@ -106,7 +106,9 @@ function construirCotizacionEnvioPDF(mysqli $db, array $r): CotizacionEnvioPDF
     }
     $pdf->dfn('Modo de cálculo', $r['Modo'] === 'km'
         ? 'Por km - ' . ($r['VehiculoNombre'] ?: 'vehículo')
-        : 'Por servicio - ' . ($tarifasUsadas ? implode(', ', $tarifasUsadas) : 'tarifa por bulto'));
+        : ($r['Modo'] === 'hora'
+            ? 'Por hora - ' . ($r['VehiculoNombre'] ?: 'vehículo') . ' (' . number_format((float) $r['HorasTotales'], 1, ',', '.') . ' h)'
+            : 'Por servicio - ' . ($tarifasUsadas ? implode(', ', $tarifasUsadas) : 'tarifa por bulto')));
 
     // ---- 2. Paquetes
     $pdf->sec(2, 'Paquetes');
@@ -148,7 +150,9 @@ function construirCotizacionEnvioPDF(mysqli $db, array $r): CotizacionEnvioPDF
 
     $modoDetalle = $r['Modo'] === 'km'
         ? 'Por km · ' . ($r['VehiculoNombre'] ?: 'vehículo')
-        : 'Por servicio' . ($tarifasUsadas ? ' · ' . implode(', ', $tarifasUsadas) : '');
+        : ($r['Modo'] === 'hora'
+            ? 'Por hora · ' . ($r['VehiculoNombre'] ?: 'vehículo') . ' · ' . number_format((float) $r['HorasTotales'], 1, ',', '.') . ' h'
+            : 'Por servicio' . ($tarifasUsadas ? ' · ' . implode(', ', $tarifasUsadas) : ''));
     $pdf->filaPrecio('Transporte', ceMoneda((float) ($desg['precio_transporte'] ?? $r['PrecioTransporte'])), $modoDetalle);
 
     if ((float) ($r['SeguroMonto'] ?? 0) > 0) {

@@ -15,7 +15,11 @@ declare(strict_types=1);
 //   'servicio': por bulto, tarifa de Productos (Grupo='Web') segun dimensiones
 //               (volumen en cm3) + km totales; convencion multi-bulto
 //               (1er bulto 100%, 2do 0%, 3ro+ 50%).
-//   'km':       ValorxKilometro.ValorKm x km totales.
+//   'km':       ValorxKilometro.ValorKm x km totales. Solo si el envio sale
+//               de Cordoba capital.
+//   'hora':     ValorxKilometro.ValorHora x horas contratadas (flota propia
+//               por tiempo, ej. mudanzas/reparto local); sin restriccion de
+//               Cordoba, aplica en cualquier lado.
 //
 // IVA: los PrecioVenta de Productos Grupo='Web' son FINALES (IVA 21% incluido)
 //      -> el total es "IVA incluido" y el neto sale de total/1.21.
@@ -134,14 +138,15 @@ $action = (string) ($_POST['action'] ?? $_GET['action'] ?? '');
 // ---------------------------------------------------------------------------
 if ($action === 'opciones') {
     $veh = [];
-    $res = $mysqli->query("SELECT id, Segmento, Nombre, ValorKm, MaxKg, MaxM3 FROM ValorxKilometro WHERE Activo = 1 ORDER BY Segmento ASC");
+    $res = $mysqli->query("SELECT id, Segmento, Nombre, ValorKm, ValorHora, MaxKg, MaxM3 FROM ValorxKilometro WHERE Activo = 1 ORDER BY Segmento ASC");
     while ($res && $row = $res->fetch_assoc()) {
         $veh[] = [
-            'id'      => (int) $row['id'],
-            'nombre'  => (string) $row['Nombre'],
-            'valorKm' => (float) $row['ValorKm'],
-            'maxKg'   => (float) $row['MaxKg'],
-            'maxM3'   => (float) $row['MaxM3'],
+            'id'        => (int) $row['id'],
+            'nombre'    => (string) $row['Nombre'],
+            'valorKm'   => (float) $row['ValorKm'],
+            'valorHora' => (float) $row['ValorHora'],
+            'maxKg'     => (float) $row['MaxKg'],
+            'maxM3'     => (float) $row['MaxM3'],
         ];
     }
     jout([
@@ -159,8 +164,9 @@ if ($action === 'opciones') {
 // ---------------------------------------------------------------------------
 if ($action === 'calcular') {
     $modoIn = (string) ($_POST['modo'] ?? 'auto');
-    $modo   = in_array($modoIn, ['km', 'servicio', 'auto'], true) ? $modoIn : 'auto';
+    $modo   = in_array($modoIn, ['km', 'servicio', 'hora', 'auto'], true) ? $modoIn : 'auto';
     $km              = max(0.0, (float) ($_POST['km'] ?? 0));
+    $horas           = max(0.0, (float) ($_POST['horas'] ?? 0));
     $tiempoManejoMin = max(0, (int) ($_POST['tiempo_manejo_min'] ?? 0));
     $demorasMin      = max(0, (int) ($_POST['demoras_min'] ?? 0));
     $paquetes        = json_decode((string) ($_POST['paquetes'] ?? '[]'), true);
@@ -280,8 +286,10 @@ if ($action === 'calcular') {
         return '';
     };
 
+    // Todos los segmentos activos (no filtra por ValorKm ni ValorHora aca: un
+    // segmento puede tener cargada solo una de las dos tarifas).
     $vehActivos = [];
-    $vr = $mysqli->query("SELECT id, Nombre, ValorKm, MaxKg, MaxM3 FROM ValorxKilometro WHERE Activo = 1 AND ValorKm > 0 ORDER BY ValorKm ASC");
+    $vr = $mysqli->query("SELECT id, Nombre, ValorKm, ValorHora, MaxKg, MaxM3 FROM ValorxKilometro WHERE Activo = 1 ORDER BY Segmento ASC");
     while ($vr && $row = $vr->fetch_assoc()) {
         $vehActivos[] = $row;
     }
@@ -298,7 +306,7 @@ if ($action === 'calcular') {
             }
         }
         if (!$seg && $idVehiculo > 0) {
-            $st = $mysqli->prepare("SELECT id, Nombre, ValorKm, MaxKg, MaxM3 FROM ValorxKilometro WHERE id = ? AND Activo = 1 LIMIT 1");
+            $st = $mysqli->prepare("SELECT id, Nombre, ValorKm, ValorHora, MaxKg, MaxM3 FROM ValorxKilometro WHERE id = ? AND Activo = 1 LIMIT 1");
             $st->bind_param('i', $idVehiculo);
             $st->execute();
             $seg = $st->get_result()->fetch_assoc();
@@ -317,15 +325,50 @@ if ($action === 'calcular') {
         $vehiculoNombre = (string) $seg['Nombre'];
         $precioTransporte = round((float) $seg['ValorKm'] * $km, 2);
         $bultosDetalle = $bultosInfo();
+    } elseif ($modo === 'hora') {
+        if ($horas <= 0) {
+            jout(['ok' => false, 'error' => 'Ingresá la cantidad de horas contratadas.']);
+        }
+        $seg = null;
+        foreach ($vehActivos as $v) {
+            if ((int) $v['id'] === $idVehiculo) {
+                $seg = $v;
+            }
+        }
+        if (!$seg && $idVehiculo > 0) {
+            $st = $mysqli->prepare("SELECT id, Nombre, ValorKm, ValorHora, MaxKg, MaxM3 FROM ValorxKilometro WHERE id = ? AND Activo = 1 LIMIT 1");
+            $st->bind_param('i', $idVehiculo);
+            $st->execute();
+            $seg = $st->get_result()->fetch_assoc();
+            $st->close();
+        }
+        if (!$seg) {
+            jout(['ok' => false, 'error' => 'Elegi un vehiculo de la flota.']);
+        }
+        $motivo = $noApto($seg);
+        if ($motivo !== '') {
+            jout(['ok' => false, 'error' => 'El vehiculo "' . $seg['Nombre'] . '" ' . $motivo . '.']);
+        }
+        if ((float) ($seg['ValorHora'] ?? 0) <= 0) {
+            jout(['ok' => false, 'error' => 'El vehiculo "' . $seg['Nombre'] . '" no tiene cargado el valor por hora.']);
+        }
+        $vehiculoNombre = (string) $seg['Nombre'];
+        $precioTransporte = round((float) $seg['ValorHora'] * $horas, 2);
+        $bultosDetalle = $bultosInfo();
     } elseif ($modo === 'servicio') {
         [$precioTransporte, $bultosDetalle] = $calcServicio();
     } else {
-        // AUTOMATICO: "por servicio" vs. cada vehiculo APTO, elige el mas barato
-        // (el vehiculo/km solo compite si el envio sale de Cordoba capital).
+        // AUTOMATICO: "por servicio" vs. cada vehiculo APTO por km, elige el mas
+        // barato (el vehiculo/km solo compite si el envio sale de Cordoba
+        // capital). "Por hora" no entra en la comparacion automatica: requiere
+        // que el usuario elija explicitamente cuantas horas contratar.
         [$pServ, $bultosServ] = $calcServicio();
         $comparativa[] = ['modo' => 'servicio', 'label' => 'Por servicio', 'id_vehiculo' => 0, 'nombre' => '', 'transporte' => $pServ, 'apto' => true, 'motivo' => ''];
         if ($fueraCordoba) {
             foreach ($vehActivos as $v) {
+                if ((float) $v['ValorKm'] <= 0) {
+                    continue; // sin tarifa por km cargada: no compite en "por km"
+                }
                 $motivo = $noApto($v);
                 $comparativa[] = [
                     'modo' => 'km', 'label' => (string) $v['Nombre'], 'id_vehiculo' => (int) $v['id'],
@@ -395,6 +438,7 @@ if ($action === 'calcular') {
         'elegida_id_vehiculo' => (int) ($comparativa[0]['id_vehiculo'] ?? $idVehiculo),
         'comparativa' => $comparativa,
         'km' => round($km, 2),
+        'horas' => round($horas, 2),
         'vehiculo_nombre' => $vehiculoNombre,
         'bultos' => array_map(static function ($b) {
             return [
@@ -463,7 +507,7 @@ if ($action === 'guardar') {
         'Titulo'            => ['s', mb_substr(trim((string) ($p['titulo'] ?? '')), 0, 140)],
         'idCliente'         => ['i', ($p['idCliente'] ?? 0) ? (int) $p['idCliente'] : null],
         'RazonSocial'       => ['s', (string) ($p['razonSocial'] ?? '')],
-        'Modo'              => ['s', ($p['modo'] ?? 'servicio') === 'km' ? 'km' : 'servicio'],
+        'Modo'              => ['s', in_array(($p['modo'] ?? 'servicio'), ['km', 'hora'], true) ? $p['modo'] : 'servicio'],
         'idValorxKilometro' => ['i', ($p['idVehiculo'] ?? 0) ? (int) $p['idVehiculo'] : null],
         'VehiculoNombre'    => ['s', (string) ($p['vehiculoNombre'] ?? '')],
         'OrigenTexto'       => ['s', (string) ($r['origenTexto'] ?? '')],
@@ -476,6 +520,7 @@ if ($action === 'guardar') {
         'DestinoLng'        => ['d', isset($r['destinoLng']) ? (float) $r['destinoLng'] : null],
         'WaypointsJSON'     => ['s', json_encode($r['waypoints'] ?? [], JSON_UNESCAPED_UNICODE)],
         'KmTotales'         => ['d', (float) ($p['km'] ?? 0)],
+        'HorasTotales'      => ['d', (float) ($p['horas'] ?? 0)],
         'TiempoManejoMin'   => ['i', (int) ($t['manejo_min'] ?? 0)],
         'DemorasMin'        => ['i', (int) ($t['demoras_min'] ?? 0)],
         'TiempoTotalMin'    => ['i', (int) ($t['total_min'] ?? 0)],
