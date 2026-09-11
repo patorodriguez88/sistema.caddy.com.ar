@@ -1807,6 +1807,43 @@
                 </div><!-- /.modal -->
                 <!--         END MODAL AJUSTAR UBICACION EN EL MAPA -->
 
+                <!-- MODAL ENVIAR INFORME MENSUAL POR MAIL -->
+                <div id="modal_informe_mail" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header modal-colored-header bg-danger">
+                                <h4 class="modal-title text-white">Enviar informe mensual</h4>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="text-muted mb-2">
+                                    Período: <strong id="informe_mail_periodo"></strong>.
+                                    Marcá contactos y/o agregá mails a mano.
+                                </p>
+                                <div id="informe_mail_lista" style="max-height:230px; overflow:auto"></div>
+
+                                <label class="form-label text-muted mt-3 mb-1" style="font-size:11px">Agregar mails</label>
+                                <div id="informe_mail_chips_box" class="form-control d-flex flex-wrap align-items-center gap-1"
+                                     style="min-height:38px; cursor:text">
+                                    <span id="informe_mail_chips" class="d-flex flex-wrap gap-1"></span>
+                                    <input type="text" id="informe_mail_input" class="border-0 flex-grow-1"
+                                           style="outline:none; min-width:140px; font-size:13px"
+                                           placeholder="escribí un mail y Enter">
+                                </div>
+
+                                <div id="informe_mail_estado" class="mt-2" style="font-size:13px"></div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                <button id="btn_informe_mail_enviar" type="button" class="btn btn-danger">
+                                    <i class="mdi mdi-send me-1"></i>Enviar
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- END MODAL ENVIAR INFORME MENSUAL -->
+
                 <!-- Standard modal -->
                 <!--                      <div class="modal fade" id="bs-example-modal-sm" tabindex="-1" role="dialog" aria-labelledby="mySmallModalLabel" aria-hidden="true">
                         <div class="modal-dialog modal-sm">
@@ -3305,25 +3342,65 @@ En la siguiente tabla figuran los clientes relacionados con el cliente principal
                                                 <div class="col-sm-12 mb-3">
                                                     <span id="admin_envios" class="badge badge-outline-primary" style="font-size:8px"></span>
                                                 </div>
-                                                <div class="card">
-                                                    <div class="card-body">
-                                                        <h4 class="header-title mb-4">Ventas Mensuales</h4>
-                                                        <div id="chart" class="apex-charts" data-colors="#fa5c7c"></div>
-                                                    </div>
-                                                </div>
-                                                <div class="card">
-                                                    <div class="card-body">
-                                                        <h4 class="header-title mb-4">PAQUETES ENVIADOS X MES</h4>
-                                                        <div id="chart_envios" class="apex-charts" data-colors="#6c757d"></div>
+
+                                                <div class="card border">
+                                                    <div class="card-body py-2">
+                                                        <div class="d-flex flex-wrap align-items-end gap-2">
+                                                            <div>
+                                                                <label class="form-label mb-1 text-muted" style="font-size:11px">Mes</label>
+                                                                <select id="informe_mes" class="form-select form-select-sm"></select>
+                                                            </div>
+                                                            <div>
+                                                                <label class="form-label mb-1 text-muted" style="font-size:11px">Año</label>
+                                                                <select id="informe_anio" class="form-select form-select-sm"></select>
+                                                            </div>
+                                                            <button type="button" id="btn_informe_pdf" class="btn btn-sm btn-danger">
+                                                                <i class="mdi mdi-file-pdf-box"></i> Ver informe PDF
+                                                            </button>
+                                                            <button type="button" id="btn_informe_mail" class="btn btn-sm btn-outline-danger">
+                                                                <i class="mdi mdi-email-outline"></i> Enviar por mail
+                                                            </button>
+                                                            <span class="text-muted" style="font-size:11px">Informe mensual de envíos para el cliente.</span>
+                                                        </div>
                                                     </div>
                                                 </div>
 
-                                                <div class="card">
+                                                <div class="card border" id="ir_card">
                                                     <div class="card-body">
-                                                        <h4 class="header-title mb-4">PAQUETES ENVIADOS X DIA MES ACTUAL</h4>
-                                                        <div id="chart_envios_1" class="apex-charts" data-colors="#6c757d"></div>
+                                                        <div class="d-flex justify-content-between align-items-center mb-2">
+                                                            <h4 class="header-title mb-0">Resumen del mes <span id="ir_periodo" class="text-muted"></span></h4>
+                                                            <span id="ir_estado" class="text-muted" style="font-size:12px"></span>
+                                                        </div>
+                                                        <div id="ir_kpis" class="row text-center g-2 mb-2"></div>
+                                                        <div class="row">
+                                                            <div class="col-md-4">
+                                                                <h6 class="text-muted text-uppercase" style="font-size:10px">Estado de entregas</h6>
+                                                                <div id="ir_estado_chart"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <h6 class="text-muted text-uppercase" style="font-size:10px">Flex vs Simple</h6>
+                                                                <div id="ir_modalidad_chart"></div>
+                                                            </div>
+                                                            <div class="col-md-4">
+                                                                <h6 class="text-muted text-uppercase" style="font-size:10px">Capital vs Interior</h6>
+                                                                <div id="ir_destino_chart"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div class="row mt-1">
+                                                            <div class="col-md-7">
+                                                                <h6 class="text-muted text-uppercase" style="font-size:10px">Envíos por día de la semana</h6>
+                                                                <div id="ir_dow_chart"></div>
+                                                            </div>
+                                                            <div class="col-md-5">
+                                                                <h6 class="text-muted text-uppercase" style="font-size:10px">Top localidades</h6>
+                                                                <div id="ir_toploc" style="font-size:12px"></div>
+                                                            </div>
+                                                        </div>
+                                                        <div id="ir_extra" class="text-muted mt-1" style="font-size:11px"></div>
+                                                        <div id="ir_recep" class="mt-2"></div>
                                                     </div>
                                                 </div>
+
                                             </div>
                                         </div>
                                     </div>
@@ -3387,6 +3464,7 @@ En la siguiente tabla figuran los clientes relacionados con el cliente principal
     <script src="Procesos/js/abmventas.js"></script>
     <script src="Procesos/js/recorridos.js"></script>
     <script src="Procesos/js/clientes.js"></script>
+    <script src="Procesos/js/informe_mensual.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/informe_mensual.js'); ?>"></script>
 
     <!-- end demo js-->
     <script src="Procesos/js/select2_clientes.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/select2_clientes.js'); ?>"></script>
