@@ -251,6 +251,13 @@ if (isset($_POST['CargarVenta'])) {
         //obtengo el id de transclientes
         $idTransClientes = $mysqli->insert_id;
 
+        // El padre (este mismo registro, retiro -> Wepoint) tambien tiene que
+        // quedar linkeado a la Colecta: el INSERT de arriba no seteaba
+        // idColecta, y el UPDATE de abajo solo alcanza a los hijos (Flex=1),
+        // nunca al padre -> la app de reparto quedaba sin poder abrir/cerrar
+        // la colecta (FALTA_COLECTAID_O_PADREID) porque idColecta quedaba NULL.
+        $mysqli->query("UPDATE TransClientes SET idColecta = {$id_colecta} WHERE id = {$idTransClientes}");
+
         $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
         WHERE Flex = 1
         AND idClienteOrigen = {$id_origen}
