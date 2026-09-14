@@ -1,4 +1,7 @@
 <?php
+// DEBUG TEMPORAL - sacar apenas se identifique el 500 en producción.
+error_reporting(E_ALL);
+ini_set('display_errors', '1');
 // FIX (a pedido): esto era una página HTML completa con su propia
 // DataTable (tema viejo "saas"), nunca conectada a ningún JS que la
 // llenara de datos (cobranza_integrada_invoice.js no se cargaba acá) -
@@ -15,7 +18,11 @@ if (!$numero) {
     exit('Falta el número de liquidación (id).');
 }
 
-$dirTemp = __DIR__ . '/../archivos_tmp';
+// Se usa el archivos_tmp COMPARTIDO de la raíz de SistemaTriangular (mismo
+// que ya usa factura_pdf.php para sus QR de AFIP) en vez de crear una
+// carpeta nueva bajo Admin/ - ya existe y tiene los permisos correctos en
+// el servidor, sin depender de que mkdir() funcione ahí.
+$dirTemp = __DIR__ . '/../../archivos_tmp';
 if (!is_dir($dirTemp)) {
     mkdir($dirTemp, 0755, true);
 }

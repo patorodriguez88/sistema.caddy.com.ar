@@ -1,6 +1,10 @@
 <?php
 require_once __DIR__ . '/../../fpdf/fpdf.php';
-require_once __DIR__ . '/../../Conexion/Conexioni.php';
+// Sin require de Conexioni.php a propósito: este archivo no abre su propia
+// conexión ni sesión, recibe $mysqli ya armado por quien lo llame
+// (invoice_cobranza_integrada.php). Requerirlo acá también corría el
+// riesgo de ejecutar Conexioni.php (session_start, etc.) una segunda vez
+// si alguna vez se invoca desde un contexto que ya lo cargó de otra forma.
 
 // Mismo formato de informe que factura_pdf.php (Clientes/Informes) - la
 // liquidación de Cobranza Integrada vivía como una página HTML aparte
