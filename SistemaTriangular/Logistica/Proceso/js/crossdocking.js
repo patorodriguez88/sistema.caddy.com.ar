@@ -159,7 +159,29 @@
             "^FO200,123^A0N,18,18^FDFecha: " + fechaTexto + "^FS" +
             "^FO200,148^A0N,30,30^FDRec: " + (data.recorrido || "-") + "^FS" +
             "^FO200,185^A0N,26,26^FDPos: " + (data.posicion || "-") + "^FS" +
-            "^FO30,74^BQN,2,7^FDQA," + data.codigoEtiqueta + "^FS" +
+            // FIX (2026-09-14): mismo ajuste que el rótulo de seguimiento.js -
+            // magnificación 7->8 (QR más grande), reportaron que la cámara de
+            // Warehouse no leía bien las etiquetas propias impresas a 203dpi.
+            "^FO30,74^BQN,2,8^FDQA," + data.codigoEtiqueta + "^FS" +
+            "^XZ"
+        );
+    }
+
+    // Rótulo de PALLET (distinto del rótulo de bulto de arriba): solo el
+    // número de recorrido, lo más grande posible, para pegar en el pallet/
+    // carro físico donde el operador va apilando los bultos de ese
+    // recorrido — así lo identifican de lejos sin tener que leer una
+    // etiqueta de bulto. Mismo tamaño físico que el resto de los rótulos
+    // de esta pantalla: 6x2,5cm @203dpi = 480x200pt.
+    function construirZplPallet(numeroRecorrido) {
+        var texto = zplLimpio(String(numeroRecorrido || "-"));
+        // Fuente escalable centrada con ^FB: baja el tamaño para números de
+        // 3+ dígitos para que siga entrando ancho en el rótulo.
+        var fontSize = texto.length <= 2 ? 190 : (texto.length === 3 ? 150 : 110);
+        var y = Math.max(0, Math.round((200 - fontSize) / 2));
+        return (
+            "^XA^PW480^LL200^CI28" +
+            "^FO0," + y + "^FB480,1,0,C,0^A0N," + fontSize + "," + fontSize + "^FD" + texto + "^FS" +
             "^XZ"
         );
     }
@@ -182,17 +204,19 @@
     // ahora un fallo de impresión dispara UN reintento automático: pide un
     // device fresco con getDefaultDevice() y reintenta el mismo rótulo una
     // sola vez antes de darse por vencido.
-    // forzado=true: pedido MANUAL de reimpresión (botón "Reimprimir Rótulo"
-    // en un reingreso) — imprime aunque el switch de auto-impresión esté
-    // apagado, porque acá el operador lo está pidiendo a propósito, no es
-    // un escaneo automático.
-    function imprimirRotulo(data, reintentando, forzado) {
-        if (!imprimirActivo() && !forzado) return;
-
+    //
+    // Envío genérico de un ZPL ya armado, con el mismo reintento automático
+    // (arranque en frío de BrowserPrint) que se probó en vivo para el
+    // rótulo de bulto: si falla el envío, pide un device fresco y reintenta
+    // una sola vez antes de darse por vencido. Se separó de imprimirRotulo
+    // para poder reusarlo también en el rótulo de pallet (botón en la
+    // tarjeta de cada recorrido), sin duplicar la lógica de reintento.
+    function enviarZPL(zpl, reintentando, onOk, onErr) {
         function enviarConDispositivo(device) {
             try {
-                device.send(construirZplCrossdocking(data), function () {
+                device.send(zpl, function () {
                     setEstadoPrinter("ok", "Impresora: " + device.name);
+                    if (onOk) onOk();
                 }, function (err) {
                     console.error("Error imprimiendo:", err);
                     if (!reintentando) {
@@ -203,20 +227,23 @@
                                 "printer",
                                 function (dev) {
                                     selected_device = dev;
-                                    imprimirRotulo(data, true, forzado);
+                                    enviarZPL(zpl, true, onOk, onErr);
                                 },
                                 function () {
                                     setEstadoPrinter("error", "Impresora: no se pudo imprimir (reintenté y no conectó)");
+                                    if (onErr) onErr();
                                 }
                             );
                         }, 800);
                         return;
                     }
                     setEstadoPrinter("error", "Impresora: no se pudo imprimir");
+                    if (onErr) onErr();
                 });
             } catch (e) {
                 console.error("Excepción imprimiendo:", e);
                 setEstadoPrinter("error", "Impresora: error al imprimir");
+                if (onErr) onErr();
             }
         }
 
@@ -226,18 +253,37 @@
                     "printer",
                     function (dev) {
                         selected_device = dev;
-                        imprimirRotulo(data, true, forzado);
+                        enviarZPL(zpl, true, onOk, onErr);
                     },
                     function () {
                         setEstadoPrinter("error", "Impresora: no conectada (no se imprimió)");
+                        if (onErr) onErr();
                     }
                 );
                 return;
             }
             setEstadoPrinter("error", "Impresora: no conectada (no se imprimió)");
+            if (onErr) onErr();
             return;
         }
         enviarConDispositivo(selected_device);
+    }
+
+    // forzado=true: pedido MANUAL de reimpresión (botón "Reimprimir Rótulo"
+    // en un reingreso) — imprime aunque el switch de auto-impresión esté
+    // apagado, porque acá el operador lo está pidiendo a propósito, no es
+    // un escaneo automático.
+    function imprimirRotulo(data, reintentando, forzado) {
+        if (!imprimirActivo() && !forzado) return;
+        enviarZPL(construirZplCrossdocking(data), reintentando);
+    }
+
+    // Rótulo de PALLET (botón chico en la tarjeta de cada recorrido): pedido
+    // manual del operador, siempre imprime — a propósito ignora el switch
+    // de auto-impresión igual que "Reimprimir Rótulo", porque acá siempre
+    // es un pedido explícito, nunca un efecto secundario de un escaneo.
+    function imprimirRotuloPallet(numeroRecorrido, onOk, onErr) {
+        enviarZPL(construirZplPallet(numeroRecorrido), false, onOk, onErr);
     }
 
     function refocus() {
@@ -467,12 +513,29 @@
                 '<div class="cd-rec-card-num" style="color:' + colorHex + ';"></div>' +
                 '<div class="cd-rec-card-nombre"></div>' +
                 '<div class="cd-rec-card-cant"><span class="v-cant"></span><span class="cd-rec-card-de">de</span><span class="v-esp"></span>' + check + '</div>' +
-                '<div class="cd-rec-card-label">Paquetes hoy</div>'
+                '<div class="cd-rec-card-label">Paquetes hoy</div>' +
+                '<button type="button" class="cd-rec-card-print" title="Imprimir rótulo de pallet (N.º de recorrido bien grande)">🖨️</button>'
             );
             $card.find(".cd-rec-card-num").text("Recorrido " + (r.numero || "-"));
             $card.find(".cd-rec-card-nombre").text(r.nombre || "");
             $card.find(".v-cant").text(r.cantidad);
             $card.find(".v-esp").text(esperados);
+
+            // Rótulo de pallet: solo el número de recorrido, bien grande,
+            // para pegar en el pallet/carro físico donde se van apilando
+            // los bultos — así el operador lo identifica de lejos. Pedido
+            // manual y puntual, no tiene nada que ver con el escaneo.
+            $card.find(".cd-rec-card-print").on("click", function (e) {
+                e.stopPropagation();
+                var $btn = $(this).addClass("imprimiendo");
+                imprimirRotuloPallet(
+                    r.numero,
+                    function () { $btn.removeClass("imprimiendo"); },
+                    function () { $btn.removeClass("imprimiendo"); }
+                );
+                setTimeout(function () { $btn.removeClass("imprimiendo"); }, 3000);
+            });
+
             $recGrid.append($card);
         });
     }

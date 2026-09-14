@@ -426,7 +426,13 @@ function _rotuloZPL(x, i, total) {
     "^FO200,123^A0N,18,18^FDFecha: " + x.fecha + "^FS" +
     "^FO200,148^A0N,30,30^FDRec: " + (x.recorrido || "-") + "^FS" +
     "^FO200,185^A0N,26,26^FDPos: " + (x.posicion || "-") + "^FS" +
-    "^FO30,74^BQN,2,7^FDQA," + csEtiqueta + "^FS" +
+    // FIX (2026-09-14, a pedido): en depósito reportaron que la cámara de
+    // Warehouse no lee estas etiquetas (sí lee las de otros orígenes/MELI) -
+    // apunta a que el QR queda chico para una impresora térmica a 203dpi.
+    // Subo la magnificación de 7 a 8 (todavía entra: a mag.8 el QR mide
+    // ~168 dots de ancho arrancando en X=30, el texto arranca en X=200 -
+    // queda margen). No es un rediseño, solo un QR más grande.
+    "^FO30,74^BQN,2,8^FDQA," + csEtiqueta + "^FS" +
     "^XZ"
   );
 }

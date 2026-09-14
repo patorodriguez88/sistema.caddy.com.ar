@@ -257,7 +257,10 @@ function _rotuloZPL(x) {
     "^FO200,123^A0N,18,18^FDFecha: " + x.fecha + "^FS" +
     "^FO200,148^A0N,30,30^FDRec: " + (x.recorrido || "-") + "^FS" +
     "^FO200,185^A0N,26,26^FDPos: " + (x.posicion || "-") + "^FS" +
-    "^FO30,74^BQN,2,7^FDQA," + x.cs + "^FS" +
+    // FIX (2026-09-14): mismo ajuste que Funciones/js/seguimiento.js - QR
+    // más grande (magnificación 7->8), reportaron que la cámara de
+    // Warehouse no leía bien estas etiquetas impresas a 203dpi.
+    "^FO30,74^BQN,2,8^FDQA," + x.cs + "^FS" +
     "^XZ"
   );
 }
