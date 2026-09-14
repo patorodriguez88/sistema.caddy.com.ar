@@ -176,8 +176,13 @@
     function construirZplPallet(numeroRecorrido) {
         var texto = zplLimpio(String(numeroRecorrido || "-"));
         // Fuente escalable centrada con ^FB: baja el tamaño para números de
-        // 3+ dígitos para que siga entrando ancho en el rótulo.
-        var fontSize = texto.length <= 2 ? 190 : (texto.length === 3 ? 150 : 110);
+        // más dígitos para que siga entrando ancho en el rótulo (480 dots).
+        // FIX (a pedido): "más grande" — la mayoría de los recorridos reales
+        // son de 4 dígitos y antes quedaban chicos (110) contra los 200 de
+        // alto disponibles. Recalculado con más margen todavía sobrado en
+        // ancho (4 dígitos a 170 ocupa ~408 de 480, deja aire de sobra).
+        var len = texto.length;
+        var fontSize = len <= 2 ? 198 : (len === 3 ? 180 : (len === 4 ? 170 : 135));
         var y = Math.max(0, Math.round((200 - fontSize) / 2));
         return (
             "^XA^PW480^LL200^CI28" +
