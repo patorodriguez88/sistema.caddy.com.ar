@@ -265,11 +265,48 @@ include_once "../Conexion/Conexioni.php";
         }
 
         .cd-rec-card {
+            position: relative;
             border-radius: 14px;
             background: #1a1d23;
             border-top: 10px solid #495057;
             padding: 16px 18px;
             transition: transform .15s ease;
+        }
+
+        /* Botón de rótulo de pallet: abajo a la derecha de la tarjeta, a
+           propósito chico y discreto — es un extra para identificar el
+           pallet físico, no compite con los números grandes que importan. */
+        .cd-rec-card .cd-rec-card-print {
+            position: absolute;
+            right: 14px;
+            bottom: 14px;
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            border: none;
+            background: #2b2f38;
+            color: #fff;
+            font-size: 18px;
+            line-height: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            opacity: .8;
+        }
+
+        .cd-rec-card .cd-rec-card-print:hover {
+            opacity: 1;
+            background: #3a3f4a;
+        }
+
+        .cd-rec-card .cd-rec-card-print:active {
+            transform: scale(.92);
+        }
+
+        .cd-rec-card .cd-rec-card-print.imprimiendo {
+            opacity: .5;
+            pointer-events: none;
         }
 
         .cd-rec-card.cd-rec-card-nuevo {
