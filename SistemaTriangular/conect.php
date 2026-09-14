@@ -91,8 +91,13 @@ if (isset($_SESSION['seluser'])) {
 // Valida si 'user' y 'password' están en POST antes de acceder a ellos
 if (isset($_POST['user']) && isset($_POST['password'])) {
 
-    $user = $mysqli->real_escape_string($_POST['user']);
-    $passwordIngresada = $_POST['password'];
+    // FIX: sin trim(), un espacio de más al copiar/pegar la contraseña del
+    // mail de acceso (clásico: seleccionar de más en el mail) rompe
+    // password_verify() en silencio - el usuario ve "usuario o contraseña
+    // incorrecto" sin ninguna pista de que el problema es un espacio invisible.
+    // Confirmado con un caso real (Diego Ibañez, "cba4824755 " vs "cba4824755").
+    $user = $mysqli->real_escape_string(trim($_POST['user']));
+    $passwordIngresada = trim($_POST['password']);
 
     // La comparación de contraseña se hace en PHP (no en el WHERE) porque las cuentas
     // migradas a password_hash no se pueden comparar directo en SQL.
