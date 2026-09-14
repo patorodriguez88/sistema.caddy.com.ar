@@ -38,13 +38,20 @@
 })();
 
 // funcion para los botones de datatable
-$.extend(true, $.fn.dataTable.Buttons.defaults, {
-  dom: {
-    button: {
-      className: "btn btn-sm btn-secondary me-1 mt-2",
+// FIX: esto asumía que DataTables+Buttons ya estaba cargado en CUALQUIER
+// página que incluya este archivo — pero no todas usan tablas (ej.
+// Logistica/CrossDocking.php). Sin la guarda, tiraba "Cannot read
+// properties of undefined" acá y cortaba el resto del script en esas
+// páginas.
+if ($.fn.dataTable && $.fn.dataTable.Buttons) {
+  $.extend(true, $.fn.dataTable.Buttons.defaults, {
+    dom: {
+      button: {
+        className: "btn btn-sm btn-secondary me-1 mt-2",
+      },
     },
-  },
-});
+  });
+}
 
 $(document).ready(function () {
   // El header y el topnav ahora se renderizan server-side (PHP include) en cada
