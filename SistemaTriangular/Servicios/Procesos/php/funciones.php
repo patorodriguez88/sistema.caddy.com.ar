@@ -41,12 +41,35 @@ ELSE Flex END WHERE id='$id' LIMIT 1");
 
 if (isset($_POST['ControlPass'])) {
 
-  //SOLO USUARIOS ACTIVOS Y CON NIVEL 1
-  $sql = "SELECT Password FROM usuarios WHERE Activo=1 AND NIVEL=1 AND id ='" . $_SESSION['idusuario'] . "' ";
+  // FIX (a pedido, Asana): antes esto exigía NIVEL=1 (Administrador) a
+  // fuego, sin importar qué contraseña se escribiera - un operador nunca
+  // podía modificar la fecha de un servicio, siempre "Usuario sin
+  // Permisos". Ahora se puede habilitar por rol (permiso puntual
+  // "Modificar Fecha de Envío" en Asignación de Roles y Permisos), sin
+  // tener que hacer administrador a nadie. Nivel=1 y usuarios sin rol
+  // asignado (mismo criterio que el resto del menú) siguen pudiendo
+  // siempre, para no bloquear a un SuperAdmin por no tener el tilde puesto.
+  require_once __DIR__ . '/../../../Menu/php/permisos_menu.php';
+
+  $idUsuario = intval($_SESSION['idusuario'] ?? 0);
+  $nivel = intval($_SESSION['Nivel'] ?? 0);
+  $permisos = obtenerPermisosDelUsuario();
+  $tienePermiso = $nivel === 1
+    || $permisos === null
+    || in_array('accion_modificar_fecha_envio', $permisos, true);
+
+  if (!$tienePermiso) {
+    echo json_encode(array('Result' => 0));
+    exit;
+  }
+
+  // Confirma identidad con la contraseña propia del usuario logueado
+  // (misma columna Password en texto plano que ya usa CambiarPasswordObligatorio.php).
+  $sql = "SELECT Password FROM usuarios WHERE Activo=1 AND id='" . $idUsuario . "'";
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
 
-  if ($row['Password'] == $_POST['pass']) {
+  if ($row && !empty($row['Password']) && hash_equals((string)$row['Password'], (string)$_POST['pass'])) {
 
     echo json_encode(array('Result' => 1));
   } else {
