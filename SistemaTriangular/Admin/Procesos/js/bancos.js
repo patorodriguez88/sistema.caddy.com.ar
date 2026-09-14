@@ -62,6 +62,14 @@ document.addEventListener("DOMContentLoaded", function () {
   // los movimientos, no solo los del rango elegido. Se reinicializa acá
   // con el formato correcto, pisando el init automático.
   if (window.jQuery && jQuery.fn.daterangepicker) {
+    // FIX (vuelta atrás de un intento anterior): con autoUpdateInput:false
+    // + manejo manual de apply/cancel el input se quedaba vacío para
+    // siempre en algunos casos ("el rango de fechas me tira todo null") -
+    // demasiado manejo custom para algo que la librería ya sabe hacer
+    // sola. Se deja autoUpdateInput en su default (true): la librería
+    // misma escribe el valor con el formato pedido y dispara el "change"
+    // que ya escucha el código de más abajo - menos código propio, menos
+    // superficie de bug.
     $("#singledaterange").daterangepicker({
       locale: {
         format: "DD/MM/YYYY",
@@ -77,22 +85,10 @@ document.addEventListener("DOMContentLoaded", function () {
           "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
         ],
       },
-      autoUpdateInput: false, // arranca vacío - evita mostrar un rango que el operador nunca eligió
+      startDate: moment(),
+      endDate: moment(),
       cancelClass: "btn-light",
       applyButtonClasses: "btn-success",
-    });
-
-    // El plugin no dispara un "change" nativo del input solo con
-    // autoUpdateInput:false - hay que setear el valor y dispararlo a mano
-    // para que el resto del código (que ya escucha "change" acá abajo)
-    // recargue la tabla con el rango recién elegido.
-    $("#singledaterange").on("apply.daterangepicker", function (ev, picker) {
-      $(this)
-        .val(picker.startDate.format("DD/MM/YYYY") + " - " + picker.endDate.format("DD/MM/YYYY"))
-        .trigger("change");
-    });
-    $("#singledaterange").on("cancel.daterangepicker", function () {
-      $(this).val("").trigger("change");
     });
   }
 
