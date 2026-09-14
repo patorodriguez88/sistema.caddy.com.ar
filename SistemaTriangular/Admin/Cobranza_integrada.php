@@ -177,6 +177,38 @@
                         </div><!-- /.modal-dialog -->
                     </div><!-- /.modal -->
                 </div>
+                <!-- Filtro de búsqueda: recuperado de Caddy_produccion, a pedido - no
+                     existía en esta versión. Se abre solo al entrar a la pantalla, y
+                     con el botón "Buscar" para volver a ajustarlo. -->
+                <div class="modal fade" id="modalFiltro" tabindex="-1" role="dialog" aria-labelledby="modalFiltroLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-md modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="modalFiltroLabel">Filtrar Resultados</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <div class="form-group">
+                                    <label for="input_recorrido">Número de Recorrido</label>
+                                    <input type="number" class="form-control" id="input_recorrido" placeholder="Ej: 1325">
+                                    <small class="text-muted">Dejalo vacío para traer todos los recorridos.</small>
+                                </div>
+                                <div class="form-group mt-3">
+                                    <label>Rango de Fechas</label>
+                                    <input type="text" class="form-control date" id="singledaterange" data-toggle="date-picker" data-cancel-class="btn-warning" placeholder="Seleccionar fechas">
+                                </div>
+                                <div class="form-check mt-3">
+                                    <input type="checkbox" class="form-check-input" id="customCheckcolor1" checked>
+                                    <label class="form-check-label" for="customCheckcolor1">Solo Pendientes de Rendición</label>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                <button id="btn_filtrar" class="btn btn-primary">Aceptar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Start Content-->
                 <div class="d-print-none container-fluid">
                     <div class="row">
@@ -186,21 +218,14 @@
                                     <h4 id="seguimiento_header" class="header-title mt-2">Cobranza Integrada </h4>
 
                                     <div class="row">
-                                        <div class="col-6 float-right">
-                                            <div class="col-5">
-                                                <div class="form-group">
-                                                    <label>Rango de Fechas</label>
-                                                    <input type="text" class="form-control date float-right mb-3" id="singledaterange" data-toggle="date-picker" data-cancel-class="btn-warning">
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <div class="d-print-none col-6 float-right">
+                                        <div class="d-print-none col-12 text-end">
                                             <div class="form-group mr-0">
                                                 <label>Total Remitos Seleccionados: $ </label>
                                                 <span id="cobranza_integrada_header" class="header-title mt-2"></span>
                                                 <span id="cobranza_integrada_cantidad" class="ci-badge-cantidad">0 remitos</span>
                                             </div>
                                             <div class="modal-footer">
+                                                <button id="cobranza_integrada_search" type="button" class="btn btn-success float-right mb-2">🔍 Buscar</button>
                                                 <button id="cobranza_integrada_clear" type="button" class="btn btn-warning float-right mb-2" disabled>Limpiar</button>
                                                 <button id="cobranza_integrada_remove" type="button" class="btn btn-warning float-right mb-2" disabled>Eliminar Seleccionados</button>
                                                 <button id="cobranza_integrada_report" type="button" class="btn btn-primary float-right mb-2" disabled>Generar Reporte</button>
@@ -212,6 +237,7 @@
                                             <tr>
                                                 <th>Fecha</th>
                                                 <th>Usuario</th>
+                                                <th>Recorrido</th>
                                                 <th>Cliente</th>
                                                 <th>Comprobante</th>
                                                 <th>Observaciones</th>
@@ -224,6 +250,8 @@
                                         </tbody>
                                         <tfoot>
                                             <tr>
+                                                <th></th>
+                                                <th></th>
                                                 <th></th>
                                                 <th></th>
                                                 <th></th>

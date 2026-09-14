@@ -111,15 +111,33 @@ if(isset($_POST['VerFechas']) && $_POST['VerFechas']==1){
 
   if(isset($_POST['Pendientes']) && $_POST['Pendientes']==1){
   // Se agrega el join con TransClientes para poder mostrar en la grilla el
-  // destinatario, el codigo de proveedor interno del cliente y el estado
-  // del paquete (Entregado/Devuelto) - antes solo se veia el nombre del
-  // cliente (empresa), sin forma de identificar el envio puntual.
-  $sql="SELECT v.*, tc.ClienteDestino, tc.CodigoProveedor, tc.Entregado, tc.Devuelto
+  // destinatario, el codigo de proveedor interno del cliente, el recorrido
+  // y el estado del paquete (Entregado/Devuelto) - antes solo se veia el
+  // nombre del cliente (empresa), sin forma de identificar el envio puntual.
+  //
+  // FIX (recuperado de Caddy_produccion, a pedido): esta pantalla no tenia
+  // filtro por Recorrido ni "Solo Pendientes de Rendicion" - siempre traia
+  // TODO lo del rango de fechas, sin forma de acotar la busqueda. Mismo
+  // criterio que ya usaba Caddy_produccion: Recorrido opcional (numerico),
+  // SoloPendientes=1 filtra por surrender_number=0 (el default de esa
+  // columna - ver Ventas.surrender_number).
+  $recorrido = $_POST['Recorrido'] ?? '';
+  $soloPendientes = ($_POST['SoloPendientes'] ?? '0') == '1';
+
+  $sql="SELECT v.*, tc.ClienteDestino, tc.CodigoProveedor, tc.Entregado, tc.Devuelto, tc.Recorrido
   FROM `Ventas` AS v
   INNER JOIN TransClientes AS tc ON v.NumPedido = tc.CodigoSeguimiento
   WHERE v.FechaPedido>='$_POST[Inicio]' AND v.FechaPedido<='$_POST[Final]' AND v.Eliminado=0 AND v.CobrarEnvio<>0 AND tc.Eliminado=0";
+
+  if (is_numeric($recorrido)) {
+      $sql .= " AND tc.Recorrido = '" . $mysqli->real_escape_string($recorrido) . "'";
+  }
+  if ($soloPendientes) {
+      $sql .= " AND v.surrender_number = 0";
+  }
+
   $Resultado=$mysqli->query($sql);
-  $rows=array();   
+  $rows=array();
   while($row = $Resultado->fetch_array(MYSQLI_ASSOC)){
   $rows[]=$row;
   }

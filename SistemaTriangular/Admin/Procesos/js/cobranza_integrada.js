@@ -32,303 +32,323 @@ if (window.jQuery && jQuery.fn.daterangepicker) {
   });
 }
 
-      
+// FIX (recuperado de Caddy_produccion, a pedido): esta pantalla no tenía
+// forma de filtrar por recorrido puntual ni de elegir "solo pendientes de
+// rendición" - siempre traía todo. Se recupera el modal de filtro, que se
+// abre solo al entrar y con el botón "Buscar" para volver a ajustarlo.
+$(document).ready(function () {
+  $('#modalFiltro').modal('show');
+});
 
-// Re-draw the table when the a date range filter changes
-$('#singledaterange').change( function() {
+$('#cobranza_integrada_search').click(function () {
+  $('#modalFiltro').modal('show');
+});
 
-// var fechas=$('#singledaterange').val();
-fechas=$('#singledaterange').val();
+$('#btn_filtrar').on('click', function () {
+  var recorrido = $('#input_recorrido').val() || null;
+  fechas = $('#singledaterange').val();
+  var soloPendientes = document.getElementById('customCheckcolor1').checked ? 1 : 0;
 
-var datatable = $('#cobranza_integrada').DataTable();
-datatable.destroy();
+  if (!fechas) {
+    if (window.toast) toast('error', 'Cobranza Integrada', 'Seleccioná un rango de fechas.');
+    else alert('Seleccioná un rango de fechas.');
+    return;
+  }
 
-     $.ajax({
-      data:{'VerFechas':1,'Fechas':fechas},
-      url:'Procesos/php/pagos.php',
-      type:'post',
-      success: function(response)
-       {
-        // Defensivo por consistencia con los otros $.ajax de este archivo:
-        // pagos.php no manda Content-Type: application/json, así que jQuery
-        // entrega esto como texto y hace falta parsearlo - pero por las
-        // dudas de que cambie, acepta los dos casos.
-        var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
-        var Inicio = jsonData.Inicio;
-        var Final =jsonData.Final;
+  $('#modalFiltro').modal('hide');
+  cargarTabla(fechas, recorrido, soloPendientes);
+});
 
-        var datatable = $('#cobranza_integrada').DataTable({
-          dom: 'Bfrtip',
-          buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
-          lengthMenu: [
-            [10, 25, 50, -1],
-            [10, 25, 50, 'All']
-          ],
-          paging: true,
-          searching: true,
-          footerCallback: function(row, data, start, end, display) {
+// Arma (o rearma) la grilla de remitos pendientes/rendidos según el filtro
+// elegido. Separado del handler de "Aceptar" del modal para poder llamarlo
+// desde ahí sin duplicar la lógica de armado de la DataTable.
+function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
+  var datatableActual = $.fn.DataTable.isDataTable('#cobranza_integrada') ? $('#cobranza_integrada').DataTable() : null;
+  if (datatableActual) datatableActual.destroy();
 
-            total = this.api()
-            //   .column(6) //numero de columna a sumar
-              .column(6, {page: 'current'})//para sumar solo la pagina actual
-              .data()
-              .reduce(function(a, b) {
-                return Number(a) + Number(b);
-                //                 return parseInt(a) + parseInt(b);
-              }, 0);
-            var saldo = currencyFormat(total);
-            
-            $(this.api().column(6).footer()).html(saldo);
+  $.ajax({
+    data: { 'VerFechas': 1, 'Fechas': fechasElegidas },
+    url: 'Procesos/php/pagos.php',
+    type: 'post',
+    success: function (response) {
+      // Defensivo por consistencia con los otros $.ajax de este archivo:
+      // pagos.php no manda Content-Type: application/json, así que jQuery
+      // entrega esto como texto y hace falta parsearlo - pero por las
+      // dudas de que cambie, acepta los dos casos.
+      var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
+      var Inicio = jsonData.Inicio;
+      var Final = jsonData.Final;
 
-          },
+      var datatable = $('#cobranza_integrada').DataTable({
+        dom: 'Bfrtip',
+        buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
+        lengthMenu: [
+          [10, 25, 50, -1],
+          [10, 25, 50, 'All']
+        ],
+        paging: true,
+        searching: true,
+        footerCallback: function (row, data, start, end, display) {
+          total = this.api()
+            .column(6, { page: 'current' }) // CobrarEnvio - ver el array "columns" de más abajo para el índice
+            .data()
+            .reduce(function (a, b) {
+              return Number(a) + Number(b);
+            }, 0);
+          var saldo = currencyFormat(total);
 
-    ajax: {
-         url:"Procesos/php/cobranza_integrada.php",
-         data:{'Pendientes':1,'Inicio':Inicio,'Final':Final},
-         processing: true,
-         type:'post',
+          $(this.api().column(6).footer()).html(saldo);
+        },
+
+        ajax: {
+          url: "Procesos/php/cobranza_integrada.php",
+          data: { 'Pendientes': 1, 'Inicio': Inicio, 'Final': Final, 'Recorrido': recorrido, 'SoloPendientes': soloPendientes },
+          processing: true,
+          type: 'post',
         },
         columns: [
-            {data:"FechaPedido",
-             render: function (data, type, row) {
-              var Fecha=row.FechaPedido.split('-').reverse().join('.');
-              return '<td><span style="display: none;">'+row.FechaPedido+'</span>'+Fecha+'</td>';  
-              }
-            },
-            {data:"Usuario"},
-            {data:"Cliente",
+          {
+            data: "FechaPedido",
             render: function (data, type, row) {
-                var entregado = row.Entregado == 1
-                  ? '<span class="badge rounded-pill bg-success text-white">Entregado</span>'
-                  : '<span class="badge rounded-pill bg-danger text-white">No Entregado</span>';
-                var devuelto = row.Devuelto == 1
-                  ? ' <span class="badge rounded-pill bg-warning text-white">Devuelto</span>'
-                  : '';
-                return '<h6 class="font-15 mb-1 fw-normal">'+row.Cliente+'</h6>'+
-                       '<h6 class="font-15 mb-1 fw-normal">'+row.ClienteDestino+'</h6>'+
-                       entregado+devuelto;
-              }
-            },
-            {data:"Titulo",
+              var Fecha = row.FechaPedido.split('-').reverse().join('.');
+              return '<td><span style="display: none;">' + row.FechaPedido + '</span>' + Fecha + '</td>';
+            }
+          },
+          { data: "Usuario" },
+          // FIX (recuperado de Caddy_produccion, a pedido): esta columna no
+          // existía - sin ella no había forma de saber a qué recorrido
+          // pertenecía cada remito desde esta pantalla.
+          { data: "Recorrido" },
+          {
+            data: "Cliente",
             render: function (data, type, row) {
-                return '<h6 class="font-15 mb-1 fw-normal">'+row.Titulo+'</h6>'+
-                       '<span class="text-muted font-11">Codigo Proveedor: '+row.CodigoProveedor+'</span><br>'+
-                       '<span class="text-muted font-11">'+row.NumeroRepo+' '+row.NumPedido+'</span>';
-              }
-            },
-            {data:"Comentario"},
-            {data:"CobrarEnvio",
-            render: $.fn.dataTable.render.number( ',', '.', 2, '$ ')
-            },
-            {data:"surrender_name",
+              var entregado = row.Entregado == 1
+                ? '<span class="badge rounded-pill bg-success text-white">Entregado</span>'
+                : '<span class="badge rounded-pill bg-danger text-white">No Entregado</span>';
+              var devuelto = row.Devuelto == 1
+                ? ' <span class="badge rounded-pill bg-warning text-white">Devuelto</span>'
+                : '';
+              return '<h6 class="font-15 mb-1 fw-normal">' + row.Cliente + '</h6>' +
+                '<h6 class="font-15 mb-1 fw-normal">' + row.ClienteDestino + '</h6>' +
+                entregado + devuelto;
+            }
+          },
+          {
+            data: "Titulo",
             render: function (data, type, row) {
-                return '<h6 class="font-15 mb-1 fw-normal">'+row.surrender_name+'</h6>'+
-                       '<span class="text-muted font-11">'+row.surrender_time+'</span>';
-              }
-            },
-            {data:"idPedido",
+              // FIX (recuperado de Caddy_produccion, a pedido): antes el
+              // código de proveedor y el de seguimiento se mostraban como
+              // texto gris suelto - ahora van como badges, más fáciles de
+              // ubicar de un vistazo (mismos colores que ya usaba Caddy_produccion).
+              return '<h6 class="font-15 mb-1 fw-normal">' + row.Titulo + '</h6>' +
+                '<span class="text-muted font-11">Código Proveedor: ' + (row.CodigoProveedor || '-') + '</span><br>' +
+                '<span class="badge rounded-pill bg-warning text-white">' + row.NumeroRepo + '</span> ' +
+                '<span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span>';
+            }
+          },
+          { data: "Comentario" },
+          {
+            data: "CobrarEnvio",
+            render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
+          },
+          {
+            data: "surrender_name",
             render: function (data, type, row) {
-               if(row.surrender_name!=''){
+              return '<h6 class="font-15 mb-1 fw-normal">' + row.surrender_name + '</h6>' +
+                '<span class="text-muted font-11">' + row.surrender_time + '</span>';
+            }
+          },
+          {
+            data: "idPedido",
+            render: function (data, type, row) {
+              if (row.surrender_name != '') {
                 return `<td class="table-action"><i class="mdi mdi-18px mdi-file-document-outline" onclick="imp(${row.surrender_number});"></i></td>`;
-                }else{
+              } else {
                 return `<td class="table-action"><input data-id="${row.CobrarEnvio}" id="surrender_checkbox" value="${row.idPedido}" type="checkbox" class"custom-control-input">
                         <td class="table-action"><i class="mdi mdi-18px mdi-pencil text-warning" onclick="change(${row.idPedido},${row.CobrarEnvio});"></i></td>`;
-                }
               }
-            },
+            }
+          },
 
         ]
-        });
-       }  
-      });     
-    });
+      });
+    }
+  });
+}
+
 // FIX: apuntaba a www.caddy.com.ar (el sitio público, no el sistema) con
 // una URL sin ".php" - nunca abría nada real. Ahora abre, en pestaña
 // aparte, la liquidación en PDF (mismo formato que el resto de los
 // comprobantes del sistema - ver Admin/Informes/CobranzaIntegradaPdf.php).
 // De paso 't_blank' -> '_blank' (typo: con nombre custom, si ya había una
 // pestaña con ese nombre la reusaba en vez de abrir una nueva).
-function imp(i){
-    window.open('Informes/invoice_cobranza_integrada.php?id='+i, '_blank');
+function imp(i) {
+  window.open('Informes/invoice_cobranza_integrada.php?id=' + i, '_blank');
 }
-      // FIX: la tabla pagina (paging:true) - DataTables solo mantiene en el
-      // DOM las filas de la página actual. Dos bugs distintos por esto:
-      //  1) El badge de cantidad se recalculaba consultando el DOM cada vez
-      //     ($('#surrender_checkbox:checked').length) - solo contaba lo
-      //     tildado en la página visible en ese momento, un remito tildado
-      //     en otra página "desaparecía" del conteo al cambiar de página.
-      //  2) MÁS GRAVE: el botón "Aceptar" armaba la lista a enviar de la
-      //     MISMA forma ($('#surrender_checkbox:checked').each(...)) - si
-      //     el operador tildaba remitos en más de una página, al aceptar
-      //     solo se procesaban los de la página que estaba visible en ese
-      //     momento; los de las otras páginas se perdían en silencio, sin
-      //     ningún aviso.
-      // Se lleva la selección real en un objeto propio (idPedido -> true),
-      // que sobrevive a que DataTables reemplace las filas al paginar. El
-      // total en $ ya se acumulaba en una variable aparte y no tenía este
-      // problema.
-      var seleccionadosCobranza = {};
+// FIX: la tabla pagina (paging:true) - DataTables solo mantiene en el
+// DOM las filas de la página actual. Dos bugs distintos por esto:
+//  1) El badge de cantidad se recalculaba consultando el DOM cada vez
+//     ($('#surrender_checkbox:checked').length) - solo contaba lo
+//     tildado en la página visible en ese momento, un remito tildado
+//     en otra página "desaparecía" del conteo al cambiar de página.
+//  2) MÁS GRAVE: el botón "Aceptar" armaba la lista a enviar de la
+//     MISMA forma ($('#surrender_checkbox:checked').each(...)) - si
+//     el operador tildaba remitos en más de una página, al aceptar
+//     solo se procesaban los de la página que estaba visible en ese
+//     momento; los de las otras páginas se perdían en silencio, sin
+//     ningún aviso.
+// Se lleva la selección real en un objeto propio (idPedido -> true),
+// que sobrevive a que DataTables reemplace las filas al paginar. El
+// total en $ ya se acumulaba en una variable aparte y no tenía este
+// problema.
+var seleccionadosCobranza = {};
 
-      function cantidadSeleccionados() {
-        return Object.keys(seleccionadosCobranza).length;
-      }
-
-      function actualizarBadgeCantidad(cantidad) {
-        $('#cobranza_integrada_cantidad').text(cantidad + (cantidad === 1 ? ' remito' : ' remitos'));
-      }
-
-      $(document).on('change', 'input[type="checkbox"]', function(e) {
-        var total=Number($('#cobranza_integrada_header').html());
-        if (this.id == "surrender_checkbox") {
-            e.preventDefault();
-            var elemento = e.target;
-
-            var dataID = elemento.getAttribute('data-id');
-            var idPedido = elemento.getAttribute('value');
-            if(this.checked){
-            total=total+Number(dataID);
-            if (idPedido) seleccionadosCobranza[idPedido] = true;
-            }else{
-            total=total-Number(dataID);
-            if (idPedido) delete seleccionadosCobranza[idPedido];
-            }
-
-            $('#cobranza_integrada_header').html(total);
-            actualizarBadgeCantidad(cantidadSeleccionados());
-            if(total!=0){
-                $('#cobranza_integrada_clear').prop('disabled',false);
-                $('#cobranza_integrada_report').prop('disabled',false);
-            }else{
-                $('#cobranza_integrada_clear').prop('disabled',true);
-                $('#cobranza_integrada_report').prop('disabled',true);
-            }
-        }
-      });
-
-    $('#cobranza_integrada_clear').click(function(){
-    var datatable = $('#cobranza_integrada').DataTable();
-    datatable.ajax.reload();
-    $('#cobranza_integrada_header').html(0);
-    seleccionadosCobranza = {};
-    actualizarBadgeCantidad(0);
-    $('#cobranza_integrada_clear').prop('disabled',true);
-    $('#cobranza_integrada_report').prop('disabled',true);
-    });
-    
-    $('#cobranza_integrada_report').click(function(){
-        $('#standard-modal').modal('show');
-        // $('#standard-modal-invoice').modal('show');
-     });
-
-    $('#generar_informe_ok').click(function(){
-    // FIX: antes se armaba esta lista consultando el DOM
-    // ($('#surrender_checkbox:checked').each(...)) - con la tabla paginada,
-    // eso solo encuentra los remitos tildados en la página que está
-    // visible en ESTE momento. Si el operador tildó remitos en más de una
-    // página, los de las otras páginas se perdían en silencio (nunca se
-    // enviaban al server). Ahora se usa la selección real, llevada aparte
-    // en seleccionadosCobranza, que no depende de qué página esté
-    // mostrando la tabla ahora mismo.
-    var checked = Object.keys(seleccionadosCobranza);
-
-    if (checked.length > 0) {
-        let nombre = $("#nombre_receptor").val();
-        let dni = $('#dni_receptor').val();
-        let obs = $('#observaciones_receptor').val();
-        let fecha = $('#fecha_receptor').val();
-        let hora = $('#hora_receptor').val();
-
-        var dato = {
-        "Cobranza_Integrada": 1,
-        "id": checked,
-        "nombre":nombre,
-        "dni":dni,
-        "obs":obs,
-        "fecha":fecha,
-        "hora":hora
-        };
-
-        $.ajax({
-            data: dato,
-            url: 'Procesos/php/cobranza_integrada.php',
-            type: 'post',
-            success: function(response) {
-              // FIX: cobranza_integrada.php manda Content-Type: application/json ->
-              // jQuery YA entrega esto parseado como objeto (no como texto). Volver a
-              // pasarlo por JSON.parse() rompía con "[object Object] is not valid JSON"
-              // y el botón "Aceptar" no hacía nada. Se acepta cualquiera de los dos
-              // casos por las dudas (si algún día cambia el Content-Type, sigue andando).
-              var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
-
-              // FIX: acá se mostraba #standard-modal-invoice, un modal que
-              // nunca tuvo ningún JS que lo llenara de datos (quedaba vacío,
-              // "no se sabe si terminó"). Ahora abre, en pestaña aparte, la
-              // misma liquidación en PDF que ya usa el botón "Ver" (ícono de
-              // documento) de la grilla - mismo formato que el resto de los
-              // comprobantes del sistema.
-              $('#standard-modal').modal('hide');
-              window.open('Informes/invoice_cobranza_integrada.php?id=' + jsonData.surrender_number, '_blank');
-              console.log('ver', jsonData.surrender_number);
-            }
-          });
-        }
-
-    });
-
-
-function change(id,imp){
-
-    $('#label_change_import').html(id);
-
-    $('#modal_change_import').modal('show');
-
-    $('#number_change_import').val(imp);
-
-    // $('#change_ok').click(function(){
-        
-        // let val=Number($('#number_change_import').val());
-        // let val1=val.toString().replace(/\./g,'');
-        // let val2 = val1.toString().replace(/\,/g,'.');
-        // alert(val);
-
-    // });
+function cantidadSeleccionados() {
+  return Object.keys(seleccionadosCobranza).length;
 }
 
-    
-    $('#btn_ok_change_import').click(function(){
-    
-    let id=$('#label_change_import').html();   
+function actualizarBadgeCantidad(cantidad) {
+  $('#cobranza_integrada_cantidad').text(cantidad + (cantidad === 1 ? ' remito' : ' remitos'));
+}
 
-    var importe=$('#number_change_import').val();
+$(document).on('change', 'input[type="checkbox"]', function (e) {
+  var total = Number($('#cobranza_integrada_header').html());
+  if (this.id == "surrender_checkbox") {
+    e.preventDefault();
+    var elemento = e.target;
 
-    console.log('id',id);
-    console.log('valor',importe);
-// id 122824
-// valor 66359.97
+    var dataID = elemento.getAttribute('data-id');
+    var idPedido = elemento.getAttribute('value');
+    if (this.checked) {
+      total = total + Number(dataID);
+      if (idPedido) seleccionadosCobranza[idPedido] = true;
+    } else {
+      total = total - Number(dataID);
+      if (idPedido) delete seleccionadosCobranza[idPedido];
+    }
+
+    $('#cobranza_integrada_header').html(total);
+    actualizarBadgeCantidad(cantidadSeleccionados());
+    if (total != 0) {
+      $('#cobranza_integrada_clear').prop('disabled', false);
+      $('#cobranza_integrada_report').prop('disabled', false);
+    } else {
+      $('#cobranza_integrada_clear').prop('disabled', true);
+      $('#cobranza_integrada_report').prop('disabled', true);
+    }
+  }
+});
+
+$('#cobranza_integrada_clear').click(function () {
+  var datatable = $('#cobranza_integrada').DataTable();
+  datatable.ajax.reload();
+  $('#cobranza_integrada_header').html(0);
+  seleccionadosCobranza = {};
+  actualizarBadgeCantidad(0);
+  $('#cobranza_integrada_clear').prop('disabled', true);
+  $('#cobranza_integrada_report').prop('disabled', true);
+});
+
+$('#cobranza_integrada_report').click(function () {
+  $('#standard-modal').modal('show');
+});
+
+$('#generar_informe_ok').click(function () {
+  // FIX: antes se armaba esta lista consultando el DOM
+  // ($('#surrender_checkbox:checked').each(...)) - con la tabla paginada,
+  // eso solo encuentra los remitos tildados en la página que está
+  // visible en ESTE momento. Si el operador tildó remitos en más de una
+  // página, los de las otras páginas se perdían en silencio (nunca se
+  // enviaban al server). Ahora se usa la selección real, llevada aparte
+  // en seleccionadosCobranza, que no depende de qué página esté
+  // mostrando la tabla ahora mismo.
+  var checked = Object.keys(seleccionadosCobranza);
+
+  if (checked.length > 0) {
+    let nombre = $("#nombre_receptor").val();
+    let dni = $('#dni_receptor').val();
+    let obs = $('#observaciones_receptor').val();
+    let fecha = $('#fecha_receptor').val();
+    let hora = $('#hora_receptor').val();
+
+    var dato = {
+      "Cobranza_Integrada": 1,
+      "id": checked,
+      "nombre": nombre,
+      "dni": dni,
+      "obs": obs,
+      "fecha": fecha,
+      "hora": hora
+    };
+
     $.ajax({
-        data: {'Change_import':1,'id':id,'Importe':importe},
-        url: 'Procesos/php/cobranza_integrada.php',
-        type: 'post',
-        success: function(response) {
-        // FIX: mismo motivo que en generar_informe_ok - cobranza_integrada.php
-        // manda Content-Type: application/json, jQuery ya lo entrega parseado.
+      data: dato,
+      url: 'Procesos/php/cobranza_integrada.php',
+      type: 'post',
+      success: function (response) {
+        // FIX: cobranza_integrada.php manda Content-Type: application/json ->
+        // jQuery YA entrega esto parseado como objeto (no como texto). Volver a
+        // pasarlo por JSON.parse() rompía con "[object Object] is not valid JSON"
+        // y el botón "Aceptar" no hacía nada. Se acepta cualquiera de los dos
+        // casos por las dudas (si algún día cambia el Content-Type, sigue andando).
         var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
 
-        if(jsonData.success==1){
-            
-            $('#modal_change_import').modal('hide');
-            
-            var datatable = $('#cobranza_integrada').DataTable();
-            datatable.ajax.reload();
-            toast("success", "Registro Actualizado !", "Se han realizado cambios.");
-
-        } else {
-
-            toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
-
-        }
-
-        }    
+        // FIX: acá se mostraba #standard-modal-invoice, un modal que
+        // nunca tuvo ningún JS que lo llenara de datos (quedaba vacío,
+        // "no se sabe si terminó"). Ahora abre, en pestaña aparte, la
+        // misma liquidación en PDF que ya usa el botón "Ver" (ícono de
+        // documento) de la grilla - mismo formato que el resto de los
+        // comprobantes del sistema.
+        $('#standard-modal').modal('hide');
+        window.open('Informes/invoice_cobranza_integrada.php?id=' + jsonData.surrender_number, '_blank');
+        console.log('ver', jsonData.surrender_number);
+      }
     });
+  }
 
-    })
+});
+
+
+function change(id, imp) {
+
+  $('#label_change_import').html(id);
+
+  $('#modal_change_import').modal('show');
+
+  $('#number_change_import').val(imp);
+}
+
+
+$('#btn_ok_change_import').click(function () {
+
+  let id = $('#label_change_import').html();
+
+  var importe = $('#number_change_import').val();
+
+  $.ajax({
+    data: { 'Change_import': 1, 'id': id, 'Importe': importe },
+    url: 'Procesos/php/cobranza_integrada.php',
+    type: 'post',
+    success: function (response) {
+      // FIX: mismo motivo que en generar_informe_ok - cobranza_integrada.php
+      // manda Content-Type: application/json, jQuery ya lo entrega parseado.
+      var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
+
+      if (jsonData.success == 1) {
+
+        $('#modal_change_import').modal('hide');
+
+        var datatable = $('#cobranza_integrada').DataTable();
+        datatable.ajax.reload();
+        toast("success", "Registro Actualizado !", "Se han realizado cambios.");
+
+      } else {
+
+        toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
+
+      }
+
+    }
+  });
+
+})
