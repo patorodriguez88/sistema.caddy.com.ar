@@ -55,7 +55,18 @@ function buscarAsiento($conexion){
 function guardarAsiento($conexion) {
     try {
         $usuario = $_SESSION['Usuario'];
-        $fecha = date("Y-m-d");
+        // FIX (a pedido, Asana): antes esto era siempre date("Y-m-d") (la fecha
+        // de HOY en el servidor), sin importar qué fecha eligiera el usuario en
+        // el picker #example-date del formulario - el asiento se guardaba (alta
+        // Y edición) con la fecha del momento de guardar, no con la fecha real
+        // del asiento. El input es type="date" (name="date"), su .value siempre
+        // viaja en ISO yyyy-mm-dd, así que se puede usar directo si viene con
+        // ese formato; si no vino o vino corrompido, se cae a hoy como antes
+        // (nunca dejar Fecha vacía).
+        $fechaPosteada = $_POST['date'] ?? '';
+        $fecha = (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fechaPosteada))
+            ? $conexion->real_escape_string($fechaPosteada)
+            : date("Y-m-d");
         $nasiento = $_POST['n_asiento'];
         $infoABM = "Actualizado por $usuario el " . date('d-m-Y H:i');
 
