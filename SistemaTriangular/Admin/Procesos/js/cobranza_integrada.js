@@ -150,29 +150,50 @@ function imp(i){
     // $('#myCenterModalLabel_rec').html();  
 //    alert(i); 
 }
-      // FIX (a pedido): además del monto total, mostrar la CANTIDAD de
-      // remitos tildados — se lleva la cuenta al lado del total, en el
-      // mismo evento, así nunca se desincronizan entre sí.
+      // FIX: la tabla pagina (paging:true) - DataTables solo mantiene en el
+      // DOM las filas de la página actual. Dos bugs distintos por esto:
+      //  1) El badge de cantidad se recalculaba consultando el DOM cada vez
+      //     ($('#surrender_checkbox:checked').length) - solo contaba lo
+      //     tildado en la página visible en ese momento, un remito tildado
+      //     en otra página "desaparecía" del conteo al cambiar de página.
+      //  2) MÁS GRAVE: el botón "Aceptar" armaba la lista a enviar de la
+      //     MISMA forma ($('#surrender_checkbox:checked').each(...)) - si
+      //     el operador tildaba remitos en más de una página, al aceptar
+      //     solo se procesaban los de la página que estaba visible en ese
+      //     momento; los de las otras páginas se perdían en silencio, sin
+      //     ningún aviso.
+      // Se lleva la selección real en un objeto propio (idPedido -> true),
+      // que sobrevive a que DataTables reemplace las filas al paginar. El
+      // total en $ ya se acumulaba en una variable aparte y no tenía este
+      // problema.
+      var seleccionadosCobranza = {};
+
+      function cantidadSeleccionados() {
+        return Object.keys(seleccionadosCobranza).length;
+      }
+
       function actualizarBadgeCantidad(cantidad) {
         $('#cobranza_integrada_cantidad').text(cantidad + (cantidad === 1 ? ' remito' : ' remitos'));
       }
 
       $(document).on('change', 'input[type="checkbox"]', function(e) {
         var total=Number($('#cobranza_integrada_header').html());
-        var cantidad=$('#surrender_checkbox:checked').length;
         if (this.id == "surrender_checkbox") {
             e.preventDefault();
             var elemento = e.target;
 
             var dataID = elemento.getAttribute('data-id');
+            var idPedido = elemento.getAttribute('value');
             if(this.checked){
             total=total+Number(dataID);
+            if (idPedido) seleccionadosCobranza[idPedido] = true;
             }else{
             total=total-Number(dataID);
+            if (idPedido) delete seleccionadosCobranza[idPedido];
             }
 
             $('#cobranza_integrada_header').html(total);
-            actualizarBadgeCantidad(cantidad);
+            actualizarBadgeCantidad(cantidadSeleccionados());
             if(total!=0){
                 $('#cobranza_integrada_clear').prop('disabled',false);
                 $('#cobranza_integrada_report').prop('disabled',false);
@@ -187,6 +208,7 @@ function imp(i){
     var datatable = $('#cobranza_integrada').DataTable();
     datatable.ajax.reload();
     $('#cobranza_integrada_header').html(0);
+    seleccionadosCobranza = {};
     actualizarBadgeCantidad(0);
     $('#cobranza_integrada_clear').prop('disabled',true);
     $('#cobranza_integrada_report').prop('disabled',true);
@@ -197,21 +219,18 @@ function imp(i){
         // $('#standard-modal-invoice').modal('show');
      });
 
-    $('#generar_informe_ok').click(function(){    
-    //Creamos un array que almacenará los valores de los input "checked"
-    var checked = [];
-    
-    //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
-    $('#surrender_checkbox:checked').each(function(){
-        // $("input.custom-control-input:checked").each(function() {    
-        //Mediante la función push agregamos al arreglo los values de los checkbox
-        if ($(this).attr("value") != null) {
-        checked.push(($(this).attr("value")));
-        }
-    });
-    // Utilizamos console.log para ver comprobar que en realidad contiene algo el arreglo
+    $('#generar_informe_ok').click(function(){
+    // FIX: antes se armaba esta lista consultando el DOM
+    // ($('#surrender_checkbox:checked').each(...)) - con la tabla paginada,
+    // eso solo encuentra los remitos tildados en la página que está
+    // visible en ESTE momento. Si el operador tildó remitos en más de una
+    // página, los de las otras páginas se perdían en silencio (nunca se
+    // enviaban al server). Ahora se usa la selección real, llevada aparte
+    // en seleccionadosCobranza, que no depende de qué página esté
+    // mostrando la tabla ahora mismo.
+    var checked = Object.keys(seleccionadosCobranza);
 
-    if (checked != 0) {
+    if (checked.length > 0) {
         let nombre = $("#nombre_receptor").val();
         let dni = $('#dni_receptor').val();
         let obs = $('#observaciones_receptor').val();
