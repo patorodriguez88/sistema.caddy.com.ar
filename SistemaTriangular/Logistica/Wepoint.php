@@ -1,3 +1,9 @@
+<?php
+// Sin esto la pantalla se armaba igual (HTML/CSS/JS) para cualquiera que
+// entrara a la URL sin sesión activa — mismo fix aplicado en
+// CrossDocking.php, ver el comentario de ese archivo para el detalle.
+include_once "../Conexion/Conexioni.php";
+?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
 

@@ -640,6 +640,13 @@
                 >Wepoint</a
               >
               <?php endif; ?>
+              <?php if (tieneMenuPermiso('Logistica', 'CrossDocking')): ?>
+              <a
+                href="/SistemaTriangular/Logistica/CrossDocking.php"
+                class="dropdown-item"
+                >CrossDocking (escaneo)</a
+              >
+              <?php endif; ?>
               <?php if (tieneMenuPermiso('Logistica', 'Zonas')): ?>
               <a
                 href="/SistemaTriangular/Logistica/Zonas.php"
