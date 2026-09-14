@@ -1,7 +1,4 @@
 <?php
-// DEBUG TEMPORAL - sacar apenas se identifique el 500 en producción.
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
 // FIX (a pedido): esto era una página HTML completa con su propia
 // DataTable (tema viejo "saas"), nunca conectada a ningún JS que la
 // llenara de datos (cobranza_integrada_invoice.js no se cargaba acá) -
