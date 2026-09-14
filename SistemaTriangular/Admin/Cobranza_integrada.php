@@ -42,6 +42,25 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        /* Badge pastel con la cantidad de remitos seleccionados, al lado del
+           total — a pedido, para que de un vistazo se vea cuántos son, no
+           solo cuánto suman. */
+        .ci-badge-cantidad {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #fce8e3;
+            color: #b23a22;
+            font-weight: 700;
+            font-size: 13px;
+            padding: 5px 14px;
+            border-radius: 20px;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+    </style>
 </head>
 
 <body>
@@ -318,6 +337,7 @@
                                             <div class="form-group mr-0">
                                                 <label>Total Remitos Seleccionados: $ </label>
                                                 <span id="cobranza_integrada_header" class="header-title mt-2"></span>
+                                                <span id="cobranza_integrada_cantidad" class="ci-badge-cantidad">0 remitos</span>
                                             </div>
                                             <div class="modal-footer">
                                                 <button id="cobranza_integrada_clear" type="button" class="btn btn-warning float-right mb-2" disabled>Limpiar</button>

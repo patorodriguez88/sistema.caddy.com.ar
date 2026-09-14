@@ -3,6 +3,35 @@ function currencyFormat(num) {
   return '$' + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 }
 
+// FIX (reportado: "cuando abro el modal me pone la fecha mal, primero mes
+// después día"): #fecha_receptor (campo "Fecha Entrega" del modal Generar
+// Liquidación) se inicializaba sin locale.format - la librería arranca en
+// su default MM/DD/YYYY (formato US). A diferencia de #singledaterange de
+// esta misma pantalla (que NO se toca - su valor lo parsea pagos.php
+// asumiendo justamente MM/DD/YYYY, cambiarlo rompería ese filtro),
+// surrender_time se guarda como texto libre sin volver a parsearse en
+// ningún lado, así que acá sí es seguro mostrarlo en DD/MM/YYYY como el
+// resto del sistema.
+if (window.jQuery && jQuery.fn.daterangepicker) {
+  $('#fecha_receptor').daterangepicker({
+    singleDatePicker: true,
+    autoUpdateInput: true,
+    startDate: moment(),
+    locale: {
+      format: 'DD/MM/YYYY',
+      applyLabel: 'Aplicar',
+      cancelLabel: 'Cancelar',
+      daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+      monthNames: [
+        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+      ],
+    },
+    cancelClass: 'btn-light',
+    applyButtonClasses: 'btn-success',
+  });
+}
+
       
 
 // Re-draw the table when the a date range filter changes
@@ -117,36 +146,46 @@ function imp(i){
     // $('#myCenterModalLabel_rec').html();  
 //    alert(i); 
 }
+      // FIX (a pedido): además del monto total, mostrar la CANTIDAD de
+      // remitos tildados — se lleva la cuenta al lado del total, en el
+      // mismo evento, así nunca se desincronizan entre sí.
+      function actualizarBadgeCantidad(cantidad) {
+        $('#cobranza_integrada_cantidad').text(cantidad + (cantidad === 1 ? ' remito' : ' remitos'));
+      }
+
       $(document).on('change', 'input[type="checkbox"]', function(e) {
         var total=Number($('#cobranza_integrada_header').html());
+        var cantidad=$('#surrender_checkbox:checked').length;
         if (this.id == "surrender_checkbox") {
             e.preventDefault();
             var elemento = e.target;
-            
+
             var dataID = elemento.getAttribute('data-id');
             if(this.checked){
             total=total+Number(dataID);
             }else{
-            total=total-Number(dataID);    
+            total=total-Number(dataID);
             }
 
-            $('#cobranza_integrada_header').html(total);  
+            $('#cobranza_integrada_header').html(total);
+            actualizarBadgeCantidad(cantidad);
             if(total!=0){
                 $('#cobranza_integrada_clear').prop('disabled',false);
-                $('#cobranza_integrada_report').prop('disabled',false);  
+                $('#cobranza_integrada_report').prop('disabled',false);
             }else{
-                $('#cobranza_integrada_clear').prop('disabled',true); 
-                $('#cobranza_integrada_report').prop('disabled',true);  
-            } 
+                $('#cobranza_integrada_clear').prop('disabled',true);
+                $('#cobranza_integrada_report').prop('disabled',true);
+            }
         }
       });
-      
+
     $('#cobranza_integrada_clear').click(function(){
     var datatable = $('#cobranza_integrada').DataTable();
     datatable.ajax.reload();
-    $('#cobranza_integrada_header').html(0);  
+    $('#cobranza_integrada_header').html(0);
+    actualizarBadgeCantidad(0);
     $('#cobranza_integrada_clear').prop('disabled',true);
-    $('#cobranza_integrada_report').prop('disabled',true);  
+    $('#cobranza_integrada_report').prop('disabled',true);
     });
     
     $('#cobranza_integrada_report').click(function(){
