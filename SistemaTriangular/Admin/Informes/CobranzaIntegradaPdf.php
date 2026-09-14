@@ -42,23 +42,6 @@ function pdf_contar_lineas_ci(FPDF $pdf, $textoCodificado, $w)
     return $lineas;
 }
 
-// Trunca con "…" para que una línea (ej. la dirección del cliente) entre en
-// $maxW sin pisar el contenido de la card de al lado - antes se cortaba
-// tapada por el fill de la card siguiente en vez de truncarse prolijo.
-function pdf_truncar_ci(FPDF $pdf, $textoCodificado, $maxW)
-{
-    $texto = (string)$textoCodificado;
-    if ($pdf->GetStringWidth($texto) <= $maxW) {
-        return $texto;
-    }
-    $sufijo = '...';
-    $anchoSufijo = $pdf->GetStringWidth($sufijo);
-    while ($texto !== '' && $pdf->GetStringWidth($texto) + $anchoSufijo > $maxW) {
-        $texto = substr($texto, 0, -1);
-    }
-    return rtrim($texto) . $sufijo;
-}
-
 class CobranzaIntegradaPDF extends FPDF
 {
     public $footerInfo = '';
@@ -156,7 +139,7 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     // del paquete (ClienteDestino) - antes solo se mostraba el destino, sin forma
     // de ver de dónde venía cada remito dentro de la liquidación.
     $stD = $mysqli->prepare(
-        "SELECT Ventas.*, TransClientes.ClienteDestino,
+        "SELECT Ventas.*, TransClientes.ClienteDestino, TransClientes.CodigoProveedor,
                 COALESCE(co.nombrecliente, '') AS ClienteOrigen
          FROM Ventas
          INNER JOIN TransClientes ON Ventas.NumPedido = TransClientes.CodigoSeguimiento
@@ -233,7 +216,26 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     $pdf->Cell(56, 5, pdf_text_ci('Teléfono: 3516151944'), 0, 0, 'L');
 
     // ─── CARD IZQUIERDA: Datos del cliente ──────────────────────
-    $cardY = $emisorY + $emisorH + 4; $cardH = 34;
+    // La dirección (u otro dato largo) ya no se trunca con "..." en una
+    // sola línea - si entra en la card pasando a una segunda línea, se
+    // deja (a pedido). Por eso se mide ANTES de dibujar el fondo de la
+    // card, para que su alto se ajuste al contenido real.
+    $anchoInfo = 92;
+    $infoCliente = array_filter([
+        $datosCliente['Direccion'] !== '' ? pdf_text_ci('Dirección: ' . $datosCliente['Direccion']) : null,
+        ($datosCliente['Telefono'] !== '' || $datosCliente['Celular'] !== '')
+            ? pdf_text_ci('Teléfono: ' . ($datosCliente['Celular'] ?: $datosCliente['Telefono'])) : null,
+        $datosCliente['Mail'] !== '' ? 'Mail: ' . $datosCliente['Mail'] : null,
+    ]);
+    $pdf->SetFont('Arial', '', 9);
+    $lineasInfo = 0;
+    foreach ($infoCliente as $linea) {
+        $lineasInfo += pdf_contar_lineas_ci($pdf, $linea, $anchoInfo);
+    }
+    // 3 (título) + 1 (gap) + 6 (nombre) + 1 (gap) + líneas de info a 4.6 c/u + 3 (padding inferior)
+    $cardY = $emisorY + $emisorH + 4;
+    $cardH = max(34, 3 + 1 + 6 + 1 + $lineasInfo * 4.6 + 3);
+
     $pdf->SetFillColor(...$grayBg);
     $pdf->SetDrawColor(...$borderC);
     $pdf->RoundedRect(10, $cardY, 100, $cardH, 3, 'FD');
@@ -250,15 +252,9 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
 
     $pdf->SetFont('Arial', '', 9);
     $pdf->SetTextColor(...$mutedC);
-    $infoCliente = array_filter([
-        $datosCliente['Direccion'] !== '' ? pdf_text_ci('Dirección: ' . $datosCliente['Direccion']) : null,
-        ($datosCliente['Telefono'] !== '' || $datosCliente['Celular'] !== '')
-            ? pdf_text_ci('Teléfono: ' . ($datosCliente['Celular'] ?: $datosCliente['Telefono'])) : null,
-        $datosCliente['Mail'] !== '' ? 'Mail: ' . $datosCliente['Mail'] : null,
-    ]);
     foreach ($infoCliente as $linea) {
         $pdf->SetXY(14, $pdf->GetY());
-        $pdf->Cell(92, 5, pdf_truncar_ci($pdf, $linea, 92), 0, 1);
+        $pdf->MultiCell($anchoInfo, 4.6, $linea, 0, 'L');
     }
 
     // ─── CARD DERECHA: Datos de la liquidación ──────────────────
@@ -335,14 +331,14 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     $pdf->SetY($y);
 
     // Origen/Destino separados (antes solo Destino), y el comprobante
-    // partido en sus dos códigos (N° Repo y Cod. de Seguimiento) en vez
-    // de uno solo, con tinte pastel para que se identifiquen rápido -
+    // partido en sus dos códigos (Cod. Proveedor y Cod. de Seguimiento) en
+    // vez de uno solo, con tinte pastel para que se identifiquen rápido -
     // mismo criterio "badge" que ya se usa en la grilla de la pantalla.
     $cols = [
         ['Fecha',        16, 'C'],
         ['Origen',       30, 'L'],
         ['Destino',      30, 'L'],
-        ['N° Repo',      24, 'C'],
+        ['Cod. Proveedor', 24, 'C'],
         ['Seguimiento',  26, 'C'],
         ['Cobrado',      32, 'R'],
         ['Retenido',     32, 'R'],
@@ -387,11 +383,11 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
         $pdf->Cell(30, 7, pdf_text_ci(substr($item['ClienteOrigen'] ?: '-', 0, 17)), 'B', 0, 'L', true);
         $pdf->Cell(30, 7, pdf_text_ci(substr($item['ClienteDestino'] ?? '', 0, 17)), 'B', 0, 'L', true);
 
-        // Badge N° Repo
+        // Badge Cod. Proveedor
         $pdf->SetFillColor(...$repoBg);
         $pdf->SetTextColor(...$repoTxt);
         $pdf->SetFont('Arial', 'B', 8);
-        $pdf->Cell(24, 7, pdf_text_ci($item['NumeroRepo'] ?? ''), 'B', 0, 'C', true);
+        $pdf->Cell(24, 7, pdf_text_ci($item['CodigoProveedor'] ?? ''), 'B', 0, 'C', true);
 
         // Badge Cod. Seguimiento
         $pdf->SetFillColor(...$segBg);

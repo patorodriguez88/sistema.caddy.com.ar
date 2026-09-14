@@ -3,30 +3,53 @@ function currencyFormat(num) {
   return '$' + num.toFixed(2).replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1,')
 }
 
+var LOCALE_FECHAS_AR = {
+  format: 'DD/MM/YYYY',
+  applyLabel: 'Aplicar',
+  cancelLabel: 'Cancelar',
+  daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
+  monthNames: [
+    'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
+    'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
+  ],
+};
+
 // FIX (reportado: "cuando abro el modal me pone la fecha mal, primero mes
 // después día"): #fecha_receptor (campo "Fecha Entrega" del modal Generar
 // Liquidación) se inicializaba sin locale.format - la librería arranca en
-// su default MM/DD/YYYY (formato US). A diferencia de #singledaterange de
-// esta misma pantalla (que NO se toca - su valor lo parsea pagos.php
-// asumiendo justamente MM/DD/YYYY, cambiarlo rompería ese filtro),
-// surrender_time se guarda como texto libre sin volver a parsearse en
-// ningún lado, así que acá sí es seguro mostrarlo en DD/MM/YYYY como el
-// resto del sistema.
+// su default MM/DD/YYYY (formato US). surrender_time se guarda como texto
+// libre sin volver a parsearse en ningún lado, así que acá es seguro
+// mostrarlo en DD/MM/YYYY como el resto del sistema.
 if (window.jQuery && jQuery.fn.daterangepicker) {
   $('#fecha_receptor').daterangepicker({
     singleDatePicker: true,
     autoUpdateInput: true,
     startDate: moment(),
-    locale: {
-      format: 'DD/MM/YYYY',
-      applyLabel: 'Aplicar',
-      cancelLabel: 'Cancelar',
-      daysOfWeek: ['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'],
-      monthNames: [
-        'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-        'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre',
-      ],
-    },
+    locale: LOCALE_FECHAS_AR,
+    cancelClass: 'btn-light',
+    applyButtonClasses: 'btn-success',
+  });
+
+  // FIX (reportado: "el filtro me abre las fechas atrás del modal, y en
+  // formato mes/día"): #singledaterange (rango del modal de filtro) antes
+  // se inicializaba solo, vía el scan genérico data-toggle="date-picker" de
+  // hyper/app.js - sin locale (formato US) y sin saber que vive dentro de
+  // un modal Bootstrap, así que el calendario se pintaba fuera de stacking
+  // del modal y quedaba tapado por él. Se inicializa acá a mano: con
+  // locale DD/MM/YYYY para que se vea bien, y con parentEl apuntando
+  // DENTRO del modal para que el calendario comparta su mismo contexto de
+  // apilamiento y se vea siempre encima.
+  //
+  // El VALOR que este campo manda a Procesos/php/pagos.php (VerFechas) se
+  // sigue armando en MM/DD/YYYY (ver #btn_filtrar más abajo) porque ese
+  // endpoint lo parsea así - no se toca pagos.php, es compartido con otras
+  // pantallas.
+  $('#singledaterange').daterangepicker({
+    autoUpdateInput: true,
+    startDate: moment(),
+    endDate: moment(),
+    parentEl: '#modalFiltro .modal-body',
+    locale: LOCALE_FECHAS_AR,
     cancelClass: 'btn-light',
     applyButtonClasses: 'btn-success',
   });
@@ -46,14 +69,19 @@ $('#cobranza_integrada_search').click(function () {
 
 $('#btn_filtrar').on('click', function () {
   var recorrido = $('#input_recorrido').val() || null;
-  fechas = $('#singledaterange').val();
   var soloPendientes = document.getElementById('customCheckcolor1').checked ? 1 : 0;
 
-  if (!fechas) {
+  var picker = $('#singledaterange').data('daterangepicker');
+  if (!picker) {
     if (window.toast) toast('error', 'Cobranza Integrada', 'Seleccioná un rango de fechas.');
     else alert('Seleccioná un rango de fechas.');
     return;
   }
+
+  // El input se muestra en DD/MM/YYYY (ver locale arriba), pero pagos.php
+  // espera MM/DD/YYYY - se arma el string en ese formato acá, a partir de
+  // las fechas ya elegidas en el picker (no del texto visible).
+  fechas = picker.startDate.format('MM/DD/YYYY') + ' - ' + picker.endDate.format('MM/DD/YYYY');
 
   $('#modalFiltro').modal('hide');
   cargarTabla(fechas, recorrido, soloPendientes);

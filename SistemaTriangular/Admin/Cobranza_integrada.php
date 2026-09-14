@@ -195,7 +195,11 @@
                                 </div>
                                 <div class="form-group mt-3">
                                     <label>Rango de Fechas</label>
-                                    <input type="text" class="form-control date" id="singledaterange" data-toggle="date-picker" data-cancel-class="btn-warning" placeholder="Seleccionar fechas">
+                                    <!-- Sin data-toggle="date-picker": ese scan genérico (hyper/app.js) lo
+                                         inicializaba con el formato en inglés MM/DD/YYYY y sin saber que
+                                         está dentro de un modal (el calendario se abría tapado por el
+                                         modal). Se inicializa a mano en cobranza_integrada.js. -->
+                                    <input type="text" class="form-control" id="singledaterange" data-cancel-class="btn-warning" placeholder="Seleccionar fechas">
                                 </div>
                                 <div class="form-check mt-3">
                                     <input type="checkbox" class="form-check-input" id="customCheckcolor1" checked>
@@ -217,19 +221,17 @@
                                 <div class="card-body">
                                     <h4 id="seguimiento_header" class="header-title mt-2">Cobranza Integrada </h4>
 
-                                    <div class="row">
-                                        <div class="d-print-none col-12 text-end">
-                                            <div class="form-group mr-0">
+                                    <div class="row align-items-center mb-2">
+                                        <div class="d-print-none col-12 d-flex flex-wrap justify-content-end align-items-center gap-2">
+                                            <div class="form-group me-auto mb-0">
                                                 <label>Total Remitos Seleccionados: $ </label>
                                                 <span id="cobranza_integrada_header" class="header-title mt-2"></span>
                                                 <span id="cobranza_integrada_cantidad" class="ci-badge-cantidad">0 remitos</span>
                                             </div>
-                                            <div class="modal-footer">
-                                                <button id="cobranza_integrada_search" type="button" class="btn btn-success float-right mb-2">🔍 Buscar</button>
-                                                <button id="cobranza_integrada_clear" type="button" class="btn btn-warning float-right mb-2" disabled>Limpiar</button>
-                                                <button id="cobranza_integrada_remove" type="button" class="btn btn-warning float-right mb-2" disabled>Eliminar Seleccionados</button>
-                                                <button id="cobranza_integrada_report" type="button" class="btn btn-primary float-right mb-2" disabled>Generar Reporte</button>
-                                            </div>
+                                            <button id="cobranza_integrada_search" type="button" class="btn btn-success mb-2">🔍 Buscar</button>
+                                            <button id="cobranza_integrada_clear" type="button" class="btn btn-warning mb-2" disabled>Limpiar</button>
+                                            <button id="cobranza_integrada_remove" type="button" class="btn btn-warning mb-2" disabled>Eliminar Seleccionados</button>
+                                            <button id="cobranza_integrada_report" type="button" class="btn btn-primary mb-2" disabled>Generar Reporte</button>
                                         </div>
                                     </div>
                                     <table class="table table-striped table-centered mb-0" id="cobranza_integrada" style="font-size:12px">
