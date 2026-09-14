@@ -559,14 +559,24 @@
     // se reconstruye pidiéndole al server el estado de hoy (TransClientes.
     // Wepoint_f/h, agrupado por Recorrido). Así un F5 no vacía la grilla, y
     // si dos operadores abren la pantalla ven el mismo estado.
-    function cargarEstadoDeHoy() {
+    // FIX: si esta llamada fallaba por lo que sea (sesión vencida justo al
+    // recargar, error de PHP, corte de red) no había NINGÚN aviso — la
+    // pantalla se quedaba con los contadores en 0 como si no se hubiera
+    // escaneado nada en todo el día, sin ninguna pista de qué pasó. Ahora
+    // reintenta sola una vez, y si vuelve a fallar lo deja bien visible en
+    // vez de fallar calladita.
+    function cargarEstadoDeHoy(reintentando) {
         $.ajax({
             url: "Proceso/php/crossdocking.php",
             type: "GET",
             dataType: "json",
             data: { EstadoCrossdocking: 1 },
             success: function (resp) {
-                if (!resp || !resp.ok) return;
+                if (!resp || !resp.ok) {
+                    console.error("EstadoCrossdocking respondió sin ok:", resp);
+                    avisarFalloEstadoInicial();
+                    return;
+                }
 
                 (resp.porRecorrido || []).forEach(function (r) {
                     setRecorridoDesdeEstado(r.recorrido, r.nombre, r.color, r.cantidad, r.esperados, r.ultimaHora);
@@ -602,7 +612,37 @@
                     }, false);
                 }
             },
+            error: function (xhr) {
+                console.error("Error cargando EstadoCrossdocking:", xhr.status, xhr.responseText);
+                if (!reintentando) {
+                    // Puede ser un hiccup de sesión justo al abrir la página
+                    // (401 "X-Session-Expired") o timing — se reintenta una
+                    // vez sola antes de avisar.
+                    setTimeout(function () { cargarEstadoDeHoy(true); }, 1500);
+                    return;
+                }
+                if (xhr.status === 401) {
+                    avisarFalloEstadoInicial("Tu sesión venció — recargá la página para volver a entrar.");
+                } else {
+                    avisarFalloEstadoInicial();
+                }
+            },
         });
+    }
+
+    // Aviso visible cuando no se pudo traer el estado de hoy al abrir la
+    // pantalla — antes esto fallaba en silencio y quedaba todo en 0 sin
+    // ninguna pista de qué pasó.
+    function avisarFalloEstadoInicial(mensaje) {
+        if (contadores.ok > 0 || contadores.dup > 0) return; // ya se cargó algo, no pisar
+        $ultimo.removeClass("dup ambiguo").addClass("err");
+        $ultimo.html(
+            '<div class="cd-info">' +
+                '<div class="cd-estado">⚠ No se pudo cargar lo escaneado hoy</div>' +
+                '<div class="cd-codigo" style="font-size:20px;"></div>' +
+            '</div>'
+        );
+        $ultimo.find(".cd-codigo").text(mensaje || "Revisá la conexión o recargá la página. (Detalle en la consola del navegador — F12)");
     }
 
     $printSwitch.prop("checked", leerPreferenciaImpresion());
