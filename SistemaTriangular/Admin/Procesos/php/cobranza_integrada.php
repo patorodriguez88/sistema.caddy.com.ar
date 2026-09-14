@@ -63,9 +63,21 @@ if(isset($_POST['Change_import']) && $_POST['Change_import']==1){
 }
 
 if(isset($_POST['Totales']) && $_POST['Totales']==1){
-    $id=$_POST['id'];
-    $sql_number="SELECT surrender_time,surrender_name,idCliente,Cliente,FechaPedido,SUM(Total)as Total,SUM(Ventas.CobrarEnvio)as Cobranza 
-    FROM Ventas INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=Ventas.NumPedido WHERE surrender_number='$id' 
+    $id=(int)$_POST['id'];
+    // FIX: CobrarEnvio viene repetido en cada fila/servicio de una misma
+    // rendicion (ver comentario en Cobranza_Integrada mas abajo) - ahora que
+    // TODAS esas filas comparten surrender_number, un SUM(CobrarEnvio) llano
+    // multiplicaria el monto real de cobranza por la cantidad de servicios
+    // de la rendicion. Se toma UN valor por NumPedido (MAX, mismo criterio
+    // que Ventas/Procesos/php/funciones.php:47) y se suman esos.
+    $sql_number="SELECT surrender_time,surrender_name,idCliente,Cliente,FechaPedido,SUM(Total)as Total,
+    (SELECT COALESCE(SUM(x.MaxCobrar),0) FROM (
+        SELECT MAX(CobrarEnvio) AS MaxCobrar
+        FROM Ventas
+        WHERE surrender_number='$id' AND Eliminado=0
+        GROUP BY NumPedido
+    ) x) as Cobranza
+    FROM Ventas INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=Ventas.NumPedido WHERE surrender_number='$id'
     AND Ventas.Eliminado=0 AND TransClientes.Eliminado=0";
     $sql_dato=$mysqli->query($sql_number);
     $ResultadoTotales=$sql_dato->fetch_array(MYSQLI_ASSOC);
@@ -133,10 +145,34 @@ $sql_dato=$mysqli->query($sql_number);
 $Resultado_number=$sql_dato->fetch_array(MYSQLI_ASSOC);
 $Numero=$Resultado_number['Numero']+1;
 
+      // FIX (Asana: "la cobranza integrada toma un solo servicio de la
+      // rendicion"): una rendicion con varios servicios queda repartida en
+      // varias FILAS de Ventas, una por servicio, todas con el mismo
+      // NumPedido (y el mismo CobrarEnvio repetido - ver el mismo criterio
+      // documentado en Ventas/Procesos/php/funciones.php:43-47). En la
+      // grilla el operador tilda UNA sola fila por rendicion (tildar mas de
+      // una duplicaria el monto en el total del modal, ya que CobrarEnvio
+      // viene repetido por fila). Antes esto marcaba surrender_number SOLO
+      // en la fila puntual tildada -> la liquidacion terminaba con un solo
+      // servicio de toda la rendicion. Ahora, por cada fila tildada, se
+      // marcan TODAS las filas de Ventas que comparten su mismo NumPedido.
       for($i=0;$i<count($box);$i++){
-        $sql=$mysqli->query("UPDATE Ventas SET surrender_name='$name',surrender_time='$time',surrender_observations='$obs',surrender_number='$Numero' WHERE idPedido='$box[$i]' AND Eliminado='0'");
+        $idPedidoEsc = (int)$box[$i];
+        $sqlNumPedido = $mysqli->query("SELECT NumPedido FROM Ventas WHERE idPedido='$idPedidoEsc' AND Eliminado=0 LIMIT 1");
+        $filaNumPedido = $sqlNumPedido ? $sqlNumPedido->fetch_assoc() : null;
+        $numPedido = $filaNumPedido['NumPedido'] ?? '';
+
+        if ($numPedido !== '') {
+            $numPedidoEsc = $mysqli->real_escape_string($numPedido);
+            $mysqli->query("UPDATE Ventas SET surrender_name='$name',surrender_time='$time',surrender_observations='$obs',surrender_number='$Numero' WHERE NumPedido='$numPedidoEsc' AND Eliminado='0'");
+        } else {
+            // Fallback defensivo: si no se encontro el NumPedido (dato
+            // corrupto/fila ya eliminada), al menos se marca la fila
+            // puntual tildada, como hacia antes.
+            $mysqli->query("UPDATE Ventas SET surrender_name='$name',surrender_time='$time',surrender_observations='$obs',surrender_number='$Numero' WHERE idPedido='$idPedidoEsc' AND Eliminado='0'");
+        }
         $rows[]=$box[$i];
-      } 
+      }
       echo json_encode(array('data'=>$rows,'surrender_number'=>$Numero));
 }
 
