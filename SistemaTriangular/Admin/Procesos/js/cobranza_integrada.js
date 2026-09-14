@@ -142,13 +142,14 @@ datatable.destroy();
        }  
       });     
     });
+// FIX: apuntaba a www.caddy.com.ar (el sitio público, no el sistema) con
+// una URL sin ".php" - nunca abría nada real. Ahora abre, en pestaña
+// aparte, la liquidación en PDF (mismo formato que el resto de los
+// comprobantes del sistema - ver Admin/Informes/CobranzaIntegradaPdf.php).
+// De paso 't_blank' -> '_blank' (typo: con nombre custom, si ya había una
+// pestaña con ese nombre la reusaba en vez de abrir una nueva).
 function imp(i){
-    window.open('https://www.caddy.com.ar/SistemaTriangular/Admin/Informes/invoice_cobranza_integrada?id='+i,'t_blank');
-    // $('#myCenterModalLabel_rec').html(i);
-    // $('#standard-modal-invoice').modal('show');
-
-    // $('#myCenterModalLabel_rec').html();  
-//    alert(i); 
+    window.open('Informes/invoice_cobranza_integrada.php?id='+i, '_blank');
 }
       // FIX: la tabla pagina (paging:true) - DataTables solo mantiene en el
       // DOM las filas de la página actual. Dos bugs distintos por esto:
@@ -258,20 +259,16 @@ function imp(i){
               // y el botón "Aceptar" no hacía nada. Se acepta cualquiera de los dos
               // casos por las dudas (si algún día cambia el Content-Type, sigue andando).
               var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
-              $('#myCenterModalLabel_rec').html(jsonData.surrender_number);
-              $('#NumeroComprobante').html(jsonData.surrender_number);
-              $('#FechaComprobante').html(fecha);
 
-              $('#standard-modal-invoice').modal('show');
+              // FIX: acá se mostraba #standard-modal-invoice, un modal que
+              // nunca tuvo ningún JS que lo llenara de datos (quedaba vacío,
+              // "no se sabe si terminó"). Ahora abre, en pestaña aparte, la
+              // misma liquidación en PDF que ya usa el botón "Ver" (ícono de
+              // documento) de la grilla - mismo formato que el resto de los
+              // comprobantes del sistema.
               $('#standard-modal').modal('hide');
-              
-              
-            //   if (jsonData.success == "1") {
-                console.log('ver',jsonData.surrender_number);
-                // toast("success", "Registro Actualizado !", "Se han realizado cambios.");
-            //   } else {
-                // toast("error", "Ocurrio un Error !", "No se realizaron cambios.");
-            //   }
+              window.open('Informes/invoice_cobranza_integrada.php?id=' + jsonData.surrender_number, '_blank');
+              console.log('ver', jsonData.surrender_number);
             }
           });
         }
