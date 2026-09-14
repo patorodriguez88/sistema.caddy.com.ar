@@ -28,7 +28,11 @@ function currencyFormat(num) {
             type: "POST",
             url: "../Procesos/php/cobranza_integrada.php",
             success: function(response) {
-                var jsonData = JSON.parse(response);
+                // FIX: mismo motivo que en cobranza_integrada.js - cobranza_integrada.php
+                // manda Content-Type: application/json, jQuery ya lo entrega parseado;
+                // volver a pasarlo por JSON.parse() rompía con "[object Object] is not
+                // valid JSON" y la liquidación se quedaba sin datos.
+                var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
              $('#FechaComprobante').html(jsonData.fecha);
              
              $('#factura_neto').html(currencyFormat(Number(jsonData.cobrado)));

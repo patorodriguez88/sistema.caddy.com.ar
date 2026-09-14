@@ -49,7 +49,11 @@ datatable.destroy();
       type:'post',
       success: function(response)
        {
-        var jsonData = JSON.parse(response);
+        // Defensivo por consistencia con los otros $.ajax de este archivo:
+        // pagos.php no manda Content-Type: application/json, así que jQuery
+        // entrega esto como texto y hace falta parsearlo - pero por las
+        // dudas de que cambie, acepta los dos casos.
+        var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
         var Inicio = jsonData.Inicio;
         var Final =jsonData.Final;
 
@@ -229,7 +233,12 @@ function imp(i){
             url: 'Procesos/php/cobranza_integrada.php',
             type: 'post',
             success: function(response) {
-              var jsonData = JSON.parse(response);
+              // FIX: cobranza_integrada.php manda Content-Type: application/json ->
+              // jQuery YA entrega esto parseado como objeto (no como texto). Volver a
+              // pasarlo por JSON.parse() rompía con "[object Object] is not valid JSON"
+              // y el botón "Aceptar" no hacía nada. Se acepta cualquiera de los dos
+              // casos por las dudas (si algún día cambia el Content-Type, sigue andando).
+              var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
               $('#myCenterModalLabel_rec').html(jsonData.surrender_number);
               $('#NumeroComprobante').html(jsonData.surrender_number);
               $('#FechaComprobante').html(fecha);
@@ -285,8 +294,10 @@ function change(id,imp){
         url: 'Procesos/php/cobranza_integrada.php',
         type: 'post',
         success: function(response) {
-        var jsonData = JSON.parse(response);
-        
+        // FIX: mismo motivo que en generar_informe_ok - cobranza_integrada.php
+        // manda Content-Type: application/json, jQuery ya lo entrega parseado.
+        var jsonData = (typeof response === 'string') ? JSON.parse(response) : response;
+
         if(jsonData.success==1){
             
             $('#modal_change_import').modal('hide');
