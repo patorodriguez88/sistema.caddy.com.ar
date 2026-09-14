@@ -149,6 +149,11 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
           { data: "Recorrido" },
           {
             data: "Cliente",
+            // FIX (reportado: "la tabla no entra, achicá la letra"): esta
+            // celda tenía 2 <h6 class="font-15"> apilados (15px c/u, con su
+            // propio margen) más badges - inflaba mucho el alto de cada
+            // fila. Se compacta a una sola línea "Origen → Destino" +
+            // badges chicos (clase .ci-fila-compacta, ver CSS de la pantalla).
             render: function (data, type, row) {
               var entregado = row.Entregado == 1
                 ? '<span class="badge rounded-pill bg-success text-white">Entregado</span>'
@@ -156,9 +161,8 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
               var devuelto = row.Devuelto == 1
                 ? ' <span class="badge rounded-pill bg-warning text-white">Devuelto</span>'
                 : '';
-              return '<h6 class="font-15 mb-1 fw-normal">' + row.Cliente + '</h6>' +
-                '<h6 class="font-15 mb-1 fw-normal">' + row.ClienteDestino + '</h6>' +
-                entregado + devuelto;
+              return '<div class="ci-fila-titulo">' + row.Cliente + ' &rarr; ' + row.ClienteDestino + '</div>' +
+                '<div class="ci-fila-badges">' + entregado + devuelto + '</div>';
             }
           },
           {
@@ -168,10 +172,12 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
               // código de proveedor y el de seguimiento se mostraban como
               // texto gris suelto - ahora van como badges, más fáciles de
               // ubicar de un vistazo (mismos colores que ya usaba Caddy_produccion).
-              return '<h6 class="font-15 mb-1 fw-normal">' + row.Titulo + '</h6>' +
-                '<span class="text-muted font-11">Código Proveedor: ' + (row.CodigoProveedor || '-') + '</span><br>' +
+              return '<div class="ci-fila-titulo">' + row.Titulo + '</div>' +
+                '<div class="ci-fila-sub">Cód. Proveedor: ' + (row.CodigoProveedor || '-') + '</div>' +
+                '<div class="ci-fila-badges">' +
                 '<span class="badge rounded-pill bg-warning text-white">' + row.NumeroRepo + '</span> ' +
-                '<span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span>';
+                '<span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span>' +
+                '</div>';
             }
           },
           { data: "Comentario" },
@@ -182,8 +188,8 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
           {
             data: "surrender_name",
             render: function (data, type, row) {
-              return '<h6 class="font-15 mb-1 fw-normal">' + row.surrender_name + '</h6>' +
-                '<span class="text-muted font-11">' + row.surrender_time + '</span>';
+              return '<div class="ci-fila-titulo">' + row.surrender_name + '</div>' +
+                '<div class="ci-fila-sub">' + row.surrender_time + '</div>';
             }
           },
           {

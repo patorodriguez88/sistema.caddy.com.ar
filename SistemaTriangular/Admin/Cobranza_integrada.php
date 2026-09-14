@@ -60,6 +60,32 @@
             margin-left: 10px;
             vertical-align: middle;
         }
+
+        /* FIX (reportado: "la tabla no entra, achicá la letra"): las celdas
+           de Cliente/Comprobante/Rendición usaban <h6 class="font-15">
+           (15px, con margen propio) apiladas - inflaba mucho el alto de
+           cada fila y entraban pocas en pantalla. Se compacta todo el
+           tipo de letra de la grilla y se achican los badges. */
+        #cobranza_integrada td {
+            vertical-align: middle;
+            padding-top: 7px;
+            padding-bottom: 7px;
+        }
+        #cobranza_integrada .ci-fila-titulo {
+            font-size: 12.5px;
+            font-weight: 600;
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        #cobranza_integrada .ci-fila-sub {
+            font-size: 10.5px;
+            color: var(--ct-secondary-color, #8a969c);
+            margin-bottom: 2px;
+        }
+        #cobranza_integrada .ci-fila-badges .badge {
+            font-size: 9.5px;
+            padding: 3px 8px;
+        }
     </style>
 </head>
 
