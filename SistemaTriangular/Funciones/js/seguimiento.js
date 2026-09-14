@@ -407,37 +407,47 @@ function _rotuloDatos() {
 
 // Rótulo 6,5 x 3,2 cm @ 203 dpi (520 x 256 pts) - mismo formato que la etiqueta
 // de colecta: logo + QR en columna izquierda, texto a la derecha desde X=200.
-function _rotuloZPL(x) {
+// FIX: antes imprimía siempre UN rótulo con "Bulto: 1/N" fijo, sin importar
+// cuántos bultos tuviera el envío (Cantidad>1) — ahora recibe el bulto
+// puntual (i de total) y arma el sufijo _N en Id/QR, igual que hace
+// CrossDocking.php para el mismo caso.
+function _rotuloZPL(x, i, total) {
+  i = i || 1;
+  total = total || (parseInt(x.cant, 10) || 1);
+  var csEtiqueta = total > 1 ? x.cs + "_" + i : x.cs;
   return (
     "^XA^PW520^LL256^LH0,0^CI28" +
     CADDY_LOGO_ZPL +
     "^FO200,10^A0N,20,20^FD" + x.cliente + "^FS" +
     "^FO200,35^A0N,18,18^FD" + x.domicilio + "^FS" +
-    "^FO200,57^A0N,18,18^FDId: " + x.cs + "^FS" +
+    "^FO200,57^A0N,18,18^FDId: " + csEtiqueta + "^FS" +
     "^FO200,79^A0N,18,18^FDOrigen: " + x.origen + "^FS" +
-    "^FO200,101^A0N,18,18^FDBulto: 1/" + x.cant + "^FS" +
+    "^FO200,101^A0N,18,18^FDBulto: " + i + "/" + total + "^FS" +
     "^FO200,123^A0N,18,18^FDFecha: " + x.fecha + "^FS" +
     "^FO200,148^A0N,30,30^FDRec: " + (x.recorrido || "-") + "^FS" +
     "^FO200,185^A0N,26,26^FDPos: " + (x.posicion || "-") + "^FS" +
-    "^FO30,74^BQN,2,7^FDQA," + x.cs + "^FS" +
+    "^FO30,74^BQN,2,7^FDQA," + csEtiqueta + "^FS" +
     "^XZ"
   );
 }
 
 function _rotuloPreviewHTML(x) {
   var esc = function (s) { return $("<div>").text(s == null ? "" : s).html(); };
-  var qr = "/SistemaTriangular/Funciones/php/qr.php?s=4&d=" + encodeURIComponent(x.cs);
+  var total = Math.max(1, parseInt(x.cant, 10) || 1);
+  var csEtiqueta = total > 1 ? x.cs + "_1" : x.cs;
+  var qr = "/SistemaTriangular/Funciones/php/qr.php?s=4&d=" + encodeURIComponent(csEtiqueta);
   return (
     '<img src="' + qr + '" alt="QR" style="position:absolute;left:8px;top:36px;width:84px;height:84px;image-rendering:pixelated;">' +
     '<div style="margin-left:100px;">' +
     '<div style="font-weight:700;font-size:12px;">' + esc(x.cliente) + "</div>" +
     "<div>" + esc(x.domicilio) + "</div>" +
-    "<div>Id: " + esc(x.cs) + "</div>" +
+    "<div>Id: " + esc(csEtiqueta) + "</div>" +
     "<div>Origen: " + esc(x.origen) + "</div>" +
-    "<div>Bulto: 1/" + esc(x.cant) + "</div>" +
+    "<div>Bulto: 1/" + total + "</div>" +
     "<div>Fecha: " + esc(x.fecha) + "</div>" +
     '<div style="font-weight:700;font-size:14px;margin-top:2px;">Rec: ' + esc(x.recorrido || "-") + "</div>" +
     '<div style="font-weight:700;font-size:12px;">Pos: ' + esc(x.posicion || "-") + "</div>" +
+    (total > 1 ? '<div class="text-muted" style="margin-top:4px;">Se van a imprimir ' + total + " etiquetas (1/" + total + " a " + total + "/" + total + ")</div>" : "") +
     "</div>"
   );
 }
@@ -488,22 +498,45 @@ function _rotuloEstadoImpresora() {
   }
 }
 
+// FIX: antes solo mandaba UN rótulo aunque Cantidad>1 (un envío de 2
+// bultos solo imprimía el "1/2" y nunca el "2/2"). Ahora manda una
+// etiqueta por bulto, EN SECUENCIA (espera la confirmación de cada una
+// antes de mandar la siguiente) — mandarlas todas juntas de una puede
+// saturar el buffer de la Zebra y perder o mezclar etiquetas.
 $(document).on("click", "#btn_rotulo_zebra_imprimir", function () {
   if (!window.zebraDevice) return;
-  var zpl = _rotuloZPL(_rotuloDatos());
+  var x = _rotuloDatos();
+  var total = Math.max(1, parseInt(x.cant, 10) || 1);
   var $b = $(this).prop("disabled", true);
-  window.zebraDevice.send(
-    zpl,
-    function () {
-      $("#modal_rotulo_zebra").modal("hide");
-      $b.prop("disabled", false);
-      if (window.toast) toast("success", "Rótulo", "Enviado a la impresora.");
-    },
-    function (err) {
-      $b.prop("disabled", false);
-      $("#rotulo_zebra_estado").removeClass("text-success").addClass("text-danger").html("Error al imprimir: " + err);
-    },
-  );
+  var $est = $("#rotulo_zebra_estado");
+
+  function imprimirBulto(i) {
+    if (total > 1) {
+      $est.removeClass("text-danger text-success").addClass("text-muted").html("Imprimiendo " + i + "/" + total + "…");
+    }
+    window.zebraDevice.send(
+      _rotuloZPL(x, i, total),
+      function () {
+        if (i < total) {
+          imprimirBulto(i + 1);
+          return;
+        }
+        $("#modal_rotulo_zebra").modal("hide");
+        $b.prop("disabled", false);
+        if (window.toast) {
+          toast("success", "Rótulo", total > 1 ? ("Se imprimieron los " + total + " rótulos.") : "Enviado a la impresora.");
+        }
+      },
+      function (err) {
+        $b.prop("disabled", false);
+        $est.removeClass("text-success").addClass("text-danger").html(
+          "Error al imprimir" + (total > 1 ? " el bulto " + i + "/" + total : "") + ": " + err,
+        );
+      },
+    );
+  }
+
+  imprimirBulto(1);
 });
 
 document.addEventListener(
