@@ -87,12 +87,21 @@
         $printerEstadoTxt.text(texto);
     }
 
-    function conectarImpresora() {
+    // FIX (post-prueba real en depósito): la app de escritorio "Zebra
+    // Browser Print" tiene un arranque en frío conocido — el primer
+    // getDefaultDevice() del día/sesión de navegador suele fallar aunque la
+    // impresora esté prendida y todo bien configurado, y una vez que
+    // CUALQUIER página logra conectar una vez, las siguientes conectan
+    // solas. Antes eso obligaba al operador a ir a buscar otra pantalla
+    // (Pendientes > Rótulo) para "despertarla". Ahora se reintenta sola,
+    // callada, un par de veces al abrir la pantalla.
+    function conectarImpresora(silencioso, intentosRestantes) {
+        if (typeof intentosRestantes !== "number") intentosRestantes = 2;
         if (typeof BrowserPrint === "undefined") {
             setEstadoPrinter("error", "Impresora: SDK no cargó");
             return;
         }
-        setEstadoPrinter("buscando", "Impresora: buscando…");
+        if (!silencioso) setEstadoPrinter("buscando", "Impresora: buscando…");
         BrowserPrint.getDefaultDevice(
             "printer",
             function (device) {
@@ -101,30 +110,38 @@
             },
             function () {
                 selected_device = null;
+                if (intentosRestantes > 0) {
+                    setTimeout(function () {
+                        conectarImpresora(true, intentosRestantes - 1);
+                    }, 1500);
+                    return;
+                }
                 setEstadoPrinter("error", "Impresora: no detectada — ¿está abierto Zebra Browser Print en esta PC?");
             }
         );
     }
 
-    $("#cd_printer_reintentar").on("click", conectarImpresora);
+    $("#cd_printer_reintentar").on("click", function () {
+        conectarImpresora(false, 2);
+    });
 
     $printSwitch.on("change", function () {
         guardarPreferenciaImpresion(imprimirActivo());
     });
 
-    // ZPL del rótulo que se pega en el bulto — mismo criterio que
-    // imprimirEtiquetasColecta() de print_automatic.js: el QR SIEMPRE lleva
-    // el código de Caddy (nunca el del proveedor), y acá además el
-    // Recorrido va grande porque es el dato que el operador necesita leer
-    // de un vistazo para saber a qué carro/zona va el bulto.
-    //
-    // OJO: este NO es el rótulo grande de colecta (6,5x3,2cm / 520x256pt) —
-    // es el rótulo chico (6x2,5cm), que a 203dpi (2.54cm=1", único dpi de
-    // la impresora) son ~480x200 puntos. A ese tamaño el logo de Caddy no
-    // entra bien junto con QR + 6 líneas de texto, así que se sacó acá:
-    // prioriza que el QR y los datos queden legibles antes que la marca.
-    // Si igual lo querés, avisame y lo agrego más chico probando en la
-    // impresora real (una foto ayuda a calibrar).
+    // Logo real (el mismo bitmap que ya usa el botón "Rótulo" del panel de
+    // seguimiento — Funciones/js/seguimiento.js — y la etiqueta de colecta
+    // de wepoint.ar). No es un logo inventado por mí: lo copié tal cual de
+    // ahí para que salga igual de prolijo que el rótulo que ya conocen.
+    var CADDY_LOGO_ZPL =
+        "^FO15,15^GFA,1675,1675,25,,:::::::::::::M0CJ04J01,L07F8003FCI0FE,L0FFC007FE003FF,K01FFE00IF007FF8,K03FFE01IF007FFC,K03IF01IF80IFC,K03IF81IFC0IFE,K07IF83IFC0IFE,K07IFC1IFE0IFE,K03IFE1JF0F01E,K03IFE1JF0E01C,K03JF1JF8703C,K01JF0JF87C78,L0JF87IFC3FF,L0JFC7IFE0FE,L07IFC3IFE01V07,L07IFE3JFX0F,L03IFE1JFX0F,L01JF0JF8W07J0F,L01JF8JFCgH0F,M0JF87IFCgH0F,M0JFC7IFEI0E3C38FC3FE07F8F73F3FE,M07IFC3IFEI0E3E79FF3FF0FFCF7FFBFF,M03IFE1JFI0E3E7BFF3FF9FFEF7FFBFE,M03IFE1JFI0F7E77C73C79E1EF7C78F,M01IFE0JFI0F7E7787BC3DE1E77878F,N0IFE07IFI077FF7FFBC3DC0FF7838F,N0IFE07IFI07F7E7FFBC3DC0FF7838F,N07FFE03IFI07E7E7803C3DE1EF7838F,N07FFE03IFI03E7E7C13C79E1EF7838F,N03FFC01FFEI03E3C3FF3FF9FFEF7878FE,N01FF800FFCI03E3C1FFBFF0FFCF78787F,O0FFI07F8I01C3C0FF3FE07F0778383F,U08Q03C,gM03C,:::,::::::::::::::^FS";
+
+    // ZPL del rótulo — mismo tamaño y layout que el botón "Rótulo" ya
+    // probado (Funciones/js/seguimiento.js::_rotuloZPL): 6,5x3,2cm @203dpi
+    // = 520x256 puntos, logo real, QR + texto desde X=200. La diferencia
+    // con ese: acá "Bulto" es el X/Y REAL de este escaneo (bultoActual/
+    // bultoTotal), no un "1/N" fijo — con multi-bulto dice cuál bulto es
+    // cada etiqueta, no solo cuántos hay en total.
     function construirZplCrossdocking(data) {
         var fechaTexto = (function () {
             var h = new Date();
@@ -132,21 +149,17 @@
         })();
 
         return (
-            "^XA" +
-            "^PW480" +
-            "^LL200" +
-            "^LH0,0" +
-            "^FX Datos crossdocking." +
-            "^FO170,4^A0N,14,14^FD" + zplLimpio(data.razonSocialOrigen || "CROSSDOCKING") + "^FS" +
-            "^FO170,22^A0N,30,30^FDRec: " + (data.recorrido || "-") + "^FS" +
-            // Pos (posición de entrega dentro del recorrido) — mismo par
-            // Rec/Pos grande que ya usa el rótulo de colecta (wepoint.ar).
-            "^FO170,54^A0N,26,26^FDPos: " + (data.posicion || "-") + "^FS" +
-            "^FO170,82^A0N,13,13^FDId: " + data.codigoEtiqueta + "^FS" +
-            "^FO170,98^A0N,13,13^FDBulto: " + data.bultoActual + "/" + data.bultoTotal + "^FS" +
-            "^FO170,114^A0N,13,13^FD" + zplLimpio((data.clienteDestino || "-").substring(0, 22)) + "^FS" +
-            "^FO170,130^A0N,13,13^FD" + fechaTexto + "^FS" +
-            "^FO15,30^BQN,2,5^FDQA," + data.codigoEtiqueta + "^FS" +
+            "^XA^PW520^LL256^LH0,0^CI28" +
+            CADDY_LOGO_ZPL +
+            "^FO200,10^A0N,20,20^FD" + zplLimpio((data.clienteDestino || "-").substring(0, 26)) + "^FS" +
+            "^FO200,35^A0N,18,18^FD" + zplLimpio((data.domicilioDestino || "").substring(0, 30)) + "^FS" +
+            "^FO200,57^A0N,18,18^FDId: " + data.codigoEtiqueta + "^FS" +
+            "^FO200,79^A0N,18,18^FDOrigen: " + zplLimpio((data.razonSocialOrigen || "").substring(0, 26)) + "^FS" +
+            "^FO200,101^A0N,18,18^FDBulto: " + data.bultoActual + "/" + data.bultoTotal + "^FS" +
+            "^FO200,123^A0N,18,18^FDFecha: " + fechaTexto + "^FS" +
+            "^FO200,148^A0N,30,30^FDRec: " + (data.recorrido || "-") + "^FS" +
+            "^FO200,185^A0N,26,26^FDPos: " + (data.posicion || "-") + "^FS" +
+            "^FO30,74^BQN,2,7^FDQA," + data.codigoEtiqueta + "^FS" +
             "^XZ"
         );
     }
@@ -161,21 +174,66 @@
             .replace(/[\^~]/g, "");
     }
 
-    function imprimirRotulo(data) {
+    // FIX (post-prueba real): la primera impresión del día podía fallar
+    // aunque el estado ya mostrara "conectada" — el mismo arranque en frío
+    // de BrowserPrint puede dejar un device "vivo" en la variable pero que
+    // ya no responde. En vez de obligar al operador a ir a otra pantalla
+    // para "despertarla" (que es justo lo que pasó en la prueba real),
+    // ahora un fallo de impresión dispara UN reintento automático: pide un
+    // device fresco con getDefaultDevice() y reintenta el mismo rótulo una
+    // sola vez antes de darse por vencido.
+    function imprimirRotulo(data, reintentando) {
         if (!imprimirActivo()) return;
+
+        function enviarConDispositivo(device) {
+            try {
+                device.send(construirZplCrossdocking(data), function () {
+                    setEstadoPrinter("ok", "Impresora: " + device.name);
+                }, function (err) {
+                    console.error("Error imprimiendo:", err);
+                    if (!reintentando) {
+                        setEstadoPrinter("buscando", "Impresora: reintentando…");
+                        setTimeout(function () {
+                            selected_device = null;
+                            BrowserPrint.getDefaultDevice(
+                                "printer",
+                                function (dev) {
+                                    selected_device = dev;
+                                    imprimirRotulo(data, true);
+                                },
+                                function () {
+                                    setEstadoPrinter("error", "Impresora: no se pudo imprimir (reintenté y no conectó)");
+                                }
+                            );
+                        }, 800);
+                        return;
+                    }
+                    setEstadoPrinter("error", "Impresora: no se pudo imprimir");
+                });
+            } catch (e) {
+                console.error("Excepción imprimiendo:", e);
+                setEstadoPrinter("error", "Impresora: error al imprimir");
+            }
+        }
+
         if (!selected_device) {
+            if (!reintentando && typeof BrowserPrint !== "undefined") {
+                BrowserPrint.getDefaultDevice(
+                    "printer",
+                    function (dev) {
+                        selected_device = dev;
+                        imprimirRotulo(data, true);
+                    },
+                    function () {
+                        setEstadoPrinter("error", "Impresora: no conectada (no se imprimió)");
+                    }
+                );
+                return;
+            }
             setEstadoPrinter("error", "Impresora: no conectada (no se imprimió)");
             return;
         }
-        try {
-            selected_device.send(construirZplCrossdocking(data), undefined, function (err) {
-                console.error("Error imprimiendo:", err);
-                setEstadoPrinter("error", "Impresora: error al imprimir");
-            });
-        } catch (e) {
-            console.error("Excepción imprimiendo:", e);
-            setEstadoPrinter("error", "Impresora: error al imprimir");
-        }
+        enviarConDispositivo(selected_device);
     }
 
     function refocus() {
