@@ -549,4 +549,164 @@ if (isset($_REQUEST['EstadoCrossdocking'])) {
     exit;
 }
 
+// Sufijos _N (o null si Cantidad=1, sin sufijo) ya escaneados HOY para un
+// envío — para saber, bulto por bulto, cuáles de los N de un multi-bulto
+// todavía faltan (no alcanza con un contador: hace falta saber CUÁLES).
+function cd_sufijos_escaneados_hoy(mysqli $mysqli, string $fecha, int $idTC): array
+{
+    $st = $mysqli->prepare("SELECT DISTINCT bulto_sufijo FROM crossdocking_eventos
+                             WHERE fecha=? AND idTransClientes=? AND resultado IN ('ok','dup')");
+    $st->bind_param('si', $fecha, $idTC);
+    $st->execute();
+    $rows = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    return array_map(function ($r) {
+        return $r['bulto_sufijo']; // string "1","2",... o null (sin sufijo)
+    }, $rows);
+}
+
+/**
+ * Lista de BULTOS pendientes (todavía no ingresados) de un recorrido, para
+ * el modal que se abre al tocar la tarjeta.
+ *
+ * OJO — esto tiene que devolver UN RENGLÓN POR BULTO físico, no uno por
+ * envío: la tarjeta ("X de Y") cuenta bultos (SUM(Cantidad) esperados vs.
+ * pares idTransClientes+sufijo escaneados), así que si acá listáramos un
+ * renglón por envío, un pedido de 3 bultos con 1 solo escaneado contaría
+ * como "1 pendiente" en la lista pero "2 bultos" en la resta de la
+ * tarjeta - los números no cerrarían entre la tarjeta y el modal (bug real
+ * encontrado en la primera versión de este endpoint). Por eso se expande
+ * cada envío multi-bulto en sus sufijos _N pendientes puntuales.
+ * GET/POST: PendientesCrossdocking=1, recorrido=<numero>
+ */
+if (isset($_REQUEST['PendientesCrossdocking'])) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $recorrido = (int)($_REQUEST['recorrido'] ?? 0);
+    if ($recorrido <= 0) {
+        echo json_encode(['ok' => false, 'error' => 'RECORRIDO_INVALIDO']);
+        exit;
+    }
+
+    $fecha = date('Y-m-d');
+
+    $st = $mysqli->prepare("SELECT id, CodigoSeguimiento, ClienteDestino, DomicilioDestino,
+                                    LocalidadDestino, Cantidad, NumerodeOrden, RazonSocial
+                             FROM TransClientes
+                             WHERE Recorrido=? AND Eliminado=0 AND Entregado=0 AND Devuelto=0
+                             ORDER BY CodigoSeguimiento");
+    $st->bind_param('i', $recorrido);
+    $st->execute();
+    $rows = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    $pendientes = [];
+    foreach ($rows as $row) {
+        $idTC = (int)$row['id'];
+        $bultoTotal = max(1, (int)($row['Cantidad'] ?? 1));
+        $hechos = cd_sufijos_escaneados_hoy($mysqli, $fecha, $idTC);
+        $codigoBase = (string)$row['CodigoSeguimiento'];
+
+        if ($bultoTotal === 1) {
+            // Sin sufijo: un solo bulto, "hecho" si hay CUALQUIER evento hoy
+            // para este envío (el sufijo grabado es null en ese caso).
+            if (!empty($hechos)) {
+                continue;
+            }
+            $pendientes[] = [
+                'codigoEtiqueta'    => $codigoBase,
+                'clienteDestino'    => (string)($row['ClienteDestino'] ?? ''),
+                'domicilioDestino'  => (string)($row['DomicilioDestino'] ?? ''),
+                'localidadDestino'  => (string)($row['LocalidadDestino'] ?? ''),
+                'numeroOrden'       => (int)($row['NumerodeOrden'] ?? 0),
+                'origen'            => (string)($row['RazonSocial'] ?? ''),
+            ];
+            continue;
+        }
+
+        for ($i = 1; $i <= $bultoTotal; $i++) {
+            if (in_array((string)$i, $hechos, true)) {
+                continue; // este bulto puntual ya se escaneó hoy
+            }
+            $pendientes[] = [
+                'codigoEtiqueta'    => $codigoBase . '_' . $i,
+                'clienteDestino'    => (string)($row['ClienteDestino'] ?? ''),
+                'domicilioDestino'  => (string)($row['DomicilioDestino'] ?? ''),
+                'localidadDestino'  => (string)($row['LocalidadDestino'] ?? ''),
+                'numeroOrden'       => (int)($row['NumerodeOrden'] ?? 0),
+                'origen'            => (string)($row['RazonSocial'] ?? ''),
+            ];
+        }
+    }
+
+    $recInfo = cd_info_recorrido($mysqli, $recorrido);
+
+    echo json_encode([
+        'ok' => true,
+        'recorrido' => $recorrido,
+        'recorridoNombre' => $recInfo['nombre'],
+        'pendientes' => $pendientes,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+/**
+ * "Controlar recorrido": el operador escanea de nuevo, de corrido, TODOS los
+ * bultos que tiene físicamente juntos para un recorrido — un control final
+ * antes de mandarlo, para detectar algo que se mezcló de otro recorrido.
+ *
+ * A propósito NO escribe nada en ningún lado (ni crossdocking_eventos ni
+ * Wepoint_status) — es un chequeo de lectura pura, la cuenta la lleva el
+ * navegador en memoria mientras el modal está abierto. Reusa cd_resolver(),
+ * el mismo motor de matching que el escaneo real, así "pertenece a este
+ * recorrido" usa exactamente el mismo criterio que resolvería un escaneo
+ * normal (Meli/Wepoint_c/Caddy/CodigoProveedor).
+ *
+ * Un código AMBIGUO (coincide con más de un proveedor) se informa como "no
+ * pertenece" acá a propósito — no tiene sentido parar el control a mitad de
+ * un escaneo rápido para desambiguar, así que se marca en rojo y el
+ * operador puede resolverlo después con un escaneo normal si hace falta.
+ *
+ * POST: ControlarCrossdocking=1, codigo=<texto>, recorrido=<numero>
+ */
+if (isset($_POST['ControlarCrossdocking'])) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $raw = trim((string)($_POST['codigo'] ?? ''));
+    $recorridoObjetivo = (int)($_POST['recorrido'] ?? 0);
+    if ($raw === '' || $recorridoObjetivo <= 0) {
+        echo json_encode(['ok' => false, 'error' => 'DATOS_INVALIDOS']);
+        exit;
+    }
+
+    $tieneSufijo = preg_match('/_(\d+)$/', $raw, $m) === 1;
+    $bultoSufijo = $tieneSufijo ? $m[1] : null;
+
+    $resuelto = cd_resolver($mysqli, $raw);
+    if (!$resuelto || $resuelto['tipo'] === 'AMBIGUO') {
+        echo json_encode([
+            'ok' => true,
+            'pertenece' => false,
+            'codigo' => $raw,
+            'motivo' => $resuelto ? 'AMBIGUO' : 'NO_MATCH',
+        ]);
+        exit;
+    }
+
+    $row = $resuelto['row'];
+    $idTC = (int)$row['id'];
+    $codigoBase = cd_base((string)$row['CodigoSeguimiento']);
+    $codigoEtiqueta = $tieneSufijo ? $codigoBase . '_' . $m[1] : (string)$row['CodigoSeguimiento'];
+    $recorridoReal = (int)($row['Recorrido'] ?? 0);
+
+    echo json_encode([
+        'ok'                => true,
+        'pertenece'         => $recorridoReal === $recorridoObjetivo,
+        'idTransClientes'   => $idTC,
+        'bultoSufijo'       => $bultoSufijo,
+        'codigoEtiqueta'    => $codigoEtiqueta,
+        'clienteDestino'    => (string)($row['ClienteDestino'] ?? ''),
+        'recorridoReal'     => $recorridoReal ?: null,
+    ], JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 echo json_encode(['ok' => false, 'error' => 'ACCION_DESCONOCIDA']);

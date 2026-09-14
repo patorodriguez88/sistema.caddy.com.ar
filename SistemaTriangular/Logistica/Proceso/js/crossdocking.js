@@ -287,6 +287,12 @@
     }
 
     function refocus() {
+        // Con el modal de recorrido abierto, este input queda tapado por el
+        // backdrop pero NO deshabilitado — sin este chequeo, cualquier click
+        // adentro del modal (ej. en el panel de "Controlar recorrido") le
+        // robaba el foco al input de control, cortando el lector de códigos
+        // a mitad de un control.
+        if ($(".modal.show").length) return;
         // pequeño delay: si se dispara justo después de un blur del navegador
         // (alt-tab, click accidental) igual termina enfocado.
         setTimeout(function () {
@@ -513,32 +519,307 @@
                 '<div class="cd-rec-card-num" style="color:' + colorHex + ';"></div>' +
                 '<div class="cd-rec-card-nombre"></div>' +
                 '<div class="cd-rec-card-cant"><span class="v-cant"></span><span class="cd-rec-card-de">de</span><span class="v-esp"></span>' + check + '</div>' +
-                '<div class="cd-rec-card-label">Paquetes hoy</div>' +
-                '<button type="button" class="cd-rec-card-print" title="Imprimir rótulo de pallet (N.º de recorrido bien grande)">🖨️</button>'
+                '<div class="cd-rec-card-label">Paquetes hoy</div>'
             );
             $card.find(".cd-rec-card-num").text("Recorrido " + (r.numero || "-"));
             $card.find(".cd-rec-card-nombre").text(r.nombre || "");
             $card.find(".v-cant").text(r.cantidad);
             $card.find(".v-esp").text(esperados);
 
-            // Rótulo de pallet: solo el número de recorrido, bien grande,
-            // para pegar en el pallet/carro físico donde se van apilando
-            // los bultos — así el operador lo identifica de lejos. Pedido
-            // manual y puntual, no tiene nada que ver con el escaneo.
-            $card.find(".cd-rec-card-print").on("click", function (e) {
-                e.stopPropagation();
-                var $btn = $(this).addClass("imprimiendo");
-                imprimirRotuloPallet(
-                    r.numero,
-                    function () { $btn.removeClass("imprimiendo"); },
-                    function () { $btn.removeClass("imprimiendo"); }
-                );
-                setTimeout(function () { $btn.removeClass("imprimiendo"); }, 3000);
+            // Tocar la tarjeta abre el menú del recorrido (imprimir / ver
+            // pendientes / controlar) — el botón de imprimir que antes vivía
+            // suelto en la tarjeta se movió adentro de ese menú, a pedido,
+            // para no ensuciar la tarjeta con más botones.
+            $card.on("click", function () {
+                abrirModalRecorrido(r.numero, r.nombre, esperados);
             });
 
             $recGrid.append($card);
         });
     }
+
+    // Modal del recorrido: arranca en un menú de 3 acciones (imprimir / ver
+    // pendientes / controlar). Nada de esto se guarda entre aperturas —
+    // cada vez que se abre se pide todo fresco al server (o arranca en 0,
+    // en el caso del control).
+    var $modalRecorrido = $("#cd_modal_recorrido");
+    var $modalRecNum = $("#cd_modal_rec_num");
+    var $modalRecNombre = $("#cd_modal_rec_nombre");
+    var $modalBody = $("#cd_modal_body");
+
+    // Estado del control de recorrido en curso (null = no hay ninguno
+    // activo). Vive SOLO en memoria del navegador — se pierde al cerrar el
+    // modal o recargar la página, a propósito (ver docblock del endpoint
+    // ControlarCrossdocking en el server).
+    var controlState = null;
+
+    // "esperados" del recorrido que tiene abierto el modal ahora mismo — se
+    // guarda acá (no solo se pasa de función en función) para que "Volver"
+    // desde Pendientes hacia el menú, y de ahí a Controlar, no lo pierda.
+    var modalEsperadosActual = null;
+
+    function abrirModalRecorrido(numero, nombre, esperados) {
+        controlState = null;
+        modalEsperadosActual = esperados;
+        $modalRecorrido.removeClass("cd-control-completo");
+        $modalRecNum.text(numero || "-");
+        $modalRecNombre.text(nombre || "");
+        renderMenuView(numero, nombre, esperados);
+        $modalRecorrido.modal("show");
+    }
+
+    function renderMenuView(numero, nombre, esperados) {
+        var $menu = $(
+            '<div class="cd-menu-botones">' +
+                '<button type="button" class="cd-menu-btn" id="cd_menu_imprimir"><span class="cd-menu-btn-icono">🖨️</span><span>Imprimir rótulo del recorrido</span></button>' +
+                '<button type="button" class="cd-menu-btn" id="cd_menu_pendientes"><span class="cd-menu-btn-icono">📋</span><span>Ver pendientes</span></button>' +
+                '<button type="button" class="cd-menu-btn" id="cd_menu_controlar"><span class="cd-menu-btn-icono">🎯</span><span>Controlar recorrido</span></button>' +
+            '</div>'
+        );
+
+        $menu.find("#cd_menu_imprimir").on("click", function () {
+            var $btn = $(this).prop("disabled", true);
+            var $texto = $btn.find("span").eq(1);
+            var textoOriginal = $texto.text();
+            $texto.text("Imprimiendo…");
+            imprimirRotuloPallet(
+                numero,
+                function () { $texto.text("✔ Impreso"); setTimeout(function () { $texto.text(textoOriginal); $btn.prop("disabled", false); }, 1500); },
+                function () { $texto.text("✖ No se pudo imprimir"); setTimeout(function () { $texto.text(textoOriginal); $btn.prop("disabled", false); }, 2000); }
+            );
+        });
+
+        $menu.find("#cd_menu_pendientes").on("click", function () {
+            cargarPendientes(numero);
+        });
+
+        $menu.find("#cd_menu_controlar").on("click", function () {
+            iniciarControl(numero, esperados);
+        });
+
+        $modalBody.empty().append($menu);
+    }
+
+    function botonVolver(onClick) {
+        var $btn = $('<button type="button" class="cd-modal-volver">← Volver</button>');
+        $btn.on("click", onClick);
+        return $btn;
+    }
+
+    function cargarPendientes(numero) {
+        $modalBody.empty().append(
+            botonVolver(function () { renderMenuView(numero, $modalRecNombre.text(), null); }),
+            $('<div class="cd-modal-vacio">Cargando…</div>')
+        );
+
+        $.ajax({
+            url: "Proceso/php/crossdocking.php",
+            type: "GET",
+            dataType: "json",
+            data: { PendientesCrossdocking: 1, recorrido: numero },
+            success: function (resp) {
+                if (!resp || !resp.ok) {
+                    $modalBody.find(".cd-modal-vacio").text("No se pudo cargar. Reintentá.");
+                    return;
+                }
+                renderPendientes(numero, resp.pendientes || []);
+            },
+            error: function () {
+                $modalBody.find(".cd-modal-vacio").text("Error de conexión. Reintentá.");
+            },
+        });
+    }
+
+    // Un renglón por BULTO pendiente (no por envío) — mismo criterio que la
+    // tarjeta, así "34 esperados - 5 escaneados" siempre da exactamente la
+    // cantidad de filas de esta tabla. Un envío multi-bulto con más de un
+    // bulto pendiente aparece más de una vez, una por cada _N que falta.
+    function renderPendientes(numero, pendientes) {
+        var $volver = botonVolver(function () { renderMenuView(numero, $modalRecNombre.text(), null); });
+
+        if (!pendientes.length) {
+            $modalBody.empty().append($volver, '<div class="cd-modal-vacio">✔ No quedan pendientes en este recorrido.</div>');
+            return;
+        }
+
+        var $tabla = $(
+            '<table class="table table-sm">' +
+                '<thead><tr>' +
+                    '<th>Código</th>' +
+                    '<th>Origen</th>' +
+                    '<th>Cliente</th>' +
+                    '<th>Localidad</th>' +
+                '</tr></thead>' +
+                '<tbody></tbody>' +
+            '</table>'
+        );
+        var $tbody = $tabla.find("tbody");
+
+        pendientes.forEach(function (p) {
+            var $fila = $(
+                '<tr>' +
+                    '<td class="cd-modal-codigo"></td>' +
+                    '<td></td>' +
+                    '<td></td>' +
+                    '<td></td>' +
+                '</tr>'
+            );
+            $fila.find(".cd-modal-codigo").text(p.codigoEtiqueta || "-");
+            $fila.find("td").eq(1).text(p.origen || "-");
+            $fila.find("td").eq(2).text(p.clienteDestino || "-");
+            $fila.find("td").eq(3).text(p.localidadDestino || "-");
+            $tbody.append($fila);
+        });
+
+        $modalBody.empty().append(
+            $volver,
+            $('<div class="text-muted mb-2"></div>').text(pendientes.length + " bulto" + (pendientes.length === 1 ? "" : "s") + " pendiente" + (pendientes.length === 1 ? "" : "s")),
+            $tabla
+        );
+    }
+
+    // --------------------------------------------------------------------
+    // Controlar recorrido: el operador junta físicamente todos los bultos
+    // de este recorrido y los vuelve a pasar, de corrido, como control
+    // final. No escanea contra "lo que falta" sino contra "todo lo que
+    // debería estar acá" — cualquier bulto de OTRO recorrido que se haya
+    // mezclado se detecta en rojo. No imprime nada, no marca nada en el
+    // server (ver docblock de ControlarCrossdocking) — la cuenta vive acá,
+    // en memoria, mientras el modal está abierto.
+    // --------------------------------------------------------------------
+    function iniciarControl(numero, esperados) {
+        controlState = {
+            recorrido: numero,
+            total: esperados || 0,
+            contados: {}, // bultoKey -> true
+            completo: false,
+        };
+
+        var $vista = $(
+            '<div class="cd-control-view">' +
+                '<button type="button" class="cd-modal-volver">← Volver</button>' +
+                '<div class="cd-control-header">Control recorrido ' + (numero || "-") + '</div>' +
+                '<div class="cd-control-contador"><span class="cd-control-actual">0</span><span class="cd-control-de">de</span><span class="cd-control-total"></span></div>' +
+                '<div class="cd-control-flash" id="cd_control_flash">' +
+                    '<div class="cd-control-flash-icono">📷</div>' +
+                    '<div class="cd-control-flash-msg">Escaneá los bultos de este recorrido, uno por uno…</div>' +
+                '</div>' +
+                '<input type="text" class="cd-control-input" id="cd_control_input" placeholder="Escaneá acá…" autocomplete="off">' +
+            '</div>'
+        );
+        $vista.find(".cd-modal-volver").on("click", function () {
+            controlState = null;
+            $modalRecorrido.removeClass("cd-control-completo");
+            renderMenuView(numero, $modalRecNombre.text(), esperados);
+        });
+        $vista.find(".cd-control-total").text(controlState.total);
+
+        $modalBody.empty().append($vista);
+        setTimeout(function () { $("#cd_control_input").trigger("focus"); }, 50);
+
+        $modalBody.off("keydown", "#cd_control_input").on("keydown", "#cd_control_input", function (e) {
+            if (e.key !== "Enter") return;
+            e.preventDefault();
+            var $input = $(this);
+            var val = $.trim($input.val());
+            $input.val("");
+            if (!val || !controlState || controlState.completo) return;
+            escanearControl(val);
+        });
+    }
+
+    function escanearControl(codigo) {
+        $.ajax({
+            url: "Proceso/php/crossdocking.php",
+            type: "POST",
+            dataType: "json",
+            data: { ControlarCrossdocking: 1, codigo: codigo, recorrido: controlState.recorrido },
+            success: function (resp) {
+                if (!controlState) return; // el modal ya se cerró o se volvió al menú
+                if (!resp || !resp.ok) {
+                    flashControl("err", "✖", codigo, "Error de conexión");
+                    return;
+                }
+                if (!resp.pertenece) {
+                    var motivo = resp.recorridoReal
+                        ? "Es del recorrido " + resp.recorridoReal + ", no de este"
+                        : (resp.motivo === "AMBIGUO" ? "Código ambiguo — escaneá con la pantalla normal" : "No pertenece a este recorrido");
+                    flashControl("err", "✖", resp.codigoEtiqueta || codigo, motivo);
+                    return;
+                }
+
+                var key = resp.idTransClientes + "|" + (resp.bultoSufijo || "");
+                var yaContado = !!controlState.contados[key];
+                if (!yaContado) {
+                    controlState.contados[key] = true;
+                    actualizarContadorControl();
+                }
+
+                flashControl("ok", "✔", resp.codigoEtiqueta || codigo, yaContado ? "Ya contado — pertenece igual" : (resp.clienteDestino || ""));
+
+                if (!controlState.completo && Object.keys(controlState.contados).length >= controlState.total && controlState.total > 0) {
+                    marcarControlCompleto();
+                }
+            },
+            error: function () {
+                if (!controlState) return;
+                flashControl("err", "✖", codigo, "Error de conexión");
+            },
+        });
+    }
+
+    function actualizarContadorControl() {
+        if (!controlState) return;
+        $modalBody.find(".cd-control-actual").text(Object.keys(controlState.contados).length);
+    }
+
+    var flashControlTimeout = null;
+    function flashControl(tipo, icono, codigo, msg) {
+        var $flash = $("#cd_control_flash");
+        if (!$flash.length) return; // se volvió al menú mientras llegaba la respuesta
+        clearTimeout(flashControlTimeout);
+        $flash.removeClass("ok err").addClass(tipo);
+        $flash.empty().append(
+            $('<div class="cd-control-flash-icono"></div>').text(icono),
+            $('<div class="cd-control-flash-codigo"></div>').text(codigo || ""),
+            $('<div class="cd-control-flash-msg"></div>').text(msg || "")
+        );
+        // Vuelve a gris después de un par de segundos, listo para el
+        // próximo escaneo — salvo que ya se haya completado el control.
+        flashControlTimeout = setTimeout(function () {
+            if (controlState && controlState.completo) return;
+            $flash.removeClass("ok err");
+            $flash.empty().append(
+                '<div class="cd-control-flash-icono">📷</div>',
+                '<div class="cd-control-flash-msg">Escaneá el próximo bulto…</div>'
+            );
+        }, 2000);
+    }
+
+    function marcarControlCompleto() {
+        controlState.completo = true;
+        $modalRecorrido.addClass("cd-control-completo");
+        clearTimeout(flashControlTimeout);
+        var $flash = $("#cd_control_flash");
+        var hora = new Date();
+        var horaTxt = String(hora.getHours()).padStart(2, "0") + ":" + String(hora.getMinutes()).padStart(2, "0");
+        var usuario = window.CD_USUARIO || "";
+        $flash.removeClass("err").addClass("ok").empty().append(
+            '<div class="cd-control-flash-icono">✔</div>',
+            '<div class="cd-control-flash-codigo">CONTROL OK</div>',
+            $('<div class="cd-control-completo-msg"></div>').text("Controlado por " + usuario + " · " + horaTxt)
+        );
+        $modalBody.find("#cd_control_input").prop("disabled", true);
+    }
+
+    // Al cerrar el modal (cualquier vista) se corta el control en curso —
+    // nada queda pendiente en el navegador, y el input principal de la
+    // pantalla recupera el foco para seguir escaneando normal.
+    $modalRecorrido.on("hidden.bs.modal", function () {
+        controlState = null;
+        $modalRecorrido.removeClass("cd-control-completo");
+        refocus();
+    });
 
     function procesarCodigo(codigo, proveedorForzado) {
         codigo = $.trim(codigo);

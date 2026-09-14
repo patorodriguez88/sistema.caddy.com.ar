@@ -58,8 +58,8 @@ include_once "../Conexion/Conexioni.php";
             top: 0;
             z-index: 60;
             background: #0f1115;
-            padding-top: 20px;
-            padding-bottom: 14px;
+            padding-top: 12px;
+            padding-bottom: 10px;
             box-shadow: 0 10px 20px -6px rgba(0, 0, 0, .55);
         }
 
@@ -67,13 +67,13 @@ include_once "../Conexion/Conexioni.php";
             display: flex;
             align-items: center;
             gap: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 10px;
         }
 
         .cd-input-bar input[type=text] {
             flex: 1;
-            font-size: 24px;
-            padding: 14px 20px;
+            font-size: 22px;
+            padding: 10px 18px;
             border-radius: 10px;
             border: 3px solid #495057;
             background: #1a1d23;
@@ -99,15 +99,23 @@ include_once "../Conexion/Conexioni.php";
         }
 
         /* Banner del último escaneo: el RECORRIDO es lo grande-grande, todo lo
-           demás es secundario al lado. */
+           demás es secundario al lado.
+           FIX (2026-09-14, a pedido): este banner + la barra de arriba se
+           comían tanta altura que en el monitor real del depósito la
+           grilla de recorridos quedaba cortada por el borde de la
+           pantalla (no había forma de verlos todos sin scrollear, y en un
+           monitor sin mouse/touch a mano nadie scrollea). Se achica el
+           banner (menos padding, min-height más bajo) para dejarle más
+           lugar a la grilla, que es lo que el operador necesita ver
+           completo de un vistazo. */
         #cd_ultimo {
             border-radius: 18px;
-            padding: 22px 30px;
+            padding: 14px 26px;
             display: flex;
             align-items: center;
-            gap: 30px;
+            gap: 24px;
             flex-wrap: wrap;
-            min-height: 150px;
+            min-height: 100px;
             background: #1a1d23;
             border: 4px solid #343a40;
         }
@@ -148,13 +156,13 @@ include_once "../Conexion/Conexioni.php";
         #cd_ultimo .cd-rec-chip {
             flex: 0 0 auto;
             border-radius: 14px;
-            padding: 10px 30px;
+            padding: 8px 26px;
             text-align: center;
-            min-width: 190px;
+            min-width: 160px;
         }
 
         #cd_ultimo .cd-rec-chip .cd-rec-label {
-            font-size: 14px;
+            font-size: 13px;
             text-transform: uppercase;
             letter-spacing: 1px;
             opacity: .85;
@@ -162,7 +170,7 @@ include_once "../Conexion/Conexioni.php";
         }
 
         #cd_ultimo .cd-rec-chip .cd-rec-numero {
-            font-size: 76px;
+            font-size: 54px;
             font-weight: 800;
             line-height: 1;
         }
@@ -179,9 +187,9 @@ include_once "../Conexion/Conexioni.php";
         #cd_ultimo .cd-bulto-chip {
             flex: 0 0 auto;
             border-radius: 14px;
-            padding: 10px 26px;
+            padding: 8px 22px;
             text-align: center;
-            min-width: 150px;
+            min-width: 130px;
             background: #2a2e35;
             border: 2px solid #495057;
         }
@@ -200,7 +208,7 @@ include_once "../Conexion/Conexioni.php";
         }
 
         #cd_ultimo .cd-bulto-chip .cd-bulto-numero {
-            font-size: 56px;
+            font-size: 40px;
             font-weight: 800;
             line-height: 1;
         }
@@ -260,54 +268,27 @@ include_once "../Conexion/Conexioni.php";
            mapa de Repartidores en Vivo. */
         .cd-rec-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-            gap: 16px;
+            grid-template-columns: repeat(auto-fill, minmax(185px, 1fr));
+            gap: 12px;
         }
 
+        /* Toda la tarjeta es clickeable (abre el detalle de pendientes) -
+           cursor + un hover sutil para que se note, sin competir con el
+           hover propio del botón de rótulo. */
         .cd-rec-card {
             position: relative;
             border-radius: 14px;
             background: #1a1d23;
-            border-top: 10px solid #495057;
-            padding: 16px 18px;
-            transition: transform .15s ease;
-        }
-
-        /* Botón de rótulo de pallet: abajo a la derecha de la tarjeta, a
-           propósito chico y discreto — es un extra para identificar el
-           pallet físico, no compite con los números grandes que importan. */
-        .cd-rec-card .cd-rec-card-print {
-            position: absolute;
-            right: 14px;
-            bottom: 14px;
-            width: 38px;
-            height: 38px;
-            border-radius: 10px;
-            border: none;
-            background: #2b2f38;
-            color: #fff;
-            font-size: 18px;
-            line-height: 1;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            border-top: 8px solid #495057;
+            padding: 12px 14px;
+            transition: transform .15s ease, box-shadow .15s ease;
             cursor: pointer;
-            opacity: .8;
         }
 
-        .cd-rec-card .cd-rec-card-print:hover {
-            opacity: 1;
-            background: #3a3f4a;
+        .cd-rec-card:hover {
+            box-shadow: 0 0 0 2px rgba(255, 255, 255, .12);
         }
 
-        .cd-rec-card .cd-rec-card-print:active {
-            transform: scale(.92);
-        }
-
-        .cd-rec-card .cd-rec-card-print.imprimiendo {
-            opacity: .5;
-            pointer-events: none;
-        }
 
         .cd-rec-card.cd-rec-card-nuevo {
             animation: cdPulso .6s ease;
@@ -319,19 +300,22 @@ include_once "../Conexion/Conexioni.php";
         }
 
         .cd-rec-card .cd-rec-card-num {
-            font-size: 26px;
+            font-size: 21px;
             font-weight: 800;
         }
 
         .cd-rec-card .cd-rec-card-nombre {
-            font-size: 13px;
+            font-size: 12px;
             opacity: .65;
-            min-height: 34px;
-            margin-bottom: 6px;
+            min-height: 16px;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .cd-rec-card .cd-rec-card-cant {
-            font-size: 58px;
+            font-size: 42px;
             font-weight: 800;
             line-height: 1;
             display: flex;
@@ -367,10 +351,10 @@ include_once "../Conexion/Conexioni.php";
         }
 
         .cd-rec-card .cd-check-completo {
-            font-size: 46px;
+            font-size: 32px;
             font-weight: 800;
             color: #3bd671;
-            margin-left: 14px;
+            margin-left: 10px;
             line-height: 1;
         }
 
@@ -410,8 +394,8 @@ include_once "../Conexion/Conexioni.php";
             display: flex;
             align-items: center;
             gap: 14px;
-            margin-bottom: 16px;
-            font-size: 14px;
+            margin-bottom: 10px;
+            font-size: 13px;
         }
 
         .cd-printer-estado {
@@ -464,6 +448,226 @@ include_once "../Conexion/Conexioni.php";
             cursor: pointer;
             color: #f1f3f5;
         }
+
+        /* Modal de recorrido (menú + pendientes + control) — mismo tema
+           oscuro que el resto de la pantalla (el modal de Bootstrap por
+           default sale blanco, y acá todo el resto es un KDS oscuro). */
+        #cd_modal_recorrido .modal-content {
+            background: #1a1d23;
+            color: #f1f3f5;
+            border: 1px solid #343a40;
+            transition: background-color .25s ease;
+        }
+
+        #cd_modal_recorrido .modal-header {
+            border-bottom-color: #343a40;
+        }
+
+        #cd_modal_recorrido .modal-body {
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        #cd_modal_recorrido table {
+            color: #f1f3f5;
+            margin-bottom: 0;
+        }
+
+        #cd_modal_recorrido table thead th {
+            border-color: #343a40;
+            opacity: .7;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            font-weight: 600;
+        }
+
+        #cd_modal_recorrido table td {
+            border-color: #262a31;
+            vertical-align: middle;
+        }
+
+        #cd_modal_recorrido .cd-modal-codigo {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+        }
+
+        /* Bootstrap pinta .text-muted gris pensado para fondo blanco - acá
+           contra el negro del modal quedaba casi invisible. */
+        #cd_modal_recorrido .text-muted {
+            color: #c8cdd3 !important;
+        }
+
+        #cd_modal_recorrido .cd-modal-vacio {
+            text-align: center;
+            opacity: .7;
+            padding: 30px 0;
+        }
+
+        /* Menú de 3 opciones, una al lado de la otra — grandes, para tocar
+           sin apuntar fino. En pantallas angostas se apilan solas (flex-wrap). */
+        .cd-menu-botones {
+            display: flex;
+            flex-direction: row;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .cd-menu-btn {
+            display: flex;
+            flex: 1 1 160px;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            padding: 22px 16px;
+            border-radius: 12px;
+            border: 2px solid #495057;
+            background: #23262d;
+            color: #f1f3f5;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .cd-menu-btn:hover {
+            background: #2b2f38;
+            border-color: #6c757d;
+        }
+
+        .cd-menu-btn .cd-menu-btn-icono {
+            font-size: 32px;
+            flex: 0 0 auto;
+        }
+
+        .cd-menu-btn:disabled {
+            opacity: .6;
+        }
+
+        /* "Volver": tiene que notarse a simple vista contra el fondo bien
+           oscuro del modal — nada de outline sutil que se pierda. */
+        .cd-modal-volver {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 18px;
+            border-radius: 9px;
+            border: 2px solid #6c757d;
+            background: #2b2f38;
+            color: #ffffff !important;
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+
+        .cd-modal-volver:hover {
+            background: #3a3f4a;
+            border-color: #98a6ad;
+            color: #ffffff !important;
+        }
+
+        /* Control de recorrido: el operador está lejos de la pantalla
+           escaneando, no cerca del mouse - el feedback tiene que ser
+           GIGANTE y de color (nada de sonido: no hay parlante ahí, y nada
+           de texto chico: no se lee de lejos). */
+        .cd-control-view {
+            text-align: center;
+        }
+
+        .cd-control-header {
+            font-size: 15px;
+            opacity: .7;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 6px;
+        }
+
+        .cd-control-contador {
+            font-size: 64px;
+            font-weight: 800;
+            line-height: 1;
+            margin-bottom: 6px;
+        }
+
+        .cd-control-contador .cd-control-de {
+            font-size: 28px;
+            opacity: .5;
+            font-weight: 400;
+            margin: 0 6px;
+        }
+
+        .cd-control-input {
+            width: 100%;
+            font-size: 20px;
+            padding: 12px 16px;
+            border-radius: 10px;
+            border: 3px solid #495057;
+            background: #0f1115;
+            color: #f1f3f5;
+            text-align: center;
+            margin: 14px 0;
+        }
+
+        .cd-control-input:focus {
+            outline: none;
+            border-color: #3bd671;
+        }
+
+        /* Panel de flash — ocupa el lugar del último resultado, cambia de
+           color entero (no solo un texto) unos segundos así se nota desde
+           lejos. Gris = esperando el próximo escaneo. */
+        .cd-control-flash {
+            border-radius: 14px;
+            padding: 26px 20px;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            background: #2a2e35;
+            border: 3px solid #495057;
+            transition: background-color .15s ease, border-color .15s ease;
+        }
+
+        .cd-control-flash .cd-control-flash-icono {
+            font-size: 40px;
+            line-height: 1;
+        }
+
+        .cd-control-flash .cd-control-flash-codigo {
+            font-family: 'Courier New', monospace;
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .cd-control-flash .cd-control-flash-msg {
+            font-size: 14px;
+            opacity: .85;
+        }
+
+        .cd-control-flash.ok {
+            background: #123322;
+            border-color: #3bd671;
+        }
+
+        .cd-control-flash.err {
+            background: #3a1414;
+            border-color: #ff5c5c;
+        }
+
+        /* Cuando llega al total: la tarjeta ENTERA del modal se pone verde,
+           no solo el panel de flash - máxima visibilidad desde lejos. */
+        #cd_modal_recorrido.cd-control-completo .modal-content {
+            background: #123322;
+            border-color: #3bd671;
+        }
+
+        .cd-control-completo-msg {
+            font-size: 15px;
+            opacity: .85;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -509,6 +713,23 @@ include_once "../Conexion/Conexioni.php";
                     <div class="cd-titulo">Últimos escaneados (detalle)</div>
                     <div class="cd-feed" id="cd_feed"></div>
 
+                    <!-- Modal de recorrido: se abre al tocar una tarjeta - arranca en un
+                         menú de 3 acciones (imprimir / ver pendientes / controlar), y
+                         cambia el contenido del body según cuál se elija. -->
+                    <div class="modal fade" id="cd_modal_recorrido" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Recorrido <span id="cd_modal_rec_num"></span> <span id="cd_modal_rec_nombre" class="text-muted"></span></h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="cd_modal_body"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
                 <!-- content -->
                 <div id="menuhyper_footer"></div>
@@ -526,6 +747,12 @@ include_once "../Conexion/Conexioni.php";
              instalado/corriendo, getDefaultDevice tira error y el estado queda en rojo. -->
         <script src="../Ticket/zebra/BrowserPrint-3.0.216.min.js"></script>
 
+        <script>
+            // Usado solo para el mensaje "Controlado por <usuario> · <hora>"
+            // al terminar un control de recorrido — no se manda al server,
+            // es puramente informativo en pantalla.
+            window.CD_USUARIO = <?php echo json_encode($_SESSION['Usuario'] ?? ''); ?>;
+        </script>
         <script src="Proceso/js/crossdocking.js"></script>
         <script src="../Menu/js/funciones.js"></script>
     </div>
