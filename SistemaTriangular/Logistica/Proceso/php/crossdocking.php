@@ -256,7 +256,7 @@ function cd_marcar_ingreso(mysqli $mysqli, int $id, string $wepointCFallback): a
     ];
 }
 
-function cd_log_evento(mysqli $mysqli, string $fecha, string $hora, string $codigoCrudo, string $resultado, ?string $matchTipo, ?int $idTC, ?int $recorrido): void
+function cd_log_evento(mysqli $mysqli, string $fecha, string $hora, string $codigoCrudo, ?string $bultoSufijo, string $resultado, ?string $matchTipo, ?int $idTC, ?int $recorrido): void
 {
     $usuario = (string)($_SESSION['Usuario'] ?? '');
     // Defensa extra además de ensanchar la columna: un QR de Meli con
@@ -267,46 +267,49 @@ function cd_log_evento(mysqli $mysqli, string $fecha, string $hora, string $codi
         $codigoCrudo = substr($codigoCrudo, 0, 490);
     }
     $st = $mysqli->prepare("INSERT INTO crossdocking_eventos
-        (fecha, hora, usuario, codigo_crudo, resultado, match_tipo, idTransClientes, recorrido)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
-    $st->bind_param('ssssssii', $fecha, $hora, $usuario, $codigoCrudo, $resultado, $matchTipo, $idTC, $recorrido);
+        (fecha, hora, usuario, codigo_crudo, bulto_sufijo, resultado, match_tipo, idTransClientes, recorrido)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)");
+    $st->bind_param('sssssssii', $fecha, $hora, $usuario, $codigoCrudo, $bultoSufijo, $resultado, $matchTipo, $idTC, $recorrido);
     $st->execute();
 }
 
 /**
- * ¿Esta etiqueta PUNTUAL (el string crudo tal cual se leyó, con su sufijo
- * _N si lo tiene) ya se había escaneado hoy para este envío?
+ * ¿Este BULTO (envío + sufijo _N, o "sin sufijo" si Cantidad=1) ya se
+ * había escaneado hoy?
  *
- * OJO, esto es distinto de "el envío ya está Ingreso": un pedido con
- * Cantidad=3 trae 3 etiquetas físicas distintas (_1, _2, _3). Si sólo
- * miráramos TransClientes.Wepoint_status, el bulto 2 y el 3 aparecerían
- * como "ya ingresado" apenas se lee el 1 — son paquetes distintos, no un
- * reintento. Por eso la duplicidad real se mide contra lo que quedó
- * logueado en crossdocking_eventos HOY para este idTransClientes: mismo
- * código crudo exacto = mismo bulto re-leído; código crudo nuevo = bulto
- * nuevo del mismo envío, aunque el envío ya estuviera marcado Ingreso.
+ * OJO — esto NO compara el texto crudo leído. Un mismo bulto físico puede
+ * tener DOS etiquetas encima (la propia del proveedor/Meli Y la de Caddy):
+ * si comparáramos el texto exacto, "CADDY123" y el JSON de Meli nunca
+ * matchean entre sí aunque sean la misma pieza — eso hacía que reescanear
+ * el mismo bulto con la OTRA etiqueta no se detectara como duplicado.
+ * La identidad real de "qué bulto es" es (idTransClientes, sufijo _N) —
+ * no importa qué formato de código lo leyó.
  *
- * Esto depende de que cada bulto físico traiga una etiqueta distinguible
- * (sufijo _N o lo que sea) — si dos bultos del mismo pedido imprimen el
- * MISMO código exacto, no hay forma de diferenciarlos por software; eso ya
- * lo vimos con Ferniplast al principio (etiquetas _3/_3/_3 en vez de
- * _1/_2/_3).
+ * Esto es distinto de "el envío ya está Ingreso" en TransClientes: un
+ * pedido con Cantidad=3 trae 3 etiquetas físicas con sufijo _1/_2/_3. Si
+ * sólo miráramos Wepoint_status, el bulto 2 y el 3 aparecerían como "ya
+ * ingresado" apenas se lee el 1 — son paquetes distintos, no un reintento.
+ *
+ * Esto depende de que cada bulto físico traiga un sufijo _N distinguible
+ * — si dos bultos del mismo pedido imprimen el MISMO sufijo (o ninguno),
+ * no hay forma de diferenciarlos por software; eso ya lo vimos con
+ * Ferniplast al principio (etiquetas _3/_3/_3 en vez de _1/_2/_3).
  */
-function cd_ya_escaneado_hoy(mysqli $mysqli, string $fecha, int $idTC, string $rawExacto): bool
+function cd_ya_escaneado_hoy(mysqli $mysqli, string $fecha, int $idTC, ?string $bultoSufijo): bool
 {
     $st = $mysqli->prepare("SELECT id FROM crossdocking_eventos
-                             WHERE fecha=? AND idTransClientes=? AND codigo_crudo=? AND resultado IN ('ok','dup')
+                             WHERE fecha=? AND idTransClientes=? AND bulto_sufijo <=> ? AND resultado IN ('ok','dup')
                              LIMIT 1");
-    $st->bind_param('sis', $fecha, $idTC, $rawExacto);
+    $st->bind_param('sis', $fecha, $idTC, $bultoSufijo);
     $st->execute();
     return (bool)$st->get_result()->fetch_assoc();
 }
 
-// Cuántas etiquetas puntuales DISTINTAS de este envío se escanearon hoy
-// (incluyendo la de este request), para el "Bulto X de Y" del banner.
+// Cuántos bultos DISTINTOS (por sufijo) de este envío se escanearon hoy
+// (incluyendo el de este request), para el "Bulto X de Y" del banner.
 function cd_bultos_escaneados_hoy(mysqli $mysqli, string $fecha, int $idTC): int
 {
-    $st = $mysqli->prepare("SELECT COUNT(DISTINCT codigo_crudo) AS n FROM crossdocking_eventos
+    $st = $mysqli->prepare("SELECT COUNT(DISTINCT COALESCE(bulto_sufijo,'\\0')) AS n FROM crossdocking_eventos
                              WHERE fecha=? AND idTransClientes=? AND resultado IN ('ok','dup')");
     $st->bind_param('si', $fecha, $idTC);
     $st->execute();
@@ -319,7 +322,7 @@ function cd_bultos_escaneados_hoy(mysqli $mysqli, string $fecha, int $idTC): int
 // navegador haya sumado bien localmente).
 function cd_escaneados_hoy_recorrido(mysqli $mysqli, string $fecha, int $recorrido): int
 {
-    $st = $mysqli->prepare("SELECT COUNT(DISTINCT CONCAT(idTransClientes,'|',codigo_crudo)) AS n
+    $st = $mysqli->prepare("SELECT COUNT(DISTINCT CONCAT(idTransClientes,'|',COALESCE(bulto_sufijo,'\\0'))) AS n
                              FROM crossdocking_eventos
                              WHERE fecha=? AND recorrido=? AND resultado IN ('ok','dup')");
     $st->bind_param('si', $fecha, $recorrido);
@@ -356,9 +359,14 @@ if (isset($_POST['EscanearCrossdocking'])) {
     $ahoraFecha = date('Y-m-d');
     $ahoraHora  = date('H:i:s');
 
+    // Sufijo _N del texto crudo (si lo tiene) — identifica el BULTO puntual,
+    // sea cual sea el formato/proveedor de la etiqueta que lo trae.
+    $tieneSufijo = preg_match('/_(\d+)$/', $raw, $m) === 1;
+    $bultoSufijo = $tieneSufijo ? $m[1] : null;
+
     $resuelto = cd_resolver($mysqli, $raw, $proveedorForzado);
     if (!$resuelto) {
-        cd_log_evento($mysqli, $ahoraFecha, $ahoraHora, $raw, 'no_match', null, null, null);
+        cd_log_evento($mysqli, $ahoraFecha, $ahoraHora, $raw, $bultoSufijo, 'no_match', null, null, null);
         echo json_encode(['ok' => false, 'error' => 'NO_MATCH', 'codigo' => $raw]);
         exit;
     }
@@ -380,18 +388,18 @@ if (isset($_POST['EscanearCrossdocking'])) {
     $base = cd_base($raw);
     // Si el código escaneado traía sufijo _N (bulto puntual), lo mantenemos en
     // el rótulo mostrado aunque CodigoSeguimiento en la base esté sin sufijo.
-    $tieneSufijo = preg_match('/_(\d+)$/', $raw, $m) === 1;
     $codigoEtiqueta = $tieneSufijo
         ? cd_base((string)$row['CodigoSeguimiento']) . '_' . $m[1]
         : (string)$row['CodigoSeguimiento'];
 
     $idTC = (int)$row['id'];
 
-    // Duplicado = esta etiqueta PUNTUAL (código crudo exacto) ya se había
-    // leído hoy para este envío — NO simplemente "el envío ya está
-    // Ingreso" (eso rompía multi-bulto: el 2do y 3er bulto son paquetes
-    // distintos, no un reintento del mismo).
-    $esRepetido = cd_ya_escaneado_hoy($mysqli, $ahoraFecha, $idTC, $raw);
+    // Duplicado = este BULTO (envío + sufijo _N) ya se había leído hoy —
+    // NO "el envío ya está Ingreso" (rompía multi-bulto) NI "mismo texto
+    // exacto" (rompía leer la etiqueta de Caddy y despues la del proveedor
+    // para el mismo bulto sin sufijo — cada formato trae un texto distinto
+    // aunque sea la misma pieza física).
+    $esRepetido = cd_ya_escaneado_hoy($mysqli, $ahoraFecha, $idTC, $bultoSufijo);
 
     $marca = cd_marcar_ingreso($mysqli, $idTC, $row['CodigoProveedor'] ?: $base);
     $recorridoNum = (int)($row['Recorrido'] ?? 0);
@@ -403,6 +411,7 @@ if (isset($_POST['EscanearCrossdocking'])) {
         $marca['fecha'],
         $marca['hora'],
         $raw,
+        $bultoSufijo,
         $esRepetido ? 'dup' : 'ok',
         $resuelto['tipo'],
         $idTC,
@@ -458,9 +467,11 @@ if (isset($_POST['EscanearCrossdocking'])) {
  * TransClientes: un pedido con Cantidad=3 es UNA fila de TransClientes pero
  * TRES bultos físicos distintos (tres etiquetas _1/_2/_3 escaneadas). Contar
  * filas subcontaría paquetes reales — por eso se cuentan pares
- * (idTransClientes, codigo_crudo) distintos, que es "cuántas etiquetas
- * puntuales se leyeron", el mismo criterio que usa "Bulto X de Y" en el
- * banner (cd_bultos_escaneados_hoy).
+ * (idTransClientes, bulto_sufijo) distintos, que es "cuántos bultos
+ * puntuales se leyeron" (no "cuántos textos distintos", para no contar dos
+ * veces el mismo bulto solo porque se leyó con la etiqueta del proveedor Y
+ * con la de Caddy) — el mismo criterio que usa "Bulto X de Y" en el banner
+ * (cd_bultos_escaneados_hoy).
  * GET/POST: EstadoCrossdocking=1, opcional fecha=YYYY-MM-DD (default hoy)
  */
 if (isset($_REQUEST['EstadoCrossdocking'])) {
@@ -479,7 +490,7 @@ if (isset($_REQUEST['EstadoCrossdocking'])) {
     $st = $mysqli->prepare("SELECT ce.recorrido AS recorrido,
                                     COALESCE(r.Nombre,'') AS nombre,
                                     COALESCE(r.Color,'') AS color,
-                                    COUNT(DISTINCT CONCAT(ce.idTransClientes,'|',ce.codigo_crudo)) AS cantidad,
+                                    COUNT(DISTINCT CONCAT(ce.idTransClientes,'|',COALESCE(ce.bulto_sufijo,'\\0'))) AS cantidad,
                                     MAX(ce.hora) AS ultimaHora
                              FROM crossdocking_eventos ce
                              LEFT JOIN Recorridos r ON r.Numero = ce.recorrido
