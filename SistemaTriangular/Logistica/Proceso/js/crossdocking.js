@@ -134,7 +134,7 @@
     // de wepoint.ar). No es un logo inventado por mí: lo copié tal cual de
     // ahí para que salga igual de prolijo que el rótulo que ya conocen.
     var CADDY_LOGO_ZPL =
-        "^FO15,15^GFA,1675,1675,25,,:::::::::::::M0CJ04J01,L07F8003FCI0FE,L0FFC007FE003FF,K01FFE00IF007FF8,K03FFE01IF007FFC,K03IF01IF80IFC,K03IF81IFC0IFE,K07IF83IFC0IFE,K07IFC1IFE0IFE,K03IFE1JF0F01E,K03IFE1JF0E01C,K03JF1JF8703C,K01JF0JF87C78,L0JF87IFC3FF,L0JFC7IFE0FE,L07IFC3IFE01V07,L07IFE3JFX0F,L03IFE1JFX0F,L01JF0JF8W07J0F,L01JF8JFCgH0F,M0JF87IFCgH0F,M0JFC7IFEI0E3C38FC3FE07F8F73F3FE,M07IFC3IFEI0E3E79FF3FF0FFCF7FFBFF,M03IFE1JFI0E3E7BFF3FF9FFEF7FFBFE,M03IFE1JFI0F7E77C73C79E1EF7C78F,M01IFE0JFI0F7E7787BC3DE1E77878F,N0IFE07IFI077FF7FFBC3DC0FF7838F,N0IFE07IFI07F7E7FFBC3DC0FF7838F,N07FFE03IFI07E7E7803C3DE1EF7838F,N07FFE03IFI03E7E7C13C79E1EF7838F,N03FFC01FFEI03E3C3FF3FF9FFEF7878FE,N01FF800FFCI03E3C1FFBFF0FFCF78787F,O0FFI07F8I01C3C0FF3FE07F0778383F,U08Q03C,gM03C,:::,::::::::::::::^FS";
+        "^FO30,15^GFA,1675,1675,25,,:::::::::::::M0CJ04J01,L07F8003FCI0FE,L0FFC007FE003FF,K01FFE00IF007FF8,K03FFE01IF007FFC,K03IF01IF80IFC,K03IF81IFC0IFE,K07IF83IFC0IFE,K07IFC1IFE0IFE,K03IFE1JF0F01E,K03IFE1JF0E01C,K03JF1JF8703C,K01JF0JF87C78,L0JF87IFC3FF,L0JFC7IFE0FE,L07IFC3IFE01V07,L07IFE3JFX0F,L03IFE1JFX0F,L01JF0JF8W07J0F,L01JF8JFCgH0F,M0JF87IFCgH0F,M0JFC7IFEI0E3C38FC3FE07F8F73F3FE,M07IFC3IFEI0E3E79FF3FF0FFCF7FFBFF,M03IFE1JFI0E3E7BFF3FF9FFEF7FFBFE,M03IFE1JFI0F7E77C73C79E1EF7C78F,M01IFE0JFI0F7E7787BC3DE1E77878F,N0IFE07IFI077FF7FFBC3DC0FF7838F,N0IFE07IFI07F7E7FFBC3DC0FF7838F,N07FFE03IFI07E7E7803C3DE1EF7838F,N07FFE03IFI03E7E7C13C79E1EF7838F,N03FFC01FFEI03E3C3FF3FF9FFEF7878FE,N01FF800FFCI03E3C1FFBFF0FFCF78787F,O0FFI07F8I01C3C0FF3FE07F0778383F,U08Q03C,gM03C,:::,::::::::::::::^FS";
 
     // ZPL del rótulo — mismo tamaño y layout que el botón "Rótulo" ya
     // probado (Funciones/js/seguimiento.js::_rotuloZPL): 6,5x3,2cm @203dpi
@@ -151,18 +151,18 @@
         return (
             "^XA^PW520^LL256^LH0,0^CI28" +
             CADDY_LOGO_ZPL +
-            "^FO200,10^A0N,20,20^FD" + zplLimpio((data.clienteDestino || "-").substring(0, 26)) + "^FS" +
-            "^FO200,35^A0N,18,18^FD" + zplLimpio((data.domicilioDestino || "").substring(0, 30)) + "^FS" +
-            "^FO200,57^A0N,18,18^FDId: " + data.codigoEtiqueta + "^FS" +
-            "^FO200,79^A0N,18,18^FDOrigen: " + zplLimpio((data.razonSocialOrigen || "").substring(0, 26)) + "^FS" +
-            "^FO200,101^A0N,18,18^FDBulto: " + data.bultoActual + "/" + data.bultoTotal + "^FS" +
-            "^FO200,123^A0N,18,18^FDFecha: " + fechaTexto + "^FS" +
-            "^FO200,148^A0N,30,30^FDRec: " + (data.recorrido || "-") + "^FS" +
-            "^FO200,185^A0N,26,26^FDPos: " + (data.posicion || "-") + "^FS" +
+            "^FO215,10^A0N,20,20^FD" + zplLimpio((data.clienteDestino || "-").substring(0, 26)) + "^FS" +
+            "^FO215,35^A0N,18,18^FD" + zplLimpio((data.domicilioDestino || "").substring(0, 30)) + "^FS" +
+            "^FO215,57^A0N,18,18^FDId: " + data.codigoEtiqueta + "^FS" +
+            "^FO215,79^A0N,18,18^FDOrigen: " + zplLimpio((data.razonSocialOrigen || "").substring(0, 26)) + "^FS" +
+            "^FO215,101^A0N,18,18^FDBulto: " + data.bultoActual + "/" + data.bultoTotal + "^FS" +
+            "^FO215,123^A0N,18,18^FDFecha: " + fechaTexto + "^FS" +
+            "^FO215,148^A0N,30,30^FDRec: " + (data.recorrido || "-") + "^FS" +
+            "^FO215,185^A0N,26,26^FDPos: " + (data.posicion || "-") + "^FS" +
             // FIX (2026-09-14): mismo ajuste que el rótulo de seguimiento.js -
-            // magnificación 7->8 (QR más grande), reportaron que la cámara de
-            // Warehouse no leía bien las etiquetas propias impresas a 203dpi.
-            "^FO30,74^BQN,2,8^FDQA," + data.codigoEtiqueta + "^FS" +
+            // todo el bloque corrido 15 dots a la derecha, el QR arrancaba
+            // pegado al margen izquierdo físico del rótulo.
+            "^FO45,74^BQN,2,7^FDQA," + data.codigoEtiqueta + "^FS" +
             "^XZ"
         );
     }
