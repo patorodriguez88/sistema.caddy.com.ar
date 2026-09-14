@@ -182,8 +182,12 @@
     // ahora un fallo de impresión dispara UN reintento automático: pide un
     // device fresco con getDefaultDevice() y reintenta el mismo rótulo una
     // sola vez antes de darse por vencido.
-    function imprimirRotulo(data, reintentando) {
-        if (!imprimirActivo()) return;
+    // forzado=true: pedido MANUAL de reimpresión (botón "Reimprimir Rótulo"
+    // en un reingreso) — imprime aunque el switch de auto-impresión esté
+    // apagado, porque acá el operador lo está pidiendo a propósito, no es
+    // un escaneo automático.
+    function imprimirRotulo(data, reintentando, forzado) {
+        if (!imprimirActivo() && !forzado) return;
 
         function enviarConDispositivo(device) {
             try {
@@ -199,7 +203,7 @@
                                 "printer",
                                 function (dev) {
                                     selected_device = dev;
-                                    imprimirRotulo(data, true);
+                                    imprimirRotulo(data, true, forzado);
                                 },
                                 function () {
                                     setEstadoPrinter("error", "Impresora: no se pudo imprimir (reintenté y no conectó)");
@@ -222,7 +226,7 @@
                     "printer",
                     function (dev) {
                         selected_device = dev;
-                        imprimirRotulo(data, true);
+                        imprimirRotulo(data, true, forzado);
                     },
                     function () {
                         setEstadoPrinter("error", "Impresora: no conectada (no se imprimió)");
@@ -322,7 +326,8 @@
                     '<div><b>Posición</b><span class="v-posicion"></span></div>' +
                     '<div><b>Orden</b><span class="v-orden"></span></div>' +
                 '</div>' +
-            '</div>'
+            '</div>' +
+            (esDup ? '<button type="button" class="btn btn-warning btn-lg cd-reimprimir-btn">🖨️ Reimprimir Rótulo</button>' : '')
         );
         $ultimo.find(".cd-rec-numero").text(data.recorrido || "-");
         $ultimo.find(".cd-rec-nombre").text(data.recorridoNombre || "");
@@ -333,6 +338,17 @@
         $ultimo.find(".v-localidad").text(data.localidadDestino || "-");
         $ultimo.find(".v-posicion").text(data.posicion || "-");
         $ultimo.find(".v-orden").text(data.numeroOrden || "-");
+
+        // Reimpresión manual — a propósito ignora el switch de
+        // auto-impresión (imprimirRotulo con forzado=true): el operador la
+        // está pidiendo, no es un escaneo automático.
+        $ultimo.find(".cd-reimprimir-btn").on("click", function () {
+            var $b = $(this).prop("disabled", true).text("Imprimiendo…");
+            imprimirRotulo(data, false, true);
+            setTimeout(function () {
+                $b.prop("disabled", false).text("🖨️ Reimprimir Rótulo");
+            }, 1500);
+        });
     }
 
     function renderUltimoErr(codigo) {

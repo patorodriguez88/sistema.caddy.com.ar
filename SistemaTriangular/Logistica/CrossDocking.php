@@ -122,6 +122,17 @@ include_once "../Conexion/Conexioni.php";
             border-color: #ffc93b;
         }
 
+        /* margin-left:auto lo empuja al espacio libre de la derecha del
+           banner (flex), sin desarmar el resto del layout. */
+        #cd_ultimo .cd-reimprimir-btn {
+            margin-left: auto;
+            align-self: center;
+            flex: 0 0 auto;
+            font-size: 18px;
+            padding: 14px 22px;
+            white-space: nowrap;
+        }
+
         .cd-ambiguo-botones {
             display: flex;
             gap: 12px;
