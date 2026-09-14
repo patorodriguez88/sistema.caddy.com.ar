@@ -152,6 +152,22 @@ if (isset($_POST['CargarVenta'])) {
         $id_destino = '18587'; //wepoint
         $codigo_seguimiento = generarCodigo(9);
 
+        // FIX: reclamo atomico. Antes esto se guardaba recien al final (linea
+        // ~319), despues de crear TODO (TransClientes+Ventas+Seguimiento+
+        // HojaDeRuta) - si el botón se disparaba dos veces casi juntas (doble
+        // click, reintento de red), las dos peticiones pasaban el chequeo de
+        // arriba ANTES de que ninguna terminara de guardar, y las dos creaban
+        // su propia fila "padre" completa para la MISMA Colecta (el caso real:
+        // colecta 8575, dos filas Wepoint idénticas J6TJ9PFNM y 5W5MKQX34).
+        // Este UPDATE condicional cierra la ventana: solo la petición que
+        // efectivamente actualiza 1 fila sigue adelante: la otra corta acá.
+        $mysqli->query("UPDATE Colecta SET CodigoSeguimiento='{$codigo_seguimiento}'
+            WHERE id='{$id_colecta}' AND (CodigoSeguimiento IS NULL OR CodigoSeguimiento='') LIMIT 1");
+        if ($mysqli->affected_rows !== 1) {
+            echo json_encode(array('success' => 0, 'error' => 'YA_PROCESADA'));
+            exit;
+        }
+
         //Genero el ultimo numero para la reposicion
         $BuscaNumRepo = $mysqli->query("SELECT MAX(NumeroRepo) AS NumeroRepo FROM Ventas");
         if ($row = $BuscaNumRepo->fetch_array(MYSQLI_ASSOC)) {
@@ -232,19 +248,33 @@ if (isset($_POST['CargarVenta'])) {
 
         //AGREGAR EN TRANSCLIENTES
 
+        // FIX: el NumerodeOrden real ya se calculaba mas abajo para la Hoja de
+        // Ruta, pero nunca se guardaba en TransClientes -> la fila quedaba con
+        // el default de la columna (0), invisible para todo lo que filtra por
+        // NumerodeOrden (paneles de la app de reparto, rendiciones, etc). Se
+        // adelanta el calculo (con ORDER BY id DESC LIMIT 1 por las dudas haya
+        // mas de una Logistica 'Cargada' para el mismo recorrido, mismo
+        // criterio que ya se usa en SistemaReparto/admision.php) para poder
+        // incluirlo en el INSERT de abajo.
+        $sqlveorecabierto = $mysqli->query("SELECT Fecha,NumerodeOrden FROM Logistica
+            WHERE Recorrido='$recorrido' AND Estado IN('Alta','Cargada') AND Eliminado=0
+            ORDER BY id DESC LIMIT 1");
+        $datoveorecabierto = $sqlveorecabierto->fetch_array(MYSQLI_ASSOC);
+        $nordenlogistica = $datoveorecabierto['NumerodeOrden'] ?: 0;
+
         $IngresaTransaccion = "INSERT INTO
         TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Debe,Haber,
         ClienteDestino,DocumentoDestino,DomicilioDestino,LocalidadDestino,SituacionFiscalDestino,TelefonoDestino,
         CodigoSeguimiento,NumeroVenta,Cantidad,DomicilioOrigen,SituacionFiscalOrigen,LocalidadOrigen,IngBrutosOrigen,TelefonoOrigen,
         FormaDePago,EntregaEn,Usuario,CodigoProveedor,Observaciones,Recorrido,ProvinciaDestino,ProvinciaOrigen,
-        idClienteOrigen,idClienteDestino,Retirado,Kilometros,ValorDeclarado,FechaEntrega,FechaPrometida,Wepoint_c,Redespacho,CompraMercaderia,Estado)
+        idClienteOrigen,idClienteDestino,Retirado,Kilometros,ValorDeclarado,FechaEntrega,FechaPrometida,Wepoint_c,Redespacho,CompraMercaderia,Estado,NumerodeOrden)
         VALUES('{$fecha}','{$clienteorigen}','{$cuitorigen}',
         '{$tipodecomprobante}','{$numerorepo}','{$total}','0','{$clientedestino}','{$cuitdestino}',
         '{$domiciliodestino}','{$localidaddestino}','{$situacionfiscaldestino}','{$telefonodestino}',
         '{$codigo_seguimiento}','{$numerorepo}','{$cantidad}','{$domicilioorigen}','{$situacionfiscalorigen}','{$localidadorigen}',
         '{$idclienteorigen}','{$telefonoorigen}','{$formadepago}','{$entregaen}','{$usuario}','{$codigoproveedor}','{$observaciones}',
         '{$recorrido}','{$provinciadestino}','{$provinciaorigen}','{$idclienteorigen}','{$idclientedestino}','{$retirado}',
-        '{$kilometros}','{$valordeclarado}','{$fechaentrega}','{$fechaprometida}','{$wepoint_c}','0','0','{$Estado}')";
+        '{$kilometros}','{$valordeclarado}','{$fechaentrega}','{$fechaprometida}','{$wepoint_c}','0','0','{$Estado}','{$nordenlogistica}')";
 
         $mysqli->query($IngresaTransaccion);
 
@@ -298,12 +328,8 @@ if (isset($_POST['CargarVenta'])) {
         $mysqli->query($sqlSeg);
 
         //INGRESAR EN HOJA DE RUTA
-        //DETECTO LA FECHA DE SALIDA Y EL NUMERO DE ORDEN DE LOGISTICA
-        $sqlveorecabierto = $mysqli->query("SELECT Fecha,NumerodeOrden FROM Logistica WHERE Recorrido='$recorrido' AND Estado IN('Alta','Cargada') AND Eliminado=0");
-        $datoveorecabierto = $sqlveorecabierto->fetch_array(MYSQLI_ASSOC);
-        $fechasalida = $datoveorecabierto['Fecha'];
-        $nordenlogistica = $datoveorecabierto['NumerodeOrden'];
-
+        // (Fecha de salida y NumerodeOrden ya se calcularon arriba, antes del
+        // INSERT a TransClientes, para poder guardarlo ahí también.)
         $SQL_ORDEN = $mysqli->query("SELECT MAX(Posicion)as Posicion FROM HojaDeRuta WHERE Recorrido='$recorrido' AND Estado='Abierto' AND Eliminado='0'");
         $DATO_ORDEN = $SQL_ORDEN->fetch_array(MYSQLI_ASSOC);
         $orden = trim($DATO_ORDEN['Posicion']) + 1;
@@ -315,8 +341,8 @@ if (isset($_POST['CargarVenta'])) {
         '{$codigo_seguimiento}','{$idclientedestino}','{$orden}','{$telefonodestino}','{$NRepo}',{$idTransClientes})");
 
 
-        //ACTUALIZAR EN COLECTA
-        $mysqli->query("UPDATE Colecta SET CodigoSeguimiento='$codigo_seguimiento' WHERE id='$id_colecta'");
+        // (Colecta.CodigoSeguimiento ya quedó guardado en el reclamo atómico
+        // de más arriba — no hace falta un segundo UPDATE acá.)
 
         echo json_encode(array('success' => 1, 'codigo' => $codigo_seguimiento));
     } else {
