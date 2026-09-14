@@ -500,43 +500,48 @@ function _rotuloEstadoImpresora() {
 
 // FIX: antes solo mandaba UN rótulo aunque Cantidad>1 (un envío de 2
 // bultos solo imprimía el "1/2" y nunca el "2/2"). Ahora manda una
-// etiqueta por bulto, EN SECUENCIA (espera la confirmación de cada una
-// antes de mandar la siguiente) — mandarlas todas juntas de una puede
-// saturar el buffer de la Zebra y perder o mezclar etiquetas.
+// etiqueta por bulto, todas SEGUIDAS sin esperar la confirmación de cada
+// una (a pedido — que no frene entre etiqueta y etiqueta).
 $(document).on("click", "#btn_rotulo_zebra_imprimir", function () {
   if (!window.zebraDevice) return;
   var x = _rotuloDatos();
   var total = Math.max(1, parseInt(x.cant, 10) || 1);
   var $b = $(this).prop("disabled", true);
   var $est = $("#rotulo_zebra_estado");
+  var errores = [];
+  var confirmados = 0;
 
-  function imprimirBulto(i) {
-    if (total > 1) {
-      $est.removeClass("text-danger text-success").addClass("text-muted").html("Imprimiendo " + i + "/" + total + "…");
-    }
-    window.zebraDevice.send(
-      _rotuloZPL(x, i, total),
-      function () {
-        if (i < total) {
-          imprimirBulto(i + 1);
-          return;
-        }
-        $("#modal_rotulo_zebra").modal("hide");
-        $b.prop("disabled", false);
-        if (window.toast) {
-          toast("success", "Rótulo", total > 1 ? ("Se imprimieron los " + total + " rótulos.") : "Enviado a la impresora.");
-        }
-      },
-      function (err) {
-        $b.prop("disabled", false);
-        $est.removeClass("text-success").addClass("text-danger").html(
-          "Error al imprimir" + (total > 1 ? " el bulto " + i + "/" + total : "") + ": " + err,
-        );
-      },
-    );
+  for (var i = 1; i <= total; i++) {
+    (function (i) {
+      window.zebraDevice.send(
+        _rotuloZPL(x, i, total),
+        function () {
+          confirmados++;
+          if (confirmados + errores.length === total) {
+            terminar();
+          }
+        },
+        function (err) {
+          errores.push(i + "/" + total + ": " + err);
+          if (confirmados + errores.length === total) {
+            terminar();
+          }
+        },
+      );
+    })(i);
   }
 
-  imprimirBulto(1);
+  function terminar() {
+    $b.prop("disabled", false);
+    if (errores.length) {
+      $est.removeClass("text-success").addClass("text-danger").html("Error al imprimir " + errores.join(" · "));
+      return;
+    }
+    $("#modal_rotulo_zebra").modal("hide");
+    if (window.toast) {
+      toast("success", "Rótulo", total > 1 ? ("Se imprimieron los " + total + " rótulos.") : "Enviado a la impresora.");
+    }
+  }
 });
 
 document.addEventListener(
