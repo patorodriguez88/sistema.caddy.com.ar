@@ -20,6 +20,45 @@ function pdf_text_ci($texto)
     return mb_convert_encoding((string)$texto, 'ISO-8859-1', 'UTF-8');
 }
 
+// FPDF (esta versión) no trae un NbLines/GetNumLines propio - se estima acá
+// a mano cuántas líneas va a ocupar un texto en un MultiCell de ancho $w,
+// para poder dibujar la caja de fondo del tamaño correcto ANTES de escribir
+// el texto (mismo criterio de wrap por palabra que usa MultiCell).
+function pdf_contar_lineas_ci(FPDF $pdf, $textoCodificado, $w)
+{
+    $palabras = explode(' ', (string)$textoCodificado);
+    $lineas = 1;
+    $anchoActual = 0;
+    $espacio = $pdf->GetStringWidth(' ');
+    foreach ($palabras as $palabra) {
+        $anchoPalabra = $pdf->GetStringWidth($palabra);
+        if ($anchoActual > 0 && $anchoActual + $espacio + $anchoPalabra > $w) {
+            $lineas++;
+            $anchoActual = $anchoPalabra;
+        } else {
+            $anchoActual += ($anchoActual > 0 ? $espacio : 0) + $anchoPalabra;
+        }
+    }
+    return $lineas;
+}
+
+// Trunca con "…" para que una línea (ej. la dirección del cliente) entre en
+// $maxW sin pisar el contenido de la card de al lado - antes se cortaba
+// tapada por el fill de la card siguiente en vez de truncarse prolijo.
+function pdf_truncar_ci(FPDF $pdf, $textoCodificado, $maxW)
+{
+    $texto = (string)$textoCodificado;
+    if ($pdf->GetStringWidth($texto) <= $maxW) {
+        return $texto;
+    }
+    $sufijo = '...';
+    $anchoSufijo = $pdf->GetStringWidth($sufijo);
+    while ($texto !== '' && $pdf->GetStringWidth($texto) + $anchoSufijo > $maxW) {
+        $texto = substr($texto, 0, -1);
+    }
+    return rtrim($texto) . $sufijo;
+}
+
 class CobranzaIntegradaPDF extends FPDF
 {
     public $footerInfo = '';
@@ -85,7 +124,7 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     // monto por línea), así que se toma UN valor por NumPedido (MAX) y se
     // suman esos, para no inflar el total cobrado.
     $st = $mysqli->prepare(
-        "SELECT surrender_time, surrender_name, idCliente, Cliente, FechaPedido,
+        "SELECT surrender_time, surrender_name, surrender_observations, idCliente, Cliente, FechaPedido,
                 SUM(Total) AS Total,
                 (SELECT COALESCE(SUM(x.MaxCobrar),0) FROM (
                     SELECT MAX(CobrarEnvio) AS MaxCobrar
@@ -113,10 +152,15 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
         $datosCliente = $row;
     }
 
+    // Origen = cliente emisor del envío (idClienteOrigen), Destino = destinatario
+    // del paquete (ClienteDestino) - antes solo se mostraba el destino, sin forma
+    // de ver de dónde venía cada remito dentro de la liquidación.
     $stD = $mysqli->prepare(
-        "SELECT Ventas.*, TransClientes.ClienteDestino
+        "SELECT Ventas.*, TransClientes.ClienteDestino,
+                COALESCE(co.nombrecliente, '') AS ClienteOrigen
          FROM Ventas
          INNER JOIN TransClientes ON Ventas.NumPedido = TransClientes.CodigoSeguimiento
+         LEFT JOIN Clientes co ON co.id = TransClientes.idClienteOrigen
          WHERE surrender_number=? AND Ventas.Eliminado=0 AND Ventas.CobrarEnvio<>0 AND TransClientes.Eliminado=0
          ORDER BY Ventas.FechaPedido ASC"
     );
@@ -162,8 +206,34 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     $pdf->SetLineWidth(0.3);
     $pdf->Line(10, 34, 200, 34);
 
+    // ─── BANDA: Datos del emisor (Triangular S.A.) ───────────────
+    // Mismos datos fijos que ya usa factura_pdf.php - la liquidación es un
+    // comprobante de Triangular S.A. hacia el cliente, y el informe viejo
+    // los mostraba; el nuevo no los tenía.
+    $emisorY = 38; $emisorH = 15;
+    $pdf->SetFillColor(...$grayBg);
+    $pdf->SetDrawColor(...$borderC);
+    $pdf->RoundedRect(10, $emisorY, 190, $emisorH, 3, 'FD');
+
+    $pdf->SetFont('Arial', 'B', 10);
+    $pdf->SetTextColor(...$darkText);
+    $pdf->SetXY(14, $emisorY + 3);
+    $pdf->Cell(45, 5, 'Triangular S.A.', 0, 0, 'L');
+
+    $pdf->SetFont('Arial', '', 8);
+    $pdf->SetTextColor(...$mutedC);
+    $pdf->SetXY(60, $emisorY + 3);
+    $pdf->Cell(70, 5, pdf_text_ci('Dirección: Francisco de Arteaga 2489, Córdoba'), 0, 0, 'L');
+    $pdf->SetXY(140, $emisorY + 3);
+    $pdf->Cell(56, 5, 'CUIT: 30-71534494-3', 0, 0, 'L');
+
+    $pdf->SetXY(60, $emisorY + 9);
+    $pdf->Cell(70, 5, 'IIBB: 281861638', 0, 0, 'L');
+    $pdf->SetXY(140, $emisorY + 9);
+    $pdf->Cell(56, 5, pdf_text_ci('Teléfono: 3516151944'), 0, 0, 'L');
+
     // ─── CARD IZQUIERDA: Datos del cliente ──────────────────────
-    $cardY = 40; $cardH = 34;
+    $cardY = $emisorY + $emisorH + 4; $cardH = 34;
     $pdf->SetFillColor(...$grayBg);
     $pdf->SetDrawColor(...$borderC);
     $pdf->RoundedRect(10, $cardY, 100, $cardH, 3, 'FD');
@@ -188,7 +258,7 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     ]);
     foreach ($infoCliente as $linea) {
         $pdf->SetXY(14, $pdf->GetY());
-        $pdf->Cell(92, 5, $linea, 0, 1);
+        $pdf->Cell(92, 5, pdf_truncar_ci($pdf, $linea, 92), 0, 1);
     }
 
     // ─── CARD DERECHA: Datos de la liquidación ──────────────────
@@ -233,42 +303,76 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     $pdf->SetXY(160, $cardY + 3);
     $pdf->Cell(34, 6, $estadoTxt, 0, 0, 'C');
 
-    // ─── TABLA DE REMITOS ────────────────────────────────────────
-    $pdf->SetY($cardY + $cardH + 6);
+    $y = $cardY + $cardH + 4;
 
+    // ─── OBSERVACIONES (si el receptor cargó alguna al rendir) ────
+    // Antes se pedían en el modal de "Aceptar" pero nunca quedaban
+    // impresas en ningún lado - se cargaban y se perdían de vista.
+    $obs = trim((string)($cab['surrender_observations'] ?? ''));
+    if ($obs !== '') {
+        $pdf->SetFont('Arial', '', 8.5);
+        $obsLineas = pdf_contar_lineas_ci($pdf, pdf_text_ci($obs), 155) ?: 1;
+        $obsH = max(10, 5 + $obsLineas * 4.2);
+
+        $pdf->SetFillColor(255, 249, 219);
+        $pdf->SetDrawColor(255, 224, 130);
+        $pdf->RoundedRect(10, $y, 190, $obsH, 2, 'FD');
+
+        $pdf->SetXY(14, $y + 2.5);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetTextColor(...$darkText);
+        $pdf->Cell(26, 4, 'Observaciones:', 0, 0, 'L');
+
+        $pdf->SetXY(40, $y + 2.5);
+        $pdf->SetFont('Arial', '', 8.5);
+        $pdf->SetTextColor(...$darkText);
+        $pdf->MultiCell(155, 4.2, pdf_text_ci($obs), 0, 'L');
+
+        $y += $obsH + 4;
+    }
+
+    // ─── TABLA DE REMITOS ────────────────────────────────────────
+    $pdf->SetY($y);
+
+    // Origen/Destino separados (antes solo Destino), y el comprobante
+    // partido en sus dos códigos (N° Repo y Cod. de Seguimiento) en vez
+    // de uno solo, con tinte pastel para que se identifiquen rápido -
+    // mismo criterio "badge" que ya se usa en la grilla de la pantalla.
     $cols = [
-        ['Fecha',       22, 'C'],
-        ['Cliente Destino', 50, 'L'],
-        ['Comprobante', 38, 'L'],
-        ['Observaciones', 40, 'L'],
-        ['Cobrado',     20, 'R'],
-        ['Retenido',    20, 'R'],
+        ['Fecha',        16, 'C'],
+        ['Origen',       30, 'L'],
+        ['Destino',      30, 'L'],
+        ['N° Repo',      24, 'C'],
+        ['Seguimiento',  26, 'C'],
+        ['Cobrado',      32, 'R'],
+        ['Retenido',     32, 'R'],
     ];
 
-    $pdf->SetFillColor(...$primaryC);
-    $pdf->SetTextColor(...$whiteC);
-    $pdf->SetFont('Arial', 'B', 9);
-    $pdf->SetDrawColor(...$primaryC);
-    foreach ($cols as [$label, $w, $align]) {
-        $pdf->Cell($w, 8, $label, 0, 0, $align, true);
-    }
-    $pdf->Ln();
+    $pintarEncabezado = function () use ($pdf, $cols, $primaryC, $whiteC) {
+        $pdf->SetFillColor(...$primaryC);
+        $pdf->SetTextColor(...$whiteC);
+        $pdf->SetFont('Arial', 'B', 8.5);
+        $pdf->SetDrawColor(...$primaryC);
+        foreach ($cols as [$label, $w, $align]) {
+            $pdf->Cell($w, 8, pdf_text_ci($label), 0, 0, $align, true);
+        }
+        $pdf->Ln();
+    };
+    $pintarEncabezado();
 
     $pdf->SetFont('Arial', '', 8.5);
     $pdf->SetDrawColor(...$borderC);
-    $anchoTabla = array_sum(array_column($cols, 1));
     $altRow = false;
 
+    // Pasteles para los badges de código (mismo lenguaje visual que el
+    // badge de cantidad de la pantalla: fondo pastel + texto de color).
+    $repoBg  = [237, 237, 253]; $repoTxt  = $primaryC;
+    $segBg   = [227, 246, 235]; $segTxt   = $greenC;
+
     foreach ($detalle as $item) {
-        if ($pdf->GetY() > 265) {
+        if ($pdf->GetY() > 260) {
             $pdf->AddPage();
-            $pdf->SetFillColor(...$primaryC);
-            $pdf->SetTextColor(...$whiteC);
-            $pdf->SetFont('Arial', 'B', 9);
-            foreach ($cols as [$label, $w, $align]) {
-                $pdf->Cell($w, 8, $label, 0, 0, $align, true);
-            }
-            $pdf->Ln();
+            $pintarEncabezado();
             $pdf->SetFont('Arial', '', 8.5);
         }
 
@@ -276,15 +380,29 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
             ? date('d/m/Y', strtotime($item['FechaPedido'])) : '';
 
         $fill = $altRow ? $grayBg : $whiteC;
+
         $pdf->SetFillColor(...$fill);
         $pdf->SetTextColor(...$darkText);
+        $pdf->Cell(16, 7, $fecha, 'B', 0, 'C', true);
+        $pdf->Cell(30, 7, pdf_text_ci(substr($item['ClienteOrigen'] ?: '-', 0, 17)), 'B', 0, 'L', true);
+        $pdf->Cell(30, 7, pdf_text_ci(substr($item['ClienteDestino'] ?? '', 0, 17)), 'B', 0, 'L', true);
 
-        $pdf->Cell(22, 7, $fecha, 'B', 0, 'C', true);
-        $pdf->Cell(50, 7, pdf_text_ci(substr($item['ClienteDestino'] ?? '', 0, 28)), 'B', 0, 'L', true);
-        $pdf->Cell(38, 7, pdf_text_ci($item['NumPedido'] ?? ''), 'B', 0, 'L', true);
-        $pdf->Cell(40, 7, pdf_text_ci(substr($item['Comentario'] ?? '', 0, 24)), 'B', 0, 'L', true);
-        $pdf->Cell(20, 7, number_format((float)$item['CobrarEnvio'], 2, ',', '.'), 'B', 0, 'R', true);
-        $pdf->Cell(20, 7, number_format((float)$item['Total'], 2, ',', '.'), 'B', 1, 'R', true);
+        // Badge N° Repo
+        $pdf->SetFillColor(...$repoBg);
+        $pdf->SetTextColor(...$repoTxt);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->Cell(24, 7, pdf_text_ci($item['NumeroRepo'] ?? ''), 'B', 0, 'C', true);
+
+        // Badge Cod. Seguimiento
+        $pdf->SetFillColor(...$segBg);
+        $pdf->SetTextColor(...$segTxt);
+        $pdf->Cell(26, 7, pdf_text_ci($item['NumPedido'] ?? ''), 'B', 0, 'C', true);
+
+        $pdf->SetFont('Arial', '', 8.5);
+        $pdf->SetFillColor(...$fill);
+        $pdf->SetTextColor(...$darkText);
+        $pdf->Cell(32, 7, number_format((float)$item['CobrarEnvio'], 2, ',', '.'), 'B', 0, 'R', true);
+        $pdf->Cell(32, 7, number_format((float)$item['Total'], 2, ',', '.'), 'B', 1, 'R', true);
 
         $altRow = !$altRow;
     }
