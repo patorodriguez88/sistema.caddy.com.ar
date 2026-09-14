@@ -53,12 +53,23 @@ if ($action === 'listar') {
 } elseif ($action === 'consultar_conciliacion') {
     // ✅ Consultar conciliación bancaria
     $Cuenta = isset($_POST['Cuenta']) ? $_POST['Cuenta'] : '';
-    $Desde = isset($_POST['desde']) ? $_POST['desde'] : '';
-    $Hasta = isset($_POST['hasta']) ? $_POST['hasta'] : '';
+    $DesdeRaw = isset($_POST['desde']) ? $_POST['desde'] : '';
+    $HastaRaw = isset($_POST['hasta']) ? $_POST['hasta'] : '';
     $Sucursal = "Córdoba";
 
-    $Desde = parseFechaFlexible($Desde);
-    $Hasta = parseFechaFlexible($Hasta);
+    $Desde = parseFechaFlexible($DesdeRaw);
+    $Hasta = parseFechaFlexible($HastaRaw);
+
+    // FIX: si llegó ALGO en desde/hasta pero no se pudo interpretar (bug
+    // real: el front mandaba un formato de fecha que este parser no
+    // reconocía), antes esto se descartaba en silencio y la consulta
+    // volvía a traer TODOS los movimientos sin filtrar - se ve como "elegí
+    // un rango y me trae todo igual", muy confuso. Ahora se avisa en vez
+    // de adivinar.
+    if (($DesdeRaw !== '' && $Desde === null) || ($HastaRaw !== '' && $Hasta === null)) {
+        echo json_encode(["error" => "No se pudo interpretar el rango de fechas. Volvé a seleccionarlo."]);
+        exit;
+    }
 
     $query = "SELECT t.id, t.Conciliado, t.Fecha, t.NombreCuenta, t.Cuenta, t.Debe, t.Haber,
                      t.Observaciones, t.idTransProvee, t.Usuario, t.NumeroAsiento, 

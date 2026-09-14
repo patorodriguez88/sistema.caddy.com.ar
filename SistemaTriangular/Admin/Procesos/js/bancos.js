@@ -50,6 +50,52 @@ function formatFechaParaUI(valor) {
 document.addEventListener("DOMContentLoaded", function () {
   console.log("✅ Script cargado correctamente");
 
+  // FIX: el daterangepicker de #singledaterange se inicializaba solo, por
+  // un script global del tema (app.js, cualquier input con
+  // data-toggle="date-picker"), SIN pasarle locale.format - la librería
+  // arranca en su default MM/DD/YYYY (formato US). Pero toYMD()/
+  // getFechasYMD() de este mismo archivo interpretan el texto del input
+  // como DD/MM/YYYY (igual que el resto del sistema). Con un día >12 (ej.
+  // "26" en 26/08/2026) eso da un mes inválido (26) al leerlo como MM ->
+  // parseFechaFlexible() del lado PHP no logra parsear esa fecha -> el
+  // filtro de fechas se descartaba en silencio y la consulta traía TODOS
+  // los movimientos, no solo los del rango elegido. Se reinicializa acá
+  // con el formato correcto, pisando el init automático.
+  if (window.jQuery && jQuery.fn.daterangepicker) {
+    $("#singledaterange").daterangepicker({
+      locale: {
+        format: "DD/MM/YYYY",
+        separator: " - ",
+        applyLabel: "Aplicar",
+        cancelLabel: "Cancelar",
+        fromLabel: "Desde",
+        toLabel: "Hasta",
+        customRangeLabel: "Personalizado",
+        daysOfWeek: ["Do", "Lu", "Ma", "Mi", "Ju", "Vi", "Sa"],
+        monthNames: [
+          "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+          "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre",
+        ],
+      },
+      autoUpdateInput: false, // arranca vacío - evita mostrar un rango que el operador nunca eligió
+      cancelClass: "btn-light",
+      applyButtonClasses: "btn-success",
+    });
+
+    // El plugin no dispara un "change" nativo del input solo con
+    // autoUpdateInput:false - hay que setear el valor y dispararlo a mano
+    // para que el resto del código (que ya escucha "change" acá abajo)
+    // recargue la tabla con el rango recién elegido.
+    $("#singledaterange").on("apply.daterangepicker", function (ev, picker) {
+      $(this)
+        .val(picker.startDate.format("DD/MM/YYYY") + " - " + picker.endDate.format("DD/MM/YYYY"))
+        .trigger("change");
+    });
+    $("#singledaterange").on("cancel.daterangepicker", function () {
+      $(this).val("").trigger("change");
+    });
+  }
+
   fetch("../Admin/Procesos/php/bancos.php?action=listar")
     .then((r) => r.json())
     .then((data) => {
@@ -205,7 +251,9 @@ function buildDataTable() {
 
           if (arr.length === 0) {
             // $("#tabla_conciliacion").hide();
-            $("#mensajeNoDatos").show();
+            $("#mensajeNoDatos")
+              .show()
+              .text(json.error || "No hay datos disponibles para la consulta.");
             $("#btnVolver").show();
             $("#btnGrabarConciliacion").hide();
           } else {
