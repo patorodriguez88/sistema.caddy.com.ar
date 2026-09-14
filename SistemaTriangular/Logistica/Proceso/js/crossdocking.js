@@ -491,6 +491,18 @@
         recorridos[numero || 0] = { cantidad: cantidad, esperados: esperados, nombre: nombre || "", color: colorRaw || "", ultimaHora: ultimaHora || "" };
     }
 
+    // Corrige cantidad/esperados de UN recorrido con un número fresco del
+    // server (ej. al abrir "Ver pendientes"), sin tocar ultimaHora — a
+    // propósito no reordena la grilla ni dispara la animación de "recién
+    // tocado", esto es una corrección silenciosa, no un escaneo nuevo.
+    function sincronizarRecorridoDesdeServer(numero, cantidad, esperados) {
+        numero = numero || 0;
+        var previo = recorridos[numero];
+        if (!previo) return; // no había tarjeta para este recorrido, nada que corregir
+        recorridos[numero] = Object.assign({}, previo, { cantidad: cantidad, esperados: esperados });
+        renderGrid(null);
+    }
+
     function renderGrid(numeroRecienTocado) {
         var lista = Object.keys(recorridos).map(function (k) {
             return Object.assign({ numero: parseInt(k, 10) }, recorridos[k]);
@@ -608,7 +620,7 @@
 
     function cargarPendientes(numero) {
         $modalBody.empty().append(
-            botonVolver(function () { renderMenuView(numero, $modalRecNombre.text(), null); }),
+            botonVolver(function () { renderMenuView(numero, $modalRecNombre.text(), modalEsperadosActual); }),
             $('<div class="cd-modal-vacio">Cargando…</div>')
         );
 
@@ -621,6 +633,16 @@
                 if (!resp || !resp.ok) {
                     $modalBody.find(".cd-modal-vacio").text("No se pudo cargar. Reintentá.");
                     return;
+                }
+                // La tarjeta de la grilla solo se actualiza sola cuando entra
+                // un escaneo NUEVO para este recorrido — si a la ruta le
+                // asignaron/sacaron un bulto y nadie volvió a escanear ahí,
+                // se queda mostrando un total viejo (caso real: "26 de 26 ✔"
+                // con 1 pendiente real). Esta consulta trae el número
+                // recalculado fresco, así que de paso corrige la tarjeta.
+                if (typeof resp.esperados === "number") {
+                    modalEsperadosActual = resp.esperados;
+                    sincronizarRecorridoDesdeServer(numero, resp.escaneadosHoy, resp.esperados);
                 }
                 renderPendientes(numero, resp.pendientes || []);
             },
@@ -635,7 +657,7 @@
     // cantidad de filas de esta tabla. Un envío multi-bulto con más de un
     // bulto pendiente aparece más de una vez, una por cada _N que falta.
     function renderPendientes(numero, pendientes) {
-        var $volver = botonVolver(function () { renderMenuView(numero, $modalRecNombre.text(), null); });
+        var $volver = botonVolver(function () { renderMenuView(numero, $modalRecNombre.text(), modalEsperadosActual); });
 
         if (!pendientes.length) {
             $modalBody.empty().append($volver, '<div class="cd-modal-vacio">✔ No quedan pendientes en este recorrido.</div>');
@@ -988,6 +1010,33 @@
         );
         $ultimo.find(".cd-codigo").text(mensaje || "Revisá la conexión o recargá la página. (Detalle en la consola del navegador — F12)");
     }
+
+    // Refresco periódico SOLO de los números de la grilla (cantidad/
+    // esperados por recorrido) — a propósito no toca el feed ni el banner
+    // de "último escaneo" (eso lo maneja cada escaneo real; repetirlo acá
+    // duplicaría el feed y podría pisar un cartel AMBIGUO a mitad de
+    // resolver). Existe porque la grilla solo se actualiza sola cuando
+    // entra un escaneo nuevo PARA ESE recorrido puntual — si a una ruta le
+    // asignan/sacan un bulto y nadie vuelve a escanear ahí, la tarjeta
+    // queda mostrando un total viejo indefinidamente (caso real: "26 de
+    // 26 ✔" con 1 pendiente real que solo el modal de pendientes veía).
+    function refrescarGridPeriodico() {
+        $.ajax({
+            url: "Proceso/php/crossdocking.php",
+            type: "GET",
+            dataType: "json",
+            data: { EstadoCrossdocking: 1 },
+            success: function (resp) {
+                if (!resp || !resp.ok) return; // fallo silencioso: es un refresco de fondo, no crítico
+                (resp.porRecorrido || []).forEach(function (r) {
+                    setRecorridoDesdeEstado(r.recorrido, r.nombre, r.color, r.cantidad, r.esperados, r.ultimaHora);
+                });
+                renderGrid(null);
+            },
+            error: function () {}, // silencioso a propósito, ídem arriba
+        });
+    }
+    setInterval(refrescarGridPeriodico, 3 * 60 * 1000);
 
     $printSwitch.prop("checked", leerPreferenciaImpresion());
     conectarImpresora();

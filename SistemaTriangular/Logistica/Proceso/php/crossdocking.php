@@ -639,11 +639,24 @@ if (isset($_REQUEST['PendientesCrossdocking'])) {
 
     $recInfo = cd_info_recorrido($mysqli, $recorrido);
 
+    // La tarjeta de este recorrido en la grilla solo se actualiza cuando
+    // entra un escaneo nuevo PARA ESE RECORRIDO — si a la ruta le asignan un
+    // bulto nuevo (o le sacan uno) y nadie vuelve a escanear ahí, la
+    // tarjeta se queda mostrando un total viejo indefinidamente (caso real:
+    // tarjeta en "26 de 26 ✔" con 1 pendiente real que el propio modal sí
+    // veía). Se manda esperados/escaneadosHoy recalculados fresco acá para
+    // que el front pueda corregir la tarjeta apenas se abre este modal, sin
+    // esperar a que llegue un escaneo.
+    $escaneadosHoy = cd_escaneados_hoy_recorrido($mysqli, $fecha, $recorrido);
+    $esperados = max($escaneadosHoy, cd_bultos_esperados($mysqli, $recorrido));
+
     echo json_encode([
         'ok' => true,
         'recorrido' => $recorrido,
         'recorridoNombre' => $recInfo['nombre'],
         'pendientes' => $pendientes,
+        'escaneadosHoy' => $escaneadosHoy,
+        'esperados' => $esperados,
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }
