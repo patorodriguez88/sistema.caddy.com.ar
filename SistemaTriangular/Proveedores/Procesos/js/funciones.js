@@ -665,7 +665,13 @@ $(document).ready(function () {
     });
   });
 
-  $("#agregar_botton_ok").click(function () {
+  // FIX: esta era la lógica correcta para dar de alta un proveedor nuevo
+  // (Agregar:1), pero el botón que la disparaba (#agregar_botton_ok) ya no
+  // existe en el HTML de Proveedores.php - quedó huérfana. Se convierte en
+  // función compartida para que la llame el botón "Guardar" que sí está
+  // visible hoy (#guardar_botton, más abajo) cuando detecta que no hay
+  // ningún proveedor existente seleccionado.
+  function guardarProveedorNuevo() {
     var razonsocial = document.getElementById("razonsocial").value;
     var dir = document.getElementById("direccion").value;
     var loc = document.getElementById("localidad").value;
@@ -689,6 +695,16 @@ $(document).ready(function () {
     var asana_gid = document.getElementById("asana_gid").value;
     if (ctaas == "" || ctaas == "000000000") {
       var ctaas = document.getElementById("nueva_cuentaasignada").value;
+    }
+
+    if (!razonsocial) {
+      Swal.fire({
+        title: "Error!",
+        text: "Ingresá la Razón Social del proveedor.",
+        icon: "warning",
+        confirmButtonText: "Aceptar",
+      });
+      return;
     }
 
     if (ctaas == "000000000" || ctaas == "Seleccionar Cuenta Contable") {
@@ -736,6 +752,8 @@ $(document).ready(function () {
               text: "Creamos el Proveedor",
               icon: "success",
               confirmButtonText: "Aceptar",
+            }).then(function () {
+              window.location.reload();
             });
           } else if (jsonData.success == "2") {
             Swal.fire({
@@ -744,6 +762,7 @@ $(document).ready(function () {
               icon: "error",
               confirmButtonText: "Aceptar",
             });
+          } else if (jsonData.success == "3") {
             Swal.fire({
               title: "Error!",
               text: "El nombre no puede ser NULL",
@@ -754,10 +773,29 @@ $(document).ready(function () {
         },
       });
     }
-  });
+  }
+
+  $("#agregar_botton_ok").click(guardarProveedorNuevo);
 
   $("#guardar_botton").click(function () {
     var id = document.getElementById("buscarproveedor").value;
+
+    // FIX: este es el único botón "Guardar" que existe hoy en la pantalla,
+    // pero solo mandaba Actualizar:1 (editar un proveedor YA existente).
+    // Al dar de alta uno nuevo, #buscarproveedor queda en "0"/vacío (no hay
+    // ningún proveedor seleccionado todavía) — el UPDATE no encontraba
+    // ninguna fila para tocar, pero mysqli igual devuelve éxito (0 filas
+    // afectadas no es un error), así que el toast decía "Datos Guardados"
+    // sin haber creado nada. El botón correcto para alta (#agregar_botton_ok,
+    // más abajo en este archivo) ya no tiene ningún botón en el HTML que lo
+    // dispare. En vez de reinstalar un botón aparte, éste ahora detecta el
+    // modo: sin proveedor seleccionado -> Agregar (alta), con proveedor
+    // seleccionado -> Actualizar (edición), como ya hacía.
+    if (!id || id === "0") {
+      guardarProveedorNuevo();
+      return;
+    }
+
     var dir = document.getElementById("direccion").value;
     var loc = document.getElementById("localidad").value;
     var prov = document.getElementById("provincia").value;
