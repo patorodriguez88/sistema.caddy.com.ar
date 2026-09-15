@@ -154,15 +154,20 @@
     }
 
     // ------------------------------------------------------------------
-    // ETIQUETA (grande) — 10x15cm @203dpi = 800x1200pt. Mismos datos que
-    // ya imprime Rotulospdf.php (logo+origen, bulto X/Y, código grande,
-    // QR + CP/Localidad/Provincia/Recorrido, bloque DESTINO, observaciones,
-    // pie con usuario/fecha), pero por la impresora térmica en vez de PDF.
+    // ETIQUETA (grande) — 10x10cm @203dpi = 800x800pt (etiqueta CUADRADA,
+    // no 10x15 como el PDF de Rotulospdf.php - el papel físico disponible
+    // es 10x10). Mismos datos que Rotulospdf.php pero acomodados en un
+    // layout más compacto: logo+origen arriba, bulto X/Y al lado, código
+    // grande, QR + datos de destino a su lado (en vez de uno debajo del
+    // otro, para no gastar alto), observaciones si entran, pie chico.
+    // OJO: nunca salió de una impresora física todavía - es muy probable
+    // que haga falta un ajuste de posiciones/tamaños después de la
+    // primera prueba real (mismo criterio que ya pasó con el rótulo chico
+    // de CrossDocking).
     // ------------------------------------------------------------------
     function construirZplEtiqueta(d, nroBulto, totalBultos) {
         var origen = zplLimpio((d.OrigenNombre || "") + (d.idProveedor ? "  #" + d.idProveedor : ""));
         var origenDireccion = zplLimpio(d.OrigenDireccion || "");
-        var origenLocalidad = zplLimpio(d.OrigenLocalidad || "");
         var cliente = zplLimpio(d.ClienteDestino || "");
         var domicilio = zplLimpio(d.DomicilioDestino || "");
         var localidad = zplLimpio(d.LocalidadDestino || "");
@@ -171,33 +176,29 @@
         var observaciones = zplLimpio(d.Observaciones || "");
 
         return (
-            "^XA^PW800^LL1200^CI28" +
+            "^XA^PW800^LL800^CI28" +
+            // Logo (mismo bitmap de siempre) + origen a su derecha + bulto
+            // X/Y arriba a la derecha, todo en la misma franja superior.
             CADDY_LOGO_ZPL +
-            // Bloque origen, a la derecha del logo
-            "^FO230,20^A0N,30,30^FB540,1,0,L,0^FD" + origen + "^FS" +
-            "^FO230,60^A0N,22,22^FB540,2,0,L,0^FD" + origenDireccion + "^FS" +
-            "^FO230,112^A0N,22,22^FB540,1,0,L,0^FD" + origenLocalidad + "^FS" +
-            // Bulto X/Y, grande
-            "^FO30,180^A0N,48,48^FD" + nroBulto + "/" + totalBultos + "^FS" +
-            "^FO30,250^GB740,3,3^FS" +
+            "^FO230,15^A0N,26,26^FB400,1,0,L,0^FD" + origen + "^FS" +
+            "^FO230,48^A0N,18,18^FB400,1,0,L,0^FD" + origenDireccion + "^FS" +
+            "^FO650,20^A0N,34,34^FD" + nroBulto + "/" + totalBultos + "^FS" +
+            "^FO30,110^GB740,3,3^FS" +
             // Código grande, centrado
-            "^FO30,270^A0N,40,40^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
-            "^FO30,330^GB740,3,3^FS" +
-            // QR + datos al lado
-            "^FO40,360^BQN,2,6^FDQA," + d.CodigoSeguimiento + "^FS" +
-            "^FO220,360^A0N,26,26^FDCP: " + cp + "^FS" +
-            "^FO220,395^A0N,22,22^FB540,2,0,L,0^FD" + localidad + "^FS" +
-            "^FO220,445^A0N,22,22^FDProv: " + provincia + "^FS" +
-            "^FO220,480^A0N,22,22^FDRecorrido: " + (d.Recorrido || "-") + "^FS" +
-            "^FO30,540^GB740,3,3^FS" +
-            // DESTINO
-            "^FO30,565^A0N,28,28^FDDESTINO^FS" +
-            "^FO30,600^A0N,30,30^FB740,2,0,L,0^FD" + cliente + "^FS" +
-            "^FO30,660^A0N,24,24^FB740,2,0,L,0^FD" + domicilio + "^FS" +
-            "^FO30,720^A0N,24,24^FB740,2,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
-            (observaciones ? "^FO30,780^A0N,20,20^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
-            // Pie
-            "^FO30,1150^A0N,18,18^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
+            "^FO30,125^A0N,36,36^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
+            "^FO30,175^GB740,3,3^FS" +
+            // QR a la izquierda, datos de destino a la derecha (uno al
+            // lado del otro para no gastar alto de más).
+            "^FO40,195^BQN,2,5^FDQA," + d.CodigoSeguimiento + "^FS" +
+            "^FO210,195^A0N,26,26^FB560,1,0,L,0^FD" + cliente + "^FS" +
+            "^FO210,228^A0N,19,19^FB560,2,0,L,0^FD" + domicilio + "^FS" +
+            "^FO210,280^A0N,19,19^FB560,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
+            "^FO210,305^A0N,19,19^FB560,1,0,L,0^FDProv: " + provincia + "^FS" +
+            "^FO210,330^A0N,22,22^FDRecorrido: " + (d.Recorrido || "-") + "^FS" +
+            "^FO30,370^GB740,3,3^FS" +
+            (observaciones ? "^FO30,385^A0N,19,19^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
+            // Pie, chico, abajo del todo
+            "^FO30,775^A0N,15,15^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
             "^XZ"
         );
     }
