@@ -333,35 +333,6 @@
                     </div>
                 </div>
 
-                <!-- FIX (a pedido, caso real recorrido 1478 - dos paradas al mismo
-                     destino en posiciones muy alejadas): mover UNA parada puntual a
-                     otra posición sin reordenar todo el recorrido de cero. Distinto
-                     de "Ordenar Recorrido" (que arranca de nuevo tocando los pines
-                     uno por uno) - esto corre solo lo necesario para insertarla. -->
-                <div class="modal fade" id="modal-cambiar-posicion" tabindex="-1" role="dialog" aria-hidden="true">
-                    <div class="modal-dialog modal-dialog-centered">
-                        <div class="modal-content">
-                            <div class="modal-header modal-colored-header bg-info">
-                                <h4 class="modal-title">Cambiar posición en el recorrido</h4>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="hidden" id="cp_idhdr">
-                                <p>Posición actual: <b id="cp_posicion_actual"></b></p>
-                                <div class="form-group">
-                                    <label for="cp_nueva_posicion">Nueva posición</label>
-                                    <input type="number" min="1" class="form-control" id="cp_nueva_posicion">
-                                    <small class="text-muted">El resto de las paradas se corre automáticamente para hacerle lugar - no se pisa ninguna.</small>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                                <button id="cp_guardar" type="button" class="btn btn-info text-white">Guardar</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
                 <!-- //MODIFICAR-->
                 <div class="modal fade" id="standard-modal" tabindex="-1" role="dialog" aria-hidden="true">
                     <div class="modal-dialog  modal-lg modal-dialog-centered">
@@ -392,6 +363,22 @@
                                                     <input type="text" class="form-control" data-toggle='timepicker' data-show-meridian="false" id="hora_receptor" name="hora_receptor">
                                                     <span class="input-group-text"><i class="dripicons-clock"></i></span>
                                                 </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- FIX (a pedido, caso real recorrido 1478 - dos paradas al mismo
+                                         destino en posiciones muy alejadas): mover UNA parada puntual a
+                                         otra posición sin reordenar todo el recorrido de cero. Distinto
+                                         de "Ordenar Recorrido" (que arranca de nuevo tocando los pines
+                                         uno por uno) - esto corre solo lo necesario para insertarla.
+                                         Integrado en este mismo modal a pedido, en vez de uno aparte. -->
+                                    <div class="row">
+                                        <div class="col-lg-4 mt-3">
+                                            <div class="form-group">
+                                                <label>Posición en el recorrido</label>
+                                                <input type="hidden" id="cp_posicion_original">
+                                                <input type="number" min="1" class="form-control" id="cp_nueva_posicion">
+                                                <small class="text-muted">Cambiala para moverla a otro lugar del recorrido - el resto se corre solo, no se pisa nada.</small>
                                             </div>
                                         </div>
                                     </div>

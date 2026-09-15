@@ -679,7 +679,7 @@ $(document).ready(function () {
           // retiro usa Posicion_retiro - son colas independientes).
           let posicionActual = row.Retirado == 1 ? row.Posicion : row.Posicion_retiro;
 
-          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a href="#" onclick="cambiarPosicionAbrir(${row.id}, ${posicionActual}); return false;" class="action-icon" title="Cambiar posición en el recorrido"> <i class="mdi mdi-18px mdi-swap-vertical text-info"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
+          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id, ${posicionActual});" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
           // return `<td class="table-action d-print-none mt-4"><a data-id="${row.DomicilioDestino}" id="${row.DomicilioDestino}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-primary"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a></td>`;
         },
       },
@@ -805,10 +805,19 @@ $("#modificarrecorrido_ok").click(function () {
     });
 });
 
-function modificar(i) {
+function modificar(i, posicionActual) {
   $("#id_modificar").val(i);
   $("#standard-modal").modal("show");
   $("#myCenterModalLabel").html("Modificar id # " + i);
+
+  // Campo "Nueva posición" (a pedido, integrado acá en vez de un modal
+  // aparte): solo lo prellenamos si esta pantalla tiene ese campo
+  // (HojaDeRuta2) y nos pasaron la posición actual - en otras pantallas
+  // que reusan este mismo modal/JS sin el campo, no hace nada.
+  if ($("#cp_posicion_original").length) {
+    $("#cp_posicion_original").val(posicionActual || "");
+    $("#cp_nueva_posicion").val(posicionActual || "");
+  }
 }
 
 $("#modificardireccion_ok").click(function () {
@@ -819,7 +828,32 @@ $("#modificardireccion_ok").click(function () {
   var obs = $("#observaciones_receptor").val();
   $("#myCenterModalLabel").html("Modificar id # " + i);
 
-  if (entregado == 1) {
+  // Cambio de posición (a pedido, integrado en este mismo modal en vez de
+  // uno aparte): independiente de "Entregado" - se guarda si el campo
+  // existe en esta pantalla (HojaDeRuta2) y el valor cambió.
+  var $nuevaPos = $("#cp_nueva_posicion");
+  var nuevaPosicion = $nuevaPos.length ? parseInt($nuevaPos.val(), 10) : NaN;
+  var posicionOriginal = $nuevaPos.length ? parseInt($("#cp_posicion_original").val(), 10) : NaN;
+  var cambioPosicion = $nuevaPos.length && nuevaPosicion > 0 && nuevaPosicion !== posicionOriginal;
+
+  function refrescarYCerrar() {
+    var datatable = $("#seguimiento").DataTable();
+    datatable.ajax.reload();
+    // Si esta pantalla tiene mapa (HojaDeRuta2), redibuja la traza con el
+    // orden actualizado - mismo mecanismo que "Ordenar Recorrido".
+    if (typeof veo === "function") {
+      var recorridoActual = ($("#recorrido").text() || "").trim();
+      if (recorridoActual) veo(recorridoActual);
+    }
+    $("#standard-modal").modal("hide");
+    $("#form")[0].reset();
+  }
+
+  function guardarEntregado(callback) {
+    if (entregado != 1) {
+      if (callback) callback();
+      return;
+    }
     $.ajax({
       data: {
         Actualiza: 1,
@@ -834,15 +868,50 @@ $("#modificardireccion_ok").click(function () {
       success: function (response) {
         var jsonData = JSON.parse(response);
         toast("success", "Registro Actualizado !", "Se ha actualizado la tabla Clientes correctamente.");
-        var datatable = $("#seguimiento").DataTable();
-        datatable.ajax.reload();
-        $("#standard-modal").modal("hide");
-        $("#form")[0].reset();
+        if (callback) callback();
       },
     });
-  } else {
-    toast("warning", "Presione Entregado !", "No se realizaron cambios.");
   }
+
+  function guardarPosicion(callback) {
+    if (!cambioPosicion) {
+      if (callback) callback();
+      return;
+    }
+    $.ajax({
+      url: "Mapas/php/cambiar_posicion.php",
+      type: "post",
+      data: {
+        CambiarPosicionInsertar: 1,
+        idhdr: i,
+        nuevaPosicion: nuevaPosicion,
+      },
+      success: function (response) {
+        var jsonData = typeof response === "string" ? JSON.parse(response) : response;
+        if (jsonData.success == 1) {
+          toast("success", "Posición actualizada", "");
+        } else {
+          toast("error", "Error", jsonData.error || "No se pudo cambiar la posición.");
+        }
+        if (callback) callback();
+      },
+      error: function () {
+        toast("error", "Error del servidor", "No se pudo cambiar la posición. Reintentá de nuevo.");
+        if (callback) callback();
+      },
+    });
+  }
+
+  if (entregado != 1 && !cambioPosicion) {
+    toast("warning", "Sin cambios", "Marcá Entregado y/o cambiá la posición antes de guardar.");
+    return;
+  }
+
+  guardarPosicion(function () {
+    guardarEntregado(function () {
+      refrescarYCerrar();
+    });
+  });
 });
 
 function eliminar(e) {
@@ -892,78 +961,6 @@ $("#warning-modal-ok").click(function () {
       } else {
         toast("error", "Error !", "No se han realizado cambios.");
       }
-    },
-  });
-});
-
-// ==================================================
-// CAMBIAR POSICIÓN de una parada puntual (a pedido, caso real: recorrido
-// 1478 con dos paradas al mismo destino en posiciones muy alejadas -
-// 0 y 18). A diferencia de "Ordenar Recorrido" (que reordena TODO desde
-// cero, tocando el pin en el mapa uno por uno), esto corre solo lo
-// necesario para insertar ESTA parada en la posición que se le indique,
-// sin tocar el orden relativo del resto.
-//
-// El modal (#modal-cambiar-posicion) vive en HojaDeRuta2.php - este JS es
-// compartido con otras pantallas que no lo tienen, así que se chequea que
-// exista antes de usarlo (si no está, no rompe nada, simplemente no hace
-// nada - no debería pasar nunca desde el ícono, que solo se ve donde esta
-// tabla está montada, pero por las dudas).
-// ==================================================
-function cambiarPosicionAbrir(idhdr, posicionActual) {
-  var $modal = $("#modal-cambiar-posicion");
-  if ($modal.length === 0) {
-    console.warn("cambiarPosicionAbrir: falta el modal #modal-cambiar-posicion en esta pantalla.");
-    return;
-  }
-  $("#cp_idhdr").val(idhdr);
-  $("#cp_posicion_actual").text(posicionActual);
-  $("#cp_nueva_posicion").val(posicionActual);
-  $modal.modal("show");
-}
-
-$(document).on("click", "#cp_guardar", function () {
-  var idhdr = $("#cp_idhdr").val();
-  var nuevaPosicion = parseInt($("#cp_nueva_posicion").val(), 10);
-
-  if (!idhdr || !nuevaPosicion || nuevaPosicion < 1) {
-    toast("error", "Posición inválida", "Ingresá un número mayor a 0.");
-    return;
-  }
-
-  $.ajax({
-    url: "Mapas/php/cambiar_posicion.php",
-    type: "post",
-    data: {
-      CambiarPosicionInsertar: 1,
-      idhdr: idhdr,
-      nuevaPosicion: nuevaPosicion,
-    },
-    success: function (response) {
-      var jsonData = typeof response === "string" ? JSON.parse(response) : response;
-      $("#modal-cambiar-posicion").modal("hide");
-
-      if (jsonData.success != 1) {
-        toast("error", "Error", jsonData.error || "No se pudo cambiar la posición.");
-        return;
-      }
-
-      toast("success", "Listo", "Posición actualizada.");
-
-      var datatable = $("#seguimiento").DataTable();
-      datatable.ajax.reload();
-
-      // Si esta pantalla tiene mapa (HojaDeRuta2), volver a dibujar la
-      // traza con el orden ya actualizado - mismo mecanismo que usa
-      // "Ordenar Recorrido" para refrescarse solo, no hace falta recargar
-      // la página.
-      if (typeof veo === "function") {
-        var recorridoActual = ($("#recorrido").text() || "").trim();
-        if (recorridoActual) veo(recorridoActual);
-      }
-    },
-    error: function () {
-      toast("error", "Error del servidor", "No se pudo cambiar la posición. Reintentá de nuevo.");
     },
   });
 });
