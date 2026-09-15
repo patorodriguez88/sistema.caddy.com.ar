@@ -188,7 +188,11 @@
             // X/Y arriba a la derecha, todo en la misma franja superior.
             CADDY_LOGO_ZPL +
             "^FO230,35^A0N,30,30^FB400,1,0,L,0^FD" + origen + "^FS" +
-            "^FO230,72^A0N,20,20^FB400,1,0,L,0^FD" + origenDireccion + "^FS" +
+            // FIX (a pedido: "la letra chiquita no se ve nada"): se agranda
+            // todo lo que había quedado chico (dirección de origen,
+            // domicilio/localidad/provincia, observaciones y el pie),
+            // recalculando los espacios para que no se pisen.
+            "^FO230,72^A0N,23,23^FB400,1,0,L,0^FD" + origenDireccion + "^FS" +
             "^FO640,38^A0N,38,38^FD" + nroBulto + "/" + totalBultos + "^FS" +
             "^FO30,140^GB740,3,3^FS" +
             // Código grande, centrado
@@ -199,15 +203,15 @@
             // recorrido junto al Recorrido (a pedido: "agregá la posición,
             // no se ve en ningún lado").
             "^FO40,225^BQN,2,6^FDQA," + d.CodigoSeguimiento + "^FS" +
-            "^FO230,225^A0N,30,30^FB520,1,0,L,0^FD" + cliente + "^FS" +
-            "^FO230,262^A0N,22,22^FB520,2,0,L,0^FD" + domicilio + "^FS" +
-            "^FO230,318^A0N,22,22^FB520,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
-            "^FO230,347^A0N,22,22^FB520,1,0,L,0^FDProv: " + provincia + "^FS" +
-            "^FO230,376^A0N,26,26^FDRec: " + (d.Recorrido || "-") + "   Pos: " + posicion + "^FS" +
-            "^FO30,425^GB740,3,3^FS" +
-            (observaciones ? "^FO30,440^A0N,22,22^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
-            // Pie, chico, abajo del todo
-            "^FO30,775^A0N,16,16^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
+            "^FO230,225^A0N,32,32^FB520,1,0,L,0^FD" + cliente + "^FS" +
+            "^FO230,264^A0N,25,25^FB520,2,0,L,0^FD" + domicilio + "^FS" +
+            "^FO230,330^A0N,25,25^FB520,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
+            "^FO230,362^A0N,25,25^FB520,1,0,L,0^FDProv: " + provincia + "^FS" +
+            "^FO230,394^A0N,28,28^FDRec: " + (d.Recorrido || "-") + "   Pos: " + posicion + "^FS" +
+            "^FO30,440^GB740,3,3^FS" +
+            (observaciones ? "^FO30,455^A0N,25,25^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
+            // Pie, abajo del todo
+            "^FO30,775^A0N,20,20^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
             "^XZ"
         );
     }
