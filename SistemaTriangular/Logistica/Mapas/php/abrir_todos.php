@@ -29,8 +29,31 @@ if($_POST['Abrir_todos']==1){
         echo json_encode(array('resultado'=>1));
 
     }else{
-        echo json_encode(array('resultado'=>0));    
+        echo json_encode(array('resultado'=>0));
     }
+}
+
+// FIX (recuperado de Caddy_produccion, a pedido de Operaciones): pasar todos
+// los servicios ABIERTOS de un recorrido de Retira a Entrega (o al revés) de
+// una sola vez, en vez de tener que ir servicio por servicio. Mismo criterio
+// que ya usaba Caddy_produccion: togglea TransClientes.Retirado sobre todo
+// lo pendiente (no entregado/devuelto/eliminado) del recorrido - Retirado=1
+// = "ya retirado, pasa a Entrega"; Retirado=0 = "vuelve a Retira".
+if (isset($_POST['Retirado_all']) && isset($_POST['Recorrido']) && isset($_POST['EstadoRetiro'])) {
+    $recorrido = intval($_POST['Recorrido']);
+    $estado = intval($_POST['EstadoRetiro']);
+
+    $update = $mysqli->query("UPDATE TransClientes SET Retirado='$estado' WHERE Eliminado=0 and Entregado=0 and Devuelto=0 and Haber=0 AND Recorrido='$recorrido'");
+
+    if ($update) {
+        echo json_encode(['success' => 1]);
+    } else {
+        echo json_encode([
+            'success' => 0,
+            'error' => $mysqli->error,
+        ]);
+    }
+    exit;
 }
 
 ?>

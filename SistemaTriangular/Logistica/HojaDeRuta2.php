@@ -279,6 +279,32 @@
                     </div><!-- /.modal-dialog -->
                 </div><!-- /.modal -->
 
+                <!-- FIX (recuperado de Caddy_produccion, a pedido de Operaciones): pasar
+                     todos los servicios abiertos del recorrido de Retira a Entrega (o al
+                     revés) de una sola vez. -->
+                <div class="modal fade" id="modalCambiarRetiro" tabindex="-1" role="dialog" aria-labelledby="modalCambiarRetiroLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header modal-colored-header bg-warning">
+                                <h4 class="modal-title" id="modalCambiarRetiroLabel">Cambiar estado de retiro de todos los servicios</h4>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body text-center">
+                                <p class="mb-3">¿Qué acción deseás realizar?</p>
+                                <button id="btn_retirar_todos" class="btn btn-warning m-2">
+                                    <i class="mdi mdi-check-bold"></i> Marcar todos como Retirados (pasan a Entrega)
+                                </button>
+                                <button id="btn_no_retirar_todos" class="btn btn-success m-2">
+                                    <i class="mdi mdi-close-thick"></i> Marcar todos como No Retirados (vuelven a Retira)
+                                </button>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                            </div>
+                        </div><!-- /.modal-content -->
+                    </div><!-- /.modal-dialog -->
+                </div><!-- /.modal -->
+
                 <!-- //MODIFICAR RECORRIDO -->
                 <div class="modal fade" id="standard-modal-rec" tabindex="-1" role="dialog" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -568,7 +594,20 @@
                             <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                                 <div class="card">
                                     <div class="card-body">
-                                        <h4 id="seguimiento_header" class="header-title mt-2">GUIAS PENDIENTES DE ENTREGA </h4>
+                                        <div class="row align-items-center">
+                                            <div class="col">
+                                                <h4 id="seguimiento_header" class="header-title mt-2">GUIAS PENDIENTES DE ENTREGA </h4>
+                                            </div>
+                                            <div class="col-auto text-end">
+                                                <!-- FIX (recuperado de Caddy_produccion, a pedido de
+                                                     Operaciones): pasar todos los servicios abiertos del
+                                                     recorrido de Retira a Entrega (o al revés) de una sola
+                                                     vez, en vez de ir servicio por servicio. -->
+                                                <button id="retirados_all" type="button" class="btn btn-warning text-white btn-sm">
+                                                    Cambiar Retiro Todos los Servicios
+                                                </button>
+                                            </div>
+                                        </div>
                                         <table class="table table-striped table-centered mb-0 w-100" id="seguimiento" style="font-size:10px">
                                             <thead>
                                                 <tr>

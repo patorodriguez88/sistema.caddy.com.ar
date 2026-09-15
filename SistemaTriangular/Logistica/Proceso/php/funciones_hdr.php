@@ -35,8 +35,11 @@ if (isset($_POST['FormaDePago'])) {
 
   // Se junta primero toda la info de cada card (en vez de imprimir en el
   // loop) para poder ordenarlas antes de mostrarlas: los recorridos "En
-  // Ruta" (Logistica.Estado='Cargada') van primero, y el resto despues,
-  // ordenado por Logistica.NumerodeOrden.
+  // Ruta" (Logistica.Estado='Cargada') van primero, y dentro de cada grupo
+  // ("En Ruta" y el resto) se ordena por NÚMERO DE RECORRIDO de menor a
+  // mayor (a pedido - antes el segundo grupo se ordenaba por
+  // Logistica.NumerodeOrden, que no tiene que ver con el número de
+  // recorrido y quedaba desordenado a simple vista).
   $cards = [];
 
   while (($fila = $BuscarRecorridos->fetch_array(MYSQLI_ASSOC)) != NULL) {
@@ -84,8 +87,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
 
     $cards[] = [
       'enRuta' => $enRuta,
-      // Sin orden asignada (NumerodeOrden 0/null) queda al final del grupo.
-      'numerodeOrden' => !empty($datologistica['NumerodeOrden']) ? (int)$datologistica['NumerodeOrden'] : PHP_INT_MAX,
+      'numeroRecorrido' => (int)$fila['Recorrido'],
       'fila' => $fila,
       'datohdr' => $datohdr,
       'difhdr' => $difhdr,
@@ -102,7 +104,7 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     if ($a['enRuta'] !== $b['enRuta']) {
       return $a['enRuta'] ? -1 : 1;
     }
-    return $a['numerodeOrden'] <=> $b['numerodeOrden'];
+    return $a['numeroRecorrido'] <=> $b['numeroRecorrido'];
   });
 
   $huboEnRuta = false;
@@ -125,8 +127,14 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
       $mostroSeparador = true;
     }
 
-    echo '<div class="col-xl-3 col-lg-6">';
-    echo '<div class="card widget-flat ribbon-box">';
+    // FIX (reportado: alto de card desprolijo - varía según cuántas líneas
+    // opcionales tiene cada una: Salida, Orden método, km/tiempo). #hdractivas
+    // ya es un .row (flex), así que alcanza con que la COLUMNA sea flex
+    // (d-flex) y la card ocupe 100% de esa columna ya pareja (h-100 w-100) -
+    // Bootstrap estira todas las columnas de una misma fila a la altura de
+    // la más alta automáticamente.
+    echo '<div class="col-xl-3 col-lg-6 d-flex">';
+    echo '<div class="card widget-flat ribbon-box h-100 w-100">';
     echo '<div class="card-body">';
     if (isset($datologistica['Estado']) && $datologistica['Estado'] == 'Cargada') {
       echo '<div class="ribbon-two ribbon-two-success"><span>En Ruta</span></div>';

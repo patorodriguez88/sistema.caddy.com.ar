@@ -904,3 +904,44 @@ $("#orden_anterior").click(function () {
     },
   });
 });
+
+// FIX (recuperado de Caddy_produccion, a pedido de Operaciones): pasar todos
+// los servicios abiertos del recorrido de Retira a Entrega (o al revés) de
+// una sola vez, en vez de ir servicio por servicio.
+$("#retirados_all").click(function () {
+  $("#modalCambiarRetiro").modal("show");
+});
+
+$("#btn_retirar_todos").click(function () {
+  cambiarEstadoRetiroMasivo(1); // 1 = Retirado -> pasan a Entrega
+});
+
+$("#btn_no_retirar_todos").click(function () {
+  cambiarEstadoRetiroMasivo(0); // 0 = No Retirado -> vuelven a Retira
+});
+
+function cambiarEstadoRetiroMasivo(estado) {
+  var Recorrido = $("#recorrido").html();
+
+  $.ajax({
+    data: { Retirado_all: 1, Recorrido: Recorrido, EstadoRetiro: estado },
+    type: "POST",
+    url: "Mapas/php/abrir_todos.php",
+    success: function (response) {
+      var jsonData = JSON.parse(response);
+      $("#modalCambiarRetiro").modal("hide");
+      if (jsonData.success == 1) {
+        var datatable = $("#seguimiento").DataTable();
+        datatable.ajax.reload();
+        veo(Recorrido);
+        toast("success", "Listo", "Se cambió el estado de retiro de todos los servicios.");
+      } else {
+        toast("error", "Error", "No se pudo cambiar el retiro de todos los servicios. " + (jsonData.error || ""));
+      }
+    },
+    error: function () {
+      $("#modalCambiarRetiro").modal("hide");
+      toast("error", "Error del servidor", "No se pudo cambiar el retiro de todos los servicios. Reintentá de nuevo.");
+    },
+  });
+}
