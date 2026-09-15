@@ -142,6 +142,103 @@ if ($Recorrido !== '') {
 echo json_encode(array('resultado'=>1,'newPosicion'=>$Posicion,'retirado'=>$Retirado,'new_p'=>$new_p));
 }
 
+// FIX (2026-09-15, a pedido - caso real recorrido 1478 con dos paradas al
+// mismo destino en posiciones 0 y 18): NewOrder (arriba) solo PISA la
+// Posicion de una fila, sin correr a las demás - sirve para el flujo de
+// "Ordenar Manual" (tocar los pines uno por uno, siempre asignando el
+// próximo número libre), pero no permite insertar UNA parada puntual en un
+// lugar específico sin desordenar/pisar otra que ya estaba ahí. Esta acción
+// SÍ corre (desplaza +1/-1) todo lo que queda entre la posición vieja y la
+// nueva, como al reordenar una lista - así se puede mover una sola parada
+// sin tocar el orden relativo del resto.
+if (isset($_POST['CambiarPosicionInsertar']) && $_POST['CambiarPosicionInsertar'] == 1) {
+    $idhdr = intval($_POST['idhdr'] ?? 0);
+    $nuevaPosicion = intval($_POST['nuevaPosicion'] ?? 0);
+
+    if ($idhdr <= 0 || $nuevaPosicion < 1) {
+        echo json_encode(['success' => 0, 'error' => 'Datos inválidos.']);
+        exit;
+    }
+
+    $st = $mysqli->prepare("
+        SELECT hdr.Recorrido, hdr.Posicion, hdr.Posicion_retiro, tc.Retirado
+        FROM HojaDeRuta hdr
+        INNER JOIN TransClientes tc ON tc.id = hdr.idTransClientes
+        WHERE hdr.id = ? AND hdr.Eliminado = 0
+        LIMIT 1
+    ");
+    $st->bind_param('i', $idhdr);
+    $st->execute();
+    $fila = $st->get_result()->fetch_assoc();
+
+    if (!$fila) {
+        echo json_encode(['success' => 0, 'error' => 'No se encontró la parada.']);
+        exit;
+    }
+
+    $recorrido = $fila['Recorrido'];
+    $retirado = (int)$fila['Retirado'];
+    // Entrega y retiro son dos "colas" de posición independientes
+    // (Posicion / Posicion_retiro) - se corre solo la que corresponde.
+    $campoPos = ($retirado === 1) ? 'Posicion' : 'Posicion_retiro';
+    $posActual = (int)$fila[$campoPos];
+
+    if ($posActual === $nuevaPosicion) {
+        echo json_encode(['success' => 1, 'sinCambios' => 1]);
+        exit;
+    }
+
+    $mysqli->begin_transaction();
+    try {
+        if ($nuevaPosicion > $posActual) {
+            // Se mueve MÁS ADELANTE: todo lo que estaba entre medio (sin
+            // incluir la posición vieja, incluyendo la nueva) retrocede 1.
+            $stmt = $mysqli->prepare("
+                UPDATE HojaDeRuta hdr
+                INNER JOIN TransClientes tc ON tc.id = hdr.idTransClientes
+                SET hdr.$campoPos = hdr.$campoPos - 1
+                WHERE hdr.Recorrido = ? AND hdr.Eliminado = 0 AND hdr.Estado = 'Abierto'
+                  AND tc.Retirado = ?
+                  AND hdr.$campoPos > ? AND hdr.$campoPos <= ?
+            ");
+            $stmt->bind_param('siii', $recorrido, $retirado, $posActual, $nuevaPosicion);
+            $stmt->execute();
+        } else {
+            // Se mueve MÁS ATRÁS: todo lo que estaba entre medio (incluyendo
+            // la nueva, sin incluir la vieja) avanza 1.
+            $stmt = $mysqli->prepare("
+                UPDATE HojaDeRuta hdr
+                INNER JOIN TransClientes tc ON tc.id = hdr.idTransClientes
+                SET hdr.$campoPos = hdr.$campoPos + 1
+                WHERE hdr.Recorrido = ? AND hdr.Eliminado = 0 AND hdr.Estado = 'Abierto'
+                  AND tc.Retirado = ?
+                  AND hdr.$campoPos >= ? AND hdr.$campoPos < ?
+            ");
+            $stmt->bind_param('siii', $recorrido, $retirado, $nuevaPosicion, $posActual);
+            $stmt->execute();
+        }
+
+        $stmtFinal = $mysqli->prepare("UPDATE HojaDeRuta SET $campoPos = ? WHERE id = ? LIMIT 1");
+        $stmtFinal->bind_param('ii', $nuevaPosicion, $idhdr);
+        $stmtFinal->execute();
+
+        // Misma trazabilidad que NewOrder (Ordenar Manual) - un cambio
+        // puntual de posición también es un ordenamiento manual.
+        $Usuario = $_SESSION['Usuario'] ?? 'sistema';
+        $fechaOrdenLocal = (new DateTime('now', new DateTimeZone('America/Argentina/Cordoba')))->format('Y-m-d H:i:s');
+        $stmtTraza = $mysqli->prepare("UPDATE Recorridos SET UltimoOrdenUsuario = ?, UltimoOrdenFecha = ?, UltimoOrdenMetodo = 'Manual' WHERE Numero = ?");
+        $stmtTraza->bind_param('sss', $Usuario, $fechaOrdenLocal, $recorrido);
+        $stmtTraza->execute();
+
+        $mysqli->commit();
+        echo json_encode(['success' => 1, 'posicionAnterior' => $posActual, 'posicionNueva' => $nuevaPosicion]);
+    } catch (Throwable $e) {
+        $mysqli->rollback();
+        echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
+    }
+    exit;
+}
+
 if(isset($_POST['RestartOrder']) && $_POST['RestartOrder']==1){
  $Recorrido = $_POST['Recorrido'] ?? '';
  $stmt = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = '0',Posicion_retiro='0' WHERE Recorrido=? AND Eliminado=0 AND Estado='Abierto'");

@@ -1,4 +1,8 @@
 <?php
+// ⚠️⚠️⚠️ NO USAR - PANTALLA MUERTA (confirmado por Patricio, 2026-09-07) ⚠️⚠️⚠️
+// La que se usa es Logistica/HojaDeRuta2.php (colgada del menú Logística >
+// Hoja de Ruta). Esta y HojaDeRuta.php (sin número) no están enlazadas en
+// el menú y no reciben features nuevos. No editar ni copiar patrones de acá.
 ob_start();
 session_start();
 include("../ConexionBD.php");

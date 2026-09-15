@@ -675,8 +675,11 @@ $(document).ready(function () {
         data: "id",
         render: function (data, type, row) {
           let myLatLng = row.Latitud + "," + row.Longitud;
+          // Posición actual de ESTA fila en su cola (entrega usa Posicion,
+          // retiro usa Posicion_retiro - son colas independientes).
+          let posicionActual = row.Retirado == 1 ? row.Posicion : row.Posicion_retiro;
 
-          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
+          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a href="#" onclick="cambiarPosicionAbrir(${row.id}, ${posicionActual}); return false;" class="action-icon" title="Cambiar posición en el recorrido"> <i class="mdi mdi-18px mdi-swap-vertical text-info"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
           // return `<td class="table-action d-print-none mt-4"><a data-id="${row.DomicilioDestino}" id="${row.DomicilioDestino}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-primary"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a></td>`;
         },
       },
@@ -889,6 +892,78 @@ $("#warning-modal-ok").click(function () {
       } else {
         toast("error", "Error !", "No se han realizado cambios.");
       }
+    },
+  });
+});
+
+// ==================================================
+// CAMBIAR POSICIÓN de una parada puntual (a pedido, caso real: recorrido
+// 1478 con dos paradas al mismo destino en posiciones muy alejadas -
+// 0 y 18). A diferencia de "Ordenar Recorrido" (que reordena TODO desde
+// cero, tocando el pin en el mapa uno por uno), esto corre solo lo
+// necesario para insertar ESTA parada en la posición que se le indique,
+// sin tocar el orden relativo del resto.
+//
+// El modal (#modal-cambiar-posicion) vive en HojaDeRuta2.php - este JS es
+// compartido con otras pantallas que no lo tienen, así que se chequea que
+// exista antes de usarlo (si no está, no rompe nada, simplemente no hace
+// nada - no debería pasar nunca desde el ícono, que solo se ve donde esta
+// tabla está montada, pero por las dudas).
+// ==================================================
+function cambiarPosicionAbrir(idhdr, posicionActual) {
+  var $modal = $("#modal-cambiar-posicion");
+  if ($modal.length === 0) {
+    console.warn("cambiarPosicionAbrir: falta el modal #modal-cambiar-posicion en esta pantalla.");
+    return;
+  }
+  $("#cp_idhdr").val(idhdr);
+  $("#cp_posicion_actual").text(posicionActual);
+  $("#cp_nueva_posicion").val(posicionActual);
+  $modal.modal("show");
+}
+
+$(document).on("click", "#cp_guardar", function () {
+  var idhdr = $("#cp_idhdr").val();
+  var nuevaPosicion = parseInt($("#cp_nueva_posicion").val(), 10);
+
+  if (!idhdr || !nuevaPosicion || nuevaPosicion < 1) {
+    toast("error", "Posición inválida", "Ingresá un número mayor a 0.");
+    return;
+  }
+
+  $.ajax({
+    url: "Mapas/php/cambiar_posicion.php",
+    type: "post",
+    data: {
+      CambiarPosicionInsertar: 1,
+      idhdr: idhdr,
+      nuevaPosicion: nuevaPosicion,
+    },
+    success: function (response) {
+      var jsonData = typeof response === "string" ? JSON.parse(response) : response;
+      $("#modal-cambiar-posicion").modal("hide");
+
+      if (jsonData.success != 1) {
+        toast("error", "Error", jsonData.error || "No se pudo cambiar la posición.");
+        return;
+      }
+
+      toast("success", "Listo", "Posición actualizada.");
+
+      var datatable = $("#seguimiento").DataTable();
+      datatable.ajax.reload();
+
+      // Si esta pantalla tiene mapa (HojaDeRuta2), volver a dibujar la
+      // traza con el orden ya actualizado - mismo mecanismo que usa
+      // "Ordenar Recorrido" para refrescarse solo, no hace falta recargar
+      // la página.
+      if (typeof veo === "function") {
+        var recorridoActual = ($("#recorrido").text() || "").trim();
+        if (recorridoActual) veo(recorridoActual);
+      }
+    },
+    error: function () {
+      toast("error", "Error del servidor", "No se pudo cambiar la posición. Reintentá de nuevo.");
     },
   });
 });
