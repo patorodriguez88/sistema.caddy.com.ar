@@ -276,7 +276,20 @@ if (isset($_POST['CargarVenta'])) {
         '{$recorrido}','{$provinciadestino}','{$provinciaorigen}','{$idclienteorigen}','{$idclientedestino}','{$retirado}',
         '{$kilometros}','{$valordeclarado}','{$fechaentrega}','{$fechaprometida}','{$wepoint_c}','0','0','{$Estado}','{$nordenlogistica}')";
 
-        $mysqli->query($IngresaTransaccion);
+        // FIX (2026-09-15, a pedido): ninguna de las queries de este bloque
+        // chequeaba error - si el INSERT de TransClientes fallaba (o
+        // cualquiera de los que siguen), la respuesta igual decía
+        // success:1 sin que nadie se enterara. Se agrega chequeo en las dos
+        // filas CRÍTICAS para que la colecta funcione en la app de reparto:
+        // TransClientes (el "padre") y HojaDeRuta (lo que la hace visible
+        // como tarjeta). Caso real que motivó esto: 13 colectas entre el
+        // 10/9 y el 15/9 (recorridos 1470, 1500, 1384) se quedaron con el
+        // padre en TransClientes pero SIN fila en HojaDeRuta - "generaban"
+        // bien en esta pantalla pero el repartidor nunca las veía.
+        if (!$mysqli->query($IngresaTransaccion)) {
+            echo json_encode(array('success' => 0, 'error' => 'ERROR_TRANSCLIENTES: ' . $mysqli->error));
+            exit;
+        }
 
         //obtengo el id de transclientes
         $idTransClientes = $mysqli->insert_id;
@@ -340,6 +353,17 @@ if (isset($_POST['CargarVenta'])) {
         '{$clientedestino}','{$tipodecomprobante}','{$observaciones}','{$usuario}','{$asignado}','{$estado_hdr}','{$nordenlogistica}',
         '{$codigo_seguimiento}','{$idclientedestino}','{$orden}','{$telefonodestino}','{$NRepo}',{$idTransClientes})");
 
+        // FIX (2026-09-15): este INSERT es el que hacía que la colecta
+        // apareciera como tarjeta en la app de reparto - si fallaba (nunca
+        // se chequeaba), el padre quedaba creado en TransClientes pero
+        // invisible para el repartidor, y encima el "reclamo atómico" de
+        // más arriba ya había marcado la Colecta como procesada, así que
+        // ni siquiera se podía reintentar desde esta pantalla (quedaba
+        // trabada para siempre). Ahora se avisa con el error real.
+        if (!$Ingresahojaderuta) {
+            echo json_encode(array('success' => 0, 'error' => 'ERROR_HOJADERUTA: ' . $mysqli->error));
+            exit;
+        }
 
         // (Colecta.CodigoSeguimiento ya quedó guardado en el reclamo atómico
         // de más arriba — no hace falta un segundo UPDATE acá.)
