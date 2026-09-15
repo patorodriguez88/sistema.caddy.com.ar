@@ -178,6 +178,11 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
             // 2 líneas (texto + badges en su propia fila). Se junta el
             // badge en la MISMA línea del texto - queda 1 sola línea la
             // mayoría de las veces (2 solo si el nombre es muy largo).
+            // FIX (reportado: "pone origen arriba y abajo el destino, sacá
+            // la flecha", y después "abajo de destino el estado"): Origen y
+            // Destino van en líneas separadas (sin flecha entre medio), y
+            // el badge de estado (Entregado/Devuelto) en su propia línea
+            // debajo del Destino.
             render: function (data, type, row) {
               var entregado = row.Entregado == 1
                 ? '<span class="badge rounded-pill bg-success text-white">Entregado</span>'
@@ -185,8 +190,9 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
               var devuelto = row.Devuelto == 1
                 ? ' <span class="badge rounded-pill bg-warning text-white">Devuelto</span>'
                 : '';
-              return '<div class="ci-fila-titulo">' + row.Cliente + ' &rarr; ' + row.ClienteDestino +
-                ' ' + entregado + devuelto + '</div>';
+              return '<div class="ci-fila-titulo">' + row.Cliente + '</div>' +
+                '<div class="ci-fila-titulo">' + row.ClienteDestino + '</div>' +
+                '<div class="ci-fila-sub">' + entregado + devuelto + '</div>';
             }
           },
           {
