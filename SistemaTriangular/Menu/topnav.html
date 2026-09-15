@@ -647,6 +647,13 @@
                 >CrossDocking (escaneo)</a
               >
               <?php endif; ?>
+              <?php if (tieneMenuPermiso('Logistica', 'EtiquetasRecorrido')): ?>
+              <a
+                href="/SistemaTriangular/Logistica/EtiquetasRecorrido.php"
+                class="dropdown-item"
+                >Etiquetas por Recorrido</a
+              >
+              <?php endif; ?>
               <?php if (tieneMenuPermiso('Logistica', 'Zonas')): ?>
               <a
                 href="/SistemaTriangular/Logistica/Zonas.php"

@@ -1,0 +1,240 @@
+<?php
+// Mismo patrón de auth que CrossDocking.php/Wepoint.php (ver comentario ahí).
+include_once "../Conexion/Conexioni.php";
+?>
+<!DOCTYPE html>
+<html lang="es" data-layout="topnav">
+
+<head>
+    <meta charset="utf-8" />
+    <title>Sistema Caddy | Etiquetas por Recorrido</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Impresión de etiquetas/rótulos por recorrido para el operador de WePoint" name="description" />
+    <meta content="Coderthemes" name="author" />
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
+    <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
+
+    <script src="../hyper/dist/assets/js/hyper-config.js"></script>
+    <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
+    <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <style>
+        /* Mismo lenguaje visual "KDS" oscuro que CrossDocking.php (se usa en
+           el mismo depósito, por el mismo operador). */
+        body {
+            background: #0f1115;
+        }
+
+        .er-wrap {
+            min-height: 100vh;
+            padding: 0 24px 24px;
+            color: #f1f3f5;
+        }
+
+        .er-sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 60;
+            background: #0f1115;
+            padding-top: 12px;
+            padding-bottom: 10px;
+            box-shadow: 0 10px 20px -6px rgba(0, 0, 0, .55);
+        }
+
+        .er-printer-bar {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        .er-printer-estado {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: #1a1d23;
+            border: 2px solid #495057;
+            font-size: 14px;
+        }
+
+        .er-printer-estado .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #6c757d;
+        }
+
+        .er-printer-estado.buscando .dot {
+            background: #ffc107;
+        }
+
+        .er-printer-estado.ok .dot {
+            background: #3bd671;
+        }
+
+        .er-printer-estado.error .dot {
+            background: #fa5c7c;
+        }
+
+        .er-tipo-select {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .er-tipo-select select {
+            background: #1a1d23;
+            color: #f1f3f5;
+            border: 2px solid #495057;
+            border-radius: 8px;
+            padding: 6px 10px;
+            font-size: 14px;
+        }
+
+        .er-titulo {
+            font-size: 20px;
+            font-weight: 700;
+            margin: 18px 0 10px;
+            color: #f1f3f5;
+        }
+
+        .er-card {
+            background: #1a1d23;
+            border: 2px solid #343a40;
+            border-radius: 14px;
+            padding: 6px 4px;
+        }
+
+        .er-card table {
+            color: #f1f3f5;
+            margin-bottom: 0;
+        }
+
+        .er-card table thead th {
+            border-bottom: 2px solid #343a40;
+            color: #adb5bd;
+            font-weight: 600;
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: .03em;
+        }
+
+        .er-card table tbody tr {
+            border-bottom: 1px solid #2a2e35;
+        }
+
+        .er-card table tbody tr:hover {
+            background: rgba(255, 255, 255, .03);
+        }
+
+        .er-rec-dot {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            vertical-align: middle;
+            margin-right: 6px;
+        }
+
+        .er-cantidad-input {
+            background: #0f1115 !important;
+            color: #f1f3f5 !important;
+            border: 2px solid #495057 !important;
+        }
+
+        .er-cantidad-input:focus {
+            border-color: #3bd671 !important;
+            box-shadow: 0 0 0 3px rgba(59, 214, 113, .25) !important;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="wrapper">
+        <?php include "../Menu/head.html"; ?>
+        <?php include "../Menu/topnav.html"; ?>
+
+        <div class="content-page">
+            <div class="content">
+                <div class="er-wrap">
+
+                    <div class="er-sticky-header">
+                        <div class="er-printer-bar">
+                            <span class="er-printer-estado buscando" id="er_printer_estado">
+                                <span class="dot"></span>
+                                <span id="er_printer_estado_txt">Impresora: buscando…</span>
+                            </span>
+                            <button type="button" class="btn btn-sm btn-outline-light" id="er_printer_reintentar">Conectar / reintentar</button>
+
+                            <div class="er-tipo-select">
+                                <label for="er_tipo_etiqueta" class="mb-0">Imprimir como:</label>
+                                <select id="er_tipo_etiqueta">
+                                    <option value="rotulo">Rótulo (chico)</option>
+                                    <option value="etiqueta">Etiqueta (grande, más info)</option>
+                                </select>
+                            </div>
+
+                            <button type="button" class="btn btn-sm btn-outline-light ms-auto" id="er_actualizar"><i class="mdi mdi-refresh"></i> Actualizar</button>
+                        </div>
+                    </div>
+
+                    <div class="er-titulo">Recorridos con paquetes pendientes</div>
+                    <div class="er-card">
+                        <table class="table table-borderless mb-0" id="er_rec_tabla">
+                            <thead>
+                                <tr>
+                                    <th>Recorrido</th>
+                                    <th>Nombre</th>
+                                    <th class="text-center">Paquetes</th>
+                                    <th class="text-center">Bultos</th>
+                                    <th class="text-end">Acción</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td colspan="5" class="text-center text-muted py-4">Cargando…</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div id="er_paq_seccion" style="display:none">
+                        <div class="er-titulo" id="er_paq_titulo">Paquetes del recorrido</div>
+                        <div class="er-card">
+                            <table class="table table-borderless mb-0" id="er_paq_tabla">
+                                <thead>
+                                    <tr>
+                                        <th>Código</th>
+                                        <th>Destinatario</th>
+                                        <th>Domicilio</th>
+                                        <th>Localidad</th>
+                                        <th>Cantidad</th>
+                                        <th class="text-end">Acción</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="../hyper/dist/assets/js/vendor.min.js"></script>
+    <script src="../hyper/dist/assets/js/app.js"></script>
+    <script src="../Ticket/zebra/BrowserPrint-3.0.216.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/alertas.js"></script>
+    <script src="Proceso/js/etiquetas_recorrido.js"></script>
+</body>
+
+</html>
