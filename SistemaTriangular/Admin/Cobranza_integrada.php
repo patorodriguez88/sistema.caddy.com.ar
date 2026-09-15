@@ -61,30 +61,33 @@
             vertical-align: middle;
         }
 
-        /* FIX (reportado: "la tabla no entra, achicá la letra"): las celdas
-           de Cliente/Comprobante/Rendición usaban <h6 class="font-15">
-           (15px, con margen propio) apiladas - inflaba mucho el alto de
-           cada fila y entraban pocas en pantalla. Se compacta todo el
-           tipo de letra de la grilla y se achican los badges. */
+        /* FIX (reportado: "la tabla no entra, achicá la letra" y luego
+           "sigue sobresalido"): las celdas de Cliente/Comprobante/Rendición
+           usaban <h6 class="font-15"> (15px, con margen propio) apiladas en
+           varias líneas - inflaba mucho el alto de cada fila. Se compacta
+           el tipo de letra, se juntan texto+badges en la misma línea donde
+           entra (ver render en cobranza_integrada.js) y se achica el
+           padding vertical de la fila. */
         #cobranza_integrada td {
             vertical-align: middle;
-            padding-top: 7px;
-            padding-bottom: 7px;
+            padding-top: 4px;
+            padding-bottom: 4px;
         }
         #cobranza_integrada .ci-fila-titulo {
-            font-size: 12.5px;
+            font-size: 12px;
             font-weight: 600;
-            line-height: 1.3;
-            margin-bottom: 2px;
+            line-height: 1.25;
+            margin-bottom: 1px;
         }
         #cobranza_integrada .ci-fila-sub {
-            font-size: 10.5px;
+            font-size: 10px;
+            line-height: 1.6;
             color: var(--ct-secondary-color, #8a969c);
-            margin-bottom: 2px;
         }
-        #cobranza_integrada .ci-fila-badges .badge {
-            font-size: 9.5px;
-            padding: 3px 8px;
+        #cobranza_integrada .badge {
+            font-size: 9px;
+            padding: 2px 7px;
+            vertical-align: middle;
         }
     </style>
 </head>

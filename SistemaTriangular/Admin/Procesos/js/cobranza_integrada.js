@@ -154,6 +154,10 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
             // propio margen) más badges - inflaba mucho el alto de cada
             // fila. Se compacta a una sola línea "Origen → Destino" +
             // badges chicos (clase .ci-fila-compacta, ver CSS de la pantalla).
+            // FIX (reportado: "sigue sobresalido, achicá más"): estaba en
+            // 2 líneas (texto + badges en su propia fila). Se junta el
+            // badge en la MISMA línea del texto - queda 1 sola línea la
+            // mayoría de las veces (2 solo si el nombre es muy largo).
             render: function (data, type, row) {
               var entregado = row.Entregado == 1
                 ? '<span class="badge rounded-pill bg-success text-white">Entregado</span>'
@@ -161,23 +165,22 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
               var devuelto = row.Devuelto == 1
                 ? ' <span class="badge rounded-pill bg-warning text-white">Devuelto</span>'
                 : '';
-              return '<div class="ci-fila-titulo">' + row.Cliente + ' &rarr; ' + row.ClienteDestino + '</div>' +
-                '<div class="ci-fila-badges">' + entregado + devuelto + '</div>';
+              return '<div class="ci-fila-titulo">' + row.Cliente + ' &rarr; ' + row.ClienteDestino +
+                ' ' + entregado + devuelto + '</div>';
             }
           },
           {
             data: "Titulo",
+            // FIX (recuperado de Caddy_produccion, a pedido): antes el código
+            // de proveedor y el de seguimiento se mostraban como texto gris
+            // suelto - ahora van como badges. Se juntan Código Proveedor +
+            // ambos badges en UNA sola línea de subtítulo (antes eran 2
+            // líneas separadas) para que la celda ocupe menos alto.
             render: function (data, type, row) {
-              // FIX (recuperado de Caddy_produccion, a pedido): antes el
-              // código de proveedor y el de seguimiento se mostraban como
-              // texto gris suelto - ahora van como badges, más fáciles de
-              // ubicar de un vistazo (mismos colores que ya usaba Caddy_produccion).
               return '<div class="ci-fila-titulo">' + row.Titulo + '</div>' +
-                '<div class="ci-fila-sub">Cód. Proveedor: ' + (row.CodigoProveedor || '-') + '</div>' +
-                '<div class="ci-fila-badges">' +
+                '<div class="ci-fila-sub">Cód. Prov: ' + (row.CodigoProveedor || '-') + ' &nbsp; ' +
                 '<span class="badge rounded-pill bg-warning text-white">' + row.NumeroRepo + '</span> ' +
-                '<span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span>' +
-                '</div>';
+                '<span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span></div>';
             }
           },
           { data: "Comentario" },
