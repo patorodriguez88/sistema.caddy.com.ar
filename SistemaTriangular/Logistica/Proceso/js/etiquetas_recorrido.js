@@ -198,20 +198,31 @@
             // Código grande, centrado
             "^FO30,155^A0N,42,42^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
             "^FO30,210^GB740,3,3^FS" +
-            // QR a la izquierda, datos de destino a la derecha (uno al
-            // lado del otro para no gastar alto de más). Posición del
-            // recorrido junto al Recorrido (a pedido: "agregá la posición,
-            // no se ve en ningún lado").
-            "^FO40,225^BQN,2,6^FDQA," + d.CodigoSeguimiento + "^FS" +
-            "^FO230,225^A0N,32,32^FB520,1,0,L,0^FD" + cliente + "^FS" +
-            "^FO230,264^A0N,25,25^FB520,2,0,L,0^FD" + domicilio + "^FS" +
-            "^FO230,330^A0N,25,25^FB520,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
-            "^FO230,362^A0N,25,25^FB520,1,0,L,0^FDProv: " + provincia + "^FS" +
-            "^FO230,394^A0N,28,28^FDRec: " + (d.Recorrido || "-") + "   Pos: " + posicion + "^FS" +
-            "^FO30,440^GB740,3,3^FS" +
-            (observaciones ? "^FO30,455^A0N,25,25^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
-            // Pie, abajo del todo
-            "^FO30,775^A0N,20,20^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
+            // QR a la izquierda (agrandado a pedido, mag 7 en vez de 6) y
+            // datos de destino corridos a la derecha para hacerle lugar.
+            "^FO40,220^BQN,2,7^FDQA," + d.CodigoSeguimiento + "^FS" +
+            "^FO260,225^A0N,32,32^FB490,1,0,L,0^FD" + cliente + "^FS" +
+            "^FO260,264^A0N,25,25^FB490,2,0,L,0^FD" + domicilio + "^FS" +
+            "^FO260,330^A0N,25,25^FB490,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
+            "^FO260,362^A0N,25,25^FB490,1,0,L,0^FDProv: " + provincia + "^FS" +
+            "^FO30,410^GB740,3,3^FS" +
+            (observaciones ? "^FO30,422^A0N,22,22^FB740,2,0,L,0^FDREF: " + observaciones + "^FS" : "") +
+            // FIX (a pedido: "Recorrido y Posición bien grandes en un
+            // cuadro, y es fundamental el Código de Proveedor bien
+            // grande también"): caja destacada abajo de todo, con las 3
+            // cosas que el repartidor/operador necesita ver de un
+            // vistazo - Recorrido y Posición lado a lado arriba, Código
+            // de Proveedor ocupando todo el ancho abajo (suele ser el más
+            // largo de los tres).
+            "^FO20,478^GB760,300,4^FS" +
+            "^FO40,492^A0N,18,18^FDRECORRIDO^FS" +
+            "^FO40,514^A0N,78,78^FB350,1,0,L,0^FD" + (d.Recorrido || "-") + "^FS" +
+            "^FO400,485^GB3,280,3^FS" +
+            "^FO420,492^A0N,18,18^FDPOSICION^FS" +
+            "^FO420,514^A0N,78,78^FB350,1,0,L,0^FD" + posicion + "^FS" +
+            "^FO30,605^GB740,3,3^FS" +
+            "^FO40,618^A0N,18,18^FDCODIGO DE PROVEEDOR^FS" +
+            "^FO40,642^A0N,68,68^FB720,1,0,C,0^FD" + zplLimpio(d.idProveedor || "-") + "^FS" +
             "^XZ"
         );
     }
@@ -245,24 +256,53 @@
     // Imprime TODOS los paquetes del recorrido actual, uno atrás del otro
     // (no todos a la vez: son potencialmente muchos bultos, y mandarlos
     // todos juntos satura la cola de la impresora).
+    //
+    // FIX (a pedido: "que pregunte antes de imprimir todo, para que no se
+    // equivoquen y salgan 20 al vicio"): confirmación previa mostrando
+    // cuántas etiquetas/rótulos va a mandar en total (suma de Cantidad de
+    // todos los paquetes, no solo la cantidad de paquetes - un paquete
+    // puede tener varios bultos).
     function imprimirTodoElRecorrido() {
         if (!paquetesActuales.length) {
             if (window.toast) toast("error", "Etiquetas", "No hay paquetes para imprimir en este recorrido.");
             return;
         }
-        var idx = 0;
-        function siguiente() {
-            if (idx >= paquetesActuales.length) {
-                if (window.toast) toast("success", "Listo", "Se mandaron a imprimir los " + paquetesActuales.length + " paquetes del recorrido.");
-                return;
+
+        var totalEtiquetas = paquetesActuales.reduce(function (acc, p) {
+            return acc + Math.max(1, parseInt(p.Cantidad, 10) || 1);
+        }, 0);
+        var tipoTexto = tipoEtiquetaSeleccionado() === "etiqueta" ? "etiquetas" : "rótulos";
+
+        function ejecutar() {
+            var idx = 0;
+            function siguiente() {
+                if (idx >= paquetesActuales.length) {
+                    if (window.toast) toast("success", "Listo", "Se mandaron a imprimir los " + paquetesActuales.length + " paquetes del recorrido.");
+                    return;
+                }
+                var d = paquetesActuales[idx];
+                idx++;
+                imprimirPaquete(d, function () {
+                    siguiente();
+                });
             }
-            var d = paquetesActuales[idx];
-            idx++;
-            imprimirPaquete(d, function () {
-                siguiente();
-            });
+            siguiente();
         }
-        siguiente();
+
+        if (typeof Swal !== "undefined") {
+            Swal.fire({
+                icon: "question",
+                title: "¿Imprimir todo el recorrido?",
+                text: "Estás por imprimir " + totalEtiquetas + " " + tipoTexto + " (" + paquetesActuales.length + " paquetes). ¿Continuar?",
+                showCancelButton: true,
+                confirmButtonText: "Sí, imprimir",
+                cancelButtonText: "Cancelar",
+            }).then(function (r) {
+                if (r.isConfirmed) ejecutar();
+            });
+        } else if (confirm("Estás por imprimir " + totalEtiquetas + " " + tipoTexto + " (" + paquetesActuales.length + " paquetes). ¿Continuar?")) {
+            ejecutar();
+        }
     }
 
     // ------------------------------------------------------------------
