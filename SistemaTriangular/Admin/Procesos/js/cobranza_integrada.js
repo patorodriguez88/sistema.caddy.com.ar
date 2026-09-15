@@ -127,14 +127,14 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
         scrollX: true,
         footerCallback: function (row, data, start, end, display) {
           total = this.api()
-            .column(6, { page: 'current' }) // CobrarEnvio - ver el array "columns" de más abajo para el índice
+            .column(5, { page: 'current' }) // CobrarEnvio - ver el array "columns" de más abajo para el índice (bajó de 6 a 5 al fusionar Usuario con Fecha)
             .data()
             .reduce(function (a, b) {
               return Number(a) + Number(b);
             }, 0);
           var saldo = currencyFormat(total);
 
-          $(this.api().column(6).footer()).html(saldo);
+          $(this.api().column(5).footer()).html(saldo);
         },
 
         ajax: {
@@ -146,12 +146,23 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
         columns: [
           {
             data: "FechaPedido",
+            // FIX (reportado: "quedó raro los títulos, tal vez el usuario
+            // está jodiendo, si lo ponemos con la fecha?"): se fusiona la
+            // columna Usuario acá (fecha arriba, usuario chico debajo) para
+            // sacar una columna entera de ancho a la tabla.
+            // De paso, esta celda devolvía su propio "<td>...</td>" - un
+            // render de DataTables tiene que devolver solo el CONTENIDO
+            // (la librería ya crea el <td>), ese <td> extra quedaba anidado
+            // dentro del <td> real, HTML inválido que el navegador corrige
+            // cerrando la celda antes de tiempo y abriendo una fantasma -
+            // eso venía corriendo todas las columnas de ahí en adelante.
             render: function (data, type, row) {
               var Fecha = row.FechaPedido.split('-').reverse().join('.');
-              return '<td><span style="display: none;">' + row.FechaPedido + '</span>' + Fecha + '</td>';
+              return '<span style="display: none;">' + row.FechaPedido + '</span>' +
+                '<div class="ci-fila-titulo">' + Fecha + '</div>' +
+                '<div class="ci-fila-sub">' + (row.Usuario || '') + '</div>';
             }
           },
-          { data: "Usuario" },
           // FIX (recuperado de Caddy_produccion, a pedido): esta columna no
           // existía - sin ella no había forma de saber a qué recorrido
           // pertenecía cada remito desde esta pantalla.

@@ -276,8 +276,10 @@
                                     <table class="table table-striped table-centered mb-0" id="cobranza_integrada" style="font-size:12px">
                                         <thead>
                                             <tr>
-                                                <th>Fecha</th>
-                                                <th>Usuario</th>
+                                                <!-- Usuario se fusionó acá abajo del render de fecha, a
+                                                     pedido ("tal vez el usuario está jodiendo, si lo
+                                                     ponemos con la fecha?") - una columna menos de ancho. -->
+                                                <th>Fecha / Usuario</th>
                                                 <th>Recorrido</th>
                                                 <th>Cliente</th>
                                                 <th>Comprobante</th>
@@ -291,7 +293,6 @@
                                         </tbody>
                                         <tfoot>
                                             <tr>
-                                                <th></th>
                                                 <th></th>
                                                 <th></th>
                                                 <th></th>
