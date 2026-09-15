@@ -173,14 +173,16 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
             data: "Titulo",
             // FIX (recuperado de Caddy_produccion, a pedido): antes el código
             // de proveedor y el de seguimiento se mostraban como texto gris
-            // suelto - ahora van como badges. Se juntan Código Proveedor +
-            // ambos badges en UNA sola línea de subtítulo (antes eran 2
-            // líneas separadas) para que la celda ocupe menos alto.
+            // suelto - ahora van como badges.
+            // FIX (reportado: "el badge de Código de Seguimiento ponelo
+            // abajo del otro, tal vez empuja"): los 2 badges iban lado a
+            // lado en la misma línea - se separa el de Seguimiento a su
+            // propia línea debajo, para que la celda no sea tan ancha.
             render: function (data, type, row) {
               return '<div class="ci-fila-titulo">' + row.Titulo + '</div>' +
                 '<div class="ci-fila-sub">Cód. Prov: ' + (row.CodigoProveedor || '-') + ' &nbsp; ' +
-                '<span class="badge rounded-pill bg-warning text-white">' + row.NumeroRepo + '</span> ' +
-                '<span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span></div>';
+                '<span class="badge rounded-pill bg-warning text-white">' + row.NumeroRepo + '</span></div>' +
+                '<div class="ci-fila-sub"><span class="badge rounded-pill bg-success text-white">' + row.NumPedido + '</span></div>';
             }
           },
           { data: "Comentario" },
