@@ -205,22 +205,34 @@ include_once "../Conexion/Conexioni.php";
                         </table>
                     </div>
 
-                    <div id="er_paq_seccion" style="display:none">
-                        <div class="er-titulo" id="er_paq_titulo">Paquetes del recorrido</div>
-                        <div class="er-card">
-                            <table class="table table-borderless mb-0" id="er_paq_tabla">
-                                <thead>
-                                    <tr>
-                                        <th>Código</th>
-                                        <th>Destinatario</th>
-                                        <th>Domicilio</th>
-                                        <th>Localidad</th>
-                                        <th>Cantidad</th>
-                                        <th class="text-end">Acción</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
+                    <!-- FIX (a pedido: "ver paquetes que me abra un modal, no me lleves
+                         abajo") - antes era una sección que aparecía debajo de la tabla
+                         de recorridos con scroll automático; ahora es un modal. -->
+                    <div class="modal fade" id="er_paq_modal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                            <div class="modal-content" style="background:#1a1d23;color:#f1f3f5">
+                                <div class="modal-header" style="border-color:#343a40">
+                                    <h5 class="modal-title" id="er_paq_titulo">Paquetes del recorrido</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="er-card">
+                                        <table class="table table-borderless mb-0" id="er_paq_tabla">
+                                            <thead>
+                                                <tr>
+                                                    <th>Código</th>
+                                                    <th>Destinatario</th>
+                                                    <th>Domicilio</th>
+                                                    <th>Localidad</th>
+                                                    <th>Cantidad</th>
+                                                    <th class="text-end">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

@@ -5,7 +5,7 @@
 
 (function () {
     var $recTabla = $("#er_rec_tabla tbody");
-    var $paqSeccion = $("#er_paq_seccion");
+    var $paqModal = $("#er_paq_modal");
     var $paqTabla = $("#er_paq_tabla tbody");
     var $paqTitulo = $("#er_paq_titulo");
     var $tipoEtiqueta = $("#er_tipo_etiqueta");
@@ -366,10 +366,9 @@
     // ------------------------------------------------------------------
     function abrirRecorrido(recorrido) {
         recorridoActual = recorrido;
-        $paqSeccion.show();
         $paqTitulo.text("Paquetes del recorrido " + recorrido);
+        $paqModal.modal("show");
         cargarPaquetes(recorrido);
-        $("html, body").animate({ scrollTop: $paqSeccion.offset().top - 20 }, 300);
     }
 
     function cargarPaquetes(recorrido, onListo) {
