@@ -264,12 +264,15 @@
                                         </div>
                                     </div>
                                     <!-- FIX (reportado: "sigue muy salido de la pantalla"): la tabla no
-                                         tenía ningún contenedor con overflow-x - con 9 columnas (varias
-                                         con badges) su ancho natural superaba el viewport y empujaba
-                                         TODA la página hacia la derecha en vez de scrollear solo la
-                                         tabla. .table-responsive la contiene en un scroll horizontal
-                                         propio, sin tocar el resto de la pantalla. -->
-                                    <div class="table-responsive">
+                                         tenía scroll horizontal propio - con 9 columnas (varias con
+                                         badges) su ancho natural superaba el viewport y empujaba TODA
+                                         la página hacia la derecha. Se resuelve con scrollX:true en el
+                                         init de DataTable (ver cobranza_integrada.js) en vez de un
+                                         <div class="table-responsive"> a mano: ese wrapper le rompe a
+                                         DataTables el cálculo de ancho de columnas y el thead queda
+                                         desfazado del tbody (reportado también) - scrollX es la forma
+                                         soportada por la librería para esto, mantiene header y filas
+                                         sincronizados. -->
                                     <table class="table table-striped table-centered mb-0" id="cobranza_integrada" style="font-size:12px">
                                         <thead>
                                             <tr>
@@ -300,7 +303,6 @@
                                             </tr>
                                         </tfoot>
                                     </table>
-                                    </div>
                                 </div>
                             </div>
                         </div>

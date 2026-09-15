@@ -116,6 +116,15 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
         ],
         paging: true,
         searching: true,
+        // FIX (reportado: "sigue muy salido de la pantalla", y después
+        // "sigue desfazada" cuando se probó envolviendo la tabla en un
+        // <div class="table-responsive"> a mano): ese wrapper le rompe a
+        // DataTables el cálculo de ancho de columnas - el thead calcula su
+        // ancho con el contenedor todavía sin scrollbar y el tbody con los
+        // datos ya cargados, y quedan desincronizados. scrollX es la forma
+        // soportada por la librería: arma su propio scroll horizontal
+        // manteniendo header y filas sincronizados.
+        scrollX: true,
         footerCallback: function (row, data, start, end, display) {
           total = this.api()
             .column(6, { page: 'current' }) // CobrarEnvio - ver el array "columns" de más abajo para el índice
