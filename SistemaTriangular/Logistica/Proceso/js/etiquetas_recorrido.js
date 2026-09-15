@@ -128,6 +128,17 @@
     var CADDY_LOGO_ZPL =
         "^FO30,15^GFA,1675,1675,25,,:::::::::::::M0CJ04J01,L07F8003FCI0FE,L0FFC007FE003FF,K01FFE00IF007FF8,K03FFE01IF007FFC,K03IF01IF80IFC,K03IF81IFC0IFE,K07IF83IFC0IFE,K07IFC1IFE0IFE,K03IFE1JF0F01E,K03IFE1JF0E01C,K03JF1JF8703C,K01JF0JF87C78,L0JF87IFC3FF,L0JFC7IFE0FE,L07IFC3IFE01V07,L07IFE3JFX0F,L03IFE1JFX0F,L01JF0JF8W07J0F,L01JF8JFCgH0F,M0JF87IFCgH0F,M0JFC7IFEI0E3C38FC3FE07F8F73F3FE,M07IFC3IFEI0E3E79FF3FF0FFCF7FFBFF,M03IFE1JFI0E3E7BFF3FF9FFEF7FFBFE,M03IFE1JFI0F7E77C73C79E1EF7C78F,M01IFE0JFI0F7E7787BC3DE1E77878F,N0IFE07IFI077FF7FFBC3DC0FF7838F,N0IFE07IFI07F7E7FFBC3DC0FF7838F,N07FFE03IFI07E7E7803C3DE1EF7838F,N07FFE03IFI03E7E7C13C79E1EF7838F,N03FFC01FFEI03E3C3FF3FF9FFEF7878FE,N01FF800FFCI03E3C1FFBFF0FFCF78787F,O0FFI07F8I01C3C0FF3FE07F0778383F,U08Q03C,gM03C,:::,::::::::::::::^FS";
 
+    // Logo real de Caddy para la ETIQUETA grande (distinto del CADDY_LOGO_ZPL
+    // de arriba, que resultó ser el logo de WEPOINT, no el de Caddy - se vio
+    // en una impresión real, 2026-09-15). Generado a partir de
+    // SistemaTriangular/images/LogoCaddy.png (190x77px, 1 bit, umbral 200),
+    // sin el ^FO adentro (a diferencia del de arriba) para poder ubicarlo a
+    // mano en cada layout. Uso exclusivo de la Etiqueta grande por ahora -
+    // el rótulo chico / CrossDocking / panel de Seguimiento siguen con el
+    // bitmap viejo hasta que se confirme si hace falta cambiarlo también ahí.
+    var CADDY_LOGO_ZPL_ETIQUETA =
+        "^GFA,1848,1848,24,0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001F8000F800000000000000000000000000000000000000007FE003FE0000000000000000000000000000000000000000FFF80FFF8000000000000000000000000000000000000001FFF80FFFC000000000000000000000000000000000000001F0FC1F07C000000000000000000000000000000000000003E03E3E03E000000000000000000000000000000000000003C01E3C01E000000000000000000000000000000000000003C01FFC01E000000000000000000000000000000000000003C01FFC01E000000000000000000000000000000000000003C07FFF01E000000000000000000000000000000000000003C1FFFFC1E000000000000000000000000000000000000003E3F80FE3E000000000000000000000000000000000000001FFE007FFC000000000000000000000000000000000000001FFC001FFC0000000000000000000003000000C0000000000FF00007F80000000000000000000007800001F0000000001FC00003FC000000000000000000000FC00003F0000000007F800000FF000000000000000000000FC00003F000000000FE0000003F800000000000000000000FC00003F000000003F80000001FE00000000000000000000FC00003F00000000FF000000007F80000000000000000000FC00003F00000001FC000000001FC0000000000000000000FC00003F00000003F8000000000FE0000000000000000000FC00003F00000007E00000000003F0000000000000000000FC00003F00000007C00000000001F00007E0000FE1C001F8FC007E3F1C00030F800000000000F8003FFC003FFBE00FFEFC03FFFF3E0007CF000000000000F8007FFE00FFFFF01FFFFC07FFFF3F000FCF0000000000007800FFFF81FFFFF07FFFFC0FFFFF3F000FCF0000000001807801FFFF83FFFFF0FFFFFC1FFFFF3F801FCF0078000007C07803FFFFC7FFFFF0FFFFFC3FFFFF3F801F8F00FE01C01FC07807FC3FE7F83FF1FF0FFC7FC3FF1FC03F8F007F0FF87FC07807F00FCFF00FF1FC03FC7F00FF1FC03F0F007FDFFEFF80780FE007CFE007F3F801FCFE007F0FE07F0F001FFFFFFE00780FC0038FC007F3F001FCFE003F0FE07E0F0007FE3FF800780FC0001FC003F3F000FCFC003F07F0FE0F0003FE1FF000780FC0001F8003F3F000FCFC003F03F0FC0F0000FFFFC000780FC0001F8003F3F000FCFC003F03F9FC0F00003FFF0000780FC0001F8003F3F000FCFC003F01F9F80F00001FFC0000780FC0001FC007F3F000FCFC003F01FFF80F000007F80000780FE0038FC007F3F001FCFE003F00FFF00F000003E00000780FE007CFE00FF3F801FC7E007F00FFF00F000001E000007807F80FCFF01FF1FC07FC7F80FF007FE00F000001E000007807FE7FC7FE7FF1FF9FFC7FE7FF007FE00F000001E000007803FFFFC3FFFFF0FFFFFC3FFFFF003FC00F000001E000007801FFFF83FFFFF07FFFFC1FFFFF003FC00F000001E000007800FFFF01FFFFF03FFFFC0FFFFF003F800F000001E0000078007FFE007FFFF01FFFFC07FFFF003F800F000001E0000078001FF8003FF9E007FE7801FF9F007F000F00001FFE0000780003C0000380C000F030003C0C007F000F00003FFF0000780000000000000000000000000000FE000F00007FFF8000780000000000000000000000000000FE000F00003FFF0000780000000000000000000040000001FC000F00001FFF00007800530002218CA700008648C18001FC000F00000E3C0000F8007799B77BDEFF1223CF5DEBCC03F8000F80000F3C0000F000269DF65E5A4E0C227A58CA1C03F00007C0000FFC0001F00027BDF3765E6E0C227B4ECA1E01F00007E00007F80003E00024B7B743D26F0C3BCF5ECBD201E00003F80007F0000FE00000000201800700198608018000000001FC0001E0003FC000000000000000000000000000000000007F000000007F0000000000000000000000000000000000003FC0000001FE0000000000000000000000000000000000000FE0000007F800000000000000000000000000000000000003F800000FE000000000000000000000000000000000000001FE00003FC0000000000000000000000000000000000000007F0000FF00000000000000000000000000000000000000001FC001FC00000000000000000000000000000000000000000FF007F8000000000000000000000000000000000000000003F81FE0000000000000000000000000000000000000000000FFFF800000000000000000000000000000000000000000007FFF000000000000000000000000000000000000000000001FFC0000000000000000000000000000000000000000000007F0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000";
+
     function fechaTexto() {
         var h = new Date();
         return String(h.getDate()).padStart(2, "0") + "/" + String(h.getMonth() + 1).padStart(2, "0") + "/" + h.getFullYear();
@@ -165,6 +176,16 @@
     // primera prueba real (mismo criterio que ya pasó con el rótulo chico
     // de CrossDocking).
     // ------------------------------------------------------------------
+    // Rediseñada a partir de una foto real de la etiqueta impresa
+    // (IGALFER #582423, recorrido 3, posición 5, 2026-09-15). El usuario
+    // marcó 4 problemas puntuales sobre esa impresión real:
+    //   1) el logo era el de WEPOINT, no el de Caddy -> CADDY_LOGO_ZPL_ETIQUETA
+    //   2) la línea divisoria del cuadro de abajo bajaba entera y cortaba el
+    //      Código de Proveedor -> ahora solo cubre la fila Recorrido/Posición
+    //   3) la dirección de origen (IGALFER) se veía pisada/amontonada en 1
+    //      renglón -> ahora 2 renglones, letra más chica para que entre
+    //   4) el REF se veía chico -> letra más grande, sigue en 2 renglones
+    // más un pedido posterior: agrandar el contador de bulto (1/1).
     function construirZplEtiqueta(d, nroBulto, totalBultos) {
         var origen = zplLimpio((d.OrigenNombre || "") + (d.idProveedor ? "  #" + d.idProveedor : ""));
         var origenDireccion = zplLimpio(d.OrigenDireccion || "");
@@ -181,48 +202,42 @@
 
         return (
             "^XA^PW800^LL800^CI28" +
-            // Margen arriba (a pedido: "separá más de arriba, dejá
-            // margen") - todo el bloque de encabezado arranca más abajo
-            // que antes (35 en vez de 15).
-            // Logo (mismo bitmap de siempre) + origen a su derecha + bulto
-            // X/Y arriba a la derecha, todo en la misma franja superior.
-            CADDY_LOGO_ZPL +
-            "^FO230,35^A0N,30,30^FB400,1,0,L,0^FD" + origen + "^FS" +
-            // FIX (a pedido: "la letra chiquita no se ve nada"): se agranda
-            // todo lo que había quedado chico (dirección de origen,
-            // domicilio/localidad/provincia, observaciones y el pie),
-            // recalculando los espacios para que no se pisen.
-            "^FO230,72^A0N,23,23^FB400,1,0,L,0^FD" + origenDireccion + "^FS" +
-            "^FO640,38^A0N,38,38^FD" + nroBulto + "/" + totalBultos + "^FS" +
-            "^FO30,140^GB740,3,3^FS" +
+            // Encabezado: logo real de Caddy (FIX 1) + origen a la derecha,
+            // dirección de origen ahora en 2 renglones más chicos (FIX 3)
+            // para que no se amontone, y el contador de bulto agrandado.
+            "^FO25,20" + CADDY_LOGO_ZPL_ETIQUETA + "^FS" +
+            "^FO230,20^A0N,24,24^FB370,1,0,L,0^FD" + origen + "^FS" +
+            "^FO230,46^A0N,16,16^FB370,2,0,L,0^FD" + origenDireccion + "^FS" +
+            "^FO610,24^A0N,48,48^FB180,1,0,R,0^FD" + nroBulto + "/" + totalBultos + "^FS" +
+            "^FO30,104^GB740,3,3^FS" +
             // Código grande, centrado
-            "^FO30,155^A0N,42,42^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
-            "^FO30,210^GB740,3,3^FS" +
-            // QR a la izquierda (agrandado a pedido, mag 7 en vez de 6) y
-            // datos de destino corridos a la derecha para hacerle lugar.
-            "^FO40,220^BQN,2,7^FDQA," + d.CodigoSeguimiento + "^FS" +
-            "^FO260,225^A0N,32,32^FB490,1,0,L,0^FD" + cliente + "^FS" +
-            "^FO260,264^A0N,25,25^FB490,2,0,L,0^FD" + domicilio + "^FS" +
-            "^FO260,330^A0N,25,25^FB490,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
-            "^FO260,362^A0N,25,25^FB490,1,0,L,0^FDProv: " + provincia + "^FS" +
-            "^FO30,410^GB740,3,3^FS" +
-            (observaciones ? "^FO30,422^A0N,22,22^FB740,2,0,L,0^FDREF: " + observaciones + "^FS" : "") +
-            // FIX (a pedido: "Recorrido y Posición bien grandes en un
-            // cuadro, y es fundamental el Código de Proveedor bien
-            // grande también"): caja destacada abajo de todo, con las 3
-            // cosas que el repartidor/operador necesita ver de un
-            // vistazo - Recorrido y Posición lado a lado arriba, Código
-            // de Proveedor ocupando todo el ancho abajo (suele ser el más
-            // largo de los tres).
-            "^FO20,478^GB760,300,4^FS" +
-            "^FO40,492^A0N,18,18^FDRECORRIDO^FS" +
-            "^FO40,514^A0N,78,78^FB350,1,0,L,0^FD" + (d.Recorrido || "-") + "^FS" +
-            "^FO400,485^GB3,280,3^FS" +
-            "^FO420,492^A0N,18,18^FDPOSICION^FS" +
-            "^FO420,514^A0N,78,78^FB350,1,0,L,0^FD" + posicion + "^FS" +
-            "^FO30,605^GB740,3,3^FS" +
-            "^FO40,618^A0N,18,18^FDCODIGO DE PROVEEDOR^FS" +
-            "^FO40,642^A0N,68,68^FB720,1,0,C,0^FD" + zplLimpio(d.idProveedor || "-") + "^FS" +
+            "^FO30,116^A0N,40,40^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
+            "^FO30,172^GB740,3,3^FS" +
+            // QR a la izquierda (mag 7) y datos de destino a la derecha.
+            "^FO40,180^BQN,2,7^FDQA," + d.CodigoSeguimiento + "^FS" +
+            "^FO260,185^A0N,28,28^FB490,1,0,L,0^FD" + cliente + "^FS" +
+            "^FO260,216^A0N,22,22^FB490,2,0,L,0^FD" + domicilio + "^FS" +
+            "^FO260,270^A0N,22,22^FB490,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
+            "^FO260,299^A0N,22,22^FB490,1,0,L,0^FDProv: " + provincia + "^FS" +
+            "^FO30,393^GB740,3,3^FS" +
+            // FIX 4: REF con letra más grande (26 en vez de 22), sigue
+            // pudiendo ocupar 2 renglones si es largo.
+            (observaciones ? "^FO30,405^A0N,26,26^FB740,2,0,L,0^FDREF: " + observaciones + "^FS" : "") +
+            // Caja destacada abajo de todo: Recorrido y Posición lado a
+            // lado arriba, Código de Proveedor ocupando todo el ancho
+            // abajo. FIX 2: la línea divisoria vertical ahora solo cubre
+            // la fila de Recorrido/Posición (altura 130, arrancando en la
+            // misma franja que esos números) y no sigue bajando hasta
+            // pisar el Código de Proveedor como antes.
+            "^FO20,476^GB760,300,4^FS" +
+            "^FO40,490^A0N,18,18^FDRECORRIDO^FS" +
+            "^FO40,512^A0N,74,74^FB350,1,0,L,0^FD" + (d.Recorrido || "-") + "^FS" +
+            "^FO400,483^GB3,130,3^FS" +
+            "^FO420,490^A0N,18,18^FDPOSICION^FS" +
+            "^FO420,512^A0N,74,74^FB350,1,0,L,0^FD" + posicion + "^FS" +
+            "^FO30,620^GB740,3,3^FS" +
+            "^FO40,632^A0N,18,18^FDCODIGO DE PROVEEDOR^FS" +
+            "^FO40,654^A0N,66,66^FB720,1,0,C,0^FD" + zplLimpio(d.idProveedor || "-") + "^FS" +
             "^XZ"
         );
     }
