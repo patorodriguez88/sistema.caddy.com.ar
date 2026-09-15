@@ -42,13 +42,14 @@ if (isset($_POST['Recorridos'])) {
 if (isset($_POST['Paquetes'])) {
     $recorrido = $mysqli->real_escape_string($_POST['Recorrido'] ?? '');
 
-    $sql = "SELECT tc.id, tc.CodigoSeguimiento, tc.Cantidad,
+    $sql = "SELECT tc.id, tc.CodigoSeguimiento, tc.Cantidad, tc.Retirado,
                    tc.ClienteDestino, tc.DomicilioDestino, tc.LocalidadDestino, tc.ProvinciaDestino,
                    tc.TelefonoDestino,
                    tc.RazonSocial AS OrigenNombre, tc.DomicilioOrigen AS OrigenDireccion, tc.LocalidadOrigen AS OrigenLocalidad,
                    tc.ValorDeclarado, tc.CobrarEnvio, tc.CodigoProveedor AS idProveedor,
                    tc.Recorrido, tc.Usuario, tc.Observaciones,
-                   c.CodigoPostal AS cpdestino
+                   c.CodigoPostal AS cpdestino,
+                   hdr.Posicion, hdr.Posicion_retiro
             FROM TransClientes tc
             LEFT JOIN Clientes c ON c.id = tc.idClienteDestino
             INNER JOIN HojaDeRuta hdr ON hdr.idTransClientes = tc.id

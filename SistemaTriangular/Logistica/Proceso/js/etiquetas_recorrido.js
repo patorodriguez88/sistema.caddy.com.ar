@@ -174,31 +174,40 @@
         var provincia = zplLimpio(d.ProvinciaDestino || "");
         var cp = zplLimpio(d.cpdestino || "");
         var observaciones = zplLimpio(d.Observaciones || "");
+        // Posición en el recorrido: Entrega usa Posicion, Retiro usa
+        // Posicion_retiro (colas independientes, mismo criterio que en
+        // Proceso/js/pendientes.js).
+        var posicion = (d.Retirado == 1 ? d.Posicion : d.Posicion_retiro) || "-";
 
         return (
             "^XA^PW800^LL800^CI28" +
+            // Margen arriba (a pedido: "separá más de arriba, dejá
+            // margen") - todo el bloque de encabezado arranca más abajo
+            // que antes (35 en vez de 15).
             // Logo (mismo bitmap de siempre) + origen a su derecha + bulto
             // X/Y arriba a la derecha, todo en la misma franja superior.
             CADDY_LOGO_ZPL +
-            "^FO230,15^A0N,26,26^FB400,1,0,L,0^FD" + origen + "^FS" +
-            "^FO230,48^A0N,18,18^FB400,1,0,L,0^FD" + origenDireccion + "^FS" +
-            "^FO650,20^A0N,34,34^FD" + nroBulto + "/" + totalBultos + "^FS" +
-            "^FO30,110^GB740,3,3^FS" +
+            "^FO230,35^A0N,30,30^FB400,1,0,L,0^FD" + origen + "^FS" +
+            "^FO230,72^A0N,20,20^FB400,1,0,L,0^FD" + origenDireccion + "^FS" +
+            "^FO640,38^A0N,38,38^FD" + nroBulto + "/" + totalBultos + "^FS" +
+            "^FO30,140^GB740,3,3^FS" +
             // Código grande, centrado
-            "^FO30,125^A0N,36,36^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
-            "^FO30,175^GB740,3,3^FS" +
+            "^FO30,155^A0N,42,42^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
+            "^FO30,210^GB740,3,3^FS" +
             // QR a la izquierda, datos de destino a la derecha (uno al
-            // lado del otro para no gastar alto de más).
-            "^FO40,195^BQN,2,5^FDQA," + d.CodigoSeguimiento + "^FS" +
-            "^FO210,195^A0N,26,26^FB560,1,0,L,0^FD" + cliente + "^FS" +
-            "^FO210,228^A0N,19,19^FB560,2,0,L,0^FD" + domicilio + "^FS" +
-            "^FO210,280^A0N,19,19^FB560,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
-            "^FO210,305^A0N,19,19^FB560,1,0,L,0^FDProv: " + provincia + "^FS" +
-            "^FO210,330^A0N,22,22^FDRecorrido: " + (d.Recorrido || "-") + "^FS" +
-            "^FO30,370^GB740,3,3^FS" +
-            (observaciones ? "^FO30,385^A0N,19,19^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
+            // lado del otro para no gastar alto de más). Posición del
+            // recorrido junto al Recorrido (a pedido: "agregá la posición,
+            // no se ve en ningún lado").
+            "^FO40,225^BQN,2,6^FDQA," + d.CodigoSeguimiento + "^FS" +
+            "^FO230,225^A0N,30,30^FB520,1,0,L,0^FD" + cliente + "^FS" +
+            "^FO230,262^A0N,22,22^FB520,2,0,L,0^FD" + domicilio + "^FS" +
+            "^FO230,318^A0N,22,22^FB520,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
+            "^FO230,347^A0N,22,22^FB520,1,0,L,0^FDProv: " + provincia + "^FS" +
+            "^FO230,376^A0N,26,26^FDRec: " + (d.Recorrido || "-") + "   Pos: " + posicion + "^FS" +
+            "^FO30,425^GB740,3,3^FS" +
+            (observaciones ? "^FO30,440^A0N,22,22^FB740,3,0,L,0^FDREF: " + observaciones + "^FS" : "") +
             // Pie, chico, abajo del todo
-            "^FO30,775^A0N,15,15^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
+            "^FO30,775^A0N,16,16^FB740,1,0,R,0^FDUsuario: " + zplLimpio(d.Usuario || "") + " | Fecha: " + fechaTexto() + "^FS" +
             "^XZ"
         );
     }
