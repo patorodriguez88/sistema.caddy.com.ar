@@ -128,13 +128,16 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     }
 
     // FIX (reportado: alto de card desprolijo - varía según cuántas líneas
-    // opcionales tiene cada una: Salida, Orden método, km/tiempo). #hdractivas
-    // ya es un .row (flex), así que alcanza con que la COLUMNA sea flex
-    // (d-flex) y la card ocupe 100% de esa columna ya pareja (h-100 w-100) -
-    // Bootstrap estira todas las columnas de una misma fila a la altura de
-    // la más alta automáticamente.
-    echo '<div class="col-xl-3 col-lg-6 d-flex">';
-    echo '<div class="card widget-flat ribbon-box h-100 w-100">';
+    // opcionales tiene cada una: Salida, Orden método, km/tiempo).
+    // FIX (reportado despues: "se pisan con los de abajo"): el primer intento
+    // usaba d-flex + h-100 (estirar por flex) - algo en este theme (el
+    // ribbon-box, position:absolute) lo rompía y las cards se superponían
+    // con la fila de abajo. Se reemplaza por un min-height fijo en la card,
+    // mucho más simple y sin depender de que el flex del row se comporte
+    // bien: las cards cortas quedan con aire abajo en vez de estiradas, pero
+    // todas ocupan el mismo alto como mínimo y no se pisan entre filas.
+    echo '<div class="col-xl-3 col-lg-6">';
+    echo '<div class="card widget-flat ribbon-box" style="min-height:305px">';
     echo '<div class="card-body">';
     if (isset($datologistica['Estado']) && $datologistica['Estado'] == 'Cargada') {
       echo '<div class="ribbon-two ribbon-two-success"><span>En Ruta</span></div>';
