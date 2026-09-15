@@ -595,10 +595,20 @@ if (isset($_POST['enter_registration'])) {
 
   //EJECUTO LOS SQL
 
+  // FIX (2026-09-15, reportado con el paquete WXHRZEPOP): este INSERT no
+  // guardaba la columna Devuelto - el UPDATE de TransClientes/HojaDeRuta de
+  // más abajo SÍ prendía Devuelto=1 al cargar un movimiento "Devuelto al
+  // Cliente", pero la fila de Seguimiento quedaba con su propio Devuelto en
+  // 0 (default). Cuando después se borra ese movimiento desde
+  // Funciones/php/tablas.php::EliminarSeguimiento, esa acción decide si
+  // revertir TransClientes.Devuelto mirando el Devuelto de LA FILA
+  // borrada - como quedaba en 0, nunca revertía, y el paquete quedaba
+  // Devuelto=1 para siempre (invisible en Hoja de Ruta/Pendientes) aunque
+  // Estado volviera a mostrar el movimiento anterior ("En Origen").
   $sqlseguimiento = "INSERT INTO `Seguimiento`(`Fecha`, `Hora`, `Usuario`, `Sucursal`, `CodigoSeguimiento`, `Observaciones`, `Entregado`, `Estado`, `Destino`,
-`Avisado`, `idCliente`, `Retirado`, `Visitas`, `idTransClientes`, `Recorrido`,`NombreCompleto`,`state_id`,`NumerodeOrden`)VALUES('{$Fecha}','{$Hora}','{$UsuarioTitularEsc}',
+`Avisado`, `idCliente`, `Retirado`, `Visitas`, `idTransClientes`, `Recorrido`,`NombreCompleto`,`state_id`,`NumerodeOrden`,`Devuelto`)VALUES('{$Fecha}','{$Hora}','{$UsuarioTitularEsc}',
 '{$_SESSION['Sucursal']}','{$CodigoSeguimiento}','{$Observaciones}','{$Entregado}','{$EstadoSeguimiento}','{$dato['Destino']}','{$dato['Avisado']}','{$idCliente}',
-'{$Retirado}','{$Visitas}','{$datosqlbuscotrans['id']}','{$datosqlbuscotrans['Recorrido']}','{$datosqlbuscotrans['ClienteDestino']}','{$id_state['id']}','{$NumOrden}')";
+'{$Retirado}','{$Visitas}','{$datosqlbuscotrans['id']}','{$datosqlbuscotrans['Recorrido']}','{$datosqlbuscotrans['ClienteDestino']}','{$id_state['id']}','{$NumOrden}','{$Devuelto}')";
 
   if ($mysqli->query($sqlseguimiento)) {
     // Propago el N° de orden a TransClientes si estaba en blanco (colectas que

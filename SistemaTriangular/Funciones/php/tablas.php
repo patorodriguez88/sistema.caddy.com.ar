@@ -133,7 +133,10 @@ if (isset($_POST['Seguimiento_Tabla'])) {
 //ELIMINAR SEGUIMEINTO
 if (isset($_POST['EliminarSeguimiento'])) {
   $id = $_POST['id'];
-  $user = $_SESSION['usuario'];
+  // FIX (2026-09-15, encontrado de paso): la clave de sesión es 'Usuario'
+  // (mayúscula) - 'usuario' no existe, así que Eliminado_user quedaba
+  // siempre vacío, sin registro de quién elimina cada movimiento.
+  $user = $_SESSION['Usuario'] ?? '';
   $fechaHora = date('Y-m-d H:i:s');
 
   $sql = $mysqli->query("SELECT Entregado,Devuelto,CodigoSeguimiento FROM Seguimiento WHERE id='$id'");
