@@ -422,19 +422,23 @@
         var html = "";
         rows.forEach(function (r) {
             var color = (r.Color || "").replace("#", "") || "E24F30";
+            // FIX (a pedido, 2026-09-16): botón "Reposiciones" a la
+            // izquierda de "Ver paquetes" - Dinter a veces avisa DESPUÉS
+            // de que ya se imprimió un recorrido que hay que sumarle
+            // bultos a algún pedido (en vez de generar un servicio
+            // nuevo en Caddy). Sólo tiene sentido en recorridos con origen
+            // Dinter (r.TieneDinter, calculado en el backend).
+            var btnRepo = Number(r.TieneDinter) === 1
+                ? '<button type="button" class="btn btn-sm btn-outline-warning er-btn-repo"><i class="mdi mdi-plus-box-outline"></i> Reposiciones</button> '
+                : "";
             html +=
                 '<tr class="er-rec-row" data-recorrido="' + r.Recorrido + '" style="cursor:pointer">' +
                 '<td><span class="er-rec-dot" style="background:#' + color + '"></span> <b>' + r.Recorrido + "</b></td>" +
                 "<td>" + (r.Nombre || "-") + "</td>" +
                 '<td class="text-center">' + r.Paquetes + "</td>" +
                 '<td class="text-center">' + r.Bultos + "</td>" +
-                // FIX (a pedido, 2026-09-16): botón "Reposiciones" a la
-                // izquierda de "Ver paquetes" - Dinter a veces avisa DESPUÉS
-                // de que ya se imprimió un recorrido que hay que sumarle
-                // bultos a algún pedido (en vez de generar un servicio
-                // nuevo en Caddy).
                 '<td class="text-end">' +
-                '<button type="button" class="btn btn-sm btn-outline-warning er-btn-repo"><i class="mdi mdi-plus-box-outline"></i> Reposiciones</button> ' +
+                btnRepo +
                 '<button type="button" class="btn btn-sm btn-success er-btn-abrir">Ver paquetes</button> ' +
                 '<button type="button" class="btn btn-sm er-btn-imprimir-todo" style="background:#0d6efd;border-color:#0d6efd;color:#fff">Imprimir todas</button></td>' +
                 "</tr>";
@@ -507,7 +511,10 @@
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
-            data: { Paquetes: 1, Recorrido: recorrido, SoloDinter: soloDinter() },
+            // Reposiciones es un proceso exclusivo de Dinter (origen) - siempre
+            // filtrado a Dinter acá, sin depender del checkbox "Solo origen
+            // Dinter" de la pantalla principal (puede estar destildado).
+            data: { Paquetes: 1, Recorrido: recorrido, SoloDinter: 1 },
             success: function (response) {
                 var jsonData = typeof response === "string" ? JSON.parse(response) : response;
                 paquetesActuales = jsonData.data || [];

@@ -27,11 +27,16 @@ if (isset($_POST['Recorridos'])) {
     $soloDinter = (int) ($_POST['SoloDinter'] ?? 0) === 1;
     $filtroDinter = $soloDinter ? " AND tc.RazonSocial LIKE 'Dinter%'" : '';
 
+    // TieneDinter: independiente del checkbox "Solo origen Dinter" - marca
+    // qué recorridos tienen AL MENOS UN paquete con origen Dinter, para que
+    // el botón "Reposiciones" sólo se muestre ahí (Dinter es el único
+    // origen que pide sumar bultos a un envío ya impreso).
     $sql = "SELECT hdr.Recorrido,
                    r.Nombre,
                    r.Color,
                    COUNT(DISTINCT tc.id) AS Paquetes,
-                   COALESCE(SUM(tc.Cantidad), 0) AS Bultos
+                   COALESCE(SUM(tc.Cantidad), 0) AS Bultos,
+                   MAX(CASE WHEN tc.RazonSocial LIKE 'Dinter%' THEN 1 ELSE 0 END) AS TieneDinter
             FROM HojaDeRuta hdr
             INNER JOIN TransClientes tc ON tc.id = hdr.idTransClientes
             LEFT JOIN Recorridos r ON r.Numero = hdr.Recorrido
@@ -208,13 +213,20 @@ if (isset($_POST['AgregarReposicion'])) {
         exit;
     }
 
-    $st = $mysqli->prepare("SELECT CodigoSeguimiento, Cantidad FROM TransClientes WHERE id=? AND Eliminado=0 LIMIT 1");
+    $st = $mysqli->prepare("SELECT CodigoSeguimiento, Cantidad, RazonSocial FROM TransClientes WHERE id=? AND Eliminado=0 LIMIT 1");
     $st->bind_param('i', $id);
     $st->execute();
     $fila = $st->get_result()->fetch_assoc();
 
     if (!$fila) {
         echo json_encode(['success' => 0, 'error' => 'No se encontró el servicio.']);
+        exit;
+    }
+
+    // Reposiciones es un proceso exclusivo de Dinter (origen) - guarda del
+    // lado del server además del filtro en pantalla, por las dudas.
+    if (stripos((string) $fila['RazonSocial'], 'Dinter') !== 0) {
+        echo json_encode(['success' => 0, 'error' => 'Reposiciones sólo aplica a envíos con origen Dinter.']);
         exit;
     }
 
