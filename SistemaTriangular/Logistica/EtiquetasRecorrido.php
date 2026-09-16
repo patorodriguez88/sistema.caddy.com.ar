@@ -177,7 +177,7 @@ include_once "../Conexion/Conexioni.php";
                                 <label for="er_tipo_etiqueta" class="mb-0">Imprimir como:</label>
                                 <select id="er_tipo_etiqueta">
                                     <option value="rotulo">Rótulo (chico)</option>
-                                    <option value="etiqueta">Etiqueta (grande, más info)</option>
+                                    <option value="etiqueta" selected>Etiqueta (grande, más info)</option>
                                 </select>
                             </div>
 
@@ -235,6 +235,7 @@ include_once "../Conexion/Conexioni.php";
                                                     <th>Destino</th>
                                                     <th>Localidad</th>
                                                     <th>Cantidad</th>
+                                                    <th>Impreso</th>
                                                     <th class="text-end">Acción</th>
                                                 </tr>
                                             </thead>

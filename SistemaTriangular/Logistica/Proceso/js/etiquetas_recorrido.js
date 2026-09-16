@@ -273,6 +273,27 @@
             : construirZplRotulo(d, nroBulto, totalBultos);
     }
 
+    // Marca "Impreso" en el servidor (usuario/fecha/hora) y actualiza la
+    // fila en pantalla sin recargar toda la tabla. A pedido: "por las
+    // dudas que alguien vaya a imprimir de nuevo".
+    function marcarImpreso(d) {
+        $.ajax({
+            url: "Proceso/php/etiquetas_recorrido.php",
+            type: "POST",
+            data: { MarcarImpreso: 1, id: d.id },
+            success: function (response) {
+                var res = typeof response === "string" ? JSON.parse(response) : response;
+                if (res.success != 1) return;
+                d.Etiqueta_impresa_f = res.fecha;
+                d.Etiqueta_impresa_h = res.hora;
+                d.Etiqueta_impresa_usuario = res.usuario;
+                $paqTabla.find('tr[data-id="' + d.id + '"] .er-impreso-celda').html(impresoHtml(d));
+            },
+            // Si falla, no rompe la impresión en sí (ya salió por la
+            // impresora) - solo queda sin la marquita hasta la próxima vez.
+        });
+    }
+
     // Imprime TODOS los bultos de un paquete (expande por Cantidad, igual
     // que ya hace Funciones/js/seguimiento.js con el rótulo individual).
     function imprimirPaquete(d, onFin) {
@@ -281,7 +302,10 @@
         for (var i = 1; i <= total; i++) {
             enviarZPL(construirZpl(d, i, total), false, function () {
                 pendientes--;
-                if (pendientes === 0 && onFin) onFin(true);
+                if (pendientes === 0) {
+                    marcarImpreso(d);
+                    if (onFin) onFin(true);
+                }
             }, function () {
                 pendientes--;
                 if (pendientes === 0 && onFin) onFin(false);
@@ -308,6 +332,12 @@
             return acc + Math.max(1, parseInt(p.Cantidad, 10) || 1);
         }, 0);
         var tipoTexto = tipoEtiquetaSeleccionado() === "etiqueta" ? "etiquetas" : "rótulos";
+        // A pedido ("por las dudas que alguien vaya a imprimir de nuevo"):
+        // avisar si alguno de estos paquetes ya se había impreso antes.
+        var yaImpresos = paquetesActuales.filter(function (p) { return !!p.Etiqueta_impresa_f; }).length;
+        var avisoReimpresion = yaImpresos > 0
+            ? " Ojo: " + yaImpresos + " de estos paquetes ya fueron impresos antes."
+            : "";
 
         function ejecutar() {
             var idx = 0;
@@ -327,16 +357,16 @@
 
         if (typeof Swal !== "undefined") {
             Swal.fire({
-                icon: "question",
+                icon: yaImpresos > 0 ? "warning" : "question",
                 title: "¿Imprimir todo el recorrido?",
-                text: "Estás por imprimir " + totalEtiquetas + " " + tipoTexto + " (" + paquetesActuales.length + " paquetes). ¿Continuar?",
+                text: "Estás por imprimir " + totalEtiquetas + " " + tipoTexto + " (" + paquetesActuales.length + " paquetes)." + avisoReimpresion + " ¿Continuar?",
                 showCancelButton: true,
                 confirmButtonText: "Sí, imprimir",
                 cancelButtonText: "Cancelar",
             }).then(function (r) {
                 if (r.isConfirmed) ejecutar();
             });
-        } else if (confirm("Estás por imprimir " + totalEtiquetas + " " + tipoTexto + " (" + paquetesActuales.length + " paquetes). ¿Continuar?")) {
+        } else if (confirm("Estás por imprimir " + totalEtiquetas + " " + tipoTexto + " (" + paquetesActuales.length + " paquetes)." + avisoReimpresion + " ¿Continuar?")) {
             ejecutar();
         }
     }
@@ -415,7 +445,7 @@
     }
 
     function cargarPaquetes(recorrido, onListo) {
-        $paqTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>');
+        $paqTabla.html('<tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>');
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
@@ -427,14 +457,37 @@
                 if (onListo) onListo();
             },
             error: function () {
-                $paqTabla.html('<tr><td colspan="6" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
+                $paqTabla.html('<tr><td colspan="7" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
             },
         });
     }
 
+    // Marca "Impreso" (a pedido: "por las dudas que alguien vaya a imprimir
+    // de nuevo") - último usuario/fecha/hora que imprimió este paquete,
+    // sea rótulo o etiqueta. No es un historial, es la última vez.
+    function impresoHtml(d) {
+        if (!d.Etiqueta_impresa_f) {
+            return '<span style="color:#6c757d">—</span>';
+        }
+        var fecha = fechaDMYdesdeISO(d.Etiqueta_impresa_f);
+        var hora = (d.Etiqueta_impresa_h || "").substring(0, 5);
+        return (
+            '<span style="color:#3bd671">✓</span> ' +
+            '<div style="font-size:12px;color:#adb5bd">' +
+            (d.Etiqueta_impresa_usuario || "-") + "<br>" + fecha + " " + hora +
+            "</div>"
+        );
+    }
+
+    function fechaDMYdesdeISO(iso) {
+        // "2026-09-16" -> "16/09/2026"
+        var partes = (iso || "").split("-");
+        return partes.length === 3 ? partes[2] + "/" + partes[1] + "/" + partes[0] : (iso || "-");
+    }
+
     function renderPaquetes(rows) {
         if (!rows.length) {
-            $paqTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
+            $paqTabla.html('<tr><td colspan="7" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
             return;
         }
         var html = "";
@@ -452,6 +505,7 @@
                 "</td>" +
                 "<td>" + (d.LocalidadDestino || "-") + "</td>" +
                 '<td><input type="number" min="1" class="form-control form-control-sm er-cantidad-input" style="width:80px" value="' + d.Cantidad + '"></td>' +
+                '<td class="er-impreso-celda">' + impresoHtml(d) + "</td>" +
                 '<td class="text-end"><button type="button" class="btn btn-sm er-btn-imprimir-individual" style="background:#0d6efd;border-color:#0d6efd;color:#fff">Imprimir</button></td>' +
                 "</tr>";
         });
@@ -501,13 +555,42 @@
         }
     });
 
+    function dispararImpresionIndividual(d) {
+        imprimirPaquete(d, function (ok) {
+            if (window.toast) toast(ok ? "success" : "error", ok ? "Listo" : "Error", ok ? "Etiqueta enviada a imprimir." : "No se pudo imprimir.");
+        });
+    }
+
     $paqTabla.on("click", ".er-btn-imprimir-individual", function () {
         var id = $(this).closest("tr").data("id");
         var d = paquetesActuales.find(function (p) { return p.id == id; });
         if (!d) return;
-        imprimirPaquete(d, function (ok) {
-            if (window.toast) toast(ok ? "success" : "error", ok ? "Listo" : "Error", ok ? "Etiqueta enviada a imprimir." : "No se pudo imprimir.");
-        });
+
+        // A pedido ("por las dudas que alguien vaya a imprimir de nuevo"):
+        // si ya tiene marca de impreso, confirmar antes de reimprimir.
+        if (d.Etiqueta_impresa_f) {
+            var fechaTxt = fechaDMYdesdeISO(d.Etiqueta_impresa_f);
+            var horaTxt = (d.Etiqueta_impresa_h || "").substring(0, 5);
+            var msg = "Este paquete ya fue impreso por " + (d.Etiqueta_impresa_usuario || "-") +
+                " el " + fechaTxt + " a las " + horaTxt + ". ¿Imprimir de nuevo igual?";
+            if (typeof Swal !== "undefined") {
+                Swal.fire({
+                    icon: "warning",
+                    title: "Ya se imprimió antes",
+                    text: msg,
+                    showCancelButton: true,
+                    confirmButtonText: "Sí, imprimir de nuevo",
+                    cancelButtonText: "Cancelar",
+                }).then(function (r) {
+                    if (r.isConfirmed) dispararImpresionIndividual(d);
+                });
+            } else if (confirm(msg)) {
+                dispararImpresionIndividual(d);
+            }
+            return;
+        }
+
+        dispararImpresionIndividual(d);
     });
 
     // ------------------------------------------------------------------

@@ -69,6 +69,7 @@ if (isset($_POST['Paquetes'])) {
                    tc.RazonSocial AS OrigenNombre, tc.DomicilioOrigen AS OrigenDireccion, tc.LocalidadOrigen AS OrigenLocalidad,
                    tc.ValorDeclarado, tc.CobrarEnvio, tc.CodigoProveedor AS idProveedor,
                    tc.Recorrido, tc.Usuario, tc.Observaciones,
+                   tc.Etiqueta_impresa_f, tc.Etiqueta_impresa_h, tc.Etiqueta_impresa_usuario,
                    c.CodigoPostal AS cpdestino,
                    hdr.Posicion, hdr.Posicion_retiro
             FROM TransClientes tc
@@ -130,6 +131,43 @@ if (isset($_POST['ModificarCantidad'])) {
 
     if ($ok1) {
         echo json_encode(['success' => 1, 'ventasActualizadas' => $ok2 ? $upd2->affected_rows : 0]);
+    } else {
+        echo json_encode(['success' => 0, 'error' => $mysqli->error]);
+    }
+    exit;
+}
+
+// ==================================================
+// MARCAR IMPRESO: a pedido ("por las dudas que alguien vaya a imprimir de
+// nuevo") - deja constancia de quién y cuándo se imprimió por última vez
+// la etiqueta/rótulo de este envío. Se llama después de cada impresión
+// exitosa (individual o dentro de "Imprimir todas"), independientemente
+// del tipo (rótulo/etiqueta) - lo que importa es que YA se imprimió algo,
+// no cuál de los dos formatos. Guarda la última impresión, no un
+// historial completo.
+// ==================================================
+if (isset($_POST['MarcarImpreso'])) {
+    $id = intval($_POST['id'] ?? 0);
+    if ($id <= 0) {
+        echo json_encode(['success' => 0, 'error' => 'Falta el id del paquete.']);
+        exit;
+    }
+
+    $usuario = $mysqli->real_escape_string((string) ($_SESSION['Usuario'] ?? 'desconocido'));
+
+    $upd = $mysqli->prepare("UPDATE TransClientes
+                              SET Etiqueta_impresa_f = CURDATE(), Etiqueta_impresa_h = CURTIME(), Etiqueta_impresa_usuario = ?
+                              WHERE id = ? LIMIT 1");
+    $upd->bind_param('si', $usuario, $id);
+    $ok = $upd->execute();
+
+    if ($ok) {
+        echo json_encode([
+            'success' => 1,
+            'usuario' => $usuario,
+            'fecha' => date('Y-m-d'),
+            'hora' => date('H:i'),
+        ]);
     } else {
         echo json_encode(['success' => 0, 'error' => $mysqli->error]);
     }
