@@ -444,15 +444,17 @@
                                                 </table>
                                             </div>
 
+                                            <!-- FIX (a pedido, 2026-09-16): antes eran 3 botones de impresión
+                                                 (Guía/Etiqueta PDF/Rótulo Zebra) - se consolida en 2: "Imprimir
+                                                 Rótulo" intenta mandar el ZPL directo por Zebra y, si no hay
+                                                 impresora conectada, abre el PDF del rótulo como respaldo
+                                                 automático (sin modal ni preguntar nada más). -->
                                             <div class="d-flex flex-wrap gap-2 mt-3">
                                                 <button type="button" class="btn btn-sm btn-outline-primary" onclick="verguia()">
-                                                    <i class="mdi mdi-file-document-outline me-1"></i>Guía de Carga
+                                                    <i class="mdi mdi-file-document-outline me-1"></i>Imprimir Remito (PDF)
                                                 </button>
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="verrotulo()">
-                                                    <i class="mdi mdi-label-outline me-1"></i>Etiqueta (PDF)
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-primary" onclick="abrirRotuloZebra()">
-                                                    <i class="mdi mdi-printer me-1"></i>Rótulo (Zebra)
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="imprimirRotuloConFallback()">
+                                                    <i class="mdi mdi-printer me-1"></i>Imprimir Rótulo
                                                 </button>
                                                 <button type="button" class="btn btn-sm btn-light" onclick="cerrarSeguimiento()">
                                                     <i class="mdi mdi-close me-1"></i>Cerrar
@@ -461,32 +463,6 @@
                                         </div>
                                     </div> <!-- end card-->
                                 </div> <!-- end card-body-->
-
-                                <!-- MODAL: preview + impresion directa del Rotulo en Zebra (BrowserPrint) -->
-                                <div id="modal_rotulo_zebra" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-                                    <div class="modal-dialog modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">Imprimir Rótulo (Zebra)</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                            </div>
-                                            <div class="modal-body">
-                                                <p class="text-muted small mb-2">Vista previa de lo que se va a imprimir en la Zebra:</p>
-                                                <div id="rotulo_preview"
-                                                     style="width:390px;height:192px;max-width:100%;border:1px solid #333;border-radius:3px;padding:8px 10px;font-family:'DejaVu Sans Mono',Consolas,monospace;font-size:11px;line-height:1.3;background:#fff;color:#000;position:relative;overflow:hidden;margin:0 auto;">
-                                                </div>
-                                                <div id="rotulo_zebra_estado" class="small mt-2 text-muted"></div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
-                                                <button id="btn_rotulo_zebra_imprimir" type="button" class="btn btn-primary">
-                                                    <i class="mdi mdi-printer me-1"></i>Imprimir
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
 
                                 <!-- end row -->
                                 <div class="col-xl-12  col-lg-6">

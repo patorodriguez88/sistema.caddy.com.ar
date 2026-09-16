@@ -210,10 +210,6 @@ $(function () {
   zebraSetup();
 });
 
-function zebraErr(msg) {
-  $("#rotulo_zebra_estado").removeClass("text-muted text-success").addClass("text-danger").html(msg);
-}
-
 // Corta un texto a n caracteres para que entre en la etiqueta.
 function _rec(s, n) {
   s = (s == null ? "" : String(s)).trim();
@@ -266,80 +262,54 @@ function _rotuloZPL(x) {
   );
 }
 
-function _rotuloPreviewHTML(x) {
-  var esc = function (s) {
-    return $("<div>").text(s == null ? "" : s).html();
-  };
-  var qr = "/SistemaTriangular/Funciones/php/qr.php?s=4&d=" + encodeURIComponent(x.cs);
-  return (
-    '<img src="' + qr + '" alt="QR" style="position:absolute;left:8px;top:36px;width:84px;height:84px;image-rendering:pixelated;">' +
-    '<div style="margin-left:100px;">' +
-    '<div style="font-weight:700;font-size:12px;">' + esc(x.cliente) + "</div>" +
-    "<div>" + esc(x.domicilio) + "</div>" +
-    "<div>Id: " + esc(x.cs) + "</div>" +
-    "<div>Origen: " + esc(x.origen) + "</div>" +
-    "<div>Bulto: 1/" + esc(x.cant) + "</div>" +
-    "<div>Fecha: " + esc(x.fecha) + "</div>" +
-    '<div style="font-weight:700;font-size:14px;margin-top:2px;">Rec: ' + esc(x.recorrido || "-") + "</div>" +
-    '<div style="font-weight:700;font-size:12px;">Pos: ' + esc(x.posicion || "-") + "</div>" +
-    "</div>"
-  );
-}
-
-function abrirRotuloZebra() {
+// FIX (a pedido, 2026-09-16): antes esto abría un modal (preview + botón
+// "Imprimir" + estado de la impresora) - un paso manual de más. Ahora es
+// una sola acción: intenta mandar el ZPL directo por Zebra, y si no hay
+// impresora disponible por cualquier motivo (SDK no instalado, no se
+// encontró un dispositivo, o falló el envío) cae automáticamente en abrir
+// el PDF del rótulo (verrotulo()) - nunca deja al operador sin nada.
+function imprimirRotuloConFallback() {
   var x = _rotuloDatos();
   if (!x.cs) {
     toast("error", "Rótulo", "No hay un código de seguimiento cargado.");
     return;
   }
-  $("#rotulo_preview").html(_rotuloPreviewHTML(x));
+
+  function enviarAZebra(device) {
+    device.send(
+      _rotuloZPL(x),
+      function () {
+        toast("success", "Rótulo", "Enviado a la impresora.");
+      },
+      function () {
+        toast("warning", "Rótulo", "No se pudo imprimir por Zebra - se abrió el PDF.");
+        verrotulo();
+      },
+    );
+  }
 
   if (typeof BrowserPrint === "undefined") {
-    zebraErr(
-      "No se detectó Zebra Browser Print en esta PC. Instalá la app 'Zebra Browser Print' o usá el botón 'Etiqueta (PDF)'.",
-    );
-    $("#btn_rotulo_zebra_imprimir").prop("disabled", true);
-  } else if (!zebraDevice) {
-    // reintento de descubrimiento por si la impresora se conectó después
-    zebraSetup();
-    setTimeout(function () {
-      if (zebraDevice) {
-        $("#rotulo_zebra_estado").removeClass("text-danger").addClass("text-success").html("Impresora: " + zebraDevice.name);
-        $("#btn_rotulo_zebra_imprimir").prop("disabled", false);
-      } else {
-        zebraErr("No se encontró ninguna impresora Zebra. Revisá que esté encendida y en Browser Print.");
-        $("#btn_rotulo_zebra_imprimir").prop("disabled", true);
-      }
-    }, 800);
-    $("#rotulo_zebra_estado").removeClass("text-danger text-success").addClass("text-muted").html("Buscando impresora…");
-  } else {
-    $("#rotulo_zebra_estado").removeClass("text-danger").addClass("text-success").html("Impresora: " + zebraDevice.name);
-    $("#btn_rotulo_zebra_imprimir").prop("disabled", false);
-  }
-
-  $("#modal_rotulo_zebra").modal("show");
-}
-
-$(document).on("click", "#btn_rotulo_zebra_imprimir", function () {
-  if (!zebraDevice) {
-    zebraErr("No hay impresora Zebra disponible.");
+    verrotulo();
     return;
   }
-  var zpl = _rotuloZPL(_rotuloDatos());
-  var $b = $(this).prop("disabled", true);
-  zebraDevice.send(
-    zpl,
-    function () {
-      $("#modal_rotulo_zebra").modal("hide");
-      $b.prop("disabled", false);
-      toast("success", "Rótulo", "Enviado a la impresora.");
+  if (zebraDevice) {
+    enviarAZebra(zebraDevice);
+    return;
+  }
+  // Sin dispositivo detectado todavía (recién se abrió la página, o se
+  // conectó la impresora después) - un último intento rápido de
+  // descubrimiento antes de resignarse al PDF.
+  BrowserPrint.getDefaultDevice(
+    "printer",
+    function (device) {
+      zebraDevice = device;
+      enviarAZebra(device);
     },
-    function (err) {
-      $b.prop("disabled", false);
-      zebraErr("Error al imprimir: " + err);
+    function () {
+      verrotulo();
     },
   );
-});
+}
 
 // Función para abrir modal, setear código y cargar fotos
 function verFotosYSubir(codigo) {
