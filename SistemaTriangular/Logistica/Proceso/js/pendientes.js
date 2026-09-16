@@ -863,12 +863,19 @@ $("#modificardireccion_ok").click(function () {
         Hora: hora,
         Observaciones: obs,
       },
-      url: "Procesos/php/pendientes.php",
+      // FIX (reportado con OFBX3F3FV): decía "Procesos" (con S) - esa
+      // carpeta no existe (es "Proceso"), así que este POST daba 404 y
+      // "Marcar entregado" desde este modal nunca funcionó, sin ningún
+      // aviso de error para notarlo.
+      url: "Proceso/php/pendientes.php",
       type: "post",
       success: function (response) {
         var jsonData = JSON.parse(response);
         toast("success", "Registro Actualizado !", "Se ha actualizado la tabla Clientes correctamente.");
         if (callback) callback();
+      },
+      error: function () {
+        toast("error", "Error", "No se pudo marcar como entregado.");
       },
     });
   }
