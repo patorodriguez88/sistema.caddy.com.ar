@@ -143,56 +143,80 @@ function abrir_tabla(){
 
                 //Recorremos todos los input checkbox con name = Colores y que se encuentren "checked"
                 $("input.custom-control-input:checked").each(function() {
-                
+
                 //Mediante la función push agregamos al arreglo los values de los checkbox
                 if ($(this).attr("value") != null) {
-            
+
                     checked.push(($(this).attr("value")));
 
                     }
                 });
-              
-                // Utilizamos console.log para ver comprobar que en realidad contiene algo el arreglo
-                        
+
                 if (checked != 0) {
-                    
-                    console.log('total',checked.length);
 
-                    for (var i = 0; i < checked.length; i++) {
-                        console.log("Elemento en el índice " + i + ": " + checked[i]);
-                        
+                    // FIX (reportado: "cuando se pone aceptar queda pensando
+                    // mucho tiempo el modal"): antes esto disparaba un
+                    // $.ajax por cada colecta seleccionada TODOS JUNTOS (un
+                    // for sin esperar la respuesta), y cada CargarVenta hace
+                    // trabajo pesado del lado del servidor (varios INSERT,
+                    // una llamada a Google para la distancia, etc). Con 10-30
+                    // colectas seleccionadas eso son 10-30 requests pesados
+                    // en paralelo pisándose en la base — encima cada uno
+                    // recargaba la tabla entera (otro request más) apenas
+                    // terminaba, multiplicando todavía más la carga. Ahora
+                    // van de a UNO, en orden, y la tabla se recarga una sola
+                    // vez al final. El tiempo total no cambia mucho (es la
+                    // suma de lo mismo), pero deja de trabarse porque no
+                    // compiten entre sí, y el operador ve el progreso real.
+                    var $btn = $(this).prop('disabled', true);
+                    var total = checked.length;
+                    var ok = 0;
+                    var fallidos = [];
 
-                        $('#pensando'+checked[i]).css('display','block');
-                        
-                            $.ajax({
-                            data:{'CargarVenta':1,'id':checked[i]},
+                    function procesarUno(idx) {
+                        if (idx >= total) {
+                            $btn.prop('disabled', false).text('Aceptar');
+                            var datatable = $('#colecta').DataTable();
+                            datatable.ajax.reload();
+                            if (fallidos.length === 0) {
+                                toast("success", "Listo", "Se generaron " + ok + " de " + total + " colectas.");
+                            } else {
+                                toast("error", "Terminado con errores", ok + " de " + total + " generadas. Fallaron: " + fallidos.join(', '));
+                            }
+                            return;
+                        }
+
+                        var id = checked[idx];
+                        $btn.text('Aceptando ' + (idx + 1) + ' de ' + total + '…');
+                        $('#pensando' + id).css('display', 'block');
+
+                        $.ajax({
+                            data: { 'CargarVenta': 1, 'id': id },
                             type: "POST",
                             url: "Procesos/php/colecta.php",
-                            beforeSend: function(){                                
-                                
-                            },            
-                            success: function(response)
-                            {
-                            var jsonData = JSON.parse(response);
-
-                            if(jsonData.success==1){    
-
-                            //ACTUALIZO LA TABLA COLECTA
-                            var datatable = $('#colecta').DataTable();
-                                    
-                            datatable.ajax.reload();     
-
-                            }
-                            
-                            }
+                            success: function (response) {
+                                var jsonData = JSON.parse(response);
+                                if (jsonData.success == 1) {
+                                    ok++;
+                                } else {
+                                    fallidos.push(id);
+                                }
+                            },
+                            error: function () {
+                                fallidos.push(id);
+                            },
+                            complete: function () {
+                                procesarUno(idx + 1);
+                            },
                         });
-                        
                     }
-                    
+
+                    procesarUno(0);
+
                 }else{
-            
-                    toast("error", "No hay Registros Seleccionados !", "No se han actualizado registros.");      
-                
+
+                    toast("error", "No hay Registros Seleccionados !", "No se han actualizado registros.");
+
                 }
 
                 });
