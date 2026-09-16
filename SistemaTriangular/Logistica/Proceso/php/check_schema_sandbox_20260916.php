@@ -36,11 +36,15 @@ $sql = "SELECT tc.id, tc.CodigoSeguimiento, tc.Cantidad, tc.Retirado,
 
 $queryError = null;
 $rowCount = 0;
-$res = @$mysqli->query($sql);
-if ($res === false) {
-    $queryError = $mysqli->error;
-} else {
-    $rowCount = $res->num_rows;
+try {
+    $res = $mysqli->query($sql);
+    if ($res === false) {
+        $queryError = $mysqli->error;
+    } else {
+        $rowCount = $res->num_rows;
+    }
+} catch (\mysqli_sql_exception $e) {
+    $queryError = $e->getMessage();
 }
 
 echo json_encode([
