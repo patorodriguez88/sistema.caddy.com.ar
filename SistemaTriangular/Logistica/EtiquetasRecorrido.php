@@ -232,8 +232,7 @@ include_once "../Conexion/Conexioni.php";
                                                 <tr>
                                                     <th>Código</th>
                                                     <th>Origen</th>
-                                                    <th>Destinatario</th>
-                                                    <th>Domicilio</th>
+                                                    <th>Destino</th>
                                                     <th>Localidad</th>
                                                     <th>Cantidad</th>
                                                     <th class="text-end">Acción</th>

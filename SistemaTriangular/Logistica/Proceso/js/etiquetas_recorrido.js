@@ -415,7 +415,7 @@
     }
 
     function cargarPaquetes(recorrido, onListo) {
-        $paqTabla.html('<tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>');
+        $paqTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>');
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
@@ -427,14 +427,14 @@
                 if (onListo) onListo();
             },
             error: function () {
-                $paqTabla.html('<tr><td colspan="7" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
+                $paqTabla.html('<tr><td colspan="6" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
             },
         });
     }
 
     function renderPaquetes(rows) {
         if (!rows.length) {
-            $paqTabla.html('<tr><td colspan="7" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
+            $paqTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
             return;
         }
         var html = "";
@@ -443,8 +443,13 @@
                 '<tr data-id="' + d.id + '">' +
                 "<td>" + d.CodigoSeguimiento + "</td>" +
                 "<td>" + (d.OrigenNombre || "-") + "</td>" +
-                "<td>" + (d.ClienteDestino || "-") + "</td>" +
-                "<td>" + (d.DomicilioDestino || "-") + "</td>" +
+                // FIX (a pedido, 2026-09-16): Destinatario+Domicilio fusionados
+                // en una sola columna "Destino" - arriba [Código Proveedor]
+                // Nombre y Apellido, abajo el domicilio un poco más chico.
+                "<td>" +
+                "<div>[" + (d.idProveedor || "-") + "] " + (d.ClienteDestino || "-") + "</div>" +
+                '<div style="font-size:12px;color:#adb5bd">' + (d.DomicilioDestino || "-") + "</div>" +
+                "</td>" +
                 "<td>" + (d.LocalidadDestino || "-") + "</td>" +
                 '<td><input type="number" min="1" class="form-control form-control-sm er-cantidad-input" style="width:80px" value="' + d.Cantidad + '"></td>' +
                 '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-light er-btn-imprimir-individual">Imprimir</button></td>' +
