@@ -382,7 +382,7 @@
                 '<td class="text-center">' + r.Paquetes + "</td>" +
                 '<td class="text-center">' + r.Bultos + "</td>" +
                 '<td class="text-end"><button type="button" class="btn btn-sm btn-success er-btn-abrir">Ver paquetes</button> ' +
-                '<button type="button" class="btn btn-sm btn-outline-light er-btn-imprimir-todo">Imprimir todas</button></td>' +
+                '<button type="button" class="btn btn-sm er-btn-imprimir-todo" style="background:#0d6efd;border-color:#0d6efd;color:#fff">Imprimir todas</button></td>' +
                 "</tr>";
         });
         $recTabla.html(html);
@@ -452,7 +452,7 @@
                 "</td>" +
                 "<td>" + (d.LocalidadDestino || "-") + "</td>" +
                 '<td><input type="number" min="1" class="form-control form-control-sm er-cantidad-input" style="width:80px" value="' + d.Cantidad + '"></td>' +
-                '<td class="text-end"><button type="button" class="btn btn-sm btn-outline-light er-btn-imprimir-individual">Imprimir</button></td>' +
+                '<td class="text-end"><button type="button" class="btn btn-sm er-btn-imprimir-individual" style="background:#0d6efd;border-color:#0d6efd;color:#fff">Imprimir</button></td>' +
                 "</tr>";
         });
         $paqTabla.html(html);
