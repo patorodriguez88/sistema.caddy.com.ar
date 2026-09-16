@@ -185,4 +185,105 @@ if (isset($_POST['MarcarImpreso'])) {
     exit;
 }
 
+// ==================================================
+// REPOSICIONES DINTER (a pedido, 2026-09-16): Dinter a veces avisa DESPUÉS
+// de que WePoint ya imprimió las etiquetas de un envío que se sumaron más
+// bultos al mismo pedido (mismo CodigoSeguimiento) - en vez de generar un
+// servicio nuevo en Caddy, se le suma la cantidad al que ya existe y se
+// imprimen SOLO las etiquetas nuevas, marcadas "REPO" para no confundirlas
+// con una reimpresión del envío original.
+//
+// Deja constancia en reposiciones_dinter (quién, cuándo, cuánto) para
+// poder mostrar después "esto tuvo una repo" en Seguimiento y en la app
+// del repartidor - igual que el criterio viejo de la tabla de Asignaciones
+// (revistas) que relacionaba cantidades con un CodigoSeguimiento sin
+// perder de dónde salió cada una.
+// ==================================================
+if (isset($_POST['AgregarReposicion'])) {
+    $id = intval($_POST['id'] ?? 0);
+    $cantidadRepo = intval($_POST['CantidadRepo'] ?? 0);
+
+    if ($id <= 0 || $cantidadRepo <= 0) {
+        echo json_encode(['success' => 0, 'error' => 'Cantidad de repo inválida.']);
+        exit;
+    }
+
+    $st = $mysqli->prepare("SELECT CodigoSeguimiento, Cantidad FROM TransClientes WHERE id=? AND Eliminado=0 LIMIT 1");
+    $st->bind_param('i', $id);
+    $st->execute();
+    $fila = $st->get_result()->fetch_assoc();
+
+    if (!$fila) {
+        echo json_encode(['success' => 0, 'error' => 'No se encontró el servicio.']);
+        exit;
+    }
+
+    $codigoSeguimiento = $fila['CodigoSeguimiento'];
+    $cantidadNueva = (int) $fila['Cantidad'] + $cantidadRepo;
+    $usuario = (string) ($_SESSION['Usuario'] ?? 'desconocido');
+    $fecha = date('Y-m-d');
+    $hora = date('H:i:s');
+
+    // TransClientes.Cantidad es LA cantidad real (mismo criterio que
+    // ModificarCantidad, más arriba) - acá se SUMA, no se reemplaza.
+    $upd1 = $mysqli->prepare("UPDATE TransClientes SET Cantidad = Cantidad + ? WHERE id=? LIMIT 1");
+    $upd1->bind_param('ii', $cantidadRepo, $id);
+    $ok1 = $upd1->execute();
+
+    // Ventas.Cantidad se mantiene sincronizado - sin LIMIT 1 a propósito,
+    // mismo motivo que ModificarCantidad (puede haber más de una línea).
+    // OJO: no se toca Precio/Total acá - a diferencia del ajuste manual de
+    // Seguimiento, una reposición de Dinter no es una corrección de un
+    // error de carga, es mercadería nueva sobre un acuerdo tarifario
+    // aparte; si en algún momento hay que facturarla, es un tema
+    // administrativo separado, no algo para resolver solo con esto.
+    $upd2 = $mysqli->prepare("UPDATE Ventas SET Cantidad = Cantidad + ? WHERE NumPedido=?");
+    $upd2->bind_param('is', $cantidadRepo, $codigoSeguimiento);
+    $ok2 = $upd2->execute();
+
+    if (!$ok1) {
+        echo json_encode(['success' => 0, 'error' => $mysqli->error]);
+        exit;
+    }
+
+    $insRepo = $mysqli->prepare("INSERT INTO reposiciones_dinter (CodigoSeguimiento, CantidadBultos, Usuario, Fecha, Hora)
+                                  VALUES (?, ?, ?, ?, ?)");
+    $insRepo->bind_param('sisss', $codigoSeguimiento, $cantidadRepo, $usuario, $fecha, $hora);
+    $okRepo = $insRepo->execute();
+
+    echo json_encode([
+        'success' => 1,
+        'cantidadAnterior' => (int) $fila['Cantidad'],
+        'cantidadRepo' => $cantidadRepo,
+        'cantidadNueva' => $cantidadNueva,
+        'ventasActualizadas' => $ok2 ? $upd2->affected_rows : 0,
+        'reposicionGuardada' => $okRepo ? 1 : 0,
+        'idReposicion' => $okRepo ? $mysqli->insert_id : null,
+    ]);
+    exit;
+}
+
+// ==================================================
+// REPOSICIONES de un servicio (historial) - usado tanto acá como desde
+// Seguimiento para mostrar "esto tuvo una repo el DD/MM a las HH:MM, +N
+// bultos, cargado por X".
+// ==================================================
+if (isset($_POST['ReposicionesDeCodigo'])) {
+    $codigo = $mysqli->real_escape_string($_POST['CodigoSeguimiento'] ?? '');
+    if ($codigo === '') {
+        echo json_encode(['data' => []]);
+        exit;
+    }
+    $res = $mysqli->query("SELECT id, CodigoSeguimiento, CantidadBultos, Usuario, Fecha, Hora, TimeStamp
+                            FROM reposiciones_dinter
+                            WHERE CodigoSeguimiento = '$codigo' AND Eliminado = 0
+                            ORDER BY id ASC");
+    $rows = [];
+    while ($row = $res->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    echo json_encode(['data' => $rows]);
+    exit;
+}
+
 echo json_encode(['success' => 0, 'error' => 'Acción no reconocida.']);

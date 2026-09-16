@@ -247,6 +247,43 @@ include_once "../Conexion/Conexioni.php";
                         </div>
                     </div>
 
+                    <!-- REPOSICIONES DINTER (a pedido, 2026-09-16): Dinter a veces
+                         avisa DESPUÉS de que ya se imprimieron las etiquetas de un
+                         envío que hay que sumarle más bultos al mismo pedido, en
+                         vez de generar un servicio nuevo. Acá se carga cuánto se
+                         suma por paquete y se imprime YA MISMO solo lo nuevo,
+                         marcado "REPO" para no confundirlo con el envío original. -->
+                    <div class="modal fade" id="er_repo_modal" tabindex="-1" role="dialog" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                            <div class="modal-content" style="background:#1a1d23;color:#f1f3f5">
+                                <div class="modal-header" style="border-color:#343a40">
+                                    <h5 class="modal-title" id="er_repo_titulo">Reposiciones del recorrido</h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <p class="text-muted small mb-3">
+                                        Cargá cuántos bultos nuevos mandó Dinter para cada paquete y tocá "Agregar e imprimir" -
+                                        se suma a la cantidad real del envío y se imprimen solo las etiquetas nuevas, marcadas <b>REPO</b>.
+                                    </p>
+                                    <div class="er-card">
+                                        <table class="table table-borderless mb-0" id="er_repo_tabla">
+                                            <thead>
+                                                <tr>
+                                                    <th>Código</th>
+                                                    <th>Destino</th>
+                                                    <th class="text-center">Cantidad actual</th>
+                                                    <th class="text-center">Cantidad repo</th>
+                                                    <th class="text-end">Acción</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody></tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

@@ -431,6 +431,33 @@
                                                 </div>
                                             </div>
                                         </div> <!-- end col-->
+
+                                        <!-- REPOSICIONES DINTER (a pedido, 2026-09-16): solo se muestra si este
+                                             código tuvo alguna reposición cargada desde Etiquetas por Recorrido -
+                                             para que el operador vea de un vistazo "esto llevaba repo" sin tener
+                                             que ir a buscarlo a otro lado. -->
+                                        <div class="col-lg-5" id="repo_dinter_col" hidden>
+                                            <div class="card">
+                                                <div class="card-body">
+                                                    <h4 class="header-title mb-3">
+                                                        <i class="mdi mdi-plus-box-outline text-warning"></i> Reposiciones Dinter
+                                                    </h4>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-sm table-centered mb-0" id="repo_dinter_tabla" style="font-size:10px">
+                                                            <thead class="thead-light">
+                                                                <tr>
+                                                                    <th>Fecha</th>
+                                                                    <th>Hora</th>
+                                                                    <th class="text-center">Bultos</th>
+                                                                    <th>Usuario</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div> <!-- end col-->
                                     </div>
                                 </div>
 

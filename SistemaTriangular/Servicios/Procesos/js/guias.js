@@ -1200,6 +1200,38 @@ function seguimiento(cs) {
           ],
         });
 
+        // REPOSICIONES DINTER (a pedido, 2026-09-16): tabla chica, no hace
+        // falta un DataTable completo - se pide una vez y se muestra la
+        // card solo si hay algo (la mayoría de los envíos no tienen repo).
+        $.ajax({
+          url: "../Logistica/Proceso/php/etiquetas_recorrido.php",
+          type: "post",
+          data: { ReposicionesDeCodigo: 1, CodigoSeguimiento: id },
+          success: function (response) {
+            var res = typeof response === "string" ? JSON.parse(response) : response;
+            var filas = res.data || [];
+            if (!filas.length) {
+              $("#repo_dinter_col").prop("hidden", true);
+              return;
+            }
+            var html = "";
+            filas.forEach(function (r) {
+              html +=
+                "<tr>" +
+                "<td>" + fechaDMY(r.Fecha, "display") + "</td>" +
+                "<td>" + (r.Hora || "").substring(0, 5) + "</td>" +
+                '<td class="text-center">+' + r.CantidadBultos + "</td>" +
+                "<td>" + (r.Usuario || "-") + "</td>" +
+                "</tr>";
+            });
+            $("#repo_dinter_tabla tbody").html(html);
+            $("#repo_dinter_col").prop("hidden", false);
+          },
+          error: function () {
+            $("#repo_dinter_col").prop("hidden", true);
+          },
+        });
+
         //TABLA AFORO
         var datatable_aforo = $("#aforo_tabla").DataTable({
           paging: false,

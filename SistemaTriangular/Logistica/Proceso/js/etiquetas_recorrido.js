@@ -8,6 +8,9 @@
     var $paqModal = $("#er_paq_modal");
     var $paqTabla = $("#er_paq_tabla tbody");
     var $paqTitulo = $("#er_paq_titulo");
+    var $repoModal = $("#er_repo_modal");
+    var $repoTabla = $("#er_repo_tabla tbody");
+    var $repoTitulo = $("#er_repo_titulo");
     var $tipoEtiqueta = $("#er_tipo_etiqueta");
 
     var recorridoActual = null;
@@ -148,7 +151,16 @@
     // RÓTULO (chico) — 6,5x3,2cm @203dpi = 520x256pt. Mismo tamaño/layout
     // que ya usan CrossDocking y el panel de Seguimiento.
     // ------------------------------------------------------------------
-    function construirZplRotulo(d, bultoActual, bultoTotal) {
+    // esRepo (a pedido, 2026-09-16): reposición de Dinter sobre un envío
+    // que ya se había impreso - el contador pasa de "Bulto: X/Y" a
+    // "REPO X/Y" más grande, para no confundirlo con el envío original.
+    // OJO: nunca se probó en una impresora física - puede necesitar ajuste
+    // de tamaño/posición después de la primera prueba real, mismo criterio
+    // que el resto de este archivo.
+    function construirZplRotulo(d, bultoActual, bultoTotal, esRepo) {
+        var lineaBulto = esRepo
+            ? "^FO215,97^A0N,26,26^FDREPO " + bultoActual + "/" + bultoTotal + "^FS"
+            : "^FO215,101^A0N,18,18^FDBulto: " + bultoActual + "/" + bultoTotal + "^FS";
         return (
             // FIX (a pedido: "se ve mal, poca resolución" - foto real de la
             // etiqueta grande, 2026-09-16, mismo problema esperable acá): el
@@ -167,7 +179,7 @@
             "^FO215,35^A0N,18,18^FD" + zplLimpio((d.DomicilioDestino || "").substring(0, 30)) + "^FS" +
             "^FO215,57^A0N,18,18^FDId: " + d.CodigoSeguimiento + "^FS" +
             "^FO215,79^A0N,18,18^FDOrigen: " + zplLimpio((d.OrigenNombre || "").substring(0, 26)) + "^FS" +
-            "^FO215,101^A0N,18,18^FDBulto: " + bultoActual + "/" + bultoTotal + "^FS" +
+            lineaBulto +
             "^FO215,123^A0N,18,18^FDFecha: " + fechaTexto() + "^FS" +
             "^FO215,148^A0N,30,30^FDRec: " + (d.Recorrido || "-") + "^FS" +
             "^FO45,74^BQN,2,7^FDQA," + d.CodigoSeguimiento + "^FS" +
@@ -197,7 +209,10 @@
     //      renglón -> ahora 2 renglones, letra más chica para que entre
     //   4) el REF se veía chico -> letra más grande, sigue en 2 renglones
     // más un pedido posterior: agrandar el contador de bulto (1/1).
-    function construirZplEtiqueta(d, nroBulto, totalBultos) {
+    // esRepo (a pedido, 2026-09-16): ver comentario en construirZplRotulo -
+    // mismo criterio, contador "REPO X/Y" en vez de "X/Y" (letra un poco
+    // más chica para que entre en el mismo espacio ya ajustado).
+    function construirZplEtiqueta(d, nroBulto, totalBultos, esRepo) {
         var origen = zplLimpio((d.OrigenNombre || "") + (d.idProveedor ? "  #" + d.idProveedor : ""));
         var origenDireccion = zplLimpio(d.OrigenDireccion || "");
         var cliente = zplLimpio(d.ClienteDestino || "");
@@ -210,6 +225,8 @@
         // Posicion_retiro (colas independientes, mismo criterio que en
         // Proceso/js/pendientes.js).
         var posicion = (d.Retirado == 1 ? d.Posicion : d.Posicion_retiro) || "-";
+        var textoContador = (esRepo ? "REPO " : "") + nroBulto + "/" + totalBultos;
+        var sizeContador = esRepo ? 32 : 48;
 
         return (
             // FIX (a pedido, foto real 2026-09-16: "se ve mal, poca
@@ -229,7 +246,7 @@
             "^FO25,20" + CADDY_LOGO_ZPL_ETIQUETA + "^FS" +
             "^FO230,20^A0N,24,24^FB370,1,0,L,0^FD" + origen + "^FS" +
             "^FO230,46^A0N,16,16^FB370,2,0,L,0^FD" + origenDireccion + "^FS" +
-            "^FO610,24^A0N,48,48^FB180,1,0,R,0^FD" + nroBulto + "/" + totalBultos + "^FS" +
+            "^FO610,24^A0N," + sizeContador + "," + sizeContador + "^FB180,1,0,R,0^FD" + textoContador + "^FS" +
             "^FO30,104^GB740,3,3^FS" +
             // Código grande, centrado
             "^FO30,116^A0N,40,40^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
@@ -267,10 +284,10 @@
         return $tipoEtiqueta.val(); // "rotulo" | "etiqueta"
     }
 
-    function construirZpl(d, nroBulto, totalBultos) {
+    function construirZpl(d, nroBulto, totalBultos, esRepo) {
         return tipoEtiquetaSeleccionado() === "etiqueta"
-            ? construirZplEtiqueta(d, nroBulto, totalBultos)
-            : construirZplRotulo(d, nroBulto, totalBultos);
+            ? construirZplEtiqueta(d, nroBulto, totalBultos, esRepo)
+            : construirZplRotulo(d, nroBulto, totalBultos, esRepo);
     }
 
     // Marca "Impreso" en el servidor (usuario/fecha/hora) y actualiza la
@@ -411,7 +428,14 @@
                 "<td>" + (r.Nombre || "-") + "</td>" +
                 '<td class="text-center">' + r.Paquetes + "</td>" +
                 '<td class="text-center">' + r.Bultos + "</td>" +
-                '<td class="text-end"><button type="button" class="btn btn-sm btn-success er-btn-abrir">Ver paquetes</button> ' +
+                // FIX (a pedido, 2026-09-16): botón "Reposiciones" a la
+                // izquierda de "Ver paquetes" - Dinter a veces avisa DESPUÉS
+                // de que ya se imprimió un recorrido que hay que sumarle
+                // bultos a algún pedido (en vez de generar un servicio
+                // nuevo en Caddy).
+                '<td class="text-end">' +
+                '<button type="button" class="btn btn-sm btn-outline-warning er-btn-repo"><i class="mdi mdi-plus-box-outline"></i> Reposiciones</button> ' +
+                '<button type="button" class="btn btn-sm btn-success er-btn-abrir">Ver paquetes</button> ' +
                 '<button type="button" class="btn btn-sm er-btn-imprimir-todo" style="background:#0d6efd;border-color:#0d6efd;color:#fff">Imprimir todas</button></td>' +
                 "</tr>";
         });
@@ -419,9 +443,9 @@
     }
 
     $recTabla.on("click", ".er-rec-row .er-btn-abrir, .er-rec-row", function (e) {
-        // El botón "Imprimir todas" también está dentro de la fila - no abrir
-        // el detalle si lo que tocaron fue ese botón.
-        if ($(e.target).hasClass("er-btn-imprimir-todo")) return;
+        // Los botones "Imprimir todas" y "Reposiciones" también están
+        // dentro de la fila - no abrir "Ver paquetes" si tocaron alguno de esos.
+        if ($(e.target).closest(".er-btn-imprimir-todo, .er-btn-repo").length) return;
         var recorrido = $(this).closest(".er-rec-row").data("recorrido");
         abrirRecorrido(recorrido);
     });
@@ -432,6 +456,12 @@
         cargarPaquetes(recorrido, function () {
             imprimirTodoElRecorrido();
         });
+    });
+
+    $recTabla.on("click", ".er-btn-repo", function (e) {
+        e.stopPropagation();
+        var recorrido = $(this).closest(".er-rec-row").data("recorrido");
+        abrirReposiciones(recorrido);
     });
 
     // ------------------------------------------------------------------
@@ -460,6 +490,125 @@
                 $paqTabla.html('<tr><td colspan="7" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
             },
         });
+    }
+
+    // ------------------------------------------------------------------
+    // REPOSICIONES DINTER (a pedido, 2026-09-16)
+    // ------------------------------------------------------------------
+    function abrirReposiciones(recorrido) {
+        recorridoActual = recorrido;
+        $repoTitulo.text("Reposiciones del recorrido " + recorrido);
+        $repoModal.modal("show");
+        cargarPaquetesParaRepo(recorrido);
+    }
+
+    function cargarPaquetesParaRepo(recorrido) {
+        $repoTabla.html('<tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>');
+        $.ajax({
+            url: "Proceso/php/etiquetas_recorrido.php",
+            type: "POST",
+            data: { Paquetes: 1, Recorrido: recorrido, SoloDinter: soloDinter() },
+            success: function (response) {
+                var jsonData = typeof response === "string" ? JSON.parse(response) : response;
+                paquetesActuales = jsonData.data || [];
+                renderReposiciones(paquetesActuales);
+            },
+            error: function () {
+                $repoTabla.html('<tr><td colspan="5" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
+            },
+        });
+    }
+
+    function renderReposiciones(rows) {
+        if (!rows.length) {
+            $repoTabla.html('<tr><td colspan="5" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
+            return;
+        }
+        var html = "";
+        rows.forEach(function (d) {
+            html +=
+                '<tr data-id="' + d.id + '">' +
+                "<td>" + d.CodigoSeguimiento + "</td>" +
+                "<td>[" + (d.idProveedor || "-") + "] " + (d.ClienteDestino || "-") + "</td>" +
+                '<td class="text-center">' + d.Cantidad + "</td>" +
+                '<td class="text-center"><input type="number" min="0" step="1" class="form-control form-control-sm er-repo-input" style="width:90px;margin:0 auto" value="0"></td>' +
+                '<td class="text-end"><button type="button" class="btn btn-sm btn-warning er-btn-repo-agregar">Agregar e imprimir</button></td>' +
+                "</tr>";
+        });
+        $repoTabla.html(html);
+    }
+
+    $repoTabla.on("click", ".er-btn-repo-agregar", function () {
+        var $btn = $(this);
+        var $fila = $btn.closest("tr");
+        var id = $fila.data("id");
+        var $input = $fila.find(".er-repo-input");
+        var cantidadRepo = parseInt($input.val(), 10);
+        var d = paquetesActuales.find(function (p) { return p.id == id; });
+
+        if (!d) return;
+        if (!cantidadRepo || cantidadRepo <= 0) {
+            if (window.toast) toast("error", "Cantidad inválida", "Ingresá cuántos bultos nuevos llegaron (mayor a 0).");
+            return;
+        }
+
+        $btn.prop("disabled", true).text("Guardando…");
+
+        $.ajax({
+            url: "Proceso/php/etiquetas_recorrido.php",
+            type: "POST",
+            data: { AgregarReposicion: 1, id: id, CantidadRepo: cantidadRepo },
+            success: function (response) {
+                var res = typeof response === "string" ? JSON.parse(response) : response;
+                if (res.success != 1) {
+                    $btn.prop("disabled", false).text("Agregar e imprimir");
+                    if (window.toast) toast("error", "Error", res.error || "No se pudo agregar la reposición.");
+                    return;
+                }
+
+                // Actualiza la cantidad en pantalla y en el objeto local (por si
+                // se agrega otra repo más sobre el mismo paquete sin cerrar el modal).
+                d.Cantidad = res.cantidadNueva;
+                $fila.find("td:eq(2)").text(res.cantidadNueva);
+                $input.val(0);
+
+                $btn.text("Imprimiendo…");
+                imprimirReposicion(d, cantidadRepo, function (ok) {
+                    $btn.prop("disabled", false).text("Agregar e imprimir");
+                    if (window.toast) {
+                        toast(
+                            ok ? "success" : "warning",
+                            ok ? "Listo" : "Guardado, pero con error al imprimir",
+                            "Se sumaron " + cantidadRepo + " bultos (" + res.cantidadAnterior + " → " + res.cantidadNueva + ")." +
+                                (ok ? "" : " Revisá la impresora e imprimí de nuevo desde 'Ver paquetes' si hace falta.")
+                        );
+                    }
+                });
+            },
+            error: function () {
+                $btn.prop("disabled", false).text("Agregar e imprimir");
+                if (window.toast) toast("error", "Error del servidor", "No se pudo agregar la reposición. Reintentá de nuevo.");
+            },
+        });
+    });
+
+    // Imprime SOLO los bultos de la reposición (no reimprime el envío
+    // original) - misma mecánica que imprimirPaquete(), pero con la marca
+    // REPO en el rótulo/etiqueta y contador propio (1/N de la repo, no del
+    // total del envío).
+    function imprimirReposicion(d, cantidadRepo, onFin) {
+        var pendientes = cantidadRepo;
+        var huboError = false;
+        for (var i = 1; i <= cantidadRepo; i++) {
+            enviarZPL(construirZpl(d, i, cantidadRepo, true), false, function () {
+                pendientes--;
+                if (pendientes === 0 && onFin) onFin(!huboError);
+            }, function () {
+                huboError = true;
+                pendientes--;
+                if (pendientes === 0 && onFin) onFin(false);
+            });
+        }
     }
 
     // Marca "Impreso" (a pedido: "por las dudas que alguien vaya a imprimir
