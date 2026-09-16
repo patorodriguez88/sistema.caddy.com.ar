@@ -6,6 +6,28 @@ include_once __DIR__ . "/../../../Conexion/Conexioni.php";
 header('Content-Type: application/json; charset=utf-8');
 
 $r = $mysqli->query("SHOW TABLES LIKE 'reposiciones_dinter'");
-$existe = $r && $r->num_rows > 0;
+$existiaAntes = $r && $r->num_rows > 0;
 
-echo json_encode(['existe' => $existe]);
+$creada = false;
+$error = null;
+if (!$existiaAntes) {
+    $sql = "CREATE TABLE reposiciones_dinter (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      CodigoSeguimiento VARCHAR(20) NOT NULL,
+      CantidadBultos INT NOT NULL DEFAULT 1,
+      Usuario VARCHAR(50) NOT NULL,
+      Fecha DATE NOT NULL,
+      Hora TIME NOT NULL,
+      TimeStamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      Eliminado TINYINT(1) NOT NULL DEFAULT 0,
+      INDEX idx_codigo (CodigoSeguimiento)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4";
+    $ok = $mysqli->query($sql);
+    $creada = (bool) $ok;
+    $error = $ok ? null : $mysqli->error;
+}
+
+$r2 = $mysqli->query("SHOW TABLES LIKE 'reposiciones_dinter'");
+$existeAhora = $r2 && $r2->num_rows > 0;
+
+echo json_encode(['existia_antes' => $existiaAntes, 'creada_ahora' => $creada, 'error' => $error, 'existe_ahora' => $existeAhora]);
