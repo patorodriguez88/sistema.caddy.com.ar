@@ -5,6 +5,12 @@
 // cantidad real de bultos de un servicio antes de imprimir.
 include_once "../../../Conexion/Conexioni.php";
 
+// FIX (reportado: "ahora son las 11:50 y me ponés 14:50 en la impresión"):
+// Conexioni.php no fija el timezone de PHP - sin esto, date() usa el huso
+// del servidor (UTC), 3hs adelantado a Argentina. Mismo criterio que ya
+// usan otros scripts del sistema (conect.php, webhook.php, etc).
+date_default_timezone_set('America/Argentina/Buenos_Aires');
+
 // ==================================================
 // RECORRIDOS: los que tienen algo pendiente de imprimir/despachar hoy -
 // mismo criterio que Hoja de Ruta / CrossDocking (Abierto, no devuelto, no
@@ -154,19 +160,24 @@ if (isset($_POST['MarcarImpreso'])) {
     }
 
     $usuario = $mysqli->real_escape_string((string) ($_SESSION['Usuario'] ?? 'desconocido'));
+    // Calculado en PHP (ya con el timezone de Argentina fijado arriba), NO
+    // con CURDATE()/CURTIME() - esas usan el huso del servidor de MySQL,
+    // que es el mismo problema de las 3hs de diferencia.
+    $fecha = date('Y-m-d');
+    $hora = date('H:i:s');
 
     $upd = $mysqli->prepare("UPDATE TransClientes
-                              SET Etiqueta_impresa_f = CURDATE(), Etiqueta_impresa_h = CURTIME(), Etiqueta_impresa_usuario = ?
+                              SET Etiqueta_impresa_f = ?, Etiqueta_impresa_h = ?, Etiqueta_impresa_usuario = ?
                               WHERE id = ? LIMIT 1");
-    $upd->bind_param('si', $usuario, $id);
+    $upd->bind_param('sssi', $fecha, $hora, $usuario, $id);
     $ok = $upd->execute();
 
     if ($ok) {
         echo json_encode([
             'success' => 1,
             'usuario' => $usuario,
-            'fecha' => date('Y-m-d'),
-            'hora' => date('H:i'),
+            'fecha' => $fecha,
+            'hora' => substr($hora, 0, 5),
         ]);
     } else {
         echo json_encode(['success' => 0, 'error' => $mysqli->error]);

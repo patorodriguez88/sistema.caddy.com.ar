@@ -281,7 +281,7 @@
                 >Ventas Pendientes</a
               >
               <?php endif; ?>
-              <?php if (tieneMenuPermiso('Ventas', 'Calculador')): ?>
+              <?php if (tieneMenuPermiso('Ventas', 'Cotizador de Envíos')): ?>
               <a
                 href="/SistemaTriangular/Ventas/CotizadorEnvios.php"
                 class="dropdown-item"
@@ -494,7 +494,7 @@
                     >Seguros</a
                   >
                   <?php endif; ?>
-                  <?php if (tieneMenuPermiso('Admin', 'Valor por Kilómetro')): ?>
+                  <?php if (tieneMenuPermiso('Admin', 'Tarifas de Flota Propia')): ?>
                   <a
                     href="/SistemaTriangular/Admin/ValorxKilometro.php"
                     class="dropdown-item"
@@ -640,14 +640,14 @@
                 >Wepoint</a
               >
               <?php endif; ?>
-              <?php if (tieneMenuPermiso('Logistica', 'CrossDocking')): ?>
+              <?php if (tieneMenuPermiso('Logistica', 'CrossDocking (escaneo)')): ?>
               <a
                 href="/SistemaTriangular/Logistica/CrossDocking.php"
                 class="dropdown-item"
                 >CrossDocking (escaneo)</a
               >
               <?php endif; ?>
-              <?php if (tieneMenuPermiso('Logistica', 'EtiquetasRecorrido')): ?>
+              <?php if (tieneMenuPermiso('Logistica', 'Etiquetas por Recorrido')): ?>
               <a
                 href="/SistemaTriangular/Logistica/EtiquetasRecorrido.php"
                 class="dropdown-item"
@@ -668,7 +668,7 @@
                 >Planificador</a
               >
               <?php endif; ?>
-              <?php if (tieneMenuPermiso('Logistica', 'RepartidoresEnVivo')): ?>
+              <?php if (tieneMenuPermiso('Logistica', 'Repartidores en vivo')): ?>
               <a
                 href="/SistemaTriangular/Logistica/Mapas/RepartidoresEnVivo.php"
                 class="dropdown-item"
