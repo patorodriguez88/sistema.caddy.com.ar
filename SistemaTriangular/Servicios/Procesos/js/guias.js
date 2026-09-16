@@ -600,17 +600,28 @@ function seguimiento(cs) {
   if (id != "") {
     $("#row_search").css("display", "none");
 
+    // FIX (reportado: "queda pensando" al buscar): si esta respuesta venía
+    // con un warning de PHP mezclado (JSON inválido) o la request fallaba,
+    // el JSON.parse de acá tiraba una excepción sin capturar y el modal
+    // "Buscando Visitas" nunca se cerraba - quedaba ahí para siempre. Con
+    // dataType:"json" jQuery valida el parseo y cae a error() en vez de
+    // reventar en success(); igual se agrega un timeout de respaldo que
+    // cierra el modal solo si por lo que sea nada más lo hizo.
+    var _modalVisitasTimeout = setTimeout(function () {
+      $("#info-alert-modal").modal("hide");
+    }, 12000);
     $.ajax({
       data: { Seguimiento_Visitas: 1, CodigoSeguimiento: id },
       type: "POST",
       url: "../Funciones/php/tablas.php",
+      dataType: "json",
       beforeSend: function () {
         // setting a timeout
         $("#info-alert-modal").modal("show");
         $("#info-alert-modal-title").html("Buscando Visitas");
       },
-      success: function (response) {
-        var jsonData = JSON.parse(response);
+      success: function (jsonData) {
+        clearTimeout(_modalVisitasTimeout);
         if (jsonData.success == 1) {
           $("#info-alert-modal").modal("hide");
           $("#myCenterModalLabel2").html(
@@ -639,8 +650,12 @@ function seguimiento(cs) {
         } else {
           $("#info-alert-modal").modal("hide");
           toast("error", "Error !", "No existen datos para el codigo " + id);
-          toast("error", "Error", "No existen datos para el codigo " + id);
         }
+      },
+      error: function () {
+        clearTimeout(_modalVisitasTimeout);
+        $("#info-alert-modal").modal("hide");
+        toast("error", "Error del servidor", "No se pudo buscar el código. Reintentá de nuevo.");
       },
     });
 
@@ -648,9 +663,8 @@ function seguimiento(cs) {
       data: { Seguimiento_Modal: 1, CodigoSeguimiento: id },
       type: "POST",
       url: "../Funciones/php/tablas.php",
-      success: function (response) {
-        var jsonData = JSON.parse(response);
-
+      dataType: "json",
+      success: function (jsonData) {
         // guardo los datos del servicio para el Rotulo (Zebra)
         window.seguimientoData = jsonData.data[0];
         window.seguimientoHdr = jsonData[1] || {};
@@ -1357,6 +1371,8 @@ function seguimiento(cs) {
       },
       error: function (err) {
         console.log("error", err);
+        $("#info-alert-modal").modal("hide");
+        toast("error", "Error del servidor", "No se pudo cargar el detalle del envío. Reintentá de nuevo.");
       },
     });
   } else {

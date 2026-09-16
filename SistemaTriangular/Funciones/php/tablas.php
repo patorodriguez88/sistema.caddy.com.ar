@@ -41,17 +41,22 @@ if (isset($_POST['DatosClientes'])) {
 //VISITAS
 if (isset($_POST['Seguimiento_Visitas'])) {
   $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
-  $BuscarSeguimiento = $mysqli->query("SELECT Visitas FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0");
-  $row_seguimiento = $BuscarSeguimiento->fetch_array(MYSQLI_ASSOC);
+  // FIX (reportado: "queda pensando" al buscar) - si el código no existe (o
+  // está Eliminado), fetch_array() devuelve null y el acceso directo
+  // $row_seguimiento['Visitas'] tira un warning de PHP; con
+  // display_errors=1 (como está arriba en este archivo) ese warning se
+  // imprime ANTES del json_encode y rompe el JSON - el JS nunca llega a
+  // JSON.parse con éxito, el modal de "Buscando..." se queda abierto para
+  // siempre. Se combinan ambas consultas en una sola (era innecesario
+  // pegarle 2 veces a la misma fila) y se usa ?? para no depender de que
+  // la fila exista.
+  $BuscarSeguimiento = $mysqli->query("SELECT Visitas, Notas FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0");
+  $row_seguimiento = $BuscarSeguimiento ? $BuscarSeguimiento->fetch_array(MYSQLI_ASSOC) : null;
 
-  $BuscarNotas = $mysqli->query("SELECT Notas FROM TransClientes WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0");
-  $row_notas = $BuscarNotas->fetch_array(MYSQLI_ASSOC);
-
-
-  if ($row_seguimiento['Visitas'] <> NULL) {
-    echo json_encode(array('success' => 1, 'Visitas' => $row_seguimiento['Visitas'], 'Notas' => $row_notas['Notas']));
+  if (($row_seguimiento['Visitas'] ?? null) !== null) {
+    echo json_encode(array('success' => 1, 'Visitas' => $row_seguimiento['Visitas'], 'Notas' => $row_seguimiento['Notas'] ?? null));
   } else {
-    echo json_encode(array('success' => 0, 'Notas' => $row_notas['Notas']));
+    echo json_encode(array('success' => 0, 'Notas' => $row_seguimiento['Notas'] ?? null));
   }
 }
 
