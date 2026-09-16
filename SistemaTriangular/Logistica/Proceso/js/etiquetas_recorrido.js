@@ -526,6 +526,11 @@
         });
     }
 
+    // FIX (a pedido, 2026-09-16): antes era un solo botón "Agregar e
+    // imprimir" (guardaba y mandaba a imprimir en el mismo click). Ahora se
+    // separa en 2 pasos: al salir del input (blur/change) se guarda sola la
+    // cantidad, y el botón "Imprimir" queda aparte - sólo imprime los
+    // bultos que se acaban de guardar, sin volver a tocar la base.
     function renderReposiciones(rows) {
         if (!rows.length) {
             $repoTabla.html('<tr><td colspan="5" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
@@ -537,29 +542,33 @@
                 '<tr data-id="' + d.id + '">' +
                 "<td>" + d.CodigoSeguimiento + "</td>" +
                 "<td>[" + (d.idProveedor || "-") + "] " + (d.ClienteDestino || "-") + "</td>" +
-                '<td class="text-center">' + d.Cantidad + "</td>" +
-                '<td class="text-center"><input type="number" min="0" step="1" class="form-control form-control-sm er-repo-input" style="width:90px;margin:0 auto" value="0"></td>' +
-                '<td class="text-end"><button type="button" class="btn btn-sm btn-warning er-btn-repo-agregar">Agregar e imprimir</button></td>' +
+                '<td class="text-center er-repo-cantidad-actual">' + d.Cantidad + "</td>" +
+                '<td class="text-center"><input type="number" min="0" step="1" class="form-control form-control-sm er-repo-input" style="width:90px;margin:0 auto" value="0" data-guardado="0"></td>' +
+                '<td class="text-end"><button type="button" class="btn btn-sm btn-warning er-btn-repo-imprimir" disabled title="Ingresá una cantidad primero">Imprimir</button></td>' +
                 "</tr>";
         });
         $repoTabla.html(html);
     }
 
-    $repoTabla.on("click", ".er-btn-repo-agregar", function () {
-        var $btn = $(this);
-        var $fila = $btn.closest("tr");
+    // Se guarda al salir del input (change = blur con valor distinto), no
+    // hace falta ningún botón para esto.
+    $repoTabla.on("change", ".er-repo-input", function () {
+        var $input = $(this);
+        var $fila = $input.closest("tr");
+        var $btnImprimir = $fila.find(".er-btn-repo-imprimir");
         var id = $fila.data("id");
-        var $input = $fila.find(".er-repo-input");
         var cantidadRepo = parseInt($input.val(), 10);
         var d = paquetesActuales.find(function (p) { return p.id == id; });
 
         if (!d) return;
+
         if (!cantidadRepo || cantidadRepo <= 0) {
-            if (window.toast) toast("error", "Cantidad inválida", "Ingresá cuántos bultos nuevos llegaron (mayor a 0).");
+            // Volver a 0 no es un error - simplemente no hay nada que guardar.
+            $input.val(0);
             return;
         }
 
-        $btn.prop("disabled", true).text("Guardando…");
+        $input.prop("disabled", true);
 
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
@@ -567,8 +576,9 @@
             data: { AgregarReposicion: 1, id: id, CantidadRepo: cantidadRepo },
             success: function (response) {
                 var res = typeof response === "string" ? JSON.parse(response) : response;
+                $input.prop("disabled", false);
+
                 if (res.success != 1) {
-                    $btn.prop("disabled", false).text("Agregar e imprimir");
                     if (window.toast) toast("error", "Error", res.error || "No se pudo agregar la reposición.");
                     return;
                 }
@@ -576,26 +586,45 @@
                 // Actualiza la cantidad en pantalla y en el objeto local (por si
                 // se agrega otra repo más sobre el mismo paquete sin cerrar el modal).
                 d.Cantidad = res.cantidadNueva;
-                $fila.find("td:eq(2)").text(res.cantidadNueva);
-                $input.val(0);
+                $fila.find(".er-repo-cantidad-actual").text(res.cantidadNueva);
+                $input.val(0).data("guardado", cantidadRepo);
 
-                $btn.text("Imprimiendo…");
-                imprimirReposicion(d, cantidadRepo, function (ok) {
-                    $btn.prop("disabled", false).text("Agregar e imprimir");
-                    if (window.toast) {
-                        toast(
-                            ok ? "success" : "warning",
-                            ok ? "Listo" : "Guardado, pero con error al imprimir",
-                            "Se sumaron " + cantidadRepo + " bultos (" + res.cantidadAnterior + " → " + res.cantidadNueva + ")." +
-                                (ok ? "" : " Revisá la impresora e imprimí de nuevo desde 'Ver paquetes' si hace falta.")
-                        );
-                    }
-                });
+                $btnImprimir.prop("disabled", false)
+                    .attr("title", "")
+                    .data("cantidad-repo", cantidadRepo)
+                    .text("Imprimir (" + cantidadRepo + ")");
+
+                if (window.toast) {
+                    toast("success", "Guardado", "Se sumaron " + cantidadRepo + " bultos (" + res.cantidadAnterior + " → " + res.cantidadNueva + "). Ahora podés imprimir.");
+                }
             },
             error: function () {
-                $btn.prop("disabled", false).text("Agregar e imprimir");
+                $input.prop("disabled", false);
                 if (window.toast) toast("error", "Error del servidor", "No se pudo agregar la reposición. Reintentá de nuevo.");
             },
+        });
+    });
+
+    $repoTabla.on("click", ".er-btn-repo-imprimir", function () {
+        var $btn = $(this);
+        var $fila = $btn.closest("tr");
+        var id = $fila.data("id");
+        var cantidadRepo = parseInt($btn.data("cantidad-repo"), 10);
+        var d = paquetesActuales.find(function (p) { return p.id == id; });
+
+        if (!d || !cantidadRepo || cantidadRepo <= 0) return;
+
+        $btn.prop("disabled", true).text("Imprimiendo…");
+
+        imprimirReposicion(d, cantidadRepo, function (ok) {
+            $btn.prop("disabled", false).text("Imprimir (" + cantidadRepo + ")");
+            if (window.toast) {
+                toast(
+                    ok ? "success" : "warning",
+                    ok ? "Listo" : "Error al imprimir",
+                    ok ? "Se imprimieron " + cantidadRepo + " rótulo(s) REPO." : "Revisá la impresora e intentá de nuevo."
+                );
+            }
         });
     });
 
