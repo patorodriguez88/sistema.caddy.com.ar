@@ -26,9 +26,16 @@ let zonasCache = [];
 let vistaTodasActiva = false;
 
 // Zonas "manuales" - poligonos que el operador dibuja a mano con "Dibujar
-// Zona" para armar cards de asignacion al vuelo, sin guardarlas como Zona
-// persistida en ZonasMapa (a diferencia de Agregar Zona/Importar KML). Cada
-// una vive solo mientras dura la vista "Ver Todas las Zonas" actual.
+// Zona". Hasta el 2026-09-08 quedaban solo como cards de asignacion al
+// vuelo (sin guardarse en ZonasMapa) para el drag&drop que había debajo del
+// mapa; al sacarse ese bloque, "Dibujar Zona" quedó dibujando el polígono
+// pero sin ningún paso siguiente (reportado: "puede armar el polígono pero
+// no le aparece ninguna zona"). Ahora cada polígono terminado se guarda
+// directo como una Zona real en ZonasMapa (Agregar Zona + Subir Polígono,
+// mismos endpoints que ya usan el botón "+" y la edición en el mapa) y
+// aparece en el acordeón como cualquier otra zona. zonasManuales queda solo
+// como registro liviano de "qué se dibujó en esta sesión", ya no es la
+// fuente de verdad de nada.
 let zonasManuales = [];
 let manualZonaContador = 0;
 
@@ -886,6 +893,13 @@ function cancelarDibujoManual() {
     .html('<i class="mdi mdi-vector-polygon"></i> Dibujar Zona');
 }
 
+// FIX (reportado: "puede armar el polígono pero no le aparece ninguna
+// zona"): antes esto solo guardaba el polígono en memoria (zonasManuales)
+// para un drag&drop que ya no existe desde el 2026-09-08 - terminar de
+// dibujar no llevaba a ningún lado. Ahora cada polígono se guarda directo
+// como Zona real en ZonasMapa (mismos endpoints AgregarZona + SubirPoligono
+// que ya usan el botón "+" y la edición de zonas en el mapa) y aparece en
+// el acordeón, lista para elegirle un Recorrido destino y redistribuir.
 function agregarZonaManual(polygon) {
   const path = polygon.getPath();
   const puntos = [];
@@ -900,38 +914,79 @@ function agregarZonaManual(polygon) {
   }
 
   manualZonaContador++;
-  zonasManuales.push({
-    id: "manual-" + manualZonaContador,
-    nombre: "Zona Manual " + manualZonaContador,
-    color: "#000000",
-    poligono: puntos,
-    shape: polygon,
+  const nombreSugerido = "Zona Manual " + manualZonaContador;
+
+  Swal.fire({
+    icon: "question",
+    title: "Nombre de la zona",
+    input: "text",
+    inputValue: nombreSugerido,
+    showCancelButton: true,
+    confirmButtonText: "Crear zona",
+    cancelButtonText: "Cancelar",
+    inputValidator: function (value) {
+      if (!value || !value.trim()) return "Ingresá un nombre para la zona";
+    },
+  }).then(function (r) {
+    if (!r.isConfirmed) {
+      polygon.setMap(null);
+      return;
+    }
+    crearZonaDesdePoligono(r.value.trim(), polygon, puntos);
   });
+}
 
-  // Se agrega al mismo array que "Ver Todas las Zonas" ya limpia en cada
-  // recarga, asi las zonas dibujadas a mano se borran solas junto con el
-  // resto de los overlays sin necesidad de un cleanup aparte.
-  overlaysTodas.push(polygon);
-
-  // Recalcular vertices si el operador edita el poligono despues de dibujarlo
-  // (editable:true) - sin esto la card quedaba con el conteo de cuando se
-  // termino de dibujar, no del ajuste final.
-  const path2 = polygon.getPath();
-  ["set_at", "insert_at", "remove_at"].forEach(function (evento) {
-    path2.addListener(evento, function () {
-      const nuevosPuntos = [];
-      for (let i = 0; i < path2.getLength(); i++) {
-        const p = path2.getAt(i);
-        nuevosPuntos.push({ lat: p.lat(), lng: p.lng() });
+function crearZonaDesdePoligono(nombre, polygon, puntos) {
+  $.ajax({
+    url: "Mapas/php/zonas.php",
+    type: "POST",
+    dataType: "json",
+    data: { AgregarZona: 1, nombrezona: nombre },
+    success: function (r) {
+      if (!(r && r.success == 1 && r.id)) {
+        Swal.fire({ icon: "error", title: "No se pudo crear la zona", text: (r && r.error) || "" });
+        polygon.setMap(null);
+        return;
       }
-      const zm = zonasManuales.find((z) => z.shape === polygon);
-      if (zm) zm.poligono = nuevosPuntos;
-      renderCardsAsignacion();
-    });
+      const idZona = r.id;
+      const bb = computeBBox(puntos);
+      $.ajax({
+        url: "Mapas/php/zonas.php",
+        type: "POST",
+        dataType: "json",
+        data: {
+          SubirPoligono: 1,
+          idZona: idZona,
+          zona: nombre,
+          Poligono: JSON.stringify(puntos),
+          LatitudN: bb.LatitudN, LatitudS: bb.LatitudS,
+          LongitudE: bb.LongitudE, LongitudO: bb.LongitudO,
+        },
+        success: function () {
+          // Se descarta el polígono "en progreso" - el acordeón/mapa lo
+          // vuelven a dibujar fresco desde la DB, con su color e InfoWindow
+          // reales (igual que cualquier otra zona).
+          polygon.setMap(null);
+          toast("success", "Zona creada", '"' + nombre + '" ya está guardada. Elegile un Recorrido destino en el acordeón para redistribuir.');
+          cargarZonasAccordion();
+          if (vistaTodasActiva) renderTodasLasZonasConWaypoints();
+        },
+        error: function () {
+          Swal.fire({
+            icon: "warning",
+            title: "Zona creada, pero sin la forma dibujada",
+            text: 'Se creó "' + nombre + '" pero no se pudo guardar el polígono - abrila desde el acordeón para dibujarla de nuevo.',
+          });
+          polygon.setMap(null);
+          cargarZonasAccordion();
+        },
+      });
+    },
+    error: function () {
+      Swal.fire({ icon: "error", title: "Error del servidor", text: "No se pudo crear la zona. Reintentá de nuevo." });
+      polygon.setMap(null);
+    },
   });
-
-  toast("success", "Zona dibujada", "Se agregó como card abajo, lista para arrastrar a un Recorrido.");
-  renderCardsAsignacion();
 }
 
 $(document).on("click", "#dibujar_zona_manual_btn", function () {
