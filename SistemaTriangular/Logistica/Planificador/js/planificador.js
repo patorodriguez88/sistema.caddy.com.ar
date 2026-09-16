@@ -92,6 +92,7 @@ function cargarClientes() {
           nombrecliente: p.nombrecliente,
           CodigoSeguimiento: p.CodigoSeguimiento,
           horarioSolicitado: p.horarioSolicitado,
+          horarioLimite: p.horarioLimite,
         }));
 
         $("#calcular_ruta").prop("disabled", false);
@@ -162,6 +163,18 @@ function buscarHorarioPorCoordenada(lat, lng, waypointsData, tolerancia = 0.0001
   return null;
 }
 
+// FIX (a pedido, 2026-09-16 - caso DENIMED "hasta las 17hs"): mismo patrón
+// que buscarHorarioPorCoordenada() pero para el LÍMITE (Clientes.HorarioEntregaHasta).
+function buscarHorarioLimitePorCoordenada(lat, lng, waypointsData, tolerancia = 0.0001) {
+  if (!waypointsData) return null;
+  for (const item of waypointsData) {
+    if (Math.abs(item.lat - lat) < tolerancia && Math.abs(item.lng - lng) < tolerancia) {
+      return item.horarioLimite || null;
+    }
+  }
+  return null;
+}
+
 // Nearest-neighbor por cercania. Con horaSalidaMinutos/waypointsData, aplica
 // el mismo criterio de urgencia que ya usa ordenarPorCercania() en
 // Logistica/Mapas/php/orden_automatico.php: las paradas con horario
@@ -193,16 +206,34 @@ function ordenarWaypointsPorCercania(
 
       let bonus = 0;
       if (horaSalidaMinutos !== null) {
+        const llegadaEstimadaMin = tiempoAcumuladoMin + (dist / VELOCIDAD_PROMEDIO_KMH) * 60;
+
         const horarioSolicitado =
           restante[i].horarioSolicitado !== undefined
             ? restante[i].horarioSolicitado
             : buscarHorarioPorCoordenada(restante[i].lat, restante[i].lng, waypointsData);
         const minSolicitado = horaAMinutos(horarioSolicitado);
         if (minSolicitado !== null) {
-          const llegadaEstimadaMin = tiempoAcumuladoMin + (dist / VELOCIDAD_PROMEDIO_KMH) * 60;
           const urgenciaMin = minSolicitado - (horaSalidaMinutos + llegadaEstimadaMin);
           if (urgenciaMin <= 60) {
             bonus = (60 - urgenciaMin) / 2;
+          }
+        }
+
+        // FIX (a pedido, 2026-09-16 - caso DENIMED "hasta las 17hs"): límite
+        // de entrega (Clientes.HorarioEntregaHasta), señal independiente del
+        // horario preferido - se usa el mayor de los dos bonus, no se suman,
+        // y pesa ×1.5 porque un límite explícito es más estricto que "cerca
+        // del horario preferido". Mismo criterio que orden_automatico.php.
+        const horarioLimite =
+          restante[i].horarioLimite !== undefined
+            ? restante[i].horarioLimite
+            : buscarHorarioLimitePorCoordenada(restante[i].lat, restante[i].lng, waypointsData);
+        const minLimite = horaAMinutos(horarioLimite);
+        if (minLimite !== null) {
+          const urgenciaLimite = minLimite - (horaSalidaMinutos + llegadaEstimadaMin);
+          if (urgenciaLimite <= 60) {
+            bonus = Math.max(bonus, ((60 - urgenciaLimite) / 2) * 1.5);
           }
         }
       }

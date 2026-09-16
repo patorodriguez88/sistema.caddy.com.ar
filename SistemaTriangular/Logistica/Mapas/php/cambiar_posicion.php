@@ -239,6 +239,37 @@ if (isset($_POST['CambiarPosicionInsertar']) && $_POST['CambiarPosicionInsertar'
     exit;
 }
 
+// Horario de entrega preferido/límite (a pedido, 2026-09-16 - caso real
+// DENIMED "hasta las 17hs"): modificar Clientes.HorarioEntregaDesde/Hasta
+// directo desde el modal de Modificar (lápiz) de Hoja de Ruta 2, sin tener
+// que ir hasta la ficha del cliente. Mismo criterio que ya usa Clientes/
+// Procesos/php/funciones.php: '' se guarda como NULL, no como '00:00:00'.
+if (isset($_POST['CambiarHorarioEntrega']) && $_POST['CambiarHorarioEntrega'] == 1) {
+    $idCliente = intval($_POST['idCliente'] ?? 0);
+    $horarioDesde = trim((string) ($_POST['horarioDesde'] ?? ''));
+    $horarioHasta = trim((string) ($_POST['horarioHasta'] ?? ''));
+
+    if ($idCliente <= 0) {
+        echo json_encode(['success' => 0, 'error' => 'Falta el cliente.']);
+        exit;
+    }
+    // Validación básica de formato HH:MM (el input ya es type="time", esto
+    // es solo por si llega algo raro).
+    $horarioDesde = preg_match('/^\d{2}:\d{2}$/', $horarioDesde) ? $horarioDesde . ':00' : null;
+    $horarioHasta = preg_match('/^\d{2}:\d{2}$/', $horarioHasta) ? $horarioHasta . ':00' : null;
+
+    $stmt = $mysqli->prepare("UPDATE Clientes SET HorarioEntregaDesde = ?, HorarioEntregaHasta = ? WHERE id = ? LIMIT 1");
+    $stmt->bind_param('ssi', $horarioDesde, $horarioHasta, $idCliente);
+    $ok = $stmt->execute();
+
+    if ($ok) {
+        echo json_encode(['success' => 1]);
+    } else {
+        echo json_encode(['success' => 0, 'error' => $stmt->error]);
+    }
+    exit;
+}
+
 if(isset($_POST['RestartOrder']) && $_POST['RestartOrder']==1){
  $Recorrido = $_POST['Recorrido'] ?? '';
  $stmt = $mysqli->prepare("UPDATE HojaDeRuta SET Posicion = '0',Posicion_retiro='0' WHERE Recorrido=? AND Eliminado=0 AND Estado='Abierto'");

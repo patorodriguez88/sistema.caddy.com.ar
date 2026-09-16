@@ -27,6 +27,15 @@ function horarioSolicitadoEfectivo(row) {
   return row.HorarioEntregaSolicitado || row.HorarioEntregaSolicitadoCliente || "";
 }
 
+// LÍMITE de entrega (a pedido, 2026-09-16 - caso DENIMED "hasta las 17hs"):
+// distinto de horarioSolicitadoEfectivo - ese es un horario PREFERIDO (un
+// punto), este es un tope ("no entregar después de"). Solo existe a nivel
+// Clientes (HorarioEntregaHasta) - no hay override por venta puntual como
+// sí tiene el solicitado.
+function horarioLimiteEfectivo(row) {
+  return row.HorarioEntregaHastaCliente || "";
+}
+
 // Icono de aviso junto al nombre del cliente cuando el horario planificado
 // para esta parada se aleja mas de UMBRAL_DISCREPANCIA_HORARIO_MIN del
 // horario que el cliente pidio - sin esto, un recorrido ya ordenado podia
@@ -34,9 +43,25 @@ function horarioSolicitadoEfectivo(row) {
 // visible en ningun lado hasta que el cliente reclamara.
 function avisoHorarioIcono(row) {
   if (row.Retirado != 1) return ""; // el horario solicitado es de entrega, no de retiro
+  var minPlanificado = horaAMinutos(row.Hora);
+
+  // Límite ("hasta"): cualquier planificación DESPUÉS del límite avisa,
+  // sin el margen de 60 min que sí tiene el horario preferido - es un tope,
+  // no una preferencia.
+  var horarioLimite = horarioLimiteEfectivo(row);
+  var minLimite = horaAMinutos(horarioLimite);
+  if (minLimite !== null && minPlanificado !== null && minPlanificado > minLimite) {
+    return (
+      ' <i class="mdi mdi-18px mdi-alert-octagon text-danger" title="Límite pedido por el cliente: hasta ' +
+      horarioLimite.substring(0, 5) +
+      " · Horario planificado: " +
+      row.Hora.substring(0, 5) +
+      ' · Va a llegar después del límite"></i>'
+    );
+  }
+
   var horarioSolicitado = horarioSolicitadoEfectivo(row);
   var minSolicitado = horaAMinutos(horarioSolicitado);
-  var minPlanificado = horaAMinutos(row.Hora);
   if (minSolicitado === null || minPlanificado === null) return "";
 
   var diferencia = minPlanificado - minSolicitado;
@@ -522,6 +547,17 @@ $(document).ready(function () {
               horarioSolicitado.substring(0, 5) +
               "</small>";
           }
+          // A pedido (2026-09-16, caso DENIMED): el límite "hasta" pedido
+          // por el cliente, debajo de Solicitado - antes no se mostraba en
+          // ningún lado (Clientes.HorarioEntregaHasta se guardaba pero
+          // nunca se leía).
+          var horarioLimite = horarioLimiteEfectivo(row);
+          if (horarioLimite) {
+            lineas +=
+              '<br><small class="text-danger"><i class="mdi mdi-clock-end"></i> Hasta ' +
+              horarioLimite.substring(0, 5) +
+              "</small>";
+          }
           return (
             '<td><span style="display: none;">' +
             row.Fecha +
@@ -679,7 +715,7 @@ $(document).ready(function () {
           // retiro usa Posicion_retiro - son colas independientes).
           let posicionActual = row.Retirado == 1 ? row.Posicion : row.Posicion_retiro;
 
-          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id, ${posicionActual});" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
+          return `<td class="table-action d-print-none mt-4"><a data-id="${myLatLng}" id="${myLatLng}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id, ${posicionActual}, ${row.idClienteDestino}, '${row.HorarioEntregaSolicitadoCliente || ""}', '${row.HorarioEntregaHastaCliente || ""}');" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a></td>`;
           // return `<td class="table-action d-print-none mt-4"><a data-id="${row.DomicilioDestino}" id="${row.DomicilioDestino}" onclick="ubicacion(this.id);" class="action-icon"> <i class="mdi mdi-18px mdi-map-marker text-danger"></i></a><a data-id="${row.id}" id="${row.id}" onclick="modificar(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-primary"></i></a><a data-id="${row.id}" id="${row.id}" onclick="eliminar(this.id);" class="action-icon"> <i class="mdi mdi-delete text-danger"></i></a></td>`;
         },
       },
@@ -805,7 +841,7 @@ $("#modificarrecorrido_ok").click(function () {
     });
 });
 
-function modificar(i, posicionActual) {
+function modificar(i, posicionActual, idCliente, horarioDesdeActual, horarioHastaActual) {
   $("#id_modificar").val(i);
   $("#standard-modal").modal("show");
   $("#myCenterModalLabel").html("Modificar id # " + i);
@@ -817,6 +853,20 @@ function modificar(i, posicionActual) {
   if ($("#cp_posicion_original").length) {
     $("#cp_posicion_original").val(posicionActual || "");
     $("#cp_nueva_posicion").val(posicionActual || "");
+  }
+
+  // Horario de entrega preferido/límite (a pedido, 2026-09-16 - caso
+  // DENIMED: "poder modificarlo desde ahí sin tener que ir hasta la ficha
+  // del cliente"). Vive en Clientes, no en TransClientes/HojaDeRuta - por
+  // eso hace falta idClienteDestino aparte de "i" (que acá es el id de
+  // HojaDeRuta). Mismo criterio defensivo que la posición: solo si esta
+  // pantalla tiene los campos.
+  if ($("#cp_id_cliente").length) {
+    $("#cp_id_cliente").val(idCliente || "");
+    $("#cp_horario_desde").val((horarioDesdeActual || "").substring(0, 5));
+    $("#cp_horario_hasta").val((horarioHastaActual || "").substring(0, 5));
+    $("#cp_horario_desde_original").val((horarioDesdeActual || "").substring(0, 5));
+    $("#cp_horario_hasta_original").val((horarioHastaActual || "").substring(0, 5));
   }
 }
 
@@ -835,6 +885,18 @@ $("#modificardireccion_ok").click(function () {
   var nuevaPosicion = $nuevaPos.length ? parseInt($nuevaPos.val(), 10) : NaN;
   var posicionOriginal = $nuevaPos.length ? parseInt($("#cp_posicion_original").val(), 10) : NaN;
   var cambioPosicion = $nuevaPos.length && nuevaPosicion > 0 && nuevaPosicion !== posicionOriginal;
+
+  // Horario de entrega (a pedido, 2026-09-16): independiente de Entregado y
+  // de la posición - se guarda si el campo existe en esta pantalla y el
+  // operador cargó algo.
+  var $idCliente = $("#cp_id_cliente");
+  var idClienteHorario = $idCliente.length ? parseInt($idCliente.val(), 10) : NaN;
+  var horarioDesde = $idCliente.length ? $("#cp_horario_desde").val() : "";
+  var horarioHasta = $idCliente.length ? $("#cp_horario_hasta").val() : "";
+  var cambioHorario =
+    $idCliente.length &&
+    idClienteHorario > 0 &&
+    (horarioDesde !== $("#cp_horario_desde_original").val() || horarioHasta !== $("#cp_horario_hasta_original").val());
 
   function refrescarYCerrar() {
     var datatable = $("#seguimiento").DataTable();
@@ -909,14 +971,49 @@ $("#modificardireccion_ok").click(function () {
     });
   }
 
-  if (entregado != 1 && !cambioPosicion) {
-    toast("warning", "Sin cambios", "Marcá Entregado y/o cambiá la posición antes de guardar.");
+  // Horario de entrega (a pedido, 2026-09-16 - caso DENIMED): modifica
+  // Clientes.HorarioEntregaDesde/Hasta directo desde este modal, sin ir
+  // hasta la ficha del cliente. Mismo patrón que guardarPosicion().
+  function guardarHorario(callback) {
+    if (!cambioHorario) {
+      if (callback) callback();
+      return;
+    }
+    $.ajax({
+      url: "Mapas/php/cambiar_posicion.php",
+      type: "post",
+      data: {
+        CambiarHorarioEntrega: 1,
+        idCliente: idClienteHorario,
+        horarioDesde: horarioDesde,
+        horarioHasta: horarioHasta,
+      },
+      success: function (response) {
+        var jsonData = typeof response === "string" ? JSON.parse(response) : response;
+        if (jsonData.success == 1) {
+          toast("success", "Horario actualizado", "");
+        } else {
+          toast("error", "Error", jsonData.error || "No se pudo actualizar el horario.");
+        }
+        if (callback) callback();
+      },
+      error: function () {
+        toast("error", "Error del servidor", "No se pudo actualizar el horario. Reintentá de nuevo.");
+        if (callback) callback();
+      },
+    });
+  }
+
+  if (entregado != 1 && !cambioPosicion && !cambioHorario) {
+    toast("warning", "Sin cambios", "Marcá Entregado, cambiá la posición y/o el horario antes de guardar.");
     return;
   }
 
   guardarPosicion(function () {
-    guardarEntregado(function () {
-      refrescarYCerrar();
+    guardarHorario(function () {
+      guardarEntregado(function () {
+        refrescarYCerrar();
+      });
     });
   });
 });

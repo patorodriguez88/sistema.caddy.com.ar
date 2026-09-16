@@ -116,6 +116,15 @@ const VELOCIDAD_PROMEDIO_KMH = 25;
 // estimada de llegada) se priorizan por sobre la mas cercana, para que no
 // queden muy desacomodadas en la ruta - igual que pidio el cliente: no hace
 // falta cumplirlo siempre, pero ayuda a acomodar el recorrido.
+//
+// FIX (a pedido, 2026-09-16 - caso real DENIMED "hasta las 17hs"): se suma
+// horarioLimiteMin (Clientes.HorarioEntregaHasta) como una segunda señal de
+// urgencia, independiente de horarioSolicitadoMin - semántica confirmada
+// con el usuario: "Hasta" es un LÍMITE (no entregar después), no un punto
+// preferido. Usa la misma fórmula de bonus que ya existía (well-probada),
+// con ×1.5 porque un límite pedido explícitamente pesa más que "cerca del
+// horario preferido" - y se toma el mayor de los dos bonus, no se suman,
+// para no sobre-priorizar una parada que además tenga Desde cargado.
 function ordenarPorCercania(array $puntos, array $origen, float $horaSalidaMinutos, float $timeDelivered): array
 {
     $ordenado = [];
@@ -139,6 +148,13 @@ function ordenarPorCercania(array $puntos, array $origen, float $horaSalidaMinut
                     // mas atrasado/proximo, en km "equivalentes" para pesar
                     // contra la distancia real.
                     $bonus = (60 - $urgenciaMin) / 2;
+                }
+            }
+            if (($p['horarioLimiteMin'] ?? null) !== null) {
+                $urgenciaLimite = $p['horarioLimiteMin'] - ($horaSalidaMinutos + $llegadaEstimadaMin);
+                if ($urgenciaLimite <= 60) {
+                    $bonusLimite = (60 - $urgenciaLimite) / 2 * 1.5;
+                    $bonus = max($bonus, $bonusLimite);
                 }
             }
 
@@ -216,7 +232,8 @@ if ($_POST['Orden_Automatic'] == 1) {
         "SELECT HojaDeRuta.id, HojaDeRuta.idCliente, HojaDeRuta.Seguimiento,
                 Clientes.Latitud, Clientes.Longitud, Clientes.nombrecliente, Clientes.Direccion,
                 Clientes.Telefono, Clientes.Celular, Clientes.Celular2,
-                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaDesde) AS HorarioEntregaSolicitado
+                COALESCE(TransClientes.HorarioEntregaSolicitado, Clientes.HorarioEntregaDesde) AS HorarioEntregaSolicitado,
+                Clientes.HorarioEntregaHasta AS HorarioEntregaHasta
            FROM HojaDeRuta
           INNER JOIN Clientes ON Clientes.id = HojaDeRuta.idCliente
           LEFT JOIN TransClientes ON TransClientes.id = HojaDeRuta.idTransClientes
@@ -242,11 +259,17 @@ if ($_POST['Orden_Automatic'] == 1) {
                 sscanf($row['HorarioEntregaSolicitado'], '%d:%d', $hs, $ms);
                 $horarioSolicitadoMin = $hs * 60 + $ms;
             }
+            $horarioLimiteMin = null;
+            if (!empty($row['HorarioEntregaHasta'])) {
+                sscanf($row['HorarioEntregaHasta'], '%d:%d', $hl, $ml);
+                $horarioLimiteMin = $hl * 60 + $ml;
+            }
             $paradas[] = [
                 'id' => $row['id'],
                 'lat' => $lat,
                 'lng' => $lng,
                 'horarioSolicitadoMin' => $horarioSolicitadoMin,
+                'horarioLimiteMin' => $horarioLimiteMin,
                 'nombrecliente' => $row['nombrecliente'],
                 'Direccion' => $row['Direccion'],
                 'Seguimiento' => $row['Seguimiento'],

@@ -54,9 +54,14 @@ if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
     // aunque el cliente sí tenga la preferencia guardada en su ficha. Se usa
     // para priorizar paradas urgentes al ordenar (ver ordenarWaypointsPorCercania
     // en planificador.js), mismo criterio que ya usa orden_automatico.php.
+    // FIX (a pedido, 2026-09-16 - caso DENIMED "hasta las 17hs"): se suma
+    // HorarioEntregaHasta (límite, no punto preferido - semántica confirmada
+    // con el usuario) para que ordenarWaypointsPorCercania() en planificador.js
+    // también lo tenga en cuenta, mismo criterio que orden_automatico.php.
     $stmt = $mysqli->prepare("
         SELECT ts.id, ts.CodigoSeguimiento, cs.nombrecliente, cs.Latitud, cs.Longitud,
-               COALESCE(ts.HorarioEntregaSolicitado, cs.HorarioEntregaDesde) AS HorarioEntregaSolicitado
+               COALESCE(ts.HorarioEntregaSolicitado, cs.HorarioEntregaDesde) AS HorarioEntregaSolicitado,
+               cs.HorarioEntregaHasta AS HorarioEntregaHasta
         FROM TransClientes AS ts
         LEFT JOIN Clientes AS cs ON ts.idClienteDestino = cs.id
         WHERE ts.Eliminado = 0
@@ -87,6 +92,7 @@ if (isset($_POST['BuscarWaypoints']) && isset($_POST['Recorrido'])) {
                 'nombrecliente' => $nombre,
                 'CodigoSeguimiento' => $row['CodigoSeguimiento'],
                 'horarioSolicitado' => $row['HorarioEntregaSolicitado'],
+                'horarioLimite' => $row['HorarioEntregaHasta'],
             ];
         } else {
             $sinCoordenadas[] = "• $nombre (Seguimiento {$row['CodigoSeguimiento']})";
