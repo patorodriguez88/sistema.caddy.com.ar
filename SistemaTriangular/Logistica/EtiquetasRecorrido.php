@@ -257,6 +257,14 @@ include_once "../Conexion/Conexioni.php";
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
     <script src="Proceso/js/etiquetas_recorrido.js"></script>
+    <!-- FIX (a pedido, 2026-09-16 - "el nombre de Diego desaparece, ya nos
+         había pasado en CrossDocking"): esta pantalla nunca cargaba
+         Menu/js/funciones.js, que es justo el script que rellena el
+         nombre/avatar/sucursal del usuario logueado en el header (Menu/
+         head.html los deja vacíos / con el placeholder "PR" a propósito,
+         esperando que este script los complete por AJAX). Sin este script
+         quedaban vacíos para siempre en esta pantalla. -->
+    <script src="../Menu/js/funciones.js"></script>
 </body>
 
 </html>

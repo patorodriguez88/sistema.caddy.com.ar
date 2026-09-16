@@ -58,6 +58,11 @@ if (isset($_POST['Paquetes'])) {
     $soloDinter = (int) ($_POST['SoloDinter'] ?? 0) === 1;
     $filtroDinter = $soloDinter ? " AND tc.RazonSocial LIKE 'Dinter%'" : '';
 
+    // Orden a pedido (2026-09-16): por Código de Proveedor de menor a mayor
+    // (TRIM porque hay algún valor con espacio adelante en producción). No
+    // son todos puramente numéricos (hay formato "00010-00006076"), así que
+    // se ordena como texto - en la práctica, al estar todos con ceros a la
+    // izquierda, el orden alfabético ya da el orden numérico esperado.
     $sql = "SELECT tc.id, tc.CodigoSeguimiento, tc.Cantidad, tc.Retirado,
                    tc.ClienteDestino, tc.DomicilioDestino, tc.LocalidadDestino, tc.ProvinciaDestino,
                    tc.TelefonoDestino,
@@ -72,7 +77,7 @@ if (isset($_POST['Paquetes'])) {
             WHERE hdr.Recorrido = '$recorrido' AND hdr.Estado = 'Abierto' AND hdr.Devuelto = 0 AND hdr.Eliminado = 0
               AND tc.Eliminado = 0 AND tc.Entregado = 0 AND tc.Devuelto = 0
               {$filtroDinter}
-            ORDER BY tc.id ASC";
+            ORDER BY TRIM(tc.CodigoProveedor) ASC, tc.id ASC";
 
     $res = $mysqli->query($sql);
     $rows = [];
