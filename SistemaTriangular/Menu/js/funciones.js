@@ -531,3 +531,68 @@ function cargarNotificaciones() {
     },
   });
 }
+
+// =========================================================
+// Lupa del header - "Buscar Seguimiento" (a pedido, 2026-09-16): consulta
+// rápida desde CUALQUIER pantalla, sin navegar hasta Pendientes/Cpanel/etc
+// primero. Reusa el mismo panel lateral de Seguimiento que ya existe ahí
+// (Funciones/js/seguimiento.js) - si la página actual no lo tiene en el
+// DOM (la mayoría no lo tiene, solo un puñado de pantallas lo embeben a
+// mano), se inyecta solo. seguimiento.js tampoco está garantizado en todas
+// las páginas, así que se carga al vuelo la primera vez que hace falta.
+// =========================================================
+(function () {
+  var $modal = $("#lupa_buscar_modal");
+  if (!$modal.length) return; // pantallas viejas sin Menu/head.html actualizado
+
+  var seguimientoJsListo = typeof window.openTrackingPanel === "function";
+
+  function conSeguimientoJs(cb) {
+    if (seguimientoJsListo) {
+      cb();
+      return;
+    }
+    $.getScript("/SistemaTriangular/Funciones/js/seguimiento.js")
+      .done(function () {
+        seguimientoJsListo = true;
+        cb();
+      })
+      .fail(function () {
+        if (window.toast) {
+          toast("error", "Error", "No se pudo cargar el buscador de seguimiento. Reintentá de nuevo.");
+        }
+      });
+  }
+
+  $("#lupa_buscar_toggle").on("click", function (e) {
+    e.preventDefault();
+    $modal.modal("show");
+    setTimeout(function () {
+      $("#lupa_buscar_input").trigger("focus");
+    }, 300);
+  });
+
+  function buscar() {
+    var codigo = ($("#lupa_buscar_input").val() || "").trim();
+    if (!codigo) {
+      $("#lupa_buscar_input").trigger("focus");
+      return;
+    }
+    conSeguimientoJs(function () {
+      if (typeof window.ensureTrackingPanelMarkup === "function") {
+        window.ensureTrackingPanelMarkup();
+      }
+      $modal.modal("hide");
+      window.openTrackingPanel(codigo);
+    });
+  }
+
+  $("#lupa_buscar_btn").on("click", buscar);
+  $("#lupa_buscar_input").on("keydown", function (e) {
+    if (e.key === "Enter") buscar();
+  });
+
+  $modal.on("hidden.bs.modal", function () {
+    $("#lupa_buscar_input").val("");
+  });
+})();

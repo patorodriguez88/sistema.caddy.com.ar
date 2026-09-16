@@ -99,6 +99,24 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
       </li>
       <?php endif; ?>
 
+      <!-- Búsqueda rápida de seguimiento (a pedido, 2026-09-16): "para consulta
+           rápida es una bomba" - pegás un código desde cualquier pantalla del
+           sistema y abre el mismo panel lateral de Seguimiento que ya existe
+           en Pendientes/Cpanel/etc, sin tener que navegar hasta ahí primero.
+           Wiring en Menu/js/funciones.js (ya se carga en casi todas las
+           páginas) - carga Funciones/js/seguimiento.js al vuelo si hace falta. -->
+      <li class="d-none d-sm-inline-block">
+        <a
+          class="nav-link"
+          href="#"
+          role="button"
+          id="lupa_buscar_toggle"
+          title="Buscar código de seguimiento"
+        >
+          <i class="ri-search-line font-22"></i>
+        </a>
+      </li>
+
       <li class="dropdown notification-list">
         <a
           class="nav-link dropdown-toggle arrow-none"
@@ -310,3 +328,27 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
   </div>
 </div>
 <?php endif; ?>
+
+<!-- Modal chico de búsqueda rápida (lupa del header) - solo pide el código,
+     el resultado se muestra en el panel lateral de Seguimiento de siempre
+     (ver ensureTrackingPanelMarkup en Funciones/js/seguimiento.js). -->
+<div class="modal fade" id="lupa_buscar_modal" tabindex="-1" role="dialog" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Buscar Seguimiento</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+      </div>
+      <div class="modal-body">
+        <label for="lupa_buscar_input" class="form-label">Código de seguimiento</label>
+        <input type="text" class="form-control" id="lupa_buscar_input" placeholder="Pegá el código acá" autocomplete="off">
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-primary" id="lupa_buscar_btn">
+          <i class="mdi mdi-magnify me-1"></i>Buscar
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

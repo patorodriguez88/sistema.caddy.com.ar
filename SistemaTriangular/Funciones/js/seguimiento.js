@@ -73,7 +73,67 @@ function renderTrackingHeader() {
   $("#modal_seguimiento").find("#myCenterModalLabel").html(html);
 }
 
+// A pedido (2026-09-16, lupa del header): solo un puñado de pantallas
+// (Pendientes, Cpanel, Sla, etc) tienen el HTML del panel lateral
+// embebido a mano. Para que el buscador rápido funcione desde CUALQUIER
+// pantalla sin tener que salir a copiar este bloque en todos lados, si
+// #modal_seguimiento no existe en la página actual se inyecta acá mismo
+// (mismo markup que ya usan esas pantallas). openTrackingPanel() la llama
+// sola, así que cualquier pantalla que ya la use queda cubierta también.
+function ensureTrackingPanelMarkup() {
+  if (document.getElementById("modal_seguimiento")) return;
+
+  var html =
+    '<div id="modal_seguimiento" class="tracking-panel" aria-hidden="true">' +
+    '<div class="tracking-panel-dialog">' +
+    '<div id="modal_seguimiento_content" class="modal-content bg-primary text-white">' +
+    '<div id="modal_seguimiento_header" class="modal-header py-2">' +
+    '<h5 class="modal-title" id="myCenterModalLabel">Seguimiento</h5>' +
+    '<button type="button" class="btn-close btn-close-white" data-panel-close aria-label="Cerrar"></button>' +
+    "</div>" +
+    '<div class="modal-body text-body">' +
+    '<div class="row g-3">' +
+    '<div class="col-lg-6"><div class="card"><div class="card-body">' +
+    '<h6 class="header-title mb-2">Información de Origen</h6>' +
+    '<h5 id="cliente_origen_seguimiento" class="mb-2"></h5>' +
+    '<ul id="cliente_origen_direcccion_seguimiento" class="list-unstyled mb-0"></ul>' +
+    "</div></div></div>" +
+    '<div class="col-lg-6"><div class="card"><div class="card-body">' +
+    '<h6 class="header-title mb-2">Información de Destino</h6>' +
+    '<h5 id="cliente_destino_seguimiento" class="mb-2"></h5>' +
+    '<ul id="cliente_destino_direcccion_seguimiento" class="list-unstyled mb-0"></ul>' +
+    "</div></div></div>" +
+    '<div class="col-lg-12"><div class="card"><div class="card-body">' +
+    '<h6 id="header_title_guia_seguimiento" class="header-title mb-2">Información de la Guía</h6>' +
+    '<h5 id="guia_seguimiento" class="mb-2"></h5>' +
+    '<table id="info_guia_seguimiento" class="table table-sm table-borderless mb-0"></table>' +
+    "</div></div></div>" +
+    '<div class="col-lg-12"><div class="card"><div class="card-body">' +
+    '<h6 id="myCenterModalLabel2" class="header-title mb-2"></h6>' +
+    '<div class="table-responsive">' +
+    '<table class="table table-sm table-centered mb-0" style="font-size:10px" id="seguimiento_tabla">' +
+    '<thead class="table-light"><tr><th>Fecha | Hora</th><th>Usuario</th><th>Observaciones</th><th>Estado</th></tr></thead>' +
+    '<tbody><tr id="tr_seguimiento"><td></td><td></td><td></td><td></td></tr></tbody>' +
+    "</table></div>" +
+    "</div></div></div>" +
+    "</div></div>" +
+    '<div class="modal-footer py-2">' +
+    '<div class="tracking-panel-actions">' +
+    '<a id="tracking-label-link" class="btn tracking-panel-action tracking-panel-action-label" href="#" target="_blank" rel="noopener">' +
+    '<i class="mdi mdi-barcode-scan"></i> Ver etiqueta</a>' +
+    '<a id="tracking-guide-link" class="btn tracking-panel-action tracking-panel-action-guide" href="#" target="_blank" rel="noopener">' +
+    '<i class="mdi mdi-file-document-outline"></i> Ver guía</a>' +
+    "</div>" +
+    '<button type="button" class="btn tracking-panel-close" data-panel-close>' +
+    '<i class="mdi mdi-close-circle-outline"></i> Cerrar</button>' +
+    "</div>" +
+    "</div></div></div>";
+
+  document.body.insertAdjacentHTML("beforeend", html);
+}
+
 function openTrackingPanel(id) {
+  ensureTrackingPanelMarkup();
   const panel = document.getElementById("modal_seguimiento");
   if (!panel || !id) {
     return;
@@ -206,9 +266,14 @@ function loadTrackingPanel(id) {
         "href",
         "/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=" + trackingCode,
       );
+      // FIX (2026-09-16, necesario para la lupa global del header): era
+      // relativo ("Informes/Remitopdf.php") - solo funcionaba en páginas
+      // que viven justo en Servicios/ (de donde salía ese link "Ver guía"
+      // hasta ahora). Con el panel ahora disponible en cualquier pantalla
+      // (ver ensureTrackingPanelMarkup más abajo), tiene que ser absoluto.
       $("#tracking-guide-link").attr(
         "href",
-        "Informes/Remitopdf.php?CS=" + trackingCode,
+        "/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" + trackingCode,
       );
 
       // badge de ultimo estado del paquete en el encabezado (despues de Visitas):
