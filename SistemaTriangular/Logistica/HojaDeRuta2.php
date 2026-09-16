@@ -372,6 +372,11 @@
                                          de "Ordenar Recorrido" (que arranca de nuevo tocando los pines
                                          uno por uno) - esto corre solo lo necesario para insertarla.
                                          Integrado en este mismo modal a pedido, en vez de uno aparte. -->
+                                    <!-- FIX (a pedido, 2026-09-16 - caso real DENIMED "hasta las 17hs"):
+                                         horario preferido/límite del cliente en la misma fila que la
+                                         posición, para cargar/corregir todo junto sin ir hasta su ficha.
+                                         Vive en Clientes (no es por venta puntual), por eso se guarda
+                                         aparte con idCliente. -->
                                     <div class="row">
                                         <div class="col-lg-4 mt-3">
                                             <div class="form-group">
@@ -381,12 +386,6 @@
                                                 <small class="text-muted">Cambiala para moverla a otro lugar del recorrido - el resto se corre solo, no se pisa nada.</small>
                                             </div>
                                         </div>
-                                    </div>
-                                    <!-- FIX (a pedido, 2026-09-16 - caso real DENIMED "hasta las 17hs"):
-                                         poder cargar/corregir el horario de entrega preferido/límite del
-                                         cliente sin tener que ir hasta su ficha. Vive en Clientes (no es
-                                         por venta puntual), por eso se guarda aparte con idCliente. -->
-                                    <div class="row">
                                         <div class="col-lg-4 mt-3">
                                             <div class="form-group">
                                                 <input type="hidden" id="cp_id_cliente">
@@ -400,7 +399,7 @@
                                                 <input type="hidden" id="cp_horario_hasta_original">
                                                 <label>Límite de entrega (hasta)</label>
                                                 <input type="time" class="form-control" id="cp_horario_hasta">
-                                                <small class="text-muted">Preferencia del cliente - se guarda en su ficha, aplica a todos sus pedidos.</small>
+                                                <small class="text-muted">Preferencia del cliente, aplica a todos sus pedidos.</small>
                                             </div>
                                         </div>
                                     </div>
