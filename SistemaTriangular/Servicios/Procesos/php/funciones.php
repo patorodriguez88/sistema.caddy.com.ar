@@ -368,15 +368,28 @@ if (isset($_POST['ActualizarDireccion'])) {
     $CobarCaddy = 0;
   }
 
-  // ACTUALIZO CLIENTES 
+  // FIX (2026-09-16, mismo bug de OFBX3F3FV / "Bernardo O'Higgins..."): todo
+  // este bloque interpolaba $_POST y datos ya guardados (Destino encadenado
+  // del movimiento anterior) sin escapar - un apóstrofe en la dirección
+  // tipeada o ya guardada rompía las consultas en silencio.
+  $direccionEsc = $mysqli->real_escape_string((string)($_POST['Direccion'] ?? ''));
+  $calleEsc = $mysqli->real_escape_string((string)($_POST['calle'] ?? ''));
+  $barrioEsc = $mysqli->real_escape_string((string)($_POST['barrio'] ?? ''));
+  $numeroEsc = $mysqli->real_escape_string((string)($_POST['numero'] ?? ''));
+  $ciudadEsc = $mysqli->real_escape_string((string)($_POST['Ciudad'] ?? ''));
+  $cpEsc = $mysqli->real_escape_string((string)($_POST['cp'] ?? ''));
+  $idClienteEsc = $mysqli->real_escape_string((string)($_POST['idCliente'] ?? ''));
+  $codigoSeguimientoEsc = $mysqli->real_escape_string((string)($_POST['CodigoSeguimiento'] ?? ''));
+
+  // ACTUALIZO CLIENTES
   if (!isset($_POST['idCliente'])) {
-    $sql = $mysqli->query("UPDATE `Clientes` SET Direccion='$_POST[Direccion]',
-                      Calle='$_POST[calle]',Barrio='$_POST[barrio]',Numero='$_POST[numero]',
-                      Ciudad='$_POST[Ciudad]',CodigoPostal='$_POST[cp]',Latitud='$latitud',Longitud='$longitud' WHERE id='$_POST[idCliente]'");
+    $sql = $mysqli->query("UPDATE `Clientes` SET Direccion='$direccionEsc',
+                      Calle='$calleEsc',Barrio='$barrioEsc',Numero='$numeroEsc',
+                      Ciudad='$ciudadEsc',CodigoPostal='$cpEsc',Latitud='$latitud',Longitud='$longitud' WHERE id='$idClienteEsc'");
   }
   if (!isset($_POST['CodigoSeguimiento'])) {
     //ACTUALIZO HOJA DE RUTA
-    $sql = $mysqli->query("UPDATE `HojaDeRuta` SET Localizacion='$_POST[Direccion]',Estado='$Estado' WHERE Seguimiento='$_POST[CodigoSeguimiento]'");
+    $sql = $mysqli->query("UPDATE `HojaDeRuta` SET Localizacion='$direccionEsc',Estado='$Estado' WHERE Seguimiento='$codigoSeguimientoEsc'");
 
     //ACTUALIZO ROADMAP (analizar si las direcciones se van a actualizar en las hojas de ruta desde este punto)
     //   $sql=$mysqli->query("UPDATE `HojaDeRuta` SET Localizacion='$_POST[Direccion]',Estado='$Estado' WHERE Seguimiento='$_POST[CodigoSeguimiento]'");
@@ -384,23 +397,24 @@ if (isset($_POST['ActualizarDireccion'])) {
   }
   //ACTUALIZO TRANS CLIENTES
   if ($_POST['Servicio'] == 'Entrega') {
-    $sql = $mysqli->query("UPDATE `TransClientes` SET DomicilioDestino='$_POST[Direccion]',Retirado='$Retirado',Entregado='$Entregado',CobrarCaddy='$CobrarCaddy',CobrarEnvio='$CobranzaIntegrada' WHERE id='$_POST[id]' AND Eliminado='0' LIMIT 1");
+    $sql = $mysqli->query("UPDATE `TransClientes` SET DomicilioDestino='$direccionEsc',Retirado='$Retirado',Entregado='$Entregado',CobrarCaddy='$CobrarCaddy',CobrarEnvio='$CobranzaIntegrada' WHERE id='$_POST[id]' AND Eliminado='0' LIMIT 1");
   } else {
-    $sql = $mysqli->query("UPDATE `TransClientes` SET DomicilioOrigen='$_POST[Direccion]',Retirado='$Retirado',Entregado='$Entregado',CobrarCaddy='$CobrarCaddy',CobrarEnvio='$CobranzaIntegrada' WHERE id='$_POST[id]' AND Eliminado='0' LIMIT 1");
+    $sql = $mysqli->query("UPDATE `TransClientes` SET DomicilioOrigen='$direccionEsc',Retirado='$Retirado',Entregado='$Entregado',CobrarCaddy='$CobrarCaddy',CobrarEnvio='$CobranzaIntegrada' WHERE id='$_POST[id]' AND Eliminado='0' LIMIT 1");
   }
   echo json_encode(array('success' => 1, 'estado' => $_POST['Estado']));
 
   $Fecha = date("Y-m-d");
   $Hora = date("H:i");
 
-  $sqlbusco = $mysqli->query("SELECT * FROM Seguimiento WHERE id=(SELECT MAX(id) FROM Seguimiento WHERE  CodigoSeguimiento='$_POST[CodigoSeguimiento]')");
+  $sqlbusco = $mysqli->query("SELECT * FROM Seguimiento WHERE id=(SELECT MAX(id) FROM Seguimiento WHERE  CodigoSeguimiento='$codigoSeguimientoEsc')");
   $dato = $sqlbusco->fetch_array(MYSQLI_ASSOC);
   $EstadoSeguimiento = $_POST['EstadoSeguimiento'];
+  $destinoEsc = $mysqli->real_escape_string((string)($dato['Destino'] ?? ''));
 
   $Visitas = $dato['Visitas'] + 1;
   $sqlseguimiento = $mysqli->query("INSERT INTO `Seguimiento`(`Fecha`, `Hora`, `Usuario`, `Sucursal`, `CodigoSeguimiento`, `Observaciones`, `Entregado`, `Estado`, `Destino`,
                               `Avisado`, `idCliente`, `Retirado`, `Visitas`, `idTransClientes`)VALUES('{$Fecha}','{$Hora}','{$_SESSION['Usuario']}',
-                              '{$_SESSION['Sucursal']}','{$_POST['CodigoSeguimiento']}','Carga Manual Sistema','{$Entregado}','{$EstadoSeguimiento}','{$dato['Destino']}','{$dato['Avisado']}','{$_POST['idCliente']}',
+                              '{$_SESSION['Sucursal']}','{$codigoSeguimientoEsc}','Carga Manual Sistema','{$Entregado}','{$EstadoSeguimiento}','{$destinoEsc}','{$dato['Avisado']}','{$idClienteEsc}',
                               '{$Retirado}','{$Visitas}','{$dato['idTransClientes']}')");
 }
 
@@ -516,13 +530,24 @@ if (isset($_POST['enter_registration'])) {
 
     $Pais = 'Argentina';
 
+    // FIX (mismo bug de OFBX3F3FV / "Bernardo O'Higgins..."): estos campos
+    // salen de TransClientes tal cual están guardados - una dirección o
+    // nombre con apóstrofe rompía este INSERT sin avisar.
+    $rmLocalizacion = $mysqli->real_escape_string((string)($Datos_transclientes['DomicilioDestino'] ?? ''));
+    $rmCiudad = $mysqli->real_escape_string((string)($Datos_transclientes['CiudadDestino'] ?? ''));
+    $rmProvincia = $mysqli->real_escape_string((string)($Datos_transclientes['ProvinciaDestino'] ?? ''));
+    $rmCliente = $mysqli->real_escape_string((string)($Datos_transclientes['ClienteDestino'] ?? ''));
+    $rmTitulo = $mysqli->real_escape_string((string)($Datos_transclientes['TipoDeComprobante'] ?? ''));
+    $rmObservaciones = $mysqli->real_escape_string((string)($Datos_transclientes['Observaciones'] ?? ''));
+    $rmUsuario = $mysqli->real_escape_string((string)$Usuario);
+
     $IngresaRoadmap = "INSERT INTO `Roadmap`(`Fecha`,`Recorrido`, `Localizacion`, `Ciudad`,
     `Provincia`,`Pais`,`Cliente`, `Titulo`, `Observaciones`,`Usuario`, `Estado`,
     `NumerodeOrden`,`Seguimiento`,`idCliente`,`NumeroRepo`,`ImporteCobranza`,`idTransClientes`)
-    VALUES ('{$Fecha}','{$Datos_transclientes['Recorrido']}','{$Datos_transclientes['DomicilioDestino']}',
-    '{$Datos_transclientes['CiudadDestino']}','{$Datos_transclientes['ProvinciaDestino']}','{$Pais}',
-    '{$Datos_transclientes['ClienteDestino']}','{$Datos_transclientes['TipoDeComprobante']}',
-    '{$Datos_transclientes['Observaciones']}','{$Usuario}','Abierto',
+    VALUES ('{$Fecha}','{$Datos_transclientes['Recorrido']}','{$rmLocalizacion}',
+    '{$rmCiudad}','{$rmProvincia}','{$Pais}',
+    '{$rmCliente}','{$rmTitulo}',
+    '{$rmObservaciones}','{$rmUsuario}','Abierto',
     '{$Datos_transclientes['NumerodeOrden']}','{$CodigoSeguimiento}','{$Datos_transclientes['idClienteDestino']}',
     '{$Datos_transclientes['NumeroVenta']}','{$importevalorcobro}','{$Datos_transclientes['id']}')";
 
@@ -605,10 +630,17 @@ if (isset($_POST['enter_registration'])) {
   // borrada - como quedaba en 0, nunca revertía, y el paquete quedaba
   // Devuelto=1 para siempre (invisible en Hoja de Ruta/Pendientes) aunque
   // Estado volviera a mostrar el movimiento anterior ("En Origen").
+  // FIX (2026-09-16, reportado con OFBX3F3FV / "Bernardo O'Higgins..."):
+  // Destino sale encadenado del movimiento anterior (Seguimiento.Destino) y
+  // ClienteDestino de TransClientes - ambos tal cual están guardados, así
+  // que un apóstrofe en cualquiera de los dos rompía este INSERT (por eso
+  // tampoco se podía marcar Entregado desde Seguimiento).
+  $destinoEsc = $mysqli->real_escape_string((string)($dato['Destino'] ?? ''));
+  $clienteDestinoEsc = $mysqli->real_escape_string((string)($datosqlbuscotrans['ClienteDestino'] ?? ''));
   $sqlseguimiento = "INSERT INTO `Seguimiento`(`Fecha`, `Hora`, `Usuario`, `Sucursal`, `CodigoSeguimiento`, `Observaciones`, `Entregado`, `Estado`, `Destino`,
 `Avisado`, `idCliente`, `Retirado`, `Visitas`, `idTransClientes`, `Recorrido`,`NombreCompleto`,`state_id`,`NumerodeOrden`,`Devuelto`)VALUES('{$Fecha}','{$Hora}','{$UsuarioTitularEsc}',
-'{$_SESSION['Sucursal']}','{$CodigoSeguimiento}','{$Observaciones}','{$Entregado}','{$EstadoSeguimiento}','{$dato['Destino']}','{$dato['Avisado']}','{$idCliente}',
-'{$Retirado}','{$Visitas}','{$datosqlbuscotrans['id']}','{$datosqlbuscotrans['Recorrido']}','{$datosqlbuscotrans['ClienteDestino']}','{$id_state['id']}','{$NumOrden}','{$Devuelto}')";
+'{$_SESSION['Sucursal']}','{$CodigoSeguimiento}','{$Observaciones}','{$Entregado}','{$EstadoSeguimiento}','{$destinoEsc}','{$dato['Avisado']}','{$idCliente}',
+'{$Retirado}','{$Visitas}','{$datosqlbuscotrans['id']}','{$datosqlbuscotrans['Recorrido']}','{$clienteDestinoEsc}','{$id_state['id']}','{$NumOrden}','{$Devuelto}')";
 
   if ($mysqli->query($sqlseguimiento)) {
     // Propago el N° de orden a TransClientes si estaba en blanco (colectas que
