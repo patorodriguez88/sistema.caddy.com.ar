@@ -30,8 +30,22 @@ $ok = $mysqli->query($sql);
 $colsCheck = $mysqli->query("SHOW COLUMNS FROM TransProveedores LIKE 'img'");
 $tieneImg = $colsCheck && $colsCheck->num_rows > 0;
 
+$alterOk = null;
+$alterError = null;
+if (!$tieneImg) {
+    // Mismo gap que había en el dump local: el código (funciones.js,
+    // "row.img==1") ya espera esta columna. Se agrega si falta, sin tocar
+    // nada más.
+    $alterOk = $mysqli->query("ALTER TABLE TransProveedores ADD COLUMN img TINYINT(1) DEFAULT 0");
+    if (!$alterOk) $alterError = $mysqli->error;
+    $colsCheck2 = $mysqli->query("SHOW COLUMNS FROM TransProveedores LIKE 'img'");
+    $tieneImg = $colsCheck2 && $colsCheck2->num_rows > 0;
+}
+
 echo json_encode([
     'success' => $ok ? 1 : 0,
     'error' => $ok ? null : $mysqli->error,
     'TransProveedores_tiene_img' => $tieneImg,
+    'alter_ejecutado' => $alterOk !== null,
+    'alter_error' => $alterError,
 ]);
