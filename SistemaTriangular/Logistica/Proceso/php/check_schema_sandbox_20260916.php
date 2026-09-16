@@ -47,8 +47,26 @@ try {
     $queryError = $e->getMessage();
 }
 
+// FIX: agrega a TransClientes las columnas que ya tiene producción (mismo
+// gap que TransProveedores.img - la base de sandbox no se migró cuando se
+// desplegaron estas features hoy). Sólo agrega las que efectivamente
+// faltan, tipos calcados de producción.
+$alterResultados = [];
+$tiposEsperados = [
+    'Etiqueta_impresa_f' => 'DATE DEFAULT NULL',
+    'Etiqueta_impresa_h' => 'TIME DEFAULT NULL',
+    'Etiqueta_impresa_usuario' => 'VARCHAR(50) DEFAULT NULL',
+];
+foreach ($tiposEsperados as $col => $tipo) {
+    if (in_array($col, $faltantes, true)) {
+        $ok = $mysqli->query("ALTER TABLE TransClientes ADD COLUMN $col $tipo");
+        $alterResultados[$col] = $ok ? 'agregada' : $mysqli->error;
+    }
+}
+
 echo json_encode([
     'columnas_faltantes' => $faltantes,
     'query_paquetes_error' => $queryError,
     'query_paquetes_filas' => $rowCount,
+    'alter_resultados' => $alterResultados,
 ]);
