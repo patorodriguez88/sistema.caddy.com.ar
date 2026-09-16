@@ -4,7 +4,15 @@ require_once __DIR__ . '/../Conexion/google_config.php';
 function geolocalizar($direccion)
 {
     $direccion = urlencode($direccion);
-    $url = "https://maps.googleapis.com/maps/api/geocode/json?key=" . GOOGLE_API_KEY_SERVER . "&address={$direccion}&language=es";
+    // FIX (2026-09-16, reportado con IGALFER: localidades random tipo
+    // "Worblaufen"/"Madrid" para direcciones de Córdoba): esta consulta no
+    // tenía ningún sesgo geográfico - una dirección corta o ambigua podía
+    // matchear con un lugar de cualquier parte del mundo. region=ar (Caddy
+    // solo opera en Argentina) inclina el resultado hacia acá sin
+    // restringirlo del todo. Sigue siendo responsabilidad de quien llama
+    // validar la provincia devuelta antes de confiar en la localidad
+    // (ver AgregarRepoVentaWeb.php).
+    $url = "https://maps.googleapis.com/maps/api/geocode/json?key=" . GOOGLE_API_KEY_SERVER . "&address={$direccion}&language=es&region=ar";
     // recibo la respuesta en formato Json
     $datosjson = @file_get_contents($url);
     // decodificamos los datos Json

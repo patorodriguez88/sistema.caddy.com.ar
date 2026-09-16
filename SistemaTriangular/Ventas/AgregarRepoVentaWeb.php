@@ -50,7 +50,13 @@ $idPreVenta = $_POST['id']; //ID DE PREVENTA
 $recorrido = $_POST['recorrido_t']; //RECORRIDO
 
 
-for ($i = 0; $i <= count($idPreVenta); $i++) {
+// FIX (2026-09-16, reportado con localidades de IGALFER mal): era "<="
+// -> una vuelta de más accediendo a $idPreVenta[count($idPreVenta)]
+// (fuera de rango, mismo patrón de bug ya visto y corregido en
+// Ventas/Procesos/php/preventa.php::ActualizaRecorrido_all y
+// Ventas/Procesos/js/colecta.js). Esa iteración fantasma procesaba una
+// "preventa" con id vacío (sin fila real), con Datos casi todos null.
+for ($i = 0; $i < count($idPreVenta); $i++) {
 
     if ($recorrido[$i] <> 0) {
 
@@ -173,13 +179,34 @@ for ($i = 0; $i <= count($idPreVenta); $i++) {
                 // -> se corrige con lo que dice Google para esas coordenadas.
                 $cpGeo  = isset($datosmapa[3]) ? trim((string)$datosmapa[3]) : '';
                 $locGeo = isset($datosmapa[4]) ? trim((string)$datosmapa[4]) : '';
+                $provGeo = isset($datosmapa[5]) ? trim((string)$datosmapa[5]) : '';
+
+                // FIX (2026-09-16, reportado con IGALFER: localidades random
+                // tipo "Worblaufen"/"Tlaltenango"/"Madrid" en pedidos de
+                // Córdoba): geolocalizar() no restringe el geocode a
+                // Argentina - una dirección corta o ambigua puede matchear
+                // con un lugar de cualquier parte del mundo, y ANTES esto
+                // pisaba ciegamente una Ciudad ya buena con lo que sea que
+                // haya devuelto Google. Ahora solo se acepta el reemplazo si
+                // la provincia que devolvió el geocode es la esperada
+                // (coincide con la Provincia que ya teníamos, o -si esa
+                // vino vacía- al menos "contiene Córdoba", que es donde
+                // opera Caddy) - si no, se guarda el CP/lat/lng igual (esos
+                // no vienen del texto ambiguo, son coordenadas puntuales
+                // confiables) pero la Ciudad/Provincia se dejan como estaban.
+                $provinciaEsperada = trim((string)($row['Provincia'] ?? ''));
+                $provinciaAceptable = $provGeo !== '' && (
+                    ($provinciaEsperada !== '' && mb_stripos($provGeo, $provinciaEsperada) !== false)
+                    || ($provinciaEsperada === '' && mb_stripos($provGeo, 'Córdoba') !== false)
+                );
+
                 $sets   = "Latitud='" . $mysqli->real_escape_string($latitud) . "',"
                         . "Longitud='" . $mysqli->real_escape_string($longitud) . "'";
                 if ($cpGeo !== '')  $sets .= ",CodigoPostal='" . $mysqli->real_escape_string($cpGeo) . "'";
-                if ($locGeo !== '') $sets .= ",Ciudad='" . $mysqli->real_escape_string($locGeo) . "'";
+                if ($locGeo !== '' && $provinciaAceptable) $sets .= ",Ciudad='" . $mysqli->real_escape_string($locGeo) . "'";
                 $mysqli->query("UPDATE Clientes SET $sets WHERE id='$idClienteDestinoPreVenta' LIMIT 1");
                 // reflejar en la sesion lo que se va a usar en el remito / carga
-                if ($locGeo !== '') $_SESSION['LocalidadDestino_t'] = $locGeo;
+                if ($locGeo !== '' && $provinciaAceptable) $_SESSION['LocalidadDestino_t'] = $locGeo;
             }
         }
 
