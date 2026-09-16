@@ -109,6 +109,96 @@ if (isset($_POST['Aforo_Tabla'])) {
   echo json_encode(array('data' => $rows_aforo));
 }
 
+// MODIFICAR CANTIDAD de una linea de Ventas (desde la ficha de Seguimiento,
+// tabla "Informacion en Ventas") + recalculo de tarifa + sincronizar
+// TransClientes.Cantidad. Convencion acordada (2026-09-16):
+//   - Si la linea tiene Precio=0 (flete sin cargo): se cambia la Cantidad
+//     libremente, sin tocar ningun campo de plata.
+//   - Si tiene Precio>0: se escala PROPORCIONAL a la cantidad nueva (factor
+//     = cantidadNueva/cantidadActual) - Precio, Total, ImporteNeto e Iva1/2/3
+//     todos con el mismo factor, para no romper el desglose de IVA. No se
+//     vuelve a buscar la tarifa del cliente/zona (podria haber cambiado
+//     desde que se armo el pedido) - se escala lo que ya esta cobrado.
+//   - Solo toca la linea de Ventas elegida (por idPedido) - si el pedido
+//     tiene otras lineas (seguro/cobranza, que se guardan con Cantidad=0),
+//     esas NO se tocan.
+//   - Lineas con Cantidad actual <= 0 no son de bultos (son seguro/cobranza)
+//     y esta accion las rechaza.
+if (isset($_POST['ModificarCantidadVenta'])) {
+  $idPedido = (int) ($_POST['idPedido'] ?? 0);
+  $cantidadNueva = (int) ($_POST['Cantidad'] ?? 0);
+
+  if ($idPedido <= 0 || $cantidadNueva <= 0) {
+    echo json_encode(['success' => 0, 'error' => 'Cantidad invalida.']);
+    exit;
+  }
+
+  $st = $mysqli->prepare("SELECT idPedido, NumPedido, Cantidad, Precio, Total, ImporteNeto, Iva1, Iva2, Iva3
+                           FROM Ventas WHERE idPedido = ? AND Eliminado = 0 LIMIT 1");
+  $st->bind_param('i', $idPedido);
+  $st->execute();
+  $venta = $st->get_result()->fetch_assoc();
+  $st->close();
+
+  if (!$venta) {
+    echo json_encode(['success' => 0, 'error' => 'No se encontro esa linea de Ventas.']);
+    exit;
+  }
+
+  $cantidadActual = (float) $venta['Cantidad'];
+  if ($cantidadActual <= 0) {
+    echo json_encode(['success' => 0, 'error' => 'Esta linea no es de bultos (cantidad 0) - no se puede modificar cantidad aca.']);
+    exit;
+  }
+
+  $precioActual = (float) $venta['Precio'];
+  $factor = $cantidadNueva / $cantidadActual;
+
+  if ($precioActual > 0) {
+    $precioNuevo = round($precioActual * $factor, 2);
+    $totalNuevo = round((float) $venta['Total'] * $factor, 2);
+    $netoNuevo = round((float) $venta['ImporteNeto'] * $factor, 2);
+    $iva1Nuevo = round((float) $venta['Iva1'] * $factor, 2);
+    $iva2Nuevo = round((float) $venta['Iva2'] * $factor, 2);
+    $iva3Nuevo = round((float) $venta['Iva3'] * $factor, 2);
+  } else {
+    // Flete sin cargo: se deja todo en 0, solo cambia la cantidad.
+    $precioNuevo = $precioActual;
+    $totalNuevo = (float) $venta['Total'];
+    $netoNuevo = (float) $venta['ImporteNeto'];
+    $iva1Nuevo = (float) $venta['Iva1'];
+    $iva2Nuevo = (float) $venta['Iva2'];
+    $iva3Nuevo = (float) $venta['Iva3'];
+  }
+
+  $upd = $mysqli->prepare("UPDATE Ventas SET Cantidad=?, Precio=?, Total=?, ImporteNeto=?, Iva1=?, Iva2=?, Iva3=?
+                            WHERE idPedido = ? LIMIT 1");
+  $upd->bind_param('iddddddi', $cantidadNueva, $precioNuevo, $totalNuevo, $netoNuevo, $iva1Nuevo, $iva2Nuevo, $iva3Nuevo, $idPedido);
+  $okVenta = $upd->execute();
+  $upd->close();
+
+  // Sincronizar TransClientes.Cantidad (misma convencion que ya usa
+  // Logistica/Proceso/php/etiquetas_recorrido.php::ModificarCantidad).
+  $numPedido = (string) $venta['NumPedido'];
+  $updTC = $mysqli->prepare("UPDATE TransClientes SET Cantidad=? WHERE CodigoSeguimiento=? AND Eliminado=0 LIMIT 1");
+  $updTC->bind_param('is', $cantidadNueva, $numPedido);
+  $okTC = $updTC->execute();
+  $filasTC = $okTC ? $updTC->affected_rows : 0;
+  $updTC->close();
+
+  echo json_encode([
+    'success' => $okVenta ? 1 : 0,
+    'error' => $okVenta ? null : $mysqli->error,
+    'transClientesActualizado' => $filasTC,
+    'cantidadAnterior' => $cantidadActual,
+    'precioAnterior' => $precioActual,
+    'cantidadNueva' => $cantidadNueva,
+    'precioNuevo' => $precioNuevo,
+    'totalNuevo' => $totalNuevo,
+  ]);
+  exit;
+}
+
 //TABLA SEARCH
 if (isset($_POST['Search_Tabla'])) {
   $BuscarAforo = $mysqli->query("SELECT id,Fecha,CodigoSeguimiento,RazonSocial,ClienteDestino,Estado,CodigoProveedor FROM TransClientes WHERE 

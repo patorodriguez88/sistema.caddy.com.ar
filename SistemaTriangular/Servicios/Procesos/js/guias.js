@@ -1229,9 +1229,79 @@ function seguimiento(cs) {
             { data: "FechaPedido" },
             { data: "Codigo" },
             { data: "Titulo" },
-            { data: "Cantidad" },
+            {
+              data: "Cantidad",
+              render: function (data, type, row) {
+                if (type !== "display") return data;
+                var cant = parseInt(data, 10) || 0;
+                // Las lineas de seguro/cobranza se guardan con Cantidad=0 -
+                // esas no son bultos, no se editan desde aca.
+                if (cant <= 0) return data;
+                return (
+                  '<input type="number" min="1" step="1" class="form-control form-control-sm aforo-cantidad-input" ' +
+                  'style="width:64px;display:inline-block" value="' +
+                  cant +
+                  '" data-idpedido="' +
+                  row.idPedido +
+                  '">' +
+                  '<i class="mdi mdi-content-save-outline text-primary aforo-cantidad-guardar" ' +
+                  'style="cursor:pointer;margin-left:6px;font-size:16px" ' +
+                  'data-idpedido="' +
+                  row.idPedido +
+                  '" title="Guardar cantidad (recalcula la tarifa)"></i>'
+                );
+              },
+            },
             { data: "Precio" },
           ],
+        });
+
+        // Modificar Cantidad de una linea de Ventas (recalcula tarifa segun
+        // convencion acordada: si Precio=0 no se toca la plata, si tiene
+        // precio se escala proporcional). Delegado porque DataTables
+        // re-renderiza las filas en cada reload.
+        $("#aforo_tabla").on("click", ".aforo-cantidad-guardar", function () {
+          var $icono = $(this);
+          var idPedido = $icono.data("idpedido");
+          var $input = $icono
+            .closest("td")
+            .find(".aforo-cantidad-input");
+          var nuevaCantidad = parseInt($input.val(), 10);
+
+          if (!nuevaCantidad || nuevaCantidad <= 0) {
+            toast("error", "Cantidad invalida", "Ingresa un numero mayor a 0.");
+            return;
+          }
+
+          $.ajax({
+            url: "../Funciones/php/tablas.php",
+            type: "post",
+            data: { ModificarCantidadVenta: 1, idPedido: idPedido, Cantidad: nuevaCantidad },
+            success: function (response) {
+              var res = typeof response === "string" ? JSON.parse(response) : response;
+              if (res.success == 1) {
+                var msg =
+                  res.precioNuevo && res.precioNuevo > 0
+                    ? "Cantidad: " +
+                      res.cantidadAnterior +
+                      " → " +
+                      res.cantidadNueva +
+                      ". Tarifa recalculada: $" +
+                      res.precioAnterior +
+                      " → $" +
+                      res.precioNuevo +
+                      "."
+                    : "Cantidad actualizada a " + res.cantidadNueva + " (flete sin cargo, no se tocó el precio).";
+                toast("success", "Cantidad actualizada", msg);
+                datatable_aforo.ajax.reload(null, false);
+              } else {
+                toast("error", "No se pudo actualizar", res.error || "Error desconocido.");
+              }
+            },
+            error: function () {
+              toast("error", "Error", "No se pudo actualizar la cantidad.");
+            },
+          });
         });
 
         //TABLA SEGUIMIENTO
