@@ -150,7 +150,18 @@
     // ------------------------------------------------------------------
     function construirZplRotulo(d, bultoActual, bultoTotal) {
         return (
-            "^XA^PW520^LL256^LH0,0^CI28" +
+            // FIX (a pedido: "se ve mal, poca resolución" - foto real de la
+            // etiqueta grande, 2026-09-16, mismo problema esperable acá): el
+            // código nunca fijaba oscuridad/velocidad de impresión, así que
+            // cada trabajo salía con lo que haya quedado seteado en la
+            // impresora por el último trabajo (persiste entre impresiones
+            // hasta que algo lo vuelva a cambiar). ^MD suma oscuridad sobre
+            // lo que esté configurado (no lo reemplaza, así que no debería
+            // "quemar" la etiqueta) y ^PR2 imprime más despacio para que
+            // texto/gráficos chicos no salgan con puntos faltantes. Si con
+            // esto sigue viéndose mal o se pasa de oscuro, avisar para
+            // subir/bajar el 10.
+            "^XA^PW520^LL256^LH0,0^CI28^MD10^PR2" +
             CADDY_LOGO_ZPL +
             "^FO215,10^A0N,20,20^FD" + zplLimpio((d.ClienteDestino || "-").substring(0, 26)) + "^FS" +
             "^FO215,35^A0N,18,18^FD" + zplLimpio((d.DomicilioDestino || "").substring(0, 30)) + "^FS" +
@@ -201,7 +212,17 @@
         var posicion = (d.Retirado == 1 ? d.Posicion : d.Posicion_retiro) || "-";
 
         return (
-            "^XA^PW800^LL800^CI28" +
+            // FIX (a pedido, foto real 2026-09-16: "se ve mal, poca
+            // resolución... no es la impresora porque mandé una prueba y se
+            // ve bien"): el código nunca fijaba oscuridad/velocidad, así que
+            // el trabajo salía con lo que haya quedado configurado en la
+            // impresora por el último trabajo enviado (eso persiste entre
+            // impresiones). ^MD suma oscuridad sobre lo ya configurado (no
+            // lo reemplaza) y ^PR2 imprime más despacio para que texto y
+            // gráficos chicos no salgan con puntos faltantes/grano. Es un
+            // punto de partida - si sigue viéndose mal o se pasa de oscuro,
+            // avisar para subir/bajar el 10.
+            "^XA^PW800^LL800^CI28^MD10^PR2" +
             // Encabezado: logo real de Caddy (FIX 1) + origen a la derecha,
             // dirección de origen ahora en 2 renglones más chicos (FIX 3)
             // para que no se amontone, y el contador de bulto agrandado.
