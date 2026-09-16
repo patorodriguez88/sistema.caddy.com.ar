@@ -92,8 +92,45 @@ $Seguimiento = $_POST['codigo_seguimiento'] ?? null;
 // guía igual) sin volver a insertar nada.
 if ($Seguimiento !== null && $Seguimiento !== '') {
     $segEsc = $mysqli->real_escape_string($Seguimiento);
-    $yaConf = $mysqli->query("SELECT id FROM TransClientes WHERE CodigoSeguimiento='$segEsc' AND Eliminado=0 LIMIT 1");
+    $yaConf = $mysqli->query("SELECT * FROM TransClientes WHERE CodigoSeguimiento='$segEsc' AND Eliminado=0 LIMIT 1");
     if ($yaConf && $yaConf->num_rows > 0) {
+        // FIX (2026-09-16, reportado con el recorrido 1258): este atajo
+        // respondía éxito sin volver a chequear nada más - si el intento
+        // anterior había creado el TransClientes pero se había cortado
+        // ANTES de llegar al INSERT de HojaDeRuta (más abajo), el pedido
+        // quedaba invisible para el repartidor para siempre (la app arma
+        // los cards a partir de HojaDeRuta, no de TransClientes directo) y
+        // un reintento nunca lo reparaba porque este mismo atajo lo cortaba
+        // acá antes de llegar a esa parte. Ahora se verifica y, si falta,
+        // se genera la HojaDeRuta faltante antes de responder éxito.
+        $rowTC = $yaConf->fetch_assoc();
+        $idTCExistente = (int) $rowTC['id'];
+        $chkHdr = $mysqli->query("SELECT id FROM HojaDeRuta WHERE idTransClientes={$idTCExistente} LIMIT 1");
+        if (!$chkHdr || $chkHdr->num_rows === 0) {
+            $rowDestino = fetch_single_row($mysqli, "SELECT * FROM Clientes WHERE id='" . (int) $rowTC['idClienteDestino'] . "'");
+            $insertHdr = $mysqli->prepare(
+                "INSERT INTO HojaDeRuta (Fecha, Recorrido, Localizacion, Ciudad, Provincia, Pais, Cliente, Titulo, Observaciones, Usuario, Asignado, Estado, NumerodeOrden, Seguimiento, idCliente, NumeroRepo, ImporteCobranza, idTransClientes)
+                 VALUES (?, ?, ?, ?, ?, 'Argentina', ?, 'Remito', '', ?, 'Unica Vez', 'Abierto', ?, ?, ?, ?, 0, ?)"
+            );
+            $fechaHdr = (string) $rowTC['Fecha'];
+            $recorridoHdr = (string) $rowTC['Recorrido'];
+            $direccionHdr = (string) ($rowDestino['Direccion'] ?? '');
+            $ciudadHdr = (string) ($rowDestino['Ciudad'] ?? '');
+            $provinciaHdr = (string) ($rowDestino['Provincia'] ?? '');
+            $clienteHdr = (string) ($rowDestino['nombrecliente'] ?? $rowTC['ClienteDestino']);
+            $usuarioHdr = (string) $rowTC['Usuario'];
+            $numOrdenHdr = (int) $rowTC['NumerodeOrden'];
+            $idClienteHdr = (int) ($rowDestino['id'] ?? $rowTC['idClienteDestino']);
+            $numeroRepoHdr = (int) $rowTC['NumeroVenta'];
+            $insertHdr->bind_param(
+                'sssssssisiii',
+                $fechaHdr, $recorridoHdr, $direccionHdr, $ciudadHdr, $provinciaHdr, $clienteHdr, $usuarioHdr,
+                $numOrdenHdr, $segEsc, $idClienteHdr, $numeroRepoHdr, $idTCExistente
+            );
+            if (!$insertHdr->execute()) {
+                error_log('ConfirmarVenta: self-heal HojaDeRuta falló para ' . $Seguimiento . ': ' . $insertHdr->error);
+            }
+        }
         $GLOBALS['cv_ok'] = true;
         echo json_encode(['success' => 1, 'message' => 'Este envío ya estaba confirmado', 'data' => $Seguimiento, 'duplicado' => 1]);
         exit();
@@ -296,7 +333,13 @@ $importevalorcobro = (int)$importevalorcobro;
 $idTransClientes = (int)$idTransClientes;
 
 // Inserción a la base de datos
-$HojaDeRutaQuery = "INSERT IGNORE INTO HojaDeRuta (Fecha, Recorrido, Localizacion, Ciudad, Provincia, Pais, Cliente, Titulo, Observaciones, Usuario, Asignado, Estado, NumerodeOrden, Seguimiento, idCliente, NumeroRepo, ImporteCobranza, idTransClientes)
+// FIX (2026-09-16, mismo caso del recorrido 1258): era INSERT IGNORE sin
+// necesidad - HojaDeRuta no tiene ningún UNIQUE aparte del id autoincremental,
+// así que el IGNORE no evitaba duplicados, solo escondía errores reales (la
+// fila se salteaba en silencio y el resto del alta seguía como si nada,
+// dejando el pedido invisible para el repartidor). Con INSERT normal, un
+// error acá cae en el "if (!$stmt2->execute())" de abajo como corresponde.
+$HojaDeRutaQuery = "INSERT INTO HojaDeRuta (Fecha, Recorrido, Localizacion, Ciudad, Provincia, Pais, Cliente, Titulo, Observaciones, Usuario, Asignado, Estado, NumerodeOrden, Seguimiento, idCliente, NumeroRepo, ImporteCobranza, idTransClientes)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
 // Preparación y asociación de parámetros
