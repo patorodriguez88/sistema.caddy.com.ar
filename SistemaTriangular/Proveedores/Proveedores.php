@@ -373,6 +373,129 @@
 
 
 
+                        <!-- ASOCIAR PAGO A FACTURA (a pedido, 2026-09-16) - calca #asociar-pagos-modal de Clientes/Clientes.php -->
+                        <div class="modal fade" id="asociar-pagos-modal-proveedor" tabindex="-1" aria-labelledby="asociarPagosProveedorLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title" id="asociarPagosProveedorLabel">Asociar Pagos a Facturas</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row">
+                                            <div class="col-12">
+                                                <h4 class="header-title mb-3">Facturas Pendientes</h4>
+                                                <div class="table-responsive">
+                                                    <table id="tabla_asociar-pagos_facturas_prov" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Fecha</th>
+                                                                <th>Comprobante</th>
+                                                                <th>Descripción</th>
+                                                                <th>Saldo</th>
+                                                                <th>&nbsp;</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="row mt-4">
+                                            <div class="col-12">
+                                                <h4 class="header-title mb-3">Pagos / Anticipos Disponibles</h4>
+                                                <div class="table-responsive">
+                                                    <table id="tabla_asociar-pagos_pagos_prov" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Fecha</th>
+                                                                <th>Comprobante</th>
+                                                                <th>Descripción</th>
+                                                                <th>Saldo</th>
+                                                                <th>&nbsp;</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                                <div class="row mt-3">
+                                                    <div class="col-12 text-end">
+                                                        <p class="mb-1"><b>Total Facturas:</b> <span class="ms-2" id="footer_total_facturas_prov"></span></p>
+                                                        <p class="mb-1"><b>Total Pagos:</b> <span class="ms-2" id="footer_total_pagos_prov"></span></p>
+                                                        <p class="mb-0"><b>Saldo:</b> <span class="ms-2" id="footer_saldo_prov"></span></p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class="mdi mdi-close mdi-18px me-1"></i>Cancelar</button>
+                                        <button id="asociar-pagos-modal-prov-ok" type="button" class="btn btn-success"><i class="mdi mdi-content-save mdi-18px me-1"></i>Guardar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VER APLICACIONES de un comprobante de proveedor - calca #modal_aplicaciones de Clientes/Clientes.php -->
+                        <div class="modal fade" id="modal_aplicaciones_proveedor" tabindex="-1" aria-labelledby="modalAplicacionesProveedorLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title" id="modalAplicacionesProveedorLabel"><i class="mdi mdi-link-variant me-2"></i>Aplicaciones del comprobante</h5>
+                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row mb-3">
+                                            <div class="col-md-3">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <small class="text-muted d-block">Comprobante</small>
+                                                    <strong id="aplicacion_prov_comprobante">-</strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <small class="text-muted d-block">Importe original</small>
+                                                    <strong id="aplicacion_prov_importe_original">$ 0,00</strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <small class="text-muted d-block">Aplicado</small>
+                                                    <strong id="aplicacion_prov_importe_aplicado">$ 0,00</strong>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="border rounded p-2 bg-light">
+                                                    <small class="text-muted d-block">Saldo</small>
+                                                    <strong id="aplicacion_prov_saldo">$ 0,00</strong>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table id="tabla_aplicaciones_proveedor" class="table table-sm table-bordered align-middle w-100">
+                                                <thead class="table-light">
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Tipo</th>
+                                                        <th>Número</th>
+                                                        <th>Importe aplicado</th>
+                                                        <th>Usuario</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                        <div id="aplicaciones_prov_empty" class="alert alert-light border mt-3 mb-0 d-none">
+                                            No hay aplicaciones registradas para este comprobante.
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-danger" data-bs-dismiss="modal"><i class="mdi mdi-close me-1"></i>Cerrar</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="modal fade" id="modal_cargar_factura" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
                             <div class="modal-dialog modal-lg">
                                 <div class="modal-content">
@@ -681,6 +804,10 @@
                                                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modal_cargar_factura"> <i class="mdi mdi-file-document-edit-outline"> </i> Ingresar Comprobante</button>
                                                 <button type="button" class="btn btn-warning text-end ml-1" data-bs-toggle="modal" data-bs-target="#modal_cargar_pagos"><i class="mdi mdi-cash"> </i> Ingresar Anticipo </button>
                                                 <a id="btn_pago_facturas" class="btn btn-warning text-end ml-1" style="display:none"> <i class="mdi mdi-cash"> </i> Ingresar Pago </a>
+                                                <!-- FIX (a pedido, 2026-09-16 - tarea Asana): "matchear" un pago/anticipo
+                                                ya cargado contra la factura que cancela, calcando el mecanismo ya en
+                                                producción de Clientes (botón "Asociar Pago" + modal con 2 grillas). -->
+                                                <button id="asociar_pago_proveedor_button" type="button" class="btn btn-info text-end ml-1"><i class="mdi mdi-link-variant"> </i> Asociar Pago</button>
                                             </div>
 
                                         </div>
@@ -1156,6 +1283,7 @@
         <script src="../Menu/js/funciones.js"></script>
         <script src="Procesos/js/proveedores.js"></script>
         <script src="Procesos/js/proveedores_pagos.js"></script>
+        <script src="Procesos/js/proveedores_asociar_pagos.js"></script>
         <!-- SweetAlert2 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 

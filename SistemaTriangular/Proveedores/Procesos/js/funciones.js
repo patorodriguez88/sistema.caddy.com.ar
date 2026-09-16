@@ -493,16 +493,29 @@ $(document).ready(function () {
               {
                 data: "TipoDeComprobante",
                 render: function (data, type, row) {
-                  if (row.Debe != 0) {
-                    if (row.Saldo == 0) {
-                      var status =
-                        '<span class="badge bg-success">Pagada</span>';
-                    } else {
-                      status =
-                        '<span class="badge bg-warning text-white">Pendiente</span>';
+                  // FIX (a pedido, 2026-09-16 - tarea Asana de Agustina):
+                  // antes esto salía de un match frágil por NumeroComprobante
+                  // (row.Saldo==0 => "Pagada"). Ahora usa EstadoAplicacion,
+                  // calculado contra TransProveedores_Imputaciones (mismo
+                  // mecanismo que ya usa Clientes) - soporta "Parcial" y
+                  // permite ver el detalle con un click.
+                  var status = "";
+                  if (row.Debe != 0 || row.Haber != 0) {
+                    var badgeClass = "bg-light text-dark";
+                    var texto = "S/D";
+                    if (row.EstadoAplicacion === "IMPUTADA") {
+                      badgeClass = "bg-success";
+                      texto = "Pagada";
+                    } else if (row.EstadoAplicacion === "PARCIAL") {
+                      badgeClass = "bg-warning text-dark";
+                      texto = "Parcial";
+                    } else if (row.EstadoAplicacion === "PENDIENTE") {
+                      badgeClass = "bg-danger";
+                      texto = "Pendiente";
                     }
-                  } else {
-                    status = "";
+                    status =
+                      '<span class="badge ' + badgeClass + '" style="cursor:pointer" onclick="ver_aplicaciones_proveedor(' +
+                      row.id + ')" title="Ver aplicaciones">' + texto + "</span>";
                   }
                   return `<p class="m-0 d-inline-block align-middle font-10">
                         <a href="apps-ecommerce-products-details.html" class="text-body">${row.TipoDeComprobante}</a>

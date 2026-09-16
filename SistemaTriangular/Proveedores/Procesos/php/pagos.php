@@ -465,3 +465,362 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
 
     echo json_encode(array('success' => 1, 'Asiento' => $NAsiento, 'Importe' => $Importe, 'Disponible' => $Disponible));
 }
+
+// ==================================================================
+// ASOCIAR PAGO A FACTURA (a pedido, 2026-09-16 - tarea Asana de Agustina:
+// "no tengo la opción de matchear un pago con la factura correspondiente,
+// como sí se puede hacer en el sistema viejo"). Calca el mecanismo que ya
+// está en producción del lado Clientes (Ctasctes_Imputaciones +
+// Clientes/Procesos/php/cargarpago.php), adaptado a TransProveedores: acá
+// no hay Facturado/idFacturado (una factura de proveedor queda firme al
+// cargarla, no hay paso de "facturar" aparte), así que sólo se filtra por
+// Eliminado=0. El "pago" es cualquier fila con Haber>0 (Ingresar Anticipo,
+// hoy el único alta de Haber que existe en la pantalla).
+// ==================================================================
+
+include_once "estado_aplicacion.php";
+
+// FACTURAS con saldo pendiente de un proveedor (Debe > 0)
+if (isset($_POST['Asociar_pago_comprobantes'])) {
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    $idProveedor = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+
+    if ($idProveedor <= 0) {
+        echo json_encode(['data' => [], 'success' => 0, 'msg' => 'Proveedor inválido']);
+        exit;
+    }
+
+    $sql = "
+        SELECT
+            T.id,
+            T.Fecha,
+            T.TipoDeComprobante,
+            T.NumeroComprobante,
+            T.Descripcion,
+            T.Debe,
+            (
+                T.Debe - COALESCE((
+                    SELECT SUM(A.Importe)
+                    FROM TransProveedores_Imputaciones A
+                    WHERE A.idMovimientoOrigen = T.id
+                      AND A.Eliminado = 0
+                ), 0)
+            ) AS SaldoPendiente
+        FROM TransProveedores T
+        WHERE T.idProveedor = ?
+          AND T.Debe > 0
+          AND T.Eliminado = 0
+        HAVING SaldoPendiente > 0.009
+        ORDER BY T.Fecha ASC, T.id ASC
+    ";
+
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['data' => [], 'success' => 0, 'msg' => $mysqli->error]);
+        exit;
+    }
+
+    $stmt->bind_param("i", $idProveedor);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    $stmt->close();
+
+    echo json_encode(['data' => $rows, 'success' => 1]);
+    exit;
+}
+
+// PAGOS/ANTICIPOS con saldo disponible de un proveedor (Haber > 0)
+if (isset($_POST['Asociar_pago_pagos'])) {
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    $idProveedor = isset($_POST['id']) ? (int) $_POST['id'] : 0;
+
+    if ($idProveedor <= 0) {
+        echo json_encode(['data' => [], 'success' => 0, 'msg' => 'Proveedor inválido']);
+        exit;
+    }
+
+    $sql = "
+        SELECT
+            T.id,
+            T.Fecha,
+            T.TipoDeComprobante,
+            T.NumeroComprobante,
+            T.Descripcion,
+            T.Haber,
+            (
+                T.Haber - COALESCE((
+                    SELECT SUM(A.Importe)
+                    FROM TransProveedores_Imputaciones A
+                    WHERE A.idMovimientoDestino = T.id
+                      AND A.Eliminado = 0
+                ), 0)
+            ) AS SaldoDisponible
+        FROM TransProveedores T
+        WHERE T.idProveedor = ?
+          AND T.Haber > 0
+          AND T.Eliminado = 0
+        HAVING SaldoDisponible > 0.009
+        ORDER BY T.Fecha ASC, T.id ASC
+    ";
+
+    $stmt = $mysqli->prepare($sql);
+    if (!$stmt) {
+        echo json_encode(['data' => [], 'success' => 0, 'msg' => $mysqli->error]);
+        exit;
+    }
+
+    $stmt->bind_param("i", $idProveedor);
+    $stmt->execute();
+    $result = $stmt->get_result();
+    $rows = [];
+    while ($row = $result->fetch_assoc()) {
+        $rows[] = $row;
+    }
+    $stmt->close();
+
+    echo json_encode(['data' => $rows, 'success' => 1]);
+    exit;
+}
+
+// Matching FIFO greedy entre las facturas y los pagos tildados - mismo
+// algoritmo que Clientes/Procesos/php/cargarpago.php (Asociar_pagos).
+if (isset($_POST['Asociar_pagos'])) {
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    $facturasId = isset($_POST['Facturasid']) ? $_POST['Facturasid'] : [];
+    $pagosId    = isset($_POST['Pagosid']) ? $_POST['Pagosid'] : [];
+
+    if (!is_array($facturasId) || !is_array($pagosId) || count($facturasId) === 0 || count($pagosId) === 0) {
+        echo json_encode(['success' => 0, 'msg' => 'Debe seleccionar al menos una factura y un pago.']);
+        exit;
+    }
+
+    $facturasId = array_map('intval', $facturasId);
+    $pagosId    = array_map('intval', $pagosId);
+
+    $usuario = isset($_SESSION['Usuario']) ? $_SESSION['Usuario'] : 'Sistema';
+    $fechaAplicacion = date('Y-m-d H:i:s');
+
+    $mysqli->begin_transaction();
+
+    try {
+
+        $facturas = [];
+        foreach ($facturasId as $idFactura) {
+            $sqlFactura = "
+                SELECT
+                    T.id, T.idProveedor, T.Debe,
+                    COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoOrigen = T.id AND A.Eliminado = 0), 0) AS Aplicado,
+                    (
+                        T.Debe - COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoOrigen = T.id AND A.Eliminado = 0), 0)
+                    ) AS SaldoPendiente
+                FROM TransProveedores T
+                WHERE T.id = ? AND T.Debe > 0 AND T.Eliminado = 0
+                HAVING SaldoPendiente > 0.009
+                LIMIT 1
+            ";
+            $stmt = $mysqli->prepare($sqlFactura);
+            if (!$stmt) throw new Exception("Error preparando factura: " . $mysqli->error);
+            $stmt->bind_param("i", $idFactura);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if ($row) $facturas[] = $row;
+        }
+
+        $pagos = [];
+        foreach ($pagosId as $idPago) {
+            $sqlPago = "
+                SELECT
+                    T.id, T.idProveedor, T.Haber,
+                    COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoDestino = T.id AND A.Eliminado = 0), 0) AS Aplicado,
+                    (
+                        T.Haber - COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoDestino = T.id AND A.Eliminado = 0), 0)
+                    ) AS SaldoDisponible
+                FROM TransProveedores T
+                WHERE T.id = ? AND T.Haber > 0 AND T.Eliminado = 0
+                HAVING SaldoDisponible > 0.009
+                LIMIT 1
+            ";
+            $stmt = $mysqli->prepare($sqlPago);
+            if (!$stmt) throw new Exception("Error preparando pago: " . $mysqli->error);
+            $stmt->bind_param("i", $idPago);
+            $stmt->execute();
+            $row = $stmt->get_result()->fetch_assoc();
+            $stmt->close();
+            if ($row) $pagos[] = $row;
+        }
+
+        if (count($facturas) === 0 || count($pagos) === 0) {
+            throw new Exception("No hay saldos pendientes o disponibles para asociar.");
+        }
+
+        $idProveedorBase = (int) $facturas[0]['idProveedor'];
+        foreach ($facturas as $f) {
+            if ((int) $f['idProveedor'] !== $idProveedorBase) {
+                throw new Exception("Las facturas seleccionadas no pertenecen al mismo proveedor.");
+            }
+        }
+        foreach ($pagos as $p) {
+            if ((int) $p['idProveedor'] !== $idProveedorBase) {
+                throw new Exception("Los pagos seleccionados no pertenecen al mismo proveedor.");
+            }
+        }
+
+        $totalFacturas = 0;
+        foreach ($facturas as $f) $totalFacturas += (float) $f['SaldoPendiente'];
+        $totalPagos = 0;
+        foreach ($pagos as $p) $totalPagos += (float) $p['SaldoDisponible'];
+
+        if ($totalPagos <= 0 || $totalFacturas <= 0) {
+            throw new Exception("Los importes seleccionados no tienen saldo para imputar.");
+        }
+
+        $insertadas = 0;
+        $facturaIndex = 0;
+        $pagoIndex = 0;
+
+        while ($facturaIndex < count($facturas) && $pagoIndex < count($pagos)) {
+
+            $saldoFactura = (float) $facturas[$facturaIndex]['SaldoPendiente'];
+            $saldoPago    = (float) $pagos[$pagoIndex]['SaldoDisponible'];
+
+            if ($saldoFactura <= 0.009) { $facturaIndex++; continue; }
+            if ($saldoPago <= 0.009) { $pagoIndex++; continue; }
+
+            $importeAplicar = min($saldoFactura, $saldoPago);
+
+            $stmtInsert = $mysqli->prepare("
+                INSERT INTO TransProveedores_Imputaciones (
+                    idProveedor, idMovimientoOrigen, idMovimientoDestino,
+                    TipoOrigen, TipoDestino, Importe, Fecha, Usuario, Eliminado
+                ) VALUES (?, ?, ?, 'FACTURA', 'PAGO', ?, ?, ?, 0)
+            ");
+            if (!$stmtInsert) throw new Exception("Error preparando insert de aplicación: " . $mysqli->error);
+
+            $idProveedor = (int) $facturas[$facturaIndex]['idProveedor'];
+            $idOrigen  = (int) $facturas[$facturaIndex]['id'];
+            $idDestino = (int) $pagos[$pagoIndex]['id'];
+
+            $stmtInsert->bind_param(
+                "iiidss",
+                $idProveedor, $idOrigen, $idDestino, $importeAplicar, $fechaAplicacion, $usuario
+            );
+            if (!$stmtInsert->execute()) throw new Exception("Error insertando aplicación: " . $stmtInsert->error);
+            $stmtInsert->close();
+
+            $facturas[$facturaIndex]['SaldoPendiente'] -= $importeAplicar;
+            $pagos[$pagoIndex]['SaldoDisponible']      -= $importeAplicar;
+            $insertadas++;
+
+            if ($facturas[$facturaIndex]['SaldoPendiente'] <= 0.009) $facturaIndex++;
+            if ($pagos[$pagoIndex]['SaldoDisponible'] <= 0.009) $pagoIndex++;
+        }
+
+        $mysqli->commit();
+
+        echo json_encode([
+            'success' => 1,
+            'msg' => 'Asociación realizada correctamente.',
+            'aplicaciones' => $insertadas,
+            'totalFacturas' => round($totalFacturas, 2),
+            'totalPagos' => round($totalPagos, 2)
+        ]);
+        exit;
+    } catch (Exception $e) {
+        $mysqli->rollback();
+        echo json_encode(['success' => 0, 'msg' => $e->getMessage()]);
+        exit;
+    }
+}
+
+// Detalle de aplicaciones de un comprobante puntual (factura o pago) - para
+// el modal "Ver aplicaciones" desde la Cuenta Corriente.
+if (isset($_POST['VerAplicacionesProveedor'])) {
+
+    header('Content-Type: application/json; charset=utf-8');
+
+    $idTransProveedores = isset($_POST['idTransProveedores']) ? (int) $_POST['idTransProveedores'] : 0;
+
+    if ($idTransProveedores <= 0) {
+        echo json_encode(['success' => 0, 'msg' => 'Comprobante inválido']);
+        exit;
+    }
+
+    $sqlMovimiento = "SELECT id, Fecha, TipoDeComprobante, NumeroComprobante, Descripcion, Debe, Haber, idProveedor
+                       FROM TransProveedores WHERE id = ? AND Eliminado = 0 LIMIT 1";
+    $stmt = $mysqli->prepare($sqlMovimiento);
+    if (!$stmt) { echo json_encode(['success' => 0, 'msg' => $mysqli->error]); exit; }
+    $stmt->bind_param("i", $idTransProveedores);
+    $stmt->execute();
+    $mov = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$mov) {
+        echo json_encode(['success' => 0, 'msg' => 'No se encontró el comprobante']);
+        exit;
+    }
+
+    $esFactura = ((float) $mov['Debe'] > 0);
+    $importeOriginal = $esFactura ? (float) $mov['Debe'] : (float) $mov['Haber'];
+
+    if ($esFactura) {
+        $sqlAplicaciones = "
+            SELECT DATE(I.Fecha) AS Fecha, C.TipoDeComprobante AS TipoRelacionado, C.NumeroComprobante AS NumeroRelacionado, I.Importe, I.Usuario
+            FROM TransProveedores_Imputaciones I
+            INNER JOIN TransProveedores C ON C.id = I.idMovimientoDestino
+            WHERE I.idMovimientoOrigen = ? AND I.Eliminado = 0
+            ORDER BY I.Fecha ASC, I.id ASC
+        ";
+        $sqlSum = "SELECT COALESCE(SUM(Importe),0) AS Aplicado FROM TransProveedores_Imputaciones WHERE idMovimientoOrigen = ? AND Eliminado = 0";
+    } else {
+        $sqlAplicaciones = "
+            SELECT DATE(I.Fecha) AS Fecha, C.TipoDeComprobante AS TipoRelacionado, C.NumeroComprobante AS NumeroRelacionado, I.Importe, I.Usuario
+            FROM TransProveedores_Imputaciones I
+            INNER JOIN TransProveedores C ON C.id = I.idMovimientoOrigen
+            WHERE I.idMovimientoDestino = ? AND I.Eliminado = 0
+            ORDER BY I.Fecha ASC, I.id ASC
+        ";
+        $sqlSum = "SELECT COALESCE(SUM(Importe),0) AS Aplicado FROM TransProveedores_Imputaciones WHERE idMovimientoDestino = ? AND Eliminado = 0";
+    }
+
+    $stmt = $mysqli->prepare($sqlAplicaciones);
+    if (!$stmt) { echo json_encode(['success' => 0, 'msg' => $mysqli->error]); exit; }
+    $stmt->bind_param("i", $idTransProveedores);
+    $stmt->execute();
+    $resAplicaciones = $stmt->get_result();
+    $rows = [];
+    while ($row = $resAplicaciones->fetch_assoc()) $rows[] = $row;
+    $stmt->close();
+
+    $stmt = $mysqli->prepare($sqlSum);
+    if (!$stmt) { echo json_encode(['success' => 0, 'msg' => $mysqli->error]); exit; }
+    $stmt->bind_param("i", $idTransProveedores);
+    $stmt->execute();
+    $sumRow = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    $importeAplicado = isset($sumRow['Aplicado']) ? (float) $sumRow['Aplicado'] : 0;
+    $saldo = $importeOriginal - $importeAplicado;
+
+    $comprobante = trim($mov['TipoDeComprobante'] . ' ' . $mov['NumeroComprobante']);
+
+    echo json_encode([
+        'success' => 1,
+        'comprobante' => $comprobante,
+        'importe_original' => $importeOriginal,
+        'importe_aplicado' => $importeAplicado,
+        'saldo' => $saldo,
+        'data' => $rows
+    ]);
+    exit;
+}

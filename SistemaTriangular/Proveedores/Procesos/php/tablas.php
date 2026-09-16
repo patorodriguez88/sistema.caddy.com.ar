@@ -1,5 +1,6 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
+include_once "estado_aplicacion.php";
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
@@ -113,19 +114,45 @@ if (isset($_POST['Saldos'])) {
 
 if (isset($_POST['CtaCte'])) {
 
-    $sql = "SELECT Fecha,TipoDeComprobante,NumeroComprobante,Descripcion,Debe,Haber,Concepto,FormaDePago,id,img FROM TransProveedores 
-  WHERE Eliminado=0 AND idProveedor='$_POST[id]' ORDER BY Fecha ASC";
+    // FIX (a pedido, 2026-09-16 - tarea Asana de Agustina sobre asociar
+    // pagos a facturas): el "Saldo" por fila salía de agrupar por
+    // NumeroComprobante (frágil: se rompe si dos comprobantes distintos
+    // comparten número, y no sirve para anticipos que no tienen número).
+    // Ahora se calcula contra TransProveedores_Imputaciones - mismo
+    // mecanismo ya en producción del lado Clientes (Ctasctes_Imputaciones).
+    $idProveedor = intval($_POST['id']);
+
+    $sql = "SELECT T.Fecha,T.TipoDeComprobante,T.NumeroComprobante,T.Descripcion,T.Debe,T.Haber,T.Concepto,T.FormaDePago,T.id,T.img,
+                   COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoOrigen = T.id AND A.Eliminado = 0), 0) AS AplicadoDebe,
+                   COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoDestino = T.id AND A.Eliminado = 0), 0) AS AplicadoHaber
+            FROM TransProveedores T
+            WHERE T.Eliminado=0 AND T.idProveedor='$idProveedor' ORDER BY T.Fecha ASC";
 
     $Resultado = $mysqli->query($sql);
     $rows = array();
 
     while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
 
-        $sql2 = "SELECT SUM(Debe)-SUM(Haber)as Saldo FROM TransProveedores WHERE Eliminado=0 AND idProveedor='$_POST[id]' AND NumeroComprobante='$row[NumeroComprobante]'";
-        $Resultado_1 = $mysqli->query($sql2);
-        $row_2 = $Resultado_1->fetch_array(MYSQLI_ASSOC);
+        $debe = floatval($row['Debe']);
+        $haber = floatval($row['Haber']);
+        $aplicadoDebe = floatval($row['AplicadoDebe']);
+        $aplicadoHaber = floatval($row['AplicadoHaber']);
 
-        $rows[] = array_merge($row, $row_2);
+        if ($debe > 0) {
+            $aplicado = $aplicadoDebe;
+            $saldo = $debe - $aplicado;
+        } else {
+            $aplicado = $aplicadoHaber;
+            $saldo = $haber - $aplicado;
+        }
+
+        // Se mantiene el nombre "Saldo" (lo sigue leyendo el front tal cual)
+        // - lo que cambia es de dónde sale el número.
+        $row['Aplicado'] = round($aplicado, 2);
+        $row['Saldo'] = round($saldo, 2);
+        $row['EstadoAplicacion'] = estadoAplicacionProveedorDesdeSaldo($debe, $haber, $aplicadoDebe, $aplicadoHaber);
+
+        $rows[] = $row;
     }
 
     echo json_encode(array('data' => $rows));
