@@ -11,6 +11,16 @@ include_once "../../../Conexion/Conexioni.php";
 // eliminado, con TransClientes vivos y no entregados).
 // ==================================================
 if (isset($_POST['Recorridos'])) {
+    // FIX (a pedido, 2026-09-16): filtro "Solo origen Dinter" - deja
+    // afuera recorridos que no tengan ningún paquete con origen Dinter
+    // (cualquier razón social que empiece con "Dinter": CBA, San
+    // Francisco, Villa María, Río Cuarto, Santa Fe, etc). Los conteos de
+    // Paquetes/Bultos también quedan acotados a los de Dinter cuando el
+    // filtro está activo, porque son justo los que importan para esta
+    // tanda de impresión.
+    $soloDinter = (int) ($_POST['SoloDinter'] ?? 0) === 1;
+    $filtroDinter = $soloDinter ? " AND tc.RazonSocial LIKE 'Dinter%'" : '';
+
     $sql = "SELECT hdr.Recorrido,
                    r.Nombre,
                    r.Color,
@@ -22,6 +32,7 @@ if (isset($_POST['Recorridos'])) {
             WHERE hdr.Estado = 'Abierto' AND hdr.Devuelto = 0 AND hdr.Eliminado = 0
               AND tc.Eliminado = 0 AND tc.Entregado = 0 AND tc.Devuelto = 0
               AND hdr.Recorrido <> 0
+              {$filtroDinter}
             GROUP BY hdr.Recorrido
             ORDER BY hdr.Recorrido ASC";
 
@@ -41,6 +52,11 @@ if (isset($_POST['Recorridos'])) {
 // ==================================================
 if (isset($_POST['Paquetes'])) {
     $recorrido = $mysqli->real_escape_string($_POST['Recorrido'] ?? '');
+    // Mismo filtro "Solo origen Dinter" que en Recorridos, aplicado acá
+    // adentro para que, con el filtro activo, solo se vean (y se puedan
+    // imprimir) los paquetes Dinter de ese recorrido.
+    $soloDinter = (int) ($_POST['SoloDinter'] ?? 0) === 1;
+    $filtroDinter = $soloDinter ? " AND tc.RazonSocial LIKE 'Dinter%'" : '';
 
     $sql = "SELECT tc.id, tc.CodigoSeguimiento, tc.Cantidad, tc.Retirado,
                    tc.ClienteDestino, tc.DomicilioDestino, tc.LocalidadDestino, tc.ProvinciaDestino,
@@ -55,6 +71,7 @@ if (isset($_POST['Paquetes'])) {
             INNER JOIN HojaDeRuta hdr ON hdr.idTransClientes = tc.id
             WHERE hdr.Recorrido = '$recorrido' AND hdr.Estado = 'Abierto' AND hdr.Devuelto = 0 AND hdr.Eliminado = 0
               AND tc.Eliminado = 0 AND tc.Entregado = 0 AND tc.Devuelto = 0
+              {$filtroDinter}
             ORDER BY tc.id ASC";
 
     $res = $mysqli->query($sql);

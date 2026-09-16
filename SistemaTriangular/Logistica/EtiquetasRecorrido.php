@@ -181,6 +181,16 @@ include_once "../Conexion/Conexioni.php";
                                 </select>
                             </div>
 
+                            <!-- FIX (a pedido, 2026-09-16): filtro "Solo origen Dinter" -
+                                 recorridos sin ningún paquete de origen Dinter quedan afuera
+                                 de la lista, y dentro de un recorrido solo se ven (e imprimen)
+                                 sus paquetes Dinter. Checkbox para poder volver a ver todo
+                                 cuando haga falta (no es exclusivo de Dinter para siempre). -->
+                            <div class="form-check form-check-inline" style="margin-left:4px">
+                                <input class="form-check-input" type="checkbox" id="er_solo_dinter" checked>
+                                <label class="form-check-label" for="er_solo_dinter">Solo origen Dinter</label>
+                            </div>
+
                             <button type="button" class="btn btn-sm btn-outline-light ms-auto" id="er_actualizar"><i class="mdi mdi-refresh"></i> Actualizar</button>
                         </div>
                     </div>
@@ -221,6 +231,7 @@ include_once "../Conexion/Conexioni.php";
                                             <thead>
                                                 <tr>
                                                     <th>Código</th>
+                                                    <th>Origen</th>
                                                     <th>Destinatario</th>
                                                     <th>Domicilio</th>
                                                     <th>Localidad</th>

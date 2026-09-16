@@ -344,12 +344,19 @@
     // ------------------------------------------------------------------
     // RECORRIDOS
     // ------------------------------------------------------------------
+    // Filtro "Solo origen Dinter" (a pedido, 2026-09-16): checkbox arriba de
+    // todo, se manda a las dos acciones (Recorridos y Paquetes) para que la
+    // lista de recorridos Y el detalle de cada uno queden consistentes.
+    function soloDinter() {
+        return $("#er_solo_dinter").is(":checked") ? 1 : 0;
+    }
+
     function cargarRecorridos() {
         $recTabla.html('<tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>');
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
-            data: { Recorridos: 1 },
+            data: { Recorridos: 1, SoloDinter: soloDinter() },
             success: function (response) {
                 var jsonData = typeof response === "string" ? JSON.parse(response) : response;
                 renderRecorridos(jsonData.data || []);
@@ -408,11 +415,11 @@
     }
 
     function cargarPaquetes(recorrido, onListo) {
-        $paqTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>');
+        $paqTabla.html('<tr><td colspan="7" class="text-center text-muted py-4">Cargando…</td></tr>');
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
-            data: { Paquetes: 1, Recorrido: recorrido },
+            data: { Paquetes: 1, Recorrido: recorrido, SoloDinter: soloDinter() },
             success: function (response) {
                 var jsonData = typeof response === "string" ? JSON.parse(response) : response;
                 paquetesActuales = jsonData.data || [];
@@ -420,14 +427,14 @@
                 if (onListo) onListo();
             },
             error: function () {
-                $paqTabla.html('<tr><td colspan="6" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
+                $paqTabla.html('<tr><td colspan="7" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
             },
         });
     }
 
     function renderPaquetes(rows) {
         if (!rows.length) {
-            $paqTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
+            $paqTabla.html('<tr><td colspan="7" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
             return;
         }
         var html = "";
@@ -435,6 +442,7 @@
             html +=
                 '<tr data-id="' + d.id + '">' +
                 "<td>" + d.CodigoSeguimiento + "</td>" +
+                "<td>" + (d.OrigenNombre || "-") + "</td>" +
                 "<td>" + (d.ClienteDestino || "-") + "</td>" +
                 "<td>" + (d.DomicilioDestino || "-") + "</td>" +
                 "<td>" + (d.LocalidadDestino || "-") + "</td>" +
@@ -506,6 +514,11 @@
     });
 
     $("#er_actualizar").on("click", function () {
+        cargarRecorridos();
+        if (recorridoActual) cargarPaquetes(recorridoActual);
+    });
+
+    $("#er_solo_dinter").on("change", function () {
         cargarRecorridos();
         if (recorridoActual) cargarPaquetes(recorridoActual);
     });
