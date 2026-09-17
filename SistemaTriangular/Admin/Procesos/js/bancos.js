@@ -366,6 +366,15 @@ document.getElementById("btnAceptar").addEventListener("click", function () {
 
 // Si cambian filtros después, recargá (si ya existe tabla)
 $("#singledaterange").on("change", function () {
+  // FIX (reportado, 2026-09-17: "seleccioné la fecha 16 pero muestra como
+  // seleccionada 17/9"): "Fecha Seleccionada" solo se actualizaba adentro
+  // de seleccionarBanco() (al elegir la cuenta) - si primero se elegía el
+  // banco (quedaba con la fecha default de "hoy") y DESPUÉS se cambiaba el
+  // rango de fechas, el resumen nunca se refrescaba y mostraba la fecha
+  // vieja aunque el input ya tuviera la nueva. Se actualiza acá también.
+  const fechaFormateada = formatFechaParaUI(this.value || "");
+  $("#fecha-info").html(`<strong>Fecha Seleccionada:</strong> ${fechaFormateada}`);
+
   if (datatable1) datatable1.ajax.reload(null, false);
   $("#btnAceptar").show();
 });
