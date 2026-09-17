@@ -40,6 +40,64 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Cards de selección de banco (a pedido, 2026-09-17: "los bancos
+         están medios feos, mételes onda, algún ícono") -->
+    <style>
+        .banco-card {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            padding: 16px 18px;
+            border-radius: 12px;
+            border: 1px solid #e6e6f0;
+            background: #fff;
+            cursor: pointer;
+            transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+        }
+        .banco-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px -6px rgba(30, 32, 62, .18);
+        }
+        .banco-card-icono {
+            flex-shrink: 0;
+            width: 44px;
+            height: 44px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            color: #fff;
+        }
+        .banco-card-nombre {
+            font-weight: 700;
+            font-size: 13.5px;
+            line-height: 1.25;
+            color: #2a2230;
+        }
+        .banco-card-cuenta {
+            font-size: 12px;
+            color: #8a8398;
+            font-variant-numeric: tabular-nums;
+            margin-top: 2px;
+        }
+        /* Identidad por banco - mismo criterio de color que usan sus propios logos. */
+        .banco-card--galicia .banco-card-icono { background: #f47920; }
+        .banco-card--macro .banco-card-icono { background: #e2231a; }
+        .banco-card--tarjeta .banco-card-icono { background: #6c5ce7; }
+        .banco-card--generico .banco-card-icono { background: #6c6070; }
+
+        .banco-card--galicia.is-selected { border-color: #f47920; box-shadow: 0 0 0 2px #f47920 inset; }
+        .banco-card--macro.is-selected { border-color: #e2231a; box-shadow: 0 0 0 2px #e2231a inset; }
+        .banco-card--tarjeta.is-selected { border-color: #6c5ce7; box-shadow: 0 0 0 2px #6c5ce7 inset; }
+        .banco-card--generico.is-selected { border-color: #6c6070; box-shadow: 0 0 0 2px #6c6070 inset; }
+        .banco-card.is-selected { background: #faf9ff; }
+        .banco-card.is-selected .banco-card-nombre::after {
+            content: " ✓";
+            color: #1c8f61;
+        }
+    </style>
 </head>
 
 <body>

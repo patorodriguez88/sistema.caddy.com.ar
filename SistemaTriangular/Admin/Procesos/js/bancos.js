@@ -105,15 +105,20 @@ document.addEventListener("DOMContentLoaded", function () {
         return;
       }
       container.innerHTML = "";
+      // A pedido (2026-09-17, "los bancos están medios feos"): cards más
+      // chicas (entran las 4 en una fila en desktop), con ícono e
+      // identidad de color por banco en vez del card Bootstrap genérico.
       data.data.forEach((banco) => {
         const card = document.createElement("div");
-        card.classList.add("col-md-4", "mb-3");
+        card.classList.add("col-sm-6", "col-xl-3", "mb-3");
         const cuentaId = `banco-${String(banco.Cuenta).replace(/\s+/g, "_")}`;
+        const { icono, marca } = identidadBanco(banco.NombreCuenta);
         card.innerHTML = `
-          <div class="card shadow-sm border-primary banco-card" id="${cuentaId}" onclick="seleccionarBanco('${banco.Cuenta}')">
-            <div class="card-body">
-              <h5 class="card-title">${banco.NombreCuenta}</h5>
-              <p class="card-text"><strong>Número de Cuenta:</strong> <span>${banco.Cuenta}</span></p>
+          <div class="banco-card banco-card--${marca}" id="${cuentaId}" onclick="seleccionarBanco('${banco.Cuenta}')">
+            <div class="banco-card-icono"><i class="mdi ${icono}"></i></div>
+            <div class="banco-card-info">
+              <div class="banco-card-nombre">${banco.NombreCuenta}</div>
+              <div class="banco-card-cuenta">Cta. ${banco.Cuenta}</div>
             </div>
           </div>`;
         container.appendChild(card);
@@ -122,19 +127,36 @@ document.addEventListener("DOMContentLoaded", function () {
     .catch((err) => console.error("❌ Error al obtener bancos:", err));
 });
 
+// Identidad visual por banco (a pedido, 2026-09-17: "métele onda, algún
+// ícono") - matchea por nombre, con un fallback genérico para cualquier
+// cuenta nueva que se agregue después.
+function identidadBanco(nombreCuenta) {
+  const n = String(nombreCuenta || "").toUpperCase();
+  if (n.includes("TARJETA") || n.includes("CREDITO")) {
+    return { icono: "mdi-credit-card-outline", marca: "tarjeta" };
+  }
+  if (n.includes("GALICIA")) {
+    return { icono: "mdi-bank", marca: "galicia" };
+  }
+  if (n.includes("MACRO")) {
+    return { icono: "mdi-bank", marca: "macro" };
+  }
+  return { icono: "mdi-bank-outline", marca: "generico" };
+}
+
 function seleccionarBanco(id) {
-  if (tarjetaSeleccionada)
-    tarjetaSeleccionada.classList.remove("bg-warning", "text-white");
+  if (tarjetaSeleccionada) tarjetaSeleccionada.classList.remove("is-selected");
   tarjetaSeleccionada = document.getElementById(
     `banco-${id.replace(/\s+/g, "_")}`
   );
-  tarjetaSeleccionada.classList.add("bg-warning", "text-white");
+  tarjetaSeleccionada.classList.add("is-selected");
 
   const nombreBanco =
-    tarjetaSeleccionada.querySelector(".card-title").innerText;
+    tarjetaSeleccionada.querySelector(".banco-card-nombre").innerText;
   cuentaSeleccionada = tarjetaSeleccionada
-    .querySelector(".card-text span")
-    .innerText.trim();
+    .querySelector(".banco-card-cuenta")
+    .innerText.replace("Cta.", "")
+    .trim();
 
   const fechaInput = document.getElementById("singledaterange");
   const fechaFormateada = formatFechaParaUI(fechaInput?.value || "");
@@ -168,7 +190,7 @@ $("#btnVolver").click(function () {
   $("#singledaterange").val("");
   $("#cuenta-info").html("<em>Seleccione una cuenta...</em>");
   $("#fecha-info").html("<em>Seleccione un rango de fechas...</em>");
-  $(".banco-card").removeClass("bg-warning text-white");
+  $(".banco-card").removeClass("is-selected");
   cuentaSeleccionada = "";
   tarjetaSeleccionada = null;
 
