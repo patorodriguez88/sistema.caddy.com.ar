@@ -346,7 +346,17 @@
                         </div> <!-- end row -->
 
 
-                        <div id="modal_seguimiento" style="display:none">
+                        <!-- FIX (reportado, 2026-09-17): este id compartía el mismo
+                             "modal_seguimiento" que usa el panel lateral deslizante
+                             genérico (Funciones/js/seguimiento.js, agregado por la
+                             lupa del header). openTrackingPanel() le agrega
+                             class="tracking-panel" a CUALQUIER elemento que encuentre
+                             con ese id (sin fijarse si es compatible) - eso traía los
+                             estilos position:fixed/width:620px del panel deslizante y
+                             comprimía toda la ficha ancha de esta pantalla. Se separa
+                             en un id propio ("ficha_seguimiento") para que nunca más
+                             se pisen, aunque el panel lateral se dispare desde acá. -->
+                        <div id="ficha_seguimiento" style="display:none">
 
                             <div id="tracker"></div>
                             <!-- end row -->
@@ -358,8 +368,8 @@
                                                 <div class="card-body">
                                                     <div id="pagaorigen" style="display:none" class="ribbon-two ribbon-two-success float-end"><span>Pagador</span></div>
                                                     <h4 class="header-title mb-3 ml-3">Informacion de Origen</h4>
-                                                    <h5 id="cliente_origen_seguimiento"></h5>
-                                                    <i class="mdi mdi-map-marker text-success"></i><small id="cliente_origen_direcccion_seguimiento" class="list-unstyled mb-0 text-muted text-"></small>
+                                                    <h5 id="ficha_cliente_origen_seguimiento"></h5>
+                                                    <i class="mdi mdi-map-marker text-success"></i><small id="ficha_cliente_origen_direcccion_seguimiento" class="list-unstyled mb-0 text-muted text-"></small>
                                                 </div>
                                             </div>
                                         </div> <!-- end col-->
@@ -369,8 +379,8 @@
                                                 <div class="card-body">
                                                     <div id="pagadestino" style="display:none" class="ribbon-two ribbon-two-success float-end"><span>Pagador</span></div>
                                                     <h4 class="header-title mb-3 ml-3">Informacion de Destino</h4>
-                                                    <h5 id="cliente_destino_seguimiento"></h5>
-                                                    <i class="mdi mdi-map-marker text-success"></i><small id="cliente_destino_direcccion_seguimiento" class="list-unstyled mb-0 text-muted"></small>
+                                                    <h5 id="ficha_cliente_destino_seguimiento"></h5>
+                                                    <i class="mdi mdi-map-marker text-success"></i><small id="ficha_cliente_destino_direcccion_seguimiento" class="list-unstyled mb-0 text-muted"></small>
                                                 </div>
                                             </div> <!-- end card-->
                                         </div> <!-- end col-->
@@ -465,9 +475,9 @@
                                 <div class="col-xl-4  col-lg-4">
                                     <div class="card">
                                         <div class="card-body">
-                                            <h4 class="header-title mb-3" id="header_title_guia_seguimiento"> Informacion Guía</h4>
+                                            <h4 class="header-title mb-3" id="ficha_header_title_guia_seguimiento"> Informacion Guía</h4>
                                             <div class="text-left">
-                                                <table id="info_guia_seguimiento" class="table table-sm table-centered table-borderless mb-0">
+                                                <table id="ficha_info_guia_seguimiento" class="table table-sm table-centered table-borderless mb-0">
                                                 </table>
                                             </div>
 
@@ -504,12 +514,12 @@
                                                 </div>
                                             </div>
 
-                                            <h4 id="myCenterModalLabel2" class="header-title mb-3"></h4>
+                                            <h4 id="ficha_myCenterModalLabel2" class="header-title mb-3"></h4>
                                             <div class="text-right">
                                                 <!-- <button type="button" class="btn btn-info my-2" data-bs-dismiss="modal">Continue</button>                                             -->
                                             </div>
                                             <div class="table-responsive">
-                                                <table class="table table-sm table-centered mb-0" style="font-size:12px" id="seguimiento_tabla">
+                                                <table class="table table-sm table-centered mb-0" style="font-size:12px" id="ficha_seguimiento_tabla">
                                                     <thead class="thead-light">
                                                         <tr>
                                                             <th>Fecha</th>
@@ -523,7 +533,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr id="tr_seguimiento">
+                                                        <tr id="ficha_tr_seguimiento">
                                                             <td></td>
                                                             <td></td>
                                                             <td></td>

@@ -182,10 +182,10 @@ function verrotulo() {
 
 // Volver del detalle de seguimiento al buscador.
 function cerrarSeguimiento() {
-  document.getElementById("modal_seguimiento").style.display = "none";
+  document.getElementById("ficha_seguimiento").style.display = "none";
   document.getElementById("form_guias").style.display = "";
   try {
-    $("#seguimiento_tabla").DataTable().destroy();
+    $("#ficha_seguimiento_tabla").DataTable().destroy();
   } catch (e) {}
 }
 
@@ -624,7 +624,7 @@ function seguimiento(cs) {
         clearTimeout(_modalVisitasTimeout);
         if (jsonData.success == 1) {
           $("#info-alert-modal").modal("hide");
-          $("#myCenterModalLabel2").html(
+          $("#ficha_myCenterModalLabel2").html(
             '<h5>Seguimiento de Codigo: <span class="badge bg-' +
               colorestado +
               ' text-white">' +
@@ -641,7 +641,7 @@ function seguimiento(cs) {
             pintarUltimoEstadoBadge(window.__ultimoEstadoGuia);
           }
           $("#notas").html("Nota Interna: " + jsonData.Notas);
-          document.getElementById("modal_seguimiento").style.display = "block";
+          document.getElementById("ficha_seguimiento").style.display = "block";
           document.getElementById("form_guias").style.display = "none";
           $("#pagina").css("display", "block").addClass("active");
           $(".breadcrumb-item active")
@@ -701,8 +701,8 @@ function seguimiento(cs) {
         });
 
         //ORIGEN
-        $("#cliente_origen_seguimiento").html(jsonData.data[0].RazonSocial);
-        $("#cliente_origen_direcccion_seguimiento").html(
+        $("#ficha_cliente_origen_seguimiento").html(jsonData.data[0].RazonSocial);
+        $("#ficha_cliente_origen_direcccion_seguimiento").html(
           jsonData.data[0].DomicilioOrigen +
             "<br>" +
             '<li><p class="mb-0"><span class="font-weight-bold mr-2">Telefono:</span>' +
@@ -710,8 +710,8 @@ function seguimiento(cs) {
             "</p></li>",
         );
         //DESTINO
-        $("#cliente_destino_seguimiento").html(jsonData.data[0].ClienteDestino);
-        $("#cliente_destino_direcccion_seguimiento").html(
+        $("#ficha_cliente_destino_seguimiento").html(jsonData.data[0].ClienteDestino);
+        $("#ficha_cliente_destino_direcccion_seguimiento").html(
           jsonData.data[0].DomicilioDestino +
             "<br>" +
             '<li><p class="mb-0"><span class="font-weight-bold mr-2">Telefono:</span>' +
@@ -719,7 +719,7 @@ function seguimiento(cs) {
             "</p></li>",
         );
         //GUIA
-        $("#header_title_guia_seguimiento").html(
+        $("#ficha_header_title_guia_seguimiento").html(
           "Información de la Guia " + jsonData.data[0].NumeroComprobante,
         );
         if (jsonData.data[0].CobrarEnvio == 0) {
@@ -815,7 +815,7 @@ function seguimiento(cs) {
         let fechaFormateada = jsonData.data[0].FechaPrometida
           ? jsonData.data[0].FechaPrometida.split("-").reverse().join("/")
           : "";
-        $("#info_guia_seguimiento").html(
+        $("#ficha_info_guia_seguimiento").html(
           '<p class="mb-1"><span style="cursor:pointer" id="' +
             jsonData.data[0].id +
             '" onclick="changeservice(this.id)" class="badge badge-' +
@@ -1321,7 +1321,7 @@ function seguimiento(cs) {
         });
 
         //TABLA SEGUIMIENTO
-        var datatable_seguimiento = $("#seguimiento_tabla").DataTable({
+        var datatable_seguimiento = $("#ficha_seguimiento_tabla").DataTable({
           paging: false,
           searching: false,
           ajax: {
@@ -1439,7 +1439,7 @@ $("#btn_confirmar_eliminacion").click(function () {
 
       if (jsonData.success == 1) {
         toast("success", "Listo!", "Seguimiento Eliminado");
-        var datatable_seguimiento = $("#seguimiento_tabla").DataTable();
+        var datatable_seguimiento = $("#ficha_seguimiento_tabla").DataTable();
         datatable_seguimiento.ajax.reload();
       } else {
         toast("error", "Error!", "No se pudo eliminar el seguimiento");
@@ -1545,7 +1545,7 @@ $("#enter_registration_save").click(function () {
       if (jsonData.success == 1) {
         $("#estado_transclientes").html("Estado Trans Clientes : " + state);
         $("#enter_registration_seguimiento-modal").modal("hide");
-        var datatable_seguimiento = $("#seguimiento_tabla").DataTable();
+        var datatable_seguimiento = $("#ficha_seguimiento_tabla").DataTable();
         datatable_seguimiento.ajax.reload();
         console.log("hdr", jsonData.estadohdr);
         if (jsonData.estadohdr == "Abierto") {
