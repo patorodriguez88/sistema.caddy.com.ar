@@ -205,25 +205,27 @@ function guardarAsiento($conexion) {
 
 
 function obtenerAsiento($conexion) {
-    $sql = "SELECT MAX(id) AS id FROM Tesoreria";
+    // FIX (reportado vía Asana, 2026-09-17: "eliminar asientos y corregir
+    // fecha de carga" - caso real: asiento 37374412 tenía un ANTICIPO A
+    // ACREEDORES del 06/08 que apareció "reemplazado" por un pago de
+    // tarjeta del 15/09 con el mismo número): esto tomaba el NumeroAsiento
+    // de la fila con el id (autoincremental) más alto, +1 - pero id
+    // (orden de inserción) y NumeroAsiento no son necesariamente lo mismo
+    // secuencia (otros flujos del sistema, ej. Ventas/pagos, insertan en
+    // Tesoreria con su propio NumeroAsiento). Si la última fila insertada
+    // por id no tenía el NumeroAsiento más alto de toda la tabla, esto
+    // podía sugerir un número YA USADO - al guardar, guardarAsiento() lo
+    // toma como una EDICIÓN del asiento existente y marca sus filas
+    // viejas como Eliminado=1, perdiendo ese asiento sin que nadie lo
+    // pidiera. Se calcula directo el máximo NumeroAsiento real de la
+    // tabla, sin pasar por id.
+    $sql = "SELECT MAX(NumeroAsiento) AS max_numero FROM Tesoreria";
     $resultado = $conexion->query($sql);
-    
+
     if ($resultado) {
         $row = $resultado->fetch_assoc();
-        $id = $row['id'];
-
-        $sql = "SELECT NumeroAsiento FROM Tesoreria WHERE id = '$id'";
-        $resultado = $conexion->query($sql);
-        
-
-        if ($resultado) {
-            $row = $resultado->fetch_assoc();
-            $Nasiento=$row['NumeroAsiento']+1;
-
-            echo json_encode(["NumeroAsiento" => $Nasiento]);
-        } else {
-            echo json_encode(["mensaje" => "No se encontró el asiento"]);
-        }
+        $Nasiento = (int) $row['max_numero'] + 1;
+        echo json_encode(["NumeroAsiento" => $Nasiento]);
     } else {
         echo json_encode(["mensaje" => "Error al obtener el asiento"]);
     }
