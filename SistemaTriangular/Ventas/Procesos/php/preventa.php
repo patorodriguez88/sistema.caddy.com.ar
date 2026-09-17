@@ -45,11 +45,19 @@ if (isset($_POST['BuscarRecorridos'])) {
 
 if (isset($_POST['ActualizaRecorrido'])) {
 
+  // FIX (reportado: "cambian de recorrido un servicio, queda el modal
+  // activo, no se va nunca y no refresca la tabla"): mismo bug que ya
+  // estaba documentado y arreglado en ActualizaRecorrido_all (mas abajo) -
+  // acá se devolvía $_POST['cs'], que este flujo de UN servicio nunca
+  // manda (el JS solo manda r/id) -> Warning "Undefined array key 'cs'"
+  // ANTES del json_encode -> JSON.parse() reventaba en el frontend, sin
+  // ningún error visible (no hay dataType:"json" ni error: acá). Se saca
+  // ese campo (ni se usaba - el JS solo lee jsonData.success).
   $sql = "UPDATE IGNORE PreVenta SET Recorrido='$_POST[r]' WHERE id='$_POST[id]'";
 
   if ($mysqli->query($sql)) {
 
-    echo json_encode(array('success' => 1, 'Recorrido' => $_POST['r'], 'CodigoSeguimiento' => $_POST['cs']));
+    echo json_encode(array('success' => 1, 'Recorrido' => $_POST['r']));
   } else {
 
     echo json_encode(array('success' => 0));

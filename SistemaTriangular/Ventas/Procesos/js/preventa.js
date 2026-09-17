@@ -324,8 +324,8 @@ $("#modificarrecorrido_ok").click(function () {
     data: { ActualizaRecorrido: 1, r: r, id: cs },
     type: "POST",
     url: "Procesos/php/preventa.php",
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+    dataType: "json",
+    success: function (jsonData) {
       if (jsonData.success == 1) {
         var datatable = $("#preventa").DataTable();
         datatable.ajax.reload();
@@ -334,6 +334,15 @@ $("#modificarrecorrido_ok").click(function () {
       } else {
         toast("error", "Registro No Actualizado !", "No pudimos actualizar el Recorrido.");
       }
+    },
+    // FIX (reportado: "queda el modal activo, no se va nunca y no
+    // refresca la tabla"): sin esto, una respuesta corrupta (warning de
+    // PHP antes del JSON) rompía JSON.parse() sin avisar nada - el modal
+    // se quedaba abierto para siempre. Con dataType:"json" cualquier
+    // respuesta que no sea JSON válido cae acá en vez de reventar adentro
+    // del success.
+    error: function () {
+      toast("error", "Error del servidor", "No se pudo actualizar el Recorrido. Reintentá de nuevo.");
     },
   });
 });
