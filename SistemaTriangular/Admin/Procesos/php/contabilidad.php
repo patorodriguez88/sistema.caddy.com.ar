@@ -173,10 +173,19 @@ function guardarAsiento($conexion) {
                 // mismo motivo que Eliminado: sin default en la columna, quedaban
                 // NULL y los informes de Sumas y Saldos / Mayor (que filtran
                 // Pendiente=0) no encontraban nunca los asientos nuevos.
+                // FIX (reportado vía Asana, 2026-09-17: "asientos que no
+                // aparecen en la conciliación bancaria"): mismo motivo que
+                // los 3 de arriba - Sucursal tampoco tiene default, quedaba
+                // NULL, y Admin/Procesos/php/bancos.php (consultar_conciliacion)
+                // filtra AND t.Sucursal = 'Córdoba' - los asientos cargados
+                // acá nunca aparecían en la conciliación aunque sí en Buscar
+                // Asiento/Libro Diario (que no filtran por Sucursal). Única
+                // sucursal real en la base (ver auditoría de datos), se
+                // hardcodea igual que ya hace bancos.php.
                 $sql = "INSERT INTO Tesoreria
-                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, FormaDePago, Caja, Dominio, Eliminado, Pendiente, NoOperativo)
+                            (Fecha, NombreCuenta, Cuenta, Debe, Haber, Usuario, Observaciones, NumeroAsiento, InfoABM, FormaDePago, Caja, Dominio, Eliminado, Pendiente, NoOperativo, Sucursal)
                         VALUES
-                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', $formaDePagoSQL, 0, 0, 0, 0, 0)";
+                            ('$fecha', '$nombreCuenta', '$cuenta', $debe, $haber, '$usuario', '$observaciones', '$nasiento', '$infoABM', $formaDePagoSQL, 0, 0, 0, 0, 0, 'Córdoba')";
             }
 
             if (!$conexion->query($sql)) {
