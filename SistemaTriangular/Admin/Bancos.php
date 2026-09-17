@@ -129,7 +129,12 @@
                     <div class="container-fluid" id="cuentas-container">
                         <div class="row">
                             <!-- <div class="col-12"> -->
-                            <div class="container mt-4">
+                            <!-- FIX (a pedido, 2026-09-17: "conciliación bancaria más
+                                 angosta que Clientes"): esto era class="container" (ancho
+                                 fijo Bootstrap), no "container-fluid" como el resto de la
+                                 página - por eso esta sección quedaba más angosta que el
+                                 resto de las pantallas del sistema. -->
+                            <div class="w-100 mt-4">
                                 <h2 class="mb-3">Conciliacion Bancaria</h2>
                                 <label><strong>Seleccione una Cuenta Bancaria</strong></label>
                                 <div id="bancos-container" class="row mt-2"></div> <!-- Aquí se insertarán los cards -->
@@ -164,7 +169,7 @@
                         <!-- Información de cuenta seleccionada -->
 
                         <div class="card">
-                            <div class="container mt-3">
+                            <div class="px-3 mt-3">
                                 <h4><i class="fas fa-info-circle"></i> Información Seleccionada:</h4>
                                 <p id="cuenta-info" class="text-primary"><em>Seleccione una cuenta...</em></p>
                                 <p id="fecha-info" class="text-success"><em>Seleccione un rango de fechas...</em></p>
