@@ -430,6 +430,16 @@ $("#standard-modal").on("show.bs.modal", function (e) {
       processing: true,
       type: "post",
     },
+    // FIX (reportado, 2026-09-17: "en el sistema anterior lo que estaba
+    // not_invoice me lo pintaba de rojo"): línea de Cobranza Integrada que
+    // no se factura (se liquida por rendición) - mismo criterio que
+    // Clientes/Procesos/js/abmventas.js. rowCallback (corre en cada
+    // dibujado), no createdRow (el tema pisaba el color).
+    rowCallback: function (row, data, index) {
+      if (data.not_invoice == 1) {
+        $(row).css("color", "red");
+      }
+    },
     columns: [
       { data: "idPedido" },
       { data: "FechaPedido" },

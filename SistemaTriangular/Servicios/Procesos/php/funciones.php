@@ -168,14 +168,19 @@ if (isset($_POST['BuscarDatos'])) {
 
 if (isset($_POST['BuscarDatosVentas'])) {
 
+  // FIX (reportado, 2026-09-17: "en el sistema anterior lo que estaba
+  // not_invoice me lo pintaba de rojo en el formulario"): faltaba
+  // not_invoice en el SELECT, así que la fila de Cobranza Integrada nunca
+  // se pintaba de rojo acá (Clientes/Procesos/php/abmventas.php sí lo
+  // tenía - mismo criterio, se agrega acá también).
   if ($_POST['idPedido'] <> '') {
     $id = $_POST['idPedido'];
-    $sql = "SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
+    $sql = "SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad,not_invoice FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
   } else {
     $sql = "SELECT CodigoSeguimiento FROM TransClientes WHERE id='$_POST[id]'";
     $Resultado = $mysqli->query($sql);
     $row = $Resultado->fetch_array(MYSQLI_ASSOC);
-    $sql = "SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
+    $sql = "SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad,not_invoice FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
   }
 
   $Resultado = $mysqli->query($sql);

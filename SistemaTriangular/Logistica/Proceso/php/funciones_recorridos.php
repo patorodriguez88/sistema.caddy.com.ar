@@ -67,14 +67,17 @@ if($_POST['BuscarDatos']==1){
 
 if($_POST['BuscarDatosVentas']==1){
   
+  // FIX (mismo motivo que Servicios/Procesos/php/funciones.php): faltaba
+  // not_invoice en el SELECT para poder pintar de rojo la fila de
+  // Cobranza Integrada en el modal "Modificar".
   if($_POST[idPedido]<>''){
-    $id=$_POST[idPedido];  
-    $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
+    $id=$_POST[idPedido];
+    $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad,not_invoice FROM Ventas WHERE idPedido='$id' AND Eliminado='0'";
   }else{
     $sql="SELECT CodigoSeguimiento FROM TransClientes WHERE id='$_POST[id]'";
-    $Resultado=$mysqli->query($sql);  
+    $Resultado=$mysqli->query($sql);
     $row=$Resultado->fetch_array(MYSQLI_ASSOC);
-    $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
+    $sql="SELECT idPedido,FechaPedido,Codigo,Titulo,Total,NumPedido,Precio,Cantidad,not_invoice FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
   }
   
     $Resultado=$mysqli->query($sql);  

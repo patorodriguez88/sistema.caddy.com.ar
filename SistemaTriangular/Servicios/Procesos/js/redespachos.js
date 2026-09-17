@@ -177,6 +177,14 @@ ajax: {
        processing: true,
        type:'post'
       },
+      // FIX (reportado, 2026-09-17: "en el sistema anterior lo que estaba
+      // not_invoice me lo pintaba de rojo"): línea de Cobranza Integrada
+      // que no se factura - mismo criterio que abmventas.js.
+      rowCallback: function (row, data, index) {
+        if (data.not_invoice == 1) {
+          $(row).css('color', 'red');
+        }
+      },
       columns: [
         {data:"idPedido"},
         {data:"FechaPedido"},
