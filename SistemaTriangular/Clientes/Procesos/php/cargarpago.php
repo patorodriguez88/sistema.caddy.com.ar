@@ -69,7 +69,14 @@ if (isset($_POST['CargarPago'])) {
 
     //DATOS TESORERIA
     $Usuario = $_SESSION['Usuario'];
-    $Sucursal = $_SESSION['Sucursal'];
+    // FIX (investigado a pedido, 2026-09-17 - "asientos que no aparecen en
+    // la conciliación bancaria", parte 2): si el usuario logueado tiene
+    // usuarios.Sucursal vacío/NULL (pasa con varias cuentas, algunas
+    // activas), esto quedaba '' - Admin/Procesos/php/bancos.php filtra
+    // Sucursal='Córdoba' y el asiento de Tesorería del pago quedaba
+    // invisible ahí. Única sucursal real de la base - fallback acá además
+    // de completar el dato en usuarios (fix de raíz, aparte).
+    $Sucursal = $_SESSION['Sucursal'] ?: 'Córdoba';
 
 
     $NumeroTrans = isset($_POST['numerotrans']) && $_POST['numerotrans'] !== ''
