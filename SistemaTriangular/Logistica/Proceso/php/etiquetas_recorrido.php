@@ -82,7 +82,9 @@ if (isset($_POST['Paquetes'])) {
                    tc.Recorrido, tc.Usuario, tc.Observaciones,
                    tc.Etiqueta_impresa_f, tc.Etiqueta_impresa_h, tc.Etiqueta_impresa_usuario,
                    c.CodigoPostal AS cpdestino,
-                   hdr.Posicion, hdr.Posicion_retiro
+                   hdr.Posicion, hdr.Posicion_retiro,
+                   COALESCE((SELECT SUM(r.CantidadBultos) FROM reposiciones_dinter r
+                             WHERE r.CodigoSeguimiento = tc.CodigoSeguimiento AND r.Impreso = 0 AND r.Eliminado = 0), 0) AS CantidadRepoPendiente
             FROM TransClientes tc
             LEFT JOIN Clientes c ON c.id = tc.idClienteDestino
             INNER JOIN HojaDeRuta hdr ON hdr.idTransClientes = tc.id
@@ -272,6 +274,35 @@ if (isset($_POST['AgregarReposicion'])) {
         'reposicionGuardada' => $okRepo ? 1 : 0,
         'idReposicion' => $okRepo ? $mysqli->insert_id : null,
     ]);
+    exit;
+}
+
+// ==================================================
+// MARCAR REPOSICIÓN COMO IMPRESA (a pedido, 2026-09-16): separa "agregar"
+// (ya suma a Cantidad al toque) de "imprimir" - lo pendiente de imprimir
+// tiene que sobrevivir a cerrar/reabrir el modal o recargar la página, así
+// que se guarda en reposiciones_dinter.Impreso en vez de vivir solo en el
+// JS. Se marca recién cuando imprimirReposicion() confirma que salió bien;
+// si falla la impresión, queda pendiente para reintentar.
+// ==================================================
+if (isset($_POST['MarcarReposicionImpresa'])) {
+    $codigoSeguimiento = trim((string) ($_POST['CodigoSeguimiento'] ?? ''));
+    if ($codigoSeguimiento === '') {
+        echo json_encode(['success' => 0, 'error' => 'Código de seguimiento inválido.']);
+        exit;
+    }
+
+    $usuario = (string) ($_SESSION['Usuario'] ?? 'desconocido');
+    $fecha = date('Y-m-d');
+    $hora = date('H:i:s');
+
+    $upd = $mysqli->prepare("UPDATE reposiciones_dinter
+                              SET Impreso = 1, Impreso_f = ?, Impreso_h = ?, Impreso_usuario = ?
+                              WHERE CodigoSeguimiento = ? AND Impreso = 0 AND Eliminado = 0");
+    $upd->bind_param('ssss', $fecha, $hora, $usuario, $codigoSeguimiento);
+    $ok = $upd->execute();
+
+    echo json_encode(['success' => $ok ? 1 : 0, 'marcadas' => $ok ? $upd->affected_rows : 0, 'error' => $ok ? null : $mysqli->error]);
     exit;
 }
 

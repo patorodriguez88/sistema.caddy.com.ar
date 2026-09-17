@@ -271,8 +271,9 @@ include_once "../Conexion/Conexioni.php";
                                                 <tr>
                                                     <th>Código</th>
                                                     <th>Destino</th>
-                                                    <th class="text-center">Cantidad actual</th>
-                                                    <th class="text-center">Cantidad repo</th>
+                                                    <th class="text-center">Cantidad</th>
+                                                    <th class="text-center">Cantidad Repo</th>
+                                                    <th class="text-center">Total</th>
                                                     <th class="text-end">Acción</th>
                                                 </tr>
                                             </thead>

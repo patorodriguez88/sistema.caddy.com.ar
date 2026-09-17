@@ -507,7 +507,7 @@
     }
 
     function cargarPaquetesParaRepo(recorrido) {
-        $repoTabla.html('<tr><td colspan="5" class="text-center text-muted py-4">Cargando…</td></tr>');
+        $repoTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Cargando…</td></tr>');
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
@@ -521,50 +521,71 @@
                 renderReposiciones(paquetesActuales);
             },
             error: function () {
-                $repoTabla.html('<tr><td colspan="5" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
+                $repoTabla.html('<tr><td colspan="6" class="text-center text-danger py-4">No se pudieron cargar los paquetes.</td></tr>');
             },
         });
     }
 
-    // FIX (a pedido, 2026-09-16): antes era un solo botón "Agregar e
-    // imprimir" (guardaba y mandaba a imprimir en el mismo click). Ahora se
-    // separa en 2 pasos: al salir del input (blur/change) se guarda sola la
-    // cantidad, y el botón "Imprimir" queda aparte - sólo imprime los
-    // bultos que se acaban de guardar, sin volver a tocar la base.
+    // FIX (a pedido, 2026-09-17): "Cantidad repo" ahora es lo PENDIENTE de
+    // imprimir (viene del server: reposiciones_dinter.Impreso=0), no un
+    // campo suelto que vuelve a 0 solo. Así, si cerrás el modal o recargás
+    // la página sin imprimir, al volver a entrar seguís viendo el pendiente
+    // y podés reintentar imprimir sin perder nada. Recién cuando imprimir
+    // sale bien se marca Impreso=1 y el pendiente vuelve a 0 (se "absorbe"
+    // en Cantidad). 3 columnas: Cantidad (ya asentada) + Cantidad Repo
+    // (pendiente de imprimir) + Total (= Cantidad real de TransClientes).
     function renderReposiciones(rows) {
         if (!rows.length) {
-            $repoTabla.html('<tr><td colspan="5" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
+            $repoTabla.html('<tr><td colspan="6" class="text-center text-muted py-4">Este recorrido no tiene paquetes pendientes.</td></tr>');
             return;
         }
         var html = "";
         rows.forEach(function (d) {
+            var pendiente = parseInt(d.CantidadRepoPendiente, 10) || 0;
+            var total = parseInt(d.Cantidad, 10) || 0;
+            var cantidadAsentada = total - pendiente;
             html +=
                 '<tr data-id="' + d.id + '">' +
                 "<td>" + d.CodigoSeguimiento + "</td>" +
                 "<td>[" + (d.idProveedor || "-") + "] " + (d.ClienteDestino || "-") + "</td>" +
-                '<td class="text-center er-repo-cantidad-actual">' + d.Cantidad + "</td>" +
-                '<td class="text-center"><input type="number" min="0" step="1" class="form-control form-control-sm er-repo-input" style="width:90px;margin:0 auto" value="0" data-guardado="0"></td>' +
-                '<td class="text-end"><button type="button" class="btn btn-sm btn-warning er-btn-repo-imprimir" disabled title="Ingresá una cantidad primero">Imprimir</button></td>' +
+                '<td class="text-center er-repo-cantidad">' + cantidadAsentada + "</td>" +
+                '<td class="text-center"><input type="number" min="0" step="1" class="form-control form-control-sm er-repo-input" style="width:90px;margin:0 auto" value="' + pendiente + '" data-pendiente-anterior="' + pendiente + '"></td>' +
+                '<td class="text-center er-repo-total">' + total + "</td>" +
+                '<td class="text-end"><button type="button" class="btn btn-sm btn-warning er-btn-repo-imprimir"' +
+                    (pendiente > 0 ? ' data-cantidad-repo="' + pendiente + '">Imprimir (' + pendiente + ")" : ' disabled title="Ingresá una cantidad primero">Imprimir') +
+                    "</button></td>" +
                 "</tr>";
         });
         $repoTabla.html(html);
     }
 
     // Se guarda al salir del input (change = blur con valor distinto), no
-    // hace falta ningún botón para esto.
+    // hace falta ningún botón para esto. El valor del input es el TOTAL
+    // pendiente (no "cuánto sumar") - se calcula la diferencia contra lo
+    // que ya estaba pendiente y sólo se manda esa diferencia a agregar.
     $repoTabla.on("change", ".er-repo-input", function () {
         var $input = $(this);
         var $fila = $input.closest("tr");
         var $btnImprimir = $fila.find(".er-btn-repo-imprimir");
         var id = $fila.data("id");
-        var cantidadRepo = parseInt($input.val(), 10);
+        var nuevoPendiente = parseInt($input.val(), 10);
+        if (isNaN(nuevoPendiente) || nuevoPendiente < 0) nuevoPendiente = 0;
+        var pendienteAnterior = parseInt($input.data("pendiente-anterior"), 10) || 0;
+        var delta = nuevoPendiente - pendienteAnterior;
         var d = paquetesActuales.find(function (p) { return p.id == id; });
 
         if (!d) return;
 
-        if (!cantidadRepo || cantidadRepo <= 0) {
-            // Volver a 0 no es un error - simplemente no hay nada que guardar.
-            $input.val(0);
+        if (delta === 0) {
+            $input.val(pendienteAnterior);
+            return;
+        }
+
+        if (delta < 0) {
+            // Reducir un pendiente ya guardado no está soportado desde acá
+            // (implicaría borrar/editar reposiciones ya cargadas).
+            if (window.toast) toast("error", "No se puede reducir", "Para bajar la cantidad pendiente, avisame y lo corrijo a mano.");
+            $input.val(pendienteAnterior);
             return;
         }
 
@@ -573,33 +594,35 @@
         $.ajax({
             url: "Proceso/php/etiquetas_recorrido.php",
             type: "POST",
-            data: { AgregarReposicion: 1, id: id, CantidadRepo: cantidadRepo },
+            data: { AgregarReposicion: 1, id: id, CantidadRepo: delta },
             success: function (response) {
                 var res = typeof response === "string" ? JSON.parse(response) : response;
                 $input.prop("disabled", false);
 
                 if (res.success != 1) {
                     if (window.toast) toast("error", "Error", res.error || "No se pudo agregar la reposición.");
+                    $input.val(pendienteAnterior);
                     return;
                 }
 
-                // Actualiza la cantidad en pantalla y en el objeto local (por si
-                // se agrega otra repo más sobre el mismo paquete sin cerrar el modal).
+                // d.Cantidad es el TOTAL real (asentado + pendiente).
                 d.Cantidad = res.cantidadNueva;
-                $fila.find(".er-repo-cantidad-actual").text(res.cantidadNueva);
-                $input.val(0).data("guardado", cantidadRepo);
+                $input.val(nuevoPendiente).data("pendiente-anterior", nuevoPendiente);
+                $fila.find(".er-repo-cantidad").text(res.cantidadNueva - nuevoPendiente);
+                $fila.find(".er-repo-total").text(res.cantidadNueva);
 
                 $btnImprimir.prop("disabled", false)
                     .attr("title", "")
-                    .data("cantidad-repo", cantidadRepo)
-                    .text("Imprimir (" + cantidadRepo + ")");
+                    .data("cantidad-repo", nuevoPendiente)
+                    .text("Imprimir (" + nuevoPendiente + ")");
 
                 if (window.toast) {
-                    toast("success", "Guardado", "Se sumaron " + cantidadRepo + " bultos (" + res.cantidadAnterior + " → " + res.cantidadNueva + "). Ahora podés imprimir.");
+                    toast("success", "Guardado", "Quedan " + nuevoPendiente + " bultos repo pendientes de imprimir (total del envío: " + res.cantidadNueva + ").");
                 }
             },
             error: function () {
                 $input.prop("disabled", false);
+                $input.val(pendienteAnterior);
                 if (window.toast) toast("error", "Error del servidor", "No se pudo agregar la reposición. Reintentá de nuevo.");
             },
         });
@@ -608,6 +631,7 @@
     $repoTabla.on("click", ".er-btn-repo-imprimir", function () {
         var $btn = $(this);
         var $fila = $btn.closest("tr");
+        var $input = $fila.find(".er-repo-input");
         var id = $fila.data("id");
         var cantidadRepo = parseInt($btn.data("cantidad-repo"), 10);
         var d = paquetesActuales.find(function (p) { return p.id == id; });
@@ -617,14 +641,32 @@
         $btn.prop("disabled", true).text("Imprimiendo…");
 
         imprimirReposicion(d, cantidadRepo, function (ok) {
-            $btn.prop("disabled", false).text("Imprimir (" + cantidadRepo + ")");
-            if (window.toast) {
-                toast(
-                    ok ? "success" : "warning",
-                    ok ? "Listo" : "Error al imprimir",
-                    ok ? "Se imprimieron " + cantidadRepo + " rótulo(s) REPO." : "Revisá la impresora e intentá de nuevo."
-                );
+            if (!ok) {
+                // No se marca Impreso en el server - queda pendiente tal
+                // cual estaba, para poder reintentar sin perder nada.
+                $btn.prop("disabled", false).text("Imprimir (" + cantidadRepo + ")");
+                if (window.toast) toast("warning", "Error al imprimir", "Revisá la impresora e intentá de nuevo - no se perdió nada, sigue pendiente.");
+                return;
             }
+
+            $.ajax({
+                url: "Proceso/php/etiquetas_recorrido.php",
+                type: "POST",
+                data: { MarcarReposicionImpresa: 1, CodigoSeguimiento: d.CodigoSeguimiento },
+                success: function () {
+                    $fila.find(".er-repo-cantidad").text(d.Cantidad);
+                    $fila.find(".er-repo-total").text(d.Cantidad);
+                    $input.val(0).data("pendiente-anterior", 0);
+                    $btn.prop("disabled", true).text("Imprimir").attr("title", "Ingresá una cantidad primero").removeData("cantidad-repo");
+                    if (window.toast) toast("success", "Listo", "Se imprimieron " + cantidadRepo + " rótulo(s) REPO.");
+                },
+                error: function () {
+                    // Se imprimió pero no se pudo marcar - dejamos el botón
+                    // activo para no perder la posibilidad de reintentar.
+                    $btn.prop("disabled", false).text("Imprimir (" + cantidadRepo + ")");
+                    if (window.toast) toast("warning", "Impreso, pero...", "Se imprimió pero no se pudo marcar como impreso. Si vuelve a aparecer pendiente, avisame.");
+                },
+            });
         });
     });
 
