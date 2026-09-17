@@ -1,60 +1,63 @@
 <?php
-// Script temporal - lee stories (comentarios) de la tarea Asana 1218536231905383
-// para encontrar el comentario duplicado y poder borrarlo.
+// Script temporal ÚNICO (2026-09-17) - se borra apenas corre bien.
+// Lee stories (comentarios) de la tarea Asana 1218536231905383
+// para ubicar el comentario duplicado y poder borrarlo.
 define('ALLOW_NO_SESSION', true);
 include_once __DIR__ . "/../../../Conexion/Conexioni.php";
+
 header('Content-Type: application/json; charset=utf-8');
 
-$taskGid = '1218536231905383';
+$gid = '1218536231905383';
 
-$row = $mysqli->query("SELECT * FROM Api WHERE id=2")->fetch_assoc();
-$accessToken = $row['access_token'];
-$refreshToken = $row['refresh_token'];
-
-function asanaRequest($url, $token, $method = 'GET', $body = null) {
-    $ch = curl_init($url);
-    $headers = ["Authorization: Bearer $token"];
-    if ($body !== null) {
-        $headers[] = "Content-Type: application/json";
-    }
-    curl_setopt($ch, CURLOPT_HTTPHEADER, $headers);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
-    if ($body !== null) {
-        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($body));
-    }
-    $resp = curl_exec($ch);
-    $code = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    curl_close($ch);
-    return [$code, json_decode($resp, true)];
+function asanaCall(string $url, string $token) {
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => $url,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTPHEADER => ['accept: application/json', 'authorization: Bearer ' . $token],
+    ]);
+    $response = curl_exec($curl);
+    curl_close($curl);
+    return json_decode($response, true);
 }
 
-function refreshAsanaToken($mysqli, $refreshToken) {
-    $ch = curl_init('https://app.asana.com/-/oauth_token');
-    curl_setopt($ch, CURLOPT_POST, true);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, http_build_query([
-        'grant_type' => 'refresh_token',
-        'client_id' => '1204867479928301',
-        'client_secret' => '84f466e023db6f9958ddebad539b4df6',
-        'redirect_uri' => 'https://www.sistema.caddy.com.ar/Api/Asana/recepcion.php',
-        'refresh_token' => $refreshToken,
-    ]));
-    $resp = curl_exec($ch);
-    curl_close($ch);
-    $data = json_decode($resp, true);
-    if (isset($data['access_token'])) {
-        $newToken = $mysqli->real_escape_string($data['access_token']);
-        $mysqli->query("UPDATE Api SET access_token='$newToken' WHERE id=2");
-        return $data['access_token'];
+function tokenExpirado($data): bool {
+    if (!isset($data['errors'])) return false;
+    foreach ($data['errors'] as $e) {
+        if (strpos($e['message'] ?? '', 'expired') !== false) return true;
     }
-    return null;
+    return false;
 }
 
-list($code, $stories) = asanaRequest("https://app.asana.com/api/1.0/tasks/$taskGid/stories?opt_fields=text,created_at,created_by.name,type", $accessToken);
-if ($code == 401) {
-    $accessToken = refreshAsanaToken($mysqli, $refreshToken);
-    list($code, $stories) = asanaRequest("https://app.asana.com/api/1.0/tasks/$taskGid/stories?opt_fields=text,created_at,created_by.name,type", $accessToken);
+$row = $mysqli->query("SELECT token, refresh_token FROM Api WHERE id=2")->fetch_assoc();
+$token = $row['token'];
+
+$storiesUrl = 'https://app.asana.com/api/1.0/tasks/' . $gid . '/stories?opt_fields=text,created_at,created_by.name,type,resource_subtype';
+
+$stories = asanaCall($storiesUrl, $token);
+
+if (tokenExpirado($stories)) {
+    $curl = curl_init();
+    curl_setopt_array($curl, [
+        CURLOPT_URL => 'https://app.asana.com/-/oauth_token',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => 'grant_type=refresh_token&client_id=1204867479928301&redirect_uri=https%3A%2F%2Fwww.sistema.caddy.com.ar%2FApi%2FAsana%2Frecepcion.php&client_secret=84f466e023db6f9958ddebad539b4df6&refresh_token=' . $row['refresh_token'],
+        CURLOPT_HTTPHEADER => ['Content-Type: application/x-www-form-urlencoded'],
+    ]);
+    $refreshResp = curl_exec($curl);
+    curl_close($curl);
+    $refreshData = json_decode($refreshResp, true);
+
+    if (isset($refreshData['access_token'])) {
+        $token = $refreshData['access_token'];
+        $mysqli->query("UPDATE Api SET token='" . $mysqli->real_escape_string($token) . "' WHERE id=2");
+        $stories = asanaCall($storiesUrl, $token);
+    } else {
+        echo json_encode(['error' => 'No se pudo refrescar el token', 'detalle' => $refreshData]);
+        exit;
+    }
 }
 
-echo json_encode(['code' => $code, 'stories' => $stories], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
+echo json_encode(['stories' => $stories], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
