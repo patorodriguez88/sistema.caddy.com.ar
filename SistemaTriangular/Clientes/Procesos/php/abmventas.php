@@ -107,7 +107,12 @@ if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
   '{$_POST['codigoseguimiento']}','{$_POST['totalventa']}','{$row['Cliente']}','{$row['Fecha']}','{$row['Localidad']}','{$row['NumeroComprobante']}','{$Neto}','0',
   '{$iva}','{$_SESSION['Usuario']}','{$row['idCliente']}')")){
   
-  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0' AND not_invoice=0";
+  // FIX (reportado vía Asana, 2026-09-17: "la cobranza integrada se sigue
+  // sumando al importe total a facturar y no debería hacerlo"): not_invoice=0
+  // NO alcanza para excluirla (la mayoría de las líneas de CI tienen
+  // not_invoice=0 - ese flag es para otra cosa, el convenio "no factura"
+  // de algunos clientes). Se agrega la exclusión por Titulo.
+  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0' AND not_invoice=0 AND Titulo NOT LIKE 'COBRANZA INTEGRADA%' AND Titulo NOT LIKE 'COBRO A CUENTA%'";
   $ResultadoV=$mysqli->query($sqlV);  
   $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
   $CodigoSeguimiento=$_POST['codigoseguimiento'];
@@ -158,7 +163,9 @@ $info="M: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)');
     infoABM='$info',Cantidad='$_POST[cantidad]',Precio='$_POST[precio]',FechaPedido='$Fecha' WHERE idPedido='$_POST[idPedido]' LIMIT 1"))
   {
     $successventas=1;  
-    $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0' AND not_invoice=0";
+    // FIX (ver comentario más arriba, mismo motivo): not_invoice=0 no
+    // alcanza para excluir la Cobranza Integrada/Cobro a Cuenta.
+    $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0' AND not_invoice=0 AND Titulo NOT LIKE 'COBRANZA INTEGRADA%' AND Titulo NOT LIKE 'COBRO A CUENTA%'";
     $ResultadoV=$mysqli->query($sqlV);  
     $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
     
@@ -260,7 +267,9 @@ if (isset($_POST['EliminarDatosVentas']) && $_POST['EliminarDatosVentas'] == 1) 
         if ($mysqli->query("UPDATE Ventas SET Eliminado=1,infoABM='$info' WHERE idPedido='$idPedido' LIMIT 1")) {
 
             // Obtener información de Ventas
-            $sqlVentas = "SELECT SUM(Total) as Total FROM Ventas WHERE NumPedido='$rowVentas[NumPedido]' AND Eliminado='0' AND not_invoice=0";
+            // FIX (ver comentario más arriba, mismo motivo): not_invoice=0
+            // no alcanza para excluir la Cobranza Integrada/Cobro a Cuenta.
+            $sqlVentas = "SELECT SUM(Total) as Total FROM Ventas WHERE NumPedido='$rowVentas[NumPedido]' AND Eliminado='0' AND not_invoice=0 AND Titulo NOT LIKE 'COBRANZA INTEGRADA%' AND Titulo NOT LIKE 'COBRO A CUENTA%'";
             $ResultadoVentas = $mysqli->query($sqlVentas);
             $rowVentasTotal = $ResultadoVentas->fetch_array(MYSQLI_ASSOC);
             

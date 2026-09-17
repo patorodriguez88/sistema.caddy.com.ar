@@ -98,7 +98,13 @@ $info="M: ".$_SESSION[Usuario].' | '.date('Y-m-d (h:m:s)');
   if($mysqli->query("UPDATE Ventas SET Codigo='$_POST[codigo]',Titulo='$_POST[titulo]',Precio='$_POST[precio]',Cantidad='$_POST[cantidad]',Total='$_POST[total]',infoABM='$info' WHERE idPedido='$_POST[idPedido]'"))
   {
     $successventas=1;  
-    $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0'";
+    // FIX (reportado vía Asana, 2026-09-17: "la cobranza integrada se sigue
+    // sumando al importe total a facturar y no debería hacerlo"): la línea
+    // de fee (COBRANZA INTEGRADA X% / COBRO A CUENTA, ver
+    // Ventas/AgregarRepoVentaWeb.php) se guarda como una línea MÁS de
+    // Ventas con su propio Total - sumarla acá infla el importe a
+    // facturar. Tiene que quedar registrada pero no sumar al Debe.
+    $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0' AND Titulo NOT LIKE 'COBRANZA INTEGRADA%' AND Titulo NOT LIKE 'COBRO A CUENTA%'";
     $ResultadoV=$mysqli->query($sqlV);  
     $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
     
@@ -140,7 +146,9 @@ if($_POST['EliminarDatosVentas']==1){
                  
   if($mysqli->query("UPDATE Ventas SET Eliminado=1,infoABM='$info' WHERE idPedido='$_POST[idPedido]'")){
     
-    $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$rowventas[NumPedido]' AND Eliminado='0'";
+    // FIX (ver comentario más arriba, mismo motivo): excluir la línea de
+    // Cobranza Integrada / Cobro a Cuenta del Debe a facturar.
+    $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$rowventas[NumPedido]' AND Eliminado='0' AND Titulo NOT LIKE 'COBRANZA INTEGRADA%' AND Titulo NOT LIKE 'COBRO A CUENTA%'";
     $ResultadoV=$mysqli->query($sqlV);  
     $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
     
@@ -191,7 +199,9 @@ if($_POST['AgregarDatosVentas']==1){
   '{$_POST[codigoseguimiento]}','{$_POST[totalventa]}','{$row[Cliente]}','{$row[Fecha]}','{$row[Localidad]}','{$row[NumeroComprobante]}','{$Neto}','0',
   '{$iva}','{$_SESSION[Usuario]}','{$row[idCliente]}')")){
   
-  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0'";
+  // FIX (ver comentario más arriba, mismo motivo): excluir la línea de
+  // Cobranza Integrada / Cobro a Cuenta del Debe a facturar.
+  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0' AND Titulo NOT LIKE 'COBRANZA INTEGRADA%' AND Titulo NOT LIKE 'COBRO A CUENTA%'";
   $ResultadoV=$mysqli->query($sqlV);  
   $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
   $CodigoSeguimiento=$_POST['codigoseguimiento'];
