@@ -295,7 +295,17 @@ include_once "../Conexion/Conexioni.php";
     <script src="../Ticket/zebra/BrowserPrint-3.0.216.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
-    <script src="Proceso/js/etiquetas_recorrido.js"></script>
+    <?php
+    // Cache-busting por fecha de modificación (mismo criterio que
+    // HojaDeRuta2.php/Zonas.php/Planificador.php): este JS se viene
+    // iterando seguido y el navegador lo cacheaba entre cambios, haciendo
+    // parecer que un fix ya deployado no andaba (era el JS viejo en caché).
+    $verJs = function ($ruta) {
+        $abs = __DIR__ . '/' . $ruta;
+        return $ruta . '?v=' . (file_exists($abs) ? filemtime($abs) : time());
+    };
+    ?>
+    <script src="<?php echo $verJs('Proceso/js/etiquetas_recorrido.js'); ?>"></script>
     <!-- FIX (a pedido, 2026-09-16 - "el nombre de Diego desaparece, ya nos
          había pasado en CrossDocking"): esta pantalla nunca cargaba
          Menu/js/funciones.js, que es justo el script que rellena el
