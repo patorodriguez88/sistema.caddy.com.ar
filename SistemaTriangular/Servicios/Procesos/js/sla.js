@@ -159,6 +159,15 @@ ajax: {
        processing: true,
        type:'post'
       },
+      // FIX (reportado, 2026-09-17: "cobranza integrada sigue sin verse
+      // rojo"): faltaba acá el mismo rowCallback ya agregado en
+      // pendientes.js/redespachos.js/abmventas.js - el backend
+      // (Servicios/Procesos/php/funciones.php) ya traía not_invoice.
+      rowCallback: function (row, data, index) {
+        if (data.not_invoice == 1) {
+          $(row).css('color', 'red');
+        }
+      },
       columns: [
         {data:"idPedido"},
         {data:"FechaPedido"},
