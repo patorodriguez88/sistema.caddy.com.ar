@@ -8,13 +8,13 @@
 // cuenta del mismo asiento (el Cuenta/Debe/Haber de cada fila SIEMPRE
 // quedó correcto, solo el texto NombreCuenta salía cruzado).
 //
-// Esto corrige los asientos históricos ya afectados: se detectan pares de
-// filas ACTIVAS del mismo NumeroAsiento donde el NombreCuenta guardado de
-// una fila coincide exactamente con el nombre REAL (PlanDeCuentas) de la
-// OTRA fila, y viceversa (swap limpio de a 2, sin ambigüedad). Se excluye
-// a propósito el bug de truncamiento de NombreCuenta (columna varchar(35),
-// ej. "COMISIONES E IMPUESTOS DE TARJETAS" truncado de "...DE CREDITO") -
-// no es este bug, no se toca.
+// Esto corrige los 13 asientos históricos (26 filas) ya detectados con
+// este cruce, vía consulta directa contra la réplica de solo-lectura
+// (el self-join contra PlanDeCuentas en el server de producción daba
+// timeout 504 - se resuelve acá con los ids ya identificados, más rápido
+// y más auditable). Se excluye a propósito el bug de truncamiento de
+// NombreCuenta (columna varchar(35), ej. "COMISIONES E IMPUESTOS DE
+// TARJETAS" truncado de "...DE CREDITO") - no es este bug, no se toca.
 define('ALLOW_NO_SESSION', true);
 include_once __DIR__ . "/../../../Conexion/Conexioni.php";
 header('Content-Type: application/json; charset=utf-8');
@@ -22,54 +22,61 @@ date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 $dry = isset($_GET['dry']) ? ($_GET['dry'] === '1') : true;
 
-$sqlDetectar = "
-SELECT t1.NumeroAsiento,
-       t1.id AS id1, t1.Cuenta AS cuenta1, t1.NombreCuenta AS guardado1, p1.NombreCuenta AS real1,
-       t2.id AS id2, t2.Cuenta AS cuenta2, t2.NombreCuenta AS guardado2, p2.NombreCuenta AS real2
-FROM Tesoreria t1
-JOIN PlanDeCuentas p1 ON p1.Cuenta = t1.Cuenta
-JOIN Tesoreria t2 ON t2.NumeroAsiento = t1.NumeroAsiento AND t2.id > t1.id AND t2.Eliminado = 0
-JOIN PlanDeCuentas p2 ON p2.Cuenta = t2.Cuenta
-WHERE t1.Eliminado = 0
-  AND t1.NombreCuenta <> p1.NombreCuenta
-  AND t2.NombreCuenta <> p2.NombreCuenta
-  AND t1.NombreCuenta = p2.NombreCuenta
-  AND t2.NombreCuenta = p1.NombreCuenta
-  AND t1.Cuenta <> t2.Cuenta
-ORDER BY t1.NumeroAsiento DESC";
+// [id => nombre_correcto]
+$correcciones = [
+    140354 => 'CAJA',
+    140355 => 'FLETES Y ENCOMIENDAS',
+    140253 => 'CAJA',
+    140254 => 'FLETES Y ENCOMIENDAS',
+    140251 => 'CAJA',
+    140252 => 'PEAJES Y ESTACIONAMIENTO',
+    139932 => 'CAJA',
+    139933 => 'RETENCIONES DE GANANCIAS',
+    139926 => 'CAJA',
+    139927 => 'RETENCIONES DE GANANCIAS',
+    139899 => 'ANTICIPOS SUELDOS',
+    139900 => 'CAJA',
+    139725 => 'CAJA',
+    139726 => 'RETENCIONES DE GANANCIAS',
+    139697 => 'CAJA',
+    139698 => 'RETENCIONES DE GANANCIAS',
+    139609 => 'ANTICIPO GASTOS A RENDIR',
+    139610 => 'CAJA',
+    139569 => 'FONDO FIJO',
+    139570 => 'CAJA',
+    139558 => 'CUENTA PARTICULAR PATRICIO',
+    139559 => 'CAJA',
+    139556 => 'CUENTA PARTICULAR PATRICIO',
+    139557 => 'CAJA',
+    139458 => 'FONDO FIJO',
+    139459 => 'PEAJES Y ESTACIONAMIENTO',
+];
 
-$resultado = $mysqli->query($sqlDetectar);
-$pares = [];
-while ($fila = $resultado->fetch_assoc()) {
-    $pares[] = $fila;
-}
+$ids = implode(',', array_keys($correcciones));
+
+$antes = [];
+$r = $mysqli->query("SELECT id, NumeroAsiento, Cuenta, NombreCuenta, Debe, Haber FROM Tesoreria WHERE id IN ($ids) ORDER BY NumeroAsiento DESC, id");
+while ($fila = $r->fetch_assoc()) $antes[] = $fila;
 
 $actualizados = 0;
-$detalle = [];
-foreach ($pares as $par) {
-    $detalle[] = [
-        'NumeroAsiento' => $par['NumeroAsiento'],
-        'fila1' => ['id' => $par['id1'], 'cuenta' => $par['cuenta1'], 'guardado' => $par['guardado1'], 'corregido_a' => $par['real1']],
-        'fila2' => ['id' => $par['id2'], 'cuenta' => $par['cuenta2'], 'guardado' => $par['guardado2'], 'corregido_a' => $par['real2']],
-    ];
-
-    if (!$dry) {
-        $real1Esc = $mysqli->real_escape_string($par['real1']);
-        $real2Esc = $mysqli->real_escape_string($par['real2']);
-        $infoNota = "Corregido cruce de NombreCuenta (bug de asiento - tarea Asana) el " . date('d-m-Y H:i');
-        $infoNotaEsc = $mysqli->real_escape_string($infoNota);
-
-        $mysqli->query("UPDATE Tesoreria SET NombreCuenta = '{$real1Esc}', InfoABM = CONCAT(IFNULL(InfoABM,''), ' | {$infoNotaEsc}') WHERE id = {$par['id1']}");
-        $actualizados += $mysqli->affected_rows;
-
-        $mysqli->query("UPDATE Tesoreria SET NombreCuenta = '{$real2Esc}', InfoABM = CONCAT(IFNULL(InfoABM,''), ' | {$infoNotaEsc}') WHERE id = {$par['id2']}");
+if (!$dry) {
+    $infoNota = "Corregido cruce de NombreCuenta (bug de asiento - tarea Asana) el " . date('d-m-Y H:i');
+    $infoNotaEsc = $mysqli->real_escape_string($infoNota);
+    foreach ($correcciones as $id => $nombreCorrecto) {
+        $nombreEsc = $mysqli->real_escape_string($nombreCorrecto);
+        $mysqli->query("UPDATE Tesoreria SET NombreCuenta = '{$nombreEsc}', InfoABM = CONCAT(IFNULL(InfoABM,''), ' | {$infoNotaEsc}') WHERE id = {$id} AND Eliminado = 0");
         $actualizados += $mysqli->affected_rows;
     }
 }
 
+$despues = [];
+$r2 = $mysqli->query("SELECT id, NumeroAsiento, Cuenta, NombreCuenta, Debe, Haber FROM Tesoreria WHERE id IN ($ids) ORDER BY NumeroAsiento DESC, id");
+while ($fila = $r2->fetch_assoc()) $despues[] = $fila;
+
 echo json_encode([
     'dry_run' => $dry,
-    'pares_encontrados' => count($pares),
+    'total_filas' => count($correcciones),
     'filas_actualizadas' => $actualizados,
-    'detalle' => $detalle,
+    'antes' => $antes,
+    'despues' => $despues,
 ], JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
