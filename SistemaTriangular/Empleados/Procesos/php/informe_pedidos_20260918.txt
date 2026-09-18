@@ -1,9 +1,0 @@
-Hola Micaela, ya está resuelto lo de los dos grupos de pedidos. Te dejo el detalle de lo que encontré y corregí:
-
-GRUPO 1 (los 7 que recreaste hoy porque no los encontrabas: KV0K8IGTU, E1I6J4N6Q, VFNT6VBWI, EWZZ1SOMO, M19QL74NQ, NBM34RNZT, F5FA2DGH1)
-Ya tenían la fecha correcta (01/09), pero al reimportar el recorrido quedaron colgados de la orden 17137 (que es la hoja de ruta que sigue abierta/en uso del recorrido 1372) en vez de la 17004 (la hoja de ruta real del 01/09, ya cerrada ese día). Corregí el N° de orden a 17004 en los 7 pedidos, y de paso borré las 7 filas duplicadas "En Origen" que había quedado sueltas de la reimportación (mostraban el pedido como si siguiera pendiente de retiro, cuando ya estaba entregado).
-
-GRUPO 2 (los 8 que ya estaban en el sistema pero con fecha mal: IG94RIEKO, F2JKCPXJD, OD5S2SJG5, ZKI8ZYJRK, MQRFL78NZ, T0A0O4E04, D3DR4BTXK, CXBIWF5R3)
-De estos, jtorti ya había corregido 3 a mano (CXBIWF5R3, F2JKCPXJD, IG94RIEKO), pero 2 quedaron con fecha 09/09 en vez de 01/09 - los terminé de corregir. Los otros 5, que no se habían tocado, los corregí directo a fecha de entrega 01/09. En los 8 corregí también la Fecha de Entrega guardada en el sistema (tenía 15/09, que era la fecha en que se cerró esa hoja de ruta, no la fecha real de entrega).
-
-Cualquier cosa rara que veas con estos números de seguimiento avisame. Gracias!
