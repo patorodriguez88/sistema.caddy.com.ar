@@ -143,7 +143,7 @@ function Header()
 	$this->SetFont('Arial','',10);
 	$this->Text(20,14,'Caddy.',0,'C', 0);
 	$this->Text(20,19,'Cuit: 30-71534494-3',0,'C', 0);
-	$this->Text(20,24,'Domicilio: Reconquista 4986 ',0,'C', 0);
+	$this->Text(20,24,'Domicilio: Justiniano Posse 1236, Barrio Jardín ',0,'C', 0);
 	$this->Text(20,29,'www.caddy.com.ar',0,'C', 0);
 	
 	//FECHA

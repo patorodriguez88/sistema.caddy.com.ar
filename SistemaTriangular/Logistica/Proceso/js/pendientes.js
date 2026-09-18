@@ -446,7 +446,7 @@ $("#modificardir_ok").click(function () {
     var modificar_lat_lon = 0;
   }
 
-  var origen = "Reconquista 4986, Cordoba, Argentina";
+  var origen = "Justiniano Posse 1236, Barrio Jardín, Cordoba, Argentina";
 
   $.ajax({
     data: {

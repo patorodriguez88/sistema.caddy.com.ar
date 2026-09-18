@@ -113,7 +113,7 @@ class PropuestaFlexPDF extends HdrPdfBase
             $this->SetFont('Arial', '', 7.5);
             $this->SetTextColor(...$p['mutedC']);
             $this->Cell(0, 4, pdf_text('Triangular S.A.  |  Caddy - Yo lo llevo!'), 0, 2, 'C');
-            $this->Cell(0, 4, pdf_text('CUIT 30-71534494-3   .   Reconquista 4986, Cordoba   .   www.caddy.com.ar'), 0, 2, 'C');
+            $this->Cell(0, 4, pdf_text('CUIT 30-71534494-3   .   Justiniano Posse 1236, Barrio Jardín, Cordoba   .   www.caddy.com.ar'), 0, 2, 'C');
             return;
         }
         parent::Footer();

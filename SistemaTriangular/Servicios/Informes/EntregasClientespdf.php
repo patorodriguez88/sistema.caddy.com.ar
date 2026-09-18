@@ -118,7 +118,7 @@ function Header()
  	$this->Image('../../images/caddy.jpg' , 100 ,8, 80 , 30,'JPG', '');
 	$this->Text(20,14,'Triangular S.A.',0,'C', 0);
 	$this->Text(20,19,'Cuit: 30-71534494-3',0,'C', 0);
-	$this->Text(20,24,'Reconquista 4986, Cordoba - Argentina',0,'C', 0);
+	$this->Text(20,24,'Justiniano Posse 1236, Barrio Jardín, Cordoba - Argentina',0,'C', 0);
 	$this->Text(20,29,'www.caddy.com.ar',0,'C', 0);
 	
 	//FECHA

@@ -90,10 +90,10 @@ include("../ConexionBD.php");
                         <!-- end page title --> 
                       
                       <select id="start">
-                        <option value="Reconquista 4986, Córdoba, Argentina">Caddy</option>
+                        <option value="Justiniano Posse 1236, Barrio Jardín, Córdoba, Argentina">Caddy</option>
                       </select>
                                      <select id='end'>
-                    <option value='Reconquista 4986, Córdoba, Argentina'>Triangular S.A.</option>
+                    <option value='Justiniano Posse 1236, Barrio Jardín, Córdoba, Argentina'>Triangular S.A.</option>
                     </select>
                       
                         <div class="row">

@@ -115,7 +115,7 @@ $allowedFileType = ['application/vnd.ms-excel','text/xls','text/xlsx','applicati
                   $longitud = $datosmapa[1];
               
                   //ORIGEN
-                  $Origenpost='Reconquista 4986, Cordoba, Argentina';
+                  $Origenpost='Justiniano Posse 1236, Barrio Jardín, Cordoba, Argentina';
                   //DESTINO
                   $Destinopost=$Destino;
                   $Key = 'AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8';//APY KEY GOOGLE

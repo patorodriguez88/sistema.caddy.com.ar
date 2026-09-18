@@ -1,7 +1,7 @@
 function calculateAndDisplayRoute(directionsService, directionsDisplay) {
         var directionsService = new google.maps.DirectionsService;
         var directionsDisplay = new google.maps.DirectionsRenderer;
-        var a= 'Reconquista 4986,Córdoba, Argentina';
+        var a= 'Justiniano Posse 1236, Barrio Jardín,Córdoba, Argentina';
         var b= document.getElementById('start').value;
         directionsService.route({
           origin: a,

@@ -133,7 +133,7 @@ function NbLines($w,$txt)
   $this->Image('../../images/LogoCaddyNoAlfa.png',16 ,8, 40 , 16,'png','');  
 	$this->Text(20,26,'Triangular S.A.',0,'C', 0);
 	$this->Text(20,31,'Cuit: 30-71534494-3',0,'C', 0);
-	$this->Text(20,36,utf8_decode('Domicilio: Reconquista 4986, Córdoba'),0,'C', 0);
+	$this->Text(20,36,utf8_decode('Domicilio: Justiniano Posse 1236, Barrio Jardín, Córdoba'),0,'C', 0);
 	$this->Text(90,36,'www.caddy.com.ar',0,'C', 0);
 	
 	//FECHA

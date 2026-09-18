@@ -20,7 +20,7 @@ mysql_select_db("dinter6_triangularcopia",$conexion);
     <div id="right-panel">
     <div>
     <b>Comienzo:</b>
-  <input type="tet" id="start" value="Reconquista 4986, Córdoba, Argentina">
+  <input type="tet" id="start" value="Justiniano Posse 1236, Barrio Jardín, Córdoba, Argentina">
     <br>
        <br>
     <b>Final:</b>
@@ -31,7 +31,7 @@ mysql_select_db("dinter6_triangularcopia",$conexion);
     <div id="directions-panel"></div>
     </div>
     <script>
-var a='Reconquista 4986, Cordoba';
+var a='Justiniano Posse 1236, Barrio Jardín, Cordoba';
 var b=document.getElementById('end').value;
 }
       function distancia(id,km,tiempo){

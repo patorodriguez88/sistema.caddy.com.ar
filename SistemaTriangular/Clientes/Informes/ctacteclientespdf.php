@@ -109,7 +109,7 @@ class PDF extends FPDF
         $this->Image('../../images/LogoCaddyNoAlfa.png', 16, 8, 40, 16, 'png', '');
         $this->Text(20, 26, 'Triangular S.A.', 0, 'C', 0);
         $this->Text(20, 31, 'Cuit: 30-71534494-3', 0, 'C', 0);
-        $domicilio="Domicilio: Reconquista 4986, Córdoba";
+        $domicilio="Domicilio: Justiniano Posse 1236, Barrio Jardín, Córdoba";
         $domicilio_decodificado = mb_convert_encoding($domicilio, 'ISO-8859-1', 'UTF-8');
         $this->Text(20, 36,$domicilio_decodificado, 0, 'C', 0);
         $this->Text(90, 36, 'www.caddy.com.ar', 0, 'C', 0);

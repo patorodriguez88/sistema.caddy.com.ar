@@ -169,7 +169,7 @@ for ($i=1; $i<=$numfilas; $i++)
 	$pdf->SetFillColor(253,253,253);
 	$pdf->SetTextColor(0);
 	$pdf->Row(array('Transporte:','Caddy Yo lo llevo!','Web:','wwww.caddy.com.ar'));
-	$pdf->Row(array('Domicilio:','Reconquista 4986','Localidad:','Cordoba'));
+	$pdf->Row(array('Domicilio:','Justiniano Posse 1236, Barrio Jardín','Localidad:','Cordoba'));
 	$pdf->Row(array('Cuit:','30-71534494-3','Telef Movil:','03516151944'));
  	$pdf->Image($PNG_WEB_DIR.basename($filename),136 ,$a, 28 , 28,'png','');
 //  	$pdf->Image('../../images/caddy.jpg',175 ,$b, 40 , 15,'jpg','');

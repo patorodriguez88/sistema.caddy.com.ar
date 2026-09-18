@@ -10,7 +10,7 @@ $conexion=mysqli_connect($host,$user,$pass,$database);
 $Recorrido=$_SESSION['Recorrido'];  
 //VARIABLES GOOGLE
 $Key = 'AIzaSyB17Mk6S2Yfzjl3HPQ1usMMC8R29fYFQm8';//APY KEY GOOGLE
-$Origenpost = "Reconquista 4986 Córdoba Argentina"; // ORIGEN
+$Origenpost = "Justiniano Posse 1236, Barrio Jardín Córdoba Argentina"; // ORIGEN
 $Origen = preg_replace('/\s(?=([^"]*"[^"]*")*[^"]*$)/', '', $Origenpost);
 $Modo="driving";
 $Lenguaje="fr-FR";

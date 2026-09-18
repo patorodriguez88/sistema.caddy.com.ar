@@ -96,7 +96,7 @@ $_SESSION[idcliente]=$_POST[idcliente];
 
     switch (retiro) {
     case 'caddycba':
-    document.getElementById('start').value='Reconquista 4986';
+    document.getElementById('start').value='Justiniano Posse 1236, Barrio Jardín';
     document.getElementById('start').disabled=true;
     document.getElementById('startciudad').value='Cordoba Capital';
     document.getElementById('startciudad').disabled=true;
@@ -136,7 +136,7 @@ $_SESSION[idcliente]=$_POST[idcliente];
 
     switch (envio) {
     case 'caddycba':
-    document.getElementById('end').value='Reconquista 4986';
+    document.getElementById('end').value='Justiniano Posse 1236, Barrio Jardín';
     document.getElementById('end').disabled=true;
     document.getElementById('endciudad').value='Cordoba Capital,1';
     document.getElementById('endciudad').disabled=true;

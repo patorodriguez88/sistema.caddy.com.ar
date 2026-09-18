@@ -84,7 +84,7 @@ include("../ConexionBD.php");
     <div>
       <b>Comienzo:</b>
        <select id="start">
-          <option value="Reconquista 4986, Córdoba, Argentina">Caddy</option>
+          <option value="Justiniano Posse 1236, Barrio Jardín, Córdoba, Argentina">Caddy</option>
         </select>
         <br>
       </div>

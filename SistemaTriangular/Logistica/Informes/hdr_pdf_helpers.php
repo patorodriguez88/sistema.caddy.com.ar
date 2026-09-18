@@ -686,7 +686,7 @@ abstract class HdrPdfBase extends FPDF
         $this->SetTextColor(...$p['mutedC']);
         $datosEmpresa = [
             'CUIT: 30-71534494-3',
-            pdf_text('Reconquista 4986 - Córdoba'),
+            pdf_text('Justiniano Posse 1236, Barrio Jardín - Córdoba'),
             'www.caddy.com.ar',
         ];
         $ly = 31;

@@ -67,7 +67,7 @@ class RemitoPDF extends HdrPdfBase
         $this->SetFont('Arial', '', 8);
         $this->SetTextColor(...$p['mutedC']);
         $ly = 31;
-        foreach (['CUIT: 30-71534494-3', pdf_text('Reconquista 4986 - Córdoba'), 'www.caddy.com.ar'] as $linea) {
+        foreach (['CUIT: 30-71534494-3', pdf_text('Justiniano Posse 1236, Barrio Jardín - Córdoba'), 'www.caddy.com.ar'] as $linea) {
             $this->SetXY($marginL, $ly);
             $this->Cell(70, 4, $linea, 0, 1);
             $ly += 4;
