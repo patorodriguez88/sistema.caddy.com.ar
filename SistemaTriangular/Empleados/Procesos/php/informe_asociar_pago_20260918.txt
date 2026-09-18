@@ -1,7 +1,0 @@
-Resuelto y desplegado a producción.
-
-Se agregó a la Cuenta Corriente de Proveedores un botón "Asociar Pago" (calcando el mismo mecanismo que ya existe en Clientes) con un modal "Asociar Pagos a Facturas" con dos grillas tildables: por un lado las facturas/comprobantes con saldo pendiente, por el otro los pagos/anticipos con saldo disponible - permite seleccionar cuál pago cancela cuál factura y queda correctamente asociado.
-
-Como consecuencia, el estado Pagada/Pendiente/Parcial de cada fila ya no sale de agrupar por número de comprobante (que se rompía con números repetidos y no servía para anticipos), sino de estas asociaciones reales - y ahora tiene un badge clickeable que abre el detalle de aplicaciones de cada comprobante.
-
-Una sola aclaración: como no se migraron datos históricos, las facturas que ya estaban cobradas/pagadas antes de este cambio van a figurar como "Pendiente" hasta asociarlas a mano una vez - no afecta el saldo total de la cuenta corriente, solo el badge de estado por fila.
