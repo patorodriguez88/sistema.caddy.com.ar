@@ -251,6 +251,18 @@
                                                             </select>
                                                         </div>
                                                         <input type="hidden" name="id[]" value="">
+                                                        <!-- FIX (reportado via Asana: PDF de asientos mostraba
+                                                             Debe/Haber "invertidos" entre las dos cuentas): a esta
+                                                             fila estatica (la unica que existe en el HTML antes de
+                                                             que corra JS - btn_nuevo_asiento solo la reemplaza si
+                                                             se clickea, y esa pestaña ya arranca activa) le faltaba
+                                                             este input - las filas que agrega agregarCampo()/
+                                                             agregarCampoDesdeDatos() si lo traen. Sin el, el evento
+                                                             'change' del select no tenia donde guardar el nombre de
+                                                             cuenta de ESTA fila, y el "parche" de confirmarAsiento()
+                                                             terminaba insertando ese nombre en la posicion
+                                                             equivocada del array nombreCuenta[] al guardar. -->
+                                                        <input type="text" class="form-control" name="nombreCuenta[]" hidden>
                                                         <input type="number" class="form-control" name="nasiento" id="nasiento" hidden>
                                                         <div class="col"><input type="number" class="form-control" name="debe[]" placeholder="Debe" step="0.01"></div>
                                                         <div class="col"><input type="number" class="form-control" name="haber[]" placeholder="Haber" step="0.01"></div>

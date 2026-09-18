@@ -527,14 +527,29 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    // ✅ Crear inputs ocultos de nombreCuenta
+    // Sincronizamos el nombreCuenta[] de cada fila (el input oculto que ya
+    // vive DENTRO de esa fila) con lo que su select tiene seleccionado en
+    // este momento - por si el evento 'change' no llegó a dispararse (ej.
+    // al precargar un asiento existente el valor se asigna por código sin
+    // disparar 'change').
+    // FIX (reportado via Asana: el PDF de un asiento mostraba Debe/Haber
+    // "invertidos" entre las dos cuentas cargadas): esto antes CREABA un
+    // input nombreCuenta[] nuevo y lo appendeaba al final del <form>, en
+    // vez de actualizar el que ya trae cada fila. Si por lo que sea a una
+    // fila le faltaba su nombreCuenta[] propio (pasaba con la fila
+    // estática del HTML - ver fix en Admin/Contabilidad.php), el appendeado
+    // quedaba en la posición equivocada dentro del array nombreCuenta[] y
+    // el backend (que empareja nombreCuenta[i] con cuenta[i] por índice)
+    // terminaba grabando el nombre de una cuenta en la fila de otra.
     document.querySelectorAll("select[name='cuenta[]']").forEach((select) => {
-      const nombre = select.options[select.selectedIndex].text.split(" (")[0];
-      const hiddenInput = document.createElement("input");
-      hiddenInput.type = "hidden";
-      hiddenInput.name = "nombreCuenta[]";
-      hiddenInput.value = nombre;
-      document.getElementById("asientoForm").appendChild(hiddenInput);
+      const opcionSeleccionada = select.options[select.selectedIndex];
+      const nombre = opcionSeleccionada ? opcionSeleccionada.text.split(" (")[0] : "";
+      const inputNombre = select
+        .closest(".row")
+        ?.querySelector("input[name='nombreCuenta[]']");
+      if (inputNombre) {
+        inputNombre.value = nombre;
+      }
     });
 
     let formData = new FormData(document.getElementById("asientoForm"));
