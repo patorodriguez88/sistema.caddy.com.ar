@@ -402,8 +402,8 @@ function construirPropuestaFlexPDF(mysqli $db, array $in): PropuestaFlexPDF
         'de cobertura. Los envios ingresan por colecta programada o por entrega del cliente en ' .
         'nuestro deposito, se procesan el mismo dia y se distribuyen en el circuito siguiente.'
     );
-    $pdf->dfn('Operacion', 'Lunes a viernes habiles. Ingreso de envios hasta las 18:00 hs para distribucion al dia habil siguiente.');
-    $pdf->dfn('Ventana de entrega', 'Franja diurna. Hasta 2 intentos de entrega antes de gestionar la devolucion al cliente.');
+    $pdf->dfn('Operacion', 'Lunes a viernes habiles. Colecta de 12 a 14 hs.');
+    $pdf->dfn('Ventana de entrega', 'De 15 a 21 hs.');
     $pdf->dfn('Area de cobertura', 'Ciudad de Cordoba y Gran Cordoba. Localidades del interior se cotizan aparte.');
     $pdf->dfn('Multi-bulto', 'Un envio puede contener varios bultos al mismo domicilio (ver convencion de tarifa).');
     $pdf->dfn('Seguimiento', 'Cada envio tiene codigo de seguimiento en linea con estados y fecha/hora de entrega.');
