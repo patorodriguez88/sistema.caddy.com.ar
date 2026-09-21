@@ -360,7 +360,17 @@ if (isset($_POST['CargarVenta'])) {
         // más arriba ya había marcado la Colecta como procesada, así que
         // ni siquiera se podía reintentar desde esta pantalla (quedaba
         // trabada para siempre). Ahora se avisa con el error real.
+        // FIX (2026-09-21, reportado con 8ASM4FTVD/El Trentino - HdR de
+        // Oriana): volvió a pasar (TransClientes+Seguimiento con éxito,
+        // HojaDeRuta ausente) sin que se viera ningún error en la pantalla -
+        // no se pudo reproducir la causa exacta con los datos de esa fila
+        // (nada raro: sin comillas sueltas, con NumerodeOrden y Recorrido
+        // válidos). Se agrega error_log() con el SQL completo y el error de
+        // mysqli para poder diagnosticarlo si se repite.
         if (!$Ingresahojaderuta) {
+            error_log('colecta.php CargarVenta: fallo INSERT HojaDeRuta para ' . $codigo_seguimiento
+                . ' (idTransClientes=' . $idTransClientes . ', Recorrido=' . $recorrido . '): '
+                . $mysqli->error);
             echo json_encode(array('success' => 0, 'error' => 'ERROR_HOJADERUTA: ' . $mysqli->error));
             exit;
         }
