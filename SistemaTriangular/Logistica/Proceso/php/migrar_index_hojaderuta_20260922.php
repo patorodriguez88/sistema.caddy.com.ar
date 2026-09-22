@@ -12,8 +12,16 @@
 // acelera lecturas (a costa de un poquito más de trabajo en cada INSERT/
 // UPDATE de HojaDeRuta, irrelevante para el volumen de esta tabla).
 define('ALLOW_NO_SESSION', true);
+set_time_limit(300);
 include_once __DIR__ . "/../../../Conexion/Conexioni.php";
 header('Content-Type: application/json; charset=utf-8');
+// El primer intento (sin ALGORITHM/LOCK explícito) se cortó con 500 en
+// blanco a los ~90s sin crear el índice. set_time_limit(300) le da más
+// margen al script; el ALTER de más abajo fuerza ALGORITHM=INPLACE,
+// LOCK=NONE (online DDL de InnoDB) para no bloquear/reescribir toda la
+// tabla - si el motor no lo soporta por lo que sea, tira un error claro
+// en vez de colgarse en silencio con el algoritmo lento (COPY).
+$mysqli->query("SET SESSION wait_timeout = 300");
 
 $dry = isset($_GET['dry']) ? ($_GET['dry'] === '1') : true;
 $resultado = ['dry_run' => $dry];
@@ -26,7 +34,8 @@ if (!$dry && !$existe) {
     $t0 = microtime(true);
     $ok = $mysqli->query("
         ALTER TABLE HojaDeRuta
-        ADD INDEX idx_numerodeorden_estado (NumerodeOrden, Estado, Eliminado)
+        ADD INDEX idx_numerodeorden_estado (NumerodeOrden, Estado, Eliminado),
+        ALGORITHM=INPLACE, LOCK=NONE
     ");
     $resultado['alter_ok'] = (bool)$ok;
     $resultado['alter_error'] = $mysqli->error;
