@@ -195,9 +195,13 @@ function verificarMostrarBoton() {
   else btn.style.display = "none";
 }
 
-// Botón volver
+// Botón volver: además de reiniciar la selección, tiene que volver a
+// mostrar los cards de bancos y el selector de fecha, que btnAceptar()
+// había ocultado - si no, quedaba "trabado" en la grilla sin forma de
+// elegir otro banco sin recargar la página (a pedido, 2026-09-22).
 $("#btnVolver").click(function () {
   $("#cuentas-container").show();
+  $("#bancos-container, #display-fecha").show();
   $("#conciliacion_bancaria").hide();
   $("#mensajeNoDatos").hide();
   $("#btnGrabarConciliacion").hide();
@@ -300,7 +304,8 @@ function buildDataTable() {
             $("#mensajeNoDatos").hide();
             // Si la corrida ya está Cerrada, no se puede seguir conciliando.
             $("#btnGrabarConciliacion").toggle(estadoConciliacionActual !== "Cerrada");
-            $("#btnVolver").hide();
+            // "Elegir otro Banco" se muestra desde btnAceptar() y queda
+            // visible durante toda la pantalla, haya datos o no.
           }
           return arr;
         } catch (e) {
@@ -408,6 +413,9 @@ document.getElementById("btnAceptar").addEventListener("click", function () {
   //   $("#cuentas-container").hide();
   $("#bancos-container, #display-fecha, #btnAceptar").hide(); // oculto cards/fecha/botón
   $("#conciliacion_bancaria").show(); // muestro la tabla
+  // "Elegir otro Banco" queda visible durante toda esta pantalla, haya o
+  // no datos (antes solo aparecía si la consulta venía vacía/con error).
+  $("#btnVolver").show();
   const rawFecha = $("#singledaterange").val();
   if (!cuentaSeleccionada || !rawFecha) {
     $("#mensajeNoDatos")

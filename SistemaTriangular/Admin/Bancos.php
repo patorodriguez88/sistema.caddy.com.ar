@@ -97,6 +97,16 @@
             content: " ✓";
             color: #1c8f61;
         }
+
+        /* Pedido (Patricio, 2026-09-22: "el card mas ancho, que ocupe mas
+           pantalla"): el tema le pone max-width:85% a .container-fluid en
+           pantallas grandes ([data-layout=topnav]) - se pisa acá, scoped a
+           esta página (esta regla vive en el <style> propio de Bancos.php,
+           no toca ninguna otra pantalla), para que la grilla de
+           conciliación aproveche todo el ancho disponible. */
+        .content-page .container-fluid {
+            max-width: 100% !important;
+        }
     </style>
 </head>
 
@@ -134,7 +144,7 @@
                                  fijo Bootstrap), no "container-fluid" como el resto de la
                                  página - por eso esta sección quedaba más angosta que el
                                  resto de las pantallas del sistema. -->
-                            <div class="w-100 mt-4">
+                            <div class="w-100 mt-1">
                                 <h2 class="mb-3">Conciliacion Bancaria</h2>
                                 <label><strong>Seleccione una Cuenta Bancaria</strong></label>
                                 <div id="bancos-container" class="row mt-2"></div> <!-- Aquí se insertarán los cards -->
@@ -233,7 +243,9 @@
                             <input type="button" value="Grabar Conciliación" class="btn btn-success" id="btnGrabarConciliacion" style="display:none;">
                         </div>
                         <div class="col-12 text-end mt-3">
-                            <input type="button" value="Buscar Nevamente" class="btn btn-warning" id="btnVolver" style="display:none;">
+                            <!-- Pedido (Patricio, 2026-09-22): volver a elegir otro banco sin
+                                 recargar la página. -->
+                            <input type="button" value="← Elegir otro Banco" class="btn btn-outline-secondary" id="btnVolver" style="display:none;">
                         </div>
 
                     </div>
