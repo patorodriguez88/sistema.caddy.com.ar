@@ -32,13 +32,18 @@ $resultado['antes'] = ['indice_existe' => $existe];
 
 if (!$dry && !$existe) {
     $t0 = microtime(true);
-    $ok = $mysqli->query("
-        ALTER TABLE HojaDeRuta
-        ADD INDEX idx_numerodeorden_estado (NumerodeOrden, Estado, Eliminado),
-        ALGORITHM=INPLACE, LOCK=NONE
-    ");
-    $resultado['alter_ok'] = (bool)$ok;
-    $resultado['alter_error'] = $mysqli->error;
+    try {
+        $ok = $mysqli->query("
+            ALTER TABLE HojaDeRuta
+            ADD INDEX idx_numerodeorden_estado (NumerodeOrden, Estado, Eliminado),
+            ALGORITHM=INPLACE, LOCK=NONE
+        ");
+        $resultado['alter_ok'] = (bool)$ok;
+        $resultado['alter_error'] = $mysqli->error;
+    } catch (\Throwable $e) {
+        $resultado['alter_ok'] = false;
+        $resultado['alter_exception'] = $e->getMessage();
+    }
     $resultado['segundos'] = round(microtime(true) - $t0, 2);
 }
 
