@@ -106,6 +106,12 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     // viene repetido en cada línea/servicio de una misma rendición (no es un
     // monto por línea), así que se toma UN valor por NumPedido (MAX) y se
     // suman esos, para no inflar el total cobrado.
+    //
+    // FIX (Asana, reportado por Agustina - Igalfer): mismo criterio que
+    // Admin/Procesos/php/cobranza_integrada.php ('Totales' y 'Pendientes')
+    // - para clientes con CobranzaIntegradaNoFactura=1 se excluye la fila
+    // de Tarifa (not_invoice=0) del SUM(Total), si no "retenido" quedaba
+    // inflado con el monto de la tarifa del servicio.
     $st = $mysqli->prepare(
         "SELECT surrender_time, surrender_name, surrender_observations, idCliente, Cliente, FechaPedido,
                 SUM(Total) AS Total,
@@ -117,7 +123,9 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
                 ) x) AS Cobranza
          FROM Ventas
          INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento = Ventas.NumPedido
-         WHERE surrender_number=? AND Ventas.Eliminado=0 AND TransClientes.Eliminado=0"
+         LEFT JOIN Clientes cab_clo ON cab_clo.id = TransClientes.idClienteOrigen
+         WHERE surrender_number=? AND Ventas.Eliminado=0 AND TransClientes.Eliminado=0
+           AND NOT (IFNULL(cab_clo.CobranzaIntegradaNoFactura,0)=1 AND Ventas.not_invoice=0)"
     );
     $st->bind_param('ii', $numero, $numero);
     $st->execute();
