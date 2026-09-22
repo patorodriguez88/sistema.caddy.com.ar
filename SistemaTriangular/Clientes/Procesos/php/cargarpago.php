@@ -47,13 +47,16 @@ if (isset($_POST['CargarPago'])) {
     //NUMERO DE COMPROBANTE
     $sqlnrecibo = $mysqli->query("SELECT Max(NumeroComprobante)as nrecibo FROM TransClientes WHERE TipoDeComprobante='Recibo de Pago' AND Eliminado='0'");
     if ($datonrecibo = $sqlnrecibo->fetch_array(MYSQLI_ASSOC)) {
-        $NumeroComprobante = trim($datonrecibo['nrecibo']) + 1;
+        // intval (no trim): MAX()/Max() da NULL si no hay ninguna fila
+        // todavia, y trim(null)+1 tira TypeError en PHP8 (auditoria
+        // 2026-09-22).
+        $NumeroComprobante = intval($datonrecibo['nrecibo']) + 1;
     }
 
     //NUMERO DE ASIENTO CONTABLE
     $BuscaNumAsiento = $mysqli->query("SELECT MAX(NumeroAsiento) as NumeroAsiento FROM Tesoreria WHERE Eliminado='0'");
     $row = $BuscaNumAsiento->fetch_array(MYSQLI_ASSOC);
-    $NAsiento = trim($row['NumeroAsiento']) + 1;
+    $NAsiento = intval($row['NumeroAsiento']) + 1;
 
     //BUSCO LA CUENTA CONTABLE
     $FormaDePago = $_POST['formadepago'];

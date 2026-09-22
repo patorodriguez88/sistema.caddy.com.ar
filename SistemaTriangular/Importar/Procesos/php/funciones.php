@@ -100,7 +100,9 @@ if(isset($_POST['ImportarTabla'])){
       // BUSCO EL ULTIMO ID PARA GENERAR EL NDECLIENTE
       $idcliente= $mysqli->query("SELECT MAX(id) AS id FROM Clientes");
       if ($rowid = $idcliente->fetch_array(MYSQLI_ASSOC)){
-      $NCliente = trim($rowid['id'])+1;
+      // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+      // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+      $NCliente = intval($rowid['id'])+1;
       }
        //AGREGO LOS CLIENTES QUE NO EXISTEN A CLIENTES 
       $sqlinsert="INSERT INTO Clientes(`NdeCliente`,`nombrecliente`,`DocumentoNacional`,`Mail`,`Ciudad`,`Provincia`,`CodigoPostal`,`Telefono`,`Celular2`,`Celular`,`Direccion`,`Observaciones`,`Relacion`,`PisoDepto`,`idProveedor`,`Contacto`,`Latitud`,`Longitud`)  
