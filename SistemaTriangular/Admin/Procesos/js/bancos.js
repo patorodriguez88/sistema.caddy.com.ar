@@ -349,6 +349,7 @@ function buildDataTable() {
         data: "Haber",
         render: $.fn.dataTable.render.number(".", ",", 2, "$ "),
       },
+      { data: "NumeroTrans", render: (d) => d || "" },
       {
         data: "Conciliado",
         render: function (data, type, row) {
@@ -366,7 +367,6 @@ function buildDataTable() {
           return `<input type="checkbox" class="conciliado-checkbox" data-id="${row.id}" ${disabled}>`;
         },
       },
-      { data: "NumeroTrans", render: (d) => d || "" },
     ],
     footerCallback: function (row, data, start, end, display) {
       const api = this.api();
