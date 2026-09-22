@@ -61,6 +61,42 @@ $out['total_pagado_query_actual'] = $totalActual;
 $out['total_si_no_duplicara'] = $totalSinDup;
 $out['diferencia'] = $totalActual - $totalSinDup;
 
+// 2b) Misma query pero quedandome solo con la fila MAS RECIENTE de
+// Seguimiento por CodigoSeguimiento (fix propuesto)
+$sqlFix = "
+    SELECT
+        Seg.id AS idSeguimiento, Seg.Fecha, Seg.Entregado, Seg.Estado, ts.CodigoSeguimiento,
+        er.PrecioPagado, er.CobranzaIntegrada, er.Rendido
+     FROM Seguimiento AS Seg
+     JOIN TransClientes AS ts        ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
+     JOIN Externos_rendicion AS er   ON er.CodigoSeguimiento = Seg.CodigoSeguimiento AND er.idRendicion = Seg.NumerodeOrden
+     WHERE Seg.Eliminado = 0
+       AND ts.Eliminado = 0
+       AND Seg.NumerodeOrden = {$nOrden}
+       AND Seg.Visitas <> 0
+       AND Seg.Estado <> 'Retirado del Cliente'
+       AND Seg.Usuario = '{$nombreUsuario}'
+       AND Seg.id = (
+           SELECT MAX(Seg2.id) FROM Seguimiento Seg2
+           WHERE Seg2.CodigoSeguimiento = Seg.CodigoSeguimiento
+             AND Seg2.NumerodeOrden = Seg.NumerodeOrden
+             AND Seg2.Eliminado = 0
+             AND Seg2.Visitas <> 0
+             AND Seg2.Estado <> 'Retirado del Cliente'
+             AND Seg2.Usuario = Seg.Usuario
+       )
+     ORDER BY Seg.CodigoSeguimiento, Seg.Fecha
+";
+$resFix = $mysqli->query($sqlFix);
+$rowsFix = $resFix ? $resFix->fetch_all(MYSQLI_ASSOC) : ['error' => $mysqli->error];
+$out['total_filas_query_FIX'] = is_array($rowsFix) && !isset($rowsFix['error']) ? count($rowsFix) : null;
+$totalFix = 0.0;
+if (is_array($rowsFix) && !isset($rowsFix['error'])) {
+    foreach ($rowsFix as $r) $totalFix += (float)$r['PrecioPagado'];
+}
+$out['total_pagado_query_FIX'] = $totalFix;
+$out['filas_query_FIX'] = $rowsFix;
+
 // 3) Estructura de Externos_rendicion para confirmar cardinalidad esperada
 $res3 = $mysqli->query("SHOW COLUMNS FROM Externos_rendicion");
 $out['columnas_externos_rendicion'] = $res3 ? array_column($res3->fetch_all(MYSQLI_ASSOC), 'Field') : null;
