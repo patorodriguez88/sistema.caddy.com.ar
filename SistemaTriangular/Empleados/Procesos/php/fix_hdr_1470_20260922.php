@@ -21,6 +21,7 @@ $out = ['dry_run' => $dry, 'items' => []];
 
 foreach ($codigos as $codigo) {
     $item = ['codigo' => $codigo];
+    try {
 
     $yaExiste = $mysqli->query("SELECT id FROM HojaDeRuta WHERE Seguimiento='{$codigo}' AND Eliminado=0");
     $item['ya_existe'] = $yaExiste ? $yaExiste->fetch_all(MYSQLI_ASSOC) : null;
@@ -74,6 +75,9 @@ foreach ($codigos as $codigo) {
         $item['mysqli_error'] = $mysqli->error;
     }
 
+    } catch (\Throwable $e) {
+        $item['exception'] = $e->getMessage();
+    }
     $out['items'][] = $item;
 }
 
