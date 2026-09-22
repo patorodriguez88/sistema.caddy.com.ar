@@ -61,6 +61,36 @@ while ($row = $res->fetch_assoc()) {
     $datos[$cuenta][$mesFormateado] = $monto;
 }
 
+// Gastos Extras (gestión de Agustina/Cintia, fuera de Tesoreria): una fila
+// por categoría, marcada como "(extra)" para que se note que no viene del
+// circuito contable formal.
+$queryExtras = "SELECT
+        Categoria,
+        DATE_FORMAT(Fecha, '%Y-%m') AS mes,
+        SUM(Importe) AS total
+    FROM GastosExtras
+    WHERE Eliminado = 0
+      AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
+    GROUP BY Categoria, mes
+    ORDER BY Categoria, mes
+";
+$resExtras = $mysqli->query($queryExtras);
+if ($resExtras) {
+    while ($row = $resExtras->fetch_assoc()) {
+        $claveCuenta = 'EXTRA-' . $row['Categoria'];
+        $mesFormateado = transformarClave($row['mes']);
+        $monto = floatval($row['total']);
+
+        if (!isset($datos[$claveCuenta])) {
+            $datos[$claveCuenta] = [
+                'cuenta' => '',
+                'nombre' => $row['Categoria'] . ' (extra)'
+            ];
+        }
+        $datos[$claveCuenta][$mesFormateado] = $monto;
+    }
+}
+
 echo json_encode([
     'datos' => array_values($datos)
 ]);

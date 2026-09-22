@@ -58,6 +58,19 @@ $ventasRecorridos = obtenerDatos($queryRecorridos, $mysqli);
 $ventasCobranza = obtenerDatos($queryCobranza, $mysqli);
 $gastos = obtenerDatos($queryGastos, $mysqli);
 
+// 4b. GASTOS EXTRAS (gestión de Agustina/Cintia, fuera de Tesoreria - no
+// tocan Mayor de Cuentas ni Libro de IVA, sólo el Cuadro de Resultados).
+$queryGastosExtras = "SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo,
+SUM(Importe) AS total
+FROM GastosExtras
+WHERE Eliminado = 0
+AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
+GROUP BY periodo";
+$gastosExtras = obtenerDatos($queryGastosExtras, $mysqli);
+foreach ($gastosExtras as $mes => $valorExtra) {
+    $gastos[$mes] = ($gastos[$mes] ?? 0) + $valorExtra;
+}
+
 // 5. SUMA TOTAL DE VENTAS
 $ventas = $ventasSimples; // copiar base
 
