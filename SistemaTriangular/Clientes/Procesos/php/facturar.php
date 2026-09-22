@@ -126,7 +126,9 @@ if ($_POST['Facturar'] == 1) {
     //BUSCO EL ULTIMO NUMERO DE ASIENTO DE TESORERIA
     $BuscaNumAsiento = $mysqli->query("SELECT MAX(NumeroAsiento) AS NumeroAsiento FROM Tesoreria");
     $row = $BuscaNumAsiento->fetch_array(MYSQLI_ASSOC);
-    $NAsiento = trim($row['NumeroAsiento']) + 1;
+    // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+    // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+    $NAsiento = intval($row['NumeroAsiento']) + 1;
     $Observaciones = "Facturacion x Remito " . $TipoDeComprobante . " " . $NumeroComprobante;
 
     $sql1 = "INSERT INTO `Tesoreria`(
@@ -374,7 +376,9 @@ if ($_POST['Facturar'] == 2) {
     //BUSCO EL ULTIMO NUMERO DE ASIENTO DE TESORERIA
     $BuscaNumAsiento = $mysqli->query("SELECT MAX(NumeroAsiento) AS NumeroAsiento FROM Tesoreria");
     $row = $BuscaNumAsiento->fetch_array(MYSQLI_ASSOC);
-    $NAsiento = trim($row['NumeroAsiento']) + 1;
+    // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+    // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+    $NAsiento = intval($row['NumeroAsiento']) + 1;
     $Observaciones = "Facturacion x Remito " . $TipoDeComprobante . " " . $NumeroComprobante;
 
     $sql1 = "INSERT INTO `Tesoreria`(
@@ -617,7 +621,9 @@ if ($_POST['Facturar'] == 3) {
     //BUSCO EL ULTIMO NUMERO DE ASIENTO DE TESORERIA
     $BuscaNumAsiento = $mysqli->query("SELECT MAX(NumeroAsiento) AS NumeroAsiento FROM Tesoreria");
     $row = $BuscaNumAsiento->fetch_array(MYSQLI_ASSOC);
-    $NAsiento = trim($row['NumeroAsiento']) + 1;
+    // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+    // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+    $NAsiento = intval($row['NumeroAsiento']) + 1;
     $Observaciones = "Facturacion x Remito " . $TipoDeComprobante . " " . $NumeroComprobante;
 
     $sql1 = "INSERT INTO `Tesoreria`(

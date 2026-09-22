@@ -422,9 +422,11 @@ if(isset($_POST['CargarPreVenta'])){
     $idClienteDestino=$resp['id'];  
     }else{
     $SQL_MAX_ID=$mysqli->query("SELECT MAX(id)as id FROM Clientes");
-    $respmax = $SQL_MAX_ID->fetch_array(MYSQLI_ASSOC); 
-    
-    $idClienteDestino=trim($respmax['id'])+1;    
+    $respmax = $SQL_MAX_ID->fetch_array(MYSQLI_ASSOC);
+
+    // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+    // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+    $idClienteDestino=intval($respmax['id'])+1;
 
     $mysqli->query("INSERT IGNORE INTO Clientes (NdeCliente,nombrecliente,Direccion,Ciudad,Telefono,Celular,Celular2,Cuit,Relacion,Pais,Mail,CodigoPostal,Observaciones)VALUES
     ('". $idClienteDestino ."','". $DATOS_IMPORTACIONES['ClienteDestino']."','". $DATOS_IMPORTACIONES['DomicilioDestino'] ."','". $DATOS_IMPORTACIONES['LocalidadDestino'] ."','". $DATOS_IMPORTACIONES['Celular'] ."','". $DATOS_IMPORTACIONES['Celular'] ."',

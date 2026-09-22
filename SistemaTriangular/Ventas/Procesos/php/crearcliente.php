@@ -36,7 +36,9 @@ function geolocalizar($Direccion){
 
 $idoferta= $mysqli->query("SELECT MAX(id) AS id FROM Clientes");
 if ($row = $idoferta->fetch_array(MYSQLI_ASSOC)) {
- $id = trim($row['id'])+1;
+ // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+ // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+ $id = intval($row['id'])+1;
  }
 
 $NdeCliente=$id;

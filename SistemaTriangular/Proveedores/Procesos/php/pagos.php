@@ -156,7 +156,10 @@ VALUES
     if (!is_array($row)) {
         $row = array();
     }
-    $NAsiento = trim($row['NumeroAsiento']) + 1;
+    // intval (no trim): MAX() da NULL (o el array queda vacio) si la tabla
+    // estuviera vacia, y trim(null)+1 tira TypeError en PHP8 (auditoria
+    // 2026-09-22).
+    $NAsiento = intval(isset($row['NumeroAsiento']) ? $row['NumeroAsiento'] : 0) + 1;
     if ($FP == '20') {
         $sql3 = "
         UPDATE Cheques 

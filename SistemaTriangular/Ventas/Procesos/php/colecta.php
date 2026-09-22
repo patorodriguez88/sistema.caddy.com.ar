@@ -171,7 +171,9 @@ if (isset($_POST['CargarVenta'])) {
         //Genero el ultimo numero para la reposicion
         $BuscaNumRepo = $mysqli->query("SELECT MAX(NumeroRepo) AS NumeroRepo FROM Ventas");
         if ($row = $BuscaNumRepo->fetch_array(MYSQLI_ASSOC)) {
-            $NRepo = trim($row['NumeroRepo']) + 1;
+            // intval (no trim): mismo bug de fondo que el de Posicion mas
+            // abajo - MAX() da NULL si la tabla estuviera vacia.
+            $NRepo = intval($row['NumeroRepo']) + 1;
         }
 
         //TARIFA 2 A

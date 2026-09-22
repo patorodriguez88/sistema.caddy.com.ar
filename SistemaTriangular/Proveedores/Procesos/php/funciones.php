@@ -192,7 +192,9 @@ if (isset($_POST['Agregar'])) {
       $id = "SELECT MAX(id) AS id FROM Proveedores";
       $Resultado = $mysqli->query($id);
       if ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-        $id = trim($row['id']) + 1;
+        // intval (no trim): MAX() da NULL si la tabla estuviera vacia, y
+        // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
+        $id = intval($row['id']) + 1;
       }
 
       $asana = isset($_POST['asana']) && $_POST['asana'] === 'on' ? 1 : 0;
