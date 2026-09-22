@@ -361,7 +361,13 @@ function buildDataTable() {
             const fecha = row.FechaConciliado ? formatFechaHoraParaUI(row.FechaConciliado) : "";
             const usuario = row.UsuarioConciliado || "";
             const titulo = `Conciliado${usuario ? " por " + usuario : ""}${fecha ? " el " + fecha : ""}`;
-            return `<span class="badge bg-success" title="${titulo}"><i class="mdi mdi-check-bold"></i> Validado</span>`;
+            // Pedido (Patricio, 2026-09-22): fecha/hora/usuario visibles, no
+            // solo como tooltip al pasar el mouse (quedaba escondido).
+            const detalle =
+              usuario || fecha
+                ? `<div style="font-size:9px;color:#8a8398;line-height:1.2;margin-top:2px;">${usuario}${usuario && fecha ? " - " : ""}${fecha}</div>`
+                : "";
+            return `<span class="badge bg-success" title="${titulo}"><i class="mdi mdi-check-bold"></i> Validado</span>${detalle}`;
           }
           const disabled = estadoConciliacionActual === "Cerrada" ? "disabled" : "";
           return `<input type="checkbox" class="conciliado-checkbox" data-id="${row.id}" ${disabled}>`;
