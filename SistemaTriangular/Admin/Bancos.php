@@ -221,8 +221,8 @@
                                                         <th>Observaciones</th>
                                                         <th>Debe</th>
                                                         <th>Haber</th>
-                                                        <th>Conciliado</th>
                                                         <th>N° Referencia</th>
+                                                        <th>Conciliado</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody></tbody>
