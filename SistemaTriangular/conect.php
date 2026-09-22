@@ -146,9 +146,6 @@ if ($fila && $passwordOk) {
     $_SESSION['NCliente'] = $fila['NdeCliente'];
     $_SESSION['Nivel'] = $fila['NIVEL'];
     $_SESSION['PuedeEliminarPagos'] = intval($fila['PuedeEliminarPagos'] ?? 0);
-    // Mismo patrón: permiso de gestionar Gastos Extras, independiente del
-    // Nivel (ver Admin/Procesos/php/gastos_extras.php).
-    $_SESSION['PuedeGestionarGastosExtras'] = intval($fila['PuedeGestionarGastosExtras'] ?? 0);
     $_SESSION['idusuario'] = $fila['id'];
     $_SESSION['Direccion'] = $fila['Direccion'];
     $_SESSION['NombreUsuario'] = $fila['Nombre'];

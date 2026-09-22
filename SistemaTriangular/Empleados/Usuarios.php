@@ -358,7 +358,6 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
                                                             <th>Notificación</th>
                                                             <th>Acceso</th>
                                                             <th title="Permiso independiente del Nivel para borrar pagos (Ctasctes)">Eliminar Pagos</th>
-                                                            <th title="Permiso independiente del Nivel para gestionar Gastos Extras (Admin/GastosExtras.php)">Gastos Extras</th>
                                                             <th></th>
                                                         </tr>
                                                     </thead>

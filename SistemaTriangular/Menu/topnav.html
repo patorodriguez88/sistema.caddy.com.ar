@@ -367,17 +367,6 @@
                     >Resultados</a
                   >
                   <?php endif; ?>
-                  <?php // Permiso propio, independiente de roles/Nivel (usuario por
-                  // usuario, ver usuarios.PuedeGestionarGastosExtras) - así queda
-                  // restringido exactamente a quien se lo den, sin depender de a
-                  // qué rol pertenezca. ?>
-                  <?php if (!empty($_SESSION['PuedeGestionarGastosExtras']) || (($_SESSION['Nivel'] ?? 0) == 1)): ?>
-                  <a
-                    href="/SistemaTriangular/Admin/GastosExtras.php"
-                    class="dropdown-item"
-                    >Gastos Extras</a
-                  >
-                  <?php endif; ?>
                 </div>
               </div>
 

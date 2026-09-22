@@ -93,23 +93,6 @@ while ($row = $result->fetch_assoc()) {
     $gastos[$row['periodo']] = floatval($row['total']);
 }
 
-// 6b. GASTOS EXTRAS -- gestión de Agustina/Cintia, fuera de Tesoreria (no
-// tocan Mayor de Cuentas ni Libro de IVA), se suman acá para que sí
-// impacten el Cuadro de Resultados.
-$queryGastosExtras = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Importe) AS total
-    FROM GastosExtras
-    WHERE Eliminado = 0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
-    GROUP BY periodo
-";
-$result = $mysqli->query($queryGastosExtras);
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $periodo = $row['periodo'];
-        $gastos[$periodo] = ($gastos[$periodo] ?? 0) + floatval($row['total']);
-    }
-}
-
 // 7. Salida JSON
 header('Content-Type: application/json');
 echo json_encode([

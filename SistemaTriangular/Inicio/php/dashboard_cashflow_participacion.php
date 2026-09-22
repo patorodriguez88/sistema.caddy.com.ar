@@ -72,32 +72,6 @@ while ($row = $res->fetch_assoc()) {
     $total_mes[$p] += $v;
 }
 
-// Gastos Extras (gestión de Agustina/Cintia, fuera de Tesoreria) - acá
-// Categoria YA es el grupo (Personal/Logistica/Generales/Financieros),
-// sin necesidad del CASE por número de cuenta de arriba.
-$sqlExtras = "
-SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, Categoria AS grupo, SUM(Importe) AS total
-FROM GastosExtras
-WHERE Eliminado = 0 AND Fecha BETWEEN '{$inicio}' AND '{$fin}'
-GROUP BY periodo, Categoria
-";
-$resExtras = $mysqli->query($sqlExtras);
-if ($resExtras) {
-    while ($row = $resExtras->fetch_assoc()) {
-        $p = $row['periodo'];
-        $g = $row['grupo'];
-        $v = floatval($row['total']);
-
-        if (!isset($totales[$p])) {
-            $totales[$p] = ["Personal" => 0, "Logistica" => 0, "Generales" => 0, "Financieros" => 0];
-            $total_mes[$p] = 0;
-        }
-        if (!isset($totales[$p][$g])) $totales[$p][$g] = 0;
-        $totales[$p][$g] += $v;
-        $total_mes[$p] += $v;
-    }
-}
-
 // % por mes
 $porcentajes = []; // [mes][grupo] = %
 foreach ($meses as $m) {
