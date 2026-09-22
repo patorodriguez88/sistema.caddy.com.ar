@@ -99,13 +99,15 @@
         }
 
         /* Pedido (Patricio, 2026-09-22: "el card mas ancho, que ocupe mas
-           pantalla"): el tema le pone max-width:85% a .container-fluid en
-           pantallas grandes ([data-layout=topnav]) - se pisa acá, scoped a
-           esta página (esta regla vive en el <style> propio de Bancos.php,
-           no toca ninguna otra pantalla), para que la grilla de
-           conciliación aproveche todo el ancho disponible. */
+           pantalla" -> probado a 100%, "se puso muy ancho", vuelve a 85%
+           que es el max-width por defecto del tema para .container-fluid
+           en pantallas grandes ([data-layout=topnav])). Se deja la regla
+           explícita (en vez de sacarla del todo) para que quede claro que
+           es un valor elegido a propósito para esta pantalla, no el
+           default heredado sin más. Scoped acá, no toca ninguna otra
+           página. */
         .content-page .container-fluid {
-            max-width: 100% !important;
+            max-width: 85% !important;
         }
     </style>
 </head>
