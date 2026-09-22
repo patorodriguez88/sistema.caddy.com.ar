@@ -58,7 +58,16 @@ $resultado['despues'] = [
     'columna_usuarios_existe' => $mysqli->query("SHOW COLUMNS FROM usuarios LIKE 'PuedeGestionarGastosExtras'")->num_rows > 0,
 ];
 
-$chk = $mysqli->query("SELECT id, Usuario, PuedeGestionarGastosExtras FROM usuarios WHERE Usuario IN ('aoviedo','coviedo')");
-$resultado['usuarios_habilitados'] = $chk ? $chk->fetch_all(MYSQLI_ASSOC) : null;
+// OJO: en un dry-run ANTES de aplicar la migración la columna todavía no
+// existe, así que esta consulta solo puede correr si ya existe (columna
+// creada en un run anterior) o si acabamos de aplicarla (!$dry) - si no,
+// mysqli (modo estricto por default en PHP 8) tira excepción no capturada
+// y la request muere con 500 antes de imprimir nada.
+if ($columnaExiste || !$dry) {
+    $chk = $mysqli->query("SELECT id, Usuario, PuedeGestionarGastosExtras FROM usuarios WHERE Usuario IN ('aoviedo','coviedo')");
+    $resultado['usuarios_habilitados'] = $chk ? $chk->fetch_all(MYSQLI_ASSOC) : null;
+} else {
+    $resultado['usuarios_habilitados'] = null; // columna todavía no existe (dry-run inicial)
+}
 
 echo json_encode($resultado, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
