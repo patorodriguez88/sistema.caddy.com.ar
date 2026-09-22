@@ -286,99 +286,133 @@ if (isset($_POST['CargarVenta'])) {
         // 10/9 y el 15/9 (recorridos 1470, 1500, 1384) se quedaron con el
         // padre en TransClientes pero SIN fila en HojaDeRuta - "generaban"
         // bien en esta pantalla pero el repartidor nunca las veía.
-        if (!$mysqli->query($IngresaTransaccion)) {
-            echo json_encode(array('success' => 0, 'error' => 'ERROR_TRANSCLIENTES: ' . $mysqli->error));
-            exit;
+        //
+        // FIX (2026-09-22, root cause real de que siguiera pasando con
+        // 8ASM4FTVD/Oriana 21/9 y RVHHXOAMF/Dynamic 22/9 pese a los checks
+        // de arriba): mysqli corre en modo estricto (MYSQLI_REPORT_ERROR|
+        // MYSQLI_REPORT_STRICT, el default desde PHP 8.1 - nunca se
+        // configuró otra cosa en Conexioni.php), así que ante CUALQUIER
+        // error de SQL el ->query() tira una \mysqli_sql_exception en vez
+        // de devolver false - los "if (!$resultado)" nunca llegaban a
+        // evaluarse, la request moría con 500 en blanco antes del
+        // error_log() y antes de cualquier JSON de respuesta (por eso no se
+        // veía ningún error en pantalla). Se envuelve todo el bloque
+        // crítico en try/catch: cualquier excepción se loguea en la tabla
+        // ErroresColecta (consultable después, sin depender de encontrar el
+        // log del hosting) y se devuelve un JSON de error prolijo como
+        // estaba pensado originalmente.
+        try {
+            if (!$mysqli->query($IngresaTransaccion)) {
+                throw new \Exception('ERROR_TRANSCLIENTES: ' . $mysqli->error);
+            }
+
+            //obtengo el id de transclientes
+            $idTransClientes = $mysqli->insert_id;
+
+            // El padre (este mismo registro, retiro -> Wepoint) tambien tiene que
+            // quedar linkeado a la Colecta: el INSERT de arriba no seteaba
+            // idColecta, y el UPDATE de abajo solo alcanza a los hijos (Flex=1),
+            // nunca al padre -> la app de reparto quedaba sin poder abrir/cerrar
+            // la colecta (FALTA_COLECTAID_O_PADREID) porque idColecta quedaba NULL.
+            $mysqli->query("UPDATE TransClientes SET idColecta = {$id_colecta} WHERE id = {$idTransClientes}");
+
+            $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
+            WHERE Flex = 1
+            AND idClienteOrigen = {$id_origen}
+            AND Entregado=0
+            AND Eliminado = 0
+            AND (idColecta IS NULL OR idColecta = 0)";
+
+            $mysqli->query($sqlUpdateHijos);
+
+            //AGREGAR EN VENTAS
+            $sql = "INSERT INTO Ventas(Codigo,FechaPedido,Titulo,Precio,Cantidad,Comentario,Terminado,Total,Cliente,NumeroRepo,
+            ImporteNeto,Iva1,NumPedido,Usuario,idCliente)
+            VALUES('{$codigo}','{$fecha}','{$titulo}','{$precio}','{$cantidad}','{$comentario}','1','{$total}','{$clienteorigen}',
+            '{$numerorepo}','{$importeneto}','{$iva}','{$numpedido}','{$usuario}','{$id_origen}')";
+
+            $mysqli->query($sql);
+
+            //AGREGAR EN CTASCTES
+
+            $TipoDeComprobante = 'Servicios de Logistica';
+
+            $IngresaCtasctes = "INSERT INTO Ctasctes(Fecha,NumeroVenta,RazonSocial,Cuit,Debe,Usuario,TipoDeComprobante,idCliente,idTransClientes)VALUES
+            ('{$fecha}','{$numerorepo}','{$clienteorigen}','{$cuitorigen}','{$total}','{$usuario}','{$TipoDeComprobante}',
+            '{$idclienteorigen}','{$idTransClientes}')";
+
+            if ($total != 0) {
+
+                $mysqli->query($IngresaCtasctes);
+            }
+
+            //INGRESAR EN SEGUIMIENTO
+
+            $observaciones_seguimiento = 'Ya tenemos tu pedido!';
+
+            $sqlSeg = "INSERT INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Estado,idTransClientes,Recorrido)
+            VALUES('{$fecha}','{$hora}','{$usuario}','{$sucursal}','{$codigo_seguimiento}','{$observaciones_seguimiento}','{$Estado}','{$idTransClientes}','{$recorrido}')";
+
+            $mysqli->query($sqlSeg);
+
+            //INGRESAR EN HOJA DE RUTA
+            // (Fecha de salida y NumerodeOrden ya se calcularon arriba, antes del
+            // INSERT a TransClientes, para poder guardarlo ahí también.)
+            $SQL_ORDEN = $mysqli->query("SELECT MAX(Posicion)as Posicion FROM HojaDeRuta WHERE Recorrido='$recorrido' AND Estado='Abierto' AND Eliminado='0'");
+            $DATO_ORDEN = $SQL_ORDEN->fetch_array(MYSQLI_ASSOC);
+            // FIX (2026-09-22): CAUSA RAÍZ real de por qué esto venía fallando
+            // en silencio (Oriana 8ASM4FTVD, Dynamic RVHHXOAMF, y las 3
+            // colectas de hoy en el recorrido 1470 de Sánchez/VENEX):
+            // MAX(Posicion) da NULL cuando la ruta arranca sin ninguna fila
+            // "Abierto" (la primera colecta/pedido del día para esa ruta) -
+            // trim(null) + 1 tira TypeError en PHP 8 ("Unsupported operand
+            // types: string + int"), la request moría ACÁ, antes de llegar
+            // siquiera al INSERT de HojaDeRuta. Y como esa primera fila nunca
+            // se llegaba a crear, la SIGUIENTE colecta de la misma ruta
+            // encontraba otra vez cero filas abiertas y volvía a chocar -
+            // efecto cascada para toda la ruta, todo el día. intval() en vez
+            // de trim() soluciona esto de raíz (intval(null) = 0).
+            $orden = intval($DATO_ORDEN['Posicion']) + 1;
+
+            $Ingresahojaderuta = $mysqli->query("INSERT INTO `HojaDeRuta`(
+            `Fecha`,`Recorrido`,`Localizacion`,`Ciudad`,`Provincia`,`Pais`,`Cliente`,`Titulo`,`Observaciones`,`Usuario`,
+            `Asignado`,`Estado`,`NumerodeOrden`,`Seguimiento`,`idCliente`,`Posicion`,`Celular`,`NumeroRepo`,`idTransClientes`) VALUES ('{$fecha}','{$recorrido}','{$domiciliodestino}','{$localidaddestino}','{$provinciadestino}','{$pais}',
+            '{$clientedestino}','{$tipodecomprobante}','{$observaciones}','{$usuario}','{$asignado}','{$estado_hdr}','{$nordenlogistica}',
+            '{$codigo_seguimiento}','{$idclientedestino}','{$orden}','{$telefonodestino}','{$NRepo}',{$idTransClientes})");
+
+            if (!$Ingresahojaderuta) {
+                throw new \Exception('ERROR_HOJADERUTA: ' . $mysqli->error);
+            }
+
+            // (Colecta.CodigoSeguimiento ya quedó guardado en el reclamo atómico
+            // de más arriba — no hace falta un segundo UPDATE acá.)
+
+            echo json_encode(array('success' => 1, 'codigo' => $codigo_seguimiento));
+        } catch (\Throwable $e) {
+            $idTransClientesLog = isset($idTransClientes) ? $idTransClientes : null;
+            $paso = isset($idTransClientes) ? 'despues_de_transclientes' : 'transclientes';
+            $mysqlErrno = ($e instanceof \mysqli_sql_exception) ? $e->getCode() : null;
+            $mensajeError = $e->getMessage();
+
+            error_log('colecta.php CargarVenta: excepcion para ' . $codigo_seguimiento
+                . ' (idColecta=' . $id_colecta . ', idTransClientes=' . ($idTransClientesLog ?? 'null')
+                . ', Recorrido=' . $recorrido . ', paso=' . $paso . '): ' . $mensajeError);
+
+            try {
+                $stmt = $mysqli->prepare("INSERT INTO ErroresColecta
+                    (idColecta, CodigoSeguimiento, idTransClientes, Recorrido, Paso, MysqlErrno, MysqlError)
+                    VALUES (?,?,?,?,?,?,?)");
+                if ($stmt) {
+                    $stmt->bind_param('isiisis', $id_colecta, $codigo_seguimiento, $idTransClientesLog, $recorrido, $paso, $mysqlErrno, $mensajeError);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            } catch (\Throwable $e2) {
+                error_log('colecta.php CargarVenta: no se pudo loguear en ErroresColecta: ' . $e2->getMessage());
+            }
+
+            echo json_encode(array('success' => 0, 'error' => $mensajeError));
         }
-
-        //obtengo el id de transclientes
-        $idTransClientes = $mysqli->insert_id;
-
-        // El padre (este mismo registro, retiro -> Wepoint) tambien tiene que
-        // quedar linkeado a la Colecta: el INSERT de arriba no seteaba
-        // idColecta, y el UPDATE de abajo solo alcanza a los hijos (Flex=1),
-        // nunca al padre -> la app de reparto quedaba sin poder abrir/cerrar
-        // la colecta (FALTA_COLECTAID_O_PADREID) porque idColecta quedaba NULL.
-        $mysqli->query("UPDATE TransClientes SET idColecta = {$id_colecta} WHERE id = {$idTransClientes}");
-
-        $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
-        WHERE Flex = 1
-        AND idClienteOrigen = {$id_origen}
-        AND Entregado=0
-        AND Eliminado = 0
-        AND (idColecta IS NULL OR idColecta = 0)";
-
-        $mysqli->query($sqlUpdateHijos);
-
-        //AGREGAR EN VENTAS
-        $sql = "INSERT INTO Ventas(Codigo,FechaPedido,Titulo,Precio,Cantidad,Comentario,Terminado,Total,Cliente,NumeroRepo,
-        ImporteNeto,Iva1,NumPedido,Usuario,idCliente)
-        VALUES('{$codigo}','{$fecha}','{$titulo}','{$precio}','{$cantidad}','{$comentario}','1','{$total}','{$clienteorigen}',
-        '{$numerorepo}','{$importeneto}','{$iva}','{$numpedido}','{$usuario}','{$id_origen}')";
-
-        $mysqli->query($sql);
-
-        //AGREGAR EN CTASCTES
-
-        $TipoDeComprobante = 'Servicios de Logistica';
-
-        $IngresaCtasctes = "INSERT INTO Ctasctes(Fecha,NumeroVenta,RazonSocial,Cuit,Debe,Usuario,TipoDeComprobante,idCliente,idTransClientes)VALUES
-        ('{$fecha}','{$numerorepo}','{$clienteorigen}','{$cuitorigen}','{$total}','{$usuario}','{$TipoDeComprobante}',
-        '{$idclienteorigen}','{$idTransClientes}')";
-
-        if ($total != 0) {
-
-            $mysqli->query($IngresaCtasctes);
-        }
-
-        //INGRESAR EN SEGUIMIENTO
-
-        $observaciones_seguimiento = 'Ya tenemos tu pedido!';
-
-        $sqlSeg = "INSERT INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Estado,idTransClientes,Recorrido)
-        VALUES('{$fecha}','{$hora}','{$usuario}','{$sucursal}','{$codigo_seguimiento}','{$observaciones_seguimiento}','{$Estado}','{$idTransClientes}','{$recorrido}')";
-
-        $mysqli->query($sqlSeg);
-
-        //INGRESAR EN HOJA DE RUTA
-        // (Fecha de salida y NumerodeOrden ya se calcularon arriba, antes del
-        // INSERT a TransClientes, para poder guardarlo ahí también.)
-        $SQL_ORDEN = $mysqli->query("SELECT MAX(Posicion)as Posicion FROM HojaDeRuta WHERE Recorrido='$recorrido' AND Estado='Abierto' AND Eliminado='0'");
-        $DATO_ORDEN = $SQL_ORDEN->fetch_array(MYSQLI_ASSOC);
-        $orden = trim($DATO_ORDEN['Posicion']) + 1;
-
-        $Ingresahojaderuta = $mysqli->query("INSERT INTO `HojaDeRuta`(
-        `Fecha`,`Recorrido`,`Localizacion`,`Ciudad`,`Provincia`,`Pais`,`Cliente`,`Titulo`,`Observaciones`,`Usuario`,
-        `Asignado`,`Estado`,`NumerodeOrden`,`Seguimiento`,`idCliente`,`Posicion`,`Celular`,`NumeroRepo`,`idTransClientes`) VALUES ('{$fecha}','{$recorrido}','{$domiciliodestino}','{$localidaddestino}','{$provinciadestino}','{$pais}',
-        '{$clientedestino}','{$tipodecomprobante}','{$observaciones}','{$usuario}','{$asignado}','{$estado_hdr}','{$nordenlogistica}',
-        '{$codigo_seguimiento}','{$idclientedestino}','{$orden}','{$telefonodestino}','{$NRepo}',{$idTransClientes})");
-
-        // FIX (2026-09-15): este INSERT es el que hacía que la colecta
-        // apareciera como tarjeta en la app de reparto - si fallaba (nunca
-        // se chequeaba), el padre quedaba creado en TransClientes pero
-        // invisible para el repartidor, y encima el "reclamo atómico" de
-        // más arriba ya había marcado la Colecta como procesada, así que
-        // ni siquiera se podía reintentar desde esta pantalla (quedaba
-        // trabada para siempre). Ahora se avisa con el error real.
-        // FIX (2026-09-21, reportado con 8ASM4FTVD/El Trentino - HdR de
-        // Oriana): volvió a pasar (TransClientes+Seguimiento con éxito,
-        // HojaDeRuta ausente) sin que se viera ningún error en la pantalla -
-        // no se pudo reproducir la causa exacta con los datos de esa fila
-        // (nada raro: sin comillas sueltas, con NumerodeOrden y Recorrido
-        // válidos). Se agrega error_log() con el SQL completo y el error de
-        // mysqli para poder diagnosticarlo si se repite.
-        if (!$Ingresahojaderuta) {
-            error_log('colecta.php CargarVenta: fallo INSERT HojaDeRuta para ' . $codigo_seguimiento
-                . ' (idTransClientes=' . $idTransClientes . ', Recorrido=' . $recorrido . '): '
-                . $mysqli->error);
-            echo json_encode(array('success' => 0, 'error' => 'ERROR_HOJADERUTA: ' . $mysqli->error));
-            exit;
-        }
-
-        // (Colecta.CodigoSeguimiento ya quedó guardado en el reclamo atómico
-        // de más arriba — no hace falta un segundo UPDATE acá.)
-
-        echo json_encode(array('success' => 1, 'codigo' => $codigo_seguimiento));
     } else {
 
         echo json_encode(array('success' => 0));

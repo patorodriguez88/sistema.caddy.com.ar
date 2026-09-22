@@ -42,7 +42,11 @@ foreach ($codigos as $codigo) {
     $recorrido = intval($row['Recorrido']);
     $SQL_ORDEN = $mysqli->query("SELECT MAX(Posicion) as Posicion FROM HojaDeRuta WHERE Recorrido='{$recorrido}' AND Estado='Abierto' AND Eliminado='0'");
     $DATO_ORDEN = $SQL_ORDEN->fetch_array(MYSQLI_ASSOC);
-    $orden = trim($DATO_ORDEN['Posicion']) + 1;
+    // intval (no trim) porque MAX(Posicion) da NULL cuando la ruta arranca
+    // sin ninguna fila "Abierto" - trim(null)+1 tira TypeError en PHP 8
+    // ("Unsupported operand types: string + int"): esta es la causa raíz
+    // real de por qué las 3 colectas de hoy en 1470 quedaron sin HojaDeRuta.
+    $orden = intval($DATO_ORDEN['Posicion']) + 1;
     $item['posicion_calculada'] = $orden;
 
     $fecha = $row['Fecha'];
