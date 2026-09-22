@@ -135,26 +135,33 @@ $(document).ready(function () {
           var entorno = (jsonData.Entorno || "").toString().toLowerCase();
           var $badge = $("#user_entorno_badge");
 
+          // FIX (reportado 2026-09-22: "CONECTADO está muy pegado arriba"):
+          // .removeClass() sin argumentos borra TODAS las clases, incluida
+          // la "mt-1" que le daba separación al badge en el HTML (head.html)
+          // - solo la rama "local" la volvía a agregar, así que producción/
+          // sandbox/desconocido quedaban sin margen superior. Se agrega
+          // "mt-2" (un poquito más que el mt-1 original) a las 4 ramas por
+          // igual.
           if (entorno === "sandbox") {
             $badge
               .text("SANDBOX")
               .removeClass()
-              .addClass("badge rounded-pill bg-warning text-dark");
+              .addClass("badge rounded-pill bg-warning text-dark mt-2");
           } else if (entorno === "produccion") {
             $badge
               .text("CONECTADO")
               .removeClass()
-              .addClass("badge rounded-pill bg-success text-white");
+              .addClass("badge rounded-pill bg-success text-white mt-2");
           } else if (entorno === "local") {
             $badge
               .text("LOCALHOST")
               .removeClass()
-              .addClass("badge rounded-pill bg-black text-white mt-1");
+              .addClass("badge rounded-pill bg-black text-white mt-2");
           } else {
             $badge
               .text("ENTORNO DESCONOCIDO")
               .removeClass()
-              .addClass("badge rounded-pill bg-secondary text-white");
+              .addClass("badge rounded-pill bg-secondary text-white mt-2");
           }
 
           if (jsonData.Nivel == 1) {
