@@ -30,7 +30,11 @@ $resultado['antes'] = ['indice_existe' => $existe];
 if (!$dry && !$existe) {
     $t0 = microtime(true);
     try {
-        $ok = $mysqli->query("ALTER TABLE HojaDeRuta ADD INDEX idx_numerodeorden_estado (NumerodeOrden, Estado, Eliminado)");
+        // Estado es TEXT (no varchar) - sin prefijo de longitud, InnoDB tira
+        // "Specified key was too long; max key length is 3072 bytes" (ya lo
+        // confirmamos en un intento anterior). 20 caracteres sobra para
+        // valores como 'Abierto'/'Cerrado'.
+        $ok = $mysqli->query("ALTER TABLE HojaDeRuta ADD INDEX idx_numerodeorden_estado (NumerodeOrden, Estado(20), Eliminado)");
         $resultado['alter_ok'] = (bool)$ok;
         $resultado['alter_error'] = $mysqli->error;
     } catch (\Throwable $e) {
