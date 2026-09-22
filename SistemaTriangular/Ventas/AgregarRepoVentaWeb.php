@@ -33,7 +33,10 @@ function generarCodigo($longitud)
 //Genero el ultimo numero para la reposicion
 $BuscaNumRepo = $mysqli->query("SELECT MAX(NumeroRepo) AS NumeroRepo FROM Ventas");
 if ($row = $BuscaNumRepo->fetch_array(MYSQLI_ASSOC)) {
-    $NRepo = trim($row['NumeroRepo']) + 1;
+    // intval (no trim): mismo bug de fondo que el de Posicion mas abajo -
+    // si Ventas estuviera vacia, MAX() da NULL y trim(null)+1 tira
+    // TypeError en PHP8 ("Unsupported operand types: string + int").
+    $NRepo = intval($row['NumeroRepo']) + 1;
 }
 
 $NumeroRepo = '';
@@ -454,10 +457,20 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
         if ($_SESSION['OrdenCliente_t'] == '0') {
             $sql = $mysqli->query("SELECT MAX(Posicion)as Posicion FROM HojaDeRuta WHERE Recorrido='$recorrido[$i]' AND Estado='Abierto'");
             $Dato = $sql->fetch_array(MYSQLI_ASSOC);
-            $Orden = trim($Dato['Posicion']) + 1;
+            // FIX (2026-09-22): mismo root cause que el bug de HojaDeRuta
+            // faltante en colectas (ver Ventas/Procesos/php/colecta.php) -
+            // MAX(Posicion) da NULL cuando el recorrido arranca sin ninguna
+            // fila "Abierto" (primer pedido del día para esa ruta), y
+            // trim(null)+1 tira TypeError en PHP8 ("Unsupported operand
+            // types: string + int") - la request moría ACÁ, antes del
+            // INSERT de HojaDeRuta, sin ningún aviso. intval() lo soluciona
+            // de raíz (intval(null) = 0).
+            $Orden = intval($Dato['Posicion']) + 1;
         } else {
             $Orden = $_SESSION['OrdenCliente_t'];
         }
+
+        try {
 
         $Ingresahojaderuta = $mysqli->query("INSERT IGNORE INTO `HojaDeRuta`(
     `Fecha`,
@@ -507,6 +520,33 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
             `ImporteCobranza`,`idTransClientes`)VALUES ('{$FechaEntrega}','{$Recorrido_Limpio}','{$DomicilioDestino}','{$LocalidadDestino}','{$ProvinciaDestino}','{$Pais}',
             '{$ClienteDestino}','{$TipoDeComprobante}','{$Observaciones}','{$Usuario}','{$Asignado}','{$EstadoH}','{$NOrdenLogistica}',
             '{$NumeroPedido}','{$idCliente}','{$Orden}','{$TelefonoDestino}','{$NOrden}','{$CobrarEnvio}',{$idTransClientes})");
+
+        } catch (\Throwable $e) {
+            // FIX (2026-09-22): mysqli en modo estricto (default desde PHP
+            // 8.1, nunca configurado distinto en Conexioni.php) tira
+            // excepcion en vez de devolver false ante un error de query -
+            // sin este try/catch, cualquier error acá mataba la request
+            // entera (500 en blanco) sin loguear ni avisar nada, dejando el
+            // pedido a medio crear. Se loguea en la misma tabla que usa
+            // colecta.php para este tipo de fallas.
+            error_log('AgregarRepoVentaWeb.php: excepcion insertando HojaDeRuta/Roadmap para idTransClientes='
+                . (isset($idTransClientes) ? $idTransClientes : '?') . ', Recorrido=' . $recorrido[$i] . ': ' . $e->getMessage());
+            try {
+                $stmt = $mysqli->prepare("INSERT INTO ErroresColecta (idTransClientes, Recorrido, Paso, MysqlErrno, MysqlError) VALUES (?,?,?,?,?)");
+                if ($stmt) {
+                    $idTCLog = isset($idTransClientes) ? intval($idTransClientes) : null;
+                    $recorridoLog = intval($recorrido[$i]);
+                    $paso = 'AgregarRepoVentaWeb';
+                    $mysqlErrno = ($e instanceof \mysqli_sql_exception) ? $e->getCode() : null;
+                    $mensajeError = $e->getMessage();
+                    $stmt->bind_param('iisis', $idTCLog, $recorridoLog, $paso, $mysqlErrno, $mensajeError);
+                    $stmt->execute();
+                    $stmt->close();
+                }
+            } catch (\Throwable $e2) {
+                error_log('AgregarRepoVentaWeb.php: no se pudo loguear en ErroresColecta: ' . $e2->getMessage());
+            }
+        }
 
 
         //INGRESA EN SEGUIMIENTO
