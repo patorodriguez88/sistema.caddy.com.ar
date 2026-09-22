@@ -470,8 +470,16 @@ function cargarTiposDeComprobante() {
       var jsonData = JSON.parse(response);
       if (jsonData.success == 1 && Array.isArray(jsonData.datos)) {
         jsonData.datos.forEach(function (tipo) {
+          // Pedido (Asana, Agustina): mostrar el código junto al tipo, como
+          // en el sistema viejo (ej. "001 FACTURAS A") - ayuda a elegir bien
+          // sin tener que adivinar. El value sigue siendo SOLO la
+          // Descripcion (sin el código) para no romper nada que ya compare
+          // contra ese texto río abajo (carga/guardado del comprobante).
+          const codigo = String(tipo.Codigo ?? "").padStart(3, "0");
           $select.append(
-            $("<option></option>").val(tipo.Descripcion).text(tipo.Descripcion)
+            $("<option></option>")
+              .val(tipo.Descripcion)
+              .text(codigo + " " + tipo.Descripcion)
           );
         });
         $select.data("cargado", true);
