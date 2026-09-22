@@ -135,33 +135,32 @@ $(document).ready(function () {
           var entorno = (jsonData.Entorno || "").toString().toLowerCase();
           var $badge = $("#user_entorno_badge");
 
-          // FIX (reportado 2026-09-22: "CONECTADO está muy pegado arriba"):
-          // .removeClass() sin argumentos borra TODAS las clases, incluida
-          // la "mt-1" que le daba separación al badge en el HTML (head.html)
-          // - solo la rama "local" la volvía a agregar, así que producción/
-          // sandbox/desconocido quedaban sin margen superior. Se agrega
-          // "mt-2" (un poquito más que el mt-1 original) a las 4 ramas por
-          // igual.
+          // El badge es un chip angosto (.entorno-badge, ver <style> en
+          // Menu/head.html), no un .badge de Bootstrap - por eso NO se usa
+          // "rounded-pill bg-* text-white": esas clases son del look
+          // anterior (barra sólida a todo el ancho). .removeClass() sin
+          // argumentos borra TODO, así que "mt-1"/"entorno-badge" se
+          // vuelven a agregar en las 4 ramas por igual.
           if (entorno === "sandbox") {
             $badge
               .text("SANDBOX")
               .removeClass()
-              .addClass("badge rounded-pill bg-warning text-dark mt-2");
+              .addClass("entorno-badge entorno-badge--warning mt-1");
           } else if (entorno === "produccion") {
             $badge
               .text("CONECTADO")
               .removeClass()
-              .addClass("badge rounded-pill bg-success text-white mt-2");
+              .addClass("entorno-badge entorno-badge--success mt-1");
           } else if (entorno === "local") {
             $badge
               .text("LOCALHOST")
               .removeClass()
-              .addClass("badge rounded-pill bg-black text-white mt-2");
+              .addClass("entorno-badge entorno-badge--dark mt-1");
           } else {
             $badge
               .text("ENTORNO DESCONOCIDO")
               .removeClass()
-              .addClass("badge rounded-pill bg-secondary text-white mt-2");
+              .addClass("entorno-badge entorno-badge--secondary mt-1");
           }
 
           if (jsonData.Nivel == 1) {
