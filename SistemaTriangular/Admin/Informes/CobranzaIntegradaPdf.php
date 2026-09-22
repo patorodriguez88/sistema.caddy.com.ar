@@ -138,6 +138,12 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
     // Origen = cliente emisor del envío (idClienteOrigen), Destino = destinatario
     // del paquete (ClienteDestino) - antes solo se mostraba el destino, sin forma
     // de ver de dónde venía cada remito dentro de la liquidación.
+    // FIX (Asana, reportado por Agustina: "Servicios duplicados en
+    // Cobranza Integrada - Igalfer"): mismo criterio que
+    // Admin/Procesos/php/cobranza_integrada.php ('Pendientes') - para
+    // clientes con Clientes.CobranzaIntegradaNoFactura=1, se excluye la
+    // fila de Tarifa del servicio (not_invoice=0), que no corresponde a
+    // esta liquidacion.
     $stD = $mysqli->prepare(
         "SELECT Ventas.*, TransClientes.ClienteDestino, TransClientes.CodigoProveedor,
                 COALESCE(co.nombrecliente, '') AS ClienteOrigen
@@ -145,6 +151,7 @@ function generarCobranzaIntegradaPDF(mysqli $mysqli, int $numero, string $rutaSa
          INNER JOIN TransClientes ON Ventas.NumPedido = TransClientes.CodigoSeguimiento
          LEFT JOIN Clientes co ON co.id = TransClientes.idClienteOrigen
          WHERE surrender_number=? AND Ventas.Eliminado=0 AND Ventas.CobrarEnvio<>0 AND TransClientes.Eliminado=0
+           AND NOT (IFNULL(co.CobranzaIntegradaNoFactura,0)=1 AND Ventas.not_invoice=0)
          ORDER BY Ventas.FechaPedido ASC"
     );
     $stD->bind_param('i', $numero);

@@ -70,6 +70,13 @@ if(isset($_POST['Totales']) && $_POST['Totales']==1){
     // multiplicaria el monto real de cobranza por la cantidad de servicios
     // de la rendicion. Se toma UN valor por NumPedido (MAX, mismo criterio
     // que Ventas/Procesos/php/funciones.php:47) y se suman esos.
+    // FIX (Asana, reportado por Agustina: "Servicios duplicados en
+    // Cobranza Integrada - Igalfer"): igual que en la accion 'Pendientes'
+    // mas abajo - para clientes con CobranzaIntegradaNoFactura=1 la fila
+    // de Tarifa (not_invoice=0) no debe sumar al "retenido", solo la fila
+    // de Cobranza Integrada. Sin este filtro, SUM(Total) sumaba tambien
+    // la tarifa del servicio -> "retenido" inflado -> neto a pagar mal
+    // calculado.
     $sql_number="SELECT surrender_time,surrender_name,idCliente,Cliente,FechaPedido,SUM(Total)as Total,
     (SELECT COALESCE(SUM(x.MaxCobrar),0) FROM (
         SELECT MAX(CobrarEnvio) AS MaxCobrar
@@ -77,8 +84,12 @@ if(isset($_POST['Totales']) && $_POST['Totales']==1){
         WHERE surrender_number='$id' AND Eliminado=0
         GROUP BY NumPedido
     ) x) as Cobranza
-    FROM Ventas INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=Ventas.NumPedido WHERE surrender_number='$id'
-    AND Ventas.Eliminado=0 AND TransClientes.Eliminado=0";
+    FROM Ventas
+    INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=Ventas.NumPedido
+    LEFT JOIN Clientes clo ON clo.id = TransClientes.idClienteOrigen
+    WHERE surrender_number='$id'
+    AND Ventas.Eliminado=0 AND TransClientes.Eliminado=0
+    AND NOT (IFNULL(clo.CobranzaIntegradaNoFactura,0)=1 AND Ventas.not_invoice=0)";
     $sql_dato=$mysqli->query($sql_number);
     $ResultadoTotales=$sql_dato->fetch_array(MYSQLI_ASSOC);
     $Total=$ResultadoTotales['Cobranza']-$ResultadoTotales['Total'];
@@ -124,10 +135,23 @@ if(isset($_POST['VerFechas']) && $_POST['VerFechas']==1){
   $recorrido = $_POST['Recorrido'] ?? '';
   $soloPendientes = ($_POST['SoloPendientes'] ?? '0') == '1';
 
+  // FIX (Asana, reportado por Agustina: "Servicios duplicados en Cobranza
+  // Integrada - Igalfer"): una rendicion con Cobranza Integrada queda
+  // repartida en 2 filas de Ventas con el mismo NumPedido y el mismo
+  // CobrarEnvio repetido - una con la Tarifa del servicio (not_invoice=0,
+  // se factura normal aparte) y otra con "COBRANZA INTEGRADA X%"
+  // (not_invoice=1, es la que se liquida por esta pantalla). Para
+  // clientes con Clientes.CobranzaIntegradaNoFactura=1 (ej. IGALFER) las
+  // DOS filas pasaban el filtro CobrarEnvio<>0 y aparecian ambas en la
+  // grilla como si fueran 2 pendientes distintos, cuando es un solo
+  // envio. Se excluye la fila de Tarifa (not_invoice=0) SOLO para estos
+  // clientes - el resto de los clientes sigue exactamente igual.
   $sql="SELECT v.*, tc.ClienteDestino, tc.CodigoProveedor, tc.Entregado, tc.Devuelto, tc.Recorrido
   FROM `Ventas` AS v
   INNER JOIN TransClientes AS tc ON v.NumPedido = tc.CodigoSeguimiento
-  WHERE v.FechaPedido>='$_POST[Inicio]' AND v.FechaPedido<='$_POST[Final]' AND v.Eliminado=0 AND v.CobrarEnvio<>0 AND tc.Eliminado=0";
+  LEFT JOIN Clientes AS clo ON clo.id = tc.idClienteOrigen
+  WHERE v.FechaPedido>='$_POST[Inicio]' AND v.FechaPedido<='$_POST[Final]' AND v.Eliminado=0 AND v.CobrarEnvio<>0 AND tc.Eliminado=0
+    AND NOT (IFNULL(clo.CobranzaIntegradaNoFactura,0)=1 AND v.not_invoice=0)";
 
   if (is_numeric($recorrido)) {
       $sql .= " AND tc.Recorrido = '" . $mysqli->real_escape_string($recorrido) . "'";
