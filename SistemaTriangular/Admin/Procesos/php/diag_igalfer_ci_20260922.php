@@ -38,14 +38,28 @@ if ($idsIgalfer) {
         ");
     }
 
-    // Pendientes de cobranza integrada (misma query que usa la pantalla), filtrado a Igalfer
-    $out['pendientes_igalfer'] = q($mysqli, "
+    // Pendientes de cobranza integrada (query ORIGINAL, con el bug), filtrado a Igalfer
+    $out['pendientes_igalfer_ANTES'] = q($mysqli, "
         SELECT v.idPedido, v.NumPedido, v.Codigo, v.Titulo, v.Precio, v.CobrarEnvio, v.surrender_number,
                v.not_invoice, tc.ClienteDestino, tc.idClienteOrigen, tc.RazonSocial
         FROM Ventas AS v
         INNER JOIN TransClientes AS tc ON v.NumPedido = tc.CodigoSeguimiento
         WHERE tc.idClienteOrigen IN ($inIds)
           AND v.Eliminado=0 AND v.CobrarEnvio<>0 AND tc.Eliminado=0 AND v.surrender_number=0
+        ORDER BY v.NumPedido, v.idPedido
+        LIMIT 40
+    ");
+
+    // Misma query, con el FIX (excluye Tarifa para clientes CobranzaIntegradaNoFactura=1)
+    $out['pendientes_igalfer_DESPUES'] = q($mysqli, "
+        SELECT v.idPedido, v.NumPedido, v.Codigo, v.Titulo, v.Precio, v.CobrarEnvio, v.surrender_number,
+               v.not_invoice, tc.ClienteDestino, tc.idClienteOrigen, tc.RazonSocial
+        FROM Ventas AS v
+        INNER JOIN TransClientes AS tc ON v.NumPedido = tc.CodigoSeguimiento
+        LEFT JOIN Clientes AS clo ON clo.id = tc.idClienteOrigen
+        WHERE tc.idClienteOrigen IN ($inIds)
+          AND v.Eliminado=0 AND v.CobrarEnvio<>0 AND tc.Eliminado=0 AND v.surrender_number=0
+          AND NOT (IFNULL(clo.CobranzaIntegradaNoFactura,0)=1 AND v.not_invoice=0)
         ORDER BY v.NumPedido, v.idPedido
         LIMIT 40
     ");
