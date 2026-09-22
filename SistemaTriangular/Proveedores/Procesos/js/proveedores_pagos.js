@@ -212,6 +212,12 @@ $("#fechacheque_t").keyup(function (e) {
   $("#footer_3_1").html(this.value);
 });
 
+// Pedido (Asana, Agustina): el "Número de Referencia" (#oculto,
+// numerotransferencia_t -> Tesoreria.NumeroTrans) antes solo se mostraba
+// para pago por transferencia (case "4") - se sacaron los
+// ".style.display = 'none'" de #oculto en el resto de los casos para que
+// quede visible sea cual sea la forma de pago (sirve para matchear
+// después en Conciliación Bancaria, no solo para transferencias).
 function mostrary(x1) {
   console.log(x1);
 
@@ -220,7 +226,6 @@ function mostrary(x1) {
       //EFECTIVO 000111100
       $("#footer_1").html("Efectivo: ");
       document.getElementById("total").style.display = "block";
-      document.getElementById("oculto").style.display = "none";
       document.getElementById("oculto1").style.display = "none";
       document.getElementById("BancoOculto").style.display = "none";
       document.getElementById("NumeroChequeOculto").style.display = "none";
@@ -238,7 +243,6 @@ function mostrary(x1) {
       // CHEQUES DE TERCEROS
       $("#footer_1").html(" Cheque de Terceros");
       document.getElementById("TercerosOculto").style.display = "block";
-      document.getElementById("oculto").style.display = "none";
       document.getElementById("oculto1").style.display = "none";
       document.getElementById("BancoOcultopropio").style.display = "none";
       document.getElementById("NumeroChequeOculto").style.display = "none";
@@ -280,7 +284,6 @@ function mostrary(x1) {
       document.getElementById("FechaChequeOculto").style.display = "block";
       // document.getElementById('BancoOcultopropio').style.display = 'block';
       document.getElementById("total").style.display = "block";
-      document.getElementById("oculto").style.display = "none";
       document.getElementById("oculto1").style.display = "none";
       document.getElementById("TercerosOculto").style.display = "none";
       $("#importepago_t").val("");
@@ -299,7 +302,6 @@ function mostrary(x1) {
       document.getElementById("FechaChequeOculto").style.display = "block";
       // document.getElementById('BancoOcultopropio').style.display = 'block';
       document.getElementById("total").style.display = "block";
-      document.getElementById("oculto").style.display = "none";
       document.getElementById("oculto1").style.display = "none";
       document.getElementById("TercerosOculto").style.display = "none";
       $("#importepago_t").val("");
@@ -313,7 +315,6 @@ function mostrary(x1) {
     default:
       $("#footer_1").html("Otros: ");
       document.getElementById("total").style.display = "block";
-      document.getElementById("oculto").style.display = "none";
       document.getElementById("oculto1").style.display = "none";
       document.getElementById("BancoOcultopropio").style.display = "none";
       document.getElementById("NumeroChequeOculto").style.display = "none";

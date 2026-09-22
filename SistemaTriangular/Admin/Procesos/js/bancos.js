@@ -13,6 +13,13 @@ let tarjetaSeleccionada = null;
 let cuentaSeleccionada = "";
 let datatable1 = null;
 
+// Conciliación Bancaria: "corrida" actual (ver ConciliacionBancaria en la
+// base) - todo lo que se concilie con "Guardar Conciliación" queda
+// linkeado a este id. Se completa al apretar "Aceptar" (abrir_conciliacion)
+// y se resetea en "Volver".
+let idConciliacionActual = null;
+let estadoConciliacionActual = null; // 'Abierta' | 'Cerrada'
+
 // --- RANGO DE FECHAS: usar daterangepicker si lo tenés, o un input simple ---
 // Este helper transforma "DD/MM/YYYY" -> "YYYY-MM-DD"
 function toYMD(fechaDDMMYYYY) {
@@ -36,6 +43,15 @@ function getFechasYMD() {
     return { desde: ymd, hasta: ymd };
   }
   return { desde: "", hasta: "" };
+}
+
+// "YYYY-MM-DD HH:MM:SS" (Tesoreria.FechaConciliado, datetime) -> "DD/MM/YYYY HH:MM"
+function formatFechaHoraParaUI(valor) {
+  if (!valor) return "";
+  const [fecha, hora] = String(valor).split(" ");
+  const [y, m, d] = (fecha || "").split("-");
+  const hm = (hora || "").slice(0, 5);
+  return y && m && d ? `${d}/${m}/${y} ${hm}`.trim() : valor;
 }
 
 // Para mostrar DD/MM/YYYY en la UI a partir de YYYY-MM-DD o del daterangepicker
@@ -185,7 +201,12 @@ $("#btnVolver").click(function () {
   $("#conciliacion_bancaria").hide();
   $("#mensajeNoDatos").hide();
   $("#btnGrabarConciliacion").hide();
+  $("#btnCerrarConciliacion").hide();
+  $("#btnImprimirConciliacion").hide();
+  $("#avisoConciliacionCerrada").hide();
   $("#btnVolver").hide();
+  idConciliacionActual = null;
+  estadoConciliacionActual = null;
 
   $("#singledaterange").val("");
   $("#cuenta-info").html("<em>Seleccione una cuenta...</em>");
@@ -277,7 +298,8 @@ function buildDataTable() {
           } else {
             // $("#tabla_conciliacion").show();
             $("#mensajeNoDatos").hide();
-            $("#btnGrabarConciliacion").show();
+            // Si la corrida ya está Cerrada, no se puede seguir conciliando.
+            $("#btnGrabarConciliacion").toggle(estadoConciliacionActual !== "Cerrada");
             $("#btnVolver").hide();
           }
           return arr;
@@ -325,10 +347,21 @@ function buildDataTable() {
       {
         data: "Conciliado",
         render: function (data, type, row) {
-          const checked = Number(data) === 1 ? "checked" : "";
-          return `<input type="checkbox" class="conciliado-checkbox" data-id="${row.id}" ${checked}>`;
+          // Pedido (Asana, Patricio/Agustina): una vez conciliado, ya NO es
+          // un checkbox - queda un ícono fijo (no se puede destildar). El
+          // checkbox interactivo solo aparece para lo que todavía no está
+          // conciliado, y solo si la corrida sigue Abierta.
+          if (Number(data) === 1) {
+            const fecha = row.FechaConciliado ? formatFechaHoraParaUI(row.FechaConciliado) : "";
+            const usuario = row.UsuarioConciliado || "";
+            const titulo = `Conciliado${usuario ? " por " + usuario : ""}${fecha ? " el " + fecha : ""}`;
+            return `<span class="badge bg-success" title="${titulo}"><i class="mdi mdi-check-bold"></i> Validado</span>`;
+          }
+          const disabled = estadoConciliacionActual === "Cerrada" ? "disabled" : "";
+          return `<input type="checkbox" class="conciliado-checkbox" data-id="${row.id}" ${disabled}>`;
         },
       },
+      { data: "NumeroTrans", render: (d) => d || "" },
     ],
     footerCallback: function (row, data, start, end, display) {
       const api = this.api();
@@ -364,7 +397,8 @@ function buildDataTable() {
   });
 }
 
-// Aceptar: oculta selección y crea DataTable
+// Aceptar: oculta selección, abre (o recupera) la corrida de conciliación
+// para esta cuenta+rango, y recién ahí crea la DataTable.
 document.getElementById("btnAceptar").addEventListener("click", function () {
   $("#conciliacion_bancaria").show();
   $("#tabla_conciliacion").show();
@@ -382,9 +416,48 @@ document.getElementById("btnAceptar").addEventListener("click", function () {
     return;
   }
 
-  buildDataTable(); // ← crea la tabla aquí
-  this.style.display = "none";
+  const { desde, hasta } = getFechasYMD();
+  const btnEl = this;
+
+  $.ajax({
+    url: "../Admin/Procesos/php/bancos.php",
+    type: "POST",
+    data: { action: "abrir_conciliacion", cuenta: cuentaSeleccionada, desde, hasta },
+    dataType: "json",
+    success: function (res) {
+      if (res && res.success && res.conciliacion) {
+        idConciliacionActual = res.conciliacion.id;
+        estadoConciliacionActual = res.conciliacion.Estado;
+        actualizarBotonesSegunEstado();
+      } else {
+        idConciliacionActual = null;
+        estadoConciliacionActual = null;
+        $("#mensajeNoDatos")
+          .show()
+          .text((res && res.error) || "No se pudo abrir la conciliación.");
+      }
+      buildDataTable(); // ← crea la tabla ya con idConciliacionActual resuelto
+      btnEl.style.display = "none";
+    },
+    error: function () {
+      idConciliacionActual = null;
+      estadoConciliacionActual = null;
+      $("#mensajeNoDatos").show().text("No se pudo abrir la conciliación. Ver consola.");
+      buildDataTable();
+      btnEl.style.display = "none";
+    },
+  });
 });
+
+// Muestra/oculta los botones de Guardar/Cerrar/Imprimir según el estado
+// de la corrida actual (Abierta permite seguir conciliando y cerrar;
+// Cerrada solo permite imprimir), y el cartel fijo de "Cerrada".
+function actualizarBotonesSegunEstado() {
+  const cerrada = estadoConciliacionActual === "Cerrada";
+  $("#btnCerrarConciliacion").toggle(!cerrada && !!idConciliacionActual);
+  $("#btnImprimirConciliacion").toggle(!!idConciliacionActual);
+  $("#avisoConciliacionCerrada").toggle(cerrada);
+}
 
 // Si cambian filtros después, recargá (si ya existe tabla)
 $("#singledaterange").on("change", function () {
@@ -402,7 +475,17 @@ $("#singledaterange").on("change", function () {
 });
 
 // Guardar conciliación
+// FIX (Asana, pedido de Patricio/Agustina): ya no hay checkboxes tildados
+// de items YA conciliados (esos ahora renderizan como ícono fijo, sin
+// checkbox) - lo que junta este selector es SOLO lo nuevo que se está por
+// conciliar. El backend (grabar_conciliacion) también dejó de resetear
+// todo el rango a 0 antes de marcar: ahora únicamente agrega.
 $("#btnGrabarConciliacion").click(function () {
+  if (!idConciliacionActual) {
+    alert("No se pudo determinar la conciliación (recargá la página e intentá de nuevo).");
+    return;
+  }
+
   const idsConciliados = [];
   $("#tabla_conciliacion tbody .conciliado-checkbox:checked").each(function () {
     const id = $(this).data("id");
@@ -410,26 +493,25 @@ $("#btnGrabarConciliacion").click(function () {
   });
 
   if (idsConciliados.length === 0) {
-    alert("No hay registros conciliados para guardar.");
+    alert("No hay registros nuevos tildados para conciliar.");
     return;
   }
-
-  const { desde, hasta } = getFechasYMD();
 
   $.ajax({
     url: "../Admin/Procesos/php/bancos.php",
     type: "POST",
     data: {
       action: "grabar_conciliacion",
-      cuenta: cuentaSeleccionada,
-      desde,
-      hasta,
+      idConciliacion: idConciliacionActual,
       ids: idsConciliados,
     },
     success: function (response) {
       console.log("Respuesta del servidor:", response);
-      $("#success-alert-modal").modal("show");
-      // Si querés refrescar sin recargar la página:
+      if (response && response.success) {
+        $("#success-alert-modal").modal("show");
+      } else {
+        alert((response && response.error) || "No se pudo guardar la conciliación.");
+      }
       if (datatable1) datatable1.ajax.reload(null, false);
     },
     error: function (xhr, status, error) {
@@ -437,4 +519,61 @@ $("#btnGrabarConciliacion").click(function () {
       alert("Error al guardar la conciliación.");
     },
   });
+});
+
+// Cerrar conciliación: bloquea la corrida completa, no se puede volver a
+// tocar (ver bancos.php::cerrar_conciliacion).
+$("#btnCerrarConciliacion").click(function () {
+  if (!idConciliacionActual) return;
+
+  const cerrar = () => {
+    $.ajax({
+      url: "../Admin/Procesos/php/bancos.php",
+      type: "POST",
+      data: { action: "cerrar_conciliacion", idConciliacion: idConciliacionActual },
+      dataType: "json",
+      success: function (res) {
+        if (res && res.success) {
+          estadoConciliacionActual = "Cerrada";
+          actualizarBotonesSegunEstado();
+          if (datatable1) datatable1.ajax.reload(null, false);
+          if (window.Swal) {
+            Swal.fire("Listo", "Conciliación cerrada correctamente.", "success");
+          } else {
+            alert("Conciliación cerrada correctamente.");
+          }
+        } else {
+          alert((res && res.error) || "No se pudo cerrar la conciliación.");
+        }
+      },
+      error: function () {
+        alert("No se pudo cerrar la conciliación. Ver consola.");
+      },
+    });
+  };
+
+  if (window.Swal) {
+    Swal.fire({
+      icon: "question",
+      title: "¿Cerrar conciliación?",
+      text: "Una vez cerrada, no se va a poder conciliar ni destildar nada más de este período.",
+      showCancelButton: true,
+      confirmButtonText: "Sí, cerrar",
+      cancelButtonText: "Cancelar",
+      confirmButtonColor: "#1c8f61",
+    }).then((r) => {
+      if (r.isConfirmed) cerrar();
+    });
+  } else if (confirm("¿Cerrar conciliación? Una vez cerrada no se puede modificar.")) {
+    cerrar();
+  }
+});
+
+// Imprimir: abre el PDF de la corrida actual en una pestaña nueva.
+$("#btnImprimirConciliacion").click(function () {
+  if (!idConciliacionActual) return;
+  window.open(
+    "../Admin/Informes/ConciliacionBancariaPdf.php?id=" + encodeURIComponent(idConciliacionActual),
+    "_blank"
+  );
 });
