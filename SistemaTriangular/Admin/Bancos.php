@@ -190,6 +190,11 @@
                                         <div id="mensajeNoDatos" class="alert alert-warning text-center mt-3" style="display: none;">
                                             <strong>No hay datos disponibles para la consulta.</strong>
                                         </div>
+                                        <!-- Pedido (Asana, Patricio/Agustina): aviso fijo cuando la corrida
+                                             ya esta Cerrada - no se puede modificar, solo consultar/imprimir. -->
+                                        <div id="avisoConciliacionCerrada" class="alert alert-info text-center mt-3" style="display: none;">
+                                            <strong><i class="mdi mdi-lock-outline"></i> Esta conciliación ya está CERRADA</strong> - no se puede modificar, solo consultar o imprimir.
+                                        </div>
 
                                         <div class="table-responsive">
                                             <table class="table table-centered table-hover w-100 dt-responsive nowrap" style="font-size:11px" id="tabla_conciliacion">
@@ -202,6 +207,7 @@
                                                         <th>Debe</th>
                                                         <th>Haber</th>
                                                         <th>Conciliado</th>
+                                                        <th>N° Referencia</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody></tbody>
@@ -210,6 +216,7 @@
                                                         <th colspan="4" class="text-end">Totales:</th>
                                                         <th id="total-debe"></th>
                                                         <th id="total-haber"></th>
+                                                        <th></th>
                                                         <th></th>
                                                     </tr>
                                                 </tfoot>
@@ -220,6 +227,9 @@
                             </div>
                         </div>
                         <div class="col-12 text-end mt-3">
+                            <!-- Pedido (Asana): poder imprimir y "cerrar" la conciliación. -->
+                            <input type="button" value="Imprimir" class="btn btn-outline-secondary me-2" id="btnImprimirConciliacion" style="display:none;">
+                            <input type="button" value="Cerrar Conciliación" class="btn btn-danger me-2" id="btnCerrarConciliacion" style="display:none;">
                             <input type="button" value="Grabar Conciliación" class="btn btn-success" id="btnGrabarConciliacion" style="display:none;">
                         </div>
                         <div class="col-12 text-end mt-3">

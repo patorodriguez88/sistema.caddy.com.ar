@@ -311,8 +311,14 @@
                                                     <input name='totalfacturas_t' value='' type='hidden' value='' class='form-control' />
                                                 </div>
 
-                                                <div class="col-lg-4 mt-3" id='oculto' style='display:none;'>
-                                                    <label for="numerotransferencia_t">Numero Transferencia</label>
+                                                <!-- Pedido (Asana, Agustina): agregar un numero de comprobante al
+                                                     cargar un pago, para poder matchearlo despues en Conciliacion
+                                                     Bancaria (Admin/Bancos.php). Reusa el mismo campo/columna que ya
+                                                     existia SOLO para transferencias (numerotransferencia_t ->
+                                                     Tesoreria.NumeroTrans) pero ahora visible para cualquier forma de
+                                                     pago, no solo transferencia - por eso el cambio de label. -->
+                                                <div class="col-lg-4 mt-3" id='oculto'>
+                                                    <label for="numerotransferencia_t">Número de Referencia</label>
                                                     <input id='numerotransferencia_t' name='numerotransferencia_t' type='text' value='' class='form-control' />
                                                 </div>
                                                 <div class="col-lg-4 mt-3" id='oculto1' style='display:none;'>

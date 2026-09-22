@@ -50,6 +50,62 @@ if ($action === 'listar') {
         echo json_encode(["data" => [], "error" => "Error en la consulta: " . $e->getMessage()]);
         exit;
     }
+} elseif ($action === 'abrir_conciliacion') {
+    // ✅ Abre (o recupera, si ya existe) la "corrida" de conciliación para
+    // esta Cuenta+rango de fechas. Ver ConciliacionBancaria: una corrida
+    // agrupa todo lo que se concilia de una vez, con su propio estado
+    // (Abierta/Cerrada) - reemplaza el viejo esquema de un simple flag
+    // suelto por fila, que permitía des-conciliar por accidente.
+    $Cuenta = isset($_POST['cuenta']) ? trim($_POST['cuenta']) : '';
+    $Desde = parseFechaFlexible($_POST['desde'] ?? '');
+    $Hasta = parseFechaFlexible($_POST['hasta'] ?? '');
+    $Sucursal = "Córdoba";
+    $Usuario = $_SESSION['Usuario'] ?? 'Sistema';
+
+    if ($Cuenta === '' || !$Desde || !$Hasta) {
+        echo json_encode(["success" => false, "error" => "Faltan cuenta o fechas válidas"]);
+        exit;
+    }
+
+    // ¿Ya existe una corrida (abierta o cerrada) EXACTA para esta cuenta+rango?
+    $stmt = $mysqli->prepare("SELECT * FROM ConciliacionBancaria WHERE Cuenta = ? AND Desde = ? AND Hasta = ? ORDER BY id DESC LIMIT 1");
+    $stmt->bind_param("sss", $Cuenta, $Desde, $Hasta);
+    $stmt->execute();
+    $existente = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if ($existente) {
+        echo json_encode(["success" => true, "conciliacion" => $existente, "nueva" => false]);
+        exit;
+    }
+
+    // Saldo inicial: saldo acumulado de la cuenta ANTES de $Desde (mismo
+    // criterio contable de siempre - Debe suma, Haber resta).
+    $stmt = $mysqli->prepare("SELECT COALESCE(SUM(Debe),0) - COALESCE(SUM(Haber),0) AS Saldo
+                               FROM Tesoreria
+                               WHERE Cuenta = ? AND Fecha < ? AND Eliminado = 0 AND Pendiente = 0 AND Sucursal = ?");
+    $stmt->bind_param("sss", $Cuenta, $Desde, $Sucursal);
+    $stmt->execute();
+    $rowSaldo = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $SaldoInicial = (float)($rowSaldo['Saldo'] ?? 0);
+
+    $stmt = $mysqli->prepare("INSERT INTO ConciliacionBancaria
+        (Cuenta, Desde, Hasta, SaldoInicial, Estado, UsuarioApertura, FechaApertura)
+        VALUES (?, ?, ?, ?, 'Abierta', ?, NOW())");
+    $stmt->bind_param("sssds", $Cuenta, $Desde, $Hasta, $SaldoInicial, $Usuario);
+    $stmt->execute();
+    $idNueva = $stmt->insert_id;
+    $stmt->close();
+
+    $stmt = $mysqli->prepare("SELECT * FROM ConciliacionBancaria WHERE id = ?");
+    $stmt->bind_param("i", $idNueva);
+    $stmt->execute();
+    $nueva = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    echo json_encode(["success" => true, "conciliacion" => $nueva, "nueva" => true]);
+    exit;
 } elseif ($action === 'consultar_conciliacion') {
     // ✅ Consultar conciliación bancaria
     $Cuenta = isset($_POST['Cuenta']) ? $_POST['Cuenta'] : '';
@@ -72,9 +128,10 @@ if ($action === 'listar') {
     }
 
     $query = "SELECT t.id, t.Conciliado, t.Fecha, t.NombreCuenta, t.Cuenta, t.Debe, t.Haber,
-                     t.Observaciones, t.idTransProvee, t.Usuario, t.NumeroAsiento, 
+                     t.Observaciones, t.idTransProvee, t.Usuario, t.NumeroAsiento, t.NumeroTrans,
+                     t.FechaConciliado, t.UsuarioConciliado, t.idConciliacionBancaria,
                      COALESCE(Ctasctes.RazonSocial, TransProveedores.RazonSocial) AS Cliente
-              FROM Tesoreria t 
+              FROM Tesoreria t
               LEFT JOIN Ctasctes ON t.idCtasctes = Ctasctes.id
               LEFT JOIN TransProveedores ON t.idTransProvee = TransProveedores.id
               WHERE t.Eliminado = 0 AND t.Pendiente = 0 AND t.Sucursal = ?";
@@ -123,6 +180,10 @@ if ($action === 'listar') {
         echo json_encode(["success" => false, "error" => "No hay registros seleccionados"]);
         exit;
     }
+    if (!isset($_POST['idConciliacion']) || !ctype_digit((string)$_POST['idConciliacion'])) {
+        echo json_encode(["success" => false, "error" => "Falta abrir la conciliación (idConciliacion)"]);
+        exit;
+    }
 
     // ✅ Recibir los datos desde el POST
     $ids = is_array($_POST['ids']) ? $_POST['ids'] : [$_POST['ids']]; // Convertir a array si es un solo valor
@@ -133,216 +194,118 @@ if ($action === 'listar') {
         exit;
     }
 
-    $Cuenta = isset($_POST['cuenta']) ? $_POST['cuenta'] : '';
-    $Desde = isset($_POST['desde']) ? $_POST['desde'] : '';
-    $Hasta = isset($_POST['hasta']) ? $_POST['hasta'] : '';
-    $Sucursal = "Córdoba";
+    $idConciliacion = (int)$_POST['idConciliacion'];
     $UsuarioConciliado = $_SESSION['Usuario'] ?? 'Sistema';
 
-    // ✅ Formatear las fechas al formato MySQL (YYYY-MM-DD)
-    $Desde = parseFechaFlexible($Desde);
-    $Hasta = parseFechaFlexible($Hasta);
-
-    // ✅ PRIMERO: Poner todos los conciliados entre las fechas seleccionadas en `0`
-    if (!empty($Cuenta) && !empty($Desde) && !empty($Hasta)) {
-        $query = "UPDATE Tesoreria SET Conciliado = 0 WHERE Cuenta = ? AND Fecha BETWEEN ? AND ? AND Eliminado = 0 AND Pendiente = 0 AND Sucursal = ?";
-        $stmt = $mysqli->prepare($query);
-        $stmt->bind_param("ssss", $Cuenta, $Desde, $Hasta, $Sucursal);
-        $stmt->execute();
-        $stmt->close();
+    // La corrida tiene que existir y seguir Abierta - si ya la cerraron
+    // (en otra pestaña, por ejemplo) no se puede seguir conciliando ahí.
+    $stmt = $mysqli->prepare("SELECT Estado FROM ConciliacionBancaria WHERE id = ?");
+    $stmt->bind_param("i", $idConciliacion);
+    $stmt->execute();
+    $conc = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if (!$conc) {
+        echo json_encode(["success" => false, "error" => "La conciliación no existe"]);
+        exit;
+    }
+    if ($conc['Estado'] !== 'Abierta') {
+        echo json_encode(["success" => false, "error" => "Esta conciliación ya está Cerrada, no se puede modificar"]);
+        exit;
     }
 
-    // ✅ SEGUNDO: Marcar los conciliados seleccionados en `1`
-    $FechaConciliado = date('Y-m-d'); // Obtener la fecha actual
-
-    // Construcción de placeholders dinámicos
+    // FIX DE RAÍZ (Asana, pedido de Patricio/Agustina - "que no se pueda
+    // eliminar una conciliación"): la versión anterior de esta acción
+    // primero ponía en Conciliado=0 TODO lo del rango de fechas/cuenta, y
+    // recién después volvía a marcar en 1 lo que estaba tildado en pantalla
+    // en ese momento - cualquier ítem ya conciliado que no estuviera entre
+    // los tildados actuales (destildado sin querer, o ni siquiera visible
+    // en la página/filtro actual) quedaba DES-conciliado sin ningún aviso.
+    // Ahora esta acción SOLO AGREGA: marca en 1 los ids recibidos, nada
+    // más - nunca toca ni pisa lo que ya estaba conciliado. Además el
+    // "AND Conciliado = 0" de abajo es una segunda barrera: aunque llegue
+    // por error el id de algo ya conciliado, no se vuelve a tocar (ni
+    // siquiera se le pisa la fecha/usuario de conciliación original).
     $placeholders = implode(',', array_fill(0, count($ids), '?'));
-    $query = "UPDATE Tesoreria SET Conciliado = 1, FechaConciliado = ?, UsuarioConciliado = ? WHERE id IN ($placeholders)";
+    $query = "UPDATE Tesoreria
+              SET Conciliado = 1, FechaConciliado = NOW(), UsuarioConciliado = ?, idConciliacionBancaria = ?
+              WHERE id IN ($placeholders) AND Conciliado = 0";
 
     $stmt = $mysqli->prepare($query);
 
-    // ✅ Crear tipos dinámicos: 2 strings (fecha y usuario) + n enteros (IDs)
-    $types = "ss" . str_repeat('i', count($ids));
-    $params = array_merge([$FechaConciliado, $UsuarioConciliado], $ids);
+    $types = "si" . str_repeat('i', count($ids));
+    $params = array_merge([$UsuarioConciliado, $idConciliacion], $ids);
     $stmt->bind_param($types, ...$params);
 
     if ($stmt->execute()) {
+        $marcados = $stmt->affected_rows;
         $stmt->close();
 
-        // ✅ TERCERO: Si la conciliación es de un cheque a pagar, marcarlo en la tabla `Cheques`
+        // ✅ Si la conciliación es de un cheque a pagar, marcarlo en la tabla `Cheques`
         $query = "UPDATE Cheques SET Pagado = 1 WHERE NumeroCheque IN (SELECT NumeroCheque FROM Tesoreria WHERE id IN ($placeholders))";
         $stmt = $mysqli->prepare($query);
         $stmt->bind_param(str_repeat('i', count($ids)), ...$ids);
         $stmt->execute();
         $stmt->close();
 
-        echo json_encode(["success" => true, "message" => "Conciliación guardada correctamente"]);
+        echo json_encode(["success" => true, "message" => "Conciliación guardada correctamente", "marcados" => $marcados]);
     } else {
         echo json_encode(["success" => false, "error" => "Error al actualizar conciliados"]);
     }
 
     $mysqli->close();
     exit;
+} elseif ($action === 'cerrar_conciliacion') {
+    // ✅ Cierra la corrida: de acá en más queda bloqueada (ninguna fila con
+    // este idConciliacionBancaria se puede volver a tocar - grabar_conciliacion
+    // ya rechaza cualquier intento si Estado <> 'Abierta').
+    $idConciliacion = isset($_POST['idConciliacion']) ? (int)$_POST['idConciliacion'] : 0;
+    $Usuario = $_SESSION['Usuario'] ?? 'Sistema';
+
+    if ($idConciliacion <= 0) {
+        echo json_encode(["success" => false, "error" => "Falta idConciliacion"]);
+        exit;
+    }
+
+    $stmt = $mysqli->prepare("SELECT * FROM ConciliacionBancaria WHERE id = ?");
+    $stmt->bind_param("i", $idConciliacion);
+    $stmt->execute();
+    $conc = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+
+    if (!$conc) {
+        echo json_encode(["success" => false, "error" => "La conciliación no existe"]);
+        exit;
+    }
+    if ($conc['Estado'] !== 'Abierta') {
+        echo json_encode(["success" => false, "error" => "Ya está Cerrada"]);
+        exit;
+    }
+
+    // Saldo final = saldo inicial + lo conciliado en esta corrida.
+    $stmt = $mysqli->prepare("SELECT COALESCE(SUM(Debe),0) - COALESCE(SUM(Haber),0) AS Movimiento
+                               FROM Tesoreria WHERE idConciliacionBancaria = ? AND Eliminado = 0");
+    $stmt->bind_param("i", $idConciliacion);
+    $stmt->execute();
+    $mov = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    $SaldoFinal = (float)$conc['SaldoInicial'] + (float)($mov['Movimiento'] ?? 0);
+
+    $stmt = $mysqli->prepare("UPDATE ConciliacionBancaria
+        SET Estado = 'Cerrada', UsuarioCierre = ?, FechaCierre = NOW(), SaldoFinal = ?
+        WHERE id = ? AND Estado = 'Abierta'");
+    $stmt->bind_param("sdi", $Usuario, $SaldoFinal, $idConciliacion);
+    $stmt->execute();
+    $ok = $stmt->affected_rows === 1;
+    $stmt->close();
+
+    if ($ok) {
+        echo json_encode(["success" => true, "message" => "Conciliación cerrada correctamente", "SaldoFinal" => $SaldoFinal]);
+    } else {
+        echo json_encode(["success" => false, "error" => "No se pudo cerrar (¿ya la cerraron en otra pestaña?)"]);
+    }
+    exit;
 }
 
 // ✅ Si no se recibe una acción válida
 echo json_encode(["error" => "Acción no permitida"]);
 exit;
-
-
-
-
-
-// $Sucursal=$_SESSION['Sucursal'];
-// $Cuenta=$_POST['CuentaBancaria'];
-// $Desde=$_POST[desde_t];
-// $Hasta=$_POST[hasta_t];
-// $Desde1=explode("-",$Desde,3);
-// $Hasta1=explode("-",$Hasta,3);
-// $Desde2=$Desde1[2]."/".$Desde1[1]."/".$Desde1[0];
-// $Hasta2=$Hasta1[2]."/".$Hasta1[1]."/".$Hasta1[0];
-// $ColSpan=5;
-
-// if($_POST[Accion]=='Grabar Conciliacion'){
-
-// //  PRIMERO PONGO TODOS LOS CONCILIADOS ENTRE LAS FECHAS SELECCIONADAS EN CERO
-
-//   $sql=mysql_query("UPDATE Tesoreria SET Conciliado='0' WHERE Cuenta='$Cuenta' AND Fecha>='$Desde' AND Fecha<='$Hasta' AND Eliminado=0 AND Pendiente=0 AND Sucursal='$Sucursal'");             
-//   $idConciliado=$_POST[conciliado];
-
-// // LUEGO MARCO TOOS LOS QUE ESTEN SELECCIONADOS EN EL CHECKBOX LOS ANTERIORES Y LOS NUEVOS
-
-//   for($i=0;$i<=count($idConciliado);$i++){
-//   $Fecha=date('Y-m-d');  
-//   $sql=mysql_query("UPDATE Tesoreria SET Conciliado='1',FechaConciliado='$Fecha',UsuarioConciliado='".$_SESSION[Usuario]."' WHERE id='$idConciliado[$i]'");      
-
-// //  AHORA SI LA CONCILIACION ES DE UN CHEQUE A PAGAR LO MARCO EN LA TABLA CHEQUES.
-
-//   $sqlBuscoCheque=mysql_query("SELECT NumeroCheque FROM Tesoreria WHERE NumeroCheque<>'' AND id='$idConciliado[$i]'");
-//   $sqlBuscoChequeR=mysql_fetch_array($sqlBuscoCheque);
-//   $sqlEjecutar=mysql_query("UPDATE Cheques SET Pagado='1' WHERE NumeroCheque='$sqlBuscoChequeR[NumeroCheque]'");  
-//   }		
-// }
-//   if ($_POST['CuentaBancaria']==''){
-// 			echo "<form class='login' action='' method='post' style='float:center; width:500px;'>";
-// 			echo "<div><titulo>Seleccione Cuenta Bancaria y Fechas</titulo></div>";
-//       echo "<div><hr></hr></div>";
-// 			$Seleccion=mysql_query("SELECT Cuenta, NombreCuenta FROM PlanDeCuentas WHERE Cuenta in('111200','111210')");
-// 			echo "<div><label>Razon Social:</label><select name='CuentaBancaria' style='float:center;width:390px;' size='1'>";
-// 			echo "<option>Seleccione Cuenta Bancaria</option>";
-// // 			$Dato = mysql_result($Seleccion,0);
-
-//       while ($row = mysql_fetch_array($Seleccion)){
-//       echo "<option value='".$row[Cuenta]."'>".$row['NombreCuenta']."</option>";
-//       }
-// 			echo "</select></div>";
-//       echo "<div><label>Desde:</label><input type='date' name='desde_t' ></div>";
-//       echo "<div><label>Hasta:</label><input type='date' name='hasta_t' ></div>";
-//       echo "<div><input type='submit' name='BuscarCuenta' value='Aceptar' ></div>";
-
-//       echo "</form>";
-//       goto a;  
-//     }  
-// echo "<table class='login' border='0'>";
-// echo "<caption>Cuenta Bancaria: $Dato $Cuenta Desde: $Desde2 Hasta: $Hasta2</caption>";
-// echo "<th>Fecha</th>";
-// echo "<th>Cuenta</th>";
-// echo "<th>Razon Social</th>";
-// echo "<th>N.Asiento</th>";  
-// echo "<th>Observaciones</th>";
-// echo "<th>Debe</th>";
-// echo "<th>Haber</th>";
-// echo "<th>Conciliado</th>";  
-
-// $ordenar="SELECT t.id,t.Conciliado,t.Fecha,t.NombreCuenta,t.Cuenta,t.Debe,t.Haber,
-// t.Observaciones,t.idTransProvee,t.Usuario,t.NumeroAsiento, 
-// if(Ctasctes.RazonSocial is NULL,TransProveedores.RazonSocial,Ctasctes.RazonSocial)AS Cliente FROM Tesoreria t 
-// LEFT JOIN Ctasctes ON t.idCtasctes=Ctasctes.id
-// LEFT JOIN TransProveedores ON t.idTransProvee=TransProveedores.id
-// WHERE t.Cuenta='$Cuenta' AND t.Fecha>='$Desde' AND t.Fecha<='$Hasta' AND t.Eliminado=0 AND t.Pendiente=0 AND t.Sucursal='$Sucursal' ORDER BY t.Fecha ASC";
-// //  $ordenar="SELECT * FROM Tesoreria WHERE Cuenta='$Cuenta' AND Fecha>='$Desde' AND Fecha<='$Hasta' AND Eliminado=0 AND Pendiente=0 AND Sucursal='$Sucursal' ORDER BY Fecha ASC";	
-//  $MuestraStock=mysql_query($ordenar);
-
-// 	while($row=mysql_fetch_array($MuestraStock)){
-//     if($numfilas%2 == 0){
-//     echo "<tr style='background: #f2f2f2;font-size:11px' >";
-//     }else{
-//     echo "<tr style='background:$color2;font-size:11px' >";
-//     }	
-
-//     $fecha=$row['Fecha'];
-//     $arrayfecha=explode('-',$fecha,3);
-//     $Fecha2=$arrayfecha[2]."/".$arrayfecha[1]."/".$arrayfecha[0];
-//     $Debe=number_format($row['Debe'],2,',','.');
-//     $Haber=number_format($row['Haber'],2,',','.');
-
-// //   echo "<tr style='font-size:12px;background:$color1;color:$font1'>
-//     echo "<td>$Fecha2</td>";
-//     echo "<td style='font-size:10px;min-width:130px'>".$row['Cuenta']."</br> ".$row['NombreCuenta']."</td>";
-//     echo "<td>".$row['Cliente']."</td>";
-//     echo "<td>".$row['NumeroAsiento']."</td>";
-//     echo "<td>".$row['Observaciones']."</td>";
-//     echo "<td>$ $Debe</td>";
-//     echo "<td>$ $Haber</td>";
-//    if($row['Conciliado']==1){
-//      $valor='checked';
-//    }else{
-//      $valor='';
-//    } 
-//     echo "<form id='limpio' action='' method='POST'>";  
-//     echo "<td align='center' style='float:center'><input type='checkbox' name='conciliado[]' value='$row[id]' $valor></td>";  
-//     echo "<input type='hidden' name='conci[]' value='$row[Conciliado]'>";
-// 	echo "<input type='hidden' name='CuentaBancaria' value='$Cuenta'>";
-// 	echo "<input type='hidden' name='desde_t' value='$Desde'>";
-// 	echo "<input type='hidden' name='hasta_t' value='$Hasta'>";
-//   $numfilas++;
-//   }
-//   $SaldoSeleccionDebe=mysql_query("SELECT SUM(Debe)as TotalDebe FROM Tesoreria WHERE Cuenta='$Cuenta' AND Fecha>=$Desde AND Fecha<='$Hasta' 
-// AND Sucursal='$Sucursal' AND Eliminado=0 AND Pendiente=0 ");	
-// $row=mysql_fetch_array($SaldoSeleccionDebe);
-// $DebeSeleccion=$row[TotalDebe];
-// $DebeSeleccion1=number_format($row[TotalDebe],2,',','.');	
-// $SaldoSeleccionHaber=mysql_query("SELECT SUM(Haber)as TotalHaber FROM Tesoreria WHERE Cuenta='$Cuenta' AND Fecha>=$Desde AND Fecha<='$Hasta' 
-// AND Sucursal='$Sucursal' AND Eliminado=0 AND Pendiente=0 ");	
-// $row=mysql_fetch_array($SaldoSeleccionHaber);
-// $HaberSeleccion=$row[TotalHaber];
-// $HaberSeleccion1=number_format($row[TotalHaber],2,',','.');  
-// $SaldoCuenta=number_format($DebeSeleccion-$HaberSeleccion,2,',','.');	
-
-// $SaldoSeleccionDebeConciliado=mysql_query("SELECT SUM(Debe)as TotalDebe FROM Tesoreria WHERE Cuenta='$Cuenta' AND Fecha>='$Desde' AND Fecha<='$Hasta' 
-// AND Sucursal='$Sucursal' AND Eliminado=0 AND Pendiente=0 AND Conciliado='1'");	
-// $row1=mysql_fetch_array($SaldoSeleccionDebeConciliado);
-// $DebeSeleccionConciliado=$row1[TotalDebe];  
-// $DebeSeleccionConciliado1=number_format($row1[TotalDebe],2,',','.');	
-// $SaldoSeleccionHaberConciliado=mysql_query("SELECT SUM(Haber)as TotalHaber FROM Tesoreria WHERE Cuenta='$Cuenta' AND Fecha>='$Desde' AND Fecha<='$Hasta' 
-// AND Sucursal='$Sucursal' AND Eliminado=0 AND Pendiente=0 AND Conciliado='1'");	
-// $row1=mysql_fetch_array($SaldoSeleccionHaberConciliado);
-// $HaberSeleccionConciliado=$row1[TotalHaber];  
-// $HaberSeleccionConciliado1=number_format($row1[TotalHaber],2,',','.');	
-// // $SaldoCuentaConciliado=number_format(51.84+$DebeSeleccionConciliado-$HaberSeleccionConciliado,2,',','.');		
-// $SaldoCuentaConciliado=number_format($DebeSeleccionConciliado-$HaberSeleccionConciliado,2,',','.');		
-// 		if ($SaldoTotal>='0'){
-// 			$colorsaldo=white;
-// 		}else{
-// 			$colorsaldo=red;
-// 		}
-// //SALDO TOTAL
-// $DiferenciaSaldos=number_format($Numero1-$Numero2,2,',','.');
-
-//   echo "<tfoot>";
-//   echo "<th colspan='5'>Detalle:</th><th>Debe</th><th>Haber</th><th>Saldo</th>";
-//   echo "<tr><td colspan='5'>Total Cuenta Contable:</td><td>$ $DebeSeleccion1</td><td>$ $HaberSeleccion1</td><td>$ $SaldoCuenta</td></tr>";
-//   echo "<tr><td colspan='5'>Total Conciliado > 01 de Mayo 2018:</td><td>$ $DebeSeleccionConciliado1</td><td>$ $HaberSeleccionConciliado1</td><td>$ $SaldoCuentaConciliado</td></tr>";
-//   echo "</tfoot>";  
-
-// 	echo "</table>";
-
-// echo "<div><input type='submit' name='Accion' value='Grabar Conciliacion' 
-//     style='background: none repeat scroll 0 0 #E24F30;
-//     border: 1px solid #C6C6C6;
-//     float: right;
-//     font-weight: bold;
-//     padding: 8px 26px;
-// 	  color:#FFFFFF;
-//     font-size:12px;'></div>";
-// echo "</form>";
