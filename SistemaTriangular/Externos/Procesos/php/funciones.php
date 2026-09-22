@@ -836,7 +836,15 @@ if (isset($_POST['Reporte'])) {
         $DATO_EXTERNOS = $SQL_EXTERNOS->fetch_array(MYSQLI_ASSOC);
         $NombreUsuario = $DATO_EXTERNOS['Usuario'];
 
-        $SQL = $mysqli->query("SELECT 
+        // FIX (2026-09-22, reportado: pedidos duplicados - mismo codigo con
+        // "En Transito"/"No entregado" y despues "Entregado" contando el
+        // servicio dos veces). Seguimiento tiene una fila por cada cambio de
+        // estado del mismo codigo - sin este filtro, un paquete con
+        // reintento de entrega aparecia 2, 3 o 4 veces en el listado. Se
+        // toma solo la fila mas reciente por codigo, mismo patron que
+        // Logistica/Proceso/php/controlrecorridos.php y el fix ya aplicado
+        // mas abajo en el bloque 'controlado == 1'.
+        $SQL = $mysqli->query("SELECT
             Seg.Entregado,
             ts.RazonSocial,
             ts.idClienteOrigen,
@@ -859,13 +867,22 @@ if (isset($_POST['Reporte'])) {
         JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
         JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
         LEFT JOIN Estados AS e ON e.Estado = Seg.Estado
-        WHERE 
+        WHERE
             Seg.Eliminado = 0
             AND ts.Eliminado = 0
             AND Seg.NumerodeOrden = " . $numeroOrden . "
             AND Seg.Visitas <> 0
             AND Seg.Estado <> 'Retirado del Cliente'
-            AND Seg.Usuario = '" . $NombreUsuario . "'");
+            AND Seg.Usuario = '" . $NombreUsuario . "'
+            AND Seg.id = (
+                SELECT MAX(Seg2.id) FROM Seguimiento Seg2
+                WHERE Seg2.CodigoSeguimiento = Seg.CodigoSeguimiento
+                  AND Seg2.NumerodeOrden = Seg.NumerodeOrden
+                  AND Seg2.Eliminado = 0
+                  AND Seg2.Visitas <> 0
+                  AND Seg2.Estado <> 'Retirado del Cliente'
+                  AND Seg2.Usuario = Seg.Usuario
+            )");
 
         $ROWS = array();
         $latOrigen = -31.445003929354897;
