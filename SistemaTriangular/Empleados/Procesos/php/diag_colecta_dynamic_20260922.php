@@ -48,7 +48,7 @@ $out['codigos_colecta_dynamic'] = $codigos;
 if ($codigos) {
     $in = "'" . implode("','", array_map([$mysqli, 'real_escape_string'], $codigos)) . "'";
     $out['hdr_por_codigo'] = q($mysqli, "SELECT id, Fecha, Recorrido, Estado, NumerodeOrden, Posicion, Seguimiento, Eliminado FROM HojaDeRuta WHERE Seguimiento IN ($in)");
-    $out['transclientes_por_codigo'] = q($mysqli, "SELECT id, Fecha, idCliente, NumerodeOrden, CodigoDeSeguimiento, Recorrido, Eliminado FROM TransClientes WHERE CodigoDeSeguimiento IN ($in)");
+    $out['transclientes_por_codigo'] = q($mysqli, "SELECT id, Fecha, idCliente, NumerodeOrden, CodigoSeguimiento, Recorrido, Eliminado FROM TransClientes WHERE CodigoSeguimiento IN ($in)");
     $out['seguimiento_por_codigo'] = q($mysqli, "SELECT id, Fecha, CodigoSeguimiento, Estado, Usuario, Recorrido, Eliminado FROM Seguimiento WHERE CodigoSeguimiento IN ($in) ORDER BY id ASC");
 }
 
