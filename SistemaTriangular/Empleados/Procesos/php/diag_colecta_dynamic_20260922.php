@@ -29,7 +29,7 @@ $out['colecta_dynamic_recientes'] = q($mysqli, "
 ");
 
 // 4. Logistica de hoy/recientes recorrido 1472
-$out['logistica_1472'] = q($mysqli, "SELECT id, Fecha, Recorrido, Usuario, HoraSalidaReal, NumerodeOrden, Eliminado FROM Logistica WHERE Recorrido=1472 ORDER BY Fecha DESC LIMIT 5");
+$out['logistica_1472'] = q($mysqli, "SELECT * FROM Logistica WHERE Recorrido=1472 ORDER BY Fecha DESC LIMIT 5");
 
 // 5. HojaDeRuta para recorrido 1472 (hoy) - a ver si el codigo de la colecta esta o no
 $out['hdr_recorrido_1472'] = q($mysqli, "
@@ -48,7 +48,7 @@ $out['codigos_colecta_dynamic'] = $codigos;
 if ($codigos) {
     $in = "'" . implode("','", array_map([$mysqli, 'real_escape_string'], $codigos)) . "'";
     $out['hdr_por_codigo'] = q($mysqli, "SELECT id, Fecha, Recorrido, Estado, NumerodeOrden, Posicion, Seguimiento, Eliminado FROM HojaDeRuta WHERE Seguimiento IN ($in)");
-    $out['transclientes_por_codigo'] = q($mysqli, "SELECT id, Fecha, idCliente, NumerodeOrden, CodigoSeguimiento, Recorrido, Eliminado FROM TransClientes WHERE CodigoSeguimiento IN ($in)");
+    $out['transclientes_por_codigo'] = q($mysqli, "SELECT * FROM TransClientes WHERE CodigoSeguimiento IN ($in)");
     $out['seguimiento_por_codigo'] = q($mysqli, "SELECT id, Fecha, CodigoSeguimiento, Estado, Usuario, Recorrido, Eliminado FROM Seguimiento WHERE CodigoSeguimiento IN ($in) ORDER BY id ASC");
 }
 
