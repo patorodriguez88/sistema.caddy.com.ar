@@ -98,16 +98,19 @@
             color: #1c8f61;
         }
 
-        /* Pedido (Patricio, 2026-09-22: "el card mas ancho, que ocupe mas
-           pantalla" -> probado a 100%, "se puso muy ancho", vuelve a 85%
-           que es el max-width por defecto del tema para .container-fluid
-           en pantallas grandes ([data-layout=topnav])). Se deja la regla
-           explícita (en vez de sacarla del todo) para que quede claro que
-           es un valor elegido a propósito para esta pantalla, no el
-           default heredado sin más. Scoped acá, no toca ninguna otra
-           página. */
-        .content-page .container-fluid {
-            max-width: 85% !important;
+        /* Causa real de "queda mas angosto que Clientes" (Patricio,
+           2026-09-22): esta página anida DOS .container-fluid (el de
+           siempre en .content, línea ~124, y adentro #cuentas-container) -
+           el tema le pone max-width:85% a CADA .container-fluid en
+           pantallas grandes ([data-layout=topnav]), así que anidados se
+           multiplican (~85% de 85% ≈ 72%). Clientes.php usa un solo
+           container-fluid, sin este efecto. Se saca el recorte solo del
+           interno (#cuentas-container) para que quede con el mismo 85%
+           total que Clientes, en vez de pisar el valor a mano (100% quedó
+           "muy ancho" porque anulaba el recorte de los DOS niveles, no
+           solo el de más). Scoped acá, no toca ninguna otra página. */
+        #cuentas-container.container-fluid {
+            max-width: 100% !important;
         }
     </style>
 </head>
