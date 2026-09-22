@@ -1250,8 +1250,15 @@ if (isset($_POST['Reporte'])) {
         $DATO_EXTERNOS = $SQL_EXTERNOS->fetch_array(MYSQLI_ASSOC);
         $NombreUsuario = $DATO_EXTERNOS['Usuario'];
 
+        // FIX (2026-09-22, reportado: pedidos duplicados en rendicion, se
+        // pagaba dos/tres veces un mismo paquete con reintento de entrega -
+        // Seguimiento tiene una fila por cada cambio de estado). Se toma
+        // solo la fila mas reciente por codigo (AND Seg.id = (SELECT
+        // MAX...) mas abajo), mismo patron que ya usa
+        // controlrecorridos.php. Caso real: orden 17057, 7 codigos
+        // duplicados, $40.400 de mas sobre $129.750.
         $SQL = $mysqli->query("
-            SELECT 
+            SELECT
                 er.id AS idExternoRendicion,
                 Seg.Entregado,
                 ts.RazonSocial,
@@ -1287,7 +1294,7 @@ if (isset($_POST['Reporte'])) {
             JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
             JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
             JOIN Externos_rendicion AS er ON er.CodigoSeguimiento = Seg.CodigoSeguimiento AND er.idRendicion = Seg.NumerodeOrden
-            JOIN Externos_tarifas AS et ON er.idExternos_tarifas = et.id        
+            JOIN Externos_tarifas AS et ON er.idExternos_tarifas = et.id
             LEFT JOIN Estados AS e ON e.Estado = Seg.Estado
             WHERE Seg.Eliminado = 0
               AND ts.Eliminado = 0
@@ -1295,6 +1302,15 @@ if (isset($_POST['Reporte'])) {
               AND Seg.Visitas <> 0
               AND Seg.Estado <> 'Retirado del Cliente'
               AND Seg.Usuario = '" . $NombreUsuario . "'
+              AND Seg.id = (
+                  SELECT MAX(Seg2.id) FROM Seguimiento Seg2
+                  WHERE Seg2.CodigoSeguimiento = Seg.CodigoSeguimiento
+                    AND Seg2.NumerodeOrden = Seg.NumerodeOrden
+                    AND Seg2.Eliminado = 0
+                    AND Seg2.Visitas <> 0
+                    AND Seg2.Estado <> 'Retirado del Cliente'
+                    AND Seg2.Usuario = Seg.Usuario
+              )
         ");
 
         $ROWS = array();

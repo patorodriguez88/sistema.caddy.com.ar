@@ -128,6 +128,17 @@ $logi = mysqli_fetch_one(
     [$nOrden]
 );
 
+// FIX (2026-09-22, reportado: pedidos duplicados en rendicion, no
+// entregados con valor de servicio pagado dos veces): Seguimiento guarda
+// una fila por cada CAMBIO de estado del mismo codigo (ej. "No se pudo
+// entregar" -> "En Transito" -> "Entregado al Cliente"), asi que un
+// paquete con reintento de entrega tenia varias filas para el mismo
+// NumerodeOrden - el JOIN contra Externos_rendicion (una fila por
+// paquete) se repetia una vez por cada fila de Seguimiento, sumando el
+// mismo PrecioPagado 2, 3 o hasta 4 veces (caso real: orden 17057, 7
+// codigos duplicados, $40.400 de mas sobre $129.750). Ahora solo se toma
+// la fila MAS RECIENTE de Seguimiento por codigo (mismo patron ya
+// probado en Logistica/Proceso/php/controlrecorridos.php).
 $items = db_fetch_all(
     $mysqli,
     "SELECT
@@ -155,6 +166,15 @@ $items = db_fetch_all(
        AND Seg.Visitas <> 0
        AND Seg.Estado <> 'Retirado del Cliente'
        AND Seg.Usuario = ?
+       AND Seg.id = (
+           SELECT MAX(Seg2.id) FROM Seguimiento Seg2
+           WHERE Seg2.CodigoSeguimiento = Seg.CodigoSeguimiento
+             AND Seg2.NumerodeOrden = Seg.NumerodeOrden
+             AND Seg2.Eliminado = 0
+             AND Seg2.Visitas <> 0
+             AND Seg2.Estado <> 'Retirado del Cliente'
+             AND Seg2.Usuario = Seg.Usuario
+       )
      ORDER BY Seg.Fecha, Seg.CodigoSeguimiento",
     'is',
     [$nOrden, $nombreUsuario]
