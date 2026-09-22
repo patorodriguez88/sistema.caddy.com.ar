@@ -8,6 +8,45 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
 ?>
+<!-- Tarjeta de usuario del topbar (a pedido, 2026-09-22: "mas
+     copado/profesional, mas balanceado") - el badge de entorno antes era
+     un .badge.rounded-pill de Bootstrap: al vivir en una columna flex sin
+     ancho propio, se estiraba a todo el ancho del bloque y quedaba como
+     una barra sólida grande, desbalanceada contra el nombre/avatar
+     chicos. Se reemplaza por un chip angosto (fondo tenue + punto de
+     estado + texto en mayúsculas chicas), estilo "badge de SaaS", que
+     solo ocupa el ancho de su contenido (align-self: flex-start). Vive
+     en este include porque Menu/head.html no tiene un CSS propio - se
+     comparte con las 59 pantallas que lo incluyen. -->
+<style>
+  .user-topbar-avatar {
+    box-shadow: 0 0 0 2px #fff, 0 0 0 3px rgba(30, 32, 62, .08);
+  }
+  .entorno-badge {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: 5px;
+    padding: 3px 9px 3px 7px;
+    border-radius: 20px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .03em;
+    line-height: 1.4;
+  }
+  .entorno-badge::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+    flex-shrink: 0;
+  }
+  .entorno-badge--success   { background: rgba(28, 143, 97, .14);  color: #1c8f61; }
+  .entorno-badge--warning   { background: rgba(243, 156, 18, .16); color: #b9770e; }
+  .entorno-badge--dark      { background: rgba(0, 0, 0, .1);       color: #495057; }
+  .entorno-badge--secondary { background: rgba(108, 117, 125, .16); color: #6c757d; }
+</style>
 <!-- ========== Topbar Start ========== -->
 <div class="navbar-custom">
   <div class="topbar container-fluid">
@@ -190,27 +229,27 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
           <div class="account-user-avatar avatar-xs me-2">
             <span
               id="user_iniciales"
-              class="avatar-title rounded-circle fw-bold text-white d-inline-flex align-items-center justify-content-center"
-              style="width: 32px; height: 32px; background-color: #f1556c"
+              class="user-topbar-avatar avatar-title rounded-circle fw-bold text-white d-inline-flex align-items-center justify-content-center"
+              style="width: 34px; height: 34px; background-color: #f1556c"
             >
               PR
             </span>
           </div>
 
           <!-- Datos del usuario -->
-          <span class="d-lg-flex flex-column d-none lh-1">
+          <span class="d-lg-flex flex-column d-none lh-1 gap-1">
             <span class="account-user-name fw-semibold" id="user_name"></span>
 
             <span class="small text-muted">
               <span id="user_sucursal"></span>
               ·
-              <span class="mt-1" id="user_nivel"></span>
+              <span id="user_nivel"></span>
             </span>
 
             <!-- Entorno como badge -->
             <span
               id="user_entorno_badge"
-              class="badge rounded-pill mt-1"
+              class="entorno-badge mt-1"
             ></span>
           </span>
         </a>
