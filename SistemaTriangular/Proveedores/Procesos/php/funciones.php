@@ -164,14 +164,42 @@ if (isset($_POST['Actualizar']) && $_POST['Actualizar'] == 1) {
     $asana = $_POST['asana'];
   }
 
-  $sql = "UPDATE Proveedores SET Domicilio='$_POST[dir]',Localidad='$_POST[loc]',Provincia='$_POST[prov]',CPostal='$_POST[cp]',
-Telefono='$_POST[tel]',Celular='$_POST[cel]',Contacto='$_POST[contacto]',Iva='$_POST[iva]',Cuit='$_POST[cuit]',Rubro='$_POST[rubro]',
-Condicion='$_POST[condicion]',Mail='$_POST[email]',PaginaWeb='$_POST[web]',CtaAsignada='$_POST[ctaas]',Observaciones='$_POST[obs]',
-IngresosBrutos='$_POST[ib]',SolicitaCombustible='$_POST[comb]',SolicitaVehiculo='$_POST[vehi]',TareasAsana='$asana',
-TareasAsana_gid='$_POST[asana_gid]',Pago_comprobantes='$_POST[pago_comprobante]' WHERE id='$_POST[id]'";
+  // FIX DE RAIZ (reportado por Agustina, 2026-09-23: "cargué el proveedor
+  // MEREB CAROLINA BENITA pero no le aparece"): tanto este UPDATE como el
+  // INSERT de "Agregar Proveedor" de mas abajo armaban el SQL interpolando
+  // $_POST[...] crudo, sin escapar. Un campo con una comilla (una
+  // direccion con apostrofe, por ej.) rompe el SQL - Conexioni.php tiene
+  // mysqli en modo estricto, asi que eso tira \mysqli_sql_exception SIN
+  // capturar (mismo patron que la auditoria trim(MAX())+1 del 2026-09-22).
+  // Encima el $.ajax del frontend (funciones.js) no tiene callback
+  // "error:", asi que un request que revienta con 500 no muestra NADA -
+  // ni el toast de exito ni uno de error. Se pasa a prepared statement,
+  // que de paso elimina el riesgo de inyeccion SQL.
+  $stmt = $mysqli->prepare(
+    "UPDATE Proveedores SET Domicilio=?,Localidad=?,Provincia=?,CPostal=?,
+     Telefono=?,Celular=?,Contacto=?,Iva=?,Cuit=?,Rubro=?,
+     Condicion=?,Mail=?,PaginaWeb=?,CtaAsignada=?,Observaciones=?,
+     IngresosBrutos=?,SolicitaCombustible=?,SolicitaVehiculo=?,TareasAsana=?,
+     TareasAsana_gid=?,Pago_comprobantes=? WHERE id=?"
+  );
+  $stmt->bind_param(
+    'sssssssssssssssssssssi',
+    $_POST['dir'], $_POST['loc'], $_POST['prov'], $_POST['cp'],
+    $_POST['tel'], $_POST['cel'], $_POST['contacto'], $_POST['iva'],
+    $_POST['cuit'], $_POST['rubro'], $_POST['condicion'], $_POST['email'],
+    $_POST['web'], $_POST['ctaas'], $_POST['obs'], $_POST['ib'],
+    $_POST['comb'], $_POST['vehi'], $asana, $_POST['asana_gid'],
+    $_POST['pago_comprobante'], $_POST['id']
+  );
 
-  if ($Resultado = $mysqli->query($sql)) {
-    echo json_encode(array('success' => 1));
+  try {
+    if ($stmt->execute()) {
+      echo json_encode(array('success' => 1));
+    } else {
+      echo json_encode(array('success' => 0, 'error' => $stmt->error));
+    }
+  } catch (\Throwable $e) {
+    echo json_encode(array('success' => 0, 'error' => $e->getMessage()));
   }
 }
 
@@ -181,14 +209,19 @@ if (isset($_POST['Agregar'])) {
   if ($_POST['razonsocial'] == null) {
     echo json_encode(array('success' => 3));
   } else {
-    //COMPRUEBO QUE EL PROVEEDOR NO EXISTA CON NOMBRE Y CUIT 
-    $sql = "SELECT RazonSocial FROM Proveedores WHERE RazonSocial ='$_POST[razonsocial]'";
-    $Resultado = $mysqli->query($sql);
-    if ($Resultado->num_rows != 0) {
+    //COMPRUEBO QUE EL PROVEEDOR NO EXISTA CON NOMBRE Y CUIT
+    $stmt = $mysqli->prepare("SELECT RazonSocial FROM Proveedores WHERE RazonSocial = ?");
+    $stmt->bind_param('s', $_POST['razonsocial']);
+    $stmt->execute();
+    $stmt->store_result();
+    $yaExiste = $stmt->num_rows != 0;
+    $stmt->close();
+
+    if ($yaExiste) {
       echo json_encode(array('success' => 0));
     } else {
 
-      //BUSCO EL MAX ID   
+      //BUSCO EL MAX ID
       $id = "SELECT MAX(id) AS id FROM Proveedores";
       $Resultado = $mysqli->query($id);
       if ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
@@ -202,17 +235,31 @@ if (isset($_POST['Agregar'])) {
       $solicita_combustible = isset($_POST['solicitacombustible']) && $_POST['solicitacombustible'] === 'on' ? 1 : 0;
       $solicita_vehiculo = isset($_POST['vehi']) && $_POST['vehi'] === 'on' ? 1 : 0;
 
+      // Ver comentario de "FIX DE RAIZ" mas arriba (bloque Actualizar): se
+      // pasa a prepared statement en vez de interpolar $_POST crudo.
+      $stmtIns = $mysqli->prepare(
+        "INSERT INTO `Proveedores`(`Codigo`,`RazonSocial`, `Domicilio`, `Localidad`, `Provincia`, `CPostal`, `Telefono`, `Celular`,
+        `Contacto`, `Iva`, `Cuit`, `Rubro`, `Condicion`, `Mail`, `PaginaWeb`, `Observaciones`, `IngresosBrutos`,
+        `CtaAsignada`, `SolicitaCombustible`, `SolicitaVehiculo`,`TareasAsana`,`TareasAsana_gid`)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)"
+      );
+      $stmtIns->bind_param(
+        'isssssssssssssssssiiis',
+        $id, $_POST['razonsocial'], $_POST['dire'], $_POST['loc'], $_POST['prov'],
+        $_POST['cp'], $_POST['tel'], $_POST['cel'], $_POST['contacto'], $_POST['iva'],
+        $_POST['cuit'], $_POST['rubro'], $_POST['condicion'], $_POST['email'], $_POST['web'],
+        $_POST['obs'], $_POST['ib'], $_POST['ctaas'], $solicita_combustible, $solicita_vehiculo,
+        $asana, $asana_gid
+      );
 
-      $sql = "INSERT INTO `Proveedores`(`Codigo`,`RazonSocial`, `Domicilio`, `Localidad`, `Provincia`, `CPostal`, `Telefono`, `Celular`,
-      `Contacto`, `Iva`, `Cuit`, `Rubro`, `Condicion`, `Mail`, `PaginaWeb`, `Observaciones`, `IngresosBrutos`, 
-      `CtaAsignada`, `SolicitaCombustible`, `SolicitaVehiculo`,`TareasAsana`,`TareasAsana_gid`) VALUES ('{$id}','{$_POST['razonsocial']}','{$_POST['dire']}','{$_POST['loc']}','{$_POST['prov']}',
-      '{$_POST['cp']}','{$_POST['tel']}','{$_POST['cel']}','{$_POST['contacto']}','{$_POST['iva']}','{$_POST['cuit']}','{$_POST['rubro']}','{$_POST['condicion']}',
-      '{$_POST['email']}','{$_POST['web']}','{$_POST['obs']}','{$_POST['ib']}','{$_POST['ctaas']}','{$solicita_combustible}','{$solicita_vehiculo}','{$asana}','{$asana_gid}')";
-
-      $Resultado = $mysqli->query($sql);
-
-      if ($Resultado) {
-        echo json_encode(array('success' => 1));
+      try {
+        if ($stmtIns->execute()) {
+          echo json_encode(array('success' => 1));
+        } else {
+          echo json_encode(array('success' => 0, 'error' => $stmtIns->error));
+        }
+      } catch (\Throwable $e) {
+        echo json_encode(array('success' => 0, 'error' => $e->getMessage()));
       }
     }
   }

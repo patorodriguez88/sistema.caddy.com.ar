@@ -758,7 +758,25 @@ $(document).ready(function () {
         url: "Procesos/php/funciones.php",
         type: "post",
         success: function (response) {
-          var jsonData = JSON.parse(response);
+          // FIX (reportado por Agustina, 2026-09-23: cargó un proveedor y no
+          // quedó guardado, sin ningún error visible): antes, si el backend
+          // devolvía algo que no era JSON válido (por ej. un 500 con HTML de
+          // error), JSON.parse tiraba una excepción JS sin capturar y todo
+          // quedaba en silencio - ni éxito ni error. Ver el fix de raíz en
+          // funciones.php (prepared statements en vez de SQL interpolado).
+          var jsonData;
+          try {
+            jsonData = JSON.parse(response);
+          } catch (e) {
+            console.error("Respuesta no válida al crear proveedor:", response, e);
+            Swal.fire({
+              title: "Error!",
+              text: "No se pudo crear el proveedor (respuesta inválida del servidor). Ver consola.",
+              icon: "error",
+              confirmButtonText: "Aceptar",
+            });
+            return;
+          }
           if (jsonData.success == "1") {
             Swal.fire({
               title: "Listo!",
@@ -782,7 +800,23 @@ $(document).ready(function () {
               icon: "error",
               confirmButtonText: "Aceptar",
             });
+          } else {
+            Swal.fire({
+              title: "Error!",
+              text: "No se pudo crear el proveedor." + (jsonData.error ? " " + jsonData.error : ""),
+              icon: "error",
+              confirmButtonText: "Aceptar",
+            });
           }
+        },
+        error: function (xhr, status, error) {
+          console.error("Error de red/servidor al crear proveedor:", status, error, xhr.responseText);
+          Swal.fire({
+            title: "Error!",
+            text: "No se pudo crear el proveedor (error de servidor). Ver consola.",
+            icon: "error",
+            confirmButtonText: "Aceptar",
+          });
         },
       });
     }
@@ -870,11 +904,41 @@ $(document).ready(function () {
       url: "Procesos/php/funciones.php",
       type: "post",
       success: function (response) {
-        var jsonData = JSON.parse(response);
+        // Mismo fix que en guardarProveedorNuevo(): antes, una respuesta no-JSON
+        // (500 con HTML de error) o success!=1 no mostraban nada - "else { }"
+        // vacío. Ver el fix de raíz en funciones.php (prepared statements).
+        var jsonData;
+        try {
+          jsonData = JSON.parse(response);
+        } catch (e) {
+          console.error("Respuesta no válida al guardar proveedor:", response, e);
+          Swal.fire({
+            title: "Error!",
+            text: "No se pudieron guardar los datos (respuesta inválida del servidor). Ver consola.",
+            icon: "error",
+            confirmButtonText: "Aceptar",
+          });
+          return;
+        }
         if (jsonData.success == "1") {
           toast("success", "Listo!", "Datos Guardados");
         } else {
+          Swal.fire({
+            title: "Error!",
+            text: "No se pudieron guardar los datos." + (jsonData.error ? " " + jsonData.error : ""),
+            icon: "error",
+            confirmButtonText: "Aceptar",
+          });
         }
+      },
+      error: function (xhr, status, error) {
+        console.error("Error de red/servidor al guardar proveedor:", status, error, xhr.responseText);
+        Swal.fire({
+          title: "Error!",
+          text: "No se pudieron guardar los datos (error de servidor). Ver consola.",
+          icon: "error",
+          confirmButtonText: "Aceptar",
+        });
       },
     });
   });
