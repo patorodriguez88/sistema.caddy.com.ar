@@ -354,6 +354,19 @@ $(document).ready(function () {
         });
         $select.append("</optgroup>");
         $select.select2(); // Iniciar select2
+
+        // Pedido de Patricio (2026-09-23): después de crear un proveedor
+        // nuevo (por CUIT), en vez de recargar y quedar en blanco, se
+        // redirige acá con ?nuevo_proveedor=<id> - una vez que el listado
+        // ya está cargado, se selecciona directo esa ficha.
+        var params = new URLSearchParams(window.location.search);
+        var nuevoId = params.get("nuevo_proveedor");
+        if (nuevoId) {
+          $select.val(nuevoId).trigger("change");
+          // Limpia el parámetro de la URL para que un F5 no vuelva a
+          // "seleccionar" el mismo proveedor de forma rara.
+          history.replaceState(null, "", window.location.pathname);
+        }
       } else {
         alert("Error al cargar proveedores");
       }

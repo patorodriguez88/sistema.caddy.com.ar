@@ -216,6 +216,14 @@ $(document).ready(function () {
     $("#billing-information").show(); // Muestra el bloque de carga
     $("#razonsocial").attr("readonly", false); // Habilita edición
 
+    // "Código" en realidad muestra el ID del proveedor (ver más abajo,
+    // $("#codigo").val(jsonData.id) al cargar uno existente) - para uno
+    // nuevo todavía no tiene, se asigna recién al guardar. Se deja en
+    // blanco (mostrar uno "adivinado" de antemano sería más riesgoso, si
+    // no coincide con el real) pero con un placeholder para que no
+    // parezca un campo roto (pregunta de Patricio, 2026-09-23).
+    $("#codigo").val("").attr("placeholder", "Se asigna al guardar");
+
     // FIX (reportado por Patricio, 2026-09-23: "dio el ok pero no lo
     // guardó" con el CUIT 27254550812): "Cuenta Contable" es obligatoria
     // para guardar, pero el selector real (#nueva_cuentaasignada) arranca
@@ -939,7 +947,17 @@ $(document).ready(function () {
               icon: "success",
               confirmButtonText: "Aceptar",
             }).then(function () {
-              window.location.reload();
+              // Pedido de Patricio (2026-09-23): antes recargaba la página
+              // y quedaba en blanco (sin ningún proveedor seleccionado) -
+              // ahora va directo a la ficha del que se acaba de crear.
+              // proveedores.js lee este parámetro apenas carga el listado
+              // de proveedores y lo selecciona automáticamente.
+              if (jsonData.id) {
+                window.location.href =
+                  window.location.pathname + "?nuevo_proveedor=" + jsonData.id;
+              } else {
+                window.location.reload();
+              }
             });
           } else if (jsonData.success == "2") {
             Swal.fire({
