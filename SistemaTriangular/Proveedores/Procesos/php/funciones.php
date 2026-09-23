@@ -362,7 +362,11 @@ if (isset($_POST['Agregar'])) {
 
       try {
         if ($stmtIns->execute()) {
-          echo json_encode(array('success' => 1));
+          // Pedido de Patricio (2026-09-23): que "Guardar" lleve directo a
+          // la ficha del proveedor recien creado, en vez de recargar la
+          // pagina y quedar en blanco. Se devuelve el id real (autoincrement
+          // de la tabla), no el $id que se uso para Codigo.
+          echo json_encode(array('success' => 1, 'id' => $mysqli->insert_id));
         } else {
           echo json_encode(array('success' => 0, 'error' => $stmtIns->error));
         }
