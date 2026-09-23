@@ -215,6 +215,16 @@ $(document).ready(function () {
     $("#agregar_botton").addClass("d-none"); // Oculta el botón con Bootstrap
     $("#billing-information").show(); // Muestra el bloque de carga
     $("#razonsocial").attr("readonly", false); // Habilita edición
+
+    // FIX (reportado por Patricio, 2026-09-23: "dio el ok pero no lo
+    // guardó" con el CUIT 27254550812): "Cuenta Contable" es obligatoria
+    // para guardar, pero el selector real (#nueva_cuentaasignada) arranca
+    // OCULTO - hay que apretar "Cambiar" para que aparezca (ver
+    // #modificar_cuenta más abajo). Con todo lo demás precargado por ARCA
+    // era fácil no notar que faltaba justo ese campo, y guardarProveedorNuevo()
+    // lo bloqueaba con un cartel poco visible. Se muestra el selector de
+    // una para un alta nueva, en vez de esperar a que lo descubran solos.
+    $("#modificar_cuenta").trigger("click");
   }
 
   // Pedido de Patricio (2026-09-23): antes de abrir el formulario en
@@ -857,11 +867,20 @@ $(document).ready(function () {
     }
 
     if (ctaas == "000000000" || ctaas == "Seleccionar Cuenta Contable") {
+      // Mensaje mas claro + scroll/foco al campo (antes solo decía
+      // "Verifique la Cuenta Contable Asignada" y era fácil no ubicar cuál
+      // era, sobre todo con el resto del formulario ya precargado por ARCA).
       Swal.fire({
-        title: "Error!",
-        text: "Verifique la Cuenta Contable Asignada",
+        title: "Falta la Cuenta Contable",
+        text: "Los demás datos ya están completos - elegí una Cuenta Contable para poder guardar el proveedor.",
         icon: "warning",
         confirmButtonText: "Aceptar",
+      }).then(function () {
+        var $campo = $("#nueva_cuentaasignada");
+        if ($campo.is(":visible")) {
+          $("html, body").animate({ scrollTop: $campo.offset().top - 150 }, 300);
+          $campo.select2("open");
+        }
       });
     } else {
       var dato = {
