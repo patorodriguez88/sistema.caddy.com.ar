@@ -1163,7 +1163,10 @@
 
                                                         </div>
                                                     </div>
-                                                    <div class="footer-content">
+                                                    <!-- A pedido de Patricio (2026-09-23): el botón Guardar quedaba muy
+                                                         pegado arriba, sin ningún margen respecto de la última fila del
+                                                         formulario. -->
+                                                    <div class="footer-content mt-4">
                                                         <div class="text-end">
                                                             <!-- <button id="agregar_botton" type="button" class="btn btn-warning d-none">
                                                                 <i class="mdi mdi-rocket me-1"></i> <span>Agregar Proveedor</span>
