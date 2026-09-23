@@ -233,6 +233,27 @@ $(document).ready(function () {
     // lo bloqueaba con un cartel poco visible. Se muestra el selector de
     // una para un alta nueva, en vez de esperar a que lo descubran solos.
     $("#modificar_cuenta").trigger("click");
+
+    // Ni así alcanzó (reportado por Patricio, 2026-09-23: mandó captura
+    // de OTRO select2 - el de "Tareas Asana" - pensando que era este; el
+    // de Cuenta Contable, más arriba en el formulario, pasaba
+    // desapercibido igual). Se hace scroll directo + un parpadeo de
+    // color para que sea imposible no verlo, apenas se termina de
+    // precargar el formulario.
+    setTimeout(function () {
+      var $campo = $("#cuenta_contable_select");
+      if (!$campo.is(":visible")) return;
+
+      $("html, body").animate({ scrollTop: $campo.offset().top - 150 }, 400);
+      $campo.css("transition", "background-color .3s");
+      var prendido = false;
+      var parpadeos = 0;
+      var intervalo = setInterval(function () {
+        prendido = !prendido;
+        $campo.css("background-color", prendido ? "#fff3cd" : "transparent");
+        if (!prendido && ++parpadeos >= 3) clearInterval(intervalo);
+      }, 400);
+    }, 400);
   }
 
   // Pedido de Patricio (2026-09-23): antes de abrir el formulario en
@@ -335,6 +356,10 @@ $(document).ready(function () {
                 "Completá los datos del proveedor a mano."
               );
             }
+            // Pinta de una el estado de cada campo (verde lo que ARCA ya
+            // completó, rojo lo que sigue faltando) - así se ve de
+            // entrada, no recién al intentar guardar.
+            validarFormularioProveedor();
           },
           error: function () {
             bootstrap.Modal.getInstance(
@@ -347,6 +372,7 @@ $(document).ready(function () {
               "No se pudo consultar ARCA",
               "Completá los datos del proveedor a mano."
             );
+            validarFormularioProveedor();
           },
         });
       },
@@ -464,6 +490,15 @@ $(document).ready(function () {
       success: function (jsonData) {
         if (jsonData.success == "1") {
           document.getElementById("steps").style.display = "flex";
+
+          // Limpia cualquier marca de validación (roja/verde) o resaltado
+          // que haya quedado de un intento anterior de alta nueva - esto
+          // es un proveedor YA existente, no corresponde.
+          $(".is-valid, .is-invalid").removeClass("is-valid is-invalid");
+          $(".invalid-feedback").hide();
+          $("#cuenta_contable_select, #cuenta_contable")
+            .removeClass("border border-danger rounded p-1")
+            .css("background-color", "");
 
           $("#codigo").val(jsonData.id);
           $("#razonsocial").val(jsonData.RazonSocial);
@@ -832,6 +867,108 @@ $(document).ready(function () {
     });
   });
 
+  // Validador visual del formulario "Datos Proveedor" (pedido de Patricio,
+  // 2026-09-23: "que avise qué campos están bien y cuáles faltan" - en vez
+  // de un solo cartel a la vez por cada cosa que faltaba). Usa las clases
+  // nativas de Bootstrap (is-valid/is-invalid + invalid-feedback), mismo
+  // criterio visual que ya usa el resto del sistema, sin sumar otra
+  // librería. Marca en rojo los REQUERIDOS que falten (Razón Social,
+  // Cuenta Contable) y en verde cualquier campo (requerido u opcional)
+  // que sí esté completo, para que de un vistazo se vea el estado de todo
+  // el formulario, no solo lo que bloquea.
+  var CAMPOS_PROVEEDOR = [
+    { id: "razonsocial", label: "Razón Social", requerido: true },
+    { id: "direccion", label: "Dirección", requerido: false },
+    { id: "localidad", label: "Localidad", requerido: false },
+    { id: "provincia", label: "Provincia", requerido: false },
+    { id: "codigopostal", label: "Código Postal", requerido: false },
+    { id: "cuit", label: "CUIT", requerido: false },
+    { id: "iva", label: "Condición de IVA", requerido: false },
+    { id: "telefono", label: "Teléfono", requerido: false },
+    { id: "contacto", label: "Contacto", requerido: false },
+  ];
+
+  function marcarCampo($el, esValido, mensajeFalta) {
+    $el.removeClass("is-valid is-invalid");
+    // El feedback tiene que ser el sibling inmediato posterior al input
+    // para que Bootstrap lo muestre/oculte solo según is-valid/is-invalid.
+    var $feedback = $el.next(".invalid-feedback");
+    if (!$feedback.length) {
+      $feedback = $('<div class="invalid-feedback"></div>').insertAfter($el);
+    }
+    if (esValido === null) {
+      // Campo opcional y vacío: no se marca ni bien ni mal, queda neutro.
+      $feedback.hide();
+      return;
+    }
+    if (esValido) {
+      $el.addClass("is-valid");
+      $feedback.hide();
+    } else {
+      $el.addClass("is-invalid");
+      $feedback.text(mensajeFalta).show();
+    }
+  }
+
+  // Devuelve el primer campo requerido que falte (o null si está todo
+  // bien), marcando de paso TODOS los campos del formulario.
+  function validarFormularioProveedor() {
+    var primerFaltante = null;
+
+    CAMPOS_PROVEEDOR.forEach(function (campo) {
+      var $el = $("#" + campo.id);
+      if (!$el.length) return;
+      var valor = ($el.val() || "").toString().trim();
+      var completo = valor !== "";
+
+      if (campo.requerido) {
+        marcarCampo($el, completo, "Este dato es obligatorio.");
+        if (!completo && !primerFaltante) primerFaltante = $el;
+      } else {
+        marcarCampo($el, completo ? true : null, "");
+      }
+    });
+
+    // Cuenta Contable vive en dos inputs distintos según el estado
+    // (#cuentaasignada readonly, o #nueva_cuentaasignada select2 una vez
+    // que se apretó "Cambiar") - se valida el que esté visible.
+    var $ctaSelect = $("#nueva_cuentaasignada");
+    var $ctaReadonly = $("#cuentaasignada");
+    var $ctaVisible = $ctaSelect.is(":visible") ? $ctaSelect : $ctaReadonly;
+    var valorCta = ($ctaVisible.val() || "").toString();
+    var ctaCompleta = valorCta !== "" && valorCta !== "000000000" && valorCta !== "Seleccionar Cuenta Contable";
+
+    // Bootstrap no pinta bien un <select2> directo (queda tapado por el
+    // widget que select2 dibuja encima) - se marca el contenedor visible
+    // en vez del <select> nativo.
+    var $ctaContenedor = $ctaSelect.is(":visible") ? $("#cuenta_contable_select") : $("#cuenta_contable");
+    if (ctaCompleta) {
+      $ctaContenedor.removeClass("border border-danger rounded p-1");
+    } else {
+      $ctaContenedor.addClass("border border-danger rounded p-1");
+      if (!primerFaltante) primerFaltante = $ctaVisible;
+    }
+
+    return primerFaltante;
+  }
+
+  // Validación en vivo: a medida que se va completando el formulario a
+  // mano (no solo al precargar desde ARCA o al intentar guardar), cada
+  // campo se pinta apenas se sale de él. Delegado en document porque
+  // #billing-information arranca oculto.
+  $(document).on(
+    "blur",
+    CAMPOS_PROVEEDOR.map(function (c) {
+      return "#" + c.id;
+    }).join(","),
+    function () {
+      if ($("#billing-information").is(":visible")) validarFormularioProveedor();
+    }
+  );
+  $(document).on("change", "#nueva_cuentaasignada", function () {
+    if ($("#billing-information").is(":visible")) validarFormularioProveedor();
+  });
+
   // FIX: esta era la lógica correcta para dar de alta un proveedor nuevo
   // (Agregar:1), pero el botón que la disparaba (#agregar_botton_ok) ya no
   // existe en el HTML de Proveedores.php - quedó huérfana. Se convierte en
@@ -864,33 +1001,32 @@ $(document).ready(function () {
       var ctaas = document.getElementById("nueva_cuentaasignada").value;
     }
 
-    if (!razonsocial) {
+    // Validador visual (marca en rojo/verde todos los campos - ver
+    // validarFormularioProveedor() más arriba) en vez de carteles sueltos
+    // uno a la vez.
+    var $primerFaltante = validarFormularioProveedor();
+
+    if ($primerFaltante) {
+      var esRazonSocial = $primerFaltante.attr("id") === "razonsocial";
       Swal.fire({
-        title: "Error!",
-        text: "Ingresá la Razón Social del proveedor.",
+        title: "Faltan datos obligatorios",
+        text: esRazonSocial
+          ? "Ingresá la Razón Social del proveedor."
+          : "Los demás datos ya están completos - elegí una Cuenta Contable para poder guardar el proveedor.",
         icon: "warning",
         confirmButtonText: "Aceptar",
+      }).then(function () {
+        $("html, body").animate({ scrollTop: $primerFaltante.offset().top - 150 }, 300);
+        if ($primerFaltante.hasClass("select2-hidden-accessible")) {
+          $primerFaltante.select2("open");
+        } else {
+          $primerFaltante.trigger("focus");
+        }
       });
       return;
     }
 
-    if (ctaas == "000000000" || ctaas == "Seleccionar Cuenta Contable") {
-      // Mensaje mas claro + scroll/foco al campo (antes solo decía
-      // "Verifique la Cuenta Contable Asignada" y era fácil no ubicar cuál
-      // era, sobre todo con el resto del formulario ya precargado por ARCA).
-      Swal.fire({
-        title: "Falta la Cuenta Contable",
-        text: "Los demás datos ya están completos - elegí una Cuenta Contable para poder guardar el proveedor.",
-        icon: "warning",
-        confirmButtonText: "Aceptar",
-      }).then(function () {
-        var $campo = $("#nueva_cuentaasignada");
-        if ($campo.is(":visible")) {
-          $("html, body").animate({ scrollTop: $campo.offset().top - 150 }, 300);
-          $campo.select2("open");
-        }
-      });
-    } else {
+    {
       var dato = {
         Agregar: 1,
         razonsocial: razonsocial,
