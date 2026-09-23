@@ -5,6 +5,114 @@ error_reporting(E_ALL);
 
 include_once "../../../Conexion/Conexioni.php";
 
+// ==========================================================
+// ALTA DE PROVEEDOR POR CUIT (pedido de Patricio, 2026-09-23): antes de
+// escribir todo el formulario a mano, se busca el CUIT primero en nuestra
+// propia base (evita duplicados) y despues en el padron de ARCA
+// (ws_sr_constancia_inscripcion via afip.php - misma libreria/certificado
+// que ya usamos para facturar, servicio distinto) para precargar los
+// datos fiscales y reducir errores de tipeo.
+// ==========================================================
+
+// Paso 1: existe ese CUIT ya como proveedor nuestro?
+if (isset($_POST['VerificarCuit'])) {
+  $cuit = preg_replace('/\D/', '', (string)($_POST['cuit'] ?? ''));
+
+  if ($cuit === '') {
+    echo json_encode(['success' => 0, 'error' => 'Falta el CUIT.']);
+    exit;
+  }
+
+  $stmt = $mysqli->prepare("SELECT id, Codigo, RazonSocial FROM Proveedores WHERE Cuit = ? LIMIT 1");
+  $stmt->bind_param('s', $cuit);
+  $stmt->execute();
+  $res = $stmt->get_result();
+  $row = $res->fetch_assoc();
+  $stmt->close();
+
+  echo json_encode([
+    'success' => 1,
+    'existe' => $row !== null,
+    'proveedor' => $row ?: null,
+  ]);
+  exit;
+}
+
+// Paso 2 (solo si NO existe en nuestra base): consultar ARCA para
+// precargar los datos fiscales.
+if (isset($_POST['ConsultarArca'])) {
+  $cuit = preg_replace('/\D/', '', (string)($_POST['cuit'] ?? ''));
+
+  if (strlen($cuit) !== 11) {
+    echo json_encode(['success' => 0, 'error' => 'El CUIT debe tener 11 dígitos.']);
+    exit;
+  }
+
+  require_once __DIR__ . '/../../../afip.php/src/Afip.php';
+
+  try {
+    // CUIT 30715344943 = Triangular S.A. (nuestra empresa) - "cuitRepresentada"
+    // del webservice, no el CUIT que se esta consultando.
+    $afip = new Afip(array('CUIT' => 30715344943, 'production' => TRUE));
+    $datos = $afip->RegisterInscriptionProof->GetTaxpayerDetails((int)$cuit);
+
+    if ($datos === null) {
+      // ARCA no tiene ese CUIT (no existe o esta mal tipeado) - no es un
+      // error del sistema, simplemente no hay nada para precargar.
+      echo json_encode(['success' => 1, 'encontrado' => false]);
+      exit;
+    }
+
+    $gen = $datos->datosGenerales ?? null;
+    $dom = $gen->domicilioFiscal ?? null;
+
+    // Persona física: nombre/apellido en vez de razonSocial.
+    if (isset($gen->razonSocial)) {
+      $razonSocial = $gen->razonSocial;
+    } else {
+      $razonSocial = trim(($gen->nombre ?? '') . ' ' . ($gen->apellido ?? ''));
+    }
+
+    // Condición frente al IVA: si tiene datos de Monotributo, es
+    // monotributista; si no, se busca el impuesto "IVA" activo en el
+    // régimen general. Si no se encuentra ninguno, se deja vacío (el
+    // campo es de texto libre, el usuario lo completa a mano).
+    $condicionIva = '';
+    if (isset($datos->datosMonotributo)) {
+      $condicionIva = 'Responsable Monotributo';
+    } elseif (isset($datos->datosRegimenGeneral->impuesto)) {
+      foreach ((array)$datos->datosRegimenGeneral->impuesto as $imp) {
+        if (
+          stripos($imp->descripcionImpuesto ?? '', 'IVA') !== false &&
+          ($imp->estadoImpuesto ?? '') === 'AC'
+        ) {
+          $condicionIva = 'IVA Responsable Inscripto';
+          break;
+        }
+      }
+    }
+
+    echo json_encode([
+      'success' => 1,
+      'encontrado' => true,
+      'datos' => [
+        'razonsocial' => $razonSocial,
+        'direccion' => $dom->direccion ?? '',
+        'localidad' => $dom->localidad ?? '',
+        'provincia' => $dom->descripcionProvincia ?? '',
+        'codigopostal' => $dom->codPostal ?? '',
+        'iva' => $condicionIva,
+        'cuit' => $cuit,
+      ],
+    ]);
+  } catch (\Throwable $e) {
+    // No bloquea el alta: si ARCA falla (caido, timeout, lo que sea), el
+    // usuario simplemente sigue completando el formulario a mano.
+    echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
+  }
+  exit;
+}
+
 if (isset($_POST['Tablero'])) {
   ini_set('display_errors', 1);
   ini_set('display_startup_errors', 1);
