@@ -436,7 +436,9 @@ $(document).ready(function () {
     // var id = document.getElementById("buscarproveedor").value;
     var id = $(this).val();
 
-    if (id === "0") {
+    // Mismo bug que el de guardar_botton (ver comentario ahí abajo): el
+    // placeholder vale "Seleccionar Proveedor", no "0".
+    if (!id || !/^\d+$/.test(id) || id === "0") {
       $("#agregar_botton").removeClass("d-none");
     } else {
       $("#agregar_botton").addClass("d-none");
@@ -1147,7 +1149,17 @@ $(document).ready(function () {
     // dispare. En vez de reinstalar un botón aparte, éste ahora detecta el
     // modo: sin proveedor seleccionado -> Agregar (alta), con proveedor
     // seleccionado -> Actualizar (edición), como ya hacía.
-    if (!id || id === "0") {
+    // FIX DE RAIZ (reportado por Patricio, 2026-09-23: "me pone guardado
+    // pero no guarda"): el chequeo de acá arriba comparaba contra "0",
+    // pero el placeholder del <select> ("Seleccionar Proveedor") NO tiene
+    // atributo value, así que su valor real es el propio texto
+    // "Seleccionar Proveedor" (confirmado: proveedores.js lo compara
+    // exactamente así en otro lado) - nunca "0". El chequeo nunca
+    // detectaba "no hay proveedor elegido" y siempre caía en Actualizar,
+    // con un id inválido: el UPDATE no tocaba ninguna fila pero mysqli
+    // igual devuelve éxito (0 filas afectadas no es error), de ahí el
+    // "guardado" fantasma. Se valida que sea un id numérico real.
+    if (!id || !/^\d+$/.test(id) || id === "0") {
       guardarProveedorNuevo();
       return;
     }
