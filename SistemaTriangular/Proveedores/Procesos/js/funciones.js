@@ -203,13 +203,149 @@ $(document).ready(function () {
     document.getElementById("cuenta_contable").style.display = "none";
   });
 
-  $("#agregar_botton").click(function () {
+  // Revela el formulario "Datos Proveedor" en blanco, listo para tipear un
+  // alta nueva - esto es lo que hacía #agregar_botton directo antes. Ahora
+  // se separa en una función aparte porque también la dispara el modal de
+  // "Nuevo Proveedor por CUIT" (más abajo), una vez resuelto si el CUIT ya
+  // existe o no.
+  function revelarFormularioNuevoProveedor() {
     $("#editor").hide(); // Oculta selector proveedor
     $("#row_contacto").hide(); // Oculta otra fila (si corresponde)
     $("#dashboard-information").hide();
     $("#agregar_botton").addClass("d-none"); // Oculta el botón con Bootstrap
     $("#billing-information").show(); // Muestra el bloque de carga
     $("#razonsocial").attr("readonly", false); // Habilita edición
+  }
+
+  // Pedido de Patricio (2026-09-23): antes de abrir el formulario en
+  // blanco, primero se pide el CUIT (modal chico) - evita cargar un
+  // proveedor duplicado y precarga los datos fiscales desde ARCA.
+  $("#agregar_botton").click(function () {
+    $("#nuevo_proveedor_cuit").val("");
+    $("#cuit_proveedor_estado").empty();
+    new bootstrap.Modal(document.getElementById("modal_nuevo_proveedor_cuit")).show();
+    setTimeout(function () {
+      $("#nuevo_proveedor_cuit").trigger("focus");
+    }, 300);
+  });
+
+  function buscarProveedorPorCuit() {
+    var cuit = $("#nuevo_proveedor_cuit").val().replace(/\D/g, "");
+    var $estado = $("#cuit_proveedor_estado");
+
+    if (cuit.length !== 11) {
+      $estado.html(
+        '<div class="alert alert-warning mb-0">El CUIT debe tener 11 dígitos.</div>'
+      );
+      return;
+    }
+
+    $estado.html(
+      '<div class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Buscando...</div>'
+    );
+
+    $.ajax({
+      url: "Procesos/php/funciones.php",
+      type: "post",
+      data: { VerificarCuit: 1, cuit: cuit },
+      dataType: "json",
+      success: function (res) {
+        if (!res || !res.success) {
+          $estado.html(
+            '<div class="alert alert-danger mb-0">No se pudo verificar el CUIT. Intentá de nuevo.</div>'
+          );
+          return;
+        }
+
+        if (res.existe) {
+          // Ya es proveedor nuestro - evitamos el duplicado, ofrecemos ir
+          // directo a su ficha en vez de seguir cargando.
+          var p = res.proveedor;
+          $estado.html(
+            '<div class="alert alert-info mb-0">' +
+              "Ya existe como proveedor: <strong>" +
+              p.RazonSocial +
+              "</strong> (código " +
+              p.Codigo +
+              ')<br><button type="button" class="btn btn-sm btn-primary mt-2" id="btn_ir_a_proveedor_existente">Ir a este proveedor</button></div>'
+          );
+          $("#btn_ir_a_proveedor_existente")
+            .off("click")
+            .on("click", function () {
+              bootstrap.Modal.getInstance(
+                document.getElementById("modal_nuevo_proveedor_cuit")
+              ).hide();
+              $("#buscarproveedor").val(p.id).trigger("change");
+            });
+          return;
+        }
+
+        // No existe todavía - consultamos ARCA para precargar el
+        // formulario (si ARCA no tiene ese CUIT, igual se abre el
+        // formulario, pero vacío salvo el CUIT).
+        $estado.html(
+          '<div class="text-muted"><span class="spinner-border spinner-border-sm me-1"></span> Consultando datos fiscales en ARCA...</div>'
+        );
+
+        $.ajax({
+          url: "Procesos/php/funciones.php",
+          type: "post",
+          data: { ConsultarArca: 1, cuit: cuit },
+          dataType: "json",
+          success: function (resArca) {
+            bootstrap.Modal.getInstance(
+              document.getElementById("modal_nuevo_proveedor_cuit")
+            ).hide();
+            revelarFormularioNuevoProveedor();
+            $("#cuit").val(cuit);
+
+            if (resArca && resArca.success && resArca.encontrado) {
+              var d = resArca.datos;
+              $("#razonsocial").val(d.razonsocial);
+              $("#direccion").val(d.direccion);
+              $("#localidad").val(d.localidad);
+              $("#provincia").val(d.provincia);
+              $("#codigopostal").val(d.codigopostal);
+              if (d.iva) $("#iva").val(d.iva);
+              toast("success", "Listo!", "Precargamos los datos fiscales desde ARCA.");
+            } else {
+              // ARCA no encontró el CUIT (o falló la consulta) - se sigue
+              // igual, cargando a mano, solo con el CUIT ya puesto.
+              toast(
+                "warning",
+                "CUIT no encontrado en ARCA",
+                "Completá los datos del proveedor a mano."
+              );
+            }
+          },
+          error: function () {
+            bootstrap.Modal.getInstance(
+              document.getElementById("modal_nuevo_proveedor_cuit")
+            ).hide();
+            revelarFormularioNuevoProveedor();
+            $("#cuit").val(cuit);
+            toast(
+              "warning",
+              "No se pudo consultar ARCA",
+              "Completá los datos del proveedor a mano."
+            );
+          },
+        });
+      },
+      error: function () {
+        $estado.html(
+          '<div class="alert alert-danger mb-0">No se pudo verificar el CUIT. Intentá de nuevo.</div>'
+        );
+      },
+    });
+  }
+
+  $("#btn_buscar_cuit_proveedor").click(buscarProveedorPorCuit);
+  $("#nuevo_proveedor_cuit").on("keypress", function (e) {
+    if (e.which === 13) {
+      e.preventDefault();
+      buscarProveedorPorCuit();
+    }
   });
 
   $(document).on("change", 'input[type="checkbox"]', function (e) {

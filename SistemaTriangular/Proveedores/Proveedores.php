@@ -783,6 +783,34 @@
 
 
 
+                        <!-- Alta de Proveedor por CUIT (pedido de Patricio, 2026-09-23):
+                             "Agregar Proveedor" ahora abre este modal chico primero -
+                             se tipea el CUIT, se verifica que no exista ya (evita
+                             duplicados) y, si no existe, se consulta el padrón de ARCA
+                             (ws_sr_constancia_inscripcion) para precargar el formulario
+                             de siempre (la pestaña "Datos Proveedor" de abajo) en vez de
+                             duplicar esos campos en un modal aparte. -->
+                        <div class="modal fade" id="modal_nuevo_proveedor_cuit" tabindex="-1" aria-labelledby="modalNuevoProveedorCuitLabel" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="modalNuevoProveedorCuitLabel"><i class="mdi mdi-rocket me-1"></i> Nuevo Proveedor</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <label for="nuevo_proveedor_cuit">CUIT del proveedor</label>
+                                        <div class="input-group">
+                                            <input type="text" id="nuevo_proveedor_cuit" class="form-control" placeholder="Ej: 20304050607" maxlength="13" inputmode="numeric">
+                                            <button id="btn_buscar_cuit_proveedor" class="btn btn-primary" type="button">
+                                                <i class="mdi mdi-magnify"></i> Buscar
+                                            </button>
+                                        </div>
+                                        <div id="cuit_proveedor_estado" class="mt-3"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="row">
                             <div class="col-12">
                                 <div class="card">
