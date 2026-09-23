@@ -1313,11 +1313,17 @@
         <!-- Dashboard App js -->
         <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
         <!-- funciones -->
-        <script src="Procesos/js/funciones.js"></script>
-        <script src="../Menu/js/funciones.js"></script>
-        <script src="Procesos/js/proveedores.js"></script>
-        <script src="Procesos/js/proveedores_pagos.js"></script>
-        <script src="Procesos/js/proveedores_asociar_pagos.js"></script>
+        <!-- Cache-busting (?v=...) en los scripts propios de esta pantalla:
+             reportado por Patricio (2026-09-23) - sin esto, el navegador
+             puede quedarse con una copia vieja del JS después de cada
+             deploy hasta que alguien haga un hard-refresh a mano, sin
+             ningún aviso de que está desactualizado. Subir el número cada
+             vez que se toque alguno de estos archivos. -->
+        <script src="Procesos/js/funciones.js?v=20260923a"></script>
+        <script src="../Menu/js/funciones.js?v=20260923a"></script>
+        <script src="Procesos/js/proveedores.js?v=20260923a"></script>
+        <script src="Procesos/js/proveedores_pagos.js?v=20260923a"></script>
+        <script src="Procesos/js/proveedores_asociar_pagos.js?v=20260923a"></script>
         <!-- SweetAlert2 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 
