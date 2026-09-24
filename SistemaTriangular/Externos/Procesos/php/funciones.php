@@ -499,7 +499,9 @@ if (isset($_POST['Envios']) && $_POST['Envios'] === '1') {
 if (isset($_POST['VerExterno'])) {
 
     // $SQL=$mysqli->query("SELECT * FROM `Empleados` WHERE id='".$_POST['id']."'");
-    $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD,
+    // OJO: usuarios.Usuario (nombre de login) pisa a Empleados.Usuario (id numérico) por
+    // venir después de Empleados.* - el id del usuario va aparte como IdUsuario.
+    $SQL = $mysqli->query("SELECT Empleados.*,usuarios.Usuario,usuarios.PASSWORD,usuarios.id AS IdUsuario,
         Vehiculos.Marca as VehiculoMarca, Vehiculos.Modelo as VehiculoModelo, Vehiculos.Dominio as VehiculoDominio,
         Vehiculos.Ano as VehiculoAno, Vehiculos.Color as VehiculoColor, Vehiculos.Kilometros as VehiculoKilometros,
         Vehiculos.Motor as VehiculoMotor, Vehiculos.Chasis as VehiculoChasis, Vehiculos.Seguro as VehiculoSeguro,
@@ -553,7 +555,11 @@ if (isset($_POST['ModificarVehiculoExterno'])) {
     $marca      = trim($_POST['marca'] ?? '');
     $dominio    = trim($_POST['dominio'] ?? '');
 
-    if ($id_usuario === 0 || $marca === '' || $dominio === '') {
+    if ($id_usuario === 0) {
+        echo json_encode(['success' => 0, 'message' => 'No se pudo identificar el usuario del repartidor. Cerrá y volvé a abrir su ficha.']);
+        exit;
+    }
+    if ($marca === '' || $dominio === '') {
         echo json_encode(['success' => 0, 'message' => 'Marca y Dominio son obligatorios']);
         exit;
     }

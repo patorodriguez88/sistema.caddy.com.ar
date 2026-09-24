@@ -258,7 +258,7 @@ function modificar(a) {
       $("#ext_pass_app").val(jsonData.data[0].PASSWORD);
 
       $("#ext_id").val(a);
-      $("#ext_id_usuario").val(jsonData.data[0].Usuario);
+      $("#ext_id_usuario").val(jsonData.data[0].IdUsuario); // id numérico (Usuario es el nombre de login)
 
       $("#ext_marca").val(jsonData.data[0].VehiculoMarca);
       $("#ext_modelo").val(jsonData.data[0].VehiculoModelo);
