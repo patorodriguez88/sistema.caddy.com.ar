@@ -522,7 +522,7 @@
     <!--pdf-->
 
     <!-- funciones -->
-    <script src="Procesos/js/funciones.js"></script>
+    <script src="Procesos/js/funciones.js?v=<?php echo @filemtime(__DIR__ . '/Procesos/js/funciones.js') ?: time(); ?>"></script>
     <script src="../Menu/js/funciones.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
