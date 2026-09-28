@@ -166,7 +166,7 @@ $('#imp_rot').click(function writeToSelectedPrinter(){
             '^FO0,235^GB850,0,2^FS'+
             '^FX QR Code ^FS'+
             '^FO10,250^A0N,16,18^FDPodes seguir tu envío en nuestra web con el Código '+ d.CodigoSeguimiento +' o escaneando con tu teléfono el QR.^FS'+    
-            '^FO260,270^BY4,4,0^BQN,2,4^FDLA,{\"id\":\"https://www.caddy.com.ar/seguimiento.html?codigo='+d.CodigoSeguimiento+'\",\"sender_id\":3987654312,\"hash_code\":\"fyePAxtasdOM/kZgZZDSAH+h1JBckgknsg2R3754ERKI=\",\"security_digit\":\"0\"}^FS'+
+            '^FO260,270^BY4,4,0^BQN,2,4^FDLA,{\"id\":\"https://web.caddy.com.ar/seguimiento.html?codigo='+d.CodigoSeguimiento+'\",\"sender_id\":3987654312,\"hash_code\":\"fyePAxtasdOM/kZgZZDSAH+h1JBckgknsg2R3754ERKI=\",\"security_digit\":\"0\"}^FS'+
             '^FO10,290^A0N,20,20^FDCódigo Wepoint:^FS'+
             '^FO20,310^BY3,2,0^BQN,2,4^FDLA,'+d.CodigoSeguimiento+'^FS'+
             '^FO10,440^A0N,20,20^FDwww.caddy.com.ar^FS'+
@@ -259,7 +259,7 @@ $.ajax({
             '^FO0,235^GB850,0,2^FS'+
             '^FX QR Code ^FS'+
             '^FO10,250^A0N,16,18^FDPodes seguir tu envío en nuestra web con el Código '+ d.CodigoSeguimiento +' o escaneando con tu teléfono el QR.^FS'+    
-            '^FO260,270^BY4,4,0^BQN,2,4^FDLA,{\"id\":\"https://www.caddy.com.ar/seguimiento.html?codigo='+d.CodigoSeguimiento+'\",\"sender_id\":3987654312,\"hash_code\":\"fyePAxtasdOM/kZgZZDSAH+h1JBckgknsg2R3754ERKI=\",\"security_digit\":\"0\"}^FS'+
+            '^FO260,270^BY4,4,0^BQN,2,4^FDLA,{\"id\":\"https://web.caddy.com.ar/seguimiento.html?codigo='+d.CodigoSeguimiento+'\",\"sender_id\":3987654312,\"hash_code\":\"fyePAxtasdOM/kZgZZDSAH+h1JBckgknsg2R3754ERKI=\",\"security_digit\":\"0\"}^FS'+
             '^FO10,440^A0N,20,20^FDwww.caddy.com.ar^FS'+
             '^FO500,440^A0N,20,20^FDUsuario: '+d.Usuario+'^FS'+
             '^XZ';

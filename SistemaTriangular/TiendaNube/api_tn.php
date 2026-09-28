@@ -15,7 +15,7 @@ function fulfill($id_cliente, $order_id, $codigoSeguimiento)
 
         $data = [
             "shipping_tracking_number" => $codigoSeguimiento,
-            "shipping_tracking_url" => "https://www.caddy.com.ar/seguimiento.html?codigo=" . $codigoSeguimiento,
+            "shipping_tracking_url" => "https://web.caddy.com.ar/seguimiento.html?codigo=" . $codigoSeguimiento,
             "notify_customer" => true
         ];
 

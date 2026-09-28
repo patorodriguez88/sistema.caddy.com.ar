@@ -193,7 +193,7 @@ $matrixPointSize = 10;
 $errorCorrectionLevel = 'L';
 
 $filename = $PNG_TEMP_DIR.'test'.md5($_REQUEST['data'].'|'.$errorCorrectionLevel.'|'.$matrixPointSize).'.png';
-QRcode::png('https://www.caddy.com.ar/seguimiento.html?codigo='.$Codigo, $filename, $errorCorrectionLevel, $matrixPointSize, 2); 
+QRcode::png('https://web.caddy.com.ar/seguimiento.html?codigo='.$Codigo, $filename, $errorCorrectionLevel, $matrixPointSize, 2); 
 
 $this->Image($PNG_WEB_DIR.basename($filename), 95 ,10, 20 , 20,'png','');
 // //HASTA ACA EL GENERADOR DE CODIGO QR	
