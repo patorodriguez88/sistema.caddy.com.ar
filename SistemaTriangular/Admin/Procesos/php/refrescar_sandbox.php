@@ -41,6 +41,67 @@ $TABLAS_SIEMPRE_COMPLETAS = array(
     'ClientesyServicios', 'ValorxKilometro'
 );
 
+// Backups y copias viejas de produccion: no se crean ni se copian en sandbox
+// (suman ~2 GB: TransClientes_backup_26JUN, Ctasctes_1.._9, Tesoreria_30JUL, ...).
+$PATRON_TABLAS_EXCLUIDAS = '/(backup|_bak|_erase|_old$|_\d+$|_\d{1,2}[A-Za-z]{3}\d{0,2}$)/i';
+
+// Tablas con credenciales/tokens: en sandbox solo se crea la estructura, sin datos.
+// Si sandbox renovara un token copiado (ML rota el refresh_token), produccion
+// perderia el acceso.
+$TABLAS_SOLO_ESTRUCTURA = array('Api', 'auth_refresh_tokens', 'ml_mensajeria');
+
+// Iguala la ESTRUCTURA de sandbox con produccion para una tabla: la crea si no
+// existe (CREATE TABLE ... LIKE, con indices) y agrega las columnas que le falten
+// con la misma definicion que en produccion. Nunca borra nada de sandbox (puede
+// haber columnas de un desarrollo en curso en develop).
+// Devuelve ['creada' => bool, 'agregadas' => [columnas], 'errores' => [..]].
+function igualarEstructura($mysqli, $dbOrigen, $dbDestino, $tabla)
+{
+    $out = array('creada' => false, 'agregadas' => array(), 'errores' => array());
+    $colsOrigen  = obtenerColumnas($mysqli, $dbOrigen, $tabla);
+    $colsDestino = obtenerColumnas($mysqli, $dbDestino, $tabla);
+    if (empty($colsOrigen)) {
+        return $out;
+    }
+    try {
+        if (empty($colsDestino)) {
+            $mysqli->query("CREATE TABLE `$dbDestino`.`$tabla` LIKE `$dbOrigen`.`$tabla`");
+            $out['creada'] = true;
+            return $out;
+        }
+        $faltan = array_diff($colsOrigen, $colsDestino);
+        if (!$faltan) {
+            return $out;
+        }
+        // definicion exacta de cada columna, tomada del CREATE TABLE de produccion
+        $res = $mysqli->query("SHOW CREATE TABLE `$dbOrigen`.`$tabla`");
+        $create = $res ? (string) $res->fetch_row()[1] : '';
+        $defs = array();
+        foreach (explode("\n", $create) as $linea) {
+            if (preg_match('/^\s*`([^`]+)`\s+(.+?),?$/', $linea, $m)) {
+                $defs[$m[1]] = $m[2];
+            }
+        }
+        foreach ($colsOrigen as $i => $col) {
+            if (!in_array($col, $faltan, true) || !isset($defs[$col])) {
+                continue;
+            }
+            $anterior = $i > 0 ? $colsOrigen[$i - 1] : null;
+            $pos = ($anterior !== null && in_array($anterior, obtenerColumnas($mysqli, $dbDestino, $tabla), true))
+                ? " AFTER `$anterior`" : '';
+            try {
+                $mysqli->query("ALTER TABLE `$dbDestino`.`$tabla` ADD COLUMN `$col` {$defs[$col]}$pos");
+                $out['agregadas'][] = $col;
+            } catch (\Throwable $e) {
+                $out['errores'][] = "$col: " . $e->getMessage();
+            }
+        }
+    } catch (\Throwable $e) {
+        $out['errores'][] = $e->getMessage();
+    }
+    return $out;
+}
+
 // Devuelve las columnas de una tabla en orden, para poder copiar solo las que
 // existen en AMBAS bases (evita "Column count doesn't match" cuando el schema
 // de sandbox quedó desactualizado respecto a producción en alguna tabla). Un
@@ -135,12 +196,12 @@ $action = isset($_POST['action']) ? $_POST['action'] : '';
 // acerca al límite.
 if ($action === 'listar_tablas') {
     try {
+        // Todas las tablas de produccion (las que faltan en sandbox se crean al
+        // refrescarlas), menos backups/copias viejas.
         $resTablas = $mysqli->query("
             SELECT t1.TABLE_NAME
             FROM information_schema.TABLES t1
-            INNER JOIN information_schema.TABLES t2
-                ON t2.TABLE_SCHEMA = '$dbDestino' AND t2.TABLE_NAME = t1.TABLE_NAME
-            WHERE t1.TABLE_SCHEMA = '$dbOrigen'
+            WHERE t1.TABLE_SCHEMA = '$dbOrigen' AND t1.TABLE_TYPE = 'BASE TABLE'
             ORDER BY t1.TABLE_NAME
         ");
 
@@ -150,7 +211,9 @@ if ($action === 'listar_tablas') {
 
         $tablas = array();
         while ($row = $resTablas->fetch_row()) {
-            $tablas[] = $row[0];
+            if (!preg_match($PATRON_TABLAS_EXCLUIDAS, $row[0])) {
+                $tablas[] = $row[0];
+            }
         }
 
         jexit(['ok' => true, 'tablas' => $tablas]);
@@ -167,6 +230,14 @@ if ($action === 'refrescar_tabla') {
     if ($tabla === '') {
         jexit(['ok' => false, 'tabla' => $tabla, 'error' => 'Falta la tabla.']);
     }
+
+    if (preg_match($PATRON_TABLAS_EXCLUIDAS, $tabla)) {
+        jexit(['ok' => false, 'tabla' => $tabla, 'error' => 'Tabla de backup: no se copia a sandbox.']);
+    }
+
+    // Primero la estructura: crea la tabla o agrega las columnas que falten.
+    // igualarEstructura solo actua si la tabla existe en produccion.
+    $estructura = igualarEstructura($mysqli, $dbOrigen, $dbDestino, $tabla);
 
     $colsOrigen  = obtenerColumnas($mysqli, $dbOrigen, $tabla);
     $colsDestino = obtenerColumnas($mysqli, $dbDestino, $tabla);
@@ -198,6 +269,13 @@ if ($action === 'refrescar_tabla') {
         $omitidas = implode(' | ', $partes);
     }
 
+    if (in_array($tabla, $TABLAS_SOLO_ESTRUCTURA, true)) {
+        jexit([
+            'ok' => true, 'tabla' => $tabla, 'filas' => 0, 'filtro' => 'solo estructura (credenciales: no se copian datos)',
+            'omitidas' => $omitidas, 'creada' => $estructura['creada'], 'agregadas' => $estructura['agregadas'], 'errores_estructura' => $estructura['errores'],
+        ]);
+    }
+
     if (empty($colsComunes)) {
         jexit(['ok' => false, 'tabla' => $tabla, 'filas' => 0, 'filtro' => null, 'omitidas' => $omitidas, 'error' => 'Sin columnas en común entre producción y sandbox.']);
     }
@@ -226,6 +304,9 @@ if ($action === 'refrescar_tabla') {
             'filas'    => $filas,
             'filtro'   => $colFecha ? ($colFecha . ' >= ' . $fechaDesde) : 'completa',
             'omitidas' => $omitidas,
+            'creada'   => $estructura['creada'],
+            'agregadas' => $estructura['agregadas'],
+            'errores_estructura' => $estructura['errores'],
         ]);
     } catch (\mysqli_sql_exception $e) {
         // Desde PHP 8.1, mysqli tira excepción en los errores (no devuelve
