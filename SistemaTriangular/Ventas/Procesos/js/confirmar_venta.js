@@ -69,6 +69,9 @@ document
       cliente_destino:
         document.getElementById("id_destino").value ||
         document.getElementById("id_destino2").value,
+      // Venta generada desde una cotizacion (cotizacion_a_venta.js): ConfirmarVenta
+      // le graba el codigo de seguimiento a esa cotizacion.
+      cotizacion_id: (document.getElementById("cotizacion_id") || {}).value || "",
     };
 
     console.log("Datos enviados:", data);

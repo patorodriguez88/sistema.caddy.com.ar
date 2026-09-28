@@ -683,6 +683,7 @@
     <script src="Procesos/js/confirmar_venta.js"></script>
     <script src="Procesos/js/redespacho.js"></script>
     <script src="Procesos/js/select2_clientes.js"></script>
+    <script src="Procesos/js/cotizacion_a_venta.js?v=<?php echo @filemtime(__DIR__ . '/Procesos/js/cotizacion_a_venta.js') ?: time(); ?>"></script>
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
     <!-- SweetAlert2 JS -->

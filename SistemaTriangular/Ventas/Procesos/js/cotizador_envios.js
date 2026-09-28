@@ -14,6 +14,7 @@
   var ultimoCalculo = null;
   var montoMinimoSeguro = 0; // Variables.MontoMinimoSeguro: cobertura sin cargo incluida en la tarifa
   var cotizacionId = 0;
+  var cotizacionVendida = ""; // CodigoSeguimiento si la cotizacion ya se convirtio en venta
   var vehiculosCache = []; // ValorxKilometro: segmentos de flota (id, nombre, valorKm, valorHora, maxKg, maxM3)
   var wpSeq = 0;
 
@@ -770,7 +771,8 @@
               "<td>" + c.id + "</td>" +
               "<td>" + fmtFechaHora(c.Fecha) + "</td>" +
               "<td>" + (c.Usuario || "-") + "</td>" +
-              "<td>" + (c.Titulo || '<span class="text-muted">—</span>') + "</td>" +
+              "<td>" + (c.Titulo || '<span class="text-muted">—</span>') +
+              (c.CodigoSeguimiento ? ' <span class="badge bg-success">Vendida ' + c.CodigoSeguimiento + "</span>" : "") + "</td>" +
               "<td>" + (c.RazonSocial || "-") + "</td>" +
               "<td>" + (c.OrigenLocalidad || "?") + " → " + (c.DestinoLocalidad || "?") + "</td>" +
               '<td class="text-end">' + money(c.Total) + "</td></tr>"
@@ -779,6 +781,40 @@
           .join("");
       })
       .catch(function () { body.innerHTML = '<tr><td colspan="7" class="text-danger">Error de red.</td></tr>'; });
+  }
+
+  // ------------------------------------------------------------ Generar venta
+  // Guarda la cotizacion (para que quede con el ultimo calculo) y abre Venta Simple
+  // precargada. Al confirmar la venta, ConfirmarVenta.php le graba el codigo de
+  // seguimiento a la cotizacion (CotizacionesEnvio.CodigoSeguimiento).
+  function actualizarVenta() {
+    var b = el("cot_generar_venta"), v = el("cot_vendida");
+    if (!b || !v) return;
+    if (cotizacionVendida) {
+      v.innerHTML = '<i class="mdi mdi-check-circle"></i> Esta cotización ya se convirtió en venta: <b>' + cotizacionVendida + "</b>";
+      v.classList.remove("d-none");
+      b.disabled = true;
+    } else {
+      v.classList.add("d-none");
+      b.disabled = false;
+    }
+  }
+
+  function generarVenta() {
+    if (cotizacionVendida) return;
+    if (!ultimoCalculo) {
+      toast2("info", "Generar venta", "Primero calculá el costo.");
+      return;
+    }
+    el("cot_generar_venta").disabled = true;
+    guardar(function (ok) {
+      el("cot_generar_venta").disabled = false;
+      if (!ok || !cotizacionId) {
+        toast2("error", "Generar venta", "No se pudo guardar la cotización antes de generar la venta.");
+        return;
+      }
+      window.location.href = "/SistemaTriangular/Ventas/Ventas?cotizacion=" + cotizacionId;
+    });
   }
 
   function setVal(id, v) { var e = el(id); if (e) e.value = v == null ? "" : v; }
@@ -841,6 +877,8 @@
 
         // se mantiene el id: el proximo "Guardar" actualiza esta misma cotizacion.
         cotizacionId = Number(c.id) || 0;
+        cotizacionVendida = c.CodigoSeguimiento || "";
+        actualizarVenta();
         ultimoCalculo = null; // se recalcula abajo; evita que un guardar dispare antes de tiempo
         var m = window.bootstrap ? window.bootstrap.Modal.getInstance(el("cot_modal_lista")) : null;
         if (m) m.hide(); else $("#cot_modal_lista").modal("hide");
@@ -1043,6 +1081,7 @@
       if (ed) abrirModalPaquete(parseInt(ed.getAttribute("data-i"), 10));
     });
     el("cot_calcular").addEventListener("click", function (e) { e.preventDefault(); calcular(); });
+    el("cot_generar_venta").addEventListener("click", function (e) { e.preventDefault(); generarVenta(); });
     el("cot_guardar").addEventListener("click", function (e) { e.preventDefault(); guardar(); });
 
     el("cot_salir_cancelar").addEventListener("click", function () { ocultarModalSalir(); });

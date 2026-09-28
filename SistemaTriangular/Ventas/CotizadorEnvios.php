@@ -361,6 +361,8 @@
                                 </details>
                                 <div class="d-grid gap-2">
                                     <button class="btn btn-primary btn-sm" id="cot_guardar"><i class="mdi mdi-content-save"></i> Guardar cotización</button>
+                                    <button class="btn btn-success btn-sm" id="cot_generar_venta"><i class="mdi mdi-cart-arrow-right"></i> Generar venta</button>
+                                    <div id="cot_vendida" class="alert alert-success py-1 px-2 small mb-0 d-none"></div>
                                     <div class="btn-group">
                                         <button class="btn btn-outline-danger btn-sm" id="cot_pdf" disabled><i class="mdi mdi-file-pdf-box"></i> PDF</button>
                                         <button class="btn btn-outline-danger btn-sm" id="cot_mail" disabled><i class="mdi mdi-email-outline"></i> Mail</button>
