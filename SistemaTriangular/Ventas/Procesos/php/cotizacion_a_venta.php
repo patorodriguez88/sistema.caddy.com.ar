@@ -33,6 +33,9 @@ if (!$c) {
 $obs = (string) ($c['Observaciones'] ?? '');
 $email = preg_match('/Email:\s*([^\s|]+)/i', $obs, $m) ? trim($m[1]) : '';
 $telefono = preg_match('/Tel[eé]fono:\s*([0-9+\s-]+)/iu', $obs, $m) ? preg_replace('/\D+/', '', $m[1]) : '';
+// Quién recibe (lo pregunta el chat de la web desde el 28/9)
+$recibeNombre = preg_match('/Recibe:\s*([^|]+)/u', $obs, $m) ? trim($m[1]) : '';
+$recibeTel = preg_match('/Tel\. recibe:\s*([0-9]+)/u', $obs, $m) ? $m[1] : '';
 
 // Cliente origen sugerido
 $cliente = null;
@@ -97,6 +100,7 @@ cav_out([
     'telefono'    => $telefono,
     'origen'      => ['texto' => (string) $c['OrigenTexto'], 'localidad' => (string) $c['OrigenLocalidad']],
     'destino'     => ['texto' => (string) $c['DestinoTexto'], 'localidad' => (string) $c['DestinoLocalidad']],
+    'recibe'      => ['nombre' => $recibeNombre, 'telefono' => $recibeTel],
     'total'       => round((float) $c['Total'], 2),
     'modo'        => (string) $c['Modo'],
     'bultos'      => max(1, $bultos),
