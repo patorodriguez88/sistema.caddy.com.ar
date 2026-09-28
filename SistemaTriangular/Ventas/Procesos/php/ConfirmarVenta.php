@@ -603,4 +603,24 @@ unset($_SESSION['NClienteDestino_t']);
 // La venta ya quedó registrada: marcamos la respuesta como enviada para que el
 // shutdown handler no pise el JSON aunque falle algo del bloque de mail/webhooks.
 $GLOBALS['cv_ok'] = true;
+// Venta generada desde una cotizacion (Cotizador de Envios > Generar venta): se le
+// graba el codigo de seguimiento para saber que ya se convirtio en venta. Nunca
+// debe afectar la venta ya confirmada (si falta la columna o falla, solo se loguea).
+$cotizacionId = (int) ($_POST['cotizacion_id'] ?? 0);
+if ($cotizacionId > 0) {
+    try {
+        $stCot = $mysqli->prepare(
+            "UPDATE CotizacionesEnvio SET CodigoSeguimiento = ?, FechaVenta = NOW()
+             WHERE id = ? AND (CodigoSeguimiento IS NULL OR CodigoSeguimiento = '')"
+        );
+        if ($stCot) {
+            $stCot->bind_param('si', $Seguimiento, $cotizacionId);
+            $stCot->execute();
+            $stCot->close();
+        }
+    } catch (Throwable $e) {
+        error_log('ConfirmarVenta: no se pudo marcar la cotizacion ' . $cotizacionId . ' como vendida: ' . $e->getMessage());
+    }
+}
+
 echo json_encode(['success' => 1, 'message' => 'Registro exitoso', 'data' => $Seguimiento]);

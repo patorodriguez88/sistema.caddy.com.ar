@@ -621,9 +621,13 @@ if ($action === 'obtener') {
 
 if ($action === 'listar') {
     $rows = [];
+    // CodigoSeguimiento: la cotizacion ya se convirtio en venta (columna agregada el 2026-09-28;
+    // si todavia no existe, el listado sigue funcionando sin la marca).
+    $colVenta = $mysqli->query("SHOW COLUMNS FROM CotizacionesEnvio LIKE 'CodigoSeguimiento'");
+    $extra = ($colVenta && $colVenta->num_rows) ? ', CodigoSeguimiento' : '';
     $res = $mysqli->query(
         "SELECT id, Fecha, Usuario, Titulo, RazonSocial, Modo, OrigenLocalidad, DestinoLocalidad,
-                KmTotales, Total, Observaciones
+                KmTotales, Total, Observaciones$extra
          FROM CotizacionesEnvio WHERE Eliminado = 0 ORDER BY id DESC LIMIT 200"
     );
     while ($res && $r = $res->fetch_assoc()) {
