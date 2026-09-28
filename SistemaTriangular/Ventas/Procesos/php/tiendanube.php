@@ -22,7 +22,7 @@ if (is_array($ids)) {
             $n = $row['NCliente'];
             $idProveedor_tn = $row['idProveedor'];
             $CodigoSeguimiento = $row['CodigoSeguimiento'];
-            $LinkCodigoSeguimiento = "https://www.caddy.com.ar/seguimiento.html?codigo=" . $CodigoSeguimiento;
+            $LinkCodigoSeguimiento = "https://web.caddy.com.ar/seguimiento.html?codigo=" . $CodigoSeguimiento;
 
             // Verificar si hay un usuario de Tienda Nube asociado
             $user_query = $mysqli->query("SELECT user_id_tn, token_tiendanube FROM Clientes WHERE id = '$n'");
