@@ -54,10 +54,16 @@
       setVal("cp_nc", partes.cp);
       setVal("ciudad_nc", dir.localidad);
       setVal("observaciones_nc", "Cotización N° " + cot.id);
-      var nombre = el("nombrecliente_nc");
-      if (nombre && tipo === "Destino") {
-        nombre.placeholder = "Nombre del destinatario";
-        nombre.focus();
+      if (tipo === "Destino") {
+        var rec = cot.recibe || {};
+        setVal("nombrecliente_nc", rec.nombre || "");
+        setVal("celular_nc", rec.telefono || "");
+        setVal("telefono_nc", rec.telefono || "");
+        var nombre = el("nombrecliente_nc");
+        if (nombre && !rec.nombre) {
+          nombre.placeholder = "Nombre del destinatario";
+          nombre.focus();
+        }
       }
     }, 150);
   }
@@ -120,7 +126,8 @@
       '<div class="small">' +
       "<b>" + esc(cot.nombre) + "</b>" + (cot.email ? " · " + esc(cot.email) : "") + (cot.telefono ? " · " + esc(cot.telefono) : "") + "<br>" +
       "Origen: " + esc(cot.origen.texto) + "<br>" +
-      "Destino: " + esc(cot.destino.texto) + "<br>" +
+      "Destino: " + esc(cot.destino.texto) +
+      (cot.recibe && cot.recibe.nombre ? " · Recibe: <b>" + esc(cot.recibe.nombre) + "</b>" + (cot.recibe.telefono ? " (" + esc(cot.recibe.telefono) + ")" : "") : "") + "<br>" +
       "Total cotizado: <b>" + money(cot.total) + "</b>" +
       (cot.servicio ? " · Tarifa " + esc(cot.servicio.titulo) : "") +
       (cot.bultos > 1 ? " · " + cot.bultos + " bultos" : "") +
