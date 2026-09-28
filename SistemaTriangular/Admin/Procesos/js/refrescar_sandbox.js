@@ -5,9 +5,12 @@
   function renderResultado(resultado) {
     const filas = resultado
       .map(function (r) {
-        const omitidas = r.omitidas
-          ? `<div class="text-warning small">Omitidas: ${r.omitidas}</div>`
-          : "";
+        const estructura =
+          (r.creada ? `<div class="text-success small">Tabla creada (no existía en sandbox)</div>` : "") +
+          (r.agregadas && r.agregadas.length ? `<div class="text-success small">Columnas agregadas: ${r.agregadas.join(", ")}</div>` : "") +
+          (r.errores_estructura && r.errores_estructura.length ? `<div class="text-danger small">Estructura: ${r.errores_estructura.join(" | ")}</div>` : "");
+        const omitidas =
+          estructura + (r.omitidas ? `<div class="text-warning small">Omitidas: ${r.omitidas}</div>` : "");
         if (r.ok) {
           return `<tr><td>${r.tabla}</td><td class="text-success">OK</td><td class="text-end">${r.filas}</td><td>${r.filtro || ""}${omitidas}</td></tr>`;
         }
