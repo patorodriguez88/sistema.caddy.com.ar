@@ -1,4 +1,4 @@
-/* Resultados / CashFlow (Inicio/dashboard_.php).
+/* Estilo de los paneles modernos: Resultados (dashboard_.php) y Panel de Control (Cpanel.php).
    Usa las variables de Bootstrap 5.3 para que funcione en tema claro y oscuro. */
 
 .cf-page {
@@ -288,3 +288,148 @@
   font-weight: 500;
   color: var(--cf-muted);
 }
+
+/* =====================================================================
+   Panel de Control (Cpanel.php)
+   ===================================================================== */
+.cp-accesos { flex-wrap: wrap; }
+.cp-badge-count {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: #fa5c7c;
+  color: #fff;
+  font-size: .7rem;
+  font-weight: 700;
+  line-height: 20px;
+  box-shadow: 0 0 0 2px var(--cf-card-bg);
+}
+
+/* Aviso de preventa */
+.cp-banner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: .9rem 1.1rem;
+  margin-bottom: 1rem;
+  border-radius: var(--cf-radius);
+  border: 1px solid color-mix(in srgb, #ffbc00 45%, transparent);
+  background: color-mix(in srgb, #ffbc00 12%, var(--cf-card-bg));
+}
+.cp-banner-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border-radius: 12px;
+  font-size: 1.4rem;
+  color: #b8860b;
+  background: color-mix(in srgb, #ffbc00 25%, transparent);
+}
+.cp-banner-body { flex: 1; min-width: 0; }
+.cp-banner-title { font-weight: 700; }
+.cp-banner-sub { margin-top: .3rem; display: flex; flex-wrap: wrap; gap: .35rem; }
+.cp-banner .btn { border-radius: 10px; font-weight: 600; white-space: nowrap; }
+.cp-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: .35rem;
+  padding: 1px 9px;
+  border-radius: 999px;
+  font-size: .75rem;
+  background: var(--cf-card-bg);
+  border: 1px solid var(--cf-border);
+}
+@media (max-width: 575px) { .cp-banner { flex-wrap: wrap; } }
+
+/* Operativo del día */
+.cp-op {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+@media (max-width: 767px) { .cp-op { grid-template-columns: 1fr; } }
+.cp-op-item {
+  padding: 1rem 1.1rem;
+  border-radius: 12px;
+  border: 1px solid var(--cf-border);
+  background: color-mix(in srgb, var(--cp-c) 5%, var(--cf-card-bg));
+}
+.cp-op-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  font-weight: 700;
+  color: var(--cf-muted);
+  text-transform: uppercase;
+  font-size: .75rem;
+  letter-spacing: .05em;
+}
+.cp-op-head small { text-transform: none; letter-spacing: 0; font-weight: 500; }
+.cp-op-head b { color: var(--cp-c); font-size: .95rem; }
+.cp-op-num { margin: .35rem 0 .6rem; color: var(--cf-muted); font-size: .85rem; }
+.cp-op-num b { font-size: 1.7rem; color: var(--bs-body-color); letter-spacing: -.02em; margin-right: .15rem; }
+.cp-op-bar { height: 8px; border-radius: 999px; background: color-mix(in srgb, var(--cp-c) 15%, transparent); overflow: hidden; }
+.cp-op-bar > div { height: 100%; width: 0; border-radius: 999px; background: var(--cp-c); transition: width .6s ease; }
+.cp-op-foot { margin-top: .5rem; font-size: .78rem; color: var(--cf-muted); }
+
+/* Tablas del panel */
+.cp-table td, .cp-table th { vertical-align: middle; }
+.cp-table td { text-align: center; }
+.cp-table .cf-first { min-width: 150px; }
+.cp-sub { font-size: .72rem; color: var(--cf-muted); font-weight: 400; white-space: nowrap; }
+.cp-patente {
+  display: inline-block;
+  padding: 1px 7px;
+  border-radius: 5px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: .75rem;
+  font-weight: 700;
+  letter-spacing: .04em;
+  border: 1px solid var(--cf-border);
+  background: var(--cf-head-bg);
+}
+.cp-pill {
+  display: inline-block;
+  min-width: 34px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-weight: 700;
+  color: var(--cf-ventas);
+  background: color-mix(in srgb, var(--cf-ventas) 12%, transparent);
+}
+.cp-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.cp-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+.cp-estado::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.cp-estado-success   { color: #08a57a; background: rgba(10, 207, 151, .13); }
+.cp-estado-warning   { color: #b8860b; background: rgba(255, 188, 0, .16); }
+.cp-estado-danger    { color: #e2445c; background: rgba(250, 92, 124, .13); }
+.cp-estado-secondary { color: var(--cf-muted); background: var(--cf-head-bg); }
+.cp-table .btn-sm { border-radius: 8px; font-weight: 600; }
+.cp-codigo { font-weight: 700; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
+.cp-nota span { font-size: .75rem; color: #1a73a8; white-space: normal; }
+
+/* Modal de envíos pendientes */
+.cp-modal { border-radius: var(--cf-radius); border: 0; }
+.cp-modal .modal-header { border-bottom: 1px solid var(--cf-border); }
+.cp-modal .cf-page, .cp-modal { --cf-border: var(--bs-border-color-translucent, rgba(0, 0, 0, .08)); --cf-muted: var(--bs-secondary-color, #6c757d); --cf-head-bg: var(--bs-tertiary-bg, #f6f7fb); --cf-card-bg: var(--bs-body-bg, #fff); --cf-ventas: #727cf5; --cf-radius: 14px; }
+.cp-scroll { max-height: 520px; overflow: auto; }
+.cp-table td.cf-first { white-space: normal; }
+.cp-table td.cf-first .cp-sub { white-space: normal; }
+.cp-modal-dialog { max-width: min(1280px, 96vw); }
+#cp-tabla-pendientes td { white-space: normal; }
+#cp-tabla-pendientes td .cp-sub { white-space: normal; min-width: 180px; }
+#cp-tabla-pendientes td:last-child { white-space: nowrap; }

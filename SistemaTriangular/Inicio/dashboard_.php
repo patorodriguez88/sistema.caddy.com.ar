@@ -25,7 +25,7 @@
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
 
-    <link href="css/dashboard_cashflow.css?v=<?= filemtime(__DIR__ . '/css/dashboard_cashflow.css') ?>" rel="stylesheet" type="text/css" />
+    <link href="css/panel.css?v=<?= filemtime(__DIR__ . '/css/panel.css') ?>" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
