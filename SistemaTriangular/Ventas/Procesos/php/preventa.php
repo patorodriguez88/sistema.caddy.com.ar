@@ -1,152 +1,127 @@
 <?php
-error_reporting(E_ALL);
-ini_set('display_errors', '1');
+// Preventa (Ventas/Pendientes.php): pedidos que entraron (web, integraciones, importadores)
+// y esperan ser aceptados. Aceptar = Ventas/AgregarRepoVentaWeb.php (crea la venta, la guía,
+// la hoja de ruta y el seguimiento). Todas las consultas van preparadas.
 include_once "../../../Conexion/Conexioni.php";
-
-mysqli_set_charset($mysqli, "utf8");
+header('Content-Type: application/json; charset=utf-8');
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
-$FechaActual = date('Y-m-d');
+function pv_out(array $a): void
+{
+    echo json_encode($a, JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
+// ids[] del navegador -> enteros únicos
+function pv_ids($v): array
+{
+    if (is_string($v)) {
+        $d = json_decode($v, true);
+        $v = is_array($d) ? $d : explode(',', $v);
+    }
+    return array_values(array_unique(array_filter(array_map('intval', (array)$v))));
+}
+
+// Número de recorrido válido de Caddy, o null
+function pv_recorrido(mysqli $mysqli, $r): ?int
+{
+    if (!preg_match('/^\d+$/', trim((string)$r))) return null;
+    $n = (int)$r;
+    $st = $mysqli->prepare("SELECT 1 FROM Recorridos WHERE Numero = ? LIMIT 1");
+    $st->bind_param('i', $n);
+    $st->execute();
+    return $st->get_result()->fetch_row() ? $n : null;
+}
+
+// Pendientes de aceptar, con el nombre del recorrido y marca de posible duplicado
 if (isset($_POST['datos'])) {
-  $sql = "SELECT * FROM PreVenta WHERE Cargado=0 AND Eliminado=0 ;";
-  $Resultado = $mysqli->query($sql);
-  $rows = array();
-  while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-    $rows[] = $row;
-  }
-  echo json_encode(array('data' => $rows));
+    $sql = "SELECT p.*, r.Nombre AS RecorridoNombre,
+                   (SELECT COUNT(*) FROM PreVenta d
+                     WHERE d.Cargado = 0 AND d.Eliminado = 0 AND d.id <> p.id
+                       AND d.NCliente = p.NCliente AND d.idClienteDestino = p.idClienteDestino
+                       AND p.idClienteDestino > 0) AS Duplicados
+              FROM PreVenta p
+              LEFT JOIN Recorridos r ON p.Recorrido REGEXP '^[0-9]+$' AND r.Numero = p.Recorrido
+             WHERE p.Cargado = 0 AND p.Eliminado = 0
+             ORDER BY p.id";
+    $rows = $mysqli->query($sql)->fetch_all(MYSQLI_ASSOC);
+    pv_out(['data' => $rows]);
 }
 
-//SELECT RECORRIDOS
+// Lista de recorridos para los selectores
+if (isset($_POST['ListaRecorridos'])) {
+    $rows = $mysqli->query("SELECT Numero, Nombre FROM Recorridos ORDER BY Numero")->fetch_all(MYSQLI_ASSOC);
+    pv_out(['ok' => true, 'recorridos' => $rows]);
+}
+
+// <option> de recorridos (lo usa Colecta: Ventas/Procesos/js/colecta.js), con el actual primero
 if (isset($_POST['BuscarRecorridos'])) {
-  $BuscarVenta = $mysqli->query("SELECT Numero,Nombre FROM Recorridos");
-  if ($_POST['cs'] <> '') {
-    $BuscarRecorrido = $mysqli->query("SELECT Recorrido FROM TransClientes WHERE CodigoSeguimiento='$_POST[cs]'");
-    $Recorrido = $BuscarRecorrido->fetch_array(MYSQLI_ASSOC);
-    $Rec_label = 'Recorrido ' . $Recorrido['Recorrido'];
-    $Rec = $Recorrido['Recorrido'];
-  } else {
-    $Rec = $Recorrido['Recorrido'];
-    $Rec_label = "Seleccionar Recorrido";
-  }
-  echo '<option value=' . $Rec . '>' . $Rec_label . '</option>';
-  while (($fila = $BuscarVenta->fetch_array(MYSQLI_ASSOC)) != NULL) {
-    echo '<option value="' . $fila["Numero"] . '">' . $fila["Numero"] . ' | ' . $fila["Nombre"] . '</option>';
-  }
-  // Liberar resultados
-  $BuscarVenta->free();
-  // mysql_free_result($BuscarVenta);
+    header('Content-Type: text/html; charset=utf-8');
+    $e = fn($s) => htmlspecialchars((string)$s, ENT_QUOTES, 'UTF-8');
+    $rec = '';
+    if (($_POST['cs'] ?? '') !== '') {
+        $st = $mysqli->prepare("SELECT Recorrido FROM TransClientes WHERE CodigoSeguimiento = ? LIMIT 1");
+        $cs = (string)$_POST['cs'];
+        $st->bind_param('s', $cs);
+        $st->execute();
+        $rec = (string)($st->get_result()->fetch_row()[0] ?? '');
+    }
+    echo '<option value="' . $e($rec) . '">' . ($rec !== '' ? 'Recorrido ' . $e($rec) : 'Seleccionar Recorrido') . '</option>';
+    foreach ($mysqli->query("SELECT Numero, Nombre FROM Recorridos")->fetch_all(MYSQLI_ASSOC) as $f) {
+        echo '<option value="' . $e($f['Numero']) . '">' . $e($f['Numero']) . ' | ' . $e($f['Nombre']) . '</option>';
+    }
+    exit;
 }
 
-//HASTA ACA SELET RECORRIDOS
-
-//SELECT RECORRIDOS
-
-if (isset($_POST['ActualizaRecorrido'])) {
-
-  // FIX (reportado: "cambian de recorrido un servicio, queda el modal
-  // activo, no se va nunca y no refresca la tabla"): mismo bug que ya
-  // estaba documentado y arreglado en ActualizaRecorrido_all (mas abajo) -
-  // acá se devolvía $_POST['cs'], que este flujo de UN servicio nunca
-  // manda (el JS solo manda r/id) -> Warning "Undefined array key 'cs'"
-  // ANTES del json_encode -> JSON.parse() reventaba en el frontend, sin
-  // ningún error visible (no hay dataType:"json" ni error: acá). Se saca
-  // ese campo (ni se usaba - el JS solo lee jsonData.success).
-  $sql = "UPDATE IGNORE PreVenta SET Recorrido='$_POST[r]' WHERE id='$_POST[id]'";
-
-  if ($mysqli->query($sql)) {
-
-    echo json_encode(array('success' => 1, 'Recorrido' => $_POST['r']));
-  } else {
-
-    echo json_encode(array('success' => 0));
-  }
-}
-
-if (isset($_POST['ActualizaRecorrido_all'])) {
-  $id = $_POST['id'];
-
-  // OJO: era "<= count($id)" -> 1 vuelta de mas accediendo a $id[count($id)]
-  // (fuera de rango). Con display_errors=1 eso imprimia un Warning "Undefined
-  // array key" ANTES del json_encode, y el JS reventaba en JSON.parse()
-  // (la tabla no se actualizaba, el modal no cerraba) aunque el UPDATE de
-  // los registros validos ya se habia hecho.
-  for ($i = 0; $i < count($id); $i++) {
-
-    $sql = "UPDATE PreVenta SET Recorrido='$_POST[r]' WHERE id='$id[$i]'";
-    $mysqli->query($sql);
-  }
-
-  echo json_encode(array('success' => 1, 'Recorrido' => $_POST['r']));
-}
-
-if (isset($_POST['Eliminar_all'])) {
-  header('Content-Type: application/json; charset=utf-8');
-  ob_start();
-  try {
-    // 1) Normalizar entrada: permitir array o string "1,2,3"
-    $ids = $_POST['id'] ?? [];
-    if (is_string($ids)) {
-      // puede venir "1,2,3" o JSON '["1","2","3"]'
-      $decoded = json_decode($ids, true);
-      if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
-        $ids = $decoded;
-      } else {
-        $ids = array_filter(array_map('trim', explode(',', $ids)));
-      }
+// Cambiar el recorrido de una o varias preventas
+if (isset($_POST['ActualizaRecorrido']) || isset($_POST['ActualizaRecorrido_all'])) {
+    $ids = pv_ids($_POST['id'] ?? []);
+    $rec = pv_recorrido($mysqli, $_POST['r'] ?? '');
+    if (!$ids || $rec === null) {
+        pv_out(['success' => 0, 'error' => $rec === null ? 'Recorrido inválido' : 'No hay registros']);
     }
-    if (!is_array($ids) || empty($ids)) {
-      ob_end_clean();
-      echo json_encode(['success' => 0, 'error' => 'No se recibieron IDs a eliminar']);
-      exit;
-    }
-
-    // 2) Filtrar a enteros únicos
-    $ids = array_values(array_unique(array_map('intval', $ids)));
-    if (!$ids) {
-      ob_end_clean();
-      echo json_encode(['success' => 0, 'error' => 'IDs inválidos']);
-      exit;
-    }
-
-    // 3a) Opción segura y simple: prepared + foreach
-    $stmt = $mysqli->prepare("UPDATE IGNORE PreVenta SET Eliminado = 1 WHERE id = ? LIMIT 1");
-    if (!$stmt) {
-      throw new Exception("Prepare failed: " . $mysqli->error);
-    }
-
-    $mysqli->begin_transaction();
-    $ok = 0;
+    $recTxt = (string)$rec;
+    $st = $mysqli->prepare("UPDATE PreVenta SET Recorrido = ? WHERE id = ? AND Cargado = 0 LIMIT 1");
+    $n = 0;
     foreach ($ids as $id) {
-      $stmt->bind_param("i", $id);
-      if ($stmt->execute()) {
-        $ok += $stmt->affected_rows; // 1 si tocó, 0 si ya estaba o no existía
-      }
+        $st->bind_param('si', $recTxt, $id);
+        $st->execute();
+        $n += $st->affected_rows;
     }
-    $mysqli->commit();
-    $stmt->close();
+    pv_out(['success' => 1, 'Recorrido' => $recTxt, 'actualizados' => $n]);
+}
 
-    ob_end_clean();
-    echo json_encode(['success' => 1, 'actualizados' => $ok, 'total_recibidos' => count($ids)]);
-    exit;
-  } catch (Throwable $e) {
-    if ($mysqli && $mysqli->errno === 0) {
-      @$mysqli->rollback();
+// Eliminar una o varias preventas (baja lógica)
+if (isset($_POST['EliminarPreventa']) || isset($_POST['Eliminar_all'])) {
+    $ids = pv_ids($_POST['id'] ?? []);
+    if (!$ids) pv_out(['success' => 0, 'error' => 'No se recibieron registros']);
+    $st = $mysqli->prepare("UPDATE PreVenta SET Eliminado = 1 WHERE id = ? AND Cargado = 0 LIMIT 1");
+    $n = 0;
+    foreach ($ids as $id) {
+        $st->bind_param('i', $id);
+        $st->execute();
+        $n += $st->affected_rows;
     }
-    ob_end_clean();
-    echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
-    exit;
-  }
+    pv_out(['success' => 1, 'actualizados' => $n, 'total_recibidos' => count($ids)]);
 }
-if (isset($_POST['EliminarPreventa'])) {
 
-  $sql = "UPDATE IGNORE PreVenta SET Eliminado=1 WHERE id='$_POST[id]' LIMIT 1";
-
-  if ($mysqli->query($sql)) {
-    echo json_encode(array('success' => 1));
-  } else {
-    echo json_encode(array('success' => 0));
-  }
+// Resultado de una aceptación: qué preventas quedaron cargadas y con qué código
+if (isset($_POST['EstadoAceptacion'])) {
+    $ids = pv_ids($_POST['id'] ?? []);
+    $out = [];
+    $st = $mysqli->prepare("SELECT p.id, p.Cargado, p.CodigoSeguimiento, p.ClienteDestino,
+                                   (SELECT COUNT(*) FROM TransClientes t
+                                     WHERE t.CodigoSeguimiento = p.CodigoSeguimiento AND t.Eliminado = 0) AS guia
+                              FROM PreVenta p WHERE p.id = ?");
+    foreach ($ids as $id) {
+        $st->bind_param('i', $id);
+        $st->execute();
+        if ($f = $st->get_result()->fetch_assoc()) {
+            $out[] = ['id' => (int)$f['id'], 'aceptada' => (int)$f['Cargado'] === 1 && (int)$f['guia'] > 0,
+                      'codigo' => $f['CodigoSeguimiento'], 'destino' => $f['ClienteDestino']];
+        }
+    }
+    pv_out(['ok' => true, 'estado' => $out]);
 }
-//HASTA ACA SELET RECORRIDOS
+
+pv_out(['success' => 0, 'error' => 'Acción no válida']);

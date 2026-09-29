@@ -3,230 +3,137 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Sistema Caddy | Pendientes </title>
+    <title>Sistema Caddy | Preventa</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
-    <meta content="Coderthemes" name="author" />
 
-    <!-- Caddy favicon -->
     <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
     <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
-    <!-- Plugin css -->
-    <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
-    <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
-
-    <!-- Datatables css -->
-    <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- For checkbox Select-->
-    <link href="../hyper/dist/assets/vendor/datatables/select.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- For Buttons -->
-    <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- Fixe header-->
-    <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
-
-    <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
-
-    <!-- Vendor css -->
     <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
-
-    <!-- App css -->
     <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-
-    <!-- Icons css -->
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="../Inicio/css/panel.css?v=<?= filemtime(__DIR__ . '/../Inicio/css/panel.css') ?>" rel="stylesheet" type="text/css" />
+    <link href="Procesos/css/preventa.css?v=<?= filemtime(__DIR__ . '/Procesos/css/preventa.css') ?>" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
-    <!-- Begin page -->
     <div class="wrapper">
-
         <?php include "../Menu/head.html"; ?>
         <?php include "../Menu/topnav.html"; ?>
         <div class="content-page">
             <div class="content">
+                <div class="container-fluid cf-page pv-page">
 
-                <!-- Start Content-->
-                <div class="container-fluid">
-
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="page-title-box">
-                                <div class="page-title-right">
-                                    <ol class="breadcrumb m-0">
-                                        <li class="breadcrumb-item"><a href="javascript: void(0);">Pre Ventas</a></li>
-                                        <li class="breadcrumb-item active">Pre Ventas</li>
-                                    </ol>
-                                </div>
-                                <h4 class="page-title">Pre Ventas</h4>
-                            </div>
+                    <!-- Encabezado -->
+                    <div class="cf-header">
+                        <div>
+                            <div class="cf-eyebrow">Ventas</div>
+                            <h3 class="cf-title">Preventa</h3>
+                            <div class="cf-sub" id="pv-sub">Pedidos que esperan ser aceptados</div>
+                        </div>
+                        <div class="cf-actions">
+                            <a class="btn btn-light" href="/SistemaTriangular/Importar/dinter.php"><i class="mdi mdi-file-upload-outline"></i><span class="ms-1">Importar Dinter</span></a>
+                            <button type="button" class="btn btn-light" id="pv-actualizar"><i class="mdi mdi-refresh"></i><span class="ms-1">Actualizar</span></button>
                         </div>
                     </div>
 
-                    <script>
-                        function subir() {
-                            var c = document.getElementsByName('cargar');
-                            var x = document.getElementsByName('recorrido_t[]');
-                            var i;
-                            for (i = 0; i < x.length; i++) {
-                                if (x[i].value != 0) {
-                                    c[i].style.display = 'block';
-                                } else {
-                                    c[i].style.display = 'none';
-                                }
-                            }
-                        }
-                    </script>
-                    <div id="info-alert-modal" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
-                        <div class="modal-dialog modal-sm modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-body p-4">
-                                    <div class="text-center">
-                                        <i class="dripicons-information h1 text-info"></i>
-                                        <h4 id="info-alert-modal-title" class="mt-2">Actualizando...</h4>
-                                        <p id="info-alert-body" class="mt-3"></p>
-                                        <div class="spinner-grow text-primary" role="status"></div>
-                                    </div>
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
-
-                    <!-- //MODIFICAR RECORRIDO -->
-                    <div class="modal fade" id="standard-modal-rec" tabindex="-1" role="dialog" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header modal-colored-header bg-primary">
-                                    <h5 class="modal-title mb-0 text-white" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h5>
-                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <div id="query_selector_recorrido_t" class="mt-2">
-                                        <div class="selector-recorrido mb-3">
-                                            <label for="recorrido_t" class="form-label">Seleccionar Recorrido</label>
-                                            <select id="recorrido_t" name="recorrido_t" class="form-select" data-bs-toggle="select2" required></select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="modal-footer mt-3">
-                                    <input type="hidden" id="cs_modificar_REC">
-                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
-                                    <button id="modificarrecorrido_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
-                                    <button id="modificarrecorrido_all_ok" type="button" class="btn btn-primary" style="display:none">Guardar Cambios</button>
-                                    <button id="eliminarrecorrido_all_ok" type="button" class="btn btn-primary" style="display:none">Aceptar</button>
-                                </div>
-                            </div>
+                    <!-- Indicadores -->
+                    <div class="cf-kpis">
+                        <div class="cf-kpi" style="--cf-accent:#727cf5">
+                            <div class="cf-kpi-label"><i class="mdi mdi-inbox-arrow-down-outline"></i>Pendientes</div>
+                            <div class="cf-kpi-value" id="kpi-total">–</div>
+                            <div class="cf-kpi-foot" id="kpi-total-pie">&nbsp;</div>
+                        </div>
+                        <div class="cf-kpi" style="--cf-accent:#39afd1">
+                            <div class="cf-kpi-label"><i class="mdi mdi-account-group-outline"></i>Clientes</div>
+                            <div class="cf-kpi-value" id="kpi-clientes">–</div>
+                            <div class="cf-kpi-foot" id="kpi-clientes-pie">&nbsp;</div>
+                        </div>
+                        <div class="cf-kpi" style="--cf-accent:#fa5c7c">
+                            <div class="cf-kpi-label"><i class="mdi mdi-map-marker-alert-outline"></i>Sin recorrido</div>
+                            <div class="cf-kpi-value" id="kpi-sinrec">–</div>
+                            <div class="cf-kpi-foot">No se pueden aceptar hasta asignarles uno</div>
+                        </div>
+                        <div class="cf-kpi" style="--cf-accent:#ffbc00">
+                            <div class="cf-kpi-label"><i class="mdi mdi-content-duplicate"></i>Posibles duplicados</div>
+                            <div class="cf-kpi-value" id="kpi-dup">–</div>
+                            <div class="cf-kpi-foot">Mismo cliente y destinatario más de una vez</div>
                         </div>
                     </div>
-                    <div class="col-lg-12 mt-3">
-                        <div class="card">
-                            <div class="card-body">
 
-                                <div class="tab-content">
-                                    <table name="f1" id="preventa" class="table dt-responsive w-100" style="font-size:11px">
-                                        <thead>
-                                            <tr>
-                                                <th>Origen</th>
-                                                <th>Destino</th>
-                                                <th>Fecha/Hora</th>
-                                                <th>Observaciones</th>
-                                                <th>Precio</th>
-                                                <th>Cant.</th>
-                                                <th>Total</th>
-                                                <th>Recorrido</th>
-                                                <th>Cobrar </th>
-                                                <th>Acccion</th>
-                                                <th class="all" style="width: 20px;">
-                                                    <div class="form-check">
-                                                        <input type="checkbox" class="form-check-input" id="customCheck1">
-                                                        <label class="form-check-label" for="customCheck1">&nbsp;</label>
-                                                    </div>
-                                                </th>
-
-
-                                                <!-- <th>Status</th> -->
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                                <td></td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                    <div class="row">
-                                        <div class="col-12 text-end">
-                                            <button id="eliminar_recorrido_all" type="button" class="btn btn-danger" data-bs-dismiss="modal">Eliminar Seleccionados</button>
-                                            <button id="modificar_recorrido_all" type="button" class="btn btn-primary" data-bs-dismiss="modal">Cambiar de Recorrido a Seleccionados</button>
-                                            <button id="aceptar_preventas" type="button" class="btn btn-success" data-bs-dismiss="modal">Aceptar</button>
-                                        </div>
-                                    </div>
-                                </div>
+                    <!-- Por recorrido -->
+                    <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-map-marker-path"></i>Por recorrido</h5>
+                                <div class="cf-card-sub">Aceptá un recorrido completo de una vez, o tocá "Ver" para revisarlo en la tabla</div>
                             </div>
                         </div>
-
-
+                        <div class="pv-grupos" id="pv-grupos"><div class="cf-loading">Cargando…</div></div>
                     </div>
-                    <!-- container -->
+
+                    <!-- Tabla -->
+                    <div class="cf-card">
+                        <div class="pv-toolbar">
+                            <div class="cf-search pv-buscar">
+                                <i class="mdi mdi-magnify"></i>
+                                <input type="search" class="form-control form-control-sm" id="pv-buscar" placeholder="Buscar destinatario, dirección, Nº…" autocomplete="off">
+                            </div>
+                            <select class="form-select form-select-sm" id="pv-f-origen"><option value="">Todos los clientes</option></select>
+                            <select class="form-select form-select-sm" id="pv-f-rec"><option value="">Todos los recorridos</option></select>
+                            <button type="button" class="btn btn-sm btn-light d-none" id="pv-limpiar"><i class="mdi mdi-filter-remove-outline"></i> Quitar filtros</button>
+                            <span class="pv-conteo" id="pv-conteo"></span>
+                        </div>
+                        <div class="cf-table-wrap">
+                            <table class="cf-table cp-table pv-table" id="pv-tabla">
+                                <thead>
+                                    <tr>
+                                        <th class="cf-first pv-chk-col"><input type="checkbox" class="form-check-input" id="pv-todos" title="Seleccionar todo lo que se ve"></th>
+                                        <th class="text-start">Cliente</th>
+                                        <th class="text-start">Destinatario</th>
+                                        <th>Ingreso</th>
+                                        <th>Entrega</th>
+                                        <th>Cant.</th>
+                                        <th>Valor</th>
+                                        <th>Recorrido</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody><tr><td class="cf-loading" colspan="9">Cargando…</td></tr></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Barra de acciones de la selección -->
+                    <div class="pv-barra" id="pv-barra">
+                        <div><b id="pv-sel-n">0</b> seleccionados <span class="text-muted" id="pv-sel-detalle"></span></div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-light" id="pv-sel-limpiar">Deseleccionar</button>
+                            <button type="button" class="btn btn-light text-danger" id="pv-sel-eliminar"><i class="mdi mdi-trash-can-outline"></i> Eliminar</button>
+                            <button type="button" class="btn btn-light" id="pv-sel-rec"><i class="mdi mdi-map-marker-path"></i> Cambiar recorrido</button>
+                            <button type="button" class="btn btn-success" id="pv-sel-aceptar"><i class="mdi mdi-check-all"></i> Aceptar</button>
+                        </div>
+                    </div>
 
                 </div>
-                <!-- content -->
-
-                <!-- Footer Start -->
-                <div id="menuhyper_footer"></div>
-                <!-- end Footer -->
-
             </div>
-
-            <!-- ============================================================== -->
-            <!-- End Page content -->
-            <!-- ============================================================== -->
-
+            <div id="menuhyper_footer"></div>
         </div>
-        <!-- END wrapper -->
+    </div>
 
-        <!-- Vendor js -->
-        <script src="../hyper/dist/assets/js/vendor.min.js"></script>
-
-        <!-- App js -->
-        <script src="../hyper/dist/assets/js/app.js"></script>
-
-        <!-- Daterangepicker js -->
-        <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
-        <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
-
-        <!-- Vector Map js -->
-        <!-- <?php include '../Menu/php/script_maps-vector.php'; ?> -->
-
-        <!-- DataTables -->
-        <?php include '../Menu/php/script_datatables.php'; ?>
-
-        <!-- Funciones -->
-
-        <script src="../Funciones/js/seguimiento.js"></script>
-        <script src="../Menu/js/funciones.js"></script>
-
-        <script src="Procesos/js/preventa.js"></script>
-        <script src="Procesos/js/webhook.js"></script>
-
-        <!-- SweetAlert2 CSS -->
-        <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-
-        <!-- SweetAlert2 JS -->
-        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../hyper/dist/assets/js/vendor.min.js"></script>
+    <script src="../hyper/dist/assets/js/app.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="../Funciones/js/seguimiento.js"></script>
+    <script src="../Menu/js/funciones.js"></script>
     <script src="../Funciones/js/alertas.js"></script>
+    <script src="Procesos/js/webhook.js"></script>
+    <script src="Procesos/js/preventa.js?v=<?= filemtime(__DIR__ . '/Procesos/js/preventa.js') ?>"></script>
 </body>
 
 </html>
