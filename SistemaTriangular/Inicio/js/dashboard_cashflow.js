@@ -123,7 +123,8 @@
     const total = COLS.map((_, i) => simples[i] + flex[i] + recorridos[i] + cobranza[i]);
     const gasto = COLS.map((c) => v(d.gastos, c.key));
     const saldo = COLS.map((_, i) => total[i] - gasto[i]);
-    cash = { simples, flex, recorridos, cobranza, total, gasto, saldo };
+    const cobrado = COLS.map((c) => v(d.cobrado, c.key)); // Recibos de Pago, con IVA
+    cash = { simples, flex, recorridos, cobranza, total, gasto, saldo, cobrado };
   }
 
   function armarGastos(datos) {
@@ -240,7 +241,8 @@
       fila("Total Ventas", cash.total, "cf-row-total") +
       fila("Gastos", cash.gasto, "cf-row-gastos") +
       fila("Resultado", cash.saldo, "cf-row-saldo", true) +
-      `<tr class="cf-row-margen"><td class="cf-first">Margen</td>${margen.map((m) => `<td>${pct(m)}</td>`).join("")}<td class="cf-col-total">${pct(margenTotal)}</td></tr>`
+      `<tr class="cf-row-margen"><td class="cf-first">Margen</td>${margen.map((m) => `<td>${pct(m)}</td>`).join("")}<td class="cf-col-total">${pct(margenTotal)}</td></tr>` +
+      fila('Cobrado a clientes <span class="cf-nota" title="Recibos de Pago de la cuenta corriente. Es plata que entró (con IVA): no suma al resultado.">con IVA · no suma al resultado</span>', cash.cobrado, "cf-row-cobrado")
     );
   }
 
@@ -464,6 +466,8 @@
       cell.border = bordes;
     }
     rMargen.getCell(1).border = bordes;
+    const rCobrado = filaDatos("Cobrado a clientes (con IVA, no suma al resultado)", "", cash.cobrado, { fill: "FFE8F4FD", color: "FF1A73A8" });
+    ws.mergeCells(rCobrado.number, 1, rCobrado.number, 2);
 
     ws.addRow([]);
     ws.addRow([]);

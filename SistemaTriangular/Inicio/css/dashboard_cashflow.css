@@ -274,3 +274,17 @@
 }
 .cf-row-grantotal .cf-first,
 .cf-row-grantotal .cf-cuenta { background: var(--cf-head-bg); color: inherit; }
+
+/* Cobrado a clientes: fila informativa (caja), separada del resultado */
+.cf-row-cobrado td {
+  color: #1a73a8;
+  border-top: 2px dashed var(--cf-border);
+  background: color-mix(in srgb, #39afd1 6%, var(--cf-card-bg));
+}
+.cf-row-cobrado td.cf-first { color: inherit; font-weight: 700; }
+.cf-nota {
+  display: block;
+  font-size: .65rem;
+  font-weight: 500;
+  color: var(--cf-muted);
+}

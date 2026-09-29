@@ -116,6 +116,21 @@ if ($result) {
     }
 }
 
+// 6c. COBRADO A CLIENTES: los Recibos de Pago de la cuenta corriente (plata que entró,
+// con IVA). Es informativo: no se suma al resultado, que se calcula sobre lo vendido.
+$queryCobrado = "
+    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Haber) AS total
+    FROM Ctasctes
+    WHERE Eliminado = 0 AND TipoDeComprobante = 'Recibo de Pago'
+      AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
+    GROUP BY periodo
+";
+$cobrado = [];
+$result = $mysqli->query($queryCobrado);
+while ($row = $result->fetch_assoc()) {
+    $cobrado[$row['periodo']] = floatval($row['total']);
+}
+
 // 7. Salida JSON
 header('Content-Type: application/json');
 echo json_encode([
@@ -124,6 +139,7 @@ echo json_encode([
     'ventas_flex' => $ventasFlex,
     'ventas_recorridos' => $ventasRecorridos,
     'ventas_cobranza' => $ventasCobranza,
-    'gastos' => $gastos
+    'gastos' => $gastos,
+    'cobrado' => $cobrado
 ]);
 exit;
