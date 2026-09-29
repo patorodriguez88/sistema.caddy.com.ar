@@ -111,12 +111,12 @@
                                 <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
                                 <div class="cp-op-bar"><div></div></div>
                                 <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle</div>
-                            </div>
-                            <div class="cp-op-item" data-tipo="meli" style="--cp-c:#ffbc00">
-                                <div class="cp-op-head"><span>MELI <small>(dentro de Flex)</small></span><b class="cp-op-pct">–</b></div>
-                                <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
-                                <div class="cp-op-bar"><div></div></div>
-                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle</div>
+                                <!-- MELI es parte de Flex: va adentro, no como un tercer grupo que se sume -->
+                                <div class="cp-op-item cp-op-sub" data-tipo="meli" style="--cp-c:#ffbc00">
+                                    <div class="cp-op-head"><span>De los cuales MELI <small>(con envío de Mercado Libre)</small></span><b class="cp-op-pct">–</b></div>
+                                    <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados · <span class="cp-op-pend">–</span> en la calle</span></div>
+                                    <div class="cp-op-bar"><div></div></div>
+                                </div>
                             </div>
                         </div>
                     </div>

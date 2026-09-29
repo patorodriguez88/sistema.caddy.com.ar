@@ -350,7 +350,7 @@
 /* Operativo del día */
 .cp-op {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
 }
 @media (max-width: 767px) { .cp-op { grid-template-columns: 1fr; } }
@@ -454,3 +454,14 @@
 @keyframes cp-pulse { 70% { box-shadow: 0 0 0 7px rgba(10, 207, 151, 0); } 100% { box-shadow: 0 0 0 0 rgba(10, 207, 151, 0); } }
 .cp-sin-salir { font-size: .85rem; color: var(--cf-muted); }
 .cp-sin-salir b { color: var(--bs-body-color); font-size: 1.05rem; }
+
+/* MELI va adentro de Flex (es un subconjunto, no un tercer grupo) */
+.cp-op-sub {
+  margin-top: .85rem;
+  padding: .7rem .85rem;
+  border-style: dashed;
+}
+.cp-op-sub .cp-op-head { font-size: .7rem; }
+.cp-op-sub .cp-op-num { margin: .25rem 0 .45rem; }
+.cp-op-sub .cp-op-num b { font-size: 1.25rem; }
+.cp-op-sub .cp-op-bar { height: 6px; }
