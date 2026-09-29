@@ -51,7 +51,7 @@
       const inc = num(d.incidencias_total);
       $("#kpi_incidencias_total").text(fmt0.format(inc)).toggleClass("cf-neg", inc > 0);
       $("#kpi_incidencias_foot").text(
-        `${fmt0.format(num(d.no_entregados))} no entregados · ${fmt0.format(num(d.rechazados))} rechazados · ${fmt0.format(num(d.no_retirados))} no retirados`
+        `${plural(num(d.no_entregados), "no entregado", "no entregados")} · ${plural(num(d.rechazados), "rechazado", "rechazados")} · ${plural(num(d.no_retirados), "no retirado", "no retirados")}`
       );
 
       // Colectas: estado del retiro + bultos escaneados en el cliente
@@ -73,11 +73,13 @@
         const ent = num(d[t + "_entregados"]), pend = num(d[t + "_pendientes"]), total = ent + pend;
         const pct = total ? Math.round((ent * 100) / total) : 0;
         const $it = $(`.cp-op-item[data-tipo="${t}"]`);
-        $it.find(".cp-op-ent").text(fmt0.format(ent));
-        $it.find(".cp-op-total").text(fmt0.format(total));
-        $it.find(".cp-op-pend").text(fmt0.format(pend));
-        $it.find(".cp-op-pct").text(total ? pct + "%" : "–");
-        $it.find(".cp-op-bar > div").css("width", pct + "%");
+        // Solo los elementos propios (la tarjeta Flex tiene adentro la de MELI)
+        const propio = (sel) => $it.find(sel).filter(function () { return $(this).closest(".cp-op-item")[0] === $it[0]; });
+        propio(".cp-op-ent").text(fmt0.format(ent));
+        propio(".cp-op-total").text(fmt0.format(total));
+        propio(".cp-op-pend").text(fmt0.format(pend));
+        propio(".cp-op-pct").text(total ? pct + "%" : "–");
+        propio(".cp-op-bar > div").css("width", pct + "%");
       });
 
       // Todavía no salieron (va abajo, junto a la tabla por recorrido)
