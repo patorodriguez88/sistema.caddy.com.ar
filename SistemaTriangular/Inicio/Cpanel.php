@@ -257,7 +257,6 @@
                                     <th class="text-start">Origen</th>
                                     <th class="text-start">Destino</th>
                                     <th class="text-start">Nota interna</th>
-                                    <th></th>
                                 </tr>
                             </thead>
                             <tbody></tbody>
