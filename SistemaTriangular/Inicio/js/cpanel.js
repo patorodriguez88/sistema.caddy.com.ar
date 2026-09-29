@@ -184,7 +184,6 @@
           </td>
           <td class="text-nowrap">
             <a class="btn btn-sm btn-light" target="_blank" rel="noopener" href="/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=${encodeURIComponent(r.Seguimiento)}" title="Remito"><i class="mdi mdi-file-document-outline"></i></a>
-            <a class="btn btn-sm btn-light" target="_blank" rel="noopener" href="/SistemaTriangular/Ventas/Informes/Rotulospdf.php?CS=${encodeURIComponent(r.Seguimiento)}" title="Rótulo"><i class="mdi mdi-label-outline"></i></a>
           </td>
         </tr>`).join("") : vacio(6, "Este recorrido no tiene envíos pendientes."));
     });
