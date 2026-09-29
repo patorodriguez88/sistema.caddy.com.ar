@@ -1,5 +1,6 @@
 // Panel de Control (Inicio/Cpanel.php) — pantalla de inicio del sistema.
-// Indicadores: php/funcionesCpanel.php (DashboardOperativo, en vivo, cada 30 s).
+// Indicadores: php/funcionesCpanel.php (DashboardOperativo, en vivo, cada 30 s). Las
+// definiciones de Simples/Flex/MELI y qué se excluye están documentadas en ese endpoint.
 // Tablas: php/tablasCpanel.php (Transporte, Logistica, Logistica1, Flota, PreVenta,
 // Pendientes), cada 60 s. Acciones: notas internas y "vaciar recorrido" (funcionesCpanel.php).
 (function () {
@@ -35,15 +36,9 @@
       if (!d || d.success != 1) return;
       pintarFecha(d.hora || new Date().toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" }));
 
-      $("#kpi_pendientes_total").text(fmt0.format(num(d.pendientes_total)));
-      let pie = `${fmt0.format(num(d.pendientes_en_ruta))} en ruta · ${fmt0.format(num(d.pendientes_sin_salir))} sin salir`;
-      if (num(d.pendientes_atrasados) > 0) {
-        pie += ` <span class="cf-delta down" title="Paradas abiertas de envíos con más de 30 días que no salieron">+${fmt0.format(num(d.pendientes_atrasados))} de +30 días</span>`;
-      }
-      $("#kpi_pendientes_foot").html(pie);
-
+      // En vivo
       $("#kpi_en_ruta_total").text(fmt0.format(num(d.en_ruta_total)));
-      $("#kpi_en_ruta_foot").text(plural(num(d.recorridos_activos), "recorrido cargado", "recorridos cargados"));
+      $("#kpi_en_ruta_foot").text(`Envíos pendientes en ${plural(num(d.recorridos_activos), "recorrido cargado", "recorridos cargados")}`);
 
       $("#kpi_entregados_total").text(fmt0.format(num(d.entregados_total)));
       let piEnt = `Ayer a esta hora: <b>${fmt0.format(num(d.entregados_ayer))}</b>`;
@@ -59,8 +54,23 @@
         `${fmt0.format(num(d.no_entregados))} no entregados · ${fmt0.format(num(d.rechazados))} rechazados · ${fmt0.format(num(d.no_retirados))} no retirados`
       );
 
+      // Colectas: estado del retiro + bultos escaneados en el cliente
+      $("#kpi_colectas_total").text(fmt0.format(num(d.colectas_total)));
+      const partes = [];
+      if (num(d.colectas_a_retirar)) partes.push(`<b>${fmt0.format(num(d.colectas_a_retirar))}</b> a retirar`);
+      if (num(d.colectas_en_camino)) partes.push(`<b>${fmt0.format(num(d.colectas_en_camino))}</b> en camino`);
+      if (num(d.colectas_en_deposito)) partes.push(`<b>${fmt0.format(num(d.colectas_en_deposito))}</b> en depósito`);
+      const bultos = num(d.colectas_bultos), esc2 = num(d.colectas_escaneados);
+      let piCol = partes.join(" · ") || "Sin colectas hoy";
+      if (bultos) {
+        piCol += `<br>${fmt0.format(esc2)} de ${plural(bultos, "bulto escaneado", "bultos escaneados")}`;
+        if (esc2 < bultos) piCol += ` <span class="cf-delta down" title="Bultos de colectas de hoy sin escanear en el cliente">${fmt0.format(bultos - esc2)} sin escanear</span>`;
+      }
+      $("#kpi_colectas_foot").html(piCol);
+
+      // Operativo del día (MELI está dentro de Flex)
       ["simples", "flex", "meli"].forEach(function (t) {
-        const total = num(d[t + "_total"]), ent = num(d[t + "_entregados"]), pend = num(d[t + "_pendientes"]);
+        const ent = num(d[t + "_entregados"]), pend = num(d[t + "_pendientes"]), total = ent + pend;
         const pct = total ? Math.round((ent * 100) / total) : 0;
         const $it = $(`.cp-op-item[data-tipo="${t}"]`);
         $it.find(".cp-op-ent").text(fmt0.format(ent));
@@ -69,6 +79,13 @@
         $it.find(".cp-op-pct").text(total ? pct + "%" : "–");
         $it.find(".cp-op-bar > div").css("width", pct + "%");
       });
+
+      // Todavía no salieron (va abajo, junto a la tabla por recorrido)
+      let sinSalir = `<b>${fmt0.format(num(d.pendientes_sin_salir))}</b> envíos todavía no salieron`;
+      if (num(d.pendientes_atrasados) > 0) {
+        sinSalir += ` <span class="cf-delta down" title="Paradas abiertas de envíos con más de 30 días que no salieron">+${fmt0.format(num(d.pendientes_atrasados))} de más de 30 días</span>`;
+      }
+      $("#cp-sin-salir").html(sinSalir);
     });
   }
 

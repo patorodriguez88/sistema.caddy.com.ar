@@ -66,15 +66,11 @@
                         <a class="btn btn-warning" href="/SistemaTriangular/Ventas/Pendientes.php">Ir a Preventa <i class="mdi mdi-arrow-right"></i></a>
                     </div>
 
-                    <!-- KPIs -->
+                    <!-- En vivo: lo que está pasando hoy en la calle -->
+                    <div class="cp-live-title"><span class="cp-live-dot"></span>En vivo · hoy</div>
                     <div class="cf-kpis" id="cp-kpis">
-                        <div class="cf-kpi" style="--cf-accent:#ffbc00">
-                            <div class="cf-kpi-label"><i class="mdi mdi-clock-outline"></i>Pendientes</div>
-                            <div class="cf-kpi-value" id="kpi_pendientes_total">–</div>
-                            <div class="cf-kpi-foot" id="kpi_pendientes_foot">&nbsp;</div>
-                        </div>
                         <div class="cf-kpi" style="--cf-accent:#727cf5">
-                            <div class="cf-kpi-label"><i class="mdi mdi-truck-fast-outline"></i>En ruta</div>
+                            <div class="cf-kpi-label"><i class="mdi mdi-truck-fast-outline"></i>En la calle</div>
                             <div class="cf-kpi-value" id="kpi_en_ruta_total">–</div>
                             <div class="cf-kpi-foot" id="kpi_en_ruta_foot">&nbsp;</div>
                         </div>
@@ -88,6 +84,11 @@
                             <div class="cf-kpi-value" id="kpi_incidencias_total">–</div>
                             <div class="cf-kpi-foot" id="kpi_incidencias_foot">&nbsp;</div>
                         </div>
+                        <div class="cf-kpi" style="--cf-accent:#39afd1">
+                            <div class="cf-kpi-label"><i class="mdi mdi-package-variant-closed-check"></i>Colectas hoy</div>
+                            <div class="cf-kpi-value" id="kpi_colectas_total">–</div>
+                            <div class="cf-kpi-foot" id="kpi_colectas_foot">&nbsp;</div>
+                        </div>
                     </div>
 
                     <!-- Operativo del día -->
@@ -95,7 +96,7 @@
                         <div class="cf-card-head">
                             <div>
                                 <h5 class="cf-card-title"><i class="mdi mdi-progress-check"></i>Operativo del día</h5>
-                                <div class="cf-card-sub">Entregado hoy y lo que sigue pendiente en los recorridos que salieron</div>
+                                <div class="cf-card-sub">Envíos a clientes de hoy: lo entregado y lo que sigue en la calle (no incluye retiros que van al depósito)</div>
                             </div>
                         </div>
                         <div class="cp-op" id="cp-op">
@@ -103,19 +104,19 @@
                                 <div class="cp-op-head"><span>Simples</span><b class="cp-op-pct">–</b></div>
                                 <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
                                 <div class="cp-op-bar"><div></div></div>
-                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> pendientes en ruta</div>
+                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle</div>
                             </div>
                             <div class="cp-op-item" data-tipo="flex" style="--cp-c:#39afd1">
-                                <div class="cp-op-head"><span>Flex <small>(colecta)</small></span><b class="cp-op-pct">–</b></div>
+                                <div class="cp-op-head"><span>Flex <small>(en el día)</small></span><b class="cp-op-pct">–</b></div>
                                 <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
                                 <div class="cp-op-bar"><div></div></div>
-                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> pendientes en ruta</div>
+                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle</div>
                             </div>
                             <div class="cp-op-item" data-tipo="meli" style="--cp-c:#ffbc00">
-                                <div class="cp-op-head"><span>MELI <small>(integración)</small></span><b class="cp-op-pct">–</b></div>
+                                <div class="cp-op-head"><span>MELI <small>(dentro de Flex)</small></span><b class="cp-op-pct">–</b></div>
                                 <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
                                 <div class="cp-op-bar"><div></div></div>
-                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> pendientes en ruta</div>
+                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle</div>
                             </div>
                         </div>
                     </div>
@@ -182,6 +183,7 @@
                                         <h5 class="cf-card-title"><i class="mdi mdi-package-variant"></i>Envíos pendientes por recorrido</h5>
                                         <div class="cf-card-sub">Todo lo que no se entregó, según el recorrido asignado</div>
                                     </div>
+                                    <div class="cp-sin-salir" id="cp-sin-salir"></div>
                                 </div>
                                 <div class="cf-table-wrap cp-scroll">
                                     <table class="cf-table cp-table" id="cp-pendientes-rec">

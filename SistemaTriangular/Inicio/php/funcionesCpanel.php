@@ -102,45 +102,60 @@ if (isset($_POST['VaciarRecorrido'])) {
 
 if (isset($_POST['DashboardOperativo'])) {
   // Indicadores del Panel de Control, calculados en vivo (antes devolvía números fijos de ejemplo).
-  // Tipo de envío: Simples = Flex 0; MELI = pedidos de la integración de Mercado Libre (tienen
-  // order_id); Flex = paquetes Flex que entran por colecta (Flex 1 sin order_id).
+  // Tipo de envío (definido con Patricio, 2026-09-29): Simples = Flex 0; Flex = Flex 1 (en el día);
+  // MELI = los Flex con número de envío de Mercado Libre (shipments_id, o en CodigoProveedor en las
+  // colectas Flex: 11 dígitos que empiezan con 4). MELI es un subconjunto de Flex.
+  // Las colectas "padre" (retiro -> depósito Wepoint, idClienteDestino 18587) no son envíos a
+  // clientes: se excluyen de todo y se cuentan aparte en "colectas".
+  $DEPOSITO = 18587;
   $uno = function (string $sql) use ($mysqli): array {
     $r = $mysqli->query($sql);
     return ($r && ($f = $r->fetch_assoc())) ? $f : [];
   };
-  $tipoSql = "CASE WHEN t.Flex = 0 THEN 'simples' WHEN t.order_id > 0 THEN 'meli' ELSE 'flex' END";
+  $esMeli = "(t.shipments_id > 0 OR t.CodigoProveedor REGEXP '^4[0-9]{10}$')";
 
   // Paradas abiertas (sin el depósito, recorrido 80), una por código
   $pendientesSql = "
     SELECT h.Seguimiento,
            MAX(l.Recorrido IS NOT NULL) AS en_ruta,
            MIN(t.Fecha) AS fecha,
-           MAX($tipoSql) AS tipo
+           MAX(t.Flex = 1) AS flex,
+           MAX(t.Flex = 1 AND $esMeli) AS meli
       FROM HojaDeRuta h
       JOIN TransClientes t ON t.CodigoSeguimiento = h.Seguimiento AND t.Eliminado = 0
-                          AND t.Entregado = 0 AND t.Devuelto = 0
+                          AND t.Entregado = 0 AND t.Devuelto = 0 AND t.idClienteDestino <> $DEPOSITO
       LEFT JOIN (SELECT DISTINCT Recorrido FROM Logistica WHERE Estado = 'Cargada' AND Eliminado = 0) l
              ON l.Recorrido = h.Recorrido
      WHERE h.Eliminado = 0 AND h.Estado = 'Abierto' AND h.Recorrido <> '80'
      GROUP BY h.Seguimiento";
   $pend = $uno("
-    SELECT COUNT(*) AS total,
-           COALESCE(SUM(en_ruta = 1), 0) AS en_ruta,
+    SELECT COALESCE(SUM(en_ruta = 1), 0) AS en_ruta,
+           COALESCE(SUM(en_ruta = 1 AND flex = 0), 0) AS simples,
+           COALESCE(SUM(en_ruta = 1 AND flex = 1), 0) AS flex,
+           COALESCE(SUM(en_ruta = 1 AND meli = 1), 0) AS meli,
            COALESCE(SUM(en_ruta = 0 AND fecha >= CURDATE() - INTERVAL 30 DAY), 0) AS sin_salir,
            COALESCE(SUM(en_ruta = 0 AND fecha <  CURDATE() - INTERVAL 30 DAY), 0) AS atrasados
       FROM ($pendientesSql) p");
 
   $recorridos = $uno("SELECT COUNT(DISTINCT Recorrido) AS n FROM Logistica WHERE Estado = 'Cargada' AND Eliminado = 0");
 
-  // Entregados hoy vs ayer hasta la misma hora
-  $entregados = $uno("
-    SELECT COUNT(DISTINCT CASE WHEN Fecha = CURDATE() THEN CodigoSeguimiento END) AS hoy,
-           COUNT(DISTINCT CASE WHEN Fecha = CURDATE() - INTERVAL 1 DAY AND Hora <= CURTIME() THEN CodigoSeguimiento END) AS ayer
-      FROM Seguimiento
-     WHERE Fecha >= CURDATE() - INTERVAL 1 DAY AND Entregado = 1
-       AND (Eliminado IS NULL OR Eliminado = 0)");
-  $hoy = (int)($entregados['hoy'] ?? 0);
-  $ayer = (int)($entregados['ayer'] ?? 0);
+  // Entregados hoy (a clientes) y ayer hasta la misma hora
+  $entregadosSql = function (string $cuando) use ($DEPOSITO, $esMeli): string {
+    return "
+      SELECT s.CodigoSeguimiento, MAX(t.Flex = 1) AS flex, MAX(t.Flex = 1 AND $esMeli) AS meli
+        FROM Seguimiento s
+        JOIN TransClientes t ON t.CodigoSeguimiento = s.CodigoSeguimiento AND t.Eliminado = 0
+                            AND t.idClienteDestino <> $DEPOSITO
+       WHERE $cuando AND s.Entregado = 1 AND (s.Eliminado IS NULL OR s.Eliminado = 0)
+       GROUP BY s.CodigoSeguimiento";
+  };
+  $ent = $uno("
+    SELECT COUNT(*) AS total, COALESCE(SUM(flex = 0), 0) AS simples,
+           COALESCE(SUM(flex = 1), 0) AS flex, COALESCE(SUM(meli = 1), 0) AS meli
+      FROM (" . $entregadosSql("s.Fecha = CURDATE()") . ") e");
+  $entAyer = $uno("SELECT COUNT(*) AS total FROM (" . $entregadosSql("s.Fecha = CURDATE() - INTERVAL 1 DAY AND s.Hora <= CURTIME()") . ") e");
+  $hoy = (int)($ent['total'] ?? 0);
+  $ayer = (int)($entAyer['total'] ?? 0);
   $variacion = $ayer > 0 ? (int)round(($hoy - $ayer) * 100 / $ayer) : null;
 
   // Incidencias de hoy
@@ -152,35 +167,34 @@ if (isset($_POST['DashboardOperativo'])) {
      WHERE Fecha = CURDATE() AND (Eliminado IS NULL OR Eliminado = 0)
        AND Estado IN ('No se pudo entregar', 'Rechazado', 'No se Pudo Retirar')");
 
-  // Operativo del día por tipo: lo entregado hoy + lo que sigue pendiente en recorridos que salieron
-  $op = ['simples' => ['e' => 0, 'p' => 0], 'flex' => ['e' => 0, 'p' => 0], 'meli' => ['e' => 0, 'p' => 0]];
-  $r = $mysqli->query("SELECT tipo, COUNT(*) AS n FROM ($pendientesSql) p WHERE en_ruta = 1 GROUP BY tipo");
-  while ($r && ($f = $r->fetch_assoc())) {
-    $op[$f['tipo']]['p'] = (int)$f['n'];
-  }
-  $r = $mysqli->query("
-    SELECT tipo, COUNT(*) AS n FROM (
-      SELECT s.CodigoSeguimiento, MAX($tipoSql) AS tipo
-        FROM Seguimiento s
-        JOIN TransClientes t ON t.CodigoSeguimiento = s.CodigoSeguimiento AND t.Eliminado = 0
-       WHERE s.Fecha = CURDATE() AND s.Entregado = 1 AND (s.Eliminado IS NULL OR s.Eliminado = 0)
-       GROUP BY s.CodigoSeguimiento) e
-     GROUP BY tipo");
-  while ($r && ($f = $r->fetch_assoc())) {
-    $op[$f['tipo']]['e'] = (int)$f['n'];
-  }
+  // Colectas de hoy: estado del retiro (el "padre") y bultos escaneados en el cliente
+  $col = $uno("
+    SELECT COUNT(*) AS total,
+           COALESCE(SUM(c.Cantidad), 0) AS bultos_declarados,
+           COALESCE(SUM(COALESCE(p.Retirado, 0) = 0 AND COALESCE(p.Entregado, 0) = 0), 0) AS a_retirar,
+           COALESCE(SUM(p.Retirado = 1 AND p.Entregado = 0), 0) AS en_camino,
+           COALESCE(SUM(p.Entregado = 1), 0) AS en_deposito
+      FROM Colecta c
+      LEFT JOIN TransClientes p ON p.CodigoSeguimiento = c.CodigoSeguimiento AND p.Eliminado = 0
+     WHERE c.Fecha = CURDATE() AND c.Eliminado = 0");
+  $colBultos = $uno("
+    SELECT COUNT(DISTINCT k.CodigoSeguimiento) AS bultos,
+           COUNT(DISTINCT CASE WHEN s.status = 'pickup_scanned' THEN k.CodigoSeguimiento END) AS escaneados
+      FROM Colecta c
+      JOIN TransClientes k ON k.idColecta = c.id AND k.Eliminado = 0 AND k.idClienteDestino <> $DEPOSITO
+      LEFT JOIN Seguimiento s ON s.CodigoSeguimiento = k.CodigoSeguimiento AND s.status = 'pickup_scanned'
+                             AND (s.Eliminado IS NULL OR s.Eliminado = 0)
+     WHERE c.Fecha = CURDATE() AND c.Eliminado = 0");
 
   $noEnt = (int)($inc['no_entregados'] ?? 0);
   $rech = (int)($inc['rechazados'] ?? 0);
   $noRet = (int)($inc['no_retirados'] ?? 0);
+  $i = fn($a, $k) => (int)($a[$k] ?? 0);
   echo json_encode(array(
     'success' => 1,
-    'pendientes_total' => (int)($pend['en_ruta'] ?? 0) + (int)($pend['sin_salir'] ?? 0),
-    'pendientes_sin_salir' => (int)($pend['sin_salir'] ?? 0),
-    'pendientes_en_ruta' => (int)($pend['en_ruta'] ?? 0),
-    'pendientes_atrasados' => (int)($pend['atrasados'] ?? 0),
-    'en_ruta_total' => (int)($pend['en_ruta'] ?? 0),
-    'recorridos_activos' => (int)($recorridos['n'] ?? 0),
+    // En vivo (hoy)
+    'en_ruta_total' => $i($pend, 'en_ruta'),
+    'recorridos_activos' => $i($recorridos, 'n'),
     'entregados_total' => $hoy,
     'entregados_ayer' => $ayer,
     'entregados_variacion' => $variacion,
@@ -188,15 +202,23 @@ if (isset($_POST['DashboardOperativo'])) {
     'no_entregados' => $noEnt,
     'rechazados' => $rech,
     'no_retirados' => $noRet,
-    'simples_total' => $op['simples']['e'] + $op['simples']['p'],
-    'simples_entregados' => $op['simples']['e'],
-    'simples_pendientes' => $op['simples']['p'],
-    'flex_total' => $op['flex']['e'] + $op['flex']['p'],
-    'flex_entregados' => $op['flex']['e'],
-    'flex_pendientes' => $op['flex']['p'],
-    'meli_total' => $op['meli']['e'] + $op['meli']['p'],
-    'meli_entregados' => $op['meli']['e'],
-    'meli_pendientes' => $op['meli']['p'],
+    // Operativo del día por tipo (MELI está incluido en Flex)
+    'simples_entregados' => $i($ent, 'simples'),
+    'simples_pendientes' => $i($pend, 'simples'),
+    'flex_entregados' => $i($ent, 'flex'),
+    'flex_pendientes' => $i($pend, 'flex'),
+    'meli_entregados' => $i($ent, 'meli'),
+    'meli_pendientes' => $i($pend, 'meli'),
+    // Colectas de hoy
+    'colectas_total' => $i($col, 'total'),
+    'colectas_a_retirar' => $i($col, 'a_retirar'),
+    'colectas_en_camino' => $i($col, 'en_camino'),
+    'colectas_en_deposito' => $i($col, 'en_deposito'),
+    'colectas_bultos' => $i($colBultos, 'bultos'),
+    'colectas_escaneados' => $i($colBultos, 'escaneados'),
+    // Todavía no salieron
+    'pendientes_sin_salir' => $i($pend, 'sin_salir'),
+    'pendientes_atrasados' => $i($pend, 'atrasados'),
     'hora' => date('H:i'),
   ));
   exit;
