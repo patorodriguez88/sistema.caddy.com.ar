@@ -1,0 +1,98 @@
+/* Preventa (Ventas/Pendientes.php). Base: Inicio/css/panel.css */
+
+/* Grupos por recorrido */
+.pv-grupos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: .75rem;
+}
+.pv-grupo {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .85rem 1rem;
+  border: 1px solid var(--cf-border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--pv-c, #727cf5) 5%, var(--cf-card-bg));
+}
+.pv-grupo.activo { outline: 2px solid var(--pv-c, #727cf5); }
+.pv-grupo-sin { --pv-c: #fa5c7c; }
+.pv-grupo-head { display: flex; justify-content: space-between; align-items: flex-start; gap: .5rem; }
+.pv-grupo-num { font-weight: 800; font-size: 1.05rem; }
+.pv-grupo-nombre { font-size: .75rem; color: var(--cf-muted); }
+.pv-grupo-n { font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--pv-c, #727cf5); }
+.pv-grupo-n small { display: block; font-size: .65rem; font-weight: 600; color: var(--cf-muted); text-align: right; }
+.pv-grupo-clientes { display: flex; flex-wrap: wrap; gap: .3rem; }
+.pv-grupo-acc { display: flex; gap: .4rem; margin-top: auto; }
+.pv-grupo-acc .btn { border-radius: 8px; font-weight: 600; }
+
+/* Toolbar */
+.pv-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; margin-bottom: .75rem; }
+.pv-toolbar .form-select { width: auto; min-width: 180px; border-radius: 10px; }
+.pv-buscar { flex: 1 1 260px; }
+.pv-conteo { margin-left: auto; font-size: .8rem; color: var(--cf-muted); }
+
+/* Tabla */
+.pv-table td { vertical-align: middle; }
+.pv-table td.text-start { white-space: normal; min-width: 200px; }
+.pv-chk-col { width: 42px; min-width: 42px !important; text-align: center !important; }
+.pv-table tr.sel td { background: color-mix(in srgb, #727cf5 8%, var(--cf-card-bg)) !important; }
+.pv-rec {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 0;
+  font-size: .75rem;
+  font-weight: 700;
+  color: #727cf5;
+  background: rgba(114, 124, 245, .12);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.pv-rec.invalido { color: #e2445c; background: rgba(250, 92, 124, .13); }
+.pv-rec small { font-weight: 500; opacity: .8; }
+.pv-tag {
+  display: inline-block;
+  margin: 2px 3px 0 0;
+  padding: 0 7px;
+  border-radius: 999px;
+  font-size: .65rem;
+  font-weight: 700;
+  border: 1px solid var(--cf-border);
+  background: var(--cf-head-bg);
+  color: var(--cf-muted);
+}
+.pv-tag.ml { color: #b8860b; border-color: rgba(255, 188, 0, .5); background: rgba(255, 188, 0, .12); }
+.pv-tag.dup { color: #e2445c; border-color: rgba(250, 92, 124, .4); background: rgba(250, 92, 124, .1); }
+.pv-tag.cobro { color: #08a57a; border-color: rgba(10, 207, 151, .4); background: rgba(10, 207, 151, .1); }
+.pv-obs { font-size: .72rem; color: #1a73a8; white-space: normal; }
+
+/* Barra fija de acciones de la selección */
+.pv-barra {
+  position: sticky;
+  bottom: 12px;
+  z-index: 20;
+  display: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: .75rem;
+  padding: .75rem 1rem;
+  border-radius: 14px;
+  background: var(--cf-card-bg);
+  border: 1px solid var(--cf-border);
+  box-shadow: 0 10px 30px rgba(16, 24, 40, .18);
+}
+.pv-barra.visible { display: flex; }
+.pv-barra .btn { border-radius: 10px; font-weight: 600; }
+
+/* Progreso de aceptación */
+.pv-progreso { height: 10px; border-radius: 999px; background: rgba(114, 124, 245, .15); overflow: hidden; margin: .75rem 0 .35rem; }
+.pv-progreso > div { height: 100%; width: 0; background: #0acf97; transition: width .3s; }
+.pv-resultado { text-align: left; font-size: .85rem; max-height: 260px; overflow: auto; }
+.pv-filtro-rec { width: 100%; margin-bottom: .5rem; }
+.pv-table td.pv-cli { min-width: 130px; max-width: 190px; }
+.pv-table td.pv-cli .cp-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.pv-table td.text-start:not(.pv-cli) { min-width: 240px; }
