@@ -432,3 +432,25 @@
 .cp-modal-dialog { max-width: min(1280px, 96vw); }
 #cp-tabla-pendientes td { white-space: normal; }
 #cp-tabla-pendientes td .cp-sub { white-space: normal; min-width: 180px; }
+.cp-live-title {
+  display: flex;
+  align-items: center;
+  gap: .45rem;
+  margin: 0 0 .5rem;
+  font-size: .72rem;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--cf-muted);
+}
+.cp-live-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #0acf97;
+  box-shadow: 0 0 0 0 rgba(10, 207, 151, .6);
+  animation: cp-pulse 1.8s infinite;
+}
+@keyframes cp-pulse { 70% { box-shadow: 0 0 0 7px rgba(10, 207, 151, 0); } 100% { box-shadow: 0 0 0 0 rgba(10, 207, 151, 0); } }
+.cp-sin-salir { font-size: .85rem; color: var(--cf-muted); }
+.cp-sin-salir b { color: var(--bs-body-color); font-size: 1.05rem; }
