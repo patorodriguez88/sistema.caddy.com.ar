@@ -69,17 +69,19 @@
       $("#kpi_colectas_foot").html(piCol);
 
       // Operativo del día (MELI está dentro de Flex)
-      ["simples", "flex", "meli"].forEach(function (t) {
+      // MELI es parte de Flex: se informa como badge dentro de la tarjeta Flex
+      const meliPend = num(d.meli_pendientes);
+      $("#cp-meli-pend").toggleClass("d-none", meliPend === 0).text(`${fmt0.format(meliPend)} MELI`);
+
+      ["simples", "flex"].forEach(function (t) {
         const ent = num(d[t + "_entregados"]), pend = num(d[t + "_pendientes"]), total = ent + pend;
         const pct = total ? Math.round((ent * 100) / total) : 0;
         const $it = $(`.cp-op-item[data-tipo="${t}"]`);
-        // Solo los elementos propios (la tarjeta Flex tiene adentro la de MELI)
-        const propio = (sel) => $it.find(sel).filter(function () { return $(this).closest(".cp-op-item")[0] === $it[0]; });
-        propio(".cp-op-ent").text(fmt0.format(ent));
-        propio(".cp-op-total").text(fmt0.format(total));
-        propio(".cp-op-pend").text(fmt0.format(pend));
-        propio(".cp-op-pct").text(total ? pct + "%" : "–");
-        propio(".cp-op-bar > div").css("width", pct + "%");
+        $it.find(".cp-op-ent").text(fmt0.format(ent));
+        $it.find(".cp-op-total").text(fmt0.format(total));
+        $it.find(".cp-op-pend").text(fmt0.format(pend));
+        $it.find(".cp-op-pct").text(total ? pct + "%" : "–");
+        $it.find(".cp-op-bar > div").css("width", pct + "%");
       });
 
       // Todavía no salieron (va abajo, junto a la tabla por recorrido)
