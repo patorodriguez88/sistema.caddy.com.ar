@@ -58,7 +58,7 @@ while ($row = $result->fetch_assoc()) {
     $ventasRecorridos[$row['periodo']] = floatval($row['total']);
 }
 
-// 5. VENTAS COBRANZA (5% del CobrarEnvio) -- misma query que dashboard_cashflow_graficos.php
+// 5. VENTAS COBRANZA (5% del CobrarEnvio)
 $queryCobranza = "
     SELECT DATE_FORMAT(FechaPedido, '%Y-%m') AS periodo,
            SUM(CobrarEnvio) * 0.05 AS total
@@ -75,7 +75,7 @@ while ($row = $result->fetch_assoc()) {
     $ventasCobranza[$row['periodo']] = floatval($row['total']);
 }
 
-// 6. GASTOS -- misma query que dashboard_cashflow_graficos.php
+// 6. GASTOS
 $queryGastos = "
     SELECT DATE_FORMAT(Tesoreria.Fecha, '%Y-%m') AS periodo,
            SUM(Tesoreria.Debe) AS total

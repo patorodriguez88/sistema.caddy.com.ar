@@ -3,31 +3,13 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Sistema Caddy | </title>
+    <title>Sistema Caddy | Resultados</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
-    <meta content="Coderthemes" name="author" />
 
     <!-- Caddy favicon -->
     <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
     <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
     <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
-
-    <!-- Plugin css -->
-    <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
-    <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
-
-
-    <!-- Datatables css -->
-    <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- For checkbox Select-->
-    <link href="../hyper/dist/assets/vendor/datatables/select.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- For Buttons -->
-    <link href="../hyper/dist/assets/vendor/datatables/buttons.bootstrap5.min.css" rel="stylesheet" type="text/css">
-    <!-- Fixe header-->
-    <link href="../hyper/dist/assets/vendor/datatables/fixedHeader.bootstrap5.min.css" rel="stylesheet" type="text/css">
-
-
 
     <!-- Theme Config Js -->
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
@@ -42,10 +24,11 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <link href="css/dashboard_cashflow.css?v=<?= filemtime(__DIR__ . '/css/dashboard_cashflow.css') ?>" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
-    <!-- Begin page -->
     <div class="wrapper">
 
         <?php include "../Menu/head.html"; ?>
@@ -53,145 +36,126 @@
         <div class="content-page">
             <div class="content">
 
-                <!-- Start Content-->
-                <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="page-title-box">
-                                <div class="page-title-right">
-                                    <ol class="breadcrumb m-0">
-                                        <li class="breadcrumb-item"><a href="javascript: void(0);">Panel de Control</a></li>
-                                        <li class="breadcrumb-item active">CashFlow</li>
-                                    </ol>
-                                </div>
-                                <h4 class="page-title" id="mes"></h4>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row mb-4">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body">
-                                    <h4 class="header-title">Evolución Mensual de Cashflow</h4>
-                                    <div id="grafico-cashflow"></div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card w-100" style="overflow-x: auto;">
-                                <div class=" card-body table-responsive">
-                                    <table class="table table-bordered table-bordered table-sm small" style="font-size: 10px;">
+                <div class="container-fluid cf-page">
 
-                                        <thead id="cashflow-meses"></thead>
-                                        <tbody id="cashflow-body"></tbody>
-                                    </table>
-                                </div>
-                            </div>
+                    <!-- Encabezado -->
+                    <div class="cf-header">
+                        <div>
+                            <div class="cf-eyebrow">Panel de Control · Resultados</div>
+                            <h3 class="cf-title">CashFlow Caddy</h3>
+                            <div class="cf-sub" id="cf-rango">Últimos 12 meses</div>
+                        </div>
+                        <div class="cf-actions">
+                            <button type="button" class="btn btn-light" id="cf-actualizar" title="Volver a calcular">
+                                <i class="mdi mdi-refresh"></i><span class="d-none d-sm-inline ms-1">Actualizar</span>
+                            </button>
+                            <button type="button" class="btn btn-success" id="cf-excel" disabled>
+                                <i class="mdi mdi-microsoft-excel"></i><span class="ms-1">Descargar Excel</span>
+                            </button>
                         </div>
                     </div>
 
-                    <!-- ===== Participación de Gastos (100% stacked) ===== -->
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <h5 class="card-title"><i class="mdi mdi-chart-bar-stacked me-2"></i>Estructura de Gastos por Mes (Participación %)</h5>
-                            <div id="grafico-participacion" style="height: 360px;"></div>
-                        </div>
+                    <!-- KPIs -->
+                    <div class="cf-kpis" id="cf-kpis">
+                        <div class="cf-kpi cf-skeleton"></div>
+                        <div class="cf-kpi cf-skeleton"></div>
+                        <div class="cf-kpi cf-skeleton"></div>
+                        <div class="cf-kpi cf-skeleton"></div>
                     </div>
 
-                    <!-- ===== Tabla $ por mes ===== -->
-                    <div class="card mb-3">
-                        <div class="card-body">
-                            <table class="table table-sm table-hover" style="font-size: 10px;">
-                                <thead id="part-meses-pesos"></thead>
-                                <tbody id="part-body-pesos"></tbody>
+                    <!-- Evolución -->
+                    <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-chart-timeline-variant"></i>Evolución mensual</h5>
+                                <div class="cf-card-sub">Ventas sin IVA, gastos y resultado de cada mes</div>
+                            </div>
+                        </div>
+                        <div id="grafico-cashflow" class="cf-chart"></div>
+                    </div>
+
+                    <!-- Cashflow -->
+                    <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-cash-multiple"></i>Cashflow Caddy · Últimos 12 meses</h5>
+                                <div class="cf-card-sub">Ventas sin IVA (÷ 1,21). El mes en curso es parcial.</div>
+                            </div>
+                        </div>
+                        <div class="cf-table-wrap">
+                            <table class="cf-table" id="cf-tabla-cashflow">
+                                <thead></thead>
+                                <tbody>
+                                    <tr><td class="cf-loading" colspan="14">Cargando…</td></tr>
+                                </tbody>
                             </table>
                         </div>
                     </div>
 
-                    <!-- ===== Tabla % por mes ===== -->
-                    <div class="card">
-                        <div class="card-body">
-                            <table class="table table-sm table-hover" style="font-size: 10px;">
-                                <thead id="part-meses-porc"></thead>
-                                <tbody id="part-body-porc"></tbody>
+                    <!-- Estructura de gastos -->
+                    <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-chart-bar-stacked"></i>Estructura de gastos</h5>
+                                <div class="cf-card-sub">Peso de cada grupo en el gasto de cada mes</div>
+                            </div>
+                            <div class="btn-group btn-group-sm cf-toggle" role="group" aria-label="Ver en pesos o porcentaje">
+                                <button type="button" class="btn btn-outline-secondary active" data-part="pesos">$</button>
+                                <button type="button" class="btn btn-outline-secondary" data-part="porc">%</button>
+                            </div>
+                        </div>
+                        <div id="grafico-participacion" class="cf-chart"></div>
+                        <div class="cf-table-wrap mt-2">
+                            <table class="cf-table" id="cf-tabla-participacion">
+                                <thead></thead>
+                                <tbody></tbody>
                             </table>
                         </div>
                     </div>
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="mb-2">
-                                <span class="badge legend-badge legend-personal me-2">Personal</span>
-                                <span class="badge legend-badge legend-logistica me-2">Logística</span>
-                                <span class="badge legend-badge legend-generales me-2">Generales</span>
-                                <span class="badge legend-badge legend-financieros me-2">Financieros/Impuestos</span>
+
+                    <!-- Detalle de gastos -->
+                    <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-format-list-bulleted-square"></i>Detalle de gastos Caddy · Últimos 12 meses</h5>
+                                <div class="cf-card-sub">Por cuenta, agrupado. <span class="cf-max-demo">Resaltado</span> = el mes más alto de cada cuenta.</div>
+                            </div>
+                            <div class="cf-search">
+                                <i class="mdi mdi-magnify"></i>
+                                <input type="search" class="form-control form-control-sm" id="cf-buscar" placeholder="Buscar cuenta…" autocomplete="off">
                             </div>
                         </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card w-100" style="overflow-x: auto;">
-                                <div class=" card-body table-responsive">
-                                    <table class="table table-bordered table-bordered table-sm small" style="font-size: 10px;">
-
-                                        <thead id="cashflow-meses_gastos"></thead>
-                                        <tbody id="cashflow-body_gastos"></tbody>
-                                    </table>
-                                </div>
-                            </div>
+                        <div class="cf-table-wrap">
+                            <table class="cf-table cf-table-gastos" id="cf-tabla-gastos">
+                                <thead></thead>
+                                <tbody>
+                                    <tr><td class="cf-loading" colspan="15">Cargando…</td></tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
 
                 </div>
-                <!-- container -->
-
             </div>
-            <!-- content -->
 
-            <!-- Footer Start -->
             <div id="menuhyper_footer"></div>
-            <!-- end Footer -->
-
         </div>
-
-        <!-- ============================================================== -->
-        <!-- End Page content -->
-        <!-- ============================================================== -->
-
     </div>
-    <!-- END wrapper -->
 
     <!-- Vendor js -->
     <script src="../hyper/dist/assets/js/vendor.min.js"></script>
-
     <!-- App js -->
     <script src="../hyper/dist/assets/js/app.js"></script>
-
-    <!-- Daterangepicker js -->
-    <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
-    <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
-
     <!-- Apex Charts js -->
     <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
 
-    <!-- Vector Map js -->
-    <?php include '../Menu/php/script_maps-vector.php'; ?>
-    <!-- DataTables -->
-    <?php include '../Menu/php/script_datatables.php'; ?>
-    <!-- Dashboard App js -->
-    <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
+    <!-- SweetAlert2 (lo usa el menú: sesión expirada, asistente IA) -->
+    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
     <!-- Funciones -->
     <script src="../Menu/js/funciones.js"></script>
-    <script src="js/dashboard_cashflow.js"></script>
-
-    <!-- SweetAlert2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="js/dashboard_cashflow.js?v=<?= filemtime(__DIR__ . '/js/dashboard_cashflow.js') ?>"></script>
 </body>
 
 </html>
