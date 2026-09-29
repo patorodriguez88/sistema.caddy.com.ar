@@ -44,12 +44,19 @@ while ($row = $result->fetch_assoc()) {
     $ventasFlex[$row['periodo']] = floatval($row['total']);
 }
 
-// 4. VENTAS RECORRIDOS (tabla Logistica)
+// 4. VENTAS RECORRIDOS: los cargos por orden de salida que se cargan en la cuenta corriente
+// de los clientes que facturan por recorrido (Clientes > recorridos -> Ctasctes con
+// FacturacionxRecorrido=1 e idLogistica de la orden, fechados el día de la orden). Es lo que
+// después se agrupa en la factura del mes (ej. FA 2520 = las 5 órdenes del recorrido 1050).
+// Antes salía de Logistica con IF(ImporteF=0, TotalFacturado, ImporteF): facturar.php graba en
+// TotalFacturado el total de la FACTURA COMPLETA en cada orden que incluye, así que en las
+// órdenes sin precio (recorrido 1314) se sumaba la factura entera varias veces - julio 2026
+// mostraba $116,7 M en vez de $32,8 M (4 órdenes x FA 2581 de $21,1 M).
 $queryRecorridos = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo,
-           SUM(IF(ImporteF=0, TotalFacturado, ImporteF)) AS total
-    FROM Logistica
-    WHERE Fecha BETWEEN '$fechaDesde' AND '$fechaHasta' AND Eliminado = 0
+    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
+    FROM Ctasctes
+    WHERE Eliminado = 0 AND FacturacionxRecorrido = 1 AND idLogistica > 0
+      AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
     GROUP BY periodo
 ";
 $ventasRecorridos = [];
