@@ -66,7 +66,12 @@ FROM GastosExtras
 WHERE Eliminado = 0
 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
 GROUP BY periodo";
-$gastosExtras = obtenerDatos($queryGastosExtras, $mysqli);
+// Si la tabla todavía no existe (migración pendiente en producción), se sigue sin extras.
+try {
+    $gastosExtras = obtenerDatos($queryGastosExtras, $mysqli);
+} catch (mysqli_sql_exception $e) {
+    $gastosExtras = [];
+}
 foreach ($gastosExtras as $mes => $valorExtra) {
     $gastos[$mes] = ($gastos[$mes] ?? 0) + $valorExtra;
 }

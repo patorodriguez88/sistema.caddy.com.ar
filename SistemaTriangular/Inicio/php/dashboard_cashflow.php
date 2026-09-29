@@ -102,7 +102,13 @@ $queryGastosExtras = "
     WHERE Eliminado = 0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
     GROUP BY periodo
 ";
-$result = $mysqli->query($queryGastosExtras);
+// En producción la tabla todavía no existe (la migración de Gastos Extras solo se corrió en
+// sandbox): con PHP 8 la consulta tira excepción y el cuadro entero quedaba sin datos.
+try {
+    $result = $mysqli->query($queryGastosExtras);
+} catch (mysqli_sql_exception $e) {
+    $result = false;
+}
 if ($result) {
     while ($row = $result->fetch_assoc()) {
         $periodo = $row['periodo'];

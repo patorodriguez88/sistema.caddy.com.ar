@@ -74,7 +74,12 @@ $queryExtras = "SELECT
     GROUP BY Categoria, mes
     ORDER BY Categoria, mes
 ";
-$resExtras = $mysqli->query($queryExtras);
+// Si la tabla todavía no existe (migración pendiente en producción), se sigue sin extras.
+try {
+    $resExtras = $mysqli->query($queryExtras);
+} catch (mysqli_sql_exception $e) {
+    $resExtras = false;
+}
 if ($resExtras) {
     while ($row = $resExtras->fetch_assoc()) {
         $claveCuenta = 'EXTRA-' . $row['Categoria'];
@@ -84,7 +89,8 @@ if ($resExtras) {
         if (!isset($datos[$claveCuenta])) {
             $datos[$claveCuenta] = [
                 'cuenta' => '',
-                'nombre' => $row['Categoria'] . ' (extra)'
+                'nombre' => $row['Categoria'] . ' (extra)',
+                'grupo'  => $row['Categoria'] // ya es Personal/Logistica/Generales/Financieros
             ];
         }
         $datos[$claveCuenta][$mesFormateado] = $monto;

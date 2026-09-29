@@ -81,7 +81,12 @@ FROM GastosExtras
 WHERE Eliminado = 0 AND Fecha BETWEEN '{$inicio}' AND '{$fin}'
 GROUP BY periodo, Categoria
 ";
-$resExtras = $mysqli->query($sqlExtras);
+// Si la tabla todavía no existe (migración pendiente en producción), se sigue sin extras.
+try {
+    $resExtras = $mysqli->query($sqlExtras);
+} catch (mysqli_sql_exception $e) {
+    $resExtras = false;
+}
 if ($resExtras) {
     while ($row = $resExtras->fetch_assoc()) {
         $p = $row['periodo'];
