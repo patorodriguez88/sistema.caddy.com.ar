@@ -162,7 +162,7 @@
     $("#cp-modal-titulo").text(`Envíos pendientes · Recorrido ${recorrido}`);
     $("#cp-modal-sub").text(nombre || "");
     $("#cp-imprimir-remitos").attr("href", "/SistemaTriangular/Servicios/Informes/Remitopdf.php?Recorrido=" + encodeURIComponent(recorrido));
-    $("#cp-tabla-pendientes tbody").html(vacio(6, "Cargando…"));
+    $("#cp-tabla-pendientes tbody").html(vacio(5, "Cargando…"));
     // focus:false: si no, el modal atrapa el foco y no deja escribir en el cuadro de la nota (SweetAlert)
     bootstrap.Modal.getOrCreateInstance(document.getElementById("cp-modal-pendientes"), { focus: false }).show();
     cargarPendientesModal();
@@ -182,10 +182,7 @@
             <button type="button" class="btn btn-sm btn-link p-0 cp-nota-editar" data-id="${num(r.id)}" data-nota="${esc(r.Notas || "")}" title="Editar nota interna"><i class="mdi mdi-pencil-outline"></i></button>
             <span>${esc(r.Notas || "")}</span>
           </td>
-          <td class="text-nowrap">
-            <a class="btn btn-sm btn-light" target="_blank" rel="noopener" href="/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=${encodeURIComponent(r.Seguimiento)}" title="Remito"><i class="mdi mdi-file-document-outline"></i></a>
-          </td>
-        </tr>`).join("") : vacio(6, "Este recorrido no tiene envíos pendientes."));
+        </tr>`).join("") : vacio(5, "Este recorrido no tiene envíos pendientes."));
     });
   }
 

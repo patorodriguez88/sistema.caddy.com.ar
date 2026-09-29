@@ -432,4 +432,3 @@
 .cp-modal-dialog { max-width: min(1280px, 96vw); }
 #cp-tabla-pendientes td { white-space: normal; }
 #cp-tabla-pendientes td .cp-sub { white-space: normal; min-width: 180px; }
-#cp-tabla-pendientes td:last-child { white-space: nowrap; }
