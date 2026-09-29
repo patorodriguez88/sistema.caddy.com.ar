@@ -3,6 +3,11 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 include_once "../Conexion/Conexioni.php";
+// Escape para los textos que van dentro del SQL: un apostrofo en el nombre o la
+// direccion ("O'Higgins", "D'Ascenzi") cortaba la consulta y el pase de preventa a
+// venta quedaba colgado a mitad de camino (2026-09-29). Se escapa en cada VALUES,
+// sin tocar las variables (se reusan en webhooks/mails).
+$esc = function ($v) use ($mysqli) { return $mysqli->real_escape_string((string) $v); };
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
 if (isset($_GET['Recorrido_t'])) {
@@ -70,6 +75,20 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
         if ($DatosPreVenta['CodigoSeguimiento']) {
 
             $NumeroPedido = $DatosPreVenta['CodigoSeguimiento'];
+
+            // Reintento de un pase que se cortó a mitad de camino: las Ventas del intento
+            // anterior quedaron sueltas (sin TransClientes) y se sumarían al Debe. Se anulan.
+            $stT = $mysqli->prepare("SELECT id FROM TransClientes WHERE CodigoSeguimiento=? AND Eliminado=0 LIMIT 1");
+            $stT->bind_param('s', $NumeroPedido);
+            $stT->execute();
+            $yaTieneTrans = (bool) $stT->get_result()->fetch_row();
+            $stT->close();
+            if (!$yaTieneTrans) {
+                $stV = $mysqli->prepare("UPDATE Ventas SET Eliminado=1 WHERE NumPedido=? AND Eliminado=0");
+                $stV->bind_param('s', $NumeroPedido);
+                $stV->execute();
+                $stV->close();
+            }
         } else {
 
             $NumeroPedido = generarCodigo(9);
@@ -263,9 +282,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
                 $Cantidad = is_numeric($Cantidad) ? $Cantidad : 0;
                 $sql = "INSERT INTO Ventas(Codigo,FechaPedido,Titulo,Precio,Cantidad,Comentario,Total,Cliente,NumeroRepo,
                 ImporteNeto,Iva1,NumPedido,Usuario,idPreVenta,NVentaWeb,CobrarEnvio,idCliente)
-                VALUES('{$codigo_sure}','{$fecha}','{$titulo_sure}','{$precio_sure}','{$cantidad_sure}','{$comentario_sure}','{$total_sure}','{$cliente_sure}',
-                '{$NumeroRepo}','{$importe_neto_sure}','{$seguro_min_iva}','{$NumeroPedido}','{$Usuario}','{$idPreVenta[$i]}'
-                ,'{$NVentaWeb}','{$CobrarEnvio}','{$rowO['id']}')";
+                VALUES('{$esc($codigo_sure)}','{$esc($fecha)}','{$esc($titulo_sure)}','{$esc($precio_sure)}','{$esc($cantidad_sure)}','{$esc($comentario_sure)}','{$esc($total_sure)}','{$esc($cliente_sure)}',
+                '{$esc($NumeroRepo)}','{$esc($importe_neto_sure)}','{$esc($seguro_min_iva)}','{$esc($NumeroPedido)}','{$esc($Usuario)}','{$esc($idPreVenta[$i])}'
+                ,'{$esc($NVentaWeb)}','{$esc($CobrarEnvio)}','{$esc($rowO['id'])}')";
 
                 $mysqli->query($sql);
 
@@ -294,9 +313,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
                 $sql = "INSERT INTO Ventas(Codigo,FechaPedido,Titulo,Precio,Cantidad,Comentario,Total,Cliente,NumeroRepo,
                 ImporteNeto,Iva1,NumPedido,Usuario,idPreVenta,NVentaWeb,CobrarEnvio,idCliente)
-                VALUES('{$codigo_sure}','{$fecha}','{$titulo_sure}','{$precio_sure}','{$cantidad_sure}','{$comentario_sure}','{$total_sure}','{$cliente_sure}',
-                '{$NumeroRepo}','{$importe_neto_sure}','{$seguro_iva}','{$NumeroPedido}','{$Usuario}','{$idPreVenta[$i]}'
-                ,'{$NVentaWeb}','{$CobrarEnvio}','{$rowO['id']}')";
+                VALUES('{$esc($codigo_sure)}','{$esc($fecha)}','{$esc($titulo_sure)}','{$esc($precio_sure)}','{$esc($cantidad_sure)}','{$esc($comentario_sure)}','{$esc($total_sure)}','{$esc($cliente_sure)}',
+                '{$esc($NumeroRepo)}','{$esc($importe_neto_sure)}','{$esc($seguro_iva)}','{$esc($NumeroPedido)}','{$esc($Usuario)}','{$esc($idPreVenta[$i])}'
+                ,'{$esc($NVentaWeb)}','{$esc($CobrarEnvio)}','{$esc($rowO['id'])}')";
 
                 $mysqli->query($sql);
             }
@@ -318,9 +337,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
         $sql = "INSERT INTO Ventas(Codigo,FechaPedido,Titulo,Edicion,Precio,Cantidad,Total,Cliente,NumeroRepo,
         ImporteNeto,Iva1,Iva2,Iva3,NumPedido,Usuario,idPreVenta,NVentaWeb,CobrarEnvio,idCliente)
-        VALUES('{$Codigo}','{$fecha}','{$titulo}','{$edicion}','{$precio}','{$Cantidad}','{$Total}','{$ClienteOrigen}',
-        '{$NumeroRepo}','{$ImporteNeto}','{$iva1}','{$iva2}','{$iva3}','{$NumeroPedido}','{$Usuario}','{$idPreVenta[$i]}'
-        ,'{$NVentaWeb}','{$CobrarEnvio}','{$rowO['id']}')";
+        VALUES('{$esc($Codigo)}','{$esc($fecha)}','{$esc($titulo)}','{$esc($edicion)}','{$esc($precio)}','{$esc($Cantidad)}','{$esc($Total)}','{$esc($ClienteOrigen)}',
+        '{$esc($NumeroRepo)}','{$esc($ImporteNeto)}','{$esc($iva1)}','{$esc($iva2)}','{$esc($iva3)}','{$esc($NumeroPedido)}','{$esc($Usuario)}','{$esc($idPreVenta[$i])}'
+        ,'{$esc($NVentaWeb)}','{$esc($CobrarEnvio)}','{$esc($rowO['id'])}')";
 
         $mysqli->query($sql);
 
@@ -353,9 +372,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
                 $sql_ci = "INSERT INTO Ventas
                     (Codigo,FechaPedido,Titulo,Precio,Cantidad,Total,Cliente,NumeroRepo,
                      ImporteNeto,Iva3,NumPedido,Usuario,Comentario,CobrarEnvio,idCliente,NVentaWeb,idPreVenta,not_invoice)
-                    VALUES('{$codigoP}','{$fecha}','{$tituloP}','{$TotalP}','1','{$TotalP}','{$ClienteOrigen}',
-                    '{$NumeroRepo}','{$ImporteNetoP}','{$iva3P}','{$NumeroPedido}','{$Usuario}','','{$cobranzaCI}',
-                    '{$rowO['id']}','{$NVentaWeb}','{$idPreVenta[$i]}','{$not_invoice_ci}')";
+                    VALUES('{$esc($codigoP)}','{$esc($fecha)}','{$esc($tituloP)}','{$esc($TotalP)}','1','{$esc($TotalP)}','{$esc($ClienteOrigen)}',
+                    '{$esc($NumeroRepo)}','{$esc($ImporteNetoP)}','{$esc($iva3P)}','{$esc($NumeroPedido)}','{$esc($Usuario)}','','{$esc($cobranzaCI)}',
+                    '{$esc($rowO['id'])}','{$esc($NVentaWeb)}','{$esc($idPreVenta[$i])}','{$esc($not_invoice_ci)}')";
 
                 $mysqli->query($sql_ci);
             }
@@ -426,14 +445,14 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
     CodigoSeguimiento,NumeroVenta,Cantidad,DomicilioOrigen,SituacionFiscalOrigen,LocalidadOrigen,IngBrutosOrigen,TelefonoOrigen,
     FormaDePago,EntregaEn,Usuario,CodigoProveedor,Observaciones,Transportista,Recorrido,ProvinciaDestino,ProvinciaOrigen,
     idClienteOrigen,idClienteDestino,Retirado,Redespacho,Kilometros,CobrarEnvio,CobrarCaddy,ValorDeclarado,FechaEntrega,order_id,shipments_id,status,Wepoint_c,Estado)
-    VALUES('{$Fecha}','{$ClienteOrigen}','{$CuitClienteA}',
-    '{$TipoDeComprobante}','{$NumeroRepo}','{$Compra}','{$total_ventas}','{$Haber}','{$ClienteDestino}','{$CuitDestino}',
-    '{$DomicilioDestino}','{$LocalidadDestino}','{$SituacionFiscalDestino}','{$IngBrutosDestino}','{$TelefonoDestino}',
-    '{$NumeroPedido}','{$NumeroRepo}','{$Cantidad}','{$DomicilioOrigen}','{$SituacionFiscalOrigen}','{$LocalidadOrigen}',
-    '{$IdOrigen}','{$TelefonoOrigen}','{$FormaDePago}','{$EntregaEn}','{$Usuario}','{$CodigoProveedor}','{$Observaciones}',
-    '{$Transportista}','{$Recorrido_Limpio}','{$ProvinciaDestino}','{$ProvinciaOrigen}','{$IdOrigen}','{$idClienteDestino}','{$Retirado}',
-    '{$Redespacho}','{$Kilometros}','{$CobrarEnvio_label}','{$CobrarCaddy}','{$ValorDeclarado}','{$FechaEntrega}','{$order_id}',
-    '{$shipments_id}','{$status}','{$wepoint_c}','{$estado}')";
+    VALUES('{$esc($Fecha)}','{$esc($ClienteOrigen)}','{$esc($CuitClienteA)}',
+    '{$esc($TipoDeComprobante)}','{$esc($NumeroRepo)}','{$esc($Compra)}','{$esc($total_ventas)}','{$esc($Haber)}','{$esc($ClienteDestino)}','{$esc($CuitDestino)}',
+    '{$esc($DomicilioDestino)}','{$esc($LocalidadDestino)}','{$esc($SituacionFiscalDestino)}','{$esc($IngBrutosDestino)}','{$esc($TelefonoDestino)}',
+    '{$esc($NumeroPedido)}','{$esc($NumeroRepo)}','{$esc($Cantidad)}','{$esc($DomicilioOrigen)}','{$esc($SituacionFiscalOrigen)}','{$esc($LocalidadOrigen)}',
+    '{$esc($IdOrigen)}','{$esc($TelefonoOrigen)}','{$esc($FormaDePago)}','{$esc($EntregaEn)}','{$esc($Usuario)}','{$esc($CodigoProveedor)}','{$esc($Observaciones)}',
+    '{$esc($Transportista)}','{$esc($Recorrido_Limpio)}','{$esc($ProvinciaDestino)}','{$esc($ProvinciaOrigen)}','{$esc($IdOrigen)}','{$esc($idClienteDestino)}','{$esc($Retirado)}',
+    '{$esc($Redespacho)}','{$esc($Kilometros)}','{$esc($CobrarEnvio_label)}','{$esc($CobrarCaddy)}','{$esc($ValorDeclarado)}','{$esc($FechaEntrega)}','{$esc($order_id)}',
+    '{$esc($shipments_id)}','{$esc($status)}','{$esc($wepoint_c)}','{$esc($estado)}')";
 
         $mysqli->query($IngresaTransaccion);
 
@@ -491,9 +510,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
     `Posicion`,
     `Celular`,
     `NumeroRepo`,
-    `ImporteCobranza`,`idTransClientes`) VALUES ('{$Fecha}','{$Recorrido_Limpio}','{$DomicilioDestino}','{$LocalidadDestino}','{$ProvinciaDestino}','{$Pais}',
-    '{$ClienteDestino}','{$TipoDeComprobante}','{$Observaciones}','{$Usuario}','{$Asignado}','{$EstadoH}','{$NOrdenLogistica}',
-    '{$NumeroPedido}','{$idCliente}','{$Orden}','{$TelefonoDestino}','{$NOrden}','{$CobrarEnvio}',{$idTransClientes})");
+    `ImporteCobranza`,`idTransClientes`) VALUES ('{$esc($Fecha)}','{$esc($Recorrido_Limpio)}','{$esc($DomicilioDestino)}','{$esc($LocalidadDestino)}','{$esc($ProvinciaDestino)}','{$esc($Pais)}',
+    '{$esc($ClienteDestino)}','{$esc($TipoDeComprobante)}','{$esc($Observaciones)}','{$esc($Usuario)}','{$esc($Asignado)}','{$esc($EstadoH)}','{$esc($NOrdenLogistica)}',
+    '{$esc($NumeroPedido)}','{$esc($idCliente)}','{$esc($Orden)}','{$esc($TelefonoDestino)}','{$esc($NOrden)}','{$esc($CobrarEnvio)}',{$idTransClientes})");
 
 
         //INGRESA EN ROADMAP
@@ -517,9 +536,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
             `Posicion`,
             `Celular`,
             `NumeroRepo`,
-            `ImporteCobranza`,`idTransClientes`)VALUES ('{$FechaEntrega}','{$Recorrido_Limpio}','{$DomicilioDestino}','{$LocalidadDestino}','{$ProvinciaDestino}','{$Pais}',
-            '{$ClienteDestino}','{$TipoDeComprobante}','{$Observaciones}','{$Usuario}','{$Asignado}','{$EstadoH}','{$NOrdenLogistica}',
-            '{$NumeroPedido}','{$idCliente}','{$Orden}','{$TelefonoDestino}','{$NOrden}','{$CobrarEnvio}',{$idTransClientes})");
+            `ImporteCobranza`,`idTransClientes`)VALUES ('{$esc($FechaEntrega)}','{$esc($Recorrido_Limpio)}','{$esc($DomicilioDestino)}','{$esc($LocalidadDestino)}','{$esc($ProvinciaDestino)}','{$esc($Pais)}',
+            '{$esc($ClienteDestino)}','{$esc($TipoDeComprobante)}','{$esc($Observaciones)}','{$esc($Usuario)}','{$esc($Asignado)}','{$esc($EstadoH)}','{$esc($NOrdenLogistica)}',
+            '{$esc($NumeroPedido)}','{$esc($idCliente)}','{$esc($Orden)}','{$esc($TelefonoDestino)}','{$esc($NOrden)}','{$esc($CobrarEnvio)}',{$idTransClientes})");
 
         } catch (\Throwable $e) {
             // FIX (2026-09-22): mysqli en modo estricto (default desde PHP
@@ -559,7 +578,7 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
             $Observaciones = 'Ya tenemos tu pedido!';
         }
         $sqlSeg = "INSERT IGNORE INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,Retirado,idTransClientes,Recorrido,status)
-        VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$NumeroPedido}','{$Observaciones}','{$Entregado}','{$Estado}','{$Retirado}','{$idTransClientes}','{$Recorrido_Limpio}','{$status}')";
+        VALUES('{$esc($Fecha)}','{$esc($Hora)}','{$esc($Usuario)}','{$esc($Sucursal)}','{$esc($NumeroPedido)}','{$esc($Observaciones)}','{$esc($Entregado)}','{$esc($Estado)}','{$esc($Retirado)}','{$esc($idTransClientes)}','{$esc($Recorrido_Limpio)}','{$esc($status)}')";
         $mysqli->query($sqlSeg);
         $Cargado = $mysqli->query("UPDATE IGNORE PreVenta SET Cargado=1 WHERE id='$idPreVenta[$i]'");
 
@@ -634,7 +653,7 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
                     $postfields = $state . ' ' . $newstatedate . ' ' . $codigo;
 
                     $sql = $mysqli->query("INSERT INTO `Webhook_notifications`(`idCliente`, `idCaddy`, `idProveedor`, `Servidor`, `State`, `Estado`, `Fecha`, `Hora`, `User`, `Response`) VALUES 
-    ('{$idClienteOrigen}','{$CodigoSeguimiento}','{$codigo}','{$Servidor}','{$postfields}','{$state}','{$Fecha}','{$Hora}','{$_SESSION['Usuario']}','{$Response}')");
+    ('{$esc($idClienteOrigen)}','{$esc($CodigoSeguimiento)}','{$esc($codigo)}','{$esc($Servidor)}','{$esc($postfields)}','{$esc($state)}','{$esc($Fecha)}','{$esc($Hora)}','{$esc($_SESSION['Usuario'])}','{$esc($Response)}')");
                 }
             }
             //end if Cliente Origen
@@ -690,7 +709,7 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
                     $postfields = $state . ' ' . $newstatedate . ' ' . $codigo;
 
                     $sql = $mysqli->query("INSERT IGNORE INTO `Webhook_notifications`(`idCliente`, `idCaddy`, `idProveedor`, `Servidor`, `State`, `Estado`, `Fecha`, `Hora`, `User`, `Response`) VALUES 
-        ('{$idClienteOrigen}','{$CodigoSeguimiento}','{$codigo}','{$Servidor}','{$postfields}','{$state}','{$Fecha}','{$Hora}','{$_SESSION['Usuario']}','{$Response}')");
+        ('{$esc($idClienteOrigen)}','{$esc($CodigoSeguimiento)}','{$esc($codigo)}','{$esc($Servidor)}','{$esc($postfields)}','{$esc($state)}','{$esc($Fecha)}','{$esc($Hora)}','{$esc($_SESSION['Usuario'])}','{$esc($Response)}')");
                 }
             }
             //end if Cliente Destino
@@ -701,12 +720,12 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
         $TipoDeComprobante = 'Servicios de Logistica';
         if ($FormaDePago == 'Origen') {
             $IngresaCtasctes = "INSERT IGNORE INTO Ctasctes(Fecha,NumeroVenta,RazonSocial,Cuit,Debe,Haber,Usuario,TipoDeComprobante,idCliente,idTransClientes)VALUES
-            ('{$Fecha}','{$NumeroRepo}','{$_SESSION['NombreClienteOrigen_t']}','{$CuitClienteA}','{$total_ventas}','{$Cero}','{$Usuario}','{$TipoDeComprobante}',
-        '{$_SESSION['idClienteOrigen_t']}','{$idTransClientes}')";
+            ('{$esc($Fecha)}','{$esc($NumeroRepo)}','{$esc($_SESSION['NombreClienteOrigen_t'])}','{$esc($CuitClienteA)}','{$esc($total_ventas)}','{$esc($Cero)}','{$esc($Usuario)}','{$esc($TipoDeComprobante)}',
+        '{$esc($_SESSION['idClienteOrigen_t'])}','{$esc($idTransClientes)}')";
         } elseif ($FormaDePago == 'Destino') {
             $IngresaCtasctes = "INSERT IGNORE INTO Ctasctes(Fecha,NumeroVenta,RazonSocial,Cuit,Debe,Haber,Usuario,TipoDeComprobante,idCliente,idTransClientes)VALUES
-		('{$Fecha}','{$NumeroRepo}','{$ClienteDestino}','{$CuitDestino}','{$total_ventas}','{$Cero}','{$Usuario},'{$TipoDeComprobante}',
-    '{$_SESSION['idClienteDestino_t']}','{$$idTransClientes}')";
+		('{$esc($Fecha)}','{$esc($NumeroRepo)}','{$esc($ClienteDestino)}','{$esc($CuitDestino)}','{$esc($total_ventas)}','{$esc($Cero)}','{$esc($Usuario)}','{$esc($TipoDeComprobante)}',
+    '{$esc($_SESSION['idClienteDestino_t'])}','{$esc($idTransClientes)}')";
         }
 
         if ($Total != 0) {
