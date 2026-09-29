@@ -56,23 +56,6 @@ if (isset($_POST['Pendientes'])) {
 }
 
 
-if (isset($_POST['PendientesEnRecorrido'])) {
-  $orden = $mysqli->real_escape_string($_POST['Orden'] ?? '');
-  $rec   = $mysqli->real_escape_string($_POST['Recorrido'] ?? '');
-  $sql = "SELECT * FROM HojaDeRuta
-            WHERE Estado='Abierto'
-              AND NumeroDeOrden='$orden'
-              AND Recorrido='$rec'
-              AND Eliminado=0";
-  $MuestraTrans = $mysqli->query($sql);
-  $rows = [];
-  while ($row = $MuestraTrans->fetch_array(MYSQLI_ASSOC)) {
-    $rows[] = $row;
-  }
-  echo json_encode(['data' => $rows]);
-  exit;
-}
-
 if (isset($_POST['PreVenta'])) {
   $sql = "SELECT COUNT(Cantidad) AS Cantidad, RazonSocial, DomicilioOrigen
             FROM PreVenta
@@ -91,24 +74,6 @@ if (isset($_POST['PreVenta'])) {
   exit;
 }
 
-
-if (isset($_POST['Empleados'])) {
-  //   $sql="SELECT NombreCompleto,sum(KilometrosRecorridos)as Km,COUNT(Logistica.id)as Salidas FROM Empleados 
-  //   INNER JOIN Logistica ON Empleados.NombreCompleto=Logistica.NombreChofer
-  //   WHERE Empleados.Inactivo=0 AND YEAR(Logistica.Fecha)=YEAR(CURRENT_DATE()) AND MONTH(Logistica.Fecha)= MONTH(CURRENT_DATE()) AND Logistica.Eliminado=0 GROUP BY NombreCompleto";
-  //   $Resultado=$mysqli->query($sql);
-  //   $rows=array();
-  // //   $rows1=array();
-  //   while($row = $Resultado->fetch_array(MYSQLI_ASSOC)){
-  // //     $Resultado1=$mysqli->query("SELECT SUM(Cantidad)as Cantidad FROM TransClientes WHERE Transportista='$row[NombreCompleto]'");
-  // //     $row1=$Resultado1->fetch_array(MYSQLI_ASSOC);
-  // //     $rows1[]=$row1;
-  //     $rows[]=$row;
-  //   }
-  // //   echo json_encode(array('NombreCompleto'=>$row[NombreCompleto],'Km'=>$row[Km],'Salidas'=>$row[Salidas],'Cantidad'=>$rows1));
-  //   echo json_encode(array('data'=>$rows));
-  // //   echo json_encode(array('data1'=>$rows1));
-}
 
 if (isset($_POST['Flota'])) {
   $sql = "SELECT CONCAT_WS(' ', Marca, Modelo) AS Marca, Dominio, Ano, Kilometros, Activo, Estado
@@ -170,28 +135,6 @@ if (isset($_POST['Logistica1'])) {
 }
 
 
-if (isset($_POST['totales'])) {
-  // ⚠️ Estas variables venían indefinidas:
-  $NumeroRepo = $mysqli->real_escape_string($_POST['NumeroRepo'] ?? '');
-  $idCliente  = intval($_POST['idCliente'] ?? 0);
-
-  $sql = "SELECT SUM(ImporteNeto) AS Neto,
-                   SUM(Total)      AS Total,
-                   SUM(Iva3)       AS Iva
-            FROM Ventas
-            WHERE NumeroRepo = '$NumeroRepo'
-              AND idCliente  = $idCliente
-              AND terminado  = 0
-              AND FechaPedido = CURDATE()
-              AND Eliminado = 0";
-  $ResultadoTesoreria = $mysqli->query($sql);
-  $rows = [];
-  while ($row = $ResultadoTesoreria->fetch_array(MYSQLI_ASSOC)) {
-    $rows[] = $row;
-  }
-  echo json_encode(['data' => $rows]);
-  exit;
-}
 // Si llegó acá, no hubo 'flag' reconocido:
 http_response_code(400);
 echo json_encode(['ok' => false, 'error' => 'BAD_REQUEST']);

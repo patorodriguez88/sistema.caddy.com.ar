@@ -351,128 +351,17 @@ class RemitoPDF extends HdrPdfBase
 // --------------------------------------------------
 // Datos
 // --------------------------------------------------
-$CodigoSeguimiento = (string)($_GET['CS'] ?? '');
-if ($CodigoSeguimiento === '') {
+// ?CS=CODIGO imprime un remito; ?Recorrido=N imprime en un solo PDF los remitos
+// de todos los envíos pendientes de ese recorrido (botón "Imprimir remitos" del
+// Panel de Control, que antes apuntaba a autoimpresion.php, roto desde PHP 7).
+$CodigoSeguimiento = trim((string)($_GET['CS'] ?? ''));
+$RecorridoLote = trim((string)($_GET['Recorrido'] ?? ''));
+if ($CodigoSeguimiento === '' && $RecorridoLote === '') {
     http_response_code(400);
     header('Content-Type: text/plain; charset=utf-8');
-    echo 'Falta parametro CS';
+    echo 'Falta parametro CS o Recorrido';
     exit;
 }
-
-$fila = mysqli_fetch_one(
-    $mysqli,
-    "SELECT * FROM TransClientes WHERE CodigoSeguimiento = ? AND Eliminado = 0 LIMIT 1",
-    's',
-    [$CodigoSeguimiento]
-);
-if ($fila === null) {
-    http_response_code(404);
-    header('Content-Type: text/plain; charset=utf-8');
-    echo 'No se encontró el servicio ' . $CodigoSeguimiento;
-    exit;
-}
-
-$ventaCabecera = mysqli_fetch_one(
-    $mysqli,
-    "SELECT NumeroRepo, FechaPedido FROM Ventas WHERE NumPedido = ? LIMIT 1",
-    's',
-    [$CodigoSeguimiento]
-) ?? [];
-$GuiaN = (string)($ventaCabecera['NumeroRepo'] ?? '');
-$FechaLabel = !empty($ventaCabecera['FechaPedido'])
-    ? (new DateTime((string)$ventaCabecera['FechaPedido']))->format('d/m/Y')
-    : date('d/m/Y');
-
-$obsOrigen = (string)(mysqli_fetch_one(
-    $mysqli,
-    "SELECT Observaciones FROM Clientes WHERE id = ?",
-    'i',
-    [(int)($fila['idClienteOrigen'] ?? 0)]
-)['Observaciones'] ?? '');
-
-$obsDestino = (string)(mysqli_fetch_one(
-    $mysqli,
-    "SELECT Observaciones FROM Clientes WHERE id = ?",
-    'i',
-    [(int)($fila['idClienteDestino'] ?? 0)]
-)['Observaciones'] ?? '');
-
-$items = db_fetch_all(
-    $mysqli,
-    "SELECT Codigo, Titulo, Comentario, Precio, Cantidad
-       FROM Ventas
-      WHERE NumPedido = ? AND Eliminado = 0",
-    's',
-    [$CodigoSeguimiento]
-);
-
-$totalesFila = mysqli_fetch_one(
-    $mysqli,
-    "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad
-       FROM Ventas WHERE NumPedido = ?",
-    's',
-    [$CodigoSeguimiento]
-) ?? [];
-
-// El contra-reembolso NO es un monto por linea: es UN valor del pedido que
-// Ventas guarda repetido en el CobrarEnvio de cada linea (mercaderia + linea de
-// cobranza integrada). Se toma UNA linea con CobrarEnvio > 0 (mismo criterio que
-// Caddy_produccion). Un SUM() lo contaba dos veces (el remito mostraba el doble).
-$cobranzaFila = mysqli_fetch_one(
-    $mysqli,
-    "SELECT CobrarEnvio FROM Ventas
-      WHERE NumPedido = ? AND CobrarEnvio > 0
-      ORDER BY idPedido DESC LIMIT 1",
-    's',
-    [$CodigoSeguimiento]
-);
-$totalesFila['Cobranza'] = $cobranzaFila['CobrarEnvio'] ?? 0;
-$TotalCant = (float)($totalesFila['TotalCantidad'] ?? 0);
-$Cobranza = (float)($totalesFila['Cobranza'] ?? 0);
-
-$ValorDeclarado = (float)($fila['ValorDeclarado'] ?? 0);
-$Retirado = (int)($fila['Retirado'] ?? 0);
-
-// --------------------------------------------------
-// Codigo QR (mismo generador que ya usa factura_pdf.php)
-// --------------------------------------------------
-$qrDir = __DIR__ . '/temp/';
-if (!file_exists($qrDir)) {
-    mkdir($qrDir, 0777, true);
-}
-$qrPath = $qrDir . 'remito_' . md5($CodigoSeguimiento) . '.png';
-if (!file_exists($qrPath)) {
-    QRcode::png($CodigoSeguimiento, $qrPath, 'L', 4, 2);
-}
-
-// --------------------------------------------------
-// Render
-// --------------------------------------------------
-$pdf = new RemitoPDF('P', 'mm', 'Letter');
-$pdf->AliasNbPages();
-$pdf->SetMargins(15, 10, 15);
-$pdf->SetAutoPageBreak(true, 16);
-
-$pdf->recorridoActual = (string)($fila['Recorrido'] ?? '');
-$pdf->guiaNActual = $GuiaN;
-$pdf->codigoSeguimientoActual = $CodigoSeguimiento;
-$pdf->fechaActual = $FechaLabel;
-$pdf->usuarioActual = (string)($fila['Usuario'] ?? '');
-$pdf->qrPath = $qrPath;
-
-$nombreOrigen = (string)($fila['RazonSocial'] ?? '');
-$filasOrigen = [
-    ['Fiscal:', ($fila['SituacionFiscalOrigen'] ?? '') . ' | CUIT: ' . ($fila['Cuit'] ?? '')],
-    ['Domicilio:', ($fila['DomicilioOrigen'] ?? '') . ' - ' . ($fila['LocalidadOrigen'] ?? '')],
-    ['Tel.:', (string)($fila['TelefonoOrigen'] ?? '')],
-];
-
-$nombreDestino = (string)($fila['ClienteDestino'] ?? '');
-$filasDestino = [
-    ['Fiscal:', ($fila['SituacionFiscalDestino'] ?? '') . ' | Doc: ' . ($fila['DocumentoDestino'] ?? '')],
-    ['Domicilio:', ($fila['DomicilioDestino'] ?? '') . ' - ' . ($fila['LocalidadDestino'] ?? '')],
-    ['Tel.:', (string)($fila['TelefonoDestino'] ?? '')],
-];
 
 // "1 BULTO" / "2 BULTOS" en vez de un numero pelado en la columna CANT. - el
 // remito solo mostraba la cantidad (ej. "1"), sin la unidad.
@@ -649,14 +538,160 @@ function renderPagina(
     bloqueFirmas($pdf, $tipo === 'RETIRO' ? 'Firma de Caddy' : 'Firma del Cliente', $dobleFirma);
 }
 
-if ($Retirado === 0) {
-    // Todavia no se retiro: la guia lleva las dos etapas, Retiro (con precio,
-    // se cobra en origen o queda pendiente segun forma de pago) y Entrega.
-    renderPagina($pdf, 'RETIRO', $fila, $nombreOrigen, $filasOrigen, $obsOrigen, $nombreDestino, $filasDestino, $obsDestino, $items, $ValorDeclarado, $TotalCant, $Cobranza, true, false);
-    renderPagina($pdf, 'ENTREGA', $fila, $nombreOrigen, $filasOrigen, $obsOrigen, $nombreDestino, $filasDestino, $obsDestino, $items, $ValorDeclarado, $TotalCant, $Cobranza, true, true);
-} else {
-    // Ya se retiro: solo hace falta la etapa de Entrega.
-    renderPagina($pdf, 'ENTREGA', $fila, $nombreOrigen, $filasOrigen, $obsOrigen, $nombreDestino, $filasDestino, $obsDestino, $items, $ValorDeclarado, $TotalCant, $Cobranza, true, false);
+// Agrega al PDF las páginas del remito de un servicio. Devuelve false si no existe.
+function agregarRemito(RemitoPDF $pdf, mysqli $mysqli, string $CodigoSeguimiento): bool
+{
+    $fila = mysqli_fetch_one(
+        $mysqli,
+        "SELECT * FROM TransClientes WHERE CodigoSeguimiento = ? AND Eliminado = 0 LIMIT 1",
+        's',
+        [$CodigoSeguimiento]
+    );
+    if ($fila === null) {
+        return false;
+    }
+
+    $ventaCabecera = mysqli_fetch_one(
+        $mysqli,
+        "SELECT NumeroRepo, FechaPedido FROM Ventas WHERE NumPedido = ? LIMIT 1",
+        's',
+        [$CodigoSeguimiento]
+    ) ?? [];
+    $GuiaN = (string)($ventaCabecera['NumeroRepo'] ?? '');
+    $FechaLabel = !empty($ventaCabecera['FechaPedido'])
+        ? (new DateTime((string)$ventaCabecera['FechaPedido']))->format('d/m/Y')
+        : date('d/m/Y');
+
+    $obsOrigen = (string)(mysqli_fetch_one(
+        $mysqli,
+        "SELECT Observaciones FROM Clientes WHERE id = ?",
+        'i',
+        [(int)($fila['idClienteOrigen'] ?? 0)]
+    )['Observaciones'] ?? '');
+
+    $obsDestino = (string)(mysqli_fetch_one(
+        $mysqli,
+        "SELECT Observaciones FROM Clientes WHERE id = ?",
+        'i',
+        [(int)($fila['idClienteDestino'] ?? 0)]
+    )['Observaciones'] ?? '');
+
+    $items = db_fetch_all(
+        $mysqli,
+        "SELECT Codigo, Titulo, Comentario, Precio, Cantidad
+           FROM Ventas
+          WHERE NumPedido = ? AND Eliminado = 0",
+        's',
+        [$CodigoSeguimiento]
+    );
+
+    $totalesFila = mysqli_fetch_one(
+        $mysqli,
+        "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad
+           FROM Ventas WHERE NumPedido = ?",
+        's',
+        [$CodigoSeguimiento]
+    ) ?? [];
+
+    // El contra-reembolso NO es un monto por linea: es UN valor del pedido que
+    // Ventas guarda repetido en el CobrarEnvio de cada linea (mercaderia + linea de
+    // cobranza integrada). Se toma UNA linea con CobrarEnvio > 0 (mismo criterio que
+    // Caddy_produccion). Un SUM() lo contaba dos veces (el remito mostraba el doble).
+    $cobranzaFila = mysqli_fetch_one(
+        $mysqli,
+        "SELECT CobrarEnvio FROM Ventas
+          WHERE NumPedido = ? AND CobrarEnvio > 0
+          ORDER BY idPedido DESC LIMIT 1",
+        's',
+        [$CodigoSeguimiento]
+    );
+    $totalesFila['Cobranza'] = $cobranzaFila['CobrarEnvio'] ?? 0;
+    $TotalCant = (float)($totalesFila['TotalCantidad'] ?? 0);
+    $Cobranza = (float)($totalesFila['Cobranza'] ?? 0);
+
+    $ValorDeclarado = (float)($fila['ValorDeclarado'] ?? 0);
+    $Retirado = (int)($fila['Retirado'] ?? 0);
+
+    // --------------------------------------------------
+    // Codigo QR (mismo generador que ya usa factura_pdf.php)
+    // --------------------------------------------------
+    $qrDir = __DIR__ . '/temp/';
+    if (!file_exists($qrDir)) {
+        mkdir($qrDir, 0777, true);
+    }
+    $qrPath = $qrDir . 'remito_' . md5($CodigoSeguimiento) . '.png';
+    if (!file_exists($qrPath)) {
+        QRcode::png($CodigoSeguimiento, $qrPath, 'L', 4, 2);
+    }
+
+    $pdf->recorridoActual = (string)($fila['Recorrido'] ?? '');
+    $pdf->guiaNActual = $GuiaN;
+    $pdf->codigoSeguimientoActual = $CodigoSeguimiento;
+    $pdf->fechaActual = $FechaLabel;
+    $pdf->usuarioActual = (string)($fila['Usuario'] ?? '');
+    $pdf->qrPath = $qrPath;
+
+    $nombreOrigen = (string)($fila['RazonSocial'] ?? '');
+    $filasOrigen = [
+        ['Fiscal:', ($fila['SituacionFiscalOrigen'] ?? '') . ' | CUIT: ' . ($fila['Cuit'] ?? '')],
+        ['Domicilio:', ($fila['DomicilioOrigen'] ?? '') . ' - ' . ($fila['LocalidadOrigen'] ?? '')],
+        ['Tel.:', (string)($fila['TelefonoOrigen'] ?? '')],
+    ];
+
+    $nombreDestino = (string)($fila['ClienteDestino'] ?? '');
+    $filasDestino = [
+        ['Fiscal:', ($fila['SituacionFiscalDestino'] ?? '') . ' | Doc: ' . ($fila['DocumentoDestino'] ?? '')],
+        ['Domicilio:', ($fila['DomicilioDestino'] ?? '') . ' - ' . ($fila['LocalidadDestino'] ?? '')],
+        ['Tel.:', (string)($fila['TelefonoDestino'] ?? '')],
+    ];
+
+    if ($Retirado === 0) {
+        // Todavia no se retiro: la guia lleva las dos etapas, Retiro (con precio,
+        // se cobra en origen o queda pendiente segun forma de pago) y Entrega.
+        renderPagina($pdf, 'RETIRO', $fila, $nombreOrigen, $filasOrigen, $obsOrigen, $nombreDestino, $filasDestino, $obsDestino, $items, $ValorDeclarado, $TotalCant, $Cobranza, true, false);
+        renderPagina($pdf, 'ENTREGA', $fila, $nombreOrigen, $filasOrigen, $obsOrigen, $nombreDestino, $filasDestino, $obsDestino, $items, $ValorDeclarado, $TotalCant, $Cobranza, true, true);
+    } else {
+        // Ya se retiro: solo hace falta la etapa de Entrega.
+        renderPagina($pdf, 'ENTREGA', $fila, $nombreOrigen, $filasOrigen, $obsOrigen, $nombreDestino, $filasDestino, $obsDestino, $items, $ValorDeclarado, $TotalCant, $Cobranza, true, false);
+    }
+    return true;
+}
+
+$pdf = new RemitoPDF('P', 'mm', 'Letter');
+$pdf->AliasNbPages();
+$pdf->SetMargins(15, 10, 15);
+$pdf->SetAutoPageBreak(true, 16);
+
+if ($RecorridoLote !== '') {
+    // Envíos pendientes del recorrido, en el orden de la hoja de ruta
+    $codigos = array_column(db_fetch_all(
+        $mysqli,
+        "SELECT t.CodigoSeguimiento
+           FROM TransClientes t
+           JOIN HojaDeRuta h ON h.Seguimiento = t.CodigoSeguimiento AND h.Eliminado = 0 AND h.Estado = 'Abierto'
+          WHERE t.Recorrido = ? AND t.Entregado = 0 AND t.Devuelto = 0 AND t.Eliminado = 0
+          GROUP BY t.CodigoSeguimiento
+          ORDER BY MIN(h.Posicion), t.CodigoSeguimiento",
+        's',
+        [$RecorridoLote]
+    ), 'CodigoSeguimiento');
+    $impresos = 0;
+    foreach ($codigos as $cs) {
+        if (agregarRemito($pdf, $mysqli, (string)$cs)) {
+            $impresos++;
+        }
+    }
+    if ($impresos === 0) {
+        http_response_code(404);
+        header('Content-Type: text/plain; charset=utf-8');
+        echo 'El recorrido ' . $RecorridoLote . ' no tiene envíos pendientes para imprimir.';
+        exit;
+    }
+} elseif (!agregarRemito($pdf, $mysqli, $CodigoSeguimiento)) {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'No se encontró el servicio ' . $CodigoSeguimiento;
+    exit;
 }
 
 $pdf->Output();
