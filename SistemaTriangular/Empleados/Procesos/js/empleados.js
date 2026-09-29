@@ -148,6 +148,7 @@ var datatable = $("#empleados").DataTable({
     url: "Procesos/php/empleados.php",
     data: function (d) {
       d.Empleados = 1;
+      d.inactivos = $("#emp-ver-inactivos").is(":checked") ? 1 : 0;
     },
     processing: true,
     type: "post",
@@ -229,7 +230,8 @@ var datatable = $("#empleados").DataTable({
             break;
         }
 
-        return `<span class="badge bg-${color} text-white">${text}</span>`;
+        // Tocando el estado se da de baja / se reactiva al empleado
+        return `<a href="javascript:void(0)" class="badge bg-${color} text-white emp-estado" data-id="${row.id}" data-inactivo="${row.Inactivo}" data-nombre="${String(row.NombreCompleto || "").replace(/"/g, "&quot;")}" title="${row.Inactivo === "1" ? "Reactivar" : "Dar de baja"}">${text}</a>`;
       },
     },
     {
@@ -580,5 +582,35 @@ $("#crear_empleado").on("click", function (e) {
         text: msg,
       });
     },
+  });
+});
+
+// ---- Dar de baja / reactivar (el estado Inactivo lo usan Presentismo y los demás listados) ----
+$(document).on("change", "#emp-ver-inactivos", function () {
+  $("#empleados").DataTable().ajax.reload();
+});
+$(document).on("click", ".emp-estado", function () {
+  const id = this.dataset.id;
+  const baja = this.dataset.inactivo !== "1";
+  const nombre = this.dataset.nombre;
+  Swal.fire({
+    icon: baja ? "warning" : "question",
+    title: baja ? `¿Dar de baja a ${nombre}?` : `¿Reactivar a ${nombre}?`,
+    text: baja ? "Deja de aparecer en Presentismo y en los listados de empleados activos. Se puede reactivar desde \"Mostrar dados de baja\"." : "Vuelve a aparecer como empleado activo.",
+    showCancelButton: true,
+    confirmButtonText: baja ? "Sí, dar de baja" : "Sí, reactivar",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: baja ? "#fa5c7c" : "#0acf97",
+  }).then(function (r) {
+    if (!r.isConfirmed) return;
+    $.post("Procesos/php/empleados.php", { CambiarEstadoEmpleado: 1, id: id, inactivo: baja ? 1 : 0 }, null, "json")
+      .done(function (res) {
+        if (res && res.success == 1) {
+          toast("success", baja ? "Empleado dado de baja" : "Empleado reactivado", nombre);
+          $("#empleados").DataTable().ajax.reload(null, false);
+        } else {
+          toast("error", "No se pudo actualizar", nombre);
+        }
+      });
   });
 });
