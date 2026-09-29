@@ -398,28 +398,47 @@ if (isset($_POST['MeliForzarConfirmar'])) {
 
 if(isset($_POST['CargarPreVenta'])){
 
-    $id=$_POST['id_importaciones'];
-    
+    // Consultas preparadas: antes los textos se pegaban en el SQL y un apostrofo
+    // en el nombre o la direccion del destinatario (ej. "O'Higgins", "D'Ascenzi")
+    // rompia la consulta y el pedido no pasaba a preventa, sin avisar (2026-09-29).
+    $id = (int) ($_POST['id_importaciones'] ?? 0);
+
     //BUSCAMOS LA TARIFA VIGENTE 183=FLEX
     $SQL_TARIFA=$mysqli->query("SELECT PrecioVenta FROM `Productos` WHERE Codigo='183'");
     $DATOS_TARIFA = $SQL_TARIFA->fetch_array(MYSQLI_ASSOC);
 
     //DATOS IMPORTACIONES
-    $SQL=$mysqli->query("SELECT * FROM `Importaciones` WHERE id='$id'");
-    $DATOS_IMPORTACIONES = $SQL->fetch_array(MYSQLI_ASSOC);
+    $st = $mysqli->prepare("SELECT * FROM `Importaciones` WHERE id = ?");
+    $st->bind_param('i', $id);
+    $st->execute();
+    $DATOS_IMPORTACIONES = $st->get_result()->fetch_assoc();
+    $st->close();
+    if (!$DATOS_IMPORTACIONES) {
+        echo json_encode(array('success'=>0, 'error'=>'No se encontró la importación'));
+        exit;
+    }
     $Fecha=date('Y-m-d');
     $Hora=date("H:i:s");
     //DATOS CLIENTE ORIGEN
-    $SQL_CLIENTES=$mysqli->query("SELECT id,IF(DireccionPredeterminadas=0,Direccion,Direccion1)as Direccion,Ciudad FROM Clientes WHERE id='".$DATOS_IMPORTACIONES['NCliente']."'");
-    $ROW_CLIENTES=$SQL_CLIENTES->fetch_array(MYSQLI_ASSOC);
+    $st = $mysqli->prepare("SELECT id,IF(DireccionPredeterminadas=0,Direccion,Direccion1)as Direccion,Ciudad FROM Clientes WHERE id = ?");
+    $nCliente = (int) $DATOS_IMPORTACIONES['NCliente'];
+    $st->bind_param('i', $nCliente);
+    $st->execute();
+    $ROW_CLIENTES = $st->get_result()->fetch_assoc() ?: array('id' => '', 'Direccion' => '', 'Ciudad' => '');
+    $st->close();
 
     //DATOS CLIENTE DESTINO
-    $SQL_CLIENTE_DESTINO=$mysqli->query("SELECT id FROM Clientes WHERE nombrecliente = '".$DATOS_IMPORTACIONES['ClienteDestino']."' AND Direccion like '%".utf8_decode($DATOS_IMPORTACIONES['DomicilioDestino'])."%' ");
-    $resp = $SQL_CLIENTE_DESTINO->fetch_array(MYSQLI_ASSOC);  
+    $st = $mysqli->prepare("SELECT id FROM Clientes WHERE nombrecliente = ? AND Direccion LIKE ?");
+    $nombreDestino = (string) $DATOS_IMPORTACIONES['ClienteDestino'];
+    $likeDireccion = '%' . mb_convert_encoding((string) $DATOS_IMPORTACIONES['DomicilioDestino'], 'ISO-8859-1', 'UTF-8') . '%'; // = utf8_decode(), obsoleto en PHP 8.2
+    $st->bind_param('ss', $nombreDestino, $likeDireccion);
+    $st->execute();
+    $resp = $st->get_result()->fetch_assoc();
+    $st->close();
 
     if($resp){
     //SI YA EXISTE EL CLIENTE OPTENEMOS EL ID
-    $idClienteDestino=$resp['id'];  
+    $idClienteDestino=$resp['id'];
     }else{
     $SQL_MAX_ID=$mysqli->query("SELECT MAX(id)as id FROM Clientes");
     $respmax = $SQL_MAX_ID->fetch_array(MYSQLI_ASSOC);
@@ -428,24 +447,49 @@ if(isset($_POST['CargarPreVenta'])){
     // trim(null)+1 tira TypeError en PHP8 (auditoria 2026-09-22).
     $idClienteDestino=intval($respmax['id'])+1;
 
-    $mysqli->query("INSERT IGNORE INTO Clientes (NdeCliente,nombrecliente,Direccion,Ciudad,Telefono,Celular,Celular2,Cuit,Relacion,Pais,Mail,CodigoPostal,Observaciones)VALUES
-    ('". $idClienteDestino ."','". $DATOS_IMPORTACIONES['ClienteDestino']."','". $DATOS_IMPORTACIONES['DomicilioDestino'] ."','". $DATOS_IMPORTACIONES['LocalidadDestino'] ."','". $DATOS_IMPORTACIONES['Celular'] ."','". $DATOS_IMPORTACIONES['Celular'] ."',
-    '". $DATOS_IMPORTACIONES['Celular'] ."','". $DATOS_IMPORTACIONES['dni_destino'] ."','" . $ROW_CLIENTES['id'] . "','Argentina','" . $DATOS_IMPORTACIONES['mail_destino']. "','" . $DATOS_IMPORTACIONES['cpdestino'] . "','" . $DATOS_IMPORTACIONES['Observaciones'] . "')");
+    $st = $mysqli->prepare("INSERT IGNORE INTO Clientes (NdeCliente,nombrecliente,Direccion,Ciudad,Telefono,Celular,Celular2,Cuit,Relacion,Pais,Mail,CodigoPostal,Observaciones)
+        VALUES (?,?,?,?,?,?,?,?,?,'Argentina',?,?,?)");
+    $vals = array(
+        (string) $idClienteDestino, $nombreDestino, (string) $DATOS_IMPORTACIONES['DomicilioDestino'], (string) $DATOS_IMPORTACIONES['LocalidadDestino'],
+        (string) $DATOS_IMPORTACIONES['Celular'], (string) $DATOS_IMPORTACIONES['Celular'], (string) $DATOS_IMPORTACIONES['Celular'],
+        (string) $DATOS_IMPORTACIONES['dni_destino'], (string) $ROW_CLIENTES['id'], (string) $DATOS_IMPORTACIONES['mail_destino'],
+        (string) $DATOS_IMPORTACIONES['cpdestino'], (string) $DATOS_IMPORTACIONES['Observaciones'],
+    );
+    $st->bind_param(str_repeat('s', count($vals)), ...$vals);
+    $st->execute();
+    $st->close();
     }
 
-    $SQL_PREVENTA="INSERT IGNORE INTO `PreVenta`(`Fecha`, `RazonSocial`, `NCliente`, `TipoDeComprobante`, `NumeroComprobante`, `Cantidad`, `Precio`, `Total`, `ClienteDestino`, `DomicilioDestino`, `LocalidadDestino`, `DomicilioOrigen`, `LocalidadOrigen`, `Usuario`, `EntregaEn`, `Observaciones`,`Hora`, `idProveedor`,`ValorDeclarado`, `Telefono`, `Celular`, `cpdestino`,`idClienteDestino`,`shipments_id`,`order_id`,`Status`) 
-    VALUES ('{$Fecha}','{$DATOS_IMPORTACIONES['RazonSocial']}','{$DATOS_IMPORTACIONES['NCliente']}','{$DATOS_IMPORTACIONES['TipoDeComprobante']}','{$DATOS_IMPORTACIONES['NumeroComprobante']}','{$DATOS_IMPORTACIONES['Cantidad']}','{$DATOS_TARIFA['PrecioVenta']}','{$DATOS_TARIFA['PrecioVenta']}','{$DATOS_IMPORTACIONES['ClienteDestino']}','{$DATOS_IMPORTACIONES['DomicilioDestino']}','{$DATOS_IMPORTACIONES['LocalidadDestino']}',
-    '{$ROW_CLIENTES['Direccion']}','{$ROW_CLIENTES['Ciudad']}','{$_SESSION['Usuario']}','Domicilio','{$DATOS_IMPORTACIONES['Observaciones']}','{$Hora}','{$DATOS_IMPORTACIONES['shipments_id']}','{$DATOS_IMPORTACIONES['ValorDeclarado']}','{$DATOS_IMPORTACIONES['Celular']}','{$DATOS_IMPORTACIONES['Celular']}','{$DATOS_IMPORTACIONES['cpdestino']}','{$idClienteDestino}','{$DATOS_IMPORTACIONES['shipments_id']}','{$DATOS_IMPORTACIONES['order_id']}','{$DATOS_IMPORTACIONES['status']}')";
+    $st = $mysqli->prepare("INSERT IGNORE INTO `PreVenta`(`Fecha`, `RazonSocial`, `NCliente`, `TipoDeComprobante`, `NumeroComprobante`, `Cantidad`, `Precio`, `Total`, `ClienteDestino`, `DomicilioDestino`, `LocalidadDestino`, `DomicilioOrigen`, `LocalidadOrigen`, `Usuario`, `EntregaEn`, `Observaciones`,`Hora`, `idProveedor`,`ValorDeclarado`, `Telefono`, `Celular`, `cpdestino`,`idClienteDestino`,`shipments_id`,`order_id`,`Status`)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Domicilio',?,?,?,?,?,?,?,?,?,?,?)");
+    $vals = array(
+        $Fecha, (string) $DATOS_IMPORTACIONES['RazonSocial'], (string) $DATOS_IMPORTACIONES['NCliente'],
+        (string) $DATOS_IMPORTACIONES['TipoDeComprobante'], (string) $DATOS_IMPORTACIONES['NumeroComprobante'], (string) $DATOS_IMPORTACIONES['Cantidad'],
+        (string) $DATOS_TARIFA['PrecioVenta'], (string) $DATOS_TARIFA['PrecioVenta'], $nombreDestino,
+        (string) $DATOS_IMPORTACIONES['DomicilioDestino'], (string) $DATOS_IMPORTACIONES['LocalidadDestino'],
+        (string) $ROW_CLIENTES['Direccion'], (string) $ROW_CLIENTES['Ciudad'], (string) ($_SESSION['Usuario'] ?? ''),
+        (string) $DATOS_IMPORTACIONES['Observaciones'], $Hora, (string) $DATOS_IMPORTACIONES['shipments_id'],
+        (string) $DATOS_IMPORTACIONES['ValorDeclarado'], (string) $DATOS_IMPORTACIONES['Celular'], (string) $DATOS_IMPORTACIONES['Celular'],
+        (string) $DATOS_IMPORTACIONES['cpdestino'], (string) $idClienteDestino, (string) $DATOS_IMPORTACIONES['shipments_id'],
+        (string) $DATOS_IMPORTACIONES['order_id'],
+        // antes leia 'status' (minuscula) que no existe en Importaciones: quedaba vacio
+        (string) ($DATOS_IMPORTACIONES['Status'] ?? $DATOS_IMPORTACIONES['status'] ?? ''),
+    );
+    $st->bind_param(str_repeat('s', count($vals)), ...$vals);
 
-    if($mysqli->query($SQL_PREVENTA)){
-        
-        $mysqli->query("UPDATE Importaciones SET Cargado=1 WHERE id='$id'");
-        
-        echo json_encode(array('success'=>1)); 
+    if($st->execute()){
+
+        $st->close();
+        $up = $mysqli->prepare("UPDATE Importaciones SET Cargado=1 WHERE id = ?");
+        $up->bind_param('i', $id);
+        $up->execute();
+        $up->close();
+
+        echo json_encode(array('success'=>1));
 
     }else{
 
-        echo json_encode(array('success'=>0));  
+        echo json_encode(array('success'=>0));
 
     }
 
