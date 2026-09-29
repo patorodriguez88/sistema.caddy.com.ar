@@ -998,10 +998,19 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
   $segmentoImputado = null;
   $valorKmImputado  = 0;
 
-  if ($stmt = $mysqli->prepare("SELECT Kilometros, Segmento FROM Vehiculos WHERE Dominio = ? LIMIT 1")) {
+  if ($stmt = $mysqli->prepare("SELECT Segmento FROM Vehiculos WHERE Dominio = ? LIMIT 1")) {
     $stmt->bind_param('s', $vehiculo);
     $stmt->execute();
-    $stmt->bind_result($kmSalida, $segmentoImputado);
+    $stmt->bind_result($segmentoImputado);
+    $stmt->fetch();
+    $stmt->close();
+  }
+  // Km de salida: el de ESTA orden (antes se tomaba el odómetro del vehículo, que puede haber
+  // cambiado desde que salió la orden).
+  if ($stmt = $mysqli->prepare("SELECT Kilometros FROM Logistica WHERE NumerodeOrden = ? AND Eliminado = 0 LIMIT 1")) {
+    $stmt->bind_param('s', $numeroOrden);
+    $stmt->execute();
+    $stmt->bind_result($kmSalida);
     $stmt->fetch();
     $stmt->close();
   }
@@ -1070,14 +1079,15 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
 
     $stmt->close();
 
-    // 2) Vehículo disponible
-    $sqlVeh = "UPDATE Vehiculos SET Estado = 'Disponible' WHERE Dominio = ? LIMIT 1";
+    // 2) Vehículo disponible, con el odómetro en el km de regreso (la próxima orden sale de ahí)
+    $sqlVeh = "UPDATE Vehiculos SET Estado = 'Disponible', Kilometros = GREATEST(IFNULL(Kilometros, 0), ?)
+               WHERE Dominio = ? LIMIT 1";
 
     if (!$stmt = $mysqli->prepare($sqlVeh)) {
       throw new Exception("No se pudo preparar UPDATE de Vehiculos.");
     }
 
-    $stmt->bind_param('s', $vehiculo);
+    $stmt->bind_param('is', $kmRegreso, $vehiculo);
     $stmt->execute();
 
     if ($stmt->errno) {
