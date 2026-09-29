@@ -3,9 +3,23 @@ include_once "../../../Conexion/Conexioni.php";
 include_once('asana_api.php');
 
 date_default_timezone_set('America/Argentina/Cordoba');
+// Dar de baja / reactivar un empleado (Inactivo). Presentismo y demás listados usan solo los activos.
+if (isset($_POST['CambiarEstadoEmpleado'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $id = (int)($_POST['id'] ?? 0);
+    $inactivo = (int)($_POST['inactivo'] ?? 0) === 1 ? 1 : 0;
+    $st = $mysqli->prepare("UPDATE Empleados SET Inactivo = ? WHERE id = ? AND IFNULL(Aliados, 0) = 0 LIMIT 1");
+    $st->bind_param('ii', $inactivo, $id);
+    $st->execute();
+    echo json_encode(['success' => $st->affected_rows > 0 ? 1 : 0, 'inactivo' => $inactivo]);
+    exit;
+}
+
 if (isset($_POST['Empleados'])) {
 
-    $SQL = $mysqli->query("SELECT * FROM `Empleados` WHERE Empleados.Aliados=0 AND Empleados.Inactivo=0");
+    // Con "Mostrar dados de baja" se incluyen los inactivos (para poder reactivarlos)
+    $conInactivos = !empty($_POST['inactivos']);
+    $SQL = $mysqli->query("SELECT * FROM `Empleados` WHERE Empleados.Aliados=0" . ($conInactivos ? "" : " AND Empleados.Inactivo=0") . " ORDER BY Empleados.Inactivo, Empleados.NombreCompleto");
 
     $ROWS = array();
 

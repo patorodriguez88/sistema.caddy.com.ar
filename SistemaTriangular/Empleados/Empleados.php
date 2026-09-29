@@ -408,6 +408,11 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
 
                                     <div class="row mb-2">
                                         <div class="col-sm-8">
+                                            <div class="form-check">
+                                                <input class="form-check-input" type="checkbox" id="emp-ver-inactivos">
+                                                <label class="form-check-label" for="emp-ver-inactivos">Mostrar dados de baja</label>
+                                                <small class="text-muted ms-2">Tocá el estado (Activo / Inactivo) para dar de baja o reactivar.</small>
+                                            </div>
                                         </div><!-- end col-->
                                     </div>
 
@@ -476,7 +481,7 @@ $actorEsSuperAdmin = intval($_SESSION['Nivel'] ?? 0) === 1;
     <!-- Funciones -->
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Procesos/js/empleados.js"></script>
+    <script src="Procesos/js/empleados.js?v=<?= filemtime(__DIR__ . '/Procesos/js/empleados.js') ?>"></script>
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 
