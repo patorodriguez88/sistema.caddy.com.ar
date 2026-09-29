@@ -111,38 +111,75 @@ var id= $('#id_modificar').val();
 });
 
 //AGREGAR VENTAS
+// Arreglado 2026-09-29 (Guias a Facturar > "Agregar Venta a Codigo"):
+//  - el <select> de Servicio estaba vacio (el SELECT que lo llenaba en Clientes.php
+//    quedo comentado): sin servicio no se completaban Titulo/Total y no se podia cargar;
+//  - select2 dentro del modal necesita dropdownParent para poder desplegar y buscar;
+//  - cada apertura agregaba OTRO click al boton: la venta se cargaba varias veces.
+var serviciosCargados = false;
+function cargarListaServicios(cb){
+  if (serviciosCargados) { cb(); return; }
+  $.post('Procesos/php/abmventas.php', {ListarServicios: 1}, null, 'json').done(function(res){
+    var $grupo = $('#servicio optgroup');
+    (res && res.data || []).forEach(function(p){
+      $grupo.append($('<option>').val(p.id).text(p.Titulo + ' | $ ' + p.PrecioVenta));
+    });
+    serviciosCargados = true;
+    cb();
+  }).fail(function(){ cb(); });
+}
+
+function avisoVentas(tipo, msg){
+  if (typeof toast === 'function') { toast(tipo, 'Agregar venta', msg); } else { alert(msg); }
+}
+
 function agregarVentas(id){
 
  $('#bs-ventas-modal-lg').modal('show');
  $('#header-ventas-modal').html('Agregar Venta a Codigo # '+id);
- $('#agregarventas_ok').show();
+ $('#agregarventas_ok').show().prop('disabled', false);
  $('#modificarventas_ok').hide();
- $('#ventas_fecha').css('readonly','false');
-  
-  $('#agregarventas_ok').click(function(){
+ if (!$('#ventas_fecha').val()) { $('#ventas_fecha').val(new Date().toISOString().slice(0,10)); }
+
+ cargarListaServicios(function(){
+   var $sel = $('#servicio');
+   if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
+   $sel.select2({ dropdownParent: $('#bs-ventas-modal-lg'), width: '100%' });
+   $sel.val($sel.find('option:first').val()).trigger('change.select2');
+ });
+
+  $('#agregarventas_ok').off('click.agregar').on('click.agregar', function(){
+   var idproducto = $('#servicio').val();
    var titulo=$('#ventas_titulo').val();
-   var codigoventa=$('#ventas_codigo').val();
    var cantidadventa=$('#ventas_cantidad').val();
    var precioventa = $('#ventas_precio').val();
    var totalventa= $('#ventas_total').val();
-   var observacionesventa=$('#ventas_observaciones').val();   
+   var observacionesventa=$('#ventas_observaciones').val();
    var fecha=$('#ventas_fecha').val();
+   if (!idproducto || isNaN(parseInt(idproducto, 10))) { avisoVentas('error', 'Elegí un servicio.'); return; }
+   if (!(parseFloat(precioventa) > 0)) { avisoVentas('error', 'Ingresá un precio mayor a 0.'); $('#ventas_precio').focus(); return; }
+   var $btn = $(this).prop('disabled', true);
    $.ajax({
-      data: {'AgregarDatosVentas':1,'codigoseguimiento':id,'tituloventa':titulo,'codigoventa':codigoventa,
+      data: {'AgregarDatosVentas':1,'codigoseguimiento':id,'idproducto':idproducto,'tituloventa':titulo,
              'cantidadventa':cantidadventa,'precioventa':precioventa,'totalventa':totalventa,'observacionesventa':observacionesventa,
              'Fecha':fecha},
       url:'Procesos/php/abmventas.php',
       type:'post',
-      success: function(response)
+      dataType:'json',
+      success: function(jsonData)
        {
-          var jsonData = JSON.parse(response);
-          if (jsonData.success == "1")
+          if (jsonData && jsonData.success == "1")
           {
           $('#bs-ventas-modal-lg').modal('hide');
           var table = $('#ventas_tabla').DataTable();
           table.ajax.reload(null,false);
+          avisoVentas('success', 'Venta agregada al envío ' + id + '.');
+          } else {
+          $btn.prop('disabled', false);
+          avisoVentas('error', (jsonData && jsonData.error) || 'No se pudo agregar la venta.');
           }
-       }
+       },
+      error: function(){ $btn.prop('disabled', false); avisoVentas('error', 'Error de conexión al agregar la venta.'); }
        });
  });
 }

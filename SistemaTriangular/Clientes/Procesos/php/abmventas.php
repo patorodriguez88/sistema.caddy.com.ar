@@ -77,57 +77,87 @@ if(isset($_POST['BuscarDatosVentas']) && $_POST['BuscarDatosVentas']==1){
 
 //AGREGAR DATOS VENTAS
 if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
-  
-  $_POST['codigoventa'];  
-  $sql=$mysqli->query("SELECT * FROM Productos WHERE Codigo='$_POST[codigoventa]'");
-  $dato=$sql->fetch_array(MYSQLI_ASSOC);
-  $PrecioVenta=$dato['PrecioVenta'];
-  $iva=$dato['PrecioVenta']-($PrecioVenta/1.21);
-  $Neto=$PrecioVenta/1.21;
-  
-  if($_POST['Fecha']=='0000-00-00'){
-  $Fecha=date('Y-m-d');
-  }else{
-  $Fecha=$_POST['Fecha'];  
+  // Reescrito 2026-09-29 (Guias a Facturar > "Agregar Venta a Codigo"):
+  //  - el producto llega por id (idproducto) y se guarda su Codigo real (antes buscaba
+  //    Productos.Codigo con el id: no lo encontraba y Neto/IVA quedaban en 0);
+  //  - Neto e IVA segun la alicuota del producto, igual que Venta Simple (AgregarVenta.php);
+  //  - consultas preparadas: un apostrofo en titulo/observaciones rompia el INSERT.
+  $cs = trim((string)($_POST['codigoseguimiento'] ?? ''));
+  $idProducto = (int)($_POST['idproducto'] ?? ($_POST['codigoventa'] ?? 0));
+  $cantidad = (float)($_POST['cantidadventa'] ?? 1);
+  if ($cantidad <= 0) { $cantidad = 1; }
+  $precio = (float)str_replace(',', '.', (string)($_POST['precioventa'] ?? 0));
+  $observaciones = (string)($_POST['observacionesventa'] ?? '');
+  $Fecha = (isset($_POST['Fecha']) && preg_match('/^\d{4}-\d{2}-\d{2}$/', $_POST['Fecha']) && $_POST['Fecha'] !== '0000-00-00') ? $_POST['Fecha'] : date('Y-m-d');
+
+  $st = $mysqli->prepare("SELECT id, Codigo, Titulo, Iva FROM Productos WHERE id = ?");
+  $st->bind_param('i', $idProducto);
+  $st->execute();
+  $prod = $st->get_result()->fetch_assoc();
+  $st->close();
+  if ($cs === '' || !$prod || $precio <= 0) {
+    echo json_encode(array('success'=>0, 'error'=> !$prod ? 'Elegí un servicio.' : ($precio <= 0 ? 'Ingresá un precio mayor a 0.' : 'Falta el código de seguimiento.')));
+    exit;
   }
-  //BUSCO ID TRANSCLIENTES
-  $sql="SELECT if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,
-               if(FechaEntrega='0000-00-00',Fecha,FechaEntrega) as Fecha, 
+  $titulo = trim((string)($_POST['tituloventa'] ?? '')) !== '' ? (string)$_POST['tituloventa'] : (string)$prod['Titulo'];
+
+  $Total = round($cantidad * $precio, 2);
+  $ivaFactor = (float)$prod['Iva'];
+  if ($ivaFactor > 2) { $ivaFactor = 1 + $ivaFactor / 100; } // hay productos con "21.00" en vez de 1.21
+  $ImporteNeto = $ivaFactor > 0 ? round($Total / $ivaFactor, 2) : $Total;
+  $iva1 = $iva2 = $iva3 = 0.0;
+  if (abs($ivaFactor - 1.025) < 0.0001) { $iva1 = $Total - $ImporteNeto; }
+  elseif (abs($ivaFactor - 1.105) < 0.0001) { $iva2 = $Total - $ImporteNeto; }
+  elseif (abs($ivaFactor - 1.21) < 0.0001) { $iva3 = $Total - $ImporteNeto; }
+
+  //BUSCO DATOS DEL ENVIO EN TRANSCLIENTES
+  $st = $mysqli->prepare("SELECT if(FormaDePago='Origen',RazonSocial,ClienteDestino)as Cliente,
+               if(FechaEntrega='0000-00-00',Fecha,FechaEntrega) as Fecha,
                if(FormaDePago='Origen',LocalidadOrigen,LocalidadDestino)as Localidad,NumeroComprobante,
-               if(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente
-               FROM TransClientes WHERE CodigoSeguimiento='$_POST[codigoseguimiento]' AND Eliminado='0'";
-
-  $Resultado=$mysqli->query($sql);  
-  $row=$Resultado->fetch_array(MYSQLI_ASSOC);
-
-  $Codigo= sprintf("%10d", $_POST['codigoventa']);
-  if($mysqli->query("INSERT INTO `Ventas`(`FechaPedido`, `Codigo`, `Titulo`, `Precio`, `Cantidad`, `Comentario`,
-  `terminado`, `NumPedido`, `Total`, `Cliente`, `FechaEntrega`, `Localidad`, `NumeroRepo`, `ImporteNeto`, `Exento`, `Iva1`, `Usuario`,`idCliente`) VALUES 
-  ('{$Fecha}','{$Codigo}','{$_POST['tituloventa']}','{$_POST['precioventa']}','{$_POST['cantidadventa']}','{$_POST['observacionesventa']}','1',
-  '{$_POST['codigoseguimiento']}','{$_POST['totalventa']}','{$row['Cliente']}','{$row['Fecha']}','{$row['Localidad']}','{$row['NumeroComprobante']}','{$Neto}','0',
-  '{$iva}','{$_SESSION['Usuario']}','{$row['idCliente']}')")){
-  
-  $sqlV="SELECT SUM(Total)as Total,NumPedido FROM Ventas WHERE NumPedido='$_POST[codigoseguimiento]' AND Eliminado='0' AND not_invoice=0";
-  $ResultadoV=$mysqli->query($sqlV);  
-  $rowV=$ResultadoV->fetch_array(MYSQLI_ASSOC);
-  $CodigoSeguimiento=$_POST['codigoseguimiento'];
-
-  if($CodigoSeguimiento<>''){  
-  $mysqli->query("UPDATE TransClientes SET Debe='$rowV[Total]' WHERE CodigoSeguimiento='$CodigoSeguimiento' AND TipoDeComprobante='Remito' AND Eliminado='0'");
-  
-    //BUSCO ID TRANSCLIENTES
-    $sql="SELECT id FROM TransClientes WHERE CodigoSeguimiento='$_POST[codigoseguimiento]' AND Eliminado='0'";
-    $Resultado=$mysqli->query($sql);  
-    $row=$Resultado->fetch_array(MYSQLI_ASSOC);
-
-   if ($row['id'] !== null && $row['id'] !== 0) {
-   //ACTUALIZO CTAS CTES
-   $mysqli->query("UPDATE Ctasctes SET Debe='$rowV[Total]' WHERE idTransClientes='$row[id]' LIMIT 1");
-   
-    }  
+               if(FormaDePago='Origen',idClienteOrigen,idClienteDestino)as idCliente, id
+               FROM TransClientes WHERE CodigoSeguimiento = ? AND Eliminado='0' LIMIT 1");
+  $st->bind_param('s', $cs);
+  $st->execute();
+  $row = $st->get_result()->fetch_assoc();
+  $st->close();
+  if (!$row) {
+    echo json_encode(array('success'=>0, 'error'=>'No se encontró el envío '.$cs));
+    exit;
   }
 
-   echo json_encode(array('success'=>1));  
+  $usuario = (string)($_SESSION['Usuario'] ?? '');
+  $st = $mysqli->prepare("INSERT INTO `Ventas`(`FechaPedido`, `Codigo`, `Titulo`, `Precio`, `Cantidad`, `Comentario`,
+    `terminado`, `NumPedido`, `Total`, `Cliente`, `FechaEntrega`, `Localidad`, `NumeroRepo`, `ImporteNeto`, `Exento`, `Iva1`, `Iva2`, `Iva3`, `Usuario`,`idCliente`)
+    VALUES (?,?,?,?,?,?,'1',?,?,?,?,?,?,?,'0',?,?,?,?,?)");
+  $vals = array($Fecha, (string)$prod['Codigo'], $titulo, (string)$precio, (string)$cantidad, $observaciones,
+                $cs, (string)$Total, (string)$row['Cliente'], (string)$row['Fecha'], (string)$row['Localidad'], (string)$row['NumeroComprobante'],
+                (string)$ImporteNeto, (string)round($iva1,2), (string)round($iva2,2), (string)round($iva3,2), $usuario, (string)$row['idCliente']);
+  $st->bind_param(str_repeat('s', count($vals)), ...$vals);
+
+  if($st->execute()){
+    $st->close();
+    // Recalcula el Debe del remito y su cuenta corriente con el total de ventas del envio
+    $st = $mysqli->prepare("SELECT SUM(Total) as Total FROM Ventas WHERE NumPedido = ? AND Eliminado='0' AND not_invoice=0");
+    $st->bind_param('s', $cs);
+    $st->execute();
+    $totalVentas = (float)($st->get_result()->fetch_assoc()['Total'] ?? 0);
+    $st->close();
+
+    $st = $mysqli->prepare("UPDATE TransClientes SET Debe = ? WHERE CodigoSeguimiento = ? AND TipoDeComprobante='Remito' AND Eliminado='0'");
+    $st->bind_param('ds', $totalVentas, $cs);
+    $st->execute();
+    $st->close();
+
+    $idTrans = (int)$row['id'];
+    if ($idTrans > 0) {
+      $st = $mysqli->prepare("UPDATE Ctasctes SET Debe = ? WHERE idTransClientes = ? LIMIT 1");
+      $st->bind_param('di', $totalVentas, $idTrans);
+      $st->execute();
+      $st->close();
+    }
+    echo json_encode(array('success'=>1));
+  } else {
+    echo json_encode(array('success'=>0, 'error'=>'No se pudo guardar la venta.'));
   }
 }
 
@@ -154,8 +184,12 @@ $info="M: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)');
         }
       
 
-  if($mysqli->query("UPDATE Ventas SET Comentario='$_POST[comentario]',Codigo='$_POST[codigo]',Titulo='$_POST[titulo]',Total='$_POST[total]',
-    infoABM='$info',Cantidad='$_POST[cantidad]',Precio='$_POST[precio]',FechaPedido='$Fecha' WHERE idPedido='$_POST[idPedido]' LIMIT 1"))
+  // Consulta preparada: un apostrofo en comentario/titulo rompia el UPDATE (2026-09-29)
+  $stMod = $mysqli->prepare("UPDATE Ventas SET Comentario=?,Codigo=?,Titulo=?,Total=?,infoABM=?,Cantidad=?,Precio=?,FechaPedido=? WHERE idPedido=? LIMIT 1");
+  $valsMod = array((string)($_POST['comentario'] ?? ''), (string)($_POST['codigo'] ?? ''), (string)($_POST['titulo'] ?? ''), (string)($_POST['total'] ?? ''),
+                   $info, (string)($_POST['cantidad'] ?? ''), (string)($_POST['precio'] ?? ''), (string)$Fecha, (string)($_POST['idPedido'] ?? ''));
+  $stMod->bind_param(str_repeat('s', count($valsMod)), ...$valsMod);
+  if($stMod->execute())
   {
     $successventas=1;  
     $sqlV="SELECT SUM(Total)as Total FROM Ventas WHERE NumPedido='$row[CodigoSeguimiento]' AND Eliminado='0' AND not_invoice=0";
@@ -175,8 +209,11 @@ $info="M: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)');
       
             if($rowV[Total]>0){ 
 
-                    if($mysqli->query("INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`,`Usuario`,`Observaciones`, `idCliente`,`idTransClientes`) VALUES ('{$row['Fecha']}','{$row['RazonSocial']}','{$row['Cuit']}','{$row['TipoDeComprobante']}',
-                    '{$row['NumeroComprobante']}','{$rowV['Total']}','{$_SESSION['Usuario']}','{$row['Observaciones']}','{$row['idCliente']}','{$row['id']}')")){
+                    $stCc = $mysqli->prepare("INSERT INTO `Ctasctes`(`Fecha`, `RazonSocial`, `Cuit`, `TipoDeComprobante`, `NumeroVenta`, `Debe`,`Usuario`,`Observaciones`, `idCliente`,`idTransClientes`) VALUES (?,?,?,?,?,?,?,?,?,?)");
+                    $valsCc = array((string)$row['Fecha'], (string)$row['RazonSocial'], (string)$row['Cuit'], (string)$row['TipoDeComprobante'], (string)$row['NumeroComprobante'],
+                                    (string)$rowV['Total'], (string)($_SESSION['Usuario'] ?? ''), (string)$row['Observaciones'], (string)$row['idCliente'], (string)$row['id']);
+                    $stCc->bind_param(str_repeat('s', count($valsCc)), ...$valsCc);
+                    if($stCc->execute()){
                     $successctasctesinsert=1;    
                     }else{
                     $successctasctesinsert=0;      
@@ -309,12 +346,24 @@ if (isset($_POST['EliminarDatosVentas']) && $_POST['EliminarDatosVentas'] == 1) 
 
 //SERVICIOS
 if(isset($_POST['id_servicio']) && $_POST['id_servicio']<>''){
-  $id=$_POST['id_servicio'];
-  $sqlservicios=$mysqli->query("SELECT id,PrecioVenta,Titulo FROM Productos WHERE id='$id'");
-  $datoservicios=$sqlservicios->fetch_array(MYSQLI_ASSOC);
-  $PrecioVenta=$datoservicios['PrecioVenta'];
-  $Codigo=$datoservicios['id'];  
-  echo json_encode(array('success'=> 1,'PrecioVenta'=> $PrecioVenta,'Codigo'=>$Codigo,'Titulo'=>$datoservicios['Titulo']));
+  // Codigo = Productos.Codigo (el que se guarda en Ventas); antes devolvia el id
+  $id=(int)$_POST['id_servicio'];
+  $sqlservicios=$mysqli->query("SELECT id,PrecioVenta,Titulo,Codigo FROM Productos WHERE id='$id'");
+  $datoservicios=$sqlservicios ? $sqlservicios->fetch_array(MYSQLI_ASSOC) : null;
+  if(!$datoservicios){
+    echo json_encode(array('success'=>0));
+  }else{
+    echo json_encode(array('success'=> 1,'id'=>(int)$datoservicios['id'],'PrecioVenta'=> $datoservicios['PrecioVenta'],'Codigo'=>$datoservicios['Codigo'],'Titulo'=>$datoservicios['Titulo']));
+  }
+}
+
+//LISTA DE SERVICIOS para "Agregar Venta a Codigo" (el <select> estaba vacio:
+//el SELECT que lo llenaba en Clientes.php quedo comentado)
+if(isset($_POST['ListarServicios'])){
+  $res=$mysqli->query("SELECT id,Titulo,PrecioVenta FROM Productos ORDER BY Titulo");
+  $out=array();
+  while($res && $r=$res->fetch_assoc()){ $out[]=$r; }
+  echo json_encode(array('success'=>1,'data'=>$out));
 }
 
 //BUSCAR DATOS

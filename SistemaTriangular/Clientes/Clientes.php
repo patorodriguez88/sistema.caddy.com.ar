@@ -3461,7 +3461,7 @@ En la siguiente tabla figuran los clientes relacionados con el cliente principal
     <script src="Procesos/js/cargarpago.js"></script>
     <script src="../Funciones/js/seguimiento.js?v=<?php echo filemtime(__DIR__ . '/../Funciones/js/seguimiento.js'); ?>"></script>
     <script src="Procesos/js/descuento.js"></script>
-    <script src="Procesos/js/abmventas.js"></script>
+    <script src="Procesos/js/abmventas.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/abmventas.js'); ?>"></script>
     <script src="Procesos/js/recorridos.js"></script>
     <script src="Procesos/js/clientes.js"></script>
     <script src="Procesos/js/informe_mensual.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/informe_mensual.js'); ?>"></script>
