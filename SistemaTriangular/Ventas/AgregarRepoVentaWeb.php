@@ -434,7 +434,10 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
         }
         $Recorrido_Limpio = trim($recorrido[$i]);
 
-        $sql_total_ventas = $mysqli->query("SELECT SUM(Total)as total_ventas FROM Ventas WHERE NumPedido='$NumeroPedido' AND Eliminado=0");
+        // Importe a facturar: sin las líneas not_invoice=1 (Cobranza Integrada de los clientes con
+        // "Cobranza Integrada no factura", ver más arriba), igual que al recalcular el Debe en
+        // Servicios/funciones.php, funciones_recorridos.php y abmventas.php.
+        $sql_total_ventas = $mysqli->query("SELECT SUM(Total)as total_ventas FROM Ventas WHERE NumPedido='{$esc($NumeroPedido)}' AND Eliminado=0 AND IFNULL(not_invoice,0)=0");
         $dato_total_ventas = $sql_total_ventas->fetch_array(MYSQLI_ASSOC);
         $total_ventas = $dato_total_ventas['total_ventas'];
         $estado = 'En Origen';
