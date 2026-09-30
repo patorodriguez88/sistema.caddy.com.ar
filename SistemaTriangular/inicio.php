@@ -211,7 +211,7 @@
         <div class="caddy-login-form-col">
 
             <div class="caddy-brand-mark">
-                <a href="index.html">
+                <a href="https://web.caddy.com.ar">
                     <img src="images/LogoCaddy.png" alt="Caddy - Transporte y Logística">
                 </a>
             </div>
