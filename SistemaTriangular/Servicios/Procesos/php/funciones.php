@@ -611,16 +611,26 @@ if (isset($_POST['enter_registration'])) {
   $datosqlbuscotrans = $sqlbuscotrans->fetch_array(MYSQLI_ASSOC);
 
   // NUMERO DE ORDEN - con criterio:
-  // 1) el de la HojaDeRuta actual del código (no eliminada, la más nueva, > 0);
-  // 2) si no hay, y se eligió repartidor: el de Logistica de ese chofer para la
-  //    fecha del movimiento (Cargada/Cerrada, la más nueva);
-  // 3) si no, 0.
+  // 1) el de la HojaDeRuta actual del código (no eliminada, la más nueva, > 0),
+  //    salvo que esa orden sea de OTRO chofer que el repartidor elegido;
+  // 2) si no hay (o es de otro chofer), y se eligió repartidor: el de Logistica
+  //    de ese chofer para la fecha del movimiento (Cargada/Cerrada, la más nueva);
+  // 3) si el elegido no tiene orden ese día, la de la HojaDeRuta; si no, 0.
+  // Caso ZTYEYOJQS (16/9): salió en la 17158 de frodriguez, no se pudo entregar y
+  // lo entregó LEON_623 (orden 17156); la entrega quedó con la 17158 y Externos no
+  // se la mostraba a Leon (filtra Usuario + NumerodeOrden del chofer).
   $NumOrden = 0;
-  $rHdr = $mysqli->query("SELECT NumerodeOrden FROM `HojaDeRuta`
-                          WHERE Seguimiento='$CodigoSeguimiento' AND Eliminado=0 AND NumerodeOrden > 0
-                          ORDER BY id DESC LIMIT 1");
+  $rHdr = $mysqli->query("SELECT h.NumerodeOrden, l.idUsuarioChofer FROM `HojaDeRuta` h
+                          LEFT JOIN Logistica l ON l.NumerodeOrden = h.NumerodeOrden AND l.Eliminado = 0
+                          WHERE h.Seguimiento='$CodigoSeguimiento' AND h.Eliminado=0 AND h.NumerodeOrden > 0
+                          ORDER BY h.id DESC LIMIT 1");
+  $ordenHdr = 0;
   if ($rHdr && ($xHdr = $rHdr->fetch_assoc())) {
-    $NumOrden = (int)$xHdr['NumerodeOrden'];
+    $ordenHdr = (int)$xHdr['NumerodeOrden'];
+    $choferHdr = (int)($xHdr['idUsuarioChofer'] ?? 0);
+    if ($idRepartidorSel === 0 || $choferHdr === 0 || $choferHdr === $idRepartidorSel) {
+      $NumOrden = $ordenHdr;
+    }
   }
   if ($NumOrden === 0 && $idRepartidorSel > 0) {
     $fEsc = $mysqli->real_escape_string($Fecha);
@@ -631,6 +641,9 @@ if (isset($_POST['enter_registration'])) {
     if ($rLog && ($xLog = $rLog->fetch_assoc())) {
       $NumOrden = (int)$xLog['NumerodeOrden'];
     }
+  }
+  if ($NumOrden === 0) {
+    $NumOrden = $ordenHdr;
   }
 
   //EJECUTO LOS SQL
