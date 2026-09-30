@@ -44,19 +44,25 @@ while ($row = $result->fetch_assoc()) {
     $ventasFlex[$row['periodo']] = floatval($row['total']);
 }
 
-// 4. VENTAS RECORRIDOS: los cargos por orden de salida que se cargan en la cuenta corriente
-// de los clientes que facturan por recorrido (Clientes > recorridos -> Ctasctes con
-// FacturacionxRecorrido=1 e idLogistica de la orden, fechados el día de la orden). Es lo que
-// después se agrupa en la factura del mes (ej. FA 2520 = las 5 órdenes del recorrido 1050).
-// Antes salía de Logistica con IF(ImporteF=0, TotalFacturado, ImporteF): facturar.php graba en
-// TotalFacturado el total de la FACTURA COMPLETA en cada orden que incluye, así que en las
-// órdenes sin precio (recorrido 1314) se sumaba la factura entera varias veces - julio 2026
-// mostraba $116,7 M en vez de $32,8 M (4 órdenes x FA 2581 de $21,1 M).
+// 4. VENTAS RECORRIDOS: los SERVICIOS de recorrido realizados en el mes (órdenes de salida, por
+// fecha de la orden), no lo facturado. Valor de cada orden:
+//   - el cargo que se cargó en la cuenta corriente del cliente (Clientes > recorridos:
+//     Ctasctes FacturacionxRecorrido=1 con su idLogistica), si tiene importe - es lo que se
+//     factura, con los ajustes manuales;
+//   - si todavía no se cargó (o quedó en 0), el precio del recorrido que se congeló al crear la
+//     orden (Logistica.PrecioRecorrido).
+// Así el mes en curso no queda bajo por los cargos que faltan cargar (sep-2026: $11,8 M cargados
+// vs $31,9 M realizados) y entran los recorridos que se facturan aparte (1314 Perfil).
+// NO usar Logistica.TotalFacturado (facturar.php graba ahí el total de la factura completa en
+// cada orden: jul-2026 daba $116,7 M) ni TotalRecorrido (suma de los envíos, ya en Ventas Simples).
 $queryRecorridos = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
-    FROM Ctasctes
-    WHERE Eliminado = 0 AND FacturacionxRecorrido = 1 AND idLogistica > 0
-      AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
+    SELECT DATE_FORMAT(l.Fecha, '%Y-%m') AS periodo,
+           SUM(IF(IFNULL(c.cargo, 0) > 0, c.cargo, IFNULL(l.PrecioRecorrido, 0))) AS total
+    FROM Logistica l
+    LEFT JOIN (SELECT idLogistica, SUM(Debe) AS cargo FROM Ctasctes
+                WHERE Eliminado = 0 AND FacturacionxRecorrido = 1 AND idLogistica > 0
+                GROUP BY idLogistica) c ON c.idLogistica = l.id
+    WHERE l.Eliminado = 0 AND l.Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
     GROUP BY periodo
 ";
 $ventasRecorridos = [];
