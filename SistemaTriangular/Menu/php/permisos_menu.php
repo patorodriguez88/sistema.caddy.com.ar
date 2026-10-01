@@ -122,28 +122,28 @@ function sincronizarPermisosMenu(mysqli $mysqli, string $topnavPath): void
 // Permisos del usuario logueado, leídos en vivo de la base (no de la sesión cacheada).
 // Así un cambio de rol se ve al toque, sin pedirle a la persona que cierre sesión y
 // vuelva a entrar. Se resuelve una sola vez por request (cache local a la función).
-// Sin sesión o sin rol asignado = sin permisos (antes era "ve todo el menú": así
-// quedaban con el menú completo los usuarios a los que nunca se les asignó rol).
-function obtenerPermisosDelUsuario(): array
+// null = sin rol asignado -> sin restricción (se ve todo el menú).
+function obtenerPermisosDelUsuario(): ?array
 {
     static $cache = null;
-    if ($cache !== null) {
+    static $calculado = false;
+    if ($calculado) {
         return $cache;
     }
-    $cache = [];
+    $calculado = true;
 
     $idUsuario = intval($_SESSION['idusuario'] ?? 0);
     if ($idUsuario <= 0) {
-        return $cache;
+        return null;
     }
 
     require __DIR__ . '/../../Conexion/conexion_publica.php';
 
-    $resRol = $mysqli->query("SELECT rol_id FROM usuarios WHERE id = $idUsuario AND ACTIVO = 1");
+    $resRol = $mysqli->query("SELECT rol_id FROM usuarios WHERE id = $idUsuario");
     $rolId = $resRol && $resRol->num_rows ? intval($resRol->fetch_assoc()['rol_id'] ?? 0) : 0;
 
     if ($rolId <= 0) {
-        return $cache;
+        return null; // sin rol asignado -> ve todo
     }
 
     $res = $mysqli->query("
@@ -163,30 +163,20 @@ function obtenerPermisosDelUsuario(): array
     return $cache;
 }
 
+// Usado desde topnav.html. Sin rol asignado (usuario nuevo o sin sesión) => se ve todo el menú.
 // Quien tiene el permiso reservado "Gestionar Roles y Permisos" ve el menú completo siempre,
 // sin necesidad de tildar los ítems uno por uno (si no, el propio SuperAdministrador se queda
 // sin menú apenas se le asigna un rol con ese único permiso).
-function veTodoElMenu(): bool
-{
-    return in_array('__gestionar_roles__', obtenerPermisosDelUsuario(), true);
-}
-
-// Usado desde topnav.html. Sin rol asignado (usuario nuevo o sin sesión) => no ve el ítem.
 function tieneMenuPermiso(string $seccion, string $texto): bool
 {
-    return veTodoElMenu() || in_array(menuSlug($seccion, $texto), obtenerPermisosDelUsuario(), true);
-}
-
-// Para los subgrupos de una sección (ej. Admin > Contabilidad): se muestran solo si hay
-// al menos un ítem habilitado adentro, si no quedaban títulos con el desplegable vacío.
-function tieneAlgunoDe(string $seccion, array $textos): bool
-{
-    foreach ($textos as $texto) {
-        if (tieneMenuPermiso($seccion, $texto)) {
-            return true;
-        }
+    $permisos = obtenerPermisosDelUsuario();
+    if ($permisos === null) {
+        return true;
     }
-    return false;
+    if (in_array('__gestionar_roles__', $permisos, true)) {
+        return true;
+    }
+    return in_array(menuSlug($seccion, $texto), $permisos, true);
 }
 
 // Gate del <li> contenedor de cada seccion del topnav (Home, Admin, Ventas,
@@ -201,126 +191,20 @@ function tieneAlgunoDe(string $seccion, array $textos): bool
 // obtenerPermisosDelUsuario(), sin otra consulta a la base.
 function tieneAlgunPermisoSeccion(string $seccion): bool
 {
-    if (veTodoElMenu()) {
+    $permisos = obtenerPermisosDelUsuario();
+    if ($permisos === null) {
+        return true;
+    }
+    if (in_array('__gestionar_roles__', $permisos, true)) {
         return true;
     }
     $prefijo = menuSlug($seccion, '') . '_';
-    foreach (obtenerPermisosDelUsuario() as $slug) {
+    foreach ($permisos as $slug) {
         if (str_starts_with($slug, $prefijo)) {
             return true;
         }
     }
     return false;
-}
-
-// ---------------------------------------------------------------------------
-// Acceso al sistema y a cada pantalla
-// ---------------------------------------------------------------------------
-
-// Solo el personal entra al sistema: 1 = administrador, 2 = empleado, 7 = operaciones
-// (los mismos que conect.php manda al Panel de Control). Repartidores (3) y clientes
-// (4 y 6) nunca: usan la app de reparto y la plataforma de clientes.
-const NIVELES_SISTEMA = [1, 2, 7];
-
-function nivelPuedeEntrarAlSistema($nivel): bool
-{
-    return in_array((int) $nivel, NIVELES_SISTEMA, true);
-}
-
-// URL de una pantalla normalizada para comparar: sin dominio, query, ".php" ni barra inicial.
-function normalizarPaginaMenu(string $url): string
-{
-    $path = parse_url($url, PHP_URL_PATH) ?: '';
-    $path = preg_replace('/\.php$/i', '', $path);
-    return strtolower(trim($path, '/'));
-}
-
-// [pantalla normalizada => [slugs de los ítems del menú que la abren]], leído del menú real
-// (una misma pantalla puede estar en más de un ítem: alcanza con tener uno).
-function mapaPaginasMenu(string $topnavPath): array
-{
-    static $cache = null;
-    if ($cache !== null) {
-        return $cache;
-    }
-    $cache = [];
-    $html = file_get_contents($topnavPath);
-    if ($html === false) {
-        return $cache;
-    }
-    libxml_use_internal_errors(true);
-    $dom = new DOMDocument();
-    $dom->loadHTML('<?xml encoding="utf-8" ?><div>' . $html . '</div>', LIBXML_NOERROR | LIBXML_NOWARNING);
-    libxml_clear_errors();
-    $xpath = new DOMXPath($dom);
-
-    foreach ($xpath->query('//li[contains(concat(" ", normalize-space(@class), " "), " nav-item ")]') as $li) {
-        $toggle = $xpath->query('./a[contains(concat(" ", normalize-space(@class), " "), " dropdown-toggle ")]', $li)->item(0);
-        $seccion = $toggle ? trim(preg_replace('/\s+/', ' ', $toggle->textContent)) : '';
-        if ($seccion === '') {
-            continue;
-        }
-        $links = $xpath->query('.//div[contains(concat(" ", normalize-space(@class), " "), " dropdown-menu ")]//a[contains(concat(" ", normalize-space(@class), " "), " dropdown-item ")]', $li);
-        foreach ($links as $a) {
-            $texto = trim(preg_replace('/\s+/', ' ', $a->textContent));
-            $href = (string) $a->getAttribute('href');
-            if ($texto === '' || stripos($href, '/SistemaTriangular/') === false) {
-                continue;
-            }
-            $cache[normalizarPaginaMenu($href)][] = menuSlug($seccion, $texto);
-        }
-    }
-    return $cache;
-}
-
-// ¿La pantalla que se está abriendo está permitida para el rol? Las pantallas que no están
-// en el menú (detalles, informes, procesos) no se controlan acá. El Panel de Control es la
-// pantalla de llegada después del login: siempre se puede abrir.
-function paginaActualPermitida(): bool
-{
-    $actual = normalizarPaginaMenu((string) ($_SERVER['SCRIPT_NAME'] ?? ''));
-    if ($actual === 'sistematriangular/inicio/cpanel' || veTodoElMenu()) {
-        return true;
-    }
-    $slugs = mapaPaginasMenu(__DIR__ . '/../topnav.html')[$actual] ?? null;
-    if ($slugs === null) {
-        return true;
-    }
-    return (bool) array_intersect($slugs, obtenerPermisosDelUsuario());
-}
-
-// Al principio del menú: una sesión que no es de personal (repartidor, cliente o sin login)
-// no puede ver ninguna pantalla del sistema. Los headers ya se enviaron (el menú se incluye
-// con la página empezada), así que se redirige desde el navegador.
-function controlarAccesoAlSistema(): void
-{
-    if (nivelPuedeEntrarAlSistema($_SESSION['Nivel'] ?? 0) && intval($_SESSION['idusuario'] ?? 0) > 0) {
-        return;
-    }
-    $_SESSION = [];
-    @session_destroy();
-    echo '<script>window.location.replace("/SistemaTriangular/inicio.php");</script></div></body></html>';
-    exit;
-}
-
-// Al final del menú: si el rol no tiene la pantalla, en lugar del contenido se muestra el aviso.
-function controlarPaginaPermitida(): void
-{
-    if (paginaActualPermitida()) {
-        return;
-    }
-    $sinRol = empty(obtenerPermisosDelUsuario());
-    $mensaje = $sinRol
-        ? 'Tu usuario todavía no tiene un rol asignado. Pedile a un administrador que te lo asigne.'
-        : 'No tenés permiso para entrar a esta pantalla. Si la necesitás, pedile a un administrador que la agregue a tu rol.';
-    echo '<div class="content-page"><div class="content"><div class="container-fluid" style="padding-top:90px">'
-        . '<div class="alert alert-warning" role="alert" style="max-width:640px;margin:40px auto;font-size:15px">'
-        . '<i class="mdi mdi-lock-outline"></i> ' . htmlspecialchars($mensaje)
-        . '<div class="mt-2"><a href="/SistemaTriangular/Inicio/Cpanel.php">Volver al Panel de Control</a></div>'
-        . '</div></div></div></div></div>'
-        . '<script src="/SistemaTriangular/hyper/dist/assets/js/vendor.min.js"></script>'
-        . '<script src="/SistemaTriangular/hyper/dist/assets/js/app.js"></script></body></html>';
-    exit;
 }
 
 // Doble candado para crear/editar/borrar roles, permisos y qué contiene cada rol:
