@@ -138,6 +138,17 @@ if ($fila) {
 
 if ($fila && $passwordOk) {
 
+    // Solo el personal entra al sistema. Repartidores (nivel 3) y clientes (4 y 6) tienen
+    // usuario en la misma tabla pero nunca pueden iniciar sesión acá: antes el nivel 3
+    // quedaba logueado en una página en blanco y desde ahí podía abrir cualquier pantalla.
+    require_once __DIR__ . '/Menu/php/permisos_menu.php';
+    if (!nivelPuedeEntrarAlSistema($fila['NIVEL'])) {
+        $_SESSION = [];
+        session_destroy();
+        header('Location: inicio.php?Error=SinAcceso');
+        exit;
+    }
+
     $_SESSION['userid'] = $fila['id'];
     $_SESSION['ingreso'] = $user;
     $_SESSION['tiempo'] = time();
@@ -201,17 +212,6 @@ if ($fila && $passwordOk) {
         case 7:
             $_SESSION['Perfil'] = "Operaciones";
             header("location:Inicio/Cpanel.php");
-            exit;
-        case 3:
-            $_SESSION['Perfil'] = "Reparto";
-
-            exit;
-        case 4:
-            header("location:Plataforma/Bienvenidos.php");
-            exit;
-        case 6:
-            $_SESSION['Perfil'] = "Usuario Web";
-            header("location:Plataforma/Bienvenidos.php");
             exit;
     }
 } else {
