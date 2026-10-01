@@ -1,4 +1,5 @@
-<?php require_once __DIR__ . '/php/permisos_menu.php'; ?>
+<?php require_once __DIR__ . '/php/permisos_menu.php';
+controlarAccesoAlSistema(); ?>
 <style>
   /* app.min.css abre los submenús del topnav con :hover además del click de Bootstrap
      (data-bs-toggle="dropdown"). Los dos mecanismos a la vez hacen que un menú clickeado
@@ -329,6 +330,7 @@
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-admin">
               <!-- Contabilidad: asientos/libros + lo que alimenta al contador -->
+              <?php if (tieneAlgunoDe('Admin', ['Asientos Contables', 'Plan de Cuentas', 'Libros Iva', 'Resultados'])): ?>
               <div class="dropdown">
                 <a
                   class="dropdown-item dropdown-toggle arrow-none px-1"
@@ -385,8 +387,10 @@
                   <?php endif; ?>
                 </div>
               </div>
+              <?php endif; ?>
 
               <!-- Tesoreria: bancos, caja, cheques, cobranzas -->
+              <?php if (tieneAlgunoDe('Admin', ['Bancos', 'Caja', 'Cheques', 'Cobranza', 'Cobranza Integrada'])): ?>
               <div class="dropdown">
                 <a
                   class="dropdown-item dropdown-toggle arrow-none px-1"
@@ -439,8 +443,10 @@
                   <?php endif; ?>
                 </div>
               </div>
+              <?php endif; ?>
 
               <!-- Facturacion: control y seguimiento de lo facturado -->
+              <?php if (tieneAlgunoDe('Admin', ['Control Facturación', 'Ventas a Facturar', 'Control Mensual'])): ?>
               <div class="dropdown">
                 <a
                   class="dropdown-item dropdown-toggle arrow-none px-1"
@@ -479,8 +485,10 @@
                   <?php endif; ?>
                 </div>
               </div>
+              <?php endif; ?>
 
               <!-- Flota / Varios: no es contable, pero vive en Admin -->
+              <?php if (tieneAlgunoDe('Admin', ['Multas', 'Seguros', 'Tarifas de Flota Propia', 'Tarifas Externos'])): ?>
               <div class="dropdown">
                 <a
                   class="dropdown-item dropdown-toggle arrow-none px-1"
@@ -526,6 +534,7 @@
                   <?php endif; ?>
                 </div>
               </div>
+              <?php endif; ?>
 
               <?php if (tieneMenuPermiso('Admin', 'Refrescar Sandbox')): ?>
               <a
@@ -758,3 +767,4 @@
   </div>
 </div>
 <!-- ========== Horizontal Menu End ========== -->
+<?php controlarPaginaPermitida(); ?>
