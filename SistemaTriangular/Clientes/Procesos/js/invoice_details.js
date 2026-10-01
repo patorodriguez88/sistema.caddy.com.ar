@@ -32,7 +32,7 @@ var datatable_facturacion = $('#tabla_facturacion_proforma_detalle').DataTable({
       $('#total_up').val(total.toFixed(2));
     },
     ajax: {
-      url: "https://www.caddy.com.ar/SistemaTriangular/Clientes/Procesos/php/invoice.php",
+      url: "Procesos/php/invoice.php", // antes apuntaba al sistema viejo (www.caddy.com.ar)
       data: {
         'FacturacionProformaDetalle': 1,
         "idCtaCte": idCtaCte          

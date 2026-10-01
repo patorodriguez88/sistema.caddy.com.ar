@@ -104,21 +104,28 @@ if (isset($_POST['Contact'])) {
   $stmt->close();
 }
 
+// Recorridos realizados para este cliente que todavía no se cargaron como cargo en la cuenta
+// corriente (modal "Ingresar Recorridos"). Antes no filtraba por cliente y usaba
+// NOT IN (SELECT idLogistica FROM Ctasctes): con filas de idLogistica NULL (hay de 2023) el NOT IN
+// no devuelve nada, así que la lista de pendientes venía siempre vacía. Últimos 4 meses: lo
+// anterior son órdenes viejas que nunca se cargaron por acá.
 if (isset($_POST['Recorridos'])) {
 
-  $id = $_POST['id'];
-  $sql = $mysqli->query("SELECT Logistica.Fecha,Logistica.id,Logistica.NumerodeOrden,Logistica.Fecha,Logistica.Hora,Logistica.Patente,Logistica.NombreChofer,Logistica.Recorrido,
-    Productos.PrecioVenta,Logistica.KilometrosRecorridos,Clientes.nombrecliente FROM Logistica 
-    INNER JOIN Recorridos ON Logistica.Recorrido=Recorridos.Numero 
-    INNER JOIN Productos ON Recorridos.CodigoProductos=Productos.Codigo
-    LEFT JOIN Clientes ON Logistica.Cliente=Clientes.id
-    WHERE Logistica.Fecha>='2021-09-01' AND Logistica.Eliminado=0 AND Logistica.Facturado=0 
-    AND Logistica.id NOT IN (SELECT idLogistica FROM `Ctasctes`)");
-
-  while ($row = $sql->fetch_array(MYSQLI_ASSOC)) {
-    $rows[] = $row;
-  }
-  echo json_encode(array('data' => $rows));
+  $id = (int) ($_POST['id'] ?? 0);
+  $st = $mysqli->prepare("SELECT Logistica.Fecha, Logistica.id, Logistica.NumerodeOrden, Logistica.Hora, Logistica.Patente,
+      Logistica.NombreChofer, Logistica.Recorrido, Productos.PrecioVenta, Logistica.KilometrosRecorridos, Clientes.nombrecliente
+    FROM Logistica
+    INNER JOIN Recorridos ON Logistica.Recorrido = Recorridos.Numero
+    INNER JOIN Productos ON Recorridos.CodigoProductos = Productos.Codigo
+    LEFT JOIN Clientes ON Logistica.Cliente = Clientes.id
+    WHERE Recorridos.Cliente = ? AND Logistica.Eliminado = 0 AND Logistica.Facturado = 0
+      AND Logistica.Fecha >= DATE_SUB(CURDATE(), INTERVAL 4 MONTH)
+      AND NOT EXISTS (SELECT 1 FROM Ctasctes WHERE Ctasctes.idLogistica = Logistica.id AND Ctasctes.Eliminado = 0)
+    ORDER BY Logistica.Fecha, Logistica.NumerodeOrden");
+  $idTexto = (string) $id;
+  $st->bind_param('s', $idTexto);
+  $st->execute();
+  echo json_encode(array('data' => $st->get_result()->fetch_all(MYSQLI_ASSOC)));
 }
 
 if (isset($_POST['Saldos'])) {

@@ -353,7 +353,7 @@ include_once "../Conexion/Conexion.php";
         <!-- funciones -->
         <script src="../Menu/js/funciones.js"></script>
         <script src="Procesos/js/invoice.js"></script>
-        <script src="Procesos/js/invoice_details.js"></script>
+        <script src="Procesos/js/invoice_details.js?v=<?= filemtime(__DIR__ . '/Procesos/js/invoice_details.js') ?>"></script>
         <script src="../Funciones/js/datosempresa.js"></script>
           <!-- demo app -->
         <script src="../hyper/dist/saas/assets/js/pages/demo.dashboard.js"></script>
