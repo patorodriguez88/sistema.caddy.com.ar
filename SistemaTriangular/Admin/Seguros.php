@@ -1,5 +1,6 @@
 <?php
-session_start();
+require_once __DIR__ . '/../Conexion/sesion.php';
+iniciarSesionSistema();
 ?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
