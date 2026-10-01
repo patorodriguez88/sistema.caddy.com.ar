@@ -46,16 +46,14 @@ if (isset($_POST['ControlPass'])) {
   // podía modificar la fecha de un servicio, siempre "Usuario sin
   // Permisos". Ahora se puede habilitar por rol (permiso puntual
   // "Modificar Fecha de Envío" en Asignación de Roles y Permisos), sin
-  // tener que hacer administrador a nadie. Nivel=1 y usuarios sin rol
-  // asignado (mismo criterio que el resto del menú) siguen pudiendo
-  // siempre, para no bloquear a un SuperAdmin por no tener el tilde puesto.
+  // tener que hacer administrador a nadie. Nivel=1 puede siempre, para no
+  // bloquear a un SuperAdmin por no tener el tilde puesto.
   require_once __DIR__ . '/../../../Menu/php/permisos_menu.php';
 
   $idUsuario = intval($_SESSION['idusuario'] ?? 0);
   $nivel = intval($_SESSION['Nivel'] ?? 0);
   $permisos = obtenerPermisosDelUsuario();
   $tienePermiso = $nivel === 1
-    || $permisos === null
     || in_array('accion_modificar_fecha_envio', $permisos, true);
 
   if (!$tienePermiso) {
