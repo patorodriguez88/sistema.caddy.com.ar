@@ -283,17 +283,18 @@ function paginaActualPermitida(): bool
     return (bool) array_intersect($slugs, obtenerPermisosDelUsuario());
 }
 
-// Al principio del menú: una sesión que no es de personal (repartidor, cliente o sin login)
-// no puede ver ninguna pantalla del sistema. Los headers ya se enviaron (el menú se incluye
-// con la página empezada), así que se redirige desde el navegador.
+// Al principio del menú: una sesión de repartidor o cliente (nivel conocido que no es de personal)
+// no puede ver ninguna pantalla del sistema. Solo redirige: nunca borra la sesión (si por algún
+// motivo una pantalla leyera mal la sesión, borrarla deslogueaba a la persona). Una sesión vacía
+// no se toca acá: de eso se encarga Conexioni.php como siempre. Los headers ya se enviaron (el menú
+// se incluye con la página empezada), así que se redirige desde el navegador.
 function controlarAccesoAlSistema(): void
 {
-    if (nivelPuedeEntrarAlSistema($_SESSION['Nivel'] ?? 0) && intval($_SESSION['idusuario'] ?? 0) > 0) {
+    $nivel = $_SESSION['Nivel'] ?? null;
+    if ($nivel === null || $nivel === '' || nivelPuedeEntrarAlSistema($nivel)) {
         return;
     }
-    $_SESSION = [];
-    @session_destroy();
-    echo '<script>window.location.replace("/SistemaTriangular/inicio.php");</script></div></body></html>';
+    echo '<script>window.location.replace("/SistemaTriangular/inicio.php?Error=SinAcceso");</script></div></body></html>';
     exit;
 }
 
