@@ -219,6 +219,13 @@
             <h4 class="text-dark-50 font-weight-bold mb-1">Iniciar sesión</h4>
             <p class="text-muted mb-4">Ingresá tus credenciales para acceder al sistema.</p>
 
+            <?php if (($_GET['Error'] ?? '') === 'SinAcceso'): ?>
+            <div class="alert alert-warning" role="alert">
+                Este acceso es solo para el personal de Caddy. Si sos repartidor, ingresá desde la app de reparto.
+                Si sos cliente, ingresá desde la plataforma de clientes.
+            </div>
+            <?php endif; ?>
+
             <form action="conect.php" method="POST">
 
                 <div class="form-group mb-3">
@@ -272,7 +279,7 @@
                 </ul>
 
                 <!-- Version del sistema: mismo numero que Menu/head.html, subir los dos en cada push a develop/main -->
-                <div class="caddy-brand-version">v.26.09.38</div>
+                <div class="caddy-brand-version">v.26.10.0</div>
             </div>
         </div>
         <!-- end caddy-login-brand-col -->
