@@ -3,9 +3,10 @@
 // en topnav.html, la sesión puede no estar cargada todavía a esta altura de la página
 // (headers ya "enviados" según PHP, aunque el buffer real es grande) — session_start()
 // carga los datos igual, solo silenciamos el warning cosmético con @.
-if (session_status() === PHP_SESSION_NONE) {
-    @session_start();
-}
+// Misma sesión que el resto del sistema (ver Conexion/sesion.php): con session_start() suelto
+// abría la sesión por defecto (vacía) y el menú, que viene después, ya no podía leer la buena.
+require_once __DIR__ . '/../Conexion/sesion.php';
+iniciarSesionSistema();
 $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
 ?>
 <!-- Tarjeta de usuario del topbar (a pedido, 2026-09-22: "mas
