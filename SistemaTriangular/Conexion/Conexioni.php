@@ -8,8 +8,16 @@
 // $_SESSION (Usuario, NCliente, etc.). Nombre de cookie propio + dominio
 // explícito (host-only) corta el cruce sin depender de la config del
 // hosting.
-require_once __DIR__ . '/sesion.php';
-iniciarSesionSistema();
+session_name('CADDY_SISTEMA_SESSID');
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '', // host-only: nunca .caddy.com.ar
+    'secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+session_start();
 
 // Evita que el navegador guarde en caché (o restaure con el botón "atrás"/bfcache)
 // una pantalla que requiere sesión — si no, después de un logout o de que la sesión

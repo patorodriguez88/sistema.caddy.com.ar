@@ -5,9 +5,15 @@
 //   la lista de permisos disponibles en Usuarios.php siempre refleje el menú real,
 //   sin mantenimiento manual.
 
-// Misma sesión que el resto del sistema (ver Conexion/sesion.php: por qué tiene que ser la misma).
-require_once __DIR__ . '/../../Conexion/sesion.php';
-iniciarSesionSistema();
+// Muchas páginas del sistema imprimen HTML antes de incluir topnav.html, así que acá
+// los headers ya están enviados. session_start() igual carga bien los datos de la
+// sesión existente en ese caso (solo falla el reenvío de la cookie, que no hace falta
+// porque el navegador ya la tiene) — silenciamos ese warning puntual con @, pero NO nos
+// salteamos el session_start(): si lo hacíamos, $_SESSION quedaba vacío en esas páginas
+// y el menú terminaba mostrando todo sin importar el rol de quien esté logueado.
+if (session_status() === PHP_SESSION_NONE) {
+    @session_start();
+}
 
 function menuSlug(string $seccion, string $texto): string
 {
