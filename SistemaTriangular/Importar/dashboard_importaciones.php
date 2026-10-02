@@ -66,7 +66,7 @@
                                             
                                             <p> Este importador importa los clientes relacionados con Dinter (N de Cliente 36) seleccionados en el excel y los carga en el recorrido 1135 (Pagina 12);</p>
                                             <p>Campos Numero de Cliente | Cantidad | Importe </p>
-                                            <a href="https://www.caddy.com.ar/SistemaTriangular/Importar/index_3" class="btn btn-primary mt-2 stretched-link">Abrir</a>
+                                            <a href="/SistemaTriangular/Importar/index_3" class="btn btn-primary mt-2 stretched-link">Abrir</a>
                                         </blockquote>
                                     </div> <!-- end card-body-->
                                 </div> <!-- end card-->
@@ -79,7 +79,7 @@
                                       <blockquote  class="card-bodyquote">                                      
                                       <p>Importacion de Pagina 12 y Diario Perfil, sirve para unificar Clientes cuando los Diarios se entregan el mismo dia.</p>
                                       <p>Campos a importar Numero de Cliente | Cantidad | Importe | Recorrido </p>    
-                                      <a href="https://www.caddy.com.ar/SistemaTriangular/Importar/index2" class="btn btn-primary mt-2 stretched-link">Abrir</a>      
+                                      <a href="/SistemaTriangular/Importar/index2" class="btn btn-primary mt-2 stretched-link">Abrir</a>      
                                       
                                         </blockquote>
                                     </div> <!-- end card-body-->
@@ -92,7 +92,7 @@
                                       <blockquote  class="card-bodyquote">                                      
                                       <p>Importacion de Recorridos de Dinter</p>
                                       <p>Campos a importar Numero de Cliente | Cantidad | Importe | Recorrido </p>    
-                                      <a href="https://www.caddy.com.ar/SistemaTriangular/Importar/index_4" class="btn btn-primary mt-2 stretched-link">Abrir</a>      
+                                      <a href="/SistemaTriangular/Importar/index_4" class="btn btn-primary mt-2 stretched-link">Abrir</a>      
                                         </blockquote>
                                     </div> <!-- end card-body-->
                                 </div> <!-- end card-->

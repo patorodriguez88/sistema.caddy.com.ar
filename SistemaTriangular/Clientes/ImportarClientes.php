@@ -889,7 +889,7 @@ skin_open();
      ?>
       <script>
     setTimeout(function() {
-        window.location.href = "https://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php";
+        window.location.href = "/SistemaTriangular/Inicio/Cpanel.php";
     }, 3000);
   </script>
     <?php

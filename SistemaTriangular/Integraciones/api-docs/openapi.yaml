@@ -5,9 +5,9 @@ info:
   version: "1.0.0"
 
 servers:
-  - url: https://www.caddy.com.ar/sandbox/api
+  - url: https://api.caddy.com.ar/sandbox
     description: Sandbox
-  - url: https://www.caddy.com.ar/api
+  - url: https://api.caddy.com.ar/api
     description: Producción
 
 tags:
@@ -205,7 +205,7 @@ paths:
         - lang: cURL
           label: cURL Example
           source: |
-            curl --location 'https://www.caddy.com.ar/sandbox/api/servicios' \
+            curl --location 'https://api.caddy.com.ar/sandbox/servicios' \
             --header 'Content-Type: application/json' \
             --data-raw '{
               "NombreCompleto" : "Elsa Fig",
@@ -237,7 +237,7 @@ paths:
             MediaType mediaType = MediaType.parse("application/json");
             RequestBody body = RequestBody.create(mediaType, "{\n\"NombreCompleto\" : \"Elsa Fig\", ... }");
             Request request = new Request.Builder()
-              .url("https://www.caddy.com.ar/sandbox/api/servicios")
+              .url("https://api.caddy.com.ar/sandbox/servicios")
               .method("POST", body)
               .addHeader("Content-Type", "application/json")
               .build();

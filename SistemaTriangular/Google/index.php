@@ -236,7 +236,7 @@ function initMap() {
 //                   };
 //                   $.ajax({
 //                   data:dato,
-//                   url: 'https://www.caddy.com.ar/SistemaTriangular/Logistica/Proceso/cambiarposicion.php',
+//                   url: '/SistemaTriangular/Logistica/Proceso/cambiarposicion.php',
 //                   type: 'post',
 //                   success: function(response)
 //                   {
@@ -273,7 +273,7 @@ function initMap() {
             };
             $.ajax({
             data:dato,
-            url: 'https://www.caddy.com.ar/SistemaTriangular/Logistica/Proceso/cambiarecorrido.php',
+            url: '/SistemaTriangular/Logistica/Proceso/cambiarecorrido.php',
             type: 'post',
             success: function(response)
             {

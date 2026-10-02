@@ -172,12 +172,6 @@ $("#bs-example-modal-lg").on("hidden.bs.modal", function () {
   datatable.destroy();
 });
 
-function rotulo(i) {
-  let href = "https://www.caddy.com.ar/report/rotulo?id=" + i;
-
-  window.open(href, "_blank");
-}
-
 function seguir(i) {
   $("#bs-example-modal-lg").modal("show");
   $("#myLargeModalLabel").html("Seguimiento del Código " + i);

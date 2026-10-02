@@ -541,7 +541,7 @@ if ($_FILES["imagen"]["error"] > 0){
 			$resultado = @move_uploaded_file($_FILES["imagen"]["tmp_name"], $ruta);
 			if ($resultado){
 				echo "El archivo ha sido movido exitosamente";
-// 			header("location:http://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php");
+// 			header("location:/SistemaTriangular/Inicio/Cpanel.php");
 
 			} else {
 				echo "Ocurrio un error al mover el archivo.";
@@ -1008,7 +1008,7 @@ echo "<div><label>Cuit:</label><input name='cuit_t' size='20' type='text' value=
 								}
 								}	
 echo "<div><label>Num de Asiento Contable:</label><input name='nasiento_t' size='20' type='text' value='$NAsiento' readonly/>
-<label style='float:right'><a href='http://www.caddy.com.ar/SistemaTriangular/Admin/VentanaAsientos.php?Pant=ComprasCargaFactura&numerocuit=$Cuit1'>Ver Asientos!</a></label>
+<label style='float:right'><a href='/SistemaTriangular/Admin/VentanaAsientos.php?Pant=ComprasCargaFactura&numerocuit=$Cuit1'>Ver Asientos!</a></label>
 </div>";
 	
 echo "<div><label>Numero de Comprobante:</label><input name='numerocomprobante_t' value='' size='15' type='text' maxlenght='12' required /></div>";

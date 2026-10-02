@@ -693,7 +693,7 @@ foreach ($_REQUEST as $key => $val)
 
                                             if (!TESTMODE && !mysql_query($query, $dbconnection))
                                             { 
-                                            header('location:https://www.caddy.com.ar/SistemaTriangular/Datos/Importar_d?error=1');
+                                            header('location:/SistemaTriangular/Datos/Importar_d?error=1');
                                             
                                             echo ("<div class='alert alert-warning' role='alert'><i class='dripicons-warning mr-2'></i> Error at the line $linenumber: ". trim($dumpline)."</div>");
                                             echo ("<p>Query: ".trim(nl2br(htmlentities($query)))."</p>\n");
@@ -871,7 +871,7 @@ foreach ($_REQUEST as $key => $val)
 
                                     <script>
                                         // setTimeout(function() {
-                                        //     window.location.href = "https://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php";
+                                        //     window.location.href = "/SistemaTriangular/Inicio/Cpanel.php";
                                         // }, 3000);
                                     </script>
                                         <?php

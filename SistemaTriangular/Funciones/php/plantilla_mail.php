@@ -4,7 +4,7 @@
 // para usar como cuerpo de los mails que se envían con enviarMail() (ver enviar_mail.php).
 function plantillaMailCaddy($titulo, $subtitulo, $cuerpoHtml)
 {
-    $logoUrl = 'https://www.caddy.com.ar/SistemaTriangular/images/LogoCaddy.png';
+    $logoUrl = 'https://sistema.caddy.com.ar/SistemaTriangular/images/LogoCaddy.png';
     $anio = date('Y');
 
     $facebookUrl  = 'https://www.facebook.com/caddylogisticaok/';

@@ -653,7 +653,7 @@ if($Estado<>$datosqlbuscoestado[Estado]){
   }  
 // mail($MailCliente,$asunto,$mensaje,$headers);
   }
-  header('location:https://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php');  
+  header('location:/SistemaTriangular/Inicio/Cpanel.php');  
   }
 }
 //-----------------------------------HASTA ACA CARGAR REMITOS----------------------------

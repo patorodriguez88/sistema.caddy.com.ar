@@ -159,7 +159,7 @@ function NbLines($w,$txt)
 	$this->Text(20,26,'Triangular S.A.',0,'C', 0);
 	$this->Text(20,31,'Cuit: 30-71534494-3',0,'C', 0);
 	$this->Text(20,36,utf8_decode('Domicilio: Justiniano Posse 1236, Barrio Jardín, Córdoba'),0,'C', 0);
-	$this->Text(90,36,'www.caddy.com.ar',0,'C', 0);
+	$this->Text(90,36,'web.caddy.com.ar',0,'C', 0);
 	
 	//FECHA
 	$this->Ln(20);
@@ -211,7 +211,7 @@ function Footer()
 	$this->SetY(-15);
 	$this->SetX(90);
 	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'www.caddy.com.ar',0,0,'L');
+	$this->Cell(100,10,'web.caddy.com.ar',0,0,'L');
 	$this->SetY(-15);
 	$this->SetX(170);
 	$this->SetFont('Arial','B',8);

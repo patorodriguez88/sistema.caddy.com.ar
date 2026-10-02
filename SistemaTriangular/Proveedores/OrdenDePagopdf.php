@@ -130,7 +130,7 @@ function Header()
 	$this->Text(20,14,'Triangular S.A.',0,'C', 0);
 	$this->Text(20,19,'Cuit: 30-71534494-3',0,'C', 0);
 	$this->Text(20,24,'Domicilio: Justiniano Posse 1236, Barrio Jardín',0,'C', 0);
-	$this->Text(20,29,'www.caddy.com.ar',0,'C', 0);
+	$this->Text(20,29,'web.caddy.com.ar',0,'C', 0);
 // 	$this->Text(20,34,'Seguimiento:'.$Codigo,0,'C', 0);
 	
 	
@@ -183,7 +183,7 @@ function Footer()
 	$this->SetY(-15);
 	$this->SetX(90);
 	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'www.caddy.com.ar',0,0,'L');
+	$this->Cell(100,10,'web.caddy.com.ar',0,0,'L');
 
 	$this->SetY(-15);
 	$this->SetX(170);

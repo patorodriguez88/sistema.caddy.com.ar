@@ -38,7 +38,7 @@ if ($_FILES["imagen"]["error"] > 0){
 //         $ext=explode()  
 			  rename("../Presupuestos/".$_FILES["imagen"]["name"],"../Presupuestos/".$newname2);           
         }else{
-			   header("location:http://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php");
+			   header("location:/SistemaTriangular/Inicio/Cpanel.php");
         }
 			} else {
 				echo "Ocurrio un error al mover el archivo.";

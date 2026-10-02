@@ -1,7 +1,7 @@
 <?php
 session_start();
 if($_SESSION[Usuario]==''){
-header('location:https://www.caddy.com.ar/sistema');  
+header('location:/SistemaTriangular/inicio.php');  
 }
 ?>
 <!DOCTYPE html>

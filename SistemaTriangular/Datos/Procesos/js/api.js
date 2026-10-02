@@ -1,6 +1,6 @@
      $.ajax({
       data:{'Api':1},
-      url:'https://www.caddy.com.ar/SistemaTriangular/Datos/Procesos/php/api.php',
+      url:'Procesos/php/api.php',
       type:'post',
         beforeSend: function(){
         },
@@ -25,7 +25,7 @@
 
     $.ajax({
       data:{'ModificarApi':1,'link':link,'user':user,'pass':pass},
-      url:'https://www.caddy.com.ar/SistemaTriangular/Datos/Procesos/php/api.php',
+      url:'Procesos/php/api.php',
       type:'post',
         beforeSend: function(){
         },

@@ -687,7 +687,7 @@ abstract class HdrPdfBase extends FPDF
         $datosEmpresa = [
             'CUIT: 30-71534494-3',
             pdf_text('Justiniano Posse 1236, Barrio Jardín - Córdoba'),
-            'www.caddy.com.ar',
+            'web.caddy.com.ar',
         ];
         $ly = 31;
         foreach ($datosEmpresa as $linea) {

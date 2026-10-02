@@ -209,7 +209,7 @@ function ver(cs){
 
 //             $.ajax({
 //                 data:{'txtEmail':user,'txtName':name,'txtAsunto':asunto,'txtMensa':mensaje,'$txtHtml':html},
-//                 url:'https://www.caddy.com.ar/SistemaTriangular/Mail/report_seller.php',
+//                 url:'/SistemaTriangular/Mail/report_seller.php',
 //                 type:'post',
 //                 success: function(response1)
 //                  {

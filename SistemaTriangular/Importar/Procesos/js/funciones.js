@@ -275,7 +275,7 @@ $.ajax({
         $('#card').hide();   
         $('#outer').show();
         $('#ImportarTabla').hide();
-          window.location("https:www.caddy.com.ar/SistemaTriangular/Importar/index.php");
+          window.location("/SistemaTriangular/Importar/index.php");
         }else{
         toast("error", "Error !", "No se han realizado cambios.");    
         }

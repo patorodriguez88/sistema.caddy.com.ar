@@ -419,7 +419,7 @@ switch ($estadoActual) {
     case 'Inicio':
         if ($mensaje === '1') {
 
-            $respuesta = "✅ ¡Genial! Por el momento no podemos completar este servicio por acá pero estamos trabajando para solucionarlo!. Por el momento podes comunicarte con nosotros al  3518028613. O para más info ingresá en https://www.caddy.com.ar 🚚";
+            $respuesta = "✅ ¡Genial! Por el momento no podemos completar este servicio por acá pero estamos trabajando para solucionarlo!. Por el momento podes comunicarte con nosotros al  3518028613. O para más info ingresá en https://web.caddy.com.ar 🚚";
         } elseif ($mensaje === '2') {
 
             $respuesta = "📦 Enviame tu *Código de Seguimiento*.";

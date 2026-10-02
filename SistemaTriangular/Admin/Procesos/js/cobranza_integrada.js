@@ -268,7 +268,7 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
   });
 }
 
-// FIX: apuntaba a www.caddy.com.ar (el sitio público, no el sistema) con
+// FIX: apuntaba al dominio viejo (el sitio público, no el sistema) con
 // una URL sin ".php" - nunca abría nada real. Ahora abre, en pestaña
 // aparte, la liquidación en PDF (mismo formato que el resto de los
 // comprobantes del sistema - ver Admin/Informes/CobranzaIntegradaPdf.php).

@@ -26,7 +26,7 @@ echo "<li><a href='Empleados.php?id=Ver'><span>Datos</span></a></li>";
 
 echo "<li class='active has-sub'><a href='Empleados.php?Horarios=ver'><span>Presentismo</span></a>";
   echo "<ul>";
-     echo "<li><a href='https://www.caddy.com.ar/SistemaTriangular/Empleados/Horarios.php'><span>Agregar Horarios</span></a></li>"; 
+     echo "<li><a href='/SistemaTriangular/Empleados/Horarios.php'><span>Agregar Horarios</span></a></li>"; 
      echo "<li><a href='Empleados.php?Horarios=ver'><span>Ver Horarios</span></a></li>"; 
 echo "</ul>";
   

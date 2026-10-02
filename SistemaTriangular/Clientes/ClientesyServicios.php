@@ -3,7 +3,7 @@ ob_start();
 session_start();
 include("../ConexionBD.php");
 if ($_SESSION['NombreUsuario']==''){
-header("location:www.caddy.com.ar/SistemaTriangular/index.php");
+header("location:/SistemaTriangular/inicio.php");
 }
 $Empresa=$_SESSION['ClienteActivo'];
 $Cuit=$_SESSION['CuitActivo'];	
@@ -66,9 +66,9 @@ if($_GET[carga]=='ok'){
   $id=$_POST[id];
   $sql="UPDATE `ClientesyServicios` SET Servicio='$Servicio[0]',MaxKm='$_POST[maxkm_t]',PrecioPlano='$_POST[plano_t]' WHERE id='$id'";
   if(mysql_query($sql)){
-  header('location:https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?carga=ok');    
+  header('location:/SistemaTriangular/Clientes/ClientesyServicios.php?carga=ok');    
   }else{
-  header('location:https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?carga=null');    
+  header('location:/SistemaTriangular/Clientes/ClientesyServicios.php?carga=null');    
   }
 }
 
@@ -97,9 +97,9 @@ $Servicio=explode(',',$_GET[servicio],3);
   $sql="INSERT INTO `ClientesyServicios`(`NdeCliente`, `Servicio`, `MaxKm`,`PrecioPlano`) VALUES 
   ($id,$Servicio[0],'{$_GET[km]}','{$_GET[tarifa]}')";
   if(mysql_query($sql)){
-  header('location:https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?carga=ok');    
+  header('location:/SistemaTriangular/Clientes/ClientesyServicios.php?carga=ok');    
   }else{
-  header('location:https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?carga=null');    
+  header('location:/SistemaTriangular/Clientes/ClientesyServicios.php?carga=null');    
   }
   goto a;
   
@@ -108,7 +108,7 @@ $Servicio=explode(',',$_GET[servicio],3);
   if($_GET[Eliminar]=='Si'){
     $id=$_GET[id];
     mysql_query("DELETE FROM `ClientesyServicios` WHERE id='$id'");  
-    header('location:https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php');
+    header('location:/SistemaTriangular/Clientes/ClientesyServicios.php');
     goto a;
   }
   if($_GET[Editar]=='Si'){
@@ -155,8 +155,8 @@ echo "<tr>";
   echo "<td>$datoservicio[Titulo]</td>";
   echo "<td>$datos[MaxKm]</td>";
   echo "<td>$datos[PrecioPlano]</td>";
-	echo "<td align='center'><a href='https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?Editar=Si&id=$datos[id]'><input type='image' src='../images/botones/lapiz.png' width='15' height='15' border='0' style='float:center;'></td>";
-	echo "<td align='center'><a href='https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?Eliminar=Si&id=$datos[id]'><input type='image' src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:center;'></td>";
+	echo "<td align='center'><a href='/SistemaTriangular/Clientes/ClientesyServicios.php?Editar=Si&id=$datos[id]'><input type='image' src='../images/botones/lapiz.png' width='15' height='15' border='0' style='float:center;'></td>";
+	echo "<td align='center'><a href='/SistemaTriangular/Clientes/ClientesyServicios.php?Eliminar=Si&id=$datos[id]'><input type='image' src='../images/botones/eliminar.png' width='15' height='15' border='0' style='float:center;'></td>";
 
 }  
 echo "</tr></table>";
