@@ -252,7 +252,7 @@ function eliminar(a) {
 }
 $("#imprimir").click(function () {
   var codigo = getParameterByName("Repo");
-  window.open("../Ventas/Informes/Remitopdf2.php?CS=" + codigo, "_blank");
+  window.open("/SistemaTriangular/Servicios/Informes/Remitopdf.php?CS=" + codigo, "_blank");
 });
 $("#terminar").click(function () {
   window.open("../Ventas/Ventas_e.php", "_self");

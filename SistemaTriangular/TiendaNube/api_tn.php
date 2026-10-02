@@ -1,12 +1,17 @@
 <?php
-include_once "../ConexionBD.php";
+// Antes incluía ../ConexionBD.php (mysql_connect, no existe en PHP 8): la venta se
+// cargaba pero el aviso de despacho a Tienda Nube nunca salía (error 500 al final).
+require_once __DIR__ . '/../Conexion/Conexioni.php';
 
 function fulfill($id_cliente, $order_id, $codigoSeguimiento)
 {
     global $mysqli;
 
-    $sql = "SELECT Clientes.user_id_tn, token_tiendanube FROM Clientes WHERE id = '$id_cliente';";
-    $res = $mysqli->query($sql);
+    $st = $mysqli->prepare("SELECT user_id_tn, token_tiendanube FROM Clientes WHERE id = ?");
+    $idCliente = (int) $id_cliente;
+    $st->bind_param('i', $idCliente);
+    $st->execute();
+    $res = $st->get_result();
 
     if ($res && $res->num_rows > 0) {
         $cliente = $res->fetch_assoc();
