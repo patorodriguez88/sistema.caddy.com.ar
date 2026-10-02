@@ -26,7 +26,7 @@ $.ajax({
     data: {
       'Webhook_track': 1
     },
-    url: "https://www.caddy.com.ar/SistemaTriangular/Datos/Procesos/php/webhook.php",
+    url: "Procesos/php/webhook.php",
     type: 'post',
     success: function(response) {
         toast("success", "Trackeando Webhooks...", "");
@@ -46,7 +46,7 @@ $.ajax({
             paging: true,
             searching: true,
             ajax: {
-              url: "https://www.caddy.com.ar/SistemaTriangular/Datos/Procesos/php/webhook.php",
+              url: "Procesos/php/webhook.php",
               data: {
                 'Webhook': 1                
               },

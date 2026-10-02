@@ -22,7 +22,7 @@ function initMap() {
           var chofer='';
 //           $.ajax({
 //               data:{'Choferes':1,'Dominio':objeto_json.data[i].patente},
-//               url:'https://www.caddy.com.ar/SistemaTriangular/Inicio/php/funciones.php',
+//               url:'/SistemaTriangular/Inicio/php/funciones.php',
 //               type:'post',
 //               success: function(response)
 //                {

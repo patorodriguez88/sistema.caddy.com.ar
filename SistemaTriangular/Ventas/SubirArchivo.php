@@ -800,7 +800,7 @@ skin_open();
      ?>
       <script>
     setTimeout(function() {
-        window.location.href = "https://www.caddy.com.ar/SistemaTriangular/Ventas/PreVenta.php";
+        window.location.href = "/SistemaTriangular/Ventas/PreVenta.php";
     }, 3000);
   </script>
     <?php

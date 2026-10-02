@@ -905,7 +905,7 @@ document.addEventListener("DOMContentLoaded", function () {
             // El PDF se abre en una pestaña nueva. Antes se incrustaba en un
             // iframe (#visor_pdf) al final de la pantalla y quedaba feo.
             // Ruta relativa: apunta siempre al mismo servidor donde corre la
-            // pantalla (antes estaba hardcodeado a www.caddy.com.ar).
+            // pantalla (antes estaba hardcodeado al dominio viejo).
             var url =
               "../Admin/Informes/SumasySaldospdf.php?Desde=" +
               encodeURIComponent(desde) +

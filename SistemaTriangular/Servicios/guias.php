@@ -199,7 +199,7 @@
                                 <div class="page-title-box">
                                     <div class="page-title-right">
                                         <ol class="breadcrumb m-0">
-                                            <li class="breadcrumb-item active"><a href="https://www.caddy.com.ar/SistemaTriangular/Servicios/guias.php">Seguimiento</a></li>
+                                            <li class="breadcrumb-item active"><a href="/SistemaTriangular/Servicios/guias.php">Seguimiento</a></li>
                                             <!--                                             <li class="breadcrumb-item"><a href="javascript: void(0);"></a></li> -->
                                             <li id="pagina" style="display:none" class="breadcrumb-item">Codigo Seguimiento</li>
                                         </ol>

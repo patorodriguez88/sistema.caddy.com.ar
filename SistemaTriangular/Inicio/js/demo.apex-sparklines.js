@@ -68,7 +68,7 @@ lastDay = moment(lastDay).format('YYYY-MM-DD');
 $('#mes').html(mes(m)+ ' ' +date.getFullYear());
 $.ajax({
       data:{'Gastos':1,'inicio':firstDay,'final':lastDay},
-      url:'https://www.caddy.com.ar/SistemaTriangular/Inicio/php/funcionesAdmin.php',
+      url:'/SistemaTriangular/Inicio/php/funcionesAdmin.php',
       type:'post',
       success: function(response)
        {

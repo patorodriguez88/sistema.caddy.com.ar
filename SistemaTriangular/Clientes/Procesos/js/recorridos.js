@@ -78,7 +78,7 @@ var id = document.getElementById('codigo').value;
           paging: false,
           searching: true,          
           ajax: {
-            url: "../Clientes/Procesos/php/tablas.php", // antes apuntaba al sistema viejo (www.caddy.com.ar)
+            url: "../Clientes/Procesos/php/tablas.php", // antes apuntaba al sistema viejo
             data: {
               'Recorridos': 1,
               'id': id

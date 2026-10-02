@@ -26,7 +26,7 @@ if ($_FILES["imagen"]["error"] > 0){
 			$resultado = @move_uploaded_file($_FILES["imagen"]["tmp_name"], $ruta);
 			if ($resultado){
 				echo "El archivo ha sido movido exitosamente";
-			// header("location:http://www.caddy.com.ar/SistemaTriangular/Inicio/Cpanel.php");
+			// header("location:/SistemaTriangular/Inicio/Cpanel.php");
 
 			} else {
 				echo "Ocurrio un error al mover el archivo.";

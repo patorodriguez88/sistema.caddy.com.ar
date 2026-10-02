@@ -144,9 +144,9 @@ $arrayfecha=explode('-',$fecha,3);
 		echo "<td align='center'><a href='VentanaAsientos.php?Ver=Si&NA=".$fila['NumeroAsiento']."&Factura=$FacturaHeredada&Pant=$Pant&numerocuit=$CuitHeredado'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td>";
 //SELECCIONAR
 	if ($_GET['Pant']=='Compras'){
-		echo "<td align='center'><a href='http://www.caddy.com.ar/SistemaTriangular/Proveedores/Compras.php?CargarPago=Si&Factura=$FacturaHeredada&NA=".$fila['NumeroAsiento']."'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td></tr>";
+		echo "<td align='center'><a href='/SistemaTriangular/Proveedores/Compras.php?CargarPago=Si&Factura=$FacturaHeredada&NA=".$fila['NumeroAsiento']."'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td></tr>";
 	}elseif($_GET['Pant']=='ComprasCargaFactura'){	
-	echo "<td align='center'><a href='http://www.caddy.com.ar/SistemaTriangular/Proveedores/Compras.php?Cargar=Si&Cuit=$CuitHeredado&NA=".$fila['NumeroAsiento']."'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td></tr>";
+	echo "<td align='center'><a href='/SistemaTriangular/Proveedores/Compras.php?Cargar=Si&Cuit=$CuitHeredado&NA=".$fila['NumeroAsiento']."'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td></tr>";
 	}else{ 
 		echo "<td align='center'><a href='Contabilidad.php?IngresaAsientos=Si&NA=".$fila['NumeroAsiento']."&Eliminado=No'><input type='image' src='../images/botones/mas.png' width='15' height='15' border='0' style='float:center;'></td></tr>";
 }

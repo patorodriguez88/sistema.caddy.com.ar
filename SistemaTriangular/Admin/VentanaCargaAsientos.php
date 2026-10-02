@@ -3,7 +3,7 @@ ob_start();
 session_start();
 include_once "../ConexionBD.php";
 if ($_SESSION['Nivel']==''){
-header("location:http://www.caddy.com.ar");
+header("location:/SistemaTriangular/inicio.php");
 }
 $color='#B8C6DE';
 $font='white';

@@ -238,7 +238,7 @@ $allowedFileType = ['text/csv'];
                                 <label>Archivo</label>
                                 <p class="text-muted font-13">
                                     Para importar archivos de excel a la base de datos del sistea, deberas realizarlo con un archivo compatible. Podes descargar un ejemplo de plantilla desde aqui 
-                                  <code><a href="https://www.caddy.com.ar/SistemaTriangular/Importar/example.xlsx" download="ejemplo">ejemplo.xlsx</a></code>  
+                                  <code><a href="/SistemaTriangular/Importar/example.xlsx" download="ejemplo">ejemplo.xlsx</a></code>  
                                 </p>
                               </div>
                             </div>

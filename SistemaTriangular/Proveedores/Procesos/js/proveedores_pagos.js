@@ -701,7 +701,7 @@ $("#btn_pago_facturas").click(function (e) {
         $("#footer_total_saldo").val(valor);
       },
       ajax: {
-        url: "https://www.caddy.com.ar/SistemaTriangular/Proveedores/Procesos/php/tablas.php",
+        url: "Procesos/php/tablas.php",
         data: { Facturas_seleccionadas: 1, id: checked },
         type: "post",
       },
@@ -766,7 +766,7 @@ $("#btn_pago_facturas").click(function (e) {
           }, 0);
       },
       ajax: {
-        url: "https://www.caddy.com.ar/SistemaTriangular/Proveedores/Procesos/php/tablas.php",
+        url: "Procesos/php/tablas.php",
         data: { Anticipos_seleccionadas: 1, id: id_proveedor },
         type: "post",
       },

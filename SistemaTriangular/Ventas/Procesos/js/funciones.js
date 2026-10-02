@@ -262,7 +262,7 @@ $("#cobrar").click(function () {
   var codigo = getParameterByName("Repo");
   $("#success-header-modal").modal("hide");
   //   alert(codigo);
-  //   window.open("https://www.caddy.com.ar/SistemaTriangular/Ventas/Ventas.php?UltimoPaso=Cobro&Remito="+codigo, '_self');
+  //   window.open("/SistemaTriangular/Ventas/Ventas.php?UltimoPaso=Cobro&Remito="+codigo, '_self');
 });
 
 $("#standard-modal").on("show.bs.modal", function () {

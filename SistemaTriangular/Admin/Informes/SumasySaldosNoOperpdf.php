@@ -161,7 +161,7 @@ function Footer()
 	$this->SetY(-15);
 	$this->SetX(90);
 	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'www.caddy.com.ar',0,0,'L');
+	$this->Cell(100,10,'web.caddy.com.ar',0,0,'L');
 
 	$this->SetY(-15);
 	$this->SetX(170);

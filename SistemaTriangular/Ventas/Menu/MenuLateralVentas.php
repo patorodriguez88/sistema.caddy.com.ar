@@ -66,7 +66,7 @@ echo "<li><a href='../Clientes/Clientes.php?id=Modificar&idCliente=$id'><span>Mo
 echo "<li><a href='Ventas.php?CtaCte=Aceptar'><span>Cuenta Corriente</span></a></li>";
 echo "<li class='last'><a href='../Clientes/ClientesyServicios.php'><span>Tarifas</span></a>";
 echo "      <ul>";
-echo "         <li><a href='https://www.caddy.com.ar/SistemaTriangular/Clientes/ClientesyServicios.php?Agregar=Si'><span>Agregar Tarifa</span></a>";
+echo "         <li><a href='/SistemaTriangular/Clientes/ClientesyServicios.php?Agregar=Si'><span>Agregar Tarifa</span></a>";
 // echo "         <li><a href='Ventas.php?Ventas=MostrarEnvio&Cliente=$Empresa&Remitos=Pendientes'><span>Factura x Remitos ($TotalRemitos)</span></a>";
 // echo "         <li><a href='Ventas.php?Ventas=Recorridos&Cliente=$Empresa'><span>Factura x Recorridos ($TotalRecorridos)</span></a>";
 echo "      </ul>";

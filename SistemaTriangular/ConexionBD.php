@@ -12,16 +12,16 @@ if (!isset($_SESSION['tiempo'])) {
 else if (time() - $_SESSION['tiempo'] > $tiempo) {
     session_destroy();
     /* Aquí redireccionas a la url especifica */
-    header("Location:https://www.caddy.com.ar/iniciosesion.php");
+    header("Location:/SistemaTriangular/inicio.php");
     die();  
 }
 $_SESSION['tiempo']=time(); //Si hay actividad seteamos el valor al tiempo actual
 
 // if($_SESSION['FechaPassword']>date()){
-// header("location:http://www.caddy.com.ar/SistemaTriangular/Inicio/Usuarios.php");  
+// header("location:/SistemaTriangular/Inicio/Usuarios.php");  
 // }
 if($_SESSION['idusuario']==""){
-header("location:https://www.caddy.com.ar/iniciosesion.php");
+header("location:/SistemaTriangular/inicio.php");
 }else{
  $conexion = mysql_connect("localhost","dinter6_prodrig","");
 //  if (($_SESSION['Nivel']=='5')){
