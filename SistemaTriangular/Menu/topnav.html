@@ -713,30 +713,11 @@ controlarAccesoAlSistema(); ?>
               <div class="arrow-down"></div>
             </a>
             <div class="dropdown-menu" aria-labelledby="topnav-datos">
-              <?php if (tieneMenuPermiso('Datos', 'Ayuda')): ?>
-              <a href="/SistemaTriangular/Datos/Ayuda.php" class="dropdown-item text-danger disabled"
-                >Ayuda</a
-              >
-              <?php endif; ?>
               <?php if (tieneMenuPermiso('Datos', 'Asignaciones')): ?>
               <a
                 href="/SistemaTriangular/Asignaciones/Asignaciones.php"
                 class="dropdown-item text-danger disabled"
                 >Asignaciones</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Datos', 'Combustible')): ?>
-              <a
-                href="/SistemaTriangular/Datos/Combustible.php"
-                class="dropdown-item text-danger disabled"
-                >Combustible</a
-              >
-              <?php endif; ?>
-              <?php if (tieneMenuPermiso('Datos', 'Kilometros')): ?>
-              <a
-                href="/SistemaTriangular/Datos/Kilometros.php"
-                class="dropdown-item text-danger disabled"
-                >Kilometros</a
               >
               <?php endif; ?>
               <?php /* Tarifas Externos se movió a Admin > Flota / Varios */ ?>

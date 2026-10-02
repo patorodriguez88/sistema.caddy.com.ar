@@ -1,273 +1,116 @@
 <?php
-session_start();
-// El servidor corre con date.timezone=UTC - sin esto la fecha impresa
-// como "Córdoba ..." salía calculada en UTC (podía mostrar el día
-// siguiente a la tarde/noche, hora Argentina).
-date_default_timezone_set('America/Argentina/Cordoba');
-require('../../fpdf/fpdf.php');
-class DB{
-	var $conect;
-	var $BaseDatos;
-	var $Servidor;
-	var $Usuario;
-	var $Clave;
-	function DB(){
-    $this->BaseDatos = "dinter6_triangular";
-		$this->Servidor = "localhost";
-		$this->Usuario = "dinter6_prodrig";
-		$this->Clave = "";
-		}
-	 function conectar() {
-		if(!($con=@mysql_connect($this->Servidor,$this->Usuario,$this->Clave))){
-			echo"<h1> [:(] Error al conectar a la base de datos</h1>";	
-			exit();
-		}
-		if (!@mysql_select_db($this->BaseDatos,$con)){
-			echo "<h1> [:(] Error al seleccionar la base de datos</h1>";  
-			exit();
-		}
-		$this->conect=$con;
-		return true;	
-	}
-}
-// require('../../../conexion.php');
-header("Content-Type: text/html; charset=iso-8859-1 ");
 
-class PDF extends FPDF
+declare(strict_types=1);
+
+// Resumen de cuenta corriente de un proveedor (Proveedores > Saldos, ícono de
+// descarga). Mismo diseño que el resto de los informes (HdrPdfBase). Antes usaba
+// mysql_* (no existe en PHP 8) y daba error 500 al abrirlo.
+//
+// ?id=<Proveedores.id>. Saldo = Debe - Haber, igual que la grilla de Saldos.
+
+require_once __DIR__ . '/../../Logistica/Informes/hdr_pdf_helpers.php';
+require_once __DIR__ . '/../../Conexion/Conexioni.php';
+
+const CP_COLS = ['Fecha', 'Comprobante', 'Debe', 'Haber', 'Saldo'];
+const CP_WIDTHS = [20, 80, 27, 27, 28];
+const CP_ALIGNS = ['C', 'L', 'R', 'R', 'R'];
+
+class CtaCteProveedorPDF extends HdrPdfBase
 {
-var $widths;
-var $aligns;
+    public array $headerDatos = [];
 
-function SetWidths($w)
-{
-	//Set the array of column widths
-	$this->widths=$w;
-}
-
-function SetAligns($a)
-{
-	//Set the array of column alignments
-	$this->aligns=$a;
-}
-
-function Row($data)
-{
-	//Calculate the height of the row
-	$nb=0;
-	for($i=0;$i<count($data);$i++)
-		$nb=max($nb,$this->NbLines($this->widths[$i],$data[$i]));
-	$h=4*$nb;
-	//Issue a page break first if needed
-	$this->CheckPageBreak($h);
-	//Draw the cells of the row
-	for($i=0;$i<count($data);$i++)
-	{
-		$w=$this->widths[$i];
-		$a=isset($this->aligns[$i]) ? $this->aligns[$i] : 'L';
-		//Save the current position
-		$x=$this->GetX();
-		$y=$this->GetY();
-		//Draw the border
-		
-		$this->Rect($x,$y,$w,$h);
-
-		$this->MultiCell($w,5,$data[$i],0,$a,'true');
-		//Put the position to the right of the cell
-		$this->SetXY($x+$w,$y);
-	}
-	//Go to the next line
-	$this->Ln($h);
-}
-
-function CheckPageBreak($h)
-{
-	//If the height h would cause an overflow, add a new page immediately
-	if($this->GetY()+$h>$this->PageBreakTrigger)
-		$this->AddPage($this->CurOrientation);
-}
-
-function NbLines($w,$txt)
-{
-	//Computes the number of lines a MultiCell of width w will take
-	$cw=&$this->CurrentFont['cw'];
-	if($w==0)
-		$w=$this->w-$this->rMargin-$this->x;
-	$wmax=($w-2*$this->cMargin)*1000/$this->FontSize;
-	$s=str_replace("\r",'',$txt);
-	$nb=strlen($s);
-	if($nb>0 and $s[$nb-1]=="\n")
-		$nb--;
-	$sep=-1;
-	$i=0;
-	$j=0;
-	$l=0;
-	$nl=1;
-	while($i<$nb)
-	{
-		$c=$s[$i];
-		if($c=="\n")
-		{
-			$i++;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-			continue;
-		}
-		if($c==' ')
-			$sep=$i;
-		$l+=$cw[$c];
-		if($l>$wmax)
-		{
-			if($sep==-1)
-			{
-				if($i==$j)
-					$i++;
-			}
-			else
-				$i=$sep+1;
-			$sep=-1;
-			$j=$i;
-			$l=0;
-			$nl++;
-		}
-		else
-			$i++;
-	}
-	return $nl;
-}
-
-	function Header()
-{
-	header("Content-Type: text/html; charset=iso-8859-1 ");
-	$this->SetFont('Arial','',8);
-  $this->Image('../../images/LogoCaddyNoAlfa.png',16 ,8, 40 , 16,'png','');  
-	$this->Text(20,26,'Triangular S.A.',0,'C', 0);
-	$this->Text(20,31,'Cuit: 30-71534494-3',0,'C', 0);
-	$this->Text(20,36,utf8_decode('Domicilio: Justiniano Posse 1236, Barrio Jardín, Córdoba'),0,'C', 0);
-	$this->Text(90,36,'web.caddy.com.ar',0,'C', 0);
-	
-	//FECHA
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(130,14,utf8_decode("Córdoba ").date('d.m.Y'),0,'C', 0);
-	$idProveedor=$_GET[id];
-	$con = new DB;
-	$conexion = $con->conectar();	
-	$strConsulta = "SELECT * FROM TransProveedores WHERE idProveedor='$idProveedor'";
-	$Usuario = mysql_query($strConsulta);
-	$fila = mysql_fetch_array($Usuario);
-  $sqltotales = "SELECT SUM(Debe)as TotalDebe,SUM(Haber)as TotalHaber FROM TransProveedores WHERE Eliminado=0 AND idProveedor='$idProveedor'";
-	$resultado = mysql_query($sqltotales);
-	$row = mysql_fetch_array($resultado);
-  $SaldoActual=number_format($row[TotalDebe]-$row[TotalHaber],2,',','.');
-
-    //REMITO NUMERO
-	$this->Ln(20);
- 	$this->SetFont('Arial','',10);
-	$this->Text(130,19,'Proveedor: '.$fila[RazonSocial],0,'C', 0);
-	
-	$this->Text(130,24,'Saldo Actual: $ '.$SaldoActual,0,'C', 0);
-
-	$this->Ln(20);
- 	$this->SetFont('Arial','',18);
-	$this->Text(80,44,'Resumen de Cuentas ',0,'B', 0);
-
-  }
-	
-function Footer()
-{
-	$this->SetY(-15);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'Caddy Yo lo llevo!.',0,0,'L');
-	
-	$this->SetY(-15);
-	$this->SetX(90);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'web.caddy.com.ar',0,0,'L');
-	$this->SetY(-15);
-	$this->SetX(170);
-	$this->SetFont('Arial','B',8);
-	$this->Cell(100,10,'Usuario:'.$fila['Usuario'],0,0,'L');
- }
-}
-	$con = new DB;
-	$conexion = $con->conectar();	
-
-	$pdf=new PDF('P','mm','Letter');
-	$pdf->Open();
-	$pdf->AddPage();
-  $pdf->SetMargins(20,10,10);
-
-  $pdf->SetFont('Arial','B',14);
-	$pdf->Text(130,7,'RESUMEN DE CUENTAS',0,'C', 0);
-	$pdf->SetFont('Arial','B',10);
-
-//AFORO
-	$pdf->SetFillColor(255,255,255);
-  $pdf->SetTextColor(0);
-	$pdf->Cell(0,6,'',0,1,'C',true);
-  $pdf->SetWidths(array(20, 75, 25, 25,25));
-	$pdf->SetFont('Arial','B',7);
-	$pdf->SetFillColor(100,100,100);
-
-  $pdf->SetTextColor(255);
-		for($i=0;$i<1;$i++)
-			{
-				$pdf->Row(array('FECHA','COMPROBANTE','DEBE', 'HABER','SALDO'));
-			}
-	$historial = $con->conectar();	
-  $idProveedor=$_GET[id];
-	$strConsulta = "SELECT Fecha,Concepto,TipoDeComprobante,NumeroComprobante,Debe,Haber,(Debe-Haber)as Saldo FROM TransProveedores WHERE Eliminado=0 AND idProveedor='$idProveedor'";
-	$historial = mysql_query($strConsulta);
-	$numfilas = mysql_num_rows($historial);
-	//Calcula el total de la repo
-  setlocale(LC_ALL,'es_AR');
-	$i=0;
-  $row=mysql_fetch_array($Muestra);
-  $Debe=number_format($row[Debe],2,',','.');
-  $Haber=number_format($row[Haber],2,',','.');
-  $Saldo=number_format($row[Saldo],2,',','.');  
-  $acumulado=0;
-for ($i=0; $i<$numfilas; $i++)
-	    {
-  
-        $filaVentas = mysql_fetch_array($historial);
-        $acumulado=$acumulado+$filaVentas[Debe]-$filaVentas[Haber];
-        if($filaVentas[Haber]>0){
-        $Tipo=$filaVentas[Concepto].' Ref.: '.$filaVentas[TipoDeComprobante];
-        }else{
-        $Tipo=$filaVentas[TipoDeComprobante];  
+    public function drawTableHeader(): void
+    {
+        $p = hdrPaleta();
+        $anchos = $this->anchosEscalados(CP_WIDTHS);
+        $this->SetWidths($anchos);
+        $this->SetAligns(CP_ALIGNS);
+        $this->SetFont('Arial', 'B', 8);
+        $this->SetFillColor(...$p['primaryC']);
+        $this->SetTextColor(...$p['whiteC']);
+        $this->SetDrawColor(...$p['primaryC']);
+        foreach (CP_COLS as $i => $label) {
+            $this->Cell($anchos[$i], 7, pdf_text($label), 0, 0, CP_ALIGNS[$i] === 'L' ? 'L' : 'C', true);
         }
-        $ImporteNeto_label=number_format($filaVentas[ImporteNeto],2,',','.');
-        $Iva_precio_label=number_format($filaVentas[Iva3],2,',','.'); 
-        $Total=number_format($filaVentas[Total],2,',','.');
-      if($i%2 == 1)
-			{
-        $pdf->SetFont('Arial','B',5);
-        $pdf->SetTextColor(0,0,0);//color negro
-        $pdf->SetFillColor(255,255,255);  
-				$pdf->Row(array($filaVentas['Fecha'], $Tipo.' '.$filaVentas['NumeroComprobante'],'$ '.number_format($filaVentas['Debe'],2,',','.'),'$ '.number_format($filaVentas['Haber'],2,',','.'),'$ '.number_format($acumulado,2,',','.')));
-			}
-			else
-			{
-        $pdf->SetFont('Arial','B',5);
-        $pdf->SetFillColor(255,255,255);  
-        $pdf->SetTextColor(0);
-				$pdf->Row(array($filaVentas['Fecha'], $Tipo.' '.$filaVentas['NumeroComprobante'],'$ '.number_format($filaVentas['Debe'],2,',','.'),'$ '.number_format($filaVentas['Haber'],2,',','.'),'$ '.number_format($acumulado,2,',','.')));
-			}
-//   $acumulado=$acumulado+($filaVentas[Debe]-$filaVentas[Haber]);
-  }   
-	$sqltotales = "SELECT SUM(Debe)as TotalDebe,SUM(Haber)as TotalHaber FROM TransProveedores WHERE Eliminado=0 AND idProveedor='$idProveedor'";
-	$resultado = mysql_query($sqltotales);
-	$row = mysql_fetch_array($resultado);
-  $TotalDebe=number_format($row[TotalDebe],2,',','.');
-  $TotalHaber=number_format($row[TotalHaber],2,',','.');
-  $SaldoActual=number_format($row[TotalDebe]-$row[TotalHaber],2,',','.');
+        $this->Ln();
+        $this->SetTextColor(...$p['darkText']);
+        $this->SetFont('Arial', '', 8);
+    }
 
-  $pdf->SetFont('Arial','B',6);
-	$pdf->Row(array($filaVentas[''],'TOTALES: ','$ '.$TotalDebe,'$ '.$TotalHaber,'$ '.$SaldoActual));
+    public function Header(): void
+    {
+        $d = $this->headerDatos;
+        $this->drawHeaderBase('RESUMEN DE CUENTA', 'Cuenta corriente de proveedor', [
+            ['Proveedor:', $d['razonSocial']],
+            ['CUIT:', $d['cuit']],
+            ['Saldo actual:', $d['saldo']],
+            ['Fecha:', date('d/m/Y')],
+        ]);
+        $this->Ln(2);
+        $this->drawTableHeader();
+    }
+}
 
-  $pdf->Output();  
+function cpImporte($n): string
+{
+    return '$ ' . number_format((float) $n, 2, ',', '.');
+}
 
-?>
+$idProveedor = (int) ($_GET['id'] ?? 0);
+
+$movimientos = db_fetch_all(
+    $mysqli,
+    'SELECT Fecha, Concepto, TipoDeComprobante, NumeroComprobante, Debe, Haber
+       FROM TransProveedores
+      WHERE Eliminado = 0 AND idProveedor = ?
+      ORDER BY Fecha, id',
+    'i',
+    [$idProveedor]
+);
+
+$proveedor = mysqli_fetch_one($mysqli, 'SELECT RazonSocial, Cuit FROM Proveedores WHERE id = ?', 'i', [$idProveedor]);
+
+if (!$proveedor && !$movimientos) {
+    http_response_code(404);
+    header('Content-Type: text/plain; charset=utf-8');
+    echo 'No se encontró el proveedor N° ' . $idProveedor . '.';
+    exit;
+}
+
+$totalDebe = array_sum(array_map(static fn($m) => (float) $m['Debe'], $movimientos));
+$totalHaber = array_sum(array_map(static fn($m) => (float) $m['Haber'], $movimientos));
+
+$pdf = new CtaCteProveedorPDF('P', 'mm', 'A4');
+$pdf->headerDatos = [
+    'razonSocial' => $proveedor['RazonSocial'] ?? ($movimientos[0]['RazonSocial'] ?? ''),
+    'cuit'        => $proveedor['Cuit'] ?? '',
+    'saldo'       => cpImporte($totalDebe - $totalHaber),
+];
+$pdf->AliasNbPages();
+$pdf->footerLeft = 'Resumen de cuenta - ' . $pdf->headerDatos['razonSocial'];
+$pdf->generadoPor = (string) ($_SESSION['Usuario'] ?? '');
+$pdf->SetMargins(12, 12, 12);
+$pdf->SetAutoPageBreak(true, 20);
+$pdf->AddPage();
+
+$paleta = hdrPaleta();
+$acumulado = 0.0;
+foreach ($movimientos as $i => $m) {
+    $acumulado += (float) $m['Debe'] - (float) $m['Haber'];
+    // En los pagos, el concepto dice qué se pagó; en las facturas alcanza con el tipo.
+    $tipo = (float) $m['Haber'] > 0 && $m['Concepto'] !== ''
+        ? $m['Concepto'] . ' - Ref.: ' . $m['TipoDeComprobante']
+        : $m['TipoDeComprobante'];
+    $pdf->Row([
+        $m['Fecha'] ? date('d/m/Y', strtotime($m['Fecha'])) : '',
+        trim($tipo . ' ' . $m['NumeroComprobante']),
+        cpImporte($m['Debe']),
+        cpImporte($m['Haber']),
+        cpImporte($acumulado),
+    ], $i % 2 ? $paleta['grayBg'] : $paleta['whiteC']);
+}
+
+$pdf->SetFont('Arial', 'B', 8.5);
+$pdf->Row(['', 'TOTALES', cpImporte($totalDebe), cpImporte($totalHaber), cpImporte($totalDebe - $totalHaber)], $paleta['tint']);
+
+$pdf->Output('I', 'CtaCte_Proveedor_' . $idProveedor . '.pdf');

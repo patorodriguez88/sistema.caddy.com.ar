@@ -1,152 +1,191 @@
 <?php
-session_start();
-include_once "../ConexionBD.php";
+// Home > Vencimientos: licencias de choferes, seguro / VTV / tarjeta verde y
+// service de los vehículos, y cheques propios pendientes de débito. Reemplaza a
+// la pantalla vieja, que usaba mysql_* (no existe en PHP 8) y daba error al entrar.
+include_once "../Conexion/Conexioni.php";
+
+$hoy = date('Y-m-d');
+$en30 = date('Y-m-d', strtotime('+30 days'));
+
+function vtoFilas(mysqli $db, string $sql): array
+{
+    $res = $db->query($sql);
+    return $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+}
+
+function vtoFecha(?string $f): string
+{
+    return ($f && !str_starts_with($f, '0000')) ? date('d/m/Y', strtotime($f)) : 'Sin dato';
+}
+
+// Rojo = vencido o sin dato, amarillo = vence en los próximos 30 días.
+// Vehículos: solo la flota propia (Aliados = 0); los de aliados no tienen estas fechas cargadas.
+function vtoClase(?string $f, string $hoy, string $en30): string
+{
+    if (!$f || str_starts_with($f, '0000') || $f < $hoy) {
+        return 'danger';
+    }
+    return $f <= $en30 ? 'warning' : 'success';
+}
+
+$vehiculo = "CONCAT_WS(' ', Marca, Modelo, Dominio)";
+$bloques = [
+    [
+        'titulo' => 'Licencias de conducir', 'icono' => 'mdi-card-account-details-outline',
+        'filas'  => vtoFilas($mysqli, "SELECT NombreCompleto AS Nombre, VencimientoLicencia AS Fecha
+                                         FROM Empleados WHERE Inactivo = 0 ORDER BY VencimientoLicencia"),
+    ],
+    [
+        'titulo' => 'Seguro', 'icono' => 'mdi-shield-car',
+        'filas'  => vtoFilas($mysqli, "SELECT $vehiculo AS Nombre, FechaVencSeguro AS Fecha
+                                         FROM Vehiculos WHERE Estado <> 'Vendida' AND Aliados = 0 ORDER BY FechaVencSeguro"),
+    ],
+    [
+        'titulo' => 'VTV / ITV', 'icono' => 'mdi-clipboard-check-outline',
+        'filas'  => vtoFilas($mysqli, "SELECT $vehiculo AS Nombre, FechaVencITV AS Fecha
+                                         FROM Vehiculos WHERE Estado <> 'Vendida' AND Aliados = 0 ORDER BY FechaVencITV"),
+    ],
+    [
+        'titulo' => 'Tarjeta verde', 'icono' => 'mdi-card-text-outline',
+        'filas'  => vtoFilas($mysqli, "SELECT $vehiculo AS Nombre, VencimientoTarjetaVerde AS Fecha
+                                         FROM Vehiculos WHERE Estado <> 'Vendida' AND Aliados = 0 ORDER BY VencimientoTarjetaVerde"),
+    ],
+];
+
+$services = vtoFilas($mysqli, "SELECT $vehiculo AS Nombre, Kilometros, ProximoService,
+                                      (ProximoService - Kilometros) AS Faltan
+                                 FROM Vehiculos WHERE Estado <> 'Vendida' AND Aliados = 0
+                             ORDER BY Faltan");
+
+$cheques = vtoFilas($mysqli, "SELECT FechaCobro, Banco, NumeroCheque, Proveedor, Importe
+                                FROM Cheques
+                               WHERE Terceros = 0 AND Utilizado = 1 AND Pagado = 0
+                                 AND FechaCobro >= DATE_SUB(CURDATE(), INTERVAL 90 DAY)
+                            ORDER BY FechaCobro");
 ?>
-<!DOCTYPE HTML>
-<html>
-	<head>
-		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-		<title>Estadisticas</title>
-    <link href="../css/StyleCaddy.css" rel="stylesheet" type="text/css" />
+<!DOCTYPE html>
+<html lang="es" data-layout="topnav">
 
-		<style type="text/css">
-		</style>
-	</head>
-	<body>
-<script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
-<script src="../Highcharts-6.0.2/code/highcharts.js"></script>
-<script src="../Highcharts-6.0.2/code/modules/exporting.js"></script>
-<link href="../css/iconic.css" media="screen" rel="stylesheet" type="text/css" />
-    
-    <?php
-    include("../Menu/MenuGestion.php");
-  $sql=mysql_query("SELECT NombreCompleto,VencimientoLicencia FROM Empleados WHERE Inactivo=0 ORDER BY VencimientoLicencia ASC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:red 3px solid;width:350px;float:left;margin-left:100px;min-height:380px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Vencimiento de Registros</label>
-  <img src='../images/botones/document.png' style='width:30px;height:30px;margin-left:70px;'> </div>";	
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-  $Fecha= explode("-",$Dato[VencimientoLicencia],3);
-  $Fecha1=$Fecha[2]."/".$Fecha[1]."/".$Fecha[0];
- if($Dato[VencimientoLicencia]<date("Y-m-d")){
-  $color="red";
-  }else{
-  $color="black";  
-  }  
- 
-    echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Dato[NombreCompleto]</label>
-    <label style='float:right;color:$color';> $Fecha1</label></div>";
-  }
-  echo "</form>";
+<head>
+    <meta charset="utf-8" />
+    <title>Sistema Caddy | Vencimientos</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta content="Sistema Caddy" name="author" />
 
-  //PROXIMO SERVICE
-      $sql=mysql_query("SELECT Marca,Modelo,Dominio,ProximoService,Kilometros FROM Vehiculos WHERE Estado<>'Vendida' AND Aliados = 0 ORDER BY ProximoService-Kilometros ASC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:blue 3px solid;width:350px;float:left;margin-left:20px;min-height:380px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Proximos Service</label>
-   <img src='../images/botones/battery.png' style='width:30px;height:30px;float:right;'> </div>";	  
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-  $KmService=$Dato[ProximoService]-$Dato[Kilometros];
-  if($KmService<2000){
-  $color="red";
-  }else{
-  $color="black";  
-  }  
-  
-   echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Dato[Marca] $Dato[Modelo] $Dato[Dominio]</label>
-    <label style='float:right;color:$color';> $KmService km</label></div>";
-  }
-  echo "</form>";
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
+    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
+    <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
-  //VENCIMIENTO SEGURO
-  $sql=mysql_query("SELECT Marca,Modelo,Dominio,FechaVencSeguro FROM Vehiculos WHERE Estado<>'Vendida' ORDER BY FechaVencSeguro ASC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:orange 3px solid;width:350px;float:left;margin-left:20px;min-height:380px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Vencimiento Seguro</label>
-  <img src='../images/botones/calendar.png' style='width:30px;height:30px;float:right;'> </div>";	
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-  $Fecha= explode("-",$Dato[FechaVencSeguro],3);
-  $Fecha1=$Fecha[2]."/".$Fecha[1]."/".$Fecha[0];
-  if($Dato[FechaVencSeguro]<date("Y-m-d")){
-  $color="red";
-  }else{
-  $color="black";  
-  }  
-    echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Dato[Marca] $Dato[Modelo] $Dato[Dominio]</label>
-    <label style='float:right;color:$color'> $Fecha1</label></div>";
-  }
-  echo "</form>";
-  
-    //VENCIMIENTO ITV
-  $sql=mysql_query("SELECT Marca,Modelo,Dominio,FechaVencITV FROM Vehiculos WHERE Estado<>'Vendida' ORDER BY FechaVencITV ASC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:black 3px solid;width:350px;float:left;margin-left:100px;min-height:380px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Vencimiento I.T.V.</label>
-  <img src='../images/botones/checked.png' style='width:30px;height:30px;float:right;'> </div>";	
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-  $Fecha= explode("-",$Dato[FechaVencITV],3);
-  $Fecha1=$Fecha[2]."/".$Fecha[1]."/".$Fecha[0];
-  if($Dato[FechaVencITV]<date("Y-m-d")){
-  $color="red";
-  }else{
-  $color="black";  
-  }  
-    echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Dato[Marca] $Dato[Modelo] $Dato[Dominio]</label>
-    <label style='float:right;color:$color'> $Fecha1</label></div>";
-  }
-  echo "</form>";
+    <script src="../hyper/dist/assets/js/hyper-config.js"></script>
+    <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
+    <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
 
-     //KM ACTUALES
-  $sql=mysql_query("SELECT Marca,Modelo,Dominio,Kilometros FROM Vehiculos WHERE Estado<>'Vendida' ORDER BY Kilometros DESC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:green 3px solid;width:350px;float:left;margin-left:20px;min-height:380px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Kilometros Actuales</label>
-  <img src='../images/botones/zoom.png' style='width:30px;height:30px;float:right;'> </div>";	
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-   echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Dato[Marca] $Dato[Modelo] $Dato[Dominio]</label>
-    <label style='float:right;color:$color'> $Dato[Kilometros] Km.</label></div>";
-  }
-  echo "</form>";
-  //VENCIMIENTO TARJETA VERDE
-  $sql=mysql_query("SELECT Marca,Modelo,Dominio,VencimientoTarjetaVerde FROM Vehiculos WHERE Estado<>'Vendida' ORDER BY VencimientoTarjetaVerde DESC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:violet 3px solid;width:350px;float:left;margin-left:20px;min-height:380px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Vencimiento Tarjeta Verde</label>
-  <img src='../images/botones/zoom.png' style='width:30px;height:30px;float:right;'> </div>";	
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-  if($Dato[VencimientoTarjetaVerde]<date("Y-m-d")){
-  $color="red";
-  }else{
-  $color="black";  
-  }  
-    echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Dato[Marca] $Dato[Modelo] $Dato[Dominio]</label>
-    <label style='float:right;color:$color'> $Dato[VencimientoTarjetaVerde]</label></div>";
-  }
-  echo "</form>";
+    <style>
+        .vto-lista { max-height: 340px; overflow-y: auto; }
+    </style>
+</head>
 
-  //CHEQUES A VENCER
-  $Fecha=date('d-m-Y'); 
-  $sql=mysql_query("SELECT * FROM Cheques WHERE Terceros=0 AND FechaCobro>='$Fecha' AND Utilizado='1' AND Pagado='0' ORDER BY FechaCobro ASC");
-  echo "<form class='login' style='margin-top:10px;background:white;border-top:yellow 3px solid;width:1135px;float:left;margin-left:100px;min-height:305px;'>";
-  echo "<div><label style='float:center;color:red;font-size:22px'>Cheques Propios</label>
-  <img src='../images/botones/Factura.png' style='width:30px;height:30px;float:right;'> </div>";	
-  echo "<div><hr></hr></div>";  
-  while($Dato=mysql_fetch_array($sql)){
-  if($Dato[FechaCobro]<=date("Y-m-d")){
-  $color="red";
-  }else{
-  $color="black";  
-  }
-  $Fecha0= explode("-",$Dato[FechaCobro],3);
-  $Fecha1= $Fecha0[2]."/".$Fecha0[1]."/".$Fecha0[0];
-  $Total=number_format($Dato[Importe],2,".",",");  
-   echo "<div style='margin-bottom:3px;font-size:12px;'><label>$Fecha1 $Dato[NumeroCheque] $Dato[Proveedor]</label>
-    <label style='float:right;color:$color'>$ $Total</label></div>";
-  }
-  echo "</form>";
+<body>
+    <div class="wrapper">
+        <?php include "../Menu/head.html"; ?>
+        <?php include "../Menu/topnav.html"; ?>
+        <div class="content-page">
+            <div class="content">
+                <div class="container-fluid mt-3">
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="page-title-box">
+                                <div class="page-title-right">
+                                    <ol class="breadcrumb m-0">
+                                        <li class="breadcrumb-item"><a href="javascript: void(0);">Home</a></li>
+                                        <li class="breadcrumb-item active">Vencimientos</li>
+                                    </ol>
+                                </div>
+                                <h4 class="page-title">Vencimientos</h4>
+                            </div>
+                            <p class="text-muted">
+                                <span class="badge bg-danger">Vencido</span>
+                                <span class="badge bg-warning text-dark">Vence en 30 días</span>
+                                <span class="badge bg-success">Al día</span>
+                            </p>
+                        </div>
+                    </div>
 
-   
-  ?>
-  
-  </body>
+                    <div class="row">
+                        <?php foreach ($bloques as $b): ?>
+                            <div class="col-xl-3 col-md-6">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <h5 class="card-title mb-3"><i class="mdi <?= $b['icono'] ?> me-1"></i><?= htmlspecialchars($b['titulo']) ?></h5>
+                                        <div class="vto-lista">
+                                            <?php if (!$b['filas']): ?>
+                                                <p class="text-muted mb-0">Sin datos.</p>
+                                            <?php endif; ?>
+                                            <?php foreach ($b['filas'] as $f): ?>
+                                                <div class="d-flex justify-content-between border-bottom py-1 small">
+                                                    <span><?= htmlspecialchars((string) $f['Nombre']) ?></span>
+                                                    <span class="badge bg-<?= vtoClase($f['Fecha'], $hoy, $en30) ?><?= vtoClase($f['Fecha'], $hoy, $en30) === 'warning' ? ' text-dark' : '' ?>"><?= vtoFecha($f['Fecha']) ?></span>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        <?php endforeach; ?>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-xl-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3"><i class="mdi mdi-wrench-outline me-1"></i>Próximo service (flota propia)</h5>
+                                    <div class="vto-lista">
+                                        <?php foreach ($services as $s):
+                                            $sinDato = $s['Faltan'] === null || (float) $s['ProximoService'] <= 0;
+                                            $faltan = (int) $s['Faltan'];
+                                            $clase = $sinDato ? 'secondary' : ($faltan < 0 ? 'danger' : ($faltan < 2000 ? 'warning text-dark' : 'success')); ?>
+                                            <div class="d-flex justify-content-between border-bottom py-1 small">
+                                                <span><?= htmlspecialchars((string) $s['Nombre']) ?>
+                                                    <span class="text-muted">(<?= number_format((float) $s['Kilometros'], 0, ',', '.') ?> km)</span></span>
+                                                <span class="badge bg-<?= $clase ?>">
+                                                    <?= $sinDato ? 'Sin dato' : ($faltan < 0 ? 'Pasado ' . number_format(-$faltan, 0, ',', '.') . ' km' : 'Faltan ' . number_format($faltan, 0, ',', '.') . ' km') ?>
+                                                </span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-xl-6">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title mb-3"><i class="mdi mdi-checkbook me-1"></i>Cheques propios pendientes de débito</h5>
+                                    <div class="vto-lista">
+                                        <?php if (!$cheques): ?>
+                                            <p class="text-muted mb-0">No hay cheques propios pendientes.</p>
+                                        <?php endif; ?>
+                                        <?php foreach ($cheques as $c): ?>
+                                            <div class="d-flex justify-content-between border-bottom py-1 small">
+                                                <span><?= vtoFecha($c['FechaCobro']) ?> · N° <?= htmlspecialchars((string) $c['NumeroCheque']) ?> · <?= htmlspecialchars((string) $c['Proveedor']) ?></span>
+                                                <span class="badge bg-<?= $c['FechaCobro'] <= $hoy ? 'danger' : 'light text-dark' ?>">$ <?= number_format((float) $c['Importe'], 2, ',', '.') ?></span>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="menuhyper_footer"></div>
+        </div>
+    </div>
+
+    <script src="../hyper/dist/assets/js/vendor.min.js"></script>
+    <script src="../hyper/dist/assets/js/app.js"></script>
+    <script src="../Menu/js/funciones.js"></script>
+</body>
+
 </html>
