@@ -13,7 +13,10 @@ if(isset($_POST['Recorridos_insert'])){
 
 if(isset($_POST['Recorridos_ctacte'])){
     
-    $sql=$mysqli->query("SELECT Logistica.*,Productos.PrecioVenta FROM Logistica 
+    // Precio del día del servicio (guardado en la orden); si la orden no lo tiene, el de la lista.
+    // Antes tomaba siempre el precio actual de la lista: un recorrido de septiembre cargado en
+    // octubre salía al precio de octubre.
+    $sql=$mysqli->query("SELECT Logistica.*, IF(Logistica.PrecioRecorrido > 0, Logistica.PrecioRecorrido, Productos.PrecioVenta) AS PrecioVenta FROM Logistica 
     INNER JOIN Recorridos ON Logistica.Recorrido=Recorridos.Numero 
     INNER JOIN Productos ON Recorridos.CodigoProductos=Productos.Codigo 
     WHERE Logistica.id='$_POST[idLogistica]' AND Logistica.Eliminado='0'");

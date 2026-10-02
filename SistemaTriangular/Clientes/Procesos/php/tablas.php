@@ -113,7 +113,9 @@ if (isset($_POST['Recorridos'])) {
 
   $id = (int) ($_POST['id'] ?? 0);
   $st = $mysqli->prepare("SELECT Logistica.Fecha, Logistica.id, Logistica.NumerodeOrden, Logistica.Hora, Logistica.Patente,
-      Logistica.NombreChofer, Logistica.Recorrido, Productos.PrecioVenta, Logistica.KilometrosRecorridos, Clientes.nombrecliente
+      Logistica.NombreChofer, Logistica.Recorrido,
+      IF(Logistica.PrecioRecorrido > 0, Logistica.PrecioRecorrido, Productos.PrecioVenta) AS PrecioVenta, -- precio del día del servicio
+      Logistica.KilometrosRecorridos, Clientes.nombrecliente
     FROM Logistica
     INNER JOIN Recorridos ON Logistica.Recorrido = Recorridos.Numero
     INNER JOIN Productos ON Recorridos.CodigoProductos = Productos.Codigo
