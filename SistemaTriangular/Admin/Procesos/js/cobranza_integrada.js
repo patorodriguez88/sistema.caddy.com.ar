@@ -109,7 +109,7 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
 
       var datatable = $('#cobranza_integrada').DataTable({
         dom: 'Bfrtip',
-        buttons: buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]),
+        buttons: botonesExportCobranzaIntegrada(),
         lengthMenu: [
           [10, 25, 50, -1],
           [10, 25, 50, 'All']
@@ -217,6 +217,16 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
             render: $.fn.dataTable.render.number(',', '.', 2, '$ ')
           },
           {
+            // Pedido de Agustina (Asana "Agregar N.º de rendición en Cobranza Integrada – Igalfer"):
+            // el número de rendición, para identificar qué paquetes van en cada rendición.
+            data: "surrender_number",
+            render: function (data, type, row) {
+              var n = parseInt(row.surrender_number || 0, 10);
+              if (type !== 'display') return n || '';
+              return n ? '<span class="badge rounded-pill bg-primary text-white">N° ' + n + '</span>' : '<span class="text-muted">Pendiente</span>';
+            }
+          },
+          {
             data: "surrender_name",
             render: function (data, type, row) {
               return '<div class="ci-fila-titulo">' + row.surrender_name + '</div>' +
@@ -234,6 +244,23 @@ function cargarTabla(fechasElegidas, recorrido, soloPendientes) {
               }
             }
           },
+          // Columnas ocultas, solo para exportar: un dato limpio por columna (antes el Excel pegaba
+          // todo junto, ej. "2026-08-0303.08.2026mvigna..." o "IGALFERJuan escalzoEntregado").
+          { data: "FechaPedido", visible: false, className: "exp", render: (d) => (d || '').split('-').reverse().join('/') },
+          { data: "Usuario", visible: false, className: "exp", defaultContent: "" },
+          { data: "Recorrido", visible: false, className: "exp", defaultContent: "" },
+          { data: "Cliente", visible: false, className: "exp", defaultContent: "" },
+          { data: "ClienteDestino", visible: false, className: "exp", defaultContent: "" },
+          { data: "Entregado", visible: false, className: "exp", render: (d, t, row) => (row.Entregado == 1 ? 'Entregado' : 'No entregado') + (row.Devuelto == 1 ? ' - Devuelto' : '') },
+          { data: "Titulo", visible: false, className: "exp", defaultContent: "" },
+          { data: "CodigoProveedor", visible: false, className: "exp", defaultContent: "" },
+          { data: "NumeroRepo", visible: false, className: "exp", defaultContent: "" },
+          { data: "NumPedido", visible: false, className: "exp", defaultContent: "" },
+          { data: "Comentario", visible: false, className: "exp", defaultContent: "" },
+          { data: "CobrarEnvio", visible: false, className: "exp", render: (d) => Number(d || 0).toFixed(2) },
+          { data: "surrender_number", visible: false, className: "exp", render: (d) => (parseInt(d || 0, 10) || '') },
+          { data: "surrender_name", visible: false, className: "exp", defaultContent: "" },
+          { data: "surrender_time", visible: false, className: "exp", defaultContent: "" },
 
         ]
       });
@@ -417,3 +444,16 @@ $('#btn_ok_change_import').click(function () {
   });
 
 })
+
+// Botones de la grilla: todos los que exportan (copiar, CSV, Excel, PDF, imprimir) usan solo las
+// columnas ocultas ".exp", así cada dato sale en su propia celda y se puede filtrar (ej. por N° Rendición).
+function botonesExportCobranzaIntegrada() {
+  var cfg = buildDtButtons(["pageLength", "copy", "csv", "excel", "pdf", "print"]);
+  cfg.buttons.forEach(function (b) {
+    if (b.extend && b.extend !== "pageLength") {
+      b.exportOptions = { columns: ".exp" };
+      b.title = "Cobranza Integrada";
+    }
+  });
+  return cfg;
+}
