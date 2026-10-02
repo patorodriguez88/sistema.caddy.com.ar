@@ -286,14 +286,47 @@
                                                 <th>Comprobante</th>
                                                 <th>Observaciones</th>
                                                 <th>Importe</th>
+                                                <th>N° Rendición</th>
                                                 <th>Rendicion</th>
                                                 <th>Accion</th>
+                                                <!-- Columnas ocultas: solo para Excel/CSV/Copiar/PDF/Imprimir (un dato por columna) -->
+                                                <th>Fecha</th>
+                                                <th>Usuario</th>
+                                                <th>Recorrido</th>
+                                                <th>Cliente</th>
+                                                <th>Destinatario</th>
+                                                <th>Estado</th>
+                                                <th>Comprobante</th>
+                                                <th>Cód. Proveedor</th>
+                                                <th>Remito</th>
+                                                <th>Seguimiento</th>
+                                                <th>Observaciones</th>
+                                                <th>Importe</th>
+                                                <th>N° Rendición</th>
+                                                <th>Rindió</th>
+                                                <th>Fecha rendición</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                         </tbody>
                                         <tfoot>
                                             <tr>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
+                                                <th></th>
                                                 <th></th>
                                                 <th></th>
                                                 <th></th>
@@ -349,7 +382,7 @@
     <?php include '../Menu/php/script_datatables.php'; ?>
 
     <!-- Funciones -->
-    <script src="Procesos/js/cobranza_integrada.js"></script>
+    <script src="Procesos/js/cobranza_integrada.js?v=<?= filemtime(__DIR__ . '/Procesos/js/cobranza_integrada.js') ?>"></script>
     <script src="../Funciones/js/datosempresa.js"></script>
     <script src="../Menu/js/funciones.js"></script>
 
