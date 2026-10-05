@@ -1,4 +1,10 @@
 <?php
+// tn_config.php (TN_APP_SECRET) existe solo en el servidor, ver tn_config.example.php.
+if (!is_file(__DIR__ . '/tn_config.php')) {
+    error_log('TiendaNube webhooks: falta ' . __DIR__ . '/tn_config.php');
+    http_response_code(503);
+    exit('Falta configuracion');
+}
 require __DIR__ . '/tn_config.php';
 
 /**
@@ -51,13 +57,15 @@ function tn_hash_equals(string $a, string $b): bool
 }
 
 /**
- * Verifica HMAC (base64 del hash_hmac SHA256 con tu APP_SECRET).
+ * Verifica HMAC: Tienda Nube firma con hash_hmac('sha256', body, APP_SECRET) en HEXADECIMAL
+ * (ver la doc de webhooks). Antes se comparaba contra el base64 del hash binario (el formato de
+ * Shopify) y rechazaba siempre las firmas válidas.
  */
 function tn_verify_hmac(string $rawBody, string $headerSignature): bool
 {
     if ($headerSignature === '') return false;
-    $calc = base64_encode(hash_hmac('sha256', $rawBody, TN_APP_SECRET, true));
-    return tn_hash_equals($calc, trim($headerSignature));
+    $calc = hash_hmac('sha256', $rawBody, TN_APP_SECRET);
+    return tn_hash_equals($calc, strtolower(trim($headerSignature)));
 }
 
 /**
