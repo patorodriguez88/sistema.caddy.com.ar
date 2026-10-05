@@ -1,5 +1,6 @@
 // Importaciones de Plataforma (Importar/plataforma.php).
-// Lista las filas de Importaciones que los clientes subieron en Plataforma y no se confirmaron.
+// Lista las filas de Importaciones que los clientes subieron en Plataforma y no se confirmaron
+// (o que subió el operador a nombre de un cliente que no usa Plataforma).
 // El operador puede corregirlas y las importa de a una por la API (POST /servicios con el token
 // del cliente); cada fila muestra el código de seguimiento o el motivo exacto del rechazo.
 (function () {
@@ -210,6 +211,79 @@
     cargar();
   });
   $("#pl-importar").on("click", importar);
+
+  // ---- Subir Excel a nombre de un cliente ----
+  let tBuscar = null;
+  $("#pl-buscar").on("input", function () {
+    $("#pl-ncliente").val("");
+    $("#pl-cli-info").text("");
+    const q = this.value.trim();
+    clearTimeout(tBuscar);
+    if (q.length < 2) return $("#pl-sugerencias").addClass("d-none");
+    tBuscar = setTimeout(function () {
+      $.post(URL, { accion: "buscar_cliente", q }, null, "json").done(function (r) {
+        const cs = (r && r.clientes) || [];
+        $("#pl-sugerencias")
+          .html(
+            cs.length
+              ? cs
+                  .map(
+                    (c) => `<button type="button" class="list-group-item list-group-item-action" data-id="${c.id}" data-nombre="${esc(c.nombrecliente)}" data-usuarios="${c.usuarios}">
+                      <b>${esc(c.nombrecliente)}</b> <span class="text-muted">· Nº ${c.id}</span>
+                      ${Number(c.usuarios) ? "" : '<span class="badge bg-warning-subtle text-warning ms-1">sin usuario de Plataforma</span>'}
+                      <div class="small text-muted">${esc(c.Direccion)}</div></button>`
+                  )
+                  .join("")
+              : `<div class="list-group-item text-muted">Sin resultados</div>`
+          )
+          .removeClass("d-none");
+      });
+    }, 250);
+  });
+
+  $("#pl-sugerencias").on("click", "[data-id]", function () {
+    const $b = $(this);
+    $("#pl-ncliente").val($b.data("id"));
+    $("#pl-buscar").val($b.data("nombre"));
+    $("#pl-sugerencias").addClass("d-none");
+    $("#pl-cli-info").html(
+      Number($b.data("usuarios"))
+        ? ""
+        : '<span class="text-warning">Este cliente no tiene usuario de Plataforma: sin usuario la API no puede darle de alta envíos. Creale uno en la ficha del cliente &gt; Accesos web.</span>'
+    );
+  });
+
+  $(document).on("click", function (e) {
+    if (!$(e.target).closest("#pl-buscar, #pl-sugerencias").length) $("#pl-sugerencias").addClass("d-none");
+  });
+
+  $("#pl-subir").on("submit", function (e) {
+    e.preventDefault();
+    if (!$("#pl-ncliente").val()) return Swal.fire("Falta el cliente", "Buscá y elegí el cliente de la lista.", "warning");
+    const fd = new FormData(this);
+    fd.append("accion", "subir");
+    const $btn = $("#pl-subir-btn").prop("disabled", true);
+    $.ajax({ url: URL, method: "POST", data: fd, processData: false, contentType: false, dataType: "json" })
+      .done(function (r) {
+        const avisos = (r && r.avisos) || [];
+        const lista = avisos.length ? `<ul class="text-start small mt-2">${avisos.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>` : "";
+        if (!r || !r.ok) {
+          Swal.fire({ icon: "error", title: "No se cargó", html: esc((r && r.msg) || "Error al subir la planilla") + lista });
+          return;
+        }
+        Swal.fire({ icon: avisos.length ? "warning" : "success", title: `${r.insertados} envío(s) cargado(s)`, html: "Quedaron en la lista de pendientes: revisalos e importalos." + lista });
+        $("#pl-archivo").val("");
+        const nc = $("#pl-ncliente").val();
+        cargarClientes();
+        setTimeout(function () {
+          $("#pl-cliente").val(nc);
+          if ($("#pl-cliente").val() == null) $("#pl-cliente").val("");
+          cargar();
+        }, 400);
+      })
+      .fail(() => Swal.fire("Error", "No se pudo subir la planilla.", "error"))
+      .always(() => $btn.prop("disabled", false));
+  });
 
   cargarClientes();
   cargar();
