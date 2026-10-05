@@ -744,7 +744,7 @@ if (isset($_POST['Actualizar'])) {
   // 2) Recolectar campos con defaults para evitar Undefined array key
   $__data = [
     'Direccion'            => $__post('dir'),
-    'PisoDepto'            => $__post('PisoDepto'),
+    'PisoDepto'            => $__post('piso'), // el JS lo manda como 'piso' (antes se leía 'PisoDepto' y se borraba siempre)
     'Ciudad'               => $__post('loc'),
     'Provincia'            => $__post('prov'),
     'CodigoPostal'         => $__post('cp'),
@@ -772,6 +772,33 @@ if (isset($_POST['Actualizar'])) {
     'DiasVencimiento'      => (string)$__diasVencimiento,
   ];
 
+  // Campos de Datos Generales que la pantalla no siempre tiene cargados (el campo de mail se
+  // sacó del formulario, los selects de Rubro y Condición no tienen opciones): vacío = no tocar,
+  // para que Guardar (que se usa sobre todo para Datos Facturación) no borre lo que ya está.
+  foreach (['Mail', 'PaginaWeb', 'Rubro'] as $__col) {
+    if ($__data[$__col] === '') unset($__data[$__col]);
+  }
+  if ($condicion === '') {
+    unset($__data['CondicionAnteIva'], $__data['SituacionFiscal']);
+  }
+  if (isset($__data['PaginaWeb'])) $__data['PaginaWeb'] = mb_substr($__data['PaginaWeb'], 0, 20); // varchar(20)
+  if (isset($__data['Rubro'])) $__data['Rubro'] = mb_substr($__data['Rubro'], 0, 10);             // varchar(10)
+  // CondicionAnteIva_f es int: si llega la descripción en vez del código, se resuelve el código.
+  if ($__condivaF !== null && !ctype_digit((string)$__condivaF)) {
+    $__codigo = null;
+    if ($__st = $mysqli->prepare("SELECT Codigo FROM AfipTipoDeResponsables WHERE Descripcion = ? LIMIT 1")) {
+      $__st->bind_param('s', $__condivaF);
+      $__st->execute();
+      $__codigo = $__st->get_result()->fetch_assoc()['Codigo'] ?? null;
+      $__st->close();
+    }
+    if ($__codigo === null) {
+      unset($__data['CondicionAnteIva_f']);
+    } else {
+      $__data['CondicionAnteIva_f'] = (string)(int)$__codigo;
+    }
+  }
+
   $__id = $__post('id');
   if ($__id === '') {
     echo json_encode(['success' => 0, 'error' => 'Falta id']);
@@ -779,10 +806,7 @@ if (isset($_POST['Actualizar'])) {
   }
 
   // (Opcional) Si tu columna PaginaWeb es corta (p.ej. VARCHAR(100)), truncá para evitar “Data too long”
-  $__PAGINAWEB_MAX = 255; // ⚠️ Ajustá al tamaño real de tu columna (DESCRIBE Clientes)
-  if (mb_strlen($__data['PaginaWeb']) > $__PAGINAWEB_MAX) {
-    $__data['PaginaWeb'] = mb_substr($__data['PaginaWeb'], 0, $__PAGINAWEB_MAX);
-  }
+
 
   // 3) UPDATE preparado (evita SQL syntax error por comillas y coma antes del WHERE)
   $__sets = [];
@@ -991,10 +1015,11 @@ if (isset($_POST['Datos'])) {
     'contacto' => $row['Contacto'],
     'iva' => $row['SituacionFiscal'],
     'Cuit' => $row['Cuit'],
-    'Rubro' => $row['Distribuidora'],
+    'Rubro' => $row['Rubro'],
     'Condicion' => $row['SituacionFiscal'],
     'Mail' => $row['Mail'],
-    'Web' => $row['Mail'],
+    'Web' => $row['PaginaWeb'],
+    'PisoDepto' => $row['PisoDepto'],
     'RelacionAsignada' => $row['Relacion'],
     'RelacionAsignada_label' => $RelacionAsignada_label,
     'Observaciones' => $row['Observaciones'],

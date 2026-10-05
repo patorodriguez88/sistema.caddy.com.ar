@@ -144,14 +144,16 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
             CT.Fecha,
             CT.TipoDeComprobante,
             CT.NumeroFactura,
-            CT.RazonSocial,
-            CT.Cuit,
+            -- Receptor: lo que se informó a ARCA (IvaVentas). Ctasctes guarda el nombre comercial
+            -- y el CUIT de Datos Generales, que pueden no ser los de facturación.
+            COALESCE(NULLIF(IV.RazonSocial, ''), NULLIF(C.RazonSocial_f, ''), CT.RazonSocial) AS RazonSocial,
+            COALESCE(NULLIF(IV.Cuit, ''), NULLIF(C.Cuit_f, ''), CT.Cuit) AS Cuit,
             CT.Debe,
             CT.Haber,
             CT.idCliente,
             CT.idFacturado,
             CT.Observaciones,
-            C.Direccion,
+            COALESCE(NULLIF(C.Direccion_f, ''), C.Direccion) AS Direccion,
             C.Ciudad,
             C.Provincia,
             C.CodigoPostal,
@@ -163,6 +165,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
             F.Vencimiento AS VencimientoFacturacion
         FROM Ctasctes CT
         LEFT JOIN Clientes C ON C.id = CT.idCliente
+        LEFT JOIN IvaVentas IV ON IV.id = CT.idIvaVentas AND CT.idIvaVentas > 0
         LEFT JOIN Facturacion F ON F.NumeroComprobante = CT.NumeroFactura
             AND F.TipoDeComprobante = CT.TipoDeComprobante
             AND F.Eliminado = 0
