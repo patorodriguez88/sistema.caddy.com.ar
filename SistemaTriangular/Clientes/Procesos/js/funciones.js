@@ -2045,6 +2045,7 @@ $("#buscarcliente").change(function () {
         $("#celular").val(jsonData.celular);
         $("#contacto").val(jsonData.contacto);
         $("#iva").val(jsonData.iva);
+        $("#pisodepto").val(jsonData.PisoDepto || "");
         $("#cuit").val(jsonData.Cuit);
         $("#rubro").val(jsonData.Rubro);
         $("#condicion").val(jsonData.Condicion);
@@ -2072,6 +2073,7 @@ $("#buscarcliente").change(function () {
         $("#tipodocumento_facturacion").val(jsonData.TipoDocumento_f);
         $("#cuit_facturacion").val(jsonData.Cuit_f);
         $("#condicion_facturacion").val(jsonData.CondicionAnteIva_f_label || jsonData.CondicionAnteIva_f);
+        $("#condicion_facturacion").data("codigo", jsonData.CondicionAnteIva_f || null);
         $("#ciclo_facturacion_label").html(jsonData.CicloFacturacion);
         $("#ciclo_facturacion").val(jsonData.CicloFacturacion || "");
         $("#observaciones_facturacion").val(jsonData.Observaciones_f);
@@ -2986,7 +2988,9 @@ $("#guardar_botton").click(function () {
   var condicion = document.getElementById("condicion").value;
   var cuit = document.getElementById("cuit").value;
   var rubro = document.getElementById("rubro").value;
-  var email = document.getElementById("email").value;
+  // El campo de mail se sacó del formulario (3/8): si no está, no se manda y el PHP no lo toca.
+  // Antes esto tiraba error y Guardar no hacía nada.
+  var email = $("#email").length ? $("#email").val() : "";
   var web = document.getElementById("web").value;
   var obs = document.getElementById("observaciones").value;
   var horario = document.getElementById("horario_entrega_cliente").value;
@@ -3001,7 +3005,10 @@ $("#guardar_botton").click(function () {
       "nueva_condicion_facturacion",
     ).value;
   } else {
-    var condiva_f = document.getElementById("condicion_facturacion").value;
+    // El input muestra la descripción; el código está en data-codigo (lo carga al abrir el cliente).
+    var condiva_f =
+      $("#condicion_facturacion").data("codigo") ??
+      document.getElementById("condicion_facturacion").value;
   }
 
   var tipodocumento_f = document.getElementById(
@@ -3072,8 +3079,14 @@ $("#guardar_botton").click(function () {
           "none";
         document.getElementById("condicion_facturacion").style.display =
           "block";
-        document.getElementById("condicion_facturacion").value = condiva_f;
+        if ($("#nueva_condicion_facturacion").val()) {
+          $("#condicion_facturacion")
+            .val($("#nueva_condicion_facturacion option:selected").text() || condiva_f)
+            .data("codigo", condiva_f);
+          $("#nueva_condicion_facturacion").val("");
+        }
       } else {
+        Swal.fire("No se guardó", jsonData.error || "Error al guardar los datos", "error");
       }
     },
   });
