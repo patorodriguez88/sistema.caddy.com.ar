@@ -44,6 +44,31 @@
                     </div>
 
                     <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-file-upload-outline"></i>Subir Excel de un cliente</h5>
+                                <div class="cf-card-sub">Para clientes que no usan Plataforma: misma planilla que suben ellos. Las filas quedan abajo como pendientes para revisarlas e importarlas.</div>
+                            </div>
+                        </div>
+                        <form id="pl-subir" class="row g-3 align-items-end">
+                            <div class="col-md-5 position-relative">
+                                <label class="form-label" for="pl-buscar">Cliente</label>
+                                <input id="pl-buscar" class="form-control" placeholder="Nombre o Nº de cliente…" autocomplete="off">
+                                <input type="hidden" name="ncliente" id="pl-ncliente">
+                                <div id="pl-sugerencias" class="list-group position-absolute w-100 shadow-sm d-none" style="z-index: 1060; max-height: 300px; overflow-y: auto;"></div>
+                                <div class="form-text" id="pl-cli-info"></div>
+                            </div>
+                            <div class="col-md-5">
+                                <label class="form-label" for="pl-archivo">Archivo (.xlsx, .xls o .csv)</label>
+                                <input id="pl-archivo" name="archivo" type="file" accept=".xlsx,.xls,.csv" class="form-control" required>
+                            </div>
+                            <div class="col-md-2">
+                                <button type="submit" class="btn btn-primary w-100" id="pl-subir-btn"><i class="mdi mdi-upload"></i> Subir</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="cf-card">
                         <div class="row g-3 align-items-end mb-3">
                             <div class="col-md-5">
                                 <label class="form-label" for="pl-cliente">Cliente</label>
