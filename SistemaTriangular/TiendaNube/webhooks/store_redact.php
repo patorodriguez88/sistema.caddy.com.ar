@@ -14,9 +14,20 @@ if (!tn_verify_hmac($raw, $sig)) {
 $payload = json_decode($raw, true);
 tn_log('store_redact OK', $payload);
 
-// Ejemplo: borrar datos ligados a la tienda
-$storeId = $payload['store_id'] ?? null;
-// TODO: ejecutar tus deletes/anonimizaciones por $storeId
+// La tienda desinstaló la app: se borran del comerciante los datos de la integración
+// (token, id de tienda y carrier). El cliente y su historial de envíos quedan.
+require __DIR__ . '/tn_privacidad.php';
+$storeId = (int)($payload['store_id'] ?? 0);
+$afectadas = 0;
+if ($storeId > 0) {
+    $st = $mysqli->prepare("UPDATE Clientes SET token_tiendanube = NULL, user_id_tn = NULL, carrier_id_tn = NULL WHERE user_id_tn = ?");
+    $s = (string)$storeId;
+    $st->bind_param('s', $s);
+    $st->execute();
+    $afectadas = $st->affected_rows;
+    $st->close();
+}
+tn_registrar($mysqli, 'store/redact', $storeId, null, [], ['Clientes' => $afectadas]);
 
 http_response_code(200);
 echo 'ok';
