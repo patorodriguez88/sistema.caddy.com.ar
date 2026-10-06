@@ -9,6 +9,19 @@ include_once "../../../Conexion/Conexioni.php";
 // de la línea ~200 con "No hay remitos seleccionados" ANTES de llegar a
 // grabar nada en el bloque real, dejando el comprobante (ya con CAE de
 // AFIP) sin registrar en el sistema.
+// Validación ANTES de pedir el CAE a ARCA (factura_afip.js): el cliente tiene que tener la
+// condición de IVA de facturación. Antes se chequeaba recién acá abajo, DESPUÉS de que ARCA ya
+// había emitido el comprobante: si faltaba, no se grababa nada (factura 00002-00002636 de
+// CASA DE PEDRO 2, 30/9/2026: emitida en ARCA, sin rastro en el sistema y los remitos de nuevo
+// en "Guías a Facturar").
+if (isset($_POST['ValidarCondicionIva'])) {
+  $idCli = (int)($_POST['id'] ?? 0);
+  $r = $mysqli->query("SELECT t.Codigo FROM Clientes c JOIN AfipTipoDeComprobante t ON t.Codigo = c.CondicionAnteIva_f WHERE c.id = $idCli LIMIT 1");
+  $ok = $r && $r->num_rows > 0;
+  echo json_encode(array('ok' => $ok, 'msg' => $ok ? '' : 'El cliente no tiene cargada la Condición de I.V.A. de facturación. Cargala en Datos Cliente > Datos Facturación y guardá antes de facturar.'), JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
 if ($_POST['Facturar'] == 1) {
 
   //DATOS CLIENTE
@@ -23,7 +36,9 @@ if ($_POST['Facturar'] == 1) {
   $datosqlTipo = $sqlTipo->fetch_array(MYSQLI_ASSOC);
 
   //SI O SI DEFINIR LA CONDICION SI NO NO PERMITE FACTURAR
-  if ($datosqlTipo['Codigo'] == '') {
+  // Si ya viene un CAE, ARCA ya emitió el comprobante: se graba igual (la condición de IVA
+  // no se usa para grabar). Bloquear acá dejaba facturas emitidas sin registrar.
+  if ($datosqlTipo['Codigo'] == '' && trim((string)($_POST['CAE'] ?? '')) === '') {
 
     echo json_encode(array('success' => 3));
   } else {
@@ -290,7 +305,9 @@ if ($_POST['Facturar'] == 2) {
   $sqlTipo = $mysqli->query("SELECT Codigo,Descripcion FROM AfipTipoDeComprobante WHERE Codigo='$datoCliente[CondicionAnteIva_f]'");
   $datosqlTipo = $sqlTipo->fetch_array(MYSQLI_ASSOC);
 
-  if ($datosqlTipo['Codigo'] == '') {
+  // Si ya viene un CAE, ARCA ya emitió el comprobante: se graba igual (la condición de IVA
+  // no se usa para grabar). Bloquear acá dejaba facturas emitidas sin registrar.
+  if ($datosqlTipo['Codigo'] == '' && trim((string)($_POST['CAE'] ?? '')) === '') {
     echo json_encode(array('success' => 3));
   } else {
     // DESDE ACA PARA SUBIR EL ARCHIVO
@@ -327,11 +344,12 @@ if ($_POST['Facturar'] == 2) {
       $Fecha = date('Y-m-d');
     }
 
-    $NumeroComprobante = $_POST['NumeroComprobante'];
+    // Mismo formato que la factura por remito: PtoVta-Numero (00002-00002632). Antes acá se
+    // guardaba el número pelado (00002632) y no coincidía con el resto de los comprobantes.
+    $NumeroComprobante = str_pad($_POST['PtoVta'], 5, '0', STR_PAD_LEFT) . '-' . str_pad($_POST['NumeroComprobante'], 8, '0', STR_PAD_LEFT);
 
     if ($_POST['condicion'] == '001') {
       $TipoDeComprobante = "FACTURAS A";
-      $NumeroComprobante = $_POST['NumeroComprobante'];
     }
 
     if (($TipoDeComprobante == 'NOTAS DE CREDITO A')
@@ -525,7 +543,9 @@ if ($_POST['Facturar'] == 3) {
   $datosqlTipo = $sqlTipo->fetch_array(MYSQLI_ASSOC);
 
   //SI O SI DEFINIR LA CONDICION SI NO NO PERMITE FACTURAR
-  if ($datosqlTipo['Codigo'] == '') {
+  // Si ya viene un CAE, ARCA ya emitió el comprobante: se graba igual (la condición de IVA
+  // no se usa para grabar). Bloquear acá dejaba facturas emitidas sin registrar.
+  if ($datosqlTipo['Codigo'] == '' && trim((string)($_POST['CAE'] ?? '')) === '') {
 
     echo json_encode(array('success' => 3));
   } else {

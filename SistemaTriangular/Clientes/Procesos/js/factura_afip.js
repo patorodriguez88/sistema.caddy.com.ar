@@ -13,6 +13,7 @@ $("#confirmar_ncnd_boton").click(function() {
 
     var fecha = document.getElementById('ncnd_fecha').value;
     var id = document.getElementById('buscarcliente').value;
+    if (!condicionIvaFacturacionOk(id)) return; // antes de pedir el CAE a ARCA
     var neto = document.getElementById('ncnd_neto').value;
     var iva = document.getElementById('ncnd_iva').value;
     var total = document.getElementById('ncnd_total').value;
@@ -204,6 +205,7 @@ $("#confirmarfactura_AFIP_boton").click(function() {
     
     var fecha = document.getElementById('fecha_up').value;
     var id = document.getElementById('buscarcliente').value;
+    if (!condicionIvaFacturacionOk(id)) return; // antes de pedir el CAE a ARCA
     var neto = document.getElementById('factura_neto_f').value;
     var iva = document.getElementById('factura_iva_f').value;
     var total = document.getElementById('factura_total_f').value;
@@ -409,6 +411,7 @@ $("#confirmarfactura_AFIP_boton").click(function() {
 $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
   
     var id = document.getElementById('buscarcliente').value;
+    if (!condicionIvaFacturacionOk(id)) return; // antes de pedir el CAE a ARCA
     var neto = document.getElementById('factura_neto_f').value;
     var iva = document.getElementById('factura_iva_f').value;
     var total = document.getElementById('factura_total_f').value;
@@ -601,3 +604,25 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
 
 });
 
+// Antes de pedir el CAE a ARCA: si el cliente no tiene la condición de IVA de facturación, no se
+// emite nada. Antes se validaba recién al grabar (facturar.php), con el comprobante ya emitido en
+// ARCA, y la factura quedaba sin registrar (00002-00002636, CASA DE PEDRO 2, 30/9/2026).
+function condicionIvaFacturacionOk(id) {
+    var ok = false;
+    var msg = 'No se pudo validar los datos de facturación del cliente.';
+    $.ajax({
+        url: 'Procesos/php/facturar.php',
+        type: 'post',
+        data: { ValidarCondicionIva: 1, id: id },
+        dataType: 'json',
+        async: false,
+        success: function (r) {
+            ok = !!(r && r.ok);
+            msg = (r && r.msg) || msg;
+        }
+    });
+    if (!ok) {
+        toast("error", "No se emitió el comprobante", msg);
+    }
+    return ok;
+}
