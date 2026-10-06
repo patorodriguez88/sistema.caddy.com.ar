@@ -253,8 +253,8 @@ try {
         $ins = $mysqli->prepare("INSERT INTO PreVenta
             (Fecha, RazonSocial, NCliente, TipoDeComprobante, NumeroComprobante, Cantidad, ClienteDestino,
              idClienteDestino, DomicilioDestino, LocalidadDestino, NumeroVenta, DomicilioOrigen, LocalidadOrigen,
-             Usuario, Cargado, EntregaEn, Eliminado, Recorrido, idProveedor, FechaEntrega, ValorDeclarado)
-            VALUES (CURDATE(), ?, ?, 'SOLICITUD WEB', 49, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, 'Domicilio', 0, ?, ?, ?, ?)");
+             Usuario, Cargado, EntregaEn, Eliminado, Recorrido, idProveedor, FechaEntrega, ValorDeclarado, Origen)
+            VALUES (CURDATE(), ?, ?, 'SOLICITUD WEB', 49, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, 'Domicilio', 0, ?, ?, ?, ?, 'IMPORTACION_DINTER')");
         $usuario = (string)($_SESSION['Usuario'] ?? '');
         $origenTxt = (string)$origen;
         $cargadas = 0;

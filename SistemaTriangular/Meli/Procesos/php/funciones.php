@@ -350,8 +350,8 @@ if(isset($_POST['CargarPreVenta'])){
     $st->close();
     }
 
-    $st = $mysqli->prepare("INSERT IGNORE INTO `PreVenta`(`Fecha`, `RazonSocial`, `NCliente`, `TipoDeComprobante`, `NumeroComprobante`, `Cantidad`, `Precio`, `Total`, `ClienteDestino`, `DomicilioDestino`, `LocalidadDestino`, `DomicilioOrigen`, `LocalidadOrigen`, `Usuario`, `EntregaEn`, `Observaciones`,`Hora`, `idProveedor`,`ValorDeclarado`, `Telefono`, `Celular`, `cpdestino`,`idClienteDestino`,`shipments_id`,`order_id`,`Status`)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Domicilio',?,?,?,?,?,?,?,?,?,?,?)");
+    $st = $mysqli->prepare("INSERT IGNORE INTO `PreVenta`(`Fecha`, `RazonSocial`, `NCliente`, `TipoDeComprobante`, `NumeroComprobante`, `Cantidad`, `Precio`, `Total`, `ClienteDestino`, `DomicilioDestino`, `LocalidadDestino`, `DomicilioOrigen`, `LocalidadOrigen`, `Usuario`, `EntregaEn`, `Observaciones`,`Hora`, `idProveedor`,`ValorDeclarado`, `Telefono`, `Celular`, `cpdestino`,`idClienteDestino`,`shipments_id`,`order_id`,`Status`,`Origen`)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,'Domicilio',?,?,?,?,?,?,?,?,?,?,?,?)");
     $vals = array(
         $Fecha, (string) $DATOS_IMPORTACIONES['RazonSocial'], (string) $DATOS_IMPORTACIONES['NCliente'],
         (string) $DATOS_IMPORTACIONES['TipoDeComprobante'], (string) $DATOS_IMPORTACIONES['NumeroComprobante'], (string) $DATOS_IMPORTACIONES['Cantidad'],
@@ -364,6 +364,8 @@ if(isset($_POST['CargarPreVenta'])){
         (string) $DATOS_IMPORTACIONES['order_id'],
         // antes leia 'status' (minuscula) que no existe en Importaciones: quedaba vacio
         (string) ($DATOS_IMPORTACIONES['Status'] ?? $DATOS_IMPORTACIONES['status'] ?? ''),
+        // Origen (PreVenta.Origen): por acá pasan los pedidos de Mercado Libre y de Tienda Nube
+        in_array($DATOS_IMPORTACIONES['TipoDeComprobante'], ['API_MELI', 'API_TIENDANUBE'], true) ? $DATOS_IMPORTACIONES['TipoDeComprobante'] : 'IMPORTACION',
     );
     $st->bind_param(str_repeat('s', count($vals)), ...$vals);
 

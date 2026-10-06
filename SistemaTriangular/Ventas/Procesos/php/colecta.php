@@ -269,14 +269,14 @@ if (isset($_POST['CargarVenta'])) {
         ClienteDestino,DocumentoDestino,DomicilioDestino,LocalidadDestino,SituacionFiscalDestino,TelefonoDestino,
         CodigoSeguimiento,NumeroVenta,Cantidad,DomicilioOrigen,SituacionFiscalOrigen,LocalidadOrigen,IngBrutosOrigen,TelefonoOrigen,
         FormaDePago,EntregaEn,Usuario,CodigoProveedor,Observaciones,Recorrido,ProvinciaDestino,ProvinciaOrigen,
-        idClienteOrigen,idClienteDestino,Retirado,Kilometros,ValorDeclarado,FechaEntrega,FechaPrometida,Wepoint_c,Redespacho,CompraMercaderia,Estado,NumerodeOrden)
+        idClienteOrigen,idClienteDestino,Retirado,Kilometros,ValorDeclarado,FechaEntrega,FechaPrometida,Wepoint_c,Redespacho,CompraMercaderia,Estado,NumerodeOrden,Origen)
         VALUES('{$fecha}','{$clienteorigen}','{$cuitorigen}',
         '{$tipodecomprobante}','{$numerorepo}','{$total}','0','{$clientedestino}','{$cuitdestino}',
         '{$domiciliodestino}','{$localidaddestino}','{$situacionfiscaldestino}','{$telefonodestino}',
         '{$codigo_seguimiento}','{$numerorepo}','{$cantidad}','{$domicilioorigen}','{$situacionfiscalorigen}','{$localidadorigen}',
         '{$idclienteorigen}','{$telefonoorigen}','{$formadepago}','{$entregaen}','{$usuario}','{$codigoproveedor}','{$observaciones}',
         '{$recorrido}','{$provinciadestino}','{$provinciaorigen}','{$idclienteorigen}','{$idclientedestino}','{$retirado}',
-        '{$kilometros}','{$valordeclarado}','{$fechaentrega}','{$fechaprometida}','{$wepoint_c}','0','0','{$Estado}','{$nordenlogistica}')";
+        '{$kilometros}','{$valordeclarado}','{$fechaentrega}','{$fechaprometida}','{$wepoint_c}','0','0','{$Estado}','{$nordenlogistica}','COLECTA')";
 
         // FIX (2026-09-15, a pedido): ninguna de las queries de este bloque
         // chequeaba error - si el INSERT de TransClientes fallaba (o

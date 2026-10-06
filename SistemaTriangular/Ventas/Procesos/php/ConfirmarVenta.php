@@ -190,8 +190,8 @@ $TransClientesQuery = "INSERT INTO TransClientes(Fecha, RazonSocial, Cuit, TipoD
     CodigoSeguimiento, NumeroVenta, Cantidad, DomicilioOrigen, SituacionFiscalOrigen, LocalidadOrigen, IngBrutosOrigen, TelefonoOrigen,
     FormaDePago, EntregaEn, Usuario, CodigoProveedor, Observaciones, Transportista, Recorrido, ProvinciaDestino, ProvinciaOrigen, Retirado,
     idClienteDestino, CobrarEnvio, CobrarCaddy, ValorDeclarado, PisoDeptoDestino, FechaEntrega, idClienteFacturacion, Kilometros, google_km,
-    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden,idClienteOrigen,HorarioEntregaSolicitado)
-    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?)";
+    google_time, Estado, Redespacho, Wepoint_c, Flex, idPago,Avisado,NumerodeOrden,idClienteOrigen,HorarioEntregaSolicitado, Origen)
+    VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,?,?, 'VENTA_MANUAL')";
 
 $stmt = $mysqli->prepare($TransClientesQuery);
 
