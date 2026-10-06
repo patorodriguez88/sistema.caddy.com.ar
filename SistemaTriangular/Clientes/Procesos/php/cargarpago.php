@@ -115,8 +115,8 @@ if (isset($_POST['CargarPago'])) {
     $Importe = limpiarMoneda($_POST['importe']);
     $Total = $Importe;
 
-    $sqltransclientes = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,Usuario,Flex,idClienteOrigen)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}',{$Importe},'{$FormaDePago}','{$id}','{$Usuario}','0','{$id}')";
+    $sqltransclientes = "INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,Usuario,Flex,idClienteOrigen,Origen)VALUES
+('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}',{$Importe},'{$FormaDePago}','{$id}','{$Usuario}','0','{$id}','PAGO')";
 
     if ($mysqli->query($sqltransclientes)) {
 

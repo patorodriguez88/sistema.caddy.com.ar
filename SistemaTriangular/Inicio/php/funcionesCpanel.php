@@ -105,8 +105,10 @@ if (isset($_POST['DashboardOperativo'])) {
   // Tipo de envío (definido con Patricio, 2026-09-29): Simples = Flex 0; Flex = Flex 1 (en el día);
   // MELI = los Flex con número de envío de Mercado Libre (shipments_id, o en CodigoProveedor en las
   // colectas Flex: 11 dígitos que empiezan con 4). MELI es un subconjunto de Flex.
-  // TN = pedidos de Tienda Nube (entran por Preventa como API_TIENDANUBE). Guardan el nº de orden de
-  // TN en shipments_id (10 dígitos), por eso MELI se reconoce por el formato y no por shipments_id > 0.
+  // TN = pedidos de Tienda Nube (TransClientes.Origen, ver migraciones/2026_10_06_origen_envios.sql).
+  // Guardan el nº de orden de TN en shipments_id (10 dígitos), por eso MELI se reconoce por el formato
+  // del número de ML y no por shipments_id > 0. MELI no usa Origen: también hay envíos de ML que
+  // entran por la API o a mano (colectas Flex), y esos también son MELI.
   // Las colectas "padre" (retiro -> depósito Wepoint, idClienteDestino 18587) no son envíos a
   // clientes: se excluyen de todo y se cuentan aparte en "colectas".
   $DEPOSITO = 18587;
@@ -115,8 +117,7 @@ if (isset($_POST['DashboardOperativo'])) {
     return ($r && ($f = $r->fetch_assoc())) ? $f : [];
   };
   $esMeli = "(t.shipments_id REGEXP '^4[0-9]{10}$' OR t.CodigoProveedor REGEXP '^4[0-9]{10}$')";
-  $esTn = "EXISTS (SELECT 1 FROM PreVenta pv WHERE pv.CodigoSeguimiento = t.CodigoSeguimiento
-                     AND pv.TipoDeComprobante = 'API_TIENDANUBE')";
+  $esTn = "(t.Origen = 'API_TIENDANUBE')";
 
   // Paradas abiertas (sin el depósito, recorrido 80), una por código
   $pendientesSql = "

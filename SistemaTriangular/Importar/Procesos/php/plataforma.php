@@ -376,6 +376,8 @@ if ($accion === 'importar') {
         'Observaciones'  => trim(preg_replace('/\s+/', ' ', (string) $row['Observaciones'])),
         'idProveedor'    => (string) $row['idProveedor'],
         'Origen'         => [['idProveedor' => '', 'Nombre' => '', 'Direccion' => '']],
+        // Canal de ingreso (PreVenta.Origen); "Origen" de arriba es la dirección de retiro.
+        'Canal'          => 'EXCEL_SISTEMA',
         // Mismos valores por defecto que usa Plataforma cuando el Excel no trae medidas.
         'Box'            => [[
             'Length' => (int) $row['Length'] ?: 11,

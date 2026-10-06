@@ -57,8 +57,8 @@ $TipoDeComprobante='Recibo de Pago';
 
 $Importe=$_POST['importe'];
 
-$sqltransclientes="INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,Usuario,idClienteOrigen)VALUES
-('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}','{$id}','{$Usuario}','{$id}')";
+$sqltransclientes="INSERT INTO TransClientes(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,FormaDePago,IngBrutosOrigen,Usuario,idClienteOrigen,Origen)VALUES
+('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$FormaDePago}','{$id}','{$Usuario}','{$id}','PAGO')";
 
 if($mysqli->query($sqltransclientes)){
 

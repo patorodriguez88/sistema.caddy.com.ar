@@ -133,6 +133,21 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
         $order_id = $DatosPreVenta['order_id'];
         $shipments_id = $DatosPreVenta['shipments_id'];
         $status = $DatosPreVenta['status'];
+        // Origen del envío (ver Conexion/migraciones/2026_10_06_origen_envios.sql). Las altas que
+        // todavía no lo graban en PreVenta (ej. Meli/Procesos) se deducen del TipoDeComprobante.
+        $origen = $DatosPreVenta['Origen'] ?? '';
+        if ($origen === '' || $origen === null) {
+            $tipoPv = (string) $DatosPreVenta['TipoDeComprobante'];
+            if ($tipoPv === 'API_MELI' || $tipoPv === 'API_TIENDANUBE') {
+                $origen = $tipoPv;
+            } elseif ($tipoPv === 'SOLICITUD WEB') {
+                $origen = 'PLATAFORMA';
+            } elseif (stripos($tipoPv, 'Tarifa') === 0) {
+                $origen = 'API';
+            } else {
+                $origen = 'PREVENTA';
+            }
+        }
 
         if ($CodigoProveedor) {
             $wepoint_c = $CodigoProveedor;
@@ -447,7 +462,7 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
     ClienteDestino,DocumentoDestino,DomicilioDestino,LocalidadDestino,SituacionFiscalDestino,IngBrutosDestino,TelefonoDestino,
     CodigoSeguimiento,NumeroVenta,Cantidad,DomicilioOrigen,SituacionFiscalOrigen,LocalidadOrigen,IngBrutosOrigen,TelefonoOrigen,
     FormaDePago,EntregaEn,Usuario,CodigoProveedor,Observaciones,Transportista,Recorrido,ProvinciaDestino,ProvinciaOrigen,
-    idClienteOrigen,idClienteDestino,Retirado,Redespacho,Kilometros,CobrarEnvio,CobrarCaddy,ValorDeclarado,FechaEntrega,order_id,shipments_id,status,Wepoint_c,Estado)
+    idClienteOrigen,idClienteDestino,Retirado,Redespacho,Kilometros,CobrarEnvio,CobrarCaddy,ValorDeclarado,FechaEntrega,order_id,shipments_id,status,Wepoint_c,Estado,Origen)
     VALUES('{$esc($Fecha)}','{$esc($ClienteOrigen)}','{$esc($CuitClienteA)}',
     '{$esc($TipoDeComprobante)}','{$esc($NumeroRepo)}','{$esc($Compra)}','{$esc($total_ventas)}','{$esc($Haber)}','{$esc($ClienteDestino)}','{$esc($CuitDestino)}',
     '{$esc($DomicilioDestino)}','{$esc($LocalidadDestino)}','{$esc($SituacionFiscalDestino)}','{$esc($IngBrutosDestino)}','{$esc($TelefonoDestino)}',
@@ -455,7 +470,7 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
     '{$esc($IdOrigen)}','{$esc($TelefonoOrigen)}','{$esc($FormaDePago)}','{$esc($EntregaEn)}','{$esc($Usuario)}','{$esc($CodigoProveedor)}','{$esc($Observaciones)}',
     '{$esc($Transportista)}','{$esc($Recorrido_Limpio)}','{$esc($ProvinciaDestino)}','{$esc($ProvinciaOrigen)}','{$esc($IdOrigen)}','{$esc($idClienteDestino)}','{$esc($Retirado)}',
     '{$esc($Redespacho)}','{$esc($Kilometros)}','{$esc($CobrarEnvio_label)}','{$esc($CobrarCaddy)}','{$esc($ValorDeclarado)}','{$esc($FechaEntrega)}','{$esc($order_id)}',
-    '{$esc($shipments_id)}','{$esc($status)}','{$esc($wepoint_c)}','{$esc($estado)}')";
+    '{$esc($shipments_id)}','{$esc($status)}','{$esc($wepoint_c)}','{$esc($estado)}','{$esc($origen)}')";
 
         $mysqli->query($IngresaTransaccion);
 
