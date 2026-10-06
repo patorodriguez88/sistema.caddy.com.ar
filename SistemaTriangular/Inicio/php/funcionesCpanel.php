@@ -105,6 +105,8 @@ if (isset($_POST['DashboardOperativo'])) {
   // Tipo de envío (definido con Patricio, 2026-09-29): Simples = Flex 0; Flex = Flex 1 (en el día);
   // MELI = los Flex con número de envío de Mercado Libre (shipments_id, o en CodigoProveedor en las
   // colectas Flex: 11 dígitos que empiezan con 4). MELI es un subconjunto de Flex.
+  // TN = pedidos de Tienda Nube (entran por Preventa como API_TIENDANUBE). Guardan el nº de orden de
+  // TN en shipments_id (10 dígitos), por eso MELI se reconoce por el formato y no por shipments_id > 0.
   // Las colectas "padre" (retiro -> depósito Wepoint, idClienteDestino 18587) no son envíos a
   // clientes: se excluyen de todo y se cuentan aparte en "colectas".
   $DEPOSITO = 18587;
@@ -112,7 +114,9 @@ if (isset($_POST['DashboardOperativo'])) {
     $r = $mysqli->query($sql);
     return ($r && ($f = $r->fetch_assoc())) ? $f : [];
   };
-  $esMeli = "(t.shipments_id > 0 OR t.CodigoProveedor REGEXP '^4[0-9]{10}$')";
+  $esMeli = "(t.shipments_id REGEXP '^4[0-9]{10}$' OR t.CodigoProveedor REGEXP '^4[0-9]{10}$')";
+  $esTn = "EXISTS (SELECT 1 FROM PreVenta pv WHERE pv.CodigoSeguimiento = t.CodigoSeguimiento
+                     AND pv.TipoDeComprobante = 'API_TIENDANUBE')";
 
   // Paradas abiertas (sin el depósito, recorrido 80), una por código
   $pendientesSql = "
@@ -120,7 +124,8 @@ if (isset($_POST['DashboardOperativo'])) {
            MAX(l.Recorrido IS NOT NULL) AS en_ruta,
            MIN(t.Fecha) AS fecha,
            MAX(t.Flex = 1) AS flex,
-           MAX(t.Flex = 1 AND $esMeli) AS meli
+           MAX(t.Flex = 1 AND $esMeli) AS meli,
+           MAX($esTn) AS tn
       FROM HojaDeRuta h
       JOIN TransClientes t ON t.CodigoSeguimiento = h.Seguimiento AND t.Eliminado = 0
                           AND t.Entregado = 0 AND t.Devuelto = 0 AND t.idClienteDestino <> $DEPOSITO
@@ -133,25 +138,33 @@ if (isset($_POST['DashboardOperativo'])) {
            COALESCE(SUM(en_ruta = 1 AND flex = 0), 0) AS simples,
            COALESCE(SUM(en_ruta = 1 AND flex = 1), 0) AS flex,
            COALESCE(SUM(en_ruta = 1 AND meli = 1), 0) AS meli,
+           COALESCE(SUM(en_ruta = 1 AND tn = 1 AND flex = 0), 0) AS tn_simples,
+           COALESCE(SUM(en_ruta = 1 AND tn = 1 AND flex = 1), 0) AS tn_flex,
            COALESCE(SUM(en_ruta = 0 AND fecha >= CURDATE() - INTERVAL 30 DAY), 0) AS sin_salir,
            COALESCE(SUM(en_ruta = 0 AND fecha <  CURDATE() - INTERVAL 30 DAY), 0) AS atrasados
       FROM ($pendientesSql) p");
 
   $recorridos = $uno("SELECT COUNT(DISTINCT Recorrido) AS n FROM Logistica WHERE Estado = 'Cargada' AND Eliminado = 0");
 
-  // Entregados hoy (a clientes) y ayer hasta la misma hora
+  // Entregados hoy (a clientes) y ayer hasta la misma hora.
+  // "cerrada" = se entregó en una salida que ya volvió (Logistica Cerrada, ej. un reintento de la
+  // mañana): operaciones cuenta lo que está en las camionetas que siguen afuera, no esos.
   $entregadosSql = function (string $cuando) use ($DEPOSITO, $esMeli): string {
     return "
-      SELECT s.CodigoSeguimiento, MAX(t.Flex = 1) AS flex, MAX(t.Flex = 1 AND $esMeli) AS meli
+      SELECT s.CodigoSeguimiento, MAX(t.Flex = 1) AS flex, MAX(t.Flex = 1 AND $esMeli) AS meli,
+             MAX(l.Estado = 'Cerrada') AS cerrada
         FROM Seguimiento s
         JOIN TransClientes t ON t.CodigoSeguimiento = s.CodigoSeguimiento AND t.Eliminado = 0
                             AND t.idClienteDestino <> $DEPOSITO
+        LEFT JOIN Logistica l ON l.NumerodeOrden = s.NumerodeOrden AND s.NumerodeOrden > 0 AND l.Eliminado = 0
        WHERE $cuando AND s.Entregado = 1 AND (s.Eliminado IS NULL OR s.Eliminado = 0)
        GROUP BY s.CodigoSeguimiento";
   };
   $ent = $uno("
     SELECT COUNT(*) AS total, COALESCE(SUM(flex = 0), 0) AS simples,
-           COALESCE(SUM(flex = 1), 0) AS flex, COALESCE(SUM(meli = 1), 0) AS meli
+           COALESCE(SUM(flex = 1), 0) AS flex, COALESCE(SUM(meli = 1), 0) AS meli,
+           COALESCE(SUM(flex = 0 AND cerrada = 1), 0) AS simples_cerrada,
+           COALESCE(SUM(flex = 1 AND cerrada = 1), 0) AS flex_cerrada
       FROM (" . $entregadosSql("s.Fecha = CURDATE()") . ") e");
   $entAyer = $uno("SELECT COUNT(*) AS total FROM (" . $entregadosSql("s.Fecha = CURDATE() - INTERVAL 1 DAY AND s.Hora <= CURTIME()") . ") e");
   $hoy = (int)($ent['total'] ?? 0);
@@ -209,6 +222,11 @@ if (isset($_POST['DashboardOperativo'])) {
     'flex_pendientes' => $i($pend, 'flex'),
     'meli_entregados' => $i($ent, 'meli'),
     'meli_pendientes' => $i($pend, 'meli'),
+    'tn_simples_pendientes' => $i($pend, 'tn_simples'),
+    'tn_flex_pendientes' => $i($pend, 'tn_flex'),
+    // Entregados hoy en salidas que ya volvieron (no están en las camionetas que siguen afuera)
+    'simples_entregados_cerrada' => $i($ent, 'simples_cerrada'),
+    'flex_entregados_cerrada' => $i($ent, 'flex_cerrada'),
     // Colectas de hoy
     'colectas_total' => $i($col, 'total'),
     'colectas_a_retirar' => $i($col, 'a_retirar'),

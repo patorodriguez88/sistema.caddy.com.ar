@@ -82,6 +82,12 @@
         $it.find(".cp-op-pend").text(fmt0.format(pend));
         $it.find(".cp-op-pct").text(total ? pct + "%" : "–");
         $it.find(".cp-op-bar > div").css("width", pct + "%");
+        const tn = num(d["tn_" + t + "_pendientes"]);
+        $it.find(".cp-tn").toggleClass("d-none", tn === 0).text(`${fmt0.format(tn)} TN`);
+        // Entregados en salidas que ya volvieron: no están en las camionetas que siguen afuera
+        const cerr = num(d[t + "_entregados_cerrada"]);
+        $it.find(".cp-op-obs").toggleClass("d-none", cerr === 0)
+          .text(`Incluye ${plural(cerr, "entregado en una salida que ya volvió", "entregados en salidas que ya volvieron")}`);
       });
 
       // Todavía no salieron (va abajo, junto a la tabla por recorrido)

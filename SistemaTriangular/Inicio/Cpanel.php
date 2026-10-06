@@ -105,13 +105,15 @@
                                 <div class="cp-op-head"><span>Simples</span><b class="cp-op-pct">–</b></div>
                                 <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
                                 <div class="cp-op-bar"><div></div></div>
-                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle</div>
+                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle <span class="cp-tn d-none" title="Pedidos de Tienda Nube que siguen en la calle"></span></div>
+                                <div class="cp-op-obs d-none"></div>
                             </div>
                             <div class="cp-op-item" data-tipo="flex" style="--cp-c:#39afd1">
                                 <div class="cp-op-head"><span>Flex <small>(en el día)</small></span><b class="cp-op-pct">–</b></div>
                                 <div class="cp-op-num"><b class="cp-op-ent">–</b> <span>de <span class="cp-op-total">–</span> entregados</span></div>
                                 <div class="cp-op-bar"><div></div></div>
-                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle <span class="cp-meli d-none" id="cp-meli-pend" title="Envíos de Mercado Libre (MELI) dentro de Flex que siguen en la calle"></span></div>
+                                <div class="cp-op-foot"><span class="cp-op-pend">–</span> en la calle <span class="cp-meli d-none" id="cp-meli-pend" title="Envíos de Mercado Libre (MELI) dentro de Flex que siguen en la calle"></span> <span class="cp-tn d-none" title="Pedidos de Tienda Nube que siguen en la calle"></span></div>
+                                <div class="cp-op-obs d-none"></div>
                             </div>
                         </div>
                     </div>
