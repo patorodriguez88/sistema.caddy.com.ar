@@ -3,6 +3,8 @@ var idCtaCte = getParameterByName('id');
 var datatable_facturacion = $('#tabla_facturacion_proforma_detalle').DataTable({
     paging: false,
     searching: false,
+    info: false,
+    ordering: false, // el orden lo da el server (fecha, envío); en el comprobante no se reordena
     footerCallback: function(row, data, start, end, display) {
       total = this.api()
         .column(5, {
