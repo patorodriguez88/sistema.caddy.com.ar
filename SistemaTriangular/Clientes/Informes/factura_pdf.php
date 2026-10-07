@@ -204,7 +204,50 @@ function facturaDetalle(mysqli $mysqli, int $idFactura): array
     return [$detalle, $total, $esRecorrido];
 }
 
-function generarFacturaPDF($idCtasctes, $rutaSalida)
+/**
+ * Líneas de la venta (tabla Ventas) de los envíos de una factura, para el "Detalle de operaciones"
+ * (ícono D en la cuenta corriente). Los envíos salen del detalle grabado al facturar o, en
+ * facturas viejas, de los remitos de Ctasctes. Sin las líneas que no se facturan (not_invoice).
+ */
+function facturaLineasVentas(mysqli $mysqli, int $idFactura): array
+{
+    $codigos = [];
+    $res = $mysqli->query("SELECT DISTINCT CodigoSeguimiento FROM Facturacion_detalle
+                            WHERE idFacturado = {$idFactura} AND CodigoSeguimiento <> ''");
+    while ($res && $r = $res->fetch_row()) {
+        $codigos[] = $r[0];
+    }
+    if (!$codigos) {
+        $res = $mysqli->query("SELECT DISTINCT t.CodigoSeguimiento FROM Ctasctes c
+                                 JOIN TransClientes t ON t.id = c.idTransClientes AND t.Eliminado = 0
+                                WHERE c.Eliminado = 0 AND c.idFacturado = {$idFactura} AND t.CodigoSeguimiento <> ''");
+        while ($res && $r = $res->fetch_row()) {
+            $codigos[] = $r[0];
+        }
+    }
+    if (!$codigos) {
+        return [];
+    }
+    $in = "'" . implode("','", array_map([$mysqli, 'real_escape_string'], $codigos)) . "'";
+    $lineas = [];
+    $res = $mysqli->query("
+        SELECT v.FechaPedido AS Fecha, v.NumPedido AS CodigoSeguimiento, v.Titulo, v.Comentario, v.Total AS Debe,
+               (SELECT t.ClienteDestino FROM TransClientes t WHERE t.CodigoSeguimiento = v.NumPedido AND t.Eliminado = 0 LIMIT 1) AS ClienteDestino
+          FROM Ventas v
+         WHERE v.Eliminado = 0 AND IFNULL(v.not_invoice, 0) = 0 AND v.NumPedido IN ($in)
+         ORDER BY v.FechaPedido, v.NumPedido, v.idPedido");
+    while ($res && $r = $res->fetch_assoc()) {
+        $lineas[] = $r;
+    }
+    return $lineas;
+}
+
+/**
+ * PDF de la factura. Con $operaciones = true es el "Detalle de operaciones": el mismo comprobante
+ * pero la tabla muestra cada línea de la venta (servicio, valor declarado, colecta, etc.) en vez
+ * de un renglón por envío. Las facturas por recorrido no tienen líneas de venta: salen igual.
+ */
+function generarFacturaPDF($idCtasctes, $rutaSalida, bool $operaciones = false)
 {
     global $mysqli;
 
@@ -252,6 +295,14 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     // Detalle (compartido con el export a Excel, ver factura_detalle_excel.php)
     [$detalle, $total, $esRecorrido] = facturaDetalle($mysqli, (int)$row['id']);
     if ($total <= 0) $total = (float)$row['Debe'];
+    $porLineas = false;
+    if ($operaciones && !$esRecorrido) {
+        $lineas = facturaLineasVentas($mysqli, (int)$row['id']);
+        if ($lineas) {
+            $porLineas = true;
+            $detalle = $lineas;
+        }
+    }
 
     // Periodo facturado
     $fechas     = array_filter(array_column($detalle, 'Fecha'), fn($f) => $f && $f !== '0000-00-00');
@@ -364,7 +415,7 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', '', 9);
     $pdf->SetTextColor(...$mutedC);
     $pdf->SetXY(120, 21);
-    $pdf->Cell(80, 6, pdf_text($row['TipoDeComprobante']), 0, 1, 'R');
+    $pdf->Cell(80, 6, pdf_text($operaciones ? 'DETALLE DE OPERACIONES' : $row['TipoDeComprobante']), 0, 1, 'R');
 
     // Línea separadora
     $pdf->SetDrawColor(...$borderC);
@@ -572,7 +623,15 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', 'B', 9);
     $pdf->SetDrawColor(...$primaryC);
 
-    if ($esRecorrido) {
+    if ($porLineas) {
+        $cols = [
+            ['Fecha',          22, 'C'],
+            ['Seguimiento',    25, 'L'],
+            ['Servicio',       73, 'L'],
+            ['Cliente Destino',40, 'L'],
+            ['Importe',        30, 'R'],
+        ];
+    } elseif ($esRecorrido) {
         $cols = [
             ['Fecha',        25, 'C'],
             ['Tipo',         45, 'L'],
@@ -599,6 +658,14 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $pdf->SetFont('Arial', '', 8.5);
     $pdf->SetDrawColor(...$borderC);
     $altRow = false;
+
+    // Corta el texto al ancho real de la celda (las mayúsculas ocupan más que las minúsculas)
+    $entra = function (string $texto, float $ancho) use ($pdf): string {
+        $t = pdf_text($texto);
+        if ($pdf->GetStringWidth($t) <= $ancho - 2) return $t;
+        while ($t !== '' && $pdf->GetStringWidth($t . '...') > $ancho - 2) $t = substr($t, 0, -1);
+        return rtrim($t) . '...';
+    };
 
     // RG AFIP 1415/03, Anexo IV, punto 6: al pasar de hoja hay que trasladar
     // el subtotal acumulado (no arranca de cero en cada hoja nueva).
@@ -638,7 +705,15 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
         $pdf->SetFillColor(...$fill);
         $pdf->SetTextColor(...$darkText);
 
-        if ($esRecorrido) {
+        if ($porLineas) {
+            $servicio = trim($item['Titulo'] ?? '');
+            if (trim($item['Comentario'] ?? '') !== '') $servicio .= ' - ' . trim($item['Comentario']);
+            $pdf->Cell(22, 7, $fecha, 'B', 0, 'C', true);
+            $pdf->Cell(25, 7, pdf_text($item['CodigoSeguimiento'] ?? ''), 'B', 0, 'L', true);
+            $pdf->Cell(73, 7, $entra($servicio, 73), 'B', 0, 'L', true);
+            $pdf->Cell(40, 7, $entra($item['ClienteDestino'] ?? '', 40), 'B', 0, 'L', true);
+            $pdf->Cell(30, 7, '$ ' . number_format((float)$item['Debe'], 2, ',', '.'), 'B', 1, 'R', true);
+        } elseif ($esRecorrido) {
             $pdf->Cell(25, 7, $fecha, 'B', 0, 'C', true);
             $pdf->Cell(45, 7, pdf_text(substr($item['TipoDeComprobante'], 0, 24)), 'B', 0, 'L', true);
             $pdf->Cell(32, 7, pdf_text($item['NumeroVenta'] ?? ''), 'B', 0, 'L', true);

@@ -770,7 +770,7 @@ $("#btn_un_ctas").click(function () {
             return (
               `<td><a target='_blank' href='invoice.php?id=${row.id}' title='Comprobante' >` +
               `<i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-              `<a target='_blank' href='invoice_details.php?id=${row.id}' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle' data-original-title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>` +
+              `<a href='javascript:void(0)' onclick='abrirModalFactura(${row.id}, true)' data-bs-toggle='tooltip' data-bs-placement='right' title='Detalle de operaciones' data-original-title='Detalle de operaciones'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>` +
               transformarBtn +
               `</td>`
             );
@@ -1085,7 +1085,8 @@ $("#modal_factura_preview").on("hidden.bs.modal", function () {
 // let facturaActualId =
 // new URLSearchParams(window.location.search).get("id") || null;
 let facturaActualId = null;
-function abrirModalFactura(id) {
+// detalle = true: "Detalle de operaciones" (ícono D): el mismo comprobante con cada línea de la venta.
+function abrirModalFactura(id, detalle = false) {
   if (!id) {
     toast("error", "Error", "No hay factura seleccionada.");
     return;
@@ -1093,7 +1094,10 @@ function abrirModalFactura(id) {
 
   facturaActualId = id;
 
-  const urlFactura = `/SistemaTriangular/Clientes/Informes/ver_factura_pdf.php?id=${id}`;
+  const urlFactura = `/SistemaTriangular/Clientes/Informes/ver_factura_pdf.php?id=${id}` + (detalle ? "&detalle=1" : "");
+  $("#modalFacturaPreviewLabel").html(
+    `<i class="mdi mdi-file-document-outline me-2"></i>${detalle ? "Detalle de operaciones" : "Vista previa de factura"}`,
+  );
 
   $("#iframe_factura_preview").attr("src", urlFactura);
   $("#btn_abrir_factura_modal").attr("href", urlFactura);
@@ -2290,12 +2294,12 @@ $("#buscarcliente").change(function () {
                     if (row.idNotifications == 0) {
                       return (
                         `<a onclick='abrirModalFactura(${row.id})' title='Comprobante'><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-                        `<a target='_blank' href='invoice_details.php?id=${row.id}' title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>`
+                        `<a href='javascript:void(0)' onclick='abrirModalFactura(${row.id}, true)' title='Detalle de operaciones'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning'></i></a>`
                       );
                     } else {
                       return (
                         `<a onclick='abrirModalFactura(${row.id})' title='Comprobante'><i class='mdi mdi-18px mdi-alpha-p-circle mr-2'></i></a>` +
-                        `<a target='_blank' href='invoice_details.php?id=${row.id}' title='Detalle'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning mr-2'></i></a>`
+                        `<a href='javascript:void(0)' onclick='abrirModalFactura(${row.id}, true)' title='Detalle de operaciones'><i class='mdi mdi-18px mdi-alpha-d-circle text-warning mr-2'></i></a>`
                       );
                     }
                   }
