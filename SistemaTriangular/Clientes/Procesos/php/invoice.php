@@ -3,8 +3,6 @@
 // Establecer la zona horaria para Argentina/Córdoba
 date_default_timezone_set('America/Argentina/Cordoba');
 
-include_once "../../../../Hubspot/php/creartarea.php";
-
 include_once "../../../Conexion/Conexioni.php";
 require_once "../../../Funciones/php/facturacion_helper.php";
 
@@ -275,27 +273,38 @@ if (isset($_POST['FacturacionProforma'])) {
 }
 
 if (isset($_POST['FacturacionProformaDetalle'])) {
-    $sqlCtaCte = $mysqli->query("SELECT idTransClientes FROM Ctasctes WHERE Eliminado='0' AND idFacturado='$_POST[idCtaCte]'");
-
-    $rowsr = array();
-
-    while ($rowr = $sqlCtaCte->fetch_array(MYSQLI_ASSOC)) {
-
-        $rowsr[] = join($rowr);
+    // Líneas de Ventas de los envíos de la factura (invoice_details.php). Los envíos salen del
+    // detalle grabado al facturar (Facturacion_detalle, igual que el PDF) y, en facturas viejas,
+    // de los remitos de Ctasctes. Antes: sin remitos (ej. factura por recorrido) armaba "IN()" y
+    // daba error 500.
+    $idFactura = (int)($_POST['idCtaCte'] ?? 0);
+    $codigos = [];
+    $res = $mysqli->query("SELECT DISTINCT CodigoSeguimiento FROM Facturacion_detalle
+                            WHERE idFacturado = {$idFactura} AND CodigoSeguimiento <> ''");
+    while ($res && $r = $res->fetch_row()) {
+        $codigos[] = $r[0];
+    }
+    if (!$codigos) {
+        $res = $mysqli->query("SELECT DISTINCT t.CodigoSeguimiento FROM Ctasctes c
+                                 JOIN TransClientes t ON t.id = c.idTransClientes AND t.Eliminado = 0
+                                WHERE c.Eliminado = 0 AND c.idFacturado = {$idFactura} AND t.CodigoSeguimiento <> ''");
+        while ($res && $r = $res->fetch_row()) {
+            $codigos[] = $r[0];
+        }
     }
 
-    $exito = json_encode($rowsr);
-    $exito = trim($exito, '[]');
-    $sql = "SELECT TransClientes.ClienteDestino,idPedido,NumPedido,FechaPedido,Codigo,Titulo,Precio,Ventas.Cantidad,Comentario,Cliente,NumeroRepo,ImporteNeto,Iva3,Total,Ventas.CobrarEnvio from Ventas   
-    INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=Ventas.NumPedido
-    WHERE Ventas.Eliminado=0 AND TransClientes.id IN($exito) AND TransClientes.Eliminado=0 ORDER BY Ventas.FechaPedido,Ventas.NumPedido;";
-
-    $Resultado = $mysqli->query($sql);
-    $rows = array();
-
-    while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-
-        $rows[] = $row;
+    $rows = [];
+    if ($codigos) {
+        $in = "'" . implode("','", array_map([$mysqli, 'real_escape_string'], $codigos)) . "'";
+        $sql = "SELECT TransClientes.ClienteDestino,idPedido,NumPedido,FechaPedido,Codigo,Titulo,Precio,Ventas.Cantidad,Comentario,Cliente,NumeroRepo,ImporteNeto,Iva3,Total,Ventas.CobrarEnvio
+                  FROM Ventas
+                  INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento = Ventas.NumPedido AND TransClientes.Eliminado = 0
+                 WHERE Ventas.Eliminado = 0 AND Ventas.NumPedido IN ($in)
+                 ORDER BY Ventas.FechaPedido, Ventas.NumPedido";
+        $Resultado = $mysqli->query($sql);
+        while ($Resultado && $row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
+            $rows[] = $row;
+        }
     }
     echo json_encode(array('data' => $rows));
 }

@@ -1,6 +1,8 @@
 <?php
-session_start();
-include_once "../Conexion/Conexion.php";
+// Detalle de operaciones de una factura (líneas de Ventas de cada envío facturado). Estaba rota:
+// incluía Conexion/Conexion.php (borrado con la limpieza de PHP 8) y la plantilla vieja
+// hyper/dist/saas (ya no existe), así que salía sin estilos ni jQuery. Misma base que invoice.php.
+include_once "../Conexion/Conexioni.php";
 ?>
 <!DOCTYPE html>
     <html lang="es">
@@ -16,17 +18,10 @@ include_once "../Conexion/Conexion.php";
         <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
         <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
 
-        <!-- third party css -->
-        <link href="../hyper/dist/saas/assets/css/vendor/dataTables.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/vendor/responsive.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/vendor/buttons.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/vendor/select.bootstrap4.css" rel="stylesheet" type="text/css" />
-        <!-- third party css end -->
-
-        <!-- App css -->
-        <link href="../hyper/dist/saas/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
-        <link href="../hyper/dist/saas/assets/css/app.min.css" rel="stylesheet" type="text/css" id="light-style" />
-        <link href="../hyper/dist/saas/assets/css/app-dark.min.css" rel="stylesheet" type="text/css" id="dark-style" />
+        <link href="../hyper/dist/assets/vendor/datatables/responsive.bootstrap5.min.css" rel="stylesheet" type="text/css">
+        <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
+        <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
+        <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
     </head>
 
     <body class="loading" data-layout="topnav" data-layout-config='{"layoutBoxed":false,"darkMode":false,"showRightSidebarOnStart": true}'>
@@ -52,7 +47,7 @@ include_once "../Conexion/Conexion.php";
                             <div class="col-lg-12 mt-3">
 
                             <label>Codigo de Cliente</label>
-                            <input id="codigocliente_t" type="text" class="form-control" data-toggle="input-mask">
+                            <input id="codigocliente_t" type="text" class="form-control">
                             <span class="font-13 text-muted">Ej.: 123456</span>
 
                             </div>
@@ -194,16 +189,7 @@ include_once "../Conexion/Conexion.php";
                                               <th>Importe</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                          <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                          </tr>
-                                        </tbody>
+                                        <tbody></tbody>
                                       </table>
                                     </div>
                                   </div>
@@ -221,15 +207,7 @@ include_once "../Conexion/Conexion.php";
                                               <th>Importe</th>
                                             </tr>
                                         </thead>
-                                        <tbody>
-                                          <tr>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                            <th></th>
-                                          </tr>
-                                        </tfoot>
+                                        <tbody></tbody>
                                       </table>
                                     </div>
                                   </div>
@@ -330,33 +308,14 @@ include_once "../Conexion/Conexion.php";
         </div>
         <!-- END wrapper -->
         <!-- bundle -->
-        <script src="../hyper/dist/saas/assets/js/vendor.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/app.min.js"></script>
-
-        <!-- third party js -->
-        <script src="../hyper/dist/saas/assets/js/vendor/jquery.dataTables.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.bootstrap4.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.responsive.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/responsive.bootstrap4.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.buttons.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.bootstrap4.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.html5.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.flash.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/buttons.print.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.keyTable.min.js"></script>
-        <script src="../hyper/dist/saas/assets/js/vendor/dataTables.select.min.js"></script>
-        <!-- third party js ends -->
-
-        <!-- demo app -->
-        <script src="../hyper/dist/saas/assets/js/pages/demo.datatable-init.js"></script>
-        <!-- end demo js-->
-        <!-- funciones -->
+        <script src="../hyper/dist/assets/js/vendor.min.js"></script>
+        <script src="../hyper/dist/assets/js/hyper-config.js"></script>
+        <script src="../hyper/dist/assets/js/app.js"></script>
+        <?php include '../Menu/php/script_datatables.php'; ?>
         <script src="../Menu/js/funciones.js"></script>
         <script src="Procesos/js/invoice.js"></script>
         <script src="Procesos/js/invoice_details.js?v=<?= filemtime(__DIR__ . '/Procesos/js/invoice_details.js') ?>"></script>
         <script src="../Funciones/js/datosempresa.js"></script>
-          <!-- demo app -->
-        <script src="../hyper/dist/saas/assets/js/pages/demo.dashboard.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
         <!-- end demo js-->
