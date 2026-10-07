@@ -119,6 +119,10 @@
                                         <i class="mdi mdi-printer me-1"></i>Imprimir
                                     </button>
 
+                                    <a href="#" class="btn btn-outline-success" id="btn_excel_factura_modal" title="Baja el detalle de servicios en Excel, una columna por dato">
+                                        <i class="mdi mdi-microsoft-excel me-1"></i>Detalle en Excel
+                                    </a>
+
                                     <button type="button" class="btn btn-success" id="btn_enviar_factura_modal">
                                         <i class="mdi mdi-send me-1"></i>Enviar por mail
                                     </button>

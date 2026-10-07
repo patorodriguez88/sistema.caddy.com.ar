@@ -132,6 +132,78 @@ class FacturaPDF extends FPDF
     }
 }
 
+/**
+ * Detalle de una factura (Ctasctes.id): los servicios o recorridos facturados, el total y si es
+ * una factura por recorrido. Lo usan el PDF y el export a Excel (factura_detalle_excel.php), así
+ * los dos muestran siempre lo mismo.
+ */
+function facturaDetalle(mysqli $mysqli, int $idFactura): array
+{
+    $detalle   = [];
+    $total     = 0;
+    $esRecorrido = false;
+
+    // Detalle grabado como foto fija al momento de facturar (Facturacion_detalle) -
+    // no se pierde aunque despues se libere algun servicio con una Nota de Credito.
+    // Fallback a las queries en vivo de abajo solo para facturas viejas, emitidas
+    // antes de que esta tabla existiera (no tienen filas acá).
+    $sqlFoto = $mysqli->query("
+        SELECT Fecha, TipoDeComprobante, NumeroComprobante, NumeroVenta,
+               ClienteDestino, CodigoSeguimiento, CodigoProveedor, Observaciones, Debe, Tipo
+        FROM Facturacion_detalle
+        WHERE idFacturado = '" . intval($idFactura) . "'
+        ORDER BY Fecha, id
+    ");
+
+    if ($sqlFoto) {
+        while ($r = $sqlFoto->fetch_assoc()) {
+            if ($r['Tipo'] === 'recorrido') $esRecorrido = true;
+            unset($r['Tipo']);
+            $detalle[] = $r;
+            $total    += (float)$r['Debe'];
+        }
+    }
+
+    if (empty($detalle)) {
+        $sqlDetalle = $mysqli->query("
+            SELECT Fecha, TipoDeComprobante, NumeroComprobante,
+                   ClienteDestino, CodigoSeguimiento, CodigoProveedor, Debe
+            FROM TransClientes
+            WHERE id IN (
+                SELECT idTransClientes FROM Ctasctes
+                WHERE Eliminado = 0 AND idFacturado = '" . intval($idFactura) . "'
+            )
+            AND Eliminado = 0 AND Debe > 0
+        ");
+
+        if ($sqlDetalle) {
+            while ($r = $sqlDetalle->fetch_assoc()) {
+                $detalle[] = $r;
+                $total    += (float)$r['Debe'];
+            }
+        }
+    }
+
+    if (empty($detalle)) {
+        $sqlRec = $mysqli->query("
+            SELECT Fecha, TipoDeComprobante, NumeroVenta, Observaciones, Debe
+            FROM Ctasctes
+            WHERE Eliminado = 0 AND idFacturado = '" . intval($idFactura) . "'
+            AND Debe > 0
+        ");
+        if ($sqlRec) {
+            while ($r = $sqlRec->fetch_assoc()) {
+                $detalle[]   = $r;
+                $total      += (float)$r['Debe'];
+                $esRecorrido = true;
+            }
+        }
+    }
+
+
+    return [$detalle, $total, $esRecorrido];
+}
+
 function generarFacturaPDF($idCtasctes, $rutaSalida)
 {
     global $mysqli;
@@ -177,67 +249,8 @@ function generarFacturaPDF($idCtasctes, $rutaSalida)
     $row = $sql->fetch_assoc();
     if (!$row) throw new Exception('No se encontró la factura');
 
-    $detalle   = [];
-    $total     = 0;
-    $esRecorrido = false;
-
-    // Detalle grabado como foto fija al momento de facturar (Facturacion_detalle) -
-    // no se pierde aunque despues se libere algun servicio con una Nota de Credito.
-    // Fallback a las queries en vivo de abajo solo para facturas viejas, emitidas
-    // antes de que esta tabla existiera (no tienen filas acá).
-    $sqlFoto = $mysqli->query("
-        SELECT Fecha, TipoDeComprobante, NumeroComprobante, NumeroVenta,
-               ClienteDestino, CodigoSeguimiento, CodigoProveedor, Observaciones, Debe, Tipo
-        FROM Facturacion_detalle
-        WHERE idFacturado = '" . intval($row['id']) . "'
-        ORDER BY Fecha, id
-    ");
-
-    if ($sqlFoto) {
-        while ($r = $sqlFoto->fetch_assoc()) {
-            if ($r['Tipo'] === 'recorrido') $esRecorrido = true;
-            unset($r['Tipo']);
-            $detalle[] = $r;
-            $total    += (float)$r['Debe'];
-        }
-    }
-
-    if (empty($detalle)) {
-        $sqlDetalle = $mysqli->query("
-            SELECT Fecha, TipoDeComprobante, NumeroComprobante,
-                   ClienteDestino, CodigoSeguimiento, CodigoProveedor, Debe
-            FROM TransClientes
-            WHERE id IN (
-                SELECT idTransClientes FROM Ctasctes
-                WHERE Eliminado = 0 AND idFacturado = '" . intval($row['id']) . "'
-            )
-            AND Eliminado = 0 AND Debe > 0
-        ");
-
-        if ($sqlDetalle) {
-            while ($r = $sqlDetalle->fetch_assoc()) {
-                $detalle[] = $r;
-                $total    += (float)$r['Debe'];
-            }
-        }
-    }
-
-    if (empty($detalle)) {
-        $sqlRec = $mysqli->query("
-            SELECT Fecha, TipoDeComprobante, NumeroVenta, Observaciones, Debe
-            FROM Ctasctes
-            WHERE Eliminado = 0 AND idFacturado = '" . intval($row['id']) . "'
-            AND Debe > 0
-        ");
-        if ($sqlRec) {
-            while ($r = $sqlRec->fetch_assoc()) {
-                $detalle[]   = $r;
-                $total      += (float)$r['Debe'];
-                $esRecorrido = true;
-            }
-        }
-    }
-
+    // Detalle (compartido con el export a Excel, ver factura_detalle_excel.php)
+    [$detalle, $total, $esRecorrido] = facturaDetalle($mysqli, (int)$row['id']);
     if ($total <= 0) $total = (float)$row['Debe'];
 
     // Periodo facturado

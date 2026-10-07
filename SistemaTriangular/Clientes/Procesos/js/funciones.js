@@ -1078,6 +1078,7 @@ $("#btn_enviar_recibo_modal").on("click", function () {
 $("#modal_factura_preview").on("hidden.bs.modal", function () {
   $("#iframe_factura_preview").attr("src", "");
   $("#btn_abrir_factura_modal").attr("href", "#");
+  $("#btn_excel_factura_modal").attr("href", "#");
   facturaActualId = null;
 });
 //ENVIAR FACTURA POR MAIL
@@ -1096,6 +1097,7 @@ function abrirModalFactura(id) {
 
   $("#iframe_factura_preview").attr("src", urlFactura);
   $("#btn_abrir_factura_modal").attr("href", urlFactura);
+  $("#btn_excel_factura_modal").attr("href", `/SistemaTriangular/Clientes/Informes/factura_detalle_excel.php?id=${id}`);
 
   const modalEl = document.getElementById("modal_factura_preview");
   const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
