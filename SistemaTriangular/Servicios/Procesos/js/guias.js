@@ -741,6 +741,8 @@ function seguimiento(cs) {
         } else {
           var estadochecked = "";
         }
+        // Abrir/cerrar en la Hoja de Ruta es logística: no depende de que esté facturado (solo de entregado)
+        var disHdr = jsonData.data[0].Entregado == 1 ? "disabled" : "";
 
         if (jsonData.data[0].FormaDePago == "Origen") {
           $("#pagaorigen").css("display", "block");
@@ -921,7 +923,7 @@ function seguimiento(cs) {
             ' value="' +
             jsonData[1].Estado +
             '" ' +
-            dis +
+            disHdr +
             ">" +
             '<label class="form-check-label" for="estadohdr_c" ><p class="mb-1"><b id="estadohdr_b">Estado en HDR : ' +
             jsonData[1].Estado +

@@ -569,6 +569,12 @@ if (isset($_POST['enter_registration'])) {
     $Retirado = $dato['Retirado'];
   }
 
+  // FIX (2026-10-09, reportado con 9X1A5MI0U): $Estadohdr solo se definía para Devuelto, Entregado y
+  // En Transito; cualquier otro movimiento cargado a mano (ej: "No se pudo entregar") dejaba la Hoja de
+  // Ruta con Estado='' y "Abrir todos" (que solo reabre los 'Cerrado') no lo levantaba. Por defecto queda
+  // Cerrado, igual que cuando el chofer no lo puede entregar desde la app; En Transito lo abre.
+  $Estadohdr = 'Cerrado';
+
   // DEVUELTO
   if ($EstadoSeguimiento == 'Devuelto al Cliente') {
     $Entregado = '0';
