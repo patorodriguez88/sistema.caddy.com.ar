@@ -14,7 +14,7 @@ if($_POST['Abrir_todos']==1){
     if($_POST['Recorrido']<>''){
     
     $sql=$mysqli->query("SELECT HojaDeRuta.id FROM HojaDeRuta INNER JOIN TransClientes ON TransClientes.CodigoSeguimiento=HojaDeRuta.Seguimiento
-    WHERE HojaDeRuta.Recorrido='".$_POST['Recorrido']."' AND HojaDeRuta.Eliminado='0' AND HojaDeRuta.Estado='Cerrado' 
+    WHERE HojaDeRuta.Recorrido='".$_POST['Recorrido']."' AND HojaDeRuta.Eliminado='0' AND (HojaDeRuta.Estado='Cerrado' OR HojaDeRuta.Estado='' OR HojaDeRuta.Estado IS NULL) 
     AND HojaDeRuta.Devuelto='0' AND HojaDeRuta.Seguimiento<>'' AND TransClientes.Entregado=0 
     AND TransClientes.Devuelto=0 AND TransClientes.Eliminado=0");
 

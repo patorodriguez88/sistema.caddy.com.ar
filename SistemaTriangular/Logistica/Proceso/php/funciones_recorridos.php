@@ -371,6 +371,9 @@ if($EstadoSeguimiento=='Retirado del Cliente'){
 }else{
     $Retirado=$dato[Retirado];
 }
+// FIX (2026-10-09): sin esto, un movimiento que no fuera Devuelto / Entregado / En Transito dejaba la
+// Hoja de Ruta con Estado='' (ver Servicios/Procesos/php/funciones.php, mismo arreglo).
+$Estadohdr='Cerrado';
 //SI ESTA DEVUELTO
 if($EstadoSeguimiento=='Devuelto al Cliente'){
     // $AvisoMail='Devuelto';  
