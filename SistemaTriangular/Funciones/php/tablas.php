@@ -225,6 +225,38 @@ if (isset($_POST['Seguimiento_Tabla'])) {
   echo json_encode(array('data' => $rows_seguimiento));
 }
 
+// Un "Entregado" de una orden ya cerrada no se borra: se corrige a "No se pudo entregar".
+// (2026-10-14, caso 7R1DR4JIZ) Si se borraba, el repartidor perdía la visita en su rendición
+// (Externos cuenta Seguimiento con su usuario, la orden y Visitas<>0) y el envío quedaba
+// pendiente pero adentro de la orden cerrada, sin poder cambiarlo de recorrido.
+// Devuelve la fila si requiere corrección, o null.
+function seguimientoRequiereCorreccion(mysqli $mysqli, int $id): ?array
+{
+  $st = $mysqli->prepare("SELECT s.*, l.Estado AS EstadoOrden FROM Seguimiento s
+      JOIN Logistica l ON l.NumerodeOrden = s.NumerodeOrden AND l.Eliminado = 0
+      WHERE s.id = ? AND s.Eliminado = 0 AND s.Entregado = 1 AND s.NumerodeOrden <> 0 LIMIT 1");
+  $st->bind_param('i', $id);
+  $st->execute();
+  $fila = $st->get_result()->fetch_assoc();
+  $st->close();
+  if (!$fila || in_array($fila['EstadoOrden'], ['Alta', 'Cargada', 'Pendiente'], true)) {
+    return null;
+  }
+  return $fila;
+}
+
+if (isset($_POST['InfoEliminarSeguimiento'])) {
+  $fila = seguimientoRequiereCorreccion($mysqli, (int) ($_POST['id'] ?? 0));
+  echo json_encode($fila ? [
+    'requiere_motivo' => 1,
+    'usuario' => $fila['Usuario'],
+    'fecha' => $fila['Fecha'],
+    'hora' => substr((string) $fila['Hora'], 0, 5),
+    'orden' => $fila['NumerodeOrden'],
+  ] : ['requiere_motivo' => 0]);
+  exit;
+}
+
 //ELIMINAR SEGUIMEINTO
 if (isset($_POST['EliminarSeguimiento'])) {
   $id = $_POST['id'];
@@ -233,6 +265,65 @@ if (isset($_POST['EliminarSeguimiento'])) {
   // siempre vacío, sin registro de quién elimina cada movimiento.
   $user = $_SESSION['Usuario'] ?? '';
   $fechaHora = date('Y-m-d H:i:s');
+
+  $correccion = seguimientoRequiereCorreccion($mysqli, (int) $id);
+  if ($correccion) {
+    $motivo = trim((string) ($_POST['Motivo'] ?? ''));
+    if ($motivo === '') {
+      echo json_encode(['success' => 0, 'error' => 'Es una entrega de una orden cerrada: hay que indicar el motivo por el que no se entregó.']);
+      exit;
+    }
+    require_once __DIR__ . '/../Funciones.php';
+    $c = $correccion;
+    $idTrans = (int) $c['idTransClientes'];
+    $cs = (string) $c['CodigoSeguimiento'];
+    $mysqli->begin_transaction();
+    try {
+      $st = $mysqli->prepare("UPDATE Seguimiento SET Eliminado=1, Eliminado_date=?, Eliminado_user=? WHERE id=? LIMIT 1");
+      $st->bind_param('ssi', $fechaHora, $user, $c['id']);
+      $st->execute();
+      $st->close();
+
+      // La visita queda a nombre del repartidor, en su orden, con la fecha/hora reales.
+      $est = $mysqli->query("SELECT id, Slug FROM Estados WHERE Estado='No se pudo entregar' LIMIT 1")->fetch_assoc();
+      $estadoId = (int) ($est['id'] ?? 8);
+      $slug = (string) ($est['Slug'] ?? '1st_visit_fail');
+      $obs = $motivo . ' (corrección de ' . $user . ': estaba marcado Entregado)';
+      $st = $mysqli->prepare("INSERT INTO Seguimiento (Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,
+          Destino,idCliente,Retirado,Visitas,idTransClientes,Recorrido,NumerodeOrden,Estado_id,state_id,status)
+          VALUES (?,?,?,?,?,?,0,'No se pudo entregar',?,?,?,1,?,?,?,?,?,?)");
+      $st->bind_param('sssssssiiisiiis', $c['Fecha'], $c['Hora'], $c['Usuario'], $c['Sucursal'], $cs, $obs,
+        $c['Destino'], $c['idCliente'], $c['Retirado'], $idTrans, $c['Recorrido'], $c['NumerodeOrden'], $estadoId, $estadoId, $slug);
+      $st->execute();
+      $st->close();
+
+      // El envío sale de la orden cerrada (como un no entregado de la app) para poder rutearlo de nuevo.
+      $whereTc = $idTrans > 0 ? "id=$idTrans" : "CodigoSeguimiento='" . $mysqli->real_escape_string($cs) . "' AND Eliminado=0";
+      $mysqli->query("UPDATE TransClientes SET Entregado=0, NumerodeOrden=0 WHERE $whereTc LIMIT 1");
+
+      // La hoja de ruta: copia al histórico (el manifiesto de la orden cerrada lo sigue mostrando) y se reabre.
+      $st = $mysqli->prepare("SELECT * FROM HojaDeRuta WHERE Seguimiento=? AND IFNULL(Eliminado,0)=0 LIMIT 1");
+      $st->bind_param('s', $cs);
+      $st->execute();
+      $hdr = $st->get_result()->fetch_assoc();
+      $st->close();
+      if ($hdr) {
+        snapshotHojaDeRutaHistorico($mysqli, $hdr, (string) $hdr['Recorrido'], 0, date('Y-m-d'), date('H:i'), $user,
+          'Corrección Entregado -> No se pudo entregar: ' . $motivo);
+        $st = $mysqli->prepare("UPDATE HojaDeRuta SET Estado='Abierto', NumerodeOrden=0 WHERE id=? LIMIT 1");
+        $st->bind_param('i', $hdr['id']);
+        $st->execute();
+        $st->close();
+      }
+
+      $mysqli->commit();
+      echo json_encode(['success' => 1, 'corregido' => 1]);
+    } catch (\Throwable $e) {
+      $mysqli->rollback();
+      echo json_encode(['success' => 0, 'error' => $e->getMessage()]);
+    }
+    exit;
+  }
 
   $sql = $mysqli->query("SELECT Entregado,Devuelto,CodigoSeguimiento FROM Seguimiento WHERE id='$id'");
   $row = $sql->fetch_array(MYSQLI_ASSOC);
