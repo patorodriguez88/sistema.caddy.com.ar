@@ -1,5 +1,6 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
+require_once __DIR__ . '/../../../Funciones/php/eliminar_envio.php';
 require_once('../../../Google/geolocalizar.php');
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
@@ -431,40 +432,11 @@ if (isset($_POST['ActualizarDireccion'])) {
                               '{$Retirado}','{$Visitas}','{$dato['idTransClientes']}')");
 }
 
-//ELIMINAR REGISTROS
+//ELIMINAR REGISTROS (ver Funciones/php/eliminar_envio.php)
 
-if ($_POST['EliminarRegistro'] == 1) {
-  $info = "B: " . $_SESSION['Usuario'] . ' | ' . date('Y-m-d H:i') . ' | ' . 'servicios.Procesos.php.funciones.php';
-  // 1FAJK96CD
-  //ACTURALIZO HOJA DE RUTA
-  if ($sql = $mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1")) {
-
-    $sql_roadmap = $mysqli->query("UPDATE `Roadmap` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1");
-
-    $hojaderuta = 1;
-  } else {
-
-    $hojaderuta = 0;
-  }
-  //ACTUALIZO TRANS CLIENTES
-  $id_Eliminar = $_POST['id'];
-
-  if ($id_Eliminar) {
-
-    $sqlCtasCtes = $mysqli->query("UPDATE Ctasctes SET Debe='$Saldo' WHERE idTransClientes='$id_Eliminar' AND Eliminado='0' LIMIT 1");
-
-    if ($sql = $mysqli->query("UPDATE `TransClientes` SET Eliminado='1',Usuario='Elimino: $_SESSION[Usuario]',infoABM='$info' WHERE id='$id_Eliminar' LIMIT 1")) {
-
-      $transclientes = 1;
-    } else {
-
-      $transclientes = 0;
-    }
-  }
-
-  $sqlventas = $mysqli->query("UPDATE Ventas SET Eliminado='1' WHERE NumPedido='$_POST[CodigoSeguimiento]' LIMIT 1");
-
-  echo json_encode(array('success' => 1, 'hojaderuta' => $hojaderuta, 'transclientes' => $transclientes));
+if (($_POST['EliminarRegistro'] ?? '') == 1) {
+  $r = eliminarEnvio($mysqli, $_POST['id'] ?? 0, $_SESSION['Usuario'], 'servicios.Procesos.php.funciones.php');
+  echo json_encode(array('success' => 1, 'hojaderuta' => $r['hojaderuta'], 'transclientes' => $r['transclientes']));
 }
 
 

@@ -305,32 +305,6 @@ $EstadoSeguimiento=$_POST[EstadoSeguimiento];
   
 }
 
-if($_POST['EliminarRegistro']==1){
-  //ACTURALIZO HOJA DE RUTA
-  if($sql=$mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]'")){
-  $hojaderuta=1;  
-  }else{
-  $hojaderuta=0;    
-  }
-  //ACTUALIZO TRANS CLIENTES
-  $id_Eliminar=$_POST['id'];
-
-  if($id_Eliminar<>''){
-    if($sql=$mysqli->query("UPDATE `TransClientes` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE id='$id_Eliminar'")){
-    $transclientes=1;    
-    }else{
-    $transclientes=0; 
-    }
-  }
-  //BUSCO ID TRANSCLIENTES
-  $sql=$mysqli->query("SELECT id FROM TransClientes WHERE id='$_POST[id]'");
-  $datoid=$sql->fetch_array(MYSQLI_ASSOC);
-  $sqlventas=$mysqli->query("UPDATE Ventas SET Eliminado='1' WHERE NumPedido='$_POST[CodigoSeguimiento]'");
-  $sqlCtasCtes=$mysqli->query("UPDATE Ctasctes SET Debe='$Saldo' WHERE idTransClientes='$datoid[id]' AND Eliminado='0' LIMIT 1");
-  
-  echo json_encode(array('success'=>1,'hojaderuta'=>$hojaderuta,'transclientes'=>$transclientes));
-}
-
 if($_POST['enter_registration']==1){
 
 $sqlbusco=$mysqli->query("SELECT * FROM Seguimiento WHERE id=(SELECT MAX(id) FROM Seguimiento WHERE  CodigoSeguimiento='$_POST[CodigoSeguimiento]')");
