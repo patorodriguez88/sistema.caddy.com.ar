@@ -142,6 +142,7 @@ $items = db_fetch_all(
             HojaDeRuta.Observaciones
        FROM HojaDeRuta
        INNER JOIN TransClientes ON HojaDeRuta.Seguimiento = TransClientes.CodigoSeguimiento
+                                AND TransClientes.Eliminado = 0
       WHERE HojaDeRuta.Recorrido = ?
         AND HojaDeRuta.Estado = 'Abierto'
         AND HojaDeRuta.Eliminado = 0
