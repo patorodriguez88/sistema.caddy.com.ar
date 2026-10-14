@@ -1,6 +1,7 @@
 <?php
 // session_start();
 include_once "../../../Conexion/Conexioni.php";
+require_once __DIR__ . '/../../../Funciones/php/eliminar_envio.php';
 require_once('../../../Google/geolocalizar.php');
 
 date_default_timezone_set('America/Argentina/Buenos_Aires');
@@ -478,25 +479,9 @@ if (isset($_POST['Actualiza'])) {
 }
 
 if (isset($_POST['EliminarRegistro'])) {
-  //ACTURALIZO HOJA DE RUTA
-  if ($sql = $mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]'")) {
-    $hojaderuta = 1;
-  } else {
-    $hojaderuta = 0;
-  }
-  //ACTUALIZO TRANS CLIENTES
-  if ($sql = $mysqli->query("UPDATE `TransClientes` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE id='$_POST[id]'")) {
-    $transclientes = 1;
-  } else {
-    $transclientes = 0;
-  }
-  //BUSCO ID TRANSCLIENTES
-  $sql = $mysqli->query("SELECT id FROM TransClientes WHERE id='$_POST[id]'");
-  $datoid = $sql->fetch_array(MYSQLI_ASSOC);
-  $sqlventas = $mysqli->query("UPDATE Ventas SET Eliminado='1' WHERE NumPedido='$_POST[CodigoSeguimiento]'");
-  $sqlCtasCtes = $mysqli->query("UPDATE Ctasctes SET Debe='$Saldo' WHERE idTransClientes='$datoid[id]' LIMIT 1");
-
-  echo json_encode(array('success' => 1, 'hojaderuta' => $hojaderuta, 'transclientes' => $transclientes));
+  // ver Funciones/php/eliminar_envio.php
+  $r = eliminarEnvio($mysqli, $_POST['id'] ?? 0, $_SESSION['Usuario'], 'Logistica/Proceso/php/pendientes.php');
+  echo json_encode(array('success' => 1, 'hojaderuta' => $r['hojaderuta'], 'transclientes' => $r['transclientes']));
 }
 
 //SELECT RECORRIDOS

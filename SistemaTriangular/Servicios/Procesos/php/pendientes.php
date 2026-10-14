@@ -92,33 +92,6 @@ if (isset($_POST['Actualiza'])) {
   echo json_encode(array('success' => 1));
 }
 
-if (isset($_POST['EliminarRegistro'])) {
-
-  $info = "B: " . $_SESSION['Usuario'] . " | " . date('Y-m-d (H:i)') . " | " . 'Servicios/Procesos/php/pendientes.php';
-  //ACTUALIZO HOJA DE RUTA
-  if ($sql = $mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1")) {
-    //ELIMINO ROADMAP
-    $mysqli->query("UPDATE `Roadmap` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1");
-
-    $hojaderuta = 1;
-  } else {
-    $hojaderuta = 0;
-  }
-  //ACTUALIZO TRANS CLIENTES
-  if ($sql = $mysqli->query("UPDATE `TransClientes` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]',infoABM='$info' WHERE id='$_POST[id]' LIMIT 1")) {
-    $transclientes = 1;
-  } else {
-    $transclientes = 0;
-  }
-  //BUSCO ID TRANSCLIENTES
-  $sql = $mysqli->query("SELECT id FROM TransClientes WHERE id='$_POST[id]' AND Eliminado='0'");
-  $datoid = $sql->fetch_array(MYSQLI_ASSOC);
-  $sqlventas = $mysqli->query("UPDATE Ventas SET Eliminado='1' WHERE NumPedido='$_POST[CodigoSeguimiento]' LIMIT 1");
-  $sqlCtasCtes = $mysqli->query("UPDATE Ctasctes SET Debe='$Saldo' WHERE idTransClientes='$datoid[id]' LIMIT 1");
-
-  echo json_encode(array('success' => 1, 'hojaderuta' => $hojaderuta, 'transclientes' => $transclientes));
-}
-
 if (isset($_POST['BuscarRecorridos'])) {
   // Helper para escapar HTML
   $h = function ($s) {

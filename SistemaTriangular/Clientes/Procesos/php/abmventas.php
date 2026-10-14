@@ -3,6 +3,7 @@
 // la llamada y el Notice de PHP ("Ignoring session_start()...") se colaba
 // como HTML antes del JSON, rompiendo el JSON.parse() del lado del cliente.
 include_once "../../../Conexion/Conexioni.php";
+require_once __DIR__ . '/../../../Funciones/php/eliminar_envio.php';
 date_default_timezone_set('America/Buenos_Aires');
 
 if(isset($_POST['Actualiza']) && $_POST['Actualiza']==1){
@@ -392,30 +393,9 @@ if(isset($_POST['BuscarDatos']) && $_POST['BuscarDatos']==1){
 
 //ELIMINAR GUIA DE CARGA
 if(isset($_POST['EliminarRegistro']) && $_POST['EliminarRegistro']==1){
-  $info="B: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)').' clientes.procesos.php.abmventas';
-  //ACTURALIZO HOJA DE RUTA
-  if($sql=$mysqli->query("UPDATE `HojaDeRuta` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]' WHERE Seguimiento='$_POST[CodigoSeguimiento]' LIMIT 1")){
-  $hojaderuta=1;  
-  }else{
-  $hojaderuta=0;    
-  }
-  //ACTUALIZO TRANS CLIENTES
-  if($sql=$mysqli->query("UPDATE `TransClientes` SET Eliminado='1',Usuario='Elimino $_SESSION[Usuario]',infoABM='$info' WHERE id='$_POST[id]' LIMIT 1")){
-  $transclientes=1;    
-  }else{
-  $transclientes=0; 
-  }
-  //BUSCO ID TRANSCLIENTES
-  $idTrans=$_POST['id'];
-  $CodigoSeguimiento=$_POST['CodigoSeguimiento'];
-  
-  $sql=$mysqli->query("SELECT id FROM TransClientes WHERE id='$idTrans'");
-  $datoid=$sql->fetch_array(MYSQLI_ASSOC);
-
-  $sqlventas=$mysqli->query("UPDATE Ventas SET Eliminado='1',infoABM='$info' WHERE NumPedido='$CodigoSeguimiento' LIMIT 1");
-  $sqlCtasCtes=$mysqli->query("UPDATE Ctasctes SET Eliminado='1' WHERE idTransClientes='$datoid[id]' LIMIT 1");
-  
-  echo json_encode(array('success'=>1,'hojaderuta'=>$hojaderuta,'transclientes'=>$transclientes));
+  // ver Funciones/php/eliminar_envio.php
+  $r=eliminarEnvio($mysqli,$_POST['id'] ?? 0,$_SESSION['Usuario'],'clientes.procesos.php.abmventas');
+  echo json_encode(array('success'=>1,'hojaderuta'=>$r['hojaderuta'],'transclientes'=>$r['transclientes']));
 }
 
 
