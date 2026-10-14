@@ -64,9 +64,39 @@ $recorrido = $_POST['recorrido_t']; //RECORRIDO
 // Ventas/Procesos/php/preventa.php::ActualizaRecorrido_all y
 // Ventas/Procesos/js/colecta.js). Esa iteración fantasma procesaba una
 // "preventa" con id vacío (sin fila real), con Datos casi todos null.
+// FIX (2026-10-14, QGRV0UT7T de VENEX y SA4VAJXL6): dos aceptaciones de la misma
+// preventa al mismo tiempo (dos operadores, o dos clicks) creaban dos remitos con el
+// mismo código de seguimiento, y el segundo con el Debe doble (sumaba las Ventas del
+// primero). Cargado se ponía en 1 recién al final. Ahora cada preventa se "reclama"
+// con un UPDATE atómico antes de procesarla: si otra request ya la tomó, se saltea.
+// Si la request muere antes de crear la guía, se libera (Cargado=0) para reintentar.
+$pvEnCurso = null;
+register_shutdown_function(function () use ($mysqli, &$pvEnCurso) {
+    if ($pvEnCurso === null) return;
+    try {
+        $st = $mysqli->prepare("UPDATE PreVenta SET Cargado=0 WHERE id=? LIMIT 1");
+        $st->bind_param('i', $pvEnCurso);
+        $st->execute();
+        $st->close();
+    } catch (\Throwable $e) {
+        error_log('AgregarRepoVentaWeb.php: no se pudo liberar la preventa ' . $pvEnCurso . ': ' . $e->getMessage());
+    }
+});
+
 for ($i = 0; $i < count($idPreVenta); $i++) {
 
     if ($recorrido[$i] <> 0) {
+
+        $idPv = intval($idPreVenta[$i]);
+        $stR = $mysqli->prepare("UPDATE PreVenta SET Cargado=1 WHERE id=? AND Cargado=0 AND Eliminado=0 LIMIT 1");
+        $stR->bind_param('i', $idPv);
+        $stR->execute();
+        $reclamada = $stR->affected_rows === 1;
+        $stR->close();
+        if (!$reclamada) {
+            continue; // ya aceptada (o eliminada) por otra request
+        }
+        $pvEnCurso = $idPv;
 
         $BuscoPreventa = $mysqli->query("SELECT * FROM PreVenta WHERE id='$idPreVenta[$i]'");
         $DatosPreVenta = $BuscoPreventa->fetch_array(MYSQLI_ASSOC);
@@ -76,14 +106,19 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
             $NumeroPedido = $DatosPreVenta['CodigoSeguimiento'];
 
-            // Reintento de un pase que se cortó a mitad de camino: las Ventas del intento
-            // anterior quedaron sueltas (sin TransClientes) y se sumarían al Debe. Se anulan.
+            // Si ese código ya tiene guía, la preventa ya se pasó: no se crea otra
+            // (queda Cargado=1). Si no, es el reintento de un pase que se cortó a mitad
+            // de camino: las Ventas del intento anterior quedaron sueltas y se sumarían
+            // al Debe. Se anulan.
             $stT = $mysqli->prepare("SELECT id FROM TransClientes WHERE CodigoSeguimiento=? AND Eliminado=0 LIMIT 1");
             $stT->bind_param('s', $NumeroPedido);
             $stT->execute();
             $yaTieneTrans = (bool) $stT->get_result()->fetch_row();
             $stT->close();
-            if (!$yaTieneTrans) {
+            if ($yaTieneTrans) {
+                $pvEnCurso = null;
+                continue;
+            } else {
                 $stV = $mysqli->prepare("UPDATE Ventas SET Eliminado=1 WHERE NumPedido=? AND Eliminado=0");
                 $stV->bind_param('s', $NumeroPedido);
                 $stV->execute();
@@ -474,8 +509,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
         $mysqli->query($IngresaTransaccion);
 
-        //obtengo el id de transclientes  
+        //obtengo el id de transclientes
         $idTransClientes = $mysqli->insert_id;
+        $pvEnCurso = null; // ya tiene guía: aunque falle lo que sigue, no se libera para no duplicarla
 
         // INGRESA MOVIMIENTO EN HOJA DE RUTA
         $Asignado = 'Unica Vez';
@@ -752,7 +788,7 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
     }
 
     //VERIFICO SI LA PREVENTA VIENE DE LA API DE TIENDA NUBE
-    if ($DatosPreVenta["TipoDeComprobante"] === 'API_TIENDANUBE') {
+    if (isset($DatosPreVenta, $CodigoSeguimiento) && $DatosPreVenta["TipoDeComprobante"] === 'API_TIENDANUBE') {
 
         include_once "../TiendaNube/api_tn.php";
 
