@@ -1,550 +1,97 @@
-<?php require_once __DIR__ . '/../Conexion/sesion.php'; iniciarSesionSistema(); // antes de cualquier HTML: después PHP no deja abrir la sesión ?>
+<?php
+date_default_timezone_set('America/Argentina/Cordoba');
+require_once __DIR__.'/../Conexion/Conexioni.php';
+require_once __DIR__.'/../Menu/php/permisos_menu.php';
+if (!nivelPuedeEntrarAlSistema($_SESSION['Nivel'] ?? 0) || !tieneMenuPermiso('Home','Panel Admin')) {
+    http_response_code(403); exit('No tenés permiso para consultar el Panel Admin.');
+}
+$initialMonth = $_GET['month'] ?? date('Y-m');
+if (!is_string($initialMonth) || !preg_match('/^(19|20|21)\d{2}-(0[1-9]|1[0-2])$/D', $initialMonth)) $initialMonth=date('Y-m');
+?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
-
 <head>
-    <meta charset="utf-8" />
-    <title>Sistema Caddy | </title>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
-    <meta content="Coderthemes" name="author" />
-
-    <!-- Caddy favicon -->
-    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-32x32.png" sizes="32x32">
-    <link rel="icon" type="image/png" href="/SistemaTriangular/images/favicon/favicon-96x96.png" sizes="96x96">
-    <link rel="shortcut icon" href="/SistemaTriangular/images/favicon/favicon.ico">
-
-    <!-- Plugin css -->
-    <link href="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.css" rel="stylesheet" type="text/css">
-    <link href="../hyper/dist/assets/vendor/jsvectormap/jsvectormap.min.css" rel="stylesheet" type="text/css">
-
-    <!-- Theme Config Js -->
+    <meta charset="utf-8">
+    <title>Inteligencia logística | Sistema Caddy</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/png" href="../images/favicon/favicon-32x32.png">
     <script src="../hyper/dist/assets/js/hyper-config.js"></script>
-
-    <!-- Vendor css -->
-    <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet" type="text/css" />
-
-    <!-- App css -->
-    <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" type="text/css" id="app-style" />
-
-    <!-- Icons css -->
-    <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
-    <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
-    <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+    <link href="../hyper/dist/assets/css/vendor.min.css" rel="stylesheet">
+    <link href="../hyper/dist/assets/css/app.min.css" rel="stylesheet" id="app-style">
+    <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet">
+    <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet">
+    <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet">
+    <link href="css/panel.css" rel="stylesheet">
+    <link href="css/dashboard_logistica.css?v=<?= filemtime(__DIR__.'/css/dashboard_logistica.css') ?>" rel="stylesheet">
 </head>
-
 <body>
-    <!-- Begin page -->
-    <div class="wrapper">
-
-        <?php include "../Menu/head.html"; ?>
-        <?php include "../Menu/topnav.html"; ?>
-        <div class="content-page">
-            <div class="content">
-
-                <!-- Start Content-->
-                <div class="container-fluid">
-
-
-                    <!-- start page title -->
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="page-title-box">
-                                <div class="page-title-right">
-                                    <ol class="breadcrumb m-0">
-                                        <li class="breadcrumb-item"><a href="javascript: void(0);">Panel de Control</a></li>
-                                        <li class="breadcrumb-item active">Venta Simple</li>
-                                    </ol>
-                                </div>
-                                <h2> <span class="badge bg-primary text-light cursor" id="mes" role="button"></span></h2>
-                                <!-- <h4 class="page-title" id="mes"></h4> -->
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="modal fade" id="modal-clientes" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title" id="modal-clientes-title">Ventas Anuales </h4>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-
-                                    <div class="row">
-                                        <div class="col-xl-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title mb-4">Ventas Mensuales</h4>
-                                                    <div id="chartClientes" class="apex-charts" data-colors="#fa5c7c"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
-
-
-                    <!-- end page title -->
-
-                    <div id="meses" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="primary-header-modalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-dialog-centered">
-                            <div class="modal-content">
-                                <div class="modal-header modal-colored-header bg-primary">
-                                    <h4 class="modal-title" id="primary-header-modalLabel">Seleccione un Mes</h4>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <select class="form-control select2" data-toggle="select2" id="mes_select">
-                                        <option value="">Seleccione un mes</option>
-                                        <optgroup label="Meses">
-                                            <option value="1">Enero</option>
-                                            <option value="2">Febrero</option>
-                                            <option value="3">Marzo</option>
-                                            <option value="4">Abril</option>
-                                            <option value="5">Mayo</option>
-                                            <option value="6">Junio</option>
-                                            <option value="7">Julio</option>
-                                            <option value="8">Agosto</option>
-                                            <option value="9">Septiembre</option>
-                                            <option value="10">Octubre</option>
-                                            <option value="11">Noviembre</option>
-                                            <option value="12">Diciembre</option>
-                                        </optgroup>
-                                    </select>
-                                </div>
-                                <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                                    <button id="button_mes_select" type="button" class="btn btn-primary">Guardar</button>
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
-                    <!-- Large modal -->
-
-                    <div class="modal fade" id="gastos-mensuales-modal-lg" tabindex="-1" role="dialog" aria-labelledby="myLargeModalLabel" aria-hidden="true">
-                        <div class="modal-dialog modal-lg">
-                            <div class="modal-content">
-                                <div class="modal-header">
-                                    <h4 class="modal-title" id="myLargeModalLabel">Gastos Seleccionados</h4>
-
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                </div>
-                                <div class="modal-body">
-                                    <p class="text-muted font-14" id="sub_header_gastos">Desde el 01/04/2022 Hasta el 30/04/2022</p>
-                                    <div class="row mt-3">
-                                        <div class="col-12">
-                                            <div class="table-responsive">
-                                                <table id="gastos_detalle" class="table table-striped dt-responsive nowrap w-100 h-6">
-                                                    <thead class="thead-light">
-                                                        <tr>
-                                                            <th>#</th>
-                                                            <th>Cuenta</th>
-                                                            <th>Nombre Cuenta</th>
-                                                            <th>Debe</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                    </tbody>
-                                                    <tfoot>
-                                                    </tfoot>
-                                                </table>
-                                            </div> <!-- end table-responsive -->
-                                        </div> <!-- end col -->
-                                    </div> <!-- end row-->
-
-
-                                </div>
-                            </div><!-- /.modal-content -->
-                        </div><!-- /.modal-dialog -->
-                    </div><!-- /.modal -->
-
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-body">
-
-                                    <!-- <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div id="spark1" class="apex-charts" data-colors="#DCE6EC"></div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div id="spark2" class="apex-charts" data-colors="#DCE6EC"></div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div id="spark3" class="apex-charts" data-colors="#0acf97"></div>
-                                                    </div>
-                                                </div> -->
-                                    <!-- end row -->
-                                    <div class="row">
-                                        <div class="col-xl-4 col-lg-6">
-                                            <div class="card widget-flat">
-                                                <div class="card-body bg-success">
-                                                    <div class="float-right">
-                                                        <i class="mdi mdi-truck-check widget-icon bg-danger rounded-circle text-white"></i>
-                                                    </div>
-                                                    <h5 class="text-white font-weight-normal mt-0" title="Revenue">Ventas Mensuales</h5>
-                                                    <h3 class="mt-3 mb-3 text-white" id="TotalIngresos"></h3>
-                                                    <!-- <span class="text-nowrap" id="entregas_mes"></span> -->
-                                                    <!-- <p class="mb-0 text-muted"> -->
-                                                    <!-- <span class="badge bg-info mr-1"> -->
-                                                    <!-- <i  id="entregas_porc"></i> </span> -->
-                                                    <!-- <span class="text-nowrap" id="entregas_mesant"></span> -->
-                                                    <!-- </p> -->
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-                                        <div class="col-xl-4 col-lg-6" style="display:none">
-                                            <div class="card widget-flat">
-                                                <div class="card-body">
-                                                    <div class="float-right">
-                                                        <i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i>
-                                                    </div>
-                                                    <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Envios Recorridos</h5>
-                                                    <h3 class="mt-3 mb-3" id="entregasr_dia"></h3>
-                                                    <span class="text-nowrap" id="entregasr_mes"></span>
-                                                    <p class="mb-0 text-muted">
-                                                        <span class="badge bg-info mr-1">
-                                                            <i id="entregasr_porc"></i> </span>
-                                                        <span class="text-nowrap" id="entregasr_mesant"></span>
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-                                        <div class="col-xl-4 col-lg-6">
-                                            <div class="card widget-flat">
-                                                <div class="card-body bg-danger">
-                                                    <div class="dropdown float-right">
-                                                        <a href="#" class="dropdown-toggle arrow-none card-drop" data-bs-toggle="dropdown" aria-expanded="false">
-                                                            <i class="mdi mdi-dots-vertical text-white"></i>
-                                                        </a>
-                                                        <div class="dropdown-menu dropdown-menu-right">
-                                                            <!-- item-->
-                                                            <a id="ver_gastos_btn" class="dropdown-item">Ver Gastos</a>
-                                                            <!-- item-->
-                                                            <!-- <a href="javascript:void(0);" class="dropdown-item">Action</a> -->
-                                                        </div>
-                                                    </div>
-
-                                                    <div class="float-right">
-                                                        <i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i>
-                                                    </div>
-                                                    <h5 class="text-white font-weight-normal mt-0" title="Revenue">Gastos Mensuales</h5>
-                                                    <h3 class="mt-3 mb-3 text-white" id="TotalGastos"></h3>
-                                                    <!-- <span class="text-nowrap" id="gastos_mes"></span> -->
-                                                    <!-- <p class="mb-0 text-muted"> -->
-                                                    <!-- <span class="badge bg-info mr-1"> -->
-                                                    <!-- <i  id="gastos_porc"></i> </span> -->
-                                                    <!-- <span class="text-nowrap" id="gastos_mesant"></span> -->
-                                                    <!-- </p> -->
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-                                        <div class="col-xl-4 col-lg-6">
-                                            <div class="card widget-flat">
-                                                <div class="card-body">
-                                                    <div class="float-right">
-                                                        <i class="mdi mdi-truck widget-icon bg-danger rounded-circle text-white"></i>
-                                                    </div>
-                                                    <h5 class="text-muted font-weight-normal mt-0" title="Revenue">Resultado Mensual</h5>
-                                                    <h3 class="mt-3 mb-3" id="resultado_mes"></h3>
-                                                    <!-- <span class="text-nowrap" id="_mes"></span> -->
-                                                    <!-- <p class="mb-0 text-muted"> -->
-                                                    <!-- <span class="badge bg-info mr-1"> -->
-                                                    <!-- <i  id="entregast_porc"></i> </span> -->
-                                                    <!-- <span class="text-nowrap" id="entregast_mesant"></span> -->
-                                                    <!-- </p> -->
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-                                    </div> <!-- end row -->
-
-
-                                    <!-- CUADRO GASTOS-->
-                                    <div class="col-xl-6" style="display:none">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h4 class="header-title mb-4">Dashed Line Chart</h4>
-                                                <div id="line-expenses" class="apex-charts" data-colors="#6c757d,#0acf97,#39afd1"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-
-
-                                    <!-- TABLA RECORRIDOS -->
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <!--                                         <a href="" class="btn btn-sm btn-link float-right mb-3">Export
-                                                        <i class="mdi mdi-download ml-1"></i>
-                                                    </a> -->
-                                                    <h4 class="header-title mt-2">HOJA DE RUTA | ENTREGAS DE HOY </h4>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-centered table-nowrap table-hover mb-0" id="desempeno_dia">
-                                                            <tbody>
-                                                                <thead>
-                                                                    <tr>
-                                                                        <th>Orden N</th>
-                                                                        <th>Nombre Completo</th>
-                                                                        <th>Dominio</th>
-                                                                        <th>Recorrido</th>
-                                                                        <th>Entregas</th>
-                                                                        <th>Cerradas</th>
-                                                                        <th>Progreso</th>
-                                                                        <th>Ver</th>
-                                                                    </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div> <!-- end table-responsive-->
-                                                </div> <!-- end card-body-->
-                                            </div> <!-- end card-->
-                                        </div> <!-- end col-->
-
-                                        <div class="col-12" style="display:none" id="panel1">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <a id='cerrar_panel1' class="float-right close-btn">
-                                                        <i class="mdi mdi-close"></i>
-                                                    </a>
-
-                                                    <h4 id="header_panel1" class="header-title mt-2"></h4>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-striped table-centered mb-0" id="seguimiento" style="font-size:10px">
-                                                            <thead>
-                                                                <tr>
-                                                                    <th>Informacion</th>
-                                                                    <th>Seguimiento</th>
-                                                                    <th>Servicio</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                            </tbody>
-                                                        </table>
-                                                    </div> <!-- end table-responsive-->
-                                                </div> <!-- end card-body-->
-                                            </div> <!-- end card-->
-                                        </div> <!-- end col-->
-
-                                    </div>
-
-
-
-
-
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title">TOTAL DE VENTAS POR PAQUETE POR CLIENTE EN $</h4>
-                                                    <p class="text-muted font-14">Corresponde a todos los clientes que enviaron paquetes en el mes de <a id="mes_clientes"></a>,
-                                                        el total de estas ventas es de <a id="total_clientes"></a>. No estan incluidos los envios x recorridos.</p>
-                                                    <div class="row mt-3">
-                                                        <div class="col-12">
-                                                            <div class="table-responsive">
-                                                                <table id="clientes" class="table table-striped dt-responsive nowrap w-100">
-                                                                    <thead class="thead-light">
-                                                                        <tr>
-                                                                            <th>Cliente</th>
-                                                                            <th>Cantidad</th>
-                                                                            <th>Total</th>
-                                                                            <th>Promedio</th>
-                                                                            <th>Grafico</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                    </tbody>
-                                                                    <tfoot>
-                                                                    </tfoot>
-                                                                </table>
-                                                            </div> <!-- end table-responsive -->
-                                                        </div> <!-- end col -->
-                                                    </div> <!-- end row-->
-                                                </div><!-- end card body-->
-                                            </div><!--end card -->
-                                        </div><!--end col-xl-12 -->
-                                    </div>
-
-                                    <!-- end row-->
-                                    <div class="row">
-                                        <div class="col-lg-8">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title">Ventas Mensuales x Paquete PESOS</h4>
-                                                    <p class="text-muted font-14 mb-3">Cantidad Total de Ventas por paquete en Pesos.</p>
-                                                    <div id="chart" class="apex-charts" data-colors="#fa5c7c"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-                                        <div class="col-lg-4">
-                                            <div class="card">
-                                                <div class="card-body">
-
-                                                    <h4 class="header-title">Ranking Anual de Clientes TOP 6</h4>
-                                                    <p class="text-muted font-14">Cantidad Total de Servicios Solicitados.</p>
-                                                    <h5 id="cliente_1" class="mb-1 mt-3 font-weight-normal"></h5>
-                                                    <div class="progress-w-percent">
-                                                        <span id="cliente_1_total" class="progress-value font-weight-bold"> </span>
-                                                        <div class="progress progress-sm">
-                                                            <div id="theprogressbar_1" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-
-                                                    <h5 id="cliente_2" class="mb-1 mt-0 font-weight-normal"></h5>
-                                                    <div class="progress-w-percent">
-                                                        <span id="cliente_2_total" class="progress-value font-weight-bold"> </span>
-                                                        <div class="progress progress-sm">
-                                                            <div id="theprogressbar_2" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-
-                                                    <h5 id="cliente_3" class="mb-1 mt-0 font-weight-normal"></h5>
-                                                    <div class="progress-w-percent">
-                                                        <span id="cliente_3_total" class="progress-value font-weight-bold"> </span>
-                                                        <div class="progress progress-sm">
-                                                            <div id="theprogressbar_3" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-
-                                                    <h5 id="cliente_4" class="mb-1 mt-0 font-weight-normal"></h5>
-                                                    <div class="progress-w-percent">
-                                                        <span id="cliente_4_total" class="progress-value font-weight-bold"> </span>
-                                                        <div class="progress progress-sm">
-                                                            <div id="theprogressbar_4" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-                                                    <h5 id="cliente_5" class="mb-1 mt-0 font-weight-normal"></h5>
-                                                    <div class="progress-w-percent">
-                                                        <span id="cliente_5_total" class="progress-value font-weight-bold"> </span>
-                                                        <div class="progress progress-sm">
-                                                            <div id="theprogressbar_5" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-                                                    <h5 id="cliente_6" class="mb-1 mt-0 font-weight-normal"></h5>
-                                                    <div class="progress-w-percent">
-                                                        <span id="cliente_6_total" class="progress-value font-weight-bold"> </span>
-                                                        <div class="progress progress-sm">
-                                                            <div id="theprogressbar_6" class="progress-bar" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
-                                                        </div>
-                                                    </div>
-                                                </div> <!-- end card-body-->
-                                            </div> <!-- end card-->
-                                        </div> <!-- end col-->
-                                    </div>
-                                    <!-- end row -->
-
-
-                                    <!-- </div> -->
-
-
-                                    <div class="row">
-                                        <div class="col-12">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title">PAQUETES ENVIADOS UNIDADES</h4>
-                                                    <p class="text-muted font-14 mb-3">Cantidad Total de Paquetes Enviados x mes x Unidades.</p>
-                                                    <div id="chart_envios" class="apex-charts" data-colors="#6c757d"></div>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h4 class="header-title">Ventas Mensuales x Recorrido</h4>
-                                                <p class="text-muted font-14 mb-3">Ventas totales Mensuales x Recorrido.</p>
-                                                <div id="chartrec" class="apex-charts" data-colors="#F76161"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                                <div class="row">
-                                    <div class="col-12">
-                                        <div class="card">
-                                            <div class="card-body">
-                                                <h4 class="header-title">TOTAL X MES EN PESOS</h4>
-                                                <p class="text-muted font-14 mb-3">Cantidad Total de Ventas en PesosPaquetes Enviados x mes x Unidades.</p>
-                                                <div id="chart_envios_total" class="apex-charts" data-colors="#6c757d"></div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-
-
-                            </div>
-                            <!-- end row-->
-                        </div>
-                    </div>
-
-                    <!-- content -->
-                    <div class="spinner-border avatar-md text-primary" role="status" style="display:none"></div>
-
-
-
-
-
-
-
-
-                </div>
-                <!-- container -->
-
+<div class="wrapper">
+    <?php include __DIR__.'/../Menu/head.html'; include __DIR__.'/../Menu/topnav.html'; ?>
+    <div class="content-page"><div class="content"><main class="container-fluid cf-page lg-page">
+        <header class="cf-header">
+            <div><div class="cf-eyebrow">Home / Panel Admin</div><h1 class="cf-title">Inteligencia logística</h1><div class="cf-sub">Rentabilidad, productividad y composición de la operación.</div></div>
+            <div class="cf-actions"><a href="dashboard_.php" class="btn btn-light"><i class="ri-funds-line"></i> Resultados Home</a><button id="export-report" class="btn btn-outline-primary" disabled><i class="ri-download-2-line"></i> Exportar análisis</button></div>
+        </header>
+        <form id="dashboard-filters" class="lg-panel lg-filters">
+            <div><label for="filter-month" class="form-label">Mes de servicio</label><input type="month" id="filter-month" name="month" value="<?= htmlspecialchars($initialMonth,ENT_QUOTES,'UTF-8') ?>" class="form-control" required></div>
+            <div><label for="filter-client" class="form-label">Cliente facturable</label><select id="filter-client" name="client" class="form-select"><option value="">Todos los clientes</option></select></div>
+            <div><label for="filter-fleet" class="form-label">Flota</label><select id="filter-fleet" name="fleet" class="form-select"><option value="">Todas las flotas</option></select></div>
+            <div><label for="filter-service" class="form-label">Servicio</label><select id="filter-service" name="service" class="form-select"><option value="">Todos los servicios</option></select></div>
+            <div class="lg-filter-actions"><button class="btn btn-primary" id="apply-filters"><i class="ri-filter-3-line"></i> Aplicar</button><button type="button" id="clear-filters" class="btn btn-light">Limpiar</button><button type="button" class="btn btn-light" data-bs-toggle="collapse" data-bs-target="#advanced-filters" aria-expanded="false" aria-controls="advanced-filters">Más filtros</button></div>
+            <div class="collapse" id="advanced-filters"><div class="lg-advanced">
+                <?php foreach (['driver'=>'Repartidor','route'=>'Ruta / recorrido','trip'=>'Salida / flete','zone'=>'Zona de entrega (localidad)','province'=>'Provincia','integration'=>'Integración'] as $key=>$label): ?>
+                <div><label for="filter-<?= $key ?>" class="form-label"><?= $label ?></label><select id="filter-<?= $key ?>" name="<?= $key ?>" class="form-select"><option value="">Todos</option></select></div>
+                <?php endforeach; ?>
+            </div></div>
+        </form>
+        <div id="dashboard-status" class="lg-status" role="status" aria-live="polite">Preparando el análisis…</div>
+        <div id="dashboard-error" class="alert alert-danger d-none" role="alert"></div>
+        <div id="dashboard-content" hidden>
+            <section class="lg-period"><div><span class="lg-dot"></span><strong id="period-label"></strong><span class="text-muted" id="period-note"></span></div><span class="lg-chip">Fecha de servicio · ARS</span></section>
+            <div id="empty-report" class="alert alert-info d-none">No hay actividad para este mes y estos filtros. Seleccioná otro período o limpiá los filtros.</div>
+            <section class="cf-kpis" id="financial-kpis" aria-label="Indicadores de rentabilidad"></section>
+            <section class="lg-insights lg-panel"><div class="lg-section-title"><div><div class="cf-eyebrow">Lectura ejecutiva</div><h2>Qué nos dice la operación</h2></div><i class="ri-lightbulb-flash-line"></i></div><div id="executive-insights" class="lg-insight-grid"></div></section>
+            <div class="row g-3 mb-3">
+                <section class="col-xl-8"><div class="lg-panel h-100"><div class="lg-section-title"><div><h2>Evolución del negocio</h2><p>12 meses de servicios · conserva los filtros seleccionados</p></div></div><div id="chart-trend" class="lg-chart" aria-label="Gráfico de evolución mensual"></div></div></section>
+                <section class="col-xl-4"><div class="lg-panel h-100"><div class="lg-section-title"><div><h2>Incidencia del flete</h2><p>Costos registrados / ventas sin IVA</p></div></div><div id="chart-incidence" class="lg-chart"></div><p id="incidence-analysis" class="lg-chart-note"></p></div></section>
             </div>
-            <!-- content -->
-
-            <!-- Footer Start -->
-            <div id="menuhyper_footer"></div>
-            <!-- end Footer -->
-
+            <section class="lg-panel mb-3"><div class="lg-section-title"><div><div class="cf-eyebrow">Utilización y productividad</div><h2>La operación en números</h2><p>Estado actual de los servicios del mes · puede cambiar con entregas posteriores</p></div></div><div id="operation-kpis" class="lg-operation-grid"></div></section>
+            <div class="row g-3 mb-3">
+                <section class="col-xl-7"><div class="lg-panel h-100"><div class="lg-section-title"><div><h2>Contribución por cliente</h2><p>Los 10 clientes con mayor venta · venta menos flete registrado</p></div></div><div id="chart-clients" class="lg-chart"></div></div></section>
+                <section class="col-xl-5"><div class="lg-panel h-100"><div class="lg-section-title"><div><h2>Composición de servicios</h2><p>Participación en la venta sin IVA</p></div></div><div id="chart-services" class="lg-chart"></div></div></section>
+            </div>
+            <section class="lg-panel mb-3"><div class="lg-section-title"><div><h2>Rentabilidad en detalle</h2><p>Cambiá la dimensión para detectar concentración, costos y oportunidades.</p></div><div class="lg-table-controls"><label for="group-dimension" class="visually-hidden">Dimensión del análisis</label><select id="group-dimension" class="form-select">
+                <option value="client">Por cliente</option><option value="driver">Por repartidor</option><option value="fleet">Propio / externo</option><option value="service">Por tipo de servicio</option><option value="route">Por ruta / recorrido</option><option value="trip">Por salida / flete</option><option value="zone">Por zona de entrega</option><option value="province">Por provincia</option><option value="integration">Por integración</option>
+            </select><label for="group-search" class="visually-hidden">Buscar en el análisis</label><input id="group-search" type="search" class="form-control" placeholder="Buscar en el análisis"></div></div>
+                <div class="table-responsive"><table class="table table-hover align-middle lg-table"><thead><tr><th><button type="button" data-sort="name">Dimensión ↕</button></th><th><button type="button" data-sort="services">Servicios ↕</button></th><th><button type="button" data-sort="sale">Venta sin IVA ↕</button></th><th><button type="button" data-sort="cost">Flete registrado ↕</button></th><th><button type="button" data-sort="contribution">Contribución ↕</button></th><th><button type="button" data-sort="margin">Margen ↕</button></th><th><button type="button" data-sort="incidence">Flete / venta ↕</button></th><th><button type="button" data-sort="coverage">Con costo ↕</button></th><th><button type="button" data-sort="km">Km reales ↕</button></th><th>Venta / km*</th><th>Flete / km*</th></tr></thead><tbody id="dimension-rows"></tbody><tfoot id="dimension-total"></tfoot></table></div>
+                <div class="lg-table-footer"><span id="table-count"></span><div><button id="table-prev" class="btn btn-sm btn-light">Anterior</button><span id="table-page" class="mx-2"></span><button id="table-next" class="btn btn-sm btn-light">Siguiente</button></div></div>
+                <p class="lg-chart-note">* Solo servicios con kilómetros reales vinculados; los km de una salida se distribuyen entre sus servicios. Una cobertura de costos baja hace que el margen sea provisional. No se imputan gastos generales a clientes.</p>
+            </section>
+            <div class="row g-3 mb-3">
+                <section class="col-xl-8"><div class="lg-panel h-100"><div class="lg-section-title"><div><h2>Pulso diario</h2><p>Venta y flete por fecha de servicio dentro del mes</p></div></div><div id="chart-daily" class="lg-chart"></div></div></section>
+                <section class="col-xl-4"><div class="lg-panel h-100"><div class="lg-section-title"><div><h2>Mix de flota</h2><p>Contribución y cobertura por operación</p></div></div><div id="fleet-analysis"></div></div></section>
+            </div>
+            <section class="lg-panel mb-3"><div class="lg-section-title"><div><div class="cf-eyebrow">Contexto de gastos · empresa completa</div><h2>Gastos y conciliación con resultados</h2><p>Sin filtros operativos. Fecha del asiento de Tesorería o del gasto extra.</p></div><a href="../Admin/Resultados.php" class="btn btn-sm btn-light">Ver Resultados por servicio <i class="ri-arrow-right-up-line"></i></a></div>
+                <div class="lg-expense-grid"><div><div id="expense-summary" class="lg-expense-summary"></div><p class="lg-chart-note">Esta referencia usa ventas brutas del modelo y gastos registrados. No equivale al resultado contable ni incluye la comisión teórica de cobranza del 5% de Home. Los fletes pueden estar incluidos en Tesorería: no se vuelven a restar de esta referencia.</p></div><div class="table-responsive"><table class="table table-sm"><thead><tr><th>Cuenta de gasto</th><th class="text-end">Importe registrado</th><th class="text-end">Participación</th></tr></thead><tbody id="expense-rows"></tbody></table></div></div>
+            </section>
+            <section class="lg-panel lg-methodology"><div class="lg-section-title"><div><h2>Calidad de datos y criterios del análisis</h2><p>Una lectura transparente de lo que está medido y de lo que falta registrar.</p></div></div><div id="quality-alerts"></div>
+                <details><summary>Ver cómo se calcula cada indicador</summary><div class="lg-method-grid">
+                    <p><strong>Fecha y unidad.</strong> Los envíos se agrupan por código y por TransClientes.Fecha; no por fecha de pago o rendición. Los movimientos de haber y eliminados quedan fuera. Una orden sin envíos usa Logistica.Fecha. Se incluyen colectas cuando están registradas como servicio: son trabajo operativo, no entregas finales.</p>
+                    <p><strong>Venta.</strong> Debe / 1,21, siguiendo Resultados. Para recorridos: cargo activo de Ctasctes asociado a idLogistica; si no es positivo, PrecioRecorrido. Se reparte entre los servicios sin venta de esa orden, incluso si están en otro mes. Sin servicios elegibles, se muestra una línea de orden. No se usa TotalFacturado, porque puede repetir la factura completa.</p>
+                    <p><strong>Flete.</strong> Suma de PrecioPagado + CobranzaIntegrada por código en Externos_rendicion, aunque se liquide después. Para flota propia se usa CostoKmTotalImputado; para externa, Costo_rendicion de la orden. Se distribuye el remanente no cubierto por rendiciones, evitando contarlo dos veces. Sin registro positivo, el costo figura como faltante.</p>
+                    <p><strong>Contribución y margen.</strong> Venta sin IVA menos flete registrado. Margen = contribución / venta; incidencia = flete / venta. Incluye servicios sin costo para reconciliar la venta, por lo que es provisional si falta cobertura. Los costos se toman por el importe guardado; no se presume ni modifica su tratamiento de IVA.</p>
+                    <p><strong>Clientes y dimensiones.</strong> Cliente facturable según FormaDePago (origen o destino). Si falta el ID, se vincula por nombre exacto únicamente cuando identifica un solo cliente; en otro caso figura Sin ID. Ruta y salida corresponden a la orden vinculada. Zona de entrega = localidad del destinatario. Repartidor externo proviene de la rendición; si hay varios se muestra el conjunto. Propio/externo usa la rendición o Vehiculos.Aliados; la vinculación actual puede cambiar al editar vehículos o recorridos.</p>
+                    <p><strong>Integraciones y kilómetros.</strong> Tienda Nube usa Origen = API_TIENDANUBE. Mercado Libre usa identificadores de 11 dígitos que empiezan con 4. Los demás orígenes se muestran tal como están registrados o sin identificar. No se estiman km ausentes. Venta/km y flete/km consideran únicamente hechos con km registrados.</p>
+                    <p><strong>Cobranza y gastos.</strong> Los importes not_invoice rendidos en Ventas se suman como ingreso operativo según Resultados. Los recibos de clientes y los pagos a fleteros no cambian la fecha del servicio. Gastos suma Tesorería con MuestraGastos=1 y NoOperativo=0, más GastosExtras si existe; no se reparte ni se vuelve a descontar del margen por cliente.</p>
+                    <p><strong>Comparación.</strong> Mes seleccionado contra mes anterior completo, con los mismos filtros. Un mes en curso se identifica como parcial; el porcentaje compara acumulados de distinta duración. La tendencia muestra los 12 meses terminados en el período elegido.</p>
+                </div></details>
+            </section>
         </div>
-
-        <!-- ============================================================== -->
-        <!-- End Page content -->
-        <!-- ============================================================== -->
-
-    </div>
-    <!-- END wrapper -->
-
-    <!-- Vendor js -->
-    <script src="../hyper/dist/assets/js/vendor.min.js"></script>
-
-    <!-- App js -->
-    <script src="../hyper/dist/assets/js/app.js"></script>
-
-    <!-- Daterangepicker js -->
-    <script src="../hyper/dist/assets/vendor/moment/moment.min.js"></script>
-    <script src="../hyper/dist/assets/vendor/daterangepicker/daterangepicker.js"></script>
-
-    <!-- Apex Charts js -->
-    <script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
-
-    <!-- Vector Map js -->
-    <?php include '../Menu/php/script_maps-vector.js'; ?>
-    <!-- DataTables -->
-    <?php include '../Menu/php/script_datatables.js'; ?>
-    <!-- Dashboard App js -->
-    <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
-    <!-- Funciones -->
-    <script src="js/funcionesAdmin.js"></script>
-    <script src="js/mapagestya.js"></script>
-    <script src="../Menu/js/funciones.js"></script>
-    <script src="../Funciones/js/alertas.js"></script>
-    <script src="js/demo.apex-line.js"></script>
-    <!-- SweetAlert2 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
-
-    <!-- SweetAlert2 JS -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-</body>
-
-</html>
+    </main></div><div id="menuhyper_footer"></div></div>
+</div>
+<script src="../hyper/dist/assets/js/vendor.min.js"></script>
+<script src="../hyper/dist/assets/js/app.js"></script>
+<script src="../hyper/dist/assets/vendor/apexcharts/apexcharts.min.js"></script>
+<script src="../Menu/js/funciones.js"></script>
+<script src="js/dashboard_logistica.js?v=<?= filemtime(__DIR__.'/js/dashboard_logistica.js') ?>"></script>
+</body></html>
