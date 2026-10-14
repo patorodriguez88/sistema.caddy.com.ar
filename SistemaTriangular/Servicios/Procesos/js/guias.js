@@ -1417,10 +1417,57 @@ let id_seguimiento_a_eliminar = null;
 // Al hacer clic en el ícono
 function ver_seguimiento(id) {
   id_seguimiento_a_eliminar = id;
-  let modal = new bootstrap.Modal(
-    document.getElementById("modal_confirmar_eliminacion"),
-  );
-  modal.show();
+  // Un "Entregado" de una orden ya cerrada no se borra: se corrige a "No se pudo entregar"
+  // con motivo, para que el repartidor conserve la visita (ver Funciones/php/tablas.php).
+  $.post("../Funciones/php/tablas.php", { InfoEliminarSeguimiento: 1, id: id })
+    .done(function (r) {
+      var info = {};
+      try { info = JSON.parse(r); } catch (e) {}
+      if (info.requiere_motivo == 1) {
+        corregir_entrega(id, info);
+      } else {
+        new bootstrap.Modal(document.getElementById("modal_confirmar_eliminacion")).show();
+      }
+    })
+    .fail(function () {
+      toast("error", "Error!", "No se pudo consultar el movimiento");
+    });
+}
+
+function corregir_entrega(id, info) {
+  Swal.fire({
+    icon: "warning",
+    title: "Corregir entrega",
+    html:
+      "Esta entrega es de la orden <b>" + info.orden + "</b>, que ya está cerrada.<br>" +
+      "No se borra: queda como <b>No se pudo entregar</b> a nombre de <b>" + info.usuario +
+      "</b> (" + info.fecha + " " + info.hora + "), para que su visita quede registrada en la rendición, " +
+      "y el envío sale de la orden para poder rutearlo de nuevo.",
+    input: "textarea",
+    inputLabel: "¿Por qué no se entregó?",
+    inputPlaceholder: "Ej: nadie en domicilio",
+    inputValidator: (v) => (!v || !v.trim() ? "Indicá el motivo" : undefined),
+    showCancelButton: true,
+    confirmButtonText: "Corregir",
+    cancelButtonText: "Cancelar",
+    confirmButtonColor: "#fa5c7c",
+  }).then(function (res) {
+    if (!res.isConfirmed) return;
+    $.post("../Funciones/php/tablas.php", { EliminarSeguimiento: 1, id: id, Motivo: res.value.trim() })
+      .done(function (r) {
+        var jsonData = {};
+        try { jsonData = JSON.parse(r); } catch (e) {}
+        if (jsonData.success == 1) {
+          toast("success", "Listo!", "Entrega corregida a No se pudo entregar");
+          $("#ficha_seguimiento_tabla").DataTable().ajax.reload();
+        } else {
+          toast("error", "Error!", jsonData.error || "No se pudo corregir la entrega");
+        }
+      })
+      .fail(function () {
+        toast("error", "Error!", "No se pudo corregir la entrega");
+      });
+  });
 }
 
 $("#btn_confirmar_eliminacion").click(function () {
