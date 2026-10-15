@@ -11,6 +11,8 @@ iniciarSesionSistema();
 
 function menuSlug(string $seccion, string $texto): string
 {
+    // Display-name changes retain existing permission IDs and role assignments.
+    if ($seccion==='Home') $texto=['Resultados del negocio'=>'Resultados','Rentabilidad operativa'=>'Panel Admin'][$texto]??$texto;
     $base = $seccion . '__' . $texto;
     $acentos = ['á', 'é', 'í', 'ó', 'ú', 'à', 'è', 'ì', 'ò', 'ù', 'ñ', 'ü', 'Á', 'É', 'Í', 'Ó', 'Ú', 'À', 'È', 'Ì', 'Ò', 'Ù', 'Ñ', 'Ü'];
     $sin_acentos = ['a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'n', 'u', 'a', 'e', 'i', 'o', 'u', 'a', 'e', 'i', 'o', 'u', 'n', 'u'];

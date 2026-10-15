@@ -1,158 +1,26 @@
 <?php
-include_once "../../Conexion/Conexioni.php";
-
-// La tabla muestra los ultimos 12 meses corridos (igual que el resto de los
-// endpoints de este dashboard), no un año calendario -- si se filtraba por
-// YEAR(Fecha) = año actual, los meses del año anterior que entran en la
-// ventana de 12 meses (ej. sep-dic si estamos en agosto) nunca aparecian.
-$fechaDesde = date('Y-m-01', strtotime('-11 months'));
-$fechaHasta = date('Y-m-t');
-
-// 1. SALDO INICIAL (todo lo anterior al inicio de la ventana de 12 meses)
-$query1 = "
-    SELECT SUM(Debe) - SUM(Haber) AS saldo_inicial
-    FROM TransClientes
-    WHERE Eliminado=0 AND Fecha < '$fechaDesde'
-";
-$result1 = $mysqli->query($query1);
-$row1 = $result1->fetch_assoc();
-$saldoInicial = floatval($row1['saldo_inicial'] ?? 0);
-
-// 2. VENTAS SIMPLES (Flex = 0)
-$querySimples = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
-    FROM TransClientes
-    WHERE  Eliminado=0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta' AND Flex = 0
-    GROUP BY periodo
-";
-$ventasSimples = [];
-$result = $mysqli->query($querySimples);
-while ($row = $result->fetch_assoc()) {
-    $ventasSimples[$row['periodo']] = floatval($row['total']);
+// Legacy URL retained for bookmarks and callers. Values are net operating income, not cash flow.
+date_default_timezone_set('America/Argentina/Cordoba');
+ini_set('display_errors','0');
+require_once __DIR__.'/../../Conexion/Conexioni.php';
+require_once __DIR__.'/../../Menu/php/permisos_menu.php';
+header('Content-Type: application/json; charset=utf-8');
+if (!nivelPuedeEntrarAlSistema($_SESSION['Nivel']??0) || !tieneMenuPermiso('Home','Resultados')) {
+    http_response_code(403);echo json_encode(['ok'=>false,'error'=>'No tenés permiso para consultar Resultados del negocio.']);exit;
 }
-
-// 3. VENTAS FLEX (Flex = 1)
-$queryFlex = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Debe) AS total
-    FROM TransClientes
-    WHERE  Eliminado=0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta' AND Flex = 1
-    GROUP BY periodo
-";
-$ventasFlex = [];
-$result = $mysqli->query($queryFlex);
-while ($row = $result->fetch_assoc()) {
-    $ventasFlex[$row['periodo']] = floatval($row['total']);
-}
-
-// 4. VENTAS RECORRIDOS: los SERVICIOS de recorrido realizados en el mes (órdenes de salida, por
-// fecha de la orden), no lo facturado. Valor de cada orden:
-//   - el cargo que se cargó en la cuenta corriente del cliente (Clientes > recorridos:
-//     Ctasctes FacturacionxRecorrido=1 con su idLogistica), si tiene importe - es lo que se
-//     factura, con los ajustes manuales;
-//   - si todavía no se cargó (o quedó en 0), el precio del recorrido que se congeló al crear la
-//     orden (Logistica.PrecioRecorrido).
-// Así el mes en curso no queda bajo por los cargos que faltan cargar (sep-2026: $11,8 M cargados
-// vs $31,9 M realizados) y entran los recorridos que se facturan aparte (1314 Perfil).
-// NO usar Logistica.TotalFacturado (facturar.php graba ahí el total de la factura completa en
-// cada orden: jul-2026 daba $116,7 M) ni TotalRecorrido (suma de los envíos, ya en Ventas Simples).
-$queryRecorridos = "
-    SELECT DATE_FORMAT(l.Fecha, '%Y-%m') AS periodo,
-           SUM(IF(IFNULL(c.cargo, 0) > 0, c.cargo, IFNULL(l.PrecioRecorrido, 0))) AS total
-    FROM Logistica l
-    LEFT JOIN (SELECT idLogistica, SUM(Debe) AS cargo FROM Ctasctes
-                WHERE Eliminado = 0 AND FacturacionxRecorrido = 1 AND idLogistica > 0
-                GROUP BY idLogistica) c ON c.idLogistica = l.id
-    WHERE l.Eliminado = 0 AND l.Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
-    GROUP BY periodo
-";
-$ventasRecorridos = [];
-$result = $mysqli->query($queryRecorridos);
-while ($row = $result->fetch_assoc()) {
-    $ventasRecorridos[$row['periodo']] = floatval($row['total']);
-}
-
-// 5. VENTAS COBRANZA (5% del CobrarEnvio)
-$queryCobranza = "
-    SELECT DATE_FORMAT(FechaPedido, '%Y-%m') AS periodo,
-           SUM(CobrarEnvio) * 0.05 AS total
-    FROM Ventas
-    WHERE FechaPedido BETWEEN '$fechaDesde' AND '$fechaHasta'
-      AND Eliminado = 0
-      AND surrender_number <> 0
-      AND CobrarEnvio > 0
-    GROUP BY periodo
-";
-$ventasCobranza = [];
-$result = $mysqli->query($queryCobranza);
-while ($row = $result->fetch_assoc()) {
-    $ventasCobranza[$row['periodo']] = floatval($row['total']);
-}
-
-// 6. GASTOS
-$queryGastos = "
-    SELECT DATE_FORMAT(Tesoreria.Fecha, '%Y-%m') AS periodo,
-           SUM(Tesoreria.Debe) AS total
-    FROM Tesoreria
-    JOIN PlanDeCuentas ON PlanDeCuentas.Cuenta = Tesoreria.Cuenta
-    WHERE Tesoreria.NoOperativo = 0
-      AND PlanDeCuentas.MuestraGastos = 1
-      AND Tesoreria.Eliminado = 0
-      AND Tesoreria.Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
-    GROUP BY periodo
-";
-$gastos = [];
-$result = $mysqli->query($queryGastos);
-while ($row = $result->fetch_assoc()) {
-    $gastos[$row['periodo']] = floatval($row['total']);
-}
-
-// 6b. GASTOS EXTRAS -- gestión de Agustina/Cintia, fuera de Tesoreria (no
-// tocan Mayor de Cuentas ni Libro de IVA), se suman acá para que sí
-// impacten el Cuadro de Resultados.
-$queryGastosExtras = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Importe) AS total
-    FROM GastosExtras
-    WHERE Eliminado = 0 AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
-    GROUP BY periodo
-";
-// En producción la tabla todavía no existe (la migración de Gastos Extras solo se corrió en
-// sandbox): con PHP 8 la consulta tira excepción y el cuadro entero quedaba sin datos.
+session_write_close();
+require_once __DIR__.'/dashboard_logistica_model.php';
 try {
-    $result = $mysqli->query($queryGastosExtras);
-} catch (mysqli_sql_exception $e) {
-    $result = false;
+    $month=date('Y-m');$start=(new DateTimeImmutable($month.'-01'))->modify('-11 months')->format('Y-m-d');
+    $end=(new DateTimeImmutable($month.'-01'))->modify('+1 month')->format('Y-m-d');
+    $receipts=[];
+    $stmt=$mysqli->prepare("SELECT DATE_FORMAT(Fecha,'%Y-%m') month,SUM(Haber) amount FROM Ctasctes
+        WHERE Eliminado=0 AND TipoDeComprobante='Recibo de Pago' AND Fecha>=? AND Fecha<? GROUP BY month");
+    $stmt->bind_param('ss',$start,$end);$stmt->execute();
+    foreach($stmt->get_result()->fetch_all(MYSQLI_ASSOC) as $r)$receipts[$r['month']]=(float)$r['amount'];$stmt->close();
+    $model=new DashboardLogistica($mysqli);
+    echo json_encode(DashboardLogistica::businessSummary($model->load($month,false),$month,$receipts),JSON_UNESCAPED_UNICODE|JSON_INVALID_UTF8_SUBSTITUTE|JSON_THROW_ON_ERROR);
+} catch(Throwable $e) {
+    error_log('Resultados del negocio: '.$e->getMessage());http_response_code(500);
+    echo json_encode(['ok'=>false,'error'=>'No se pudo calcular el resultado. Volvé a intentar.']);
 }
-if ($result) {
-    while ($row = $result->fetch_assoc()) {
-        $periodo = $row['periodo'];
-        $gastos[$periodo] = ($gastos[$periodo] ?? 0) + floatval($row['total']);
-    }
-}
-
-// 6c. COBRADO A CLIENTES: los Recibos de Pago de la cuenta corriente (plata que entró,
-// con IVA). Es informativo: no se suma al resultado, que se calcula sobre lo vendido.
-$queryCobrado = "
-    SELECT DATE_FORMAT(Fecha, '%Y-%m') AS periodo, SUM(Haber) AS total
-    FROM Ctasctes
-    WHERE Eliminado = 0 AND TipoDeComprobante = 'Recibo de Pago'
-      AND Fecha BETWEEN '$fechaDesde' AND '$fechaHasta'
-    GROUP BY periodo
-";
-$cobrado = [];
-$result = $mysqli->query($queryCobrado);
-while ($row = $result->fetch_assoc()) {
-    $cobrado[$row['periodo']] = floatval($row['total']);
-}
-
-// 7. Salida JSON
-header('Content-Type: application/json');
-echo json_encode([
-    'saldo_inicial' => $saldoInicial,
-    'ventas_simples' => $ventasSimples,
-    'ventas_flex' => $ventasFlex,
-    'ventas_recorridos' => $ventasRecorridos,
-    'ventas_cobranza' => $ventasCobranza,
-    'gastos' => $gastos,
-    'cobrado' => $cobrado
-]);
-exit;
