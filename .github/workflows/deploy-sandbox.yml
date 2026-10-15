@@ -14,6 +14,13 @@ jobs:
     - name: 🚚 Get latest code
       uses: actions/checkout@v4
     
+    - name: Repair obsolete sandbox FTP manifest entries
+      run: python3 .github/scripts/repair_sandbox_ftp_state.py
+      env:
+        FTP_SERVER: dintersa.com.ar
+        FTP_USER: user@sandbox.sistema.caddy.com.ar
+        FTP_PASSWORD: ${{ secrets.SANDBOX_FTP_PASSWORD }}
+
     - name: 📂 Sync files
       uses: SamKirkland/FTP-Deploy-Action@v4.3.5
       with:
@@ -23,7 +30,6 @@ jobs:
         protocol: ftp
         port: 21
         log-level: verbose
-        # Ignore the obsolete Importar/assets entry in the server sync manifest.
         exclude: |
             **/.git*
             **/.github/**
@@ -32,5 +38,3 @@ jobs:
             **/.env
             **/*.log
             **/*.zip
-            SistemaTriangular/Importar/assets/
-            SistemaTriangular/Importar/assets/**
