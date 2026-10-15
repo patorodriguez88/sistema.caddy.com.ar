@@ -23,6 +23,7 @@ jobs:
         protocol: ftp
         port: 21
         log-level: verbose
+        # Ignore the obsolete Importar/assets entry in the server sync manifest.
         exclude: |
             **/.git*
             **/.github/**
@@ -31,3 +32,5 @@ jobs:
             **/.env
             **/*.log
             **/*.zip
+            SistemaTriangular/Importar/assets/
+            SistemaTriangular/Importar/assets/**

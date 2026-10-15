@@ -1,4 +1,4 @@
-// Resultados / CashFlow (Inicio/dashboard_.php)
+// Resultados del negocio (legacy route: Inicio/dashboard_.php)
 // Datos: php/dashboard_cashflow.php (ventas y gastos por mes) y
 // php/dashboard_cashflow_gastos.php (gastos por cuenta). La estructura de gastos
 // por grupo se calcula acá desde el detalle, así los tres cuadros suman lo mismo.
@@ -11,7 +11,7 @@
   const GRUPOS = ["Personal", "Logistica", "Generales", "Financieros"];
   const GRUPO_LABEL = { Personal: "Personal", Logistica: "Logística", Generales: "Generales", Financieros: "Financieros / Impuestos" };
   const GRUPO_COLOR = { Personal: "#727cf5", Logistica: "#39afd1", Generales: "#ffbc00", Financieros: "#fa5c7c" };
-  const IVA = 1.21;
+  // Revenue is already net in the shared backend; do not divide it by VAT again.
 
   // === Mapeo de cuentas a grupos de gasto ===
   const MAP_CUENTAS_A_GRUPO = {
@@ -96,17 +96,31 @@
     $("#cf-excel").prop("disabled", true);
     $("#cf-actualizar .mdi").addClass("mdi-spin");
     const pCash = $.ajax({ url: "php/dashboard_cashflow.php", type: "POST", dataType: "json" });
-    const pGastos = $.ajax({ url: "php/dashboard_cashflow_gastos.php", type: "POST", dataType: "json" });
-
-    $.when(pCash, pGastos)
-      .done(function (rCash, rGastos) {
-        armarCash(rCash[0] || {});
-        armarGastos((rGastos[0] || {}).datos || []);
+    // One snapshot supplies revenue, expense totals and account detail to prevent drift.
+    pCash.done(function (data) {
+        if (!data || data.ok!==true) {
+          $('#cf-quality').text(data?.error || 'No se pudo calcular el resultado.');return;
+        }
+        if (Array.isArray(data.months) && data.months.length) {
+          COLS.length=0;
+          data.months.forEach((m,i)=>{const [year,month]=m.month.split('-');COLS.push({key:m.month,label:MESES[Number(month)-1]+'-'+year.slice(-2),parcial:i===data.months.length-1});});
+        }
+        armarCash(data);
+        armarGastos(data.datos || []);
+        cash.operativos=COLS.map((_,i)=>gastos.filter(g=>g.grupo==='Logistica').reduce((a,g)=>a+g.valores[i],0));
+        cash.otros=cash.gasto.map((v,i)=>v-cash.operativos[i]);
+        const last=data.months[data.months.length-2];
+        const notes=['Resultado provisional. Los gastos se imputan por fecha del asiento o gasto extra; las obligaciones sin registrar y las fechas de devengamiento requieren revisión.'];
+        if(last)notes.push(`${last.month}: ${fmt0.format(last.services-last.covered)} servicios sin costo positivo vinculado. El costo de flete se informa como referencia y no se suma otra vez a los gastos.`);
+        notes.push(...(data.warnings||[]));
+        $('#cf-quality').text('Resultado provisional · Gastos por fecha registrada · Costos pendientes de conciliación. Ver criterios de ingresos, costos y gastos.');
+        $('#cf-quality-detail').html(notes.map(esc).join('<br>'));
         renderTodo();
-        $("#cf-excel").prop("disabled", false);
+        $('#cf-excel').prop('disabled',false);
       })
       .fail(function (xhr) {
-        console.error("CashFlow: error cargando datos", xhr);
+        console.error("Resultados del negocio: error cargando datos", xhr);
+        $("#cf-quality").text("No se pudo actualizar el resultado. Revisá la sesión y volvé a intentar.");
         $("#cf-tabla-cashflow tbody, #cf-tabla-gastos tbody").html('<tr><td class="cf-loading" colspan="15">No se pudieron cargar los datos. Probá con Actualizar.</td></tr>');
       })
       .always(function () {
@@ -116,15 +130,16 @@
 
   function armarCash(d) {
     const v = (obj, k) => parseFloat((obj || {})[k] || 0);
-    const simples = COLS.map((c) => v(d.ventas_simples, c.key) / IVA);
-    const flex = COLS.map((c) => v(d.ventas_flex, c.key) / IVA);
-    const recorridos = COLS.map((c) => v(d.ventas_recorridos, c.key) / IVA);
+    const simples = COLS.map((c) => v(d.ventas_simples, c.key));
+    const flex = COLS.map((c) => v(d.ventas_flex, c.key));
+    const recorridos = COLS.map((c) => v(d.ventas_recorridos, c.key));
     const cobranza = COLS.map((c) => v(d.ventas_cobranza, c.key));
-    const total = COLS.map((_, i) => simples[i] + flex[i] + recorridos[i] + cobranza[i]);
+    const total = COLS.map(c=>v(d.ventas_total,c.key));
+    const flete=COLS.map(c=>(d.months.find(m=>m.month===c.key)||{}).cost||0);
     const gasto = COLS.map((c) => v(d.gastos, c.key));
     const saldo = COLS.map((_, i) => total[i] - gasto[i]);
     const cobrado = COLS.map((c) => v(d.cobrado, c.key)); // Recibos de Pago, con IVA
-    cash = { simples, flex, recorridos, cobranza, total, gasto, saldo, cobrado };
+    cash = { simples, flex, recorridos, cobranza, total, gasto, saldo, cobrado, flete };
   }
 
   function armarGastos(datos) {
@@ -176,13 +191,13 @@
       </div>`;
 
     $("#cf-kpis").html(
-      kpi("#727cf5", "mdi-trending-up", "Ventas 12 meses", pesosCorto(v12),
+      kpi("#727cf5", "mdi-trending-up", "Ingresos generados · 12 meses", pesosCorto(v12),
         `${mesU}: <b>${pesosCorto(cash.total[iu])}</b> ${delta(cash.total[iu], cash.total[ip])}`) +
-      kpi("#fa5c7c", "mdi-cash-minus", "Gastos 12 meses", pesosCorto(g12),
+      kpi("#fa5c7c", "mdi-cash-minus", "Costos y gastos · 12 meses", pesosCorto(g12),
         `${mesU}: <b>${pesosCorto(cash.gasto[iu])}</b> ${delta(cash.gasto[iu], cash.gasto[ip], true)}`) +
-      kpi(s12 >= 0 ? "#0acf97" : "#fa5c7c", "mdi-scale-balance", "Resultado 12 meses", pesosCorto(s12),
+      kpi(s12 >= 0 ? "#0acf97" : "#fa5c7c", "mdi-scale-balance", "Resultado operativo · provisional", pesosCorto(s12),
         `${mesU}: <b class="${cash.saldo[iu] >= 0 ? "cf-pos" : "cf-neg"}">${pesosCorto(cash.saldo[iu])}</b>`, s12 >= 0 ? "cf-pos" : "cf-neg") +
-      kpi("#ffbc00", "mdi-percent-outline", "Margen 12 meses", pct(margen12),
+      kpi("#ffbc00", "mdi-percent-outline", "Margen operativo · provisional", pct(margen12),
         `${mesU}: <b>${pct(margenU)}</b> <span class="text-muted">(mes anterior ${pct(margenP)})</span>`)
     );
   }
@@ -196,9 +211,9 @@
       chart: { type: "line", height: 340, toolbar: { show: false }, fontFamily: "inherit", foreColor: temaOscuro() ? "#aab8c5" : "#6c757d" },
       theme: { mode: temaOscuro() ? "dark" : "light" },
       series: [
-        { name: "Ventas", type: "column", data: cash.total.map(Math.round) },
-        { name: "Gastos", type: "column", data: cash.gasto.map(Math.round) },
-        { name: "Resultado", type: "line", data: cash.saldo.map(Math.round) },
+        { name: "Ingresos generados", type: "column", data: cash.total.map(Math.round) },
+        { name: "Costos y gastos registrados", type: "column", data: cash.gasto.map(Math.round) },
+        { name: "Resultado operativo provisional", type: "line", data: cash.saldo.map(Math.round) },
       ],
       colors: ["#727cf5", "#fa5c7c", "#0acf97"],
       stroke: { width: [0, 0, 3], curve: "smooth" },
@@ -237,11 +252,14 @@
       fila("Ventas Simples", cash.simples) +
       fila("Ventas Flex", cash.flex) +
       fila("Ventas Recorridos", cash.recorridos) +
-      fila("Cobranza (5%)", cash.cobranza) +
-      fila("Total Ventas", cash.total, "cf-row-total") +
-      fila("Gastos", cash.gasto, "cf-row-gastos") +
-      fila("Resultado", cash.saldo, "cf-row-saldo", true) +
-      `<tr class="cf-row-margen"><td class="cf-first">Margen</td>${margen.map((m) => `<td>${pct(m)}</td>`).join("")}<td class="cf-col-total">${pct(margenTotal)}</td></tr>` +
+      fila("Otros ingresos operativos", cash.cobranza) +
+      fila("Ingresos generados", cash.total, "cf-row-total") +
+      fila("Costos operativos registrados", cash.operativos) +
+      fila("Otros gastos registrados", cash.otros) +
+      fila("Total costos y gastos registrados", cash.gasto, "cf-row-gastos") +
+      fila("Resultado operativo provisional", cash.saldo, "cf-row-saldo", true) +
+      `<tr class="cf-row-margen"><td class="cf-first">Margen operativo provisional</td>${margen.map((m) => `<td>${pct(m)}</td>`).join("")}<td class="cf-col-total">${pct(margenTotal)}</td></tr>` +
+      fila('Costo de flete vinculado <span class="cf-nota" title="Referencia de Rentabilidad operativa. Puede estar incluido en Tesorería: no se suma de nuevo al gasto.">referencia · no se vuelve a descontar</span>', cash.flete, "cf-row-cobrado") +
       fila('Cobrado a clientes <span class="cf-nota" title="Recibos de Pago de la cuenta corriente. Es plata que entró (con IVA): no suma al resultado.">con IVA · no suma al resultado</span>', cash.cobrado, "cf-row-cobrado")
     );
   }
@@ -357,7 +375,7 @@
       const a = document.createElement("a");
       const f = new Date();
       a.href = URL.createObjectURL(blob);
-      a.download = `Cashflow_Caddy_${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}.xlsx`;
+      a.download = `Resultados_del_negocio_${f.getFullYear()}-${String(f.getMonth() + 1).padStart(2, "0")}-${String(f.getDate()).padStart(2, "0")}.xlsx`;
       document.body.appendChild(a);
       a.click();
       setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
@@ -375,7 +393,7 @@
     const wb = new ExcelJS.Workbook();
     wb.creator = "Sistema Caddy";
     wb.created = new Date();
-    const ws = wb.addWorksheet("Cashflow", { views: [{ state: "frozen", xSplit: 2 }] });
+    const ws = wb.addWorksheet("Resultados", { views: [{ state: "frozen", xSplit: 2 }] });
 
     const nMeses = COLS.length;
     const colTotal = 3 + nMeses; // A,B + meses + total
@@ -389,10 +407,10 @@
     for (let c = 3; c <= colTotal; c++) ws.getColumn(c).width = 15;
     ws.getColumn(colTotal).width = 17;
 
-    const titulo = ws.addRow(["Caddy · Cashflow y detalle de gastos"]);
+    const titulo = ws.addRow(["Caddy · Resultados del negocio y detalle de gastos"]);
     titulo.font = { bold: true, size: 15, color: { argb: "FF313A46" } };
     ws.addRow([`Últimos 12 meses: ${COLS[0].label} a ${COLS[nMeses - 1].label}. Generado el ${new Date().toLocaleString("es-AR")}.`]).font = { italic: true, color: { argb: "FF6C757D" } };
-    ws.addRow(["Ventas sin IVA (÷ 1,21). El mes en curso es parcial."]).font = { italic: true, color: { argb: "FF6C757D" } };
+    ws.addRow(["Ingresos generados sin IVA; base compartida con Rentabilidad operativa. Gastos por fecha registrada. Resultado provisional; mes en curso parcial."]).font = { italic: true, color: { argb: "FF6C757D" } };
     ws.addRow([]);
 
     const banda = (texto, argb) => {
@@ -404,7 +422,7 @@
       r.getCell(1).alignment = { vertical: "middle", horizontal: "center" };
     };
     const encabezado = (a, b) => {
-      const r = ws.addRow([a, b, ...COLS.map((c) => (c.parcial ? c.label + " (parcial)" : c.label)), "Total 12 meses"]);
+      const r = ws.addRow([a, b, ...COLS.map((c) => (c.parcial ? c.label + " (parcial)" : c.label)), "Total 12 meses (provisional)"]);
       r.eachCell((cell) => {
         cell.font = { bold: true, color: { argb: "FF313A46" } };
         cell.fill = relleno("FFF1F3FA");
@@ -431,20 +449,22 @@
     };
 
     // --- Cashflow ---
-    banda("Cashflow Caddy - Últimos 12 Meses", "FF313A46");
+    banda("Estado de resultados mensual - Provisional", "FF313A46");
     const hCash = encabezado("Concepto", "");
     ws.mergeCells(hCash.number, 1, hCash.number, 2);
     const conceptos = [
       ["Ventas Simples", cash.simples],
       ["Ventas Flex", cash.flex],
       ["Ventas Recorridos", cash.recorridos],
-      ["Cobranza (5%)", cash.cobranza],
+      ["Otros ingresos operativos", cash.cobranza],
     ];
     const filasCash = {};
     conceptos.forEach(([n, arr]) => { filasCash[n] = filaDatos(n, "", arr); ws.mergeCells(filasCash[n].number, 1, filasCash[n].number, 2); });
-    const rTotal = filaDatos("Total Ventas", "", cash.total, { bold: true, fill: "FFE6F4EA" });
-    const rGastos = filaDatos("Gastos", "", cash.gasto, { bold: true, fill: "FFFDE8EC", color: "FFC0392B" });
-    const rSaldo = filaDatos("Resultado", "", cash.saldo, { bold: true });
+    const rTotal = filaDatos("Ingresos generados", "", cash.total, { bold: true, fill: "FFE6F4EA" });
+    filaDatos("Costos operativos registrados", "", cash.operativos);
+    filaDatos("Otros gastos registrados", "", cash.otros);
+    const rGastos = filaDatos("Total costos y gastos registrados", "", cash.gasto, { bold: true, fill: "FFFDE8EC", color: "FFC0392B" });
+    const rSaldo = filaDatos("Resultado operativo provisional", "", cash.saldo, { bold: true });
     [rTotal, rGastos, rSaldo].forEach((r) => ws.mergeCells(r.number, 1, r.number, 2));
     // Total Ventas y Resultado como fórmulas sobre las filas de arriba
     for (let c = 3; c <= 2 + nMeses; c++) {
@@ -453,7 +473,7 @@
       rTotal.getCell(c).value = { formula: `SUM(${filasV})`, result: Math.round(cash.total[i] * 100) / 100 };
       rSaldo.getCell(c).value = { formula: `${L}${rTotal.number}-${L}${rGastos.number}`, result: Math.round(cash.saldo[i] * 100) / 100 };
     }
-    const rMargen = ws.addRow(["Margen", ""]);
+    const rMargen = ws.addRow(["Margen operativo provisional", ""]);
     ws.mergeCells(rMargen.number, 1, rMargen.number, 2);
     for (let c = 3; c <= colTotal; c++) {
       const L = ws.getColumn(c).letter;
@@ -466,6 +486,8 @@
       cell.border = bordes;
     }
     rMargen.getCell(1).border = bordes;
+    const rFlete = filaDatos("Costo de flete vinculado (referencia, no se suma al gasto)", "", cash.flete);
+    ws.mergeCells(rFlete.number,1,rFlete.number,2);
     const rCobrado = filaDatos("Cobrado a clientes (con IVA, no suma al resultado)", "", cash.cobrado, { fill: "FFE8F4FD", color: "FF1A73A8" });
     ws.mergeCells(rCobrado.number, 1, rCobrado.number, 2);
 
