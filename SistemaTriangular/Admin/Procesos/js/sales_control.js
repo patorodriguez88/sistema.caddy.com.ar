@@ -187,8 +187,8 @@ function mostrarNotificaciones(idFacturacion) {
                     var htmlNotificacion = `
                         <div class="mt-0 text-left">
                             <hr class="">
-                            <p class="mt-0 mb-0" style="font-size: 10px;"><strong><i class="uil uil-users-alt"> </i> ${notificacion.usuario} ${notificacion.fecha}:</strong></p>
-                            <p style="font-size: 10px;">${notificacion.mensaje}</p>
+                            <p class="mt-0 mb-0" style="font-size: 10px;"><strong><i class="uil uil-users-alt"> </i> ${escaparHistorial(notificacion.usuario)} ${escaparHistorial(notificacion.fecha)}:</strong></p>
+                            <p style="font-size: 10px;">${escaparHistorial(notificacion.mensaje)}</p>
                         </div>
                     `;
                     $('#notificaciones-container').append(htmlNotificacion);
@@ -502,58 +502,11 @@ var datatable1 = $('#librocontrolventas').DataTable({
                     status_text='success';
              }
 
-             if(row.Vencimiento=='0000-00-00'){
-                var res = new Date(row.Fecha);
-    
-                // Función para verificar si un día es hábil (lunes a viernes)
-                function esDiaHabil(dia) {
-                return dia.getDay() !== 0 && dia.getDay() !== 6; // No es domingo (0) ni sábado (6)
-                }
-    
-                // Lista de días festivos ficticios (mes y día)
-                const diasFestivos = [
-                { mes: 12, dia: 25 }, // Navidad
-                { mes: 1, dia: 1 },    // Año Nuevo
-                { mes: 5, dia: 1 }    // Dia del Trabajador
-                // Agrega más días festivos según sea necesario
-                ];
-    
-                // Asegurarse de que la fecha resultante sea 7 días corridos hábiles y sin días festivos
-                for (let i = 0; i < 7;) {
-                res.setDate(res.getDate() + 1);
-    
-                // Si es un día hábil y no es un día festivo, incrementar el contador
-                if (esDiaHabil(res) && !diasFestivos.some(festivo => festivo.mes === (res.getMonth() + 1) && festivo.dia === res.getDate())) {
-                    i++;
-                }
-                }
-    
-                var vencimiento=(res.getDate()+ "/" + (res.getMonth() +1) + "/" + res.getFullYear());
-                var fechavencimiento=(res.getFullYear()+"-"+(res.getMonth() +1)+"-"+res.getDate());
-
-                // SI LA FECHA DE VENCIMIENTO ES 00-00-000 Actualizamos la fecha con la generada
-                $.ajax({
-                    data: {
-                    'Actualizar': 1,
-                    'id':row.id,
-                    'FechaVencimiento':fechavencimiento
-                    },
-                    type: "POST",
-                    url: "../Admin/Procesos/php/tablas.php",
-                    success: function(response) {
-    
-                    }
-                })
-
-
-
-
-            }else{
-                var vencimiento =row.Vencimiento.split('-').reverse().join('/');
-            }
-            
-                // Obtén la fecha actual
+             var vencimiento = row.Vencimiento && row.Vencimiento !== '0000-00-00'
+                ? row.Vencimiento.split('-').reverse().join('/') : '';
+            // Obtén la fecha actual
                 var fechaActual = new Date();
+                fechaActual.setHours(0, 0, 0, 0);
 
                 // Obtén la fecha del elemento HTML (en este caso, el párrafo con id "miFecha")
                 
@@ -569,7 +522,7 @@ var datatable1 = $('#librocontrolventas').DataTable({
 
                  const _sm = {0:{l:'Pendiente',c:'bg-danger'},1:{l:'Notificado',c:'bg-primary'},2:{l:'En Revisión',c:'bg-warning text-dark'},3:{l:'Solucionado',c:'bg-success'}};
                  const _s  = _sm[parseInt(row.Status)] ?? _sm[0];
-                 return `<a class="text-${color_fecha}">${vencimiento}</a><br><span class="badge ${_s.c}">${_s.l}</span>`;
+                 return `<a class="text-${color_fecha}">${vencimiento || 'Sin vencimiento'}</a><br><span class="badge ${_s.c}">${_s.l}</span>`;
             }
           },
         //  {data:null,
@@ -680,6 +633,9 @@ function tuFuncion(data) {
     $('#right-modal_obs').val(data['Observaciones']);
     $('#fecha_emision').html('Fecha Emision: '+data['Fecha']);
     $('#fecha_vencimiento').html(`Fecha Vencimiento: ${data['Vencimiento']}`);
+    $('#editar-vencimiento, #vencimiento-anterior').val(data.Vencimiento);
+    $('#editar-vencimiento').attr('min', data.Fecha);
+    $('#motivo-vencimiento, #resultado-vencimiento').val('').text('');
     // Obtener las fechas desde el HTML
     var fechaEmisionString = data['Fecha'];
     var fechaVencimientoString = data['Vencimiento'];
@@ -718,3 +674,28 @@ $("#button_pendientes").click(function(){
 
 
 });
+$(document).on('click', '#guardar-vencimiento', async function () {
+    const boton = $(this);
+    const salida = $('#resultado-vencimiento');
+    boton.prop('disabled', true);
+    salida.text('Guardando...');
+    try {
+        const r = await $.ajax({url: 'Procesos/php/vencimiento_factura.php', type: 'POST', dataType: 'json', data: {
+            id: $('#right-modal_id').val(), anterior: $('#vencimiento-anterior').val(),
+            fecha: $('#editar-vencimiento').val(), motivo: $('#motivo-vencimiento').val(),
+            csrf: $('#csrf-vencimiento').val()
+        }});
+        if (!r.ok) throw new Error(r.error);
+        $('#vencimiento-anterior').val($('#editar-vencimiento').val());
+        $('#fecha_vencimiento').text('Fecha Vencimiento: ' + $('#editar-vencimiento').val());
+        $('#fecha_dias').text('');
+        $('#motivo-vencimiento').val('');
+        salida.text('Vencimiento actualizado. El cambio quedó registrado en el historial.');
+        mostrarNotificaciones($('#right-modal_id').val());
+        $('#librocontrolventas').DataTable().ajax.reload(null, false);
+    } catch (e) {
+        salida.text(e.responseJSON?.error || e.message || 'No se pudo guardar.');
+    } finally { boton.prop('disabled', false); }
+});
+
+function escaparHistorial(valor) { return $("<span>").text(valor || "").html(); }

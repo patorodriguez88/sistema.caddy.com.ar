@@ -26,7 +26,7 @@ if ($_POST['Facturar'] == 1) {
 
   //DATOS CLIENTE
   $id = $_POST['id'];
-  $sqlCliente = $mysqli->query("SELECT nombrecliente,Cuit,RazonSocial_f,Cuit_f,CondicionAnteIva_f,Observaciones_f FROM Clientes WHERE id='$id'");
+  $sqlCliente = $mysqli->query("SELECT nombrecliente,Cuit,RazonSocial_f,Cuit_f,CondicionAnteIva_f,Observaciones_f,DiasVencimiento FROM Clientes WHERE id='$id'");
   $datoCliente = $sqlCliente->fetch_array(MYSQLI_ASSOC);
   $RazonSocial = $datoCliente['nombrecliente'];
   $Cuit = $datoCliente['Cuit'];
@@ -181,16 +181,9 @@ if ($_POST['Facturar'] == 1) {
 
     $Comprobante = $_POST['Comprobante'];
 
-    //DESDE ACA FECHA VENCIMIENTO PAGO  
-    $fechaOriginal = $_POST['Vencpago'];
-
-    // Dividir la cadena de fecha en partes usando '/'
-    $partesFecha = explode('/', $fechaOriginal);
-
-    // Crear un nuevo formato de fecha y reorganizar las partes
-    $fechaFormateada = $partesFecha[2] . '-' . $partesFecha[1] . '-' . $partesFecha[0];
-
-    $Vencpago = $fechaFormateada;
+    // El servidor fija el plazo en días corridos, aunque el navegador conserve JS viejo.
+    $diasVencimiento = max(7, min(30, (int)($datoCliente['DiasVencimiento'] ?? 7)));
+    $Vencpago = (new DateTimeImmutable($Fecha))->modify('+' . $diasVencimiento . ' days')->format('Y-m-d');
 
     //INGRESO LA INFO A TABLA FACTURACION
     $sql_table_facturacion = "INSERT INTO Facturacion(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,ImporteNeto,Iva1,Iva2,Iva3,Exento,Total,
