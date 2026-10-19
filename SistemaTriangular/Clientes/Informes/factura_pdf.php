@@ -14,44 +14,15 @@ function pdf_text($texto)
     return mb_convert_encoding((string)$texto, 'ISO-8859-1', 'UTF-8');
 }
 
-// Vencimiento de pago = fecha de la factura + N días hábiles (sin fines de semana
-// ni feriados), donde N es Clientes.DiasVencimiento (parametrizable por cliente,
-// mínimo 7 y máximo 30 - ver Clientes.php > Datos Facturación). Debe reflejar
-// exactamente la misma regla que la vista previa (Clientes/Procesos/js/invoice.js,
-// función que arma "#venc_pago") — si cambia acá, cambiar también ahí, porque son
-// dos implementaciones separadas de la misma regla.
+// Vencimiento de pago: fecha de emisión + plazo del cliente en días corridos.
 function fechaVencimientoPago($fechaFactura, $diasVencimiento = 7)
 {
     $diasVencimiento = (int)$diasVencimiento;
     if ($diasVencimiento < 7) $diasVencimiento = 7;
     if ($diasVencimiento > 30) $diasVencimiento = 30;
 
-    $diasFestivos = [
-        ['mes' => 12, 'dia' => 25], // Navidad
-        ['mes' => 1,  'dia' => 1],  // Año Nuevo
-        ['mes' => 5,  'dia' => 1],  // Día del Trabajador
-    ];
-
     $fecha = new DateTime($fechaFactura);
-    $agregados = 0;
-
-    while ($agregados < $diasVencimiento) {
-        $fecha->modify('+1 day');
-
-        $esHabil = (int)$fecha->format('N') < 6; // 1=lunes ... 7=domingo
-
-        $esFeriado = false;
-        foreach ($diasFestivos as $f) {
-            if ((int)$fecha->format('n') === $f['mes'] && (int)$fecha->format('j') === $f['dia']) {
-                $esFeriado = true;
-                break;
-            }
-        }
-
-        if ($esHabil && !$esFeriado) {
-            $agregados++;
-        }
-    }
+    $fecha->modify('+' . $diasVencimiento . ' days');
 
     return $fecha->format('d/m/Y');
 }

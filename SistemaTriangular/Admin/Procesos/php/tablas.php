@@ -237,14 +237,11 @@ if (isset($_POST['Notificaciones'])) {
     }
 }
 
+// Los vencimientos se modifican explícitamente con permiso, CSRF e historial.
 if (isset($_POST['Actualizar'])) {
-
-    $vencimiento = $_POST['FechaVencimiento'];
-    $id = $_POST['id'];
-    $sql = $mysqli->query("UPDATE Facturacion SET Vencimiento='$vencimiento' WHERE id='$id' LIMIT 1");
-
-    // echo json_encode(array('id'))
-
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'Usá la acción Guardar vencimiento del comprobante.']);
+    exit;
 }
 
 if (isset($_POST['Observaciones_facturacion_clientes'])) {

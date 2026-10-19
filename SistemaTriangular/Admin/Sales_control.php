@@ -1,5 +1,7 @@
 <?php
 include_once('../Conexion/Conexioni.php');
+require_once __DIR__ . '/../Funciones/php/vencimientos_facturacion.php';
+$_SESSION['csrf_vencimiento'] = $_SESSION['csrf_vencimiento'] ?? bin2hex(random_bytes(32));
 ?>
 <!DOCTYPE html>
 <html lang="es" data-layout="topnav">
@@ -216,6 +218,19 @@ include_once('../Conexion/Conexioni.php');
             <input id="right-modal_saldo" type="hidden">
             <input id="right-modal_status_actual" type="hidden" value="0">
 
+            <?php if (puedeEditarVencimiento($mysqli)): ?>
+            <div class="mb-3 border-bottom pb-3">
+                <label for="editar-vencimiento" class="form-label">Vencimiento de pago</label>
+                <input type="date" class="form-control mb-2" id="editar-vencimiento">
+                <input type="hidden" id="vencimiento-anterior">
+                <input type="hidden" id="csrf-vencimiento" value="<?= htmlspecialchars($_SESSION['csrf_vencimiento'], ENT_QUOTES, 'UTF-8') ?>">
+                <label for="motivo-vencimiento" class="form-label">Motivo del cambio</label>
+                <textarea id="motivo-vencimiento" class="form-control mb-2" maxlength="500" rows="2"></textarea>
+                <button type="button" class="btn btn-primary btn-sm" id="guardar-vencimiento">Guardar vencimiento</button>
+                <div id="resultado-vencimiento" class="small mt-2" role="status"></div>
+            </div>
+            <?php endif; ?>
+
             <div id="alert-coment" class="alert alert-warning" role="alert" style="display:none;">
                 <strong>Comentarios: </strong>
                 <span style="font-size:12px" id="right-modal_coment"></span>
@@ -270,7 +285,7 @@ include_once('../Conexion/Conexioni.php');
     <script src="../Menu/js/funciones.js"></script>
     <script src="../Funciones/js/facturacion_status.js"></script>
     <script src="../Funciones/js/alertas.js"></script>
-    <script src="Procesos/js/sales_control.js"></script>
+    <script src="Procesos/js/sales_control.js?v=20261019"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </body>

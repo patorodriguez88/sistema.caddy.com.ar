@@ -425,20 +425,7 @@ $(document).ready(function () {
         $("#factura_titulo").html(jsonData.TipoDeComprobante);
         $("#NumeroComprobante").html(jsonData.NumeroFactura);
         $("#FechaComprobante").html(jsonData.FechaComprobante);
-        var res = new Date(jsonData.FechaPura);
-
-        // Función para verificar si un día es hábil (lunes a viernes)
-        function esDiaHabil(dia) {
-          return dia.getDay() !== 0 && dia.getDay() !== 6; // No es domingo (0) ni sábado (6)
-        }
-
-        // Lista de días festivos ficticios (mes y día)
-        const diasFestivos = [
-          { mes: 12, dia: 25 }, // Navidad
-          { mes: 1, dia: 1 }, // Año Nuevo
-          { mes: 5, dia: 1 }, // Dia del Trabajador
-          // Agrega más días festivos según sea necesario
-        ];
+        var res = new Date(jsonData.FechaPura.substring(0, 10) + "T12:00:00");
 
         var f;
         if (jsonData.VencimientoFacturacion) {
@@ -457,22 +444,7 @@ $(document).ready(function () {
           if (isNaN(diasVencimiento) || diasVencimiento < 7) diasVencimiento = 7;
           if (diasVencimiento > 30) diasVencimiento = 30;
 
-          // Asegurarse de que la fecha resultante sea "diasVencimiento" días corridos hábiles y sin días festivos
-          for (let i = 0; i < diasVencimiento; ) {
-            res.setDate(res.getDate() + 1);
-
-            // Si es un día hábil y no es un día festivo, incrementar el contador
-            if (
-              esDiaHabil(res) &&
-              !diasFestivos.some(
-                (festivo) =>
-                  festivo.mes === res.getMonth() + 1 &&
-                  festivo.dia === res.getDate(),
-              )
-            ) {
-              i++;
-            }
-          }
+          res.setDate(res.getDate() + diasVencimiento);
 
           f = res.getDate() + "/" + (res.getMonth() + 1) + "/" + res.getFullYear();
         }
