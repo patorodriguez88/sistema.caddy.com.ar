@@ -242,9 +242,11 @@ if (!$stmt) {
     cv_error_json('No se pudo confirmar la venta (error al preparar el registro). Avisá a sistemas.', 'prepare TransClientes falló: ' . $mysqli->error);
 }
 
-// Enlace de parámetros
+// Enlace de parámetros. Observaciones (posición 28) va como 's': estaba como
+// 'd' y cualquier texto ("entregar en la guardia") se grababa como 0, y
+// "3 BULTOS" como 3.
 if (!$stmt->bind_param(
-    "sssssdddsssssssssdsssssssssdssssddsddssssiisisddiiis",
+    "sssssdddsssssssssdssssssssssssssddsddssssiisisddiiis",
     $FechaActual,
     $razonSocial,
     $cuit,
