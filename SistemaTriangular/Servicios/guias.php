@@ -613,10 +613,6 @@
 
                         <div class="row" id="quick"> </div>
 
-                        <div class="row" id="fotos">
-
-                        </div>
-
                         <!-- end row -->
                         <!-- content -->
                         <div class="spinner-border avatar-md text-primary" role="status" style="display:none"></div>
