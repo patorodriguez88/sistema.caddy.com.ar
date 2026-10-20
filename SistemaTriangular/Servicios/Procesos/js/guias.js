@@ -122,6 +122,31 @@ $("#inputcodigo, #inputcodigoproveedor, #inputname").on("keydown", function (e) 
   }
 });
 
+// Modal "Actualizando información" (#info-alert-modal). Bootstrap 5 ignora modal("hide") mientras
+// el modal todavía se está animando para abrirse, y acá las respuestas suelen llegar antes de que
+// termine: el modal quedaba abierto para siempre. Si se pide cerrar en plena animación, se cierra
+// apenas termina de abrirse (shown.bs.modal).
+var gsCerrarCargaPendiente = false;
+$("#info-alert-modal")
+  .on("show.bs.modal", function () {
+    gsCerrarCargaPendiente = false;
+  })
+  .on("shown.bs.modal", function () {
+    if (gsCerrarCargaPendiente) {
+      gsCerrarCargaPendiente = false;
+      $(this).modal("hide");
+    }
+  });
+function gsOcultarCarga() {
+  var el = document.getElementById("info-alert-modal");
+  var inst = el && window.bootstrap && bootstrap.Modal.getInstance(el);
+  if (inst && inst._isTransitioning) {
+    gsCerrarCargaPendiente = true;
+  } else {
+    $("#info-alert-modal").modal("hide");
+  }
+}
+
 // Las tablas de la ficha son DataTables: se destruyen antes de volver a buscar (si no, la
 // segunda búsqueda tira "Cannot reinitialise DataTable" y deja los datos del envío anterior).
 function gsResetTablas() {
@@ -420,7 +445,7 @@ function showLoading(title, body) {
 }
 
 function hideLoading() {
-  $("#info-alert-modal").modal("hide");
+  gsOcultarCarga();
 }
 
 function safeJsonParse(response) {
@@ -557,7 +582,7 @@ function seguimiento(cs) {
     // reventar en success(); igual se agrega un timeout de respaldo que
     // cierra el modal solo si por lo que sea nada más lo hizo.
     var _modalVisitasTimeout = setTimeout(function () {
-      $("#info-alert-modal").modal("hide");
+      gsOcultarCarga();
     }, 12000);
     $.ajax({
       data: { Seguimiento_Visitas: 1, CodigoSeguimiento: id },
@@ -572,7 +597,7 @@ function seguimiento(cs) {
       success: function (jsonData) {
         clearTimeout(_modalVisitasTimeout);
         if (jsonData.success == 1) {
-          $("#info-alert-modal").modal("hide");
+          gsOcultarCarga();
           var visitas = parseInt(jsonData.Visitas, 10) || 0;
           $("#gs_k_visitas").text(visitas);
           $("#gs_k_visitas_foot").text(
@@ -585,13 +610,13 @@ function seguimiento(cs) {
             .removeClass("breadcrumb-item active")
             .addClass("breadcrumb-item");
         } else {
-          $("#info-alert-modal").modal("hide");
+          gsOcultarCarga();
           toast("error", "Error !", "No existen datos para el codigo " + id);
         }
       },
       error: function () {
         clearTimeout(_modalVisitasTimeout);
-        $("#info-alert-modal").modal("hide");
+        gsOcultarCarga();
         toast("error", "Error del servidor", "No se pudo buscar el código. Reintentá de nuevo.");
       },
     });
@@ -919,7 +944,7 @@ function seguimiento(cs) {
               if (jsonData.success == 1) {
                 $("#formadepago_c").val(formadepago_valor);
                 $("#formadepago_b, #gs_chip_paga").text(formadepago_valor);
-                $("#info-alert-modal").modal("hide");
+                gsOcultarCarga();
                 toast("success", "Exito", "Modificamos Forma De Pago");
               }
             },
@@ -953,7 +978,7 @@ function seguimiento(cs) {
               if (jsonData.success == 1) {
                 $("#cobrarcaddy_c").val(cobrarcaddy_valor);
                 $("#cobrarcaddy_b").text(cobrarcaddy_valor == 1 ? "Si" : "No");
-                $("#info-alert-modal").modal("hide");
+                gsOcultarCarga();
                 toast("success", "Exito", "Modificamos Cobrar Caddy");
               }
             },
@@ -998,7 +1023,7 @@ function seguimiento(cs) {
               }
             },
             complete: function () {
-              // $("#info-alert-modal").modal("hide");
+              // gsOcultarCarga();
             },
           });
         });
@@ -1030,7 +1055,7 @@ function seguimiento(cs) {
               if (jsonData.success == 1) {
                 $("#cobrarenvio_c").val(cobrarenvio_valor);
                 $("#cobrarenvio_b").text(cobrarenvio_valor == 1 ? "Si" : "No");
-                $("#info-alert-modal").modal("hide");
+                gsOcultarCarga();
                 toast("success", "Exito", "Modificamos Cobrar Envio");
               }
             },
@@ -1263,11 +1288,11 @@ function seguimiento(cs) {
           },
         });
 
-        $("#info-alert-modal").modal("hide");
+        gsOcultarCarga();
       },
       error: function (err) {
         console.log("error", err);
-        $("#info-alert-modal").modal("hide");
+        gsOcultarCarga();
         toast("error", "Error del servidor", "No se pudo cargar el detalle del envío. Reintentá de nuevo.");
       },
     });
