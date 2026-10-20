@@ -107,3 +107,24 @@
 .gs-page .dataTables_empty { color: var(--cf-muted); padding: 1.2rem !important; }
 .gs-estado-pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--gs-c, var(--cf-muted)) 15%, transparent); color: var(--gs-c, inherit); white-space: nowrap; }
 .gs-sub-title { font-size: .85rem; font-weight: 700; margin: 0 0 .5rem; display: flex; align-items: center; gap: .4rem; }
+
+/* ---------- Facturación: lista de ítems (antes dos DataTables anchas) ---------- */
+.gs-items { border: 1px solid var(--cf-border); border-radius: 10px; overflow: hidden; }
+.gs-item { display: flex; align-items: center; gap: .75rem; padding: .6rem .8rem; border-bottom: 1px solid var(--cf-border); font-size: .82rem; }
+.gs-item:last-child { border-bottom: 0; }
+.gs-item-main { flex: 1; min-width: 0; }
+.gs-item-title { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gs-item-sub { font-size: .72rem; color: var(--cf-muted); }
+.gs-item-qty { display: flex; align-items: center; gap: .3rem; color: var(--cf-muted); font-size: .75rem; white-space: nowrap; }
+.gs-item-qty input { width: 52px; height: 28px; padding: 0 .4rem; font-size: .8rem; text-align: center; border-radius: 8px; }
+.gs-item-qty .mdi { font-size: 1.1rem; color: var(--gs-pri); cursor: pointer; }
+.gs-item-amount { min-width: 92px; text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.gs-item-total { background: var(--cf-head-bg); font-weight: 700; }
+.gs-item-total .gs-item-main { text-transform: uppercase; font-size: .72rem; letter-spacing: .05em; color: var(--cf-muted); }
+.gs-items-empty { padding: .9rem .8rem; font-size: .8rem; color: var(--cf-muted); text-align: center; }
+
+/* ---------- Interruptores bloqueados (envío facturado / entregado) ---------- */
+.gs-switch.locked label, .gs-switch.locked b { opacity: .55; }
+.gs-switch.locked .form-check-input { cursor: not-allowed; }
+.gs-switch .mdi-lock-outline { color: var(--cf-muted); font-size: .95rem; }
+.gs-lock-note { display: flex; gap: .4rem; align-items: flex-start; font-size: .75rem; color: var(--cf-muted); background: var(--cf-head-bg); border-radius: 8px; padding: .45rem .6rem; margin-bottom: .4rem; }

@@ -414,36 +414,12 @@
                                         </div>
                                         <div class="row g-3">
                                             <div class="col-lg-7">
-                                                <div class="gs-sub-title">Ventas</div>
-                                                <div class="gs-table-wrap">
-                                                    <table class="table table-sm table-centered mb-0 gs-table" id="aforo_tabla">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Fecha</th>
-                                                                <th>Codigo</th>
-                                                                <th>Servicio</th>
-                                                                <th>Cantidad</th>
-                                                                <th>Precio</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody></tbody>
-                                                    </table>
-                                                </div>
+                                                <div class="gs-sub-title">Ítems de la venta</div>
+                                                <div id="gs_ventas" class="gs-items"></div>
                                             </div>
                                             <div class="col-lg-5">
-                                                <div class="gs-sub-title">Transacciones <span id="title_aforo_trans" class="badge bg-primary text-white"></span></div>
-                                                <div class="gs-table-wrap">
-                                                    <table class="table table-sm table-centered mb-0 gs-table" id="aforo_tabla_trans">
-                                                        <thead>
-                                                            <tr>
-                                                                <th>Comprobante</th>
-                                                                <th>Numero</th>
-                                                                <th>Importe</th>
-                                                            </tr>
-                                                        </thead>
-                                                        <tbody></tbody>
-                                                    </table>
-                                                </div>
+                                                <div class="gs-sub-title">Comprobantes <span id="title_aforo_trans"></span></div>
+                                                <div id="gs_trans" class="gs-items"></div>
                                             </div>
                                         </div>
                                     </div>
