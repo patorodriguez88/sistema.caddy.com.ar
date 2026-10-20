@@ -1,38 +1,100 @@
 var button_ver = 0;
 var state = 0;
-var colorestado = "primary";
 
-// Badge de ultimo estado del paquete, al lado de "Visitas" en el encabezado de
-// la ficha de seguimiento. Se puede llamar desde varios ajax (Compruebo trae el
-// ultimo real; Seguimiento_Modal el de TransClientes como fallback).
+// ---------- Ficha del envío: helpers de presentación ----------
+function gsEsc(v) {
+  return String(v == null ? "" : v)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
+function gsVacio(v) {
+  v = String(v == null ? "" : v).trim();
+  return v === "" || v === "0" || v === "null" || v === "0000-00-00";
+}
+function gsFecha(v) {
+  var m = String(v || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? m[3] + "/" + m[2] + "/" + m[1] : "";
+}
+// Color de cada estado (mismo criterio en el estado actual, la barra y el historial)
+function gsColorEstado(estado) {
+  switch (String(estado || "").trim()) {
+    case "Entregado al Cliente":
+      return "#0acf97";
+    case "Devuelto al Cliente":
+    case "No se pudo entregar":
+    case "No se pudo Retirar":
+    case "No se Pudo Retirar":
+      return "#fa5c7c";
+    case "En Transito":
+    case "Cargado en Hoja de Ruta":
+    case "Cargado en Hoja De Ruta":
+      return "#727cf5";
+    case "Retirado del Cliente":
+      return "#39afd1";
+    default:
+      return "#ffbc00";
+  }
+}
+function gsEstadoPill(estado) {
+  return estado
+    ? '<span class="gs-estado-pill" style="--gs-c:' + gsColorEstado(estado) + '">' + gsEsc(estado) + "</span>"
+    : "";
+}
+
+// Estado actual del paquete y barra de progreso. Se llama con el estado de TransClientes
+// (Seguimiento_Modal) y después con el último movimiento real de Seguimiento (Compruebo), que manda.
 function pintarUltimoEstadoBadge(estado) {
   estado = String(estado || "").trim();
   if (!estado || estado === "0") return;
   window.__ultimoEstadoGuia = estado;
-  var cls = "bg-secondary";
+  var c = gsColorEstado(estado);
+
+  // Paso alcanzado: 0 En origen · 1 Retirado · 2 En tránsito · 3 Entregado (o el final fallido)
+  var paso = 0, fallo = "";
   switch (estado) {
-    case "Entregado al Cliente":
-      cls = "bg-success";
+    case "Retirado del Cliente":
+      paso = 1;
       break;
-    case "Devuelto al Cliente":
-    case "No se pudo entregar":
+    case "No se pudo Retirar":
     case "No se Pudo Retirar":
-      cls = "bg-danger";
+      paso = 1;
+      fallo = "No se pudo retirar";
       break;
     case "En Transito":
-      cls = "bg-info";
-      break;
-    case "En Origen":
-    case "A Retirar":
-      cls = "bg-warning";
-      break;
     case "Cargado en Hoja de Ruta":
-      cls = "bg-primary";
+    case "Cargado en Hoja De Ruta":
+      paso = 2;
+      break;
+    case "Entregado al Cliente":
+      paso = 3;
+      break;
+    case "No se pudo entregar":
+      paso = 3;
+      fallo = "No se pudo entregar";
+      break;
+    case "Devuelto al Cliente":
+      paso = 3;
+      fallo = "Devuelto";
       break;
   }
-  $("#ultimo_estado_badge").html(
-    '<span class="badge ' + cls + ' text-white">Estado: ' + estado + "</span>",
-  );
+  var pasos = [
+    ["En origen", "mdi-store-outline"],
+    ["Retirado", "mdi-package-up"],
+    ["En tránsito", "mdi-truck-fast-outline"],
+    ["Entregado", "mdi-flag-checkered"],
+  ];
+  if (fallo) pasos[paso] = [fallo, "mdi-close"];
+
+  var html = "";
+  pasos.forEach(function (p, i) {
+    var cls = i < paso ? "done" : i === paso ? "current" + (i === 3 || fallo ? " final" : "") : "";
+    html +=
+      '<div class="gs-step ' + cls + '"><span class="gs-step-dot"><i class="mdi ' +
+      (i < paso ? "mdi-check" : p[1]) + '"></i></span>' + p[0] + "</div>";
+  });
+  $("#tracker").css("--gs-c", c).html(html);
+  $("#gs_progreso .gs-status").css("--gs-c", c);
+  $("#gs_estado").text(estado);
 }
 
 // Formatea 'YYYY-MM-DD' (con o sin hora) como 'd.m.yyyy'. Solo para mostrar;
@@ -48,29 +110,28 @@ $(document).ready(function () {
   $("#inputcodigoproveedor").val("");
   $("#inputname").val("");
 });
-$("#inputname").focus(function () {
-  $("#inputname").css("background", "");
-  $("#inputcodigo").val("");
-  $("#inputcodigo").css("background", "#D5D3D3");
-  $("#inputcodigoproveedor").val("");
-  $("#inputcodigoproveedor").css("background", "#D5D3D3");
+// Se busca por un solo criterio: al entrar a un campo se vacían y atenúan los otros dos.
+$("#inputcodigo, #inputcodigoproveedor, #inputname").on("focus", function () {
+  $("#inputcodigo, #inputcodigoproveedor, #inputname").not(this).val("").addClass("gs-dim");
+  $(this).removeClass("gs-dim");
+});
+$("#inputcodigo, #inputcodigoproveedor, #inputname").on("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    $("#remito").click();
+  }
 });
 
-$("#inputcodigo").focus(function () {
-  $("#inputcodigo").css("background", "");
-  $("#inputcodigoproveedor").val("");
-  $("#inputcodigoproveedor").css("background", "#D5D3D3");
-  $("#inputname").val("");
-  $("#inputname").css("background", "#D5D3D3");
-});
-
-$("#inputcodigoproveedor").focus(function () {
-  $("#inputcodigoproveedor").css("background", "");
-  $("#inputcodigo").val("");
-  $("#inputcodigo").css("background", "#D5D3D3");
-  $("#inputname").val("");
-  $("#inputname").css("background", "#D5D3D3");
-});
+// Las tablas de la ficha son DataTables: se destruyen antes de volver a buscar (si no, la
+// segunda búsqueda tira "Cannot reinitialise DataTable" y deja los datos del envío anterior).
+function gsResetTablas() {
+  ["#search_tabla", "#ficha_seguimiento_tabla", "#aforo_tabla", "#aforo_tabla_trans", "#webhook_tabla"].forEach(
+    function (sel) {
+      if ($.fn.DataTable.isDataTable(sel)) $(sel).DataTable().clear().destroy();
+    },
+  );
+  $("#aforo_tabla").off("click", ".aforo-cantidad-guardar");
+}
 
 function changeservice(f) {
   $.ajax({
@@ -183,10 +244,16 @@ function verrotulo() {
 // Volver del detalle de seguimiento al buscador.
 function cerrarSeguimiento() {
   document.getElementById("ficha_seguimiento").style.display = "none";
+  $("#row_search").css("display", "none");
   document.getElementById("form_guias").style.display = "";
-  try {
-    $("#ficha_seguimiento_tabla").DataTable().destroy();
-  } catch (e) {}
+  gsResetTablas();
+  window.__ultimoEstadoGuia = null;
+  $("#gs_acciones").prop("hidden", true);
+  $("#gs_titulo").text("Seguimiento de envíos");
+  $("#gs_sub").text("Buscá un envío por código de Caddy, código del proveedor o nombre del cliente.");
+  $("#pagaorigen, #pagadestino").hide();
+  $("#title_aforo, #title_aforo_trans").html("");
+  $("#inputcodigo, #inputcodigoproveedor, #inputname").val("").removeClass("gs-dim");
 }
 
 // ============================================================
@@ -379,8 +446,10 @@ $("#remito").click(function () {
   }
 
   if (name != "") {
+    gsResetTablas();
     $("#row_search").css("display", "block");
     $("#form_guias").css("display", "none");
+    $("#title_search").text(name);
 
     //TABLA PRE BUSQUEDA
     var datatable_search = $("#search_tabla").DataTable({
@@ -396,7 +465,7 @@ $("#remito").click(function () {
         type: "post",
       },
       columns: [
-        { data: "Fecha" },
+        { data: "Fecha", render: fechaDMY },
         { data: "CodigoSeguimiento" },
         { data: "RazonSocial" },
         { data: "ClienteDestino" },
@@ -405,26 +474,7 @@ $("#remito").click(function () {
           data: "Estado",
 
           render: function (data, type, row) {
-            colorestado = "warning";
-
-            if (row.Estado == "Entregado al Cliente") {
-              colorestado = "success";
-            } else if (row.Estado == "Devuelto al Cliente") {
-              colorestado = "danger";
-            } else if (row.Estado == "En Transito") {
-              colorestado = "primary";
-            } else if (row.Estado == "En Origen") {
-              colorestado = "warning";
-            } else if (row.Estado == "A Retirar") {
-              colorestado = "warning";
-            }
-            return (
-              '<h5><span class="badge bg-' +
-              colorestado +
-              ' text-white">' +
-              row.Estado +
-              "</span></h5>"
-            );
+            return type === "display" ? gsEstadoPill(row.Estado) : row.Estado;
           },
         },
         {
@@ -496,6 +546,7 @@ function seguimiento(cs) {
   $("#inputcodigo").val(id);
 
   if (id != "") {
+    gsResetTablas();
     $("#row_search").css("display", "none");
 
     // FIX (reportado: "queda pensando" al buscar): si esta respuesta venía
@@ -522,23 +573,11 @@ function seguimiento(cs) {
         clearTimeout(_modalVisitasTimeout);
         if (jsonData.success == 1) {
           $("#info-alert-modal").modal("hide");
-          $("#ficha_myCenterModalLabel2").html(
-            '<h5>Seguimiento de Codigo: <span class="badge bg-' +
-              colorestado +
-              ' text-white">' +
-              id +
-              " </span>" +
-              ' Visitas: <span class="badge bg-' +
-              colorestado +
-              ' text-white"> ' +
-              jsonData.Visitas +
-              " </span>" +
-              ' <span id="ultimo_estado_badge"></span></h5>',
+          var visitas = parseInt(jsonData.Visitas, 10) || 0;
+          $("#gs_k_visitas").text(visitas);
+          $("#gs_k_visitas_foot").text(
+            visitas === 1 ? "intento de entrega" : visitas ? "intentos de entrega" : "todavía sin visitas",
           );
-          if (window.__ultimoEstadoGuia) {
-            pintarUltimoEstadoBadge(window.__ultimoEstadoGuia);
-          }
-          $("#notas").html("Nota Interna: " + jsonData.Notas);
           document.getElementById("ficha_seguimiento").style.display = "block";
           document.getElementById("form_guias").style.display = "none";
           $("#pagina").css("display", "block").addClass("active");
@@ -588,38 +627,48 @@ function seguimiento(cs) {
           );
         }
 
-        //TRACKER
-        $.ajax({
-          data: { Tracker: 1, CodigoSeguimiento: id },
-          type: "POST",
-          url: "Procesos/php/fotos.php",
-          success: function (response) {
-            $("#tracker").html(response).fadeIn();
-          },
-        });
+        var d = jsonData.data[0];
 
-        //ORIGEN
-        $("#ficha_cliente_origen_seguimiento").html(jsonData.data[0].RazonSocial);
-        $("#ficha_cliente_origen_direcccion_seguimiento").html(
-          jsonData.data[0].DomicilioOrigen +
-            "<br>" +
-            '<li><p class="mb-0"><span class="font-weight-bold mr-2">Telefono:</span>' +
-            jsonData.data[0].TelefonoOrigen +
-            "</p></li>",
+        // ENCABEZADO: código, guía y ruta + acciones
+        $("#gs_titulo").html(
+          '<span class="gs-code">' + gsEsc(id) + "</span>" +
+            '<button type="button" class="gs-copy" title="Copiar código" onclick="navigator.clipboard && navigator.clipboard.writeText(\'' +
+            gsEsc(id) + "'); toast('success','Copiado','" + gsEsc(id) + "')\"><i class=\"mdi mdi-content-copy\"></i></button>",
         );
-        //DESTINO
-        $("#ficha_cliente_destino_seguimiento").html(jsonData.data[0].ClienteDestino);
-        $("#ficha_cliente_destino_direcccion_seguimiento").html(
-          jsonData.data[0].DomicilioDestino +
-            "<br>" +
-            '<li><p class="mb-0"><span class="font-weight-bold mr-2">Telefono:</span>' +
-            jsonData.data[0].TelefonoDestino +
-            "</p></li>",
+        $("#gs_sub").html(
+          "Guía " + gsEsc(d.NumeroComprobante) + " · " + gsEsc(d.RazonSocial) +
+            ' <i class="mdi mdi-arrow-right"></i> ' + gsEsc(d.ClienteDestino),
         );
-        //GUIA
-        $("#ficha_header_title_guia_seguimiento").html(
-          "Información de la Guia " + jsonData.data[0].NumeroComprobante,
+        $("#gs_acciones").prop("hidden", false);
+        $("#gs_fotos_count").text("…").removeClass("on");
+
+        // ORIGEN / DESTINO
+        function gsParte(domicilio, telefono) {
+          return (
+            '<div class="gs-parte-linea"><i class="mdi mdi-map-marker-outline"></i><span>' + gsEsc(domicilio) + "</span></div>" +
+            (gsVacio(telefono)
+              ? ""
+              : '<div class="gs-parte-linea"><i class="mdi mdi-phone-outline"></i><span>' + gsEsc(telefono) + "</span></div>")
+          );
+        }
+        $("#ficha_cliente_origen_seguimiento").text(d.RazonSocial || "");
+        $("#ficha_cliente_origen_direcccion_seguimiento").html(gsParte(d.DomicilioOrigen, d.TelefonoOrigen));
+        $("#ficha_cliente_destino_seguimiento").text(d.ClienteDestino || "");
+        $("#ficha_cliente_destino_direcccion_seguimiento").html(gsParte(d.DomicilioDestino, d.TelefonoDestino));
+        $("#ficha_header_title_guia_seguimiento").text("Guía " + (d.NumeroComprobante || ""));
+
+        // KPIs
+        $("#gs_k_fecha").text(gsFecha(d.Fecha) || "–");
+        $("#gs_k_fecha_foot").text(gsVacio(d.FechaPrometida) ? "Sin fecha prometida" : "Prometida: " + gsFecha(d.FechaPrometida));
+        $("#gs_k_bultos").text(d.Cantidad || "–");
+        $("#gs_k_bultos_foot").text(gsVacio(d.EntregaEn) ? " " : "Entrega en " + String(d.EntregaEn).toLowerCase());
+        $("#gs_k_recorrido").text(gsVacio(d.Recorrido) ? "Sin asignar" : d.Recorrido);
+        $("#gs_k_recorrido_foot").text(
+          [gsVacio(d.Transportista) ? "" : d.Transportista, gsVacio(d.Kilometros) ? "" : d.Kilometros + " km"]
+            .filter(Boolean)
+            .join(" · ") || " ",
         );
+
         if (jsonData.data[0].CobrarEnvio == 0) {
           var cobrarenvio = "No";
           var cobrarenviochecked = "";
@@ -666,21 +715,7 @@ function seguimiento(cs) {
         } else {
           var dis = "";
         }
-        //DEFINO LA VARIABLE ESTADO Y EL COLOR
         var Estado = jsonData.data[0].Estado;
-        if (jsonData.data[0].Estado == "Entregado al Cliente") {
-          colorestado = "success";
-        } else if (jsonData.data[0].Estado == "Devuelto al Cliente") {
-          colorestado = "danger";
-        } else if (jsonData.data[0].Estado == "En Transito") {
-          colorestado = "primary";
-        } else if (jsonData.data[0].Estado == "En Origen") {
-          colorestado = "warning";
-        } else if (jsonData.data[0].Estado == "A Retirar") {
-          colorestado = "warning";
-        } else if (jsonData.data[0].Estado == "Cargado en Hoja de Ruta") {
-          colorestado = "primary";
-        }
 
         // fallback: estado de TransClientes hasta que Compruebo traiga el ultimo real
         pintarUltimoEstadoBadge(Estado);
@@ -697,139 +732,77 @@ function seguimiento(cs) {
             state = jsonDataEstado.data;
             pintarUltimoEstadoBadge(state);
 
-            if (jsonDataEstado.data != Estado) {
-              $("#alert").css("display", "inline-block");
-            } else {
-              $("#alert").css("display", "none");
-            }
+            // Sin movimientos de seguimiento no hay nada que corregir: antes mostraba la alerta
+            // igual y "Corregir" dejaba el estado de transacciones vacío.
+            var incoherente = !gsVacio(state) && state != Estado;
+            $("#alert").css("display", incoherente ? "inline-block" : "none");
+            $("#gs_estado_sub").html(
+              gsVacio(state)
+                ? "Sin movimientos de seguimiento: estado de transacciones"
+                : incoherente
+                  ? '<span class="gs-status-alert" onclick="$(\'#info-alert\').modal(\'show\')">' +
+                    '<i class="mdi mdi-alert-octagon"></i> Transacciones dice "' + gsEsc(Estado) + '" · corregir</span>'
+                  : "Último movimiento de seguimiento",
+            );
           },
         });
 
-        if (jsonData.Flex == 1) {
-          var flex = "Flex";
-          var flex_color = "success";
-        } else {
-          flex = "Simple";
-          flex_color = "warning";
-        }
-        let fechaFormateada = jsonData.data[0].FechaPrometida
-          ? jsonData.data[0].FechaPrometida.split("-").reverse().join("/")
-          : "";
-        $("#ficha_info_guia_seguimiento").html(
-          '<p class="mb-1"><span style="cursor:pointer" id="' +
-            jsonData.data[0].id +
-            '" onclick="changeservice(this.id)" class="badge badge-' +
-            flex_color +
-            '">' +
-            flex +
-            "</span>" +
-            '<p class="mb-1"><b id="fecha_transclientes">Fecha : ' +
-            jsonData.data[0].Fecha.split("-").reverse().join("/") +
-            '</b> <i id="alert_date" style="" class="mdi mdi-18px mdi-calendar-refresh text-warning ml-2" ></i>  </p>' +
-            '</b><p class"mb-1"><b>Fecha Prometida: ' +
-            fechaFormateada +
-            "</b></p>" +
-            '<p class="mb-1"><b id="estado_transclientes">Estado Trans Clientes : ' +
-            jsonData.data[0].Estado +
-            '</b><i id="alert" style="display:none" class="mdi mdi-18px mdi-spin mdi-alert-octagon text-danger" onclick="alerta_modal();"></i>  </p>' +
-            '<p class="mb-1"><b>Codigo Seguimiento : </b>' +
-            id +
-            "</p>" +
-            '<p class="mb-1"><b>Numero de Guia : </b>' +
-            jsonData.data[0].NumeroComprobante +
-            "</p>" +
-            '<p class="mb-1"><b>Cantidad : </b>' +
-            jsonData.data[0].Cantidad +
-            "</p>" +
-            '<p class="mb-1"><b>Entregar En : </b>' +
-            jsonData.data[0].EntregaEn +
-            "</p>" +
-            '<p class="mb-1"><b>Cod. Proveedor : </b>' +
-            jsonData.data[0].CodigoProveedor +
-            "</p>" +
-            '<p class="mb-1"><b>Valor Declarado : </b> $ ' +
-            jsonData.data[0].ValorDeclarado +
-            "</p>" +
-            '<p class="mb-1"><b>Recorrido : </b>' +
-            jsonData.data[0].Recorrido +
-            "</p>" +
-            '<p class="mb-1"><b>Transportista : </b>' +
-            jsonData.data[0].Transportista +
-            "</p>" +
-            '<p class="mb-1"><b>Kilometros : </b>' +
-            jsonData.data[0].Kilometros +
-            "</p>" +
-            '<p class="mb-1"><b>Warehouse (WePoint) : </b>' +
-            (function (f, h, st) {
-              f = String(f || "").trim();
-              if (f === "" || f === "0000-00-00") return "Sin registro";
-              h = String(h || "").trim().slice(0, 5);
-              st = String(st || "").trim() || "Ingreso";
-              return (
-                st +
-                " · " +
-                f.split("-").reverse().join(".") +
-                (h ? " " + h : "")
-              );
-            })(
-              jsonData.data[0].Wepoint_f,
-              jsonData.data[0].Wepoint_h,
-              jsonData.data[0].Wepoint_status,
-            ) +
-            "</p>" +
-            //'<p class="mb-1"><b>Forma de Pago : </b>'+ jsonData.data[0].FormaDePago + '  <i class="mdi mdi-reload text-warning"/> </i></p>'+
+        var flex = jsonData.Flex == 1 ? "Flex" : "Simple";
+        var warehouse = (function (f, h, st) {
+          f = String(f || "").trim();
+          if (f === "" || f === "0000-00-00") return "Sin registro";
+          h = String(h || "").trim().slice(0, 5);
+          st = String(st || "").trim() || "Ingreso";
+          return st + " · " + f.split("-").reverse().join(".") + (h ? " " + h : "");
+        })(d.Wepoint_f, d.Wepoint_h, d.Wepoint_status);
 
-            '<div class="form-check form-switch mb-1">' +
-            '<input type="checkbox" role="switch" class="form-check-input" id="formadepago_c" ' +
-            formadepagochecked +
-            ' value="' +
-            jsonData.data[0].FormaDePago +
-            '" ' +
-            dis +
-            ">" +
-            '<label class="form-check-label" for="formadepago_c"><p class="mb-1"><b id="formadepago_b">Forma De Pago : ' +
-            formadepago +
-            "</b></p></label>" +
+        function gsDato(label, valor, extra) {
+          return (
+            '<div class="gs-dato"><span>' + label + "</span><b>" +
+            (gsVacio(valor) ? '<span class="text-muted fw-normal">—</span>' : valor) + (extra || "") + "</b></div>"
+          );
+        }
+        function gsSwitch(idc, label, valor, checked, disabled, valorInput) {
+          return (
+            '<div class="gs-switch"><label for="' + idc + '_c">' + label + "</label>" +
+            '<div class="form-check form-switch"><b id="' + idc + '_b">' + valor + "</b>" +
+            '<input type="checkbox" role="switch" class="form-check-input" id="' + idc + '_c" ' + checked +
+            ' value="' + gsEsc(valorInput) + '" ' + disabled + "></div></div>"
+          );
+        }
+        var valorDeclarado = parseFloat(d.ValorDeclarado);
+
+        $("#ficha_info_guia_seguimiento").html(
+          '<div class="gs-chips">' +
+            '<span class="gs-chip ' + (jsonData.Flex == 1 ? "flex" : "simple") + '" id="' + d.id +
+            '" onclick="changeservice(this.id)" title="Cambiar entre Simple y Flex">' +
+            '<i class="mdi mdi-swap-horizontal"></i>' + flex + "</span>" +
+            '<span class="gs-chip"><i class="mdi mdi-cash"></i>Paga <span id="gs_chip_paga">' + gsEsc(formadepago) + "</span></span>" +
             "</div>" +
-            '<div class="form-check form-switch mb-1">' +
-            '<input type="checkbox" role="switch" class="form-check-input" id="cobrarenvio_c" ' +
-            cobrarenviochecked +
-            ' value="' +
-            jsonData.data[0].CobrarEnvio +
-            '" ' +
-            dis +
-            ">" +
-            '<label class="form-check-label" for="cobrarenvio_c"><p class="mb-1"><b id="cobrarenvio_b">Cobrar Envio : ' +
-            cobrarenvio +
-            "</b></p></label>" +
+            '<div class="gs-datos">' +
+            gsDato("Código", '<span class="gs-code">' + gsEsc(id) + "</span>") +
+            gsDato("N° de guía", gsEsc(d.NumeroComprobante)) +
+            gsDato("Cód. proveedor", gsEsc(d.CodigoProveedor)) +
+            gsDato(
+              "Fecha",
+              '<span id="fecha_transclientes">' + gsFecha(d.Fecha) + "</span>",
+              ' <i id="alert_date" class="mdi mdi-calendar-edit text-warning ms-1" title="Modificar la fecha del envío"></i>',
+            ) +
+            gsDato(
+              "Estado (transacciones)",
+              '<span id="estado_transclientes">' + gsEsc(d.Estado) + "</span>",
+              ' <i id="alert" style="display:none" class="mdi mdi-alert-octagon text-danger ms-1" title="No coincide con el último movimiento de seguimiento: tocá para corregir"></i>',
+            ) +
+            gsDato("Valor declarado", isNaN(valorDeclarado) || !valorDeclarado ? "" : "$ " + valorDeclarado.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
+            gsDato("Kilómetros", gsEsc(d.Kilometros)) +
+            gsDato("Warehouse (WePoint)", gsEsc(warehouse)) +
             "</div>" +
-            '<div class="form-check form-switch mb-1">' +
-            '<input type="checkbox" role="switch" class="form-check-input" id="cobrarcaddy_c" ' +
-            cobrarcaddychecked +
-            ' value="' +
-            jsonData.data[0].CobrarCaddy +
-            '" ' +
-            dis +
-            ">" +
-            '<label class="form-check-label" for="cobrarcaddy_c"><p class="mb-1"><b id="cobrarcaddy_b">Cobrar Caddy : ' +
-            cobrarcaddy +
-            "</b></p></label>" +
-            "</div>" +
-            '<div class="form-check form-switch mb-1">' +
-            '<input type="checkbox" role="switch" class="form-check-input" id="estadohdr_c" ' +
-            estadochecked +
-            ' value="' +
-            jsonData[1].Estado +
-            '" ' +
-            disHdr +
-            ">" +
-            '<label class="form-check-label" for="estadohdr_c" ><p class="mb-1"><b id="estadohdr_b">Estado en HDR : ' +
-            jsonData[1].Estado +
-            "</b></p></label>" +
-            "</div>" +
-            '<p class="mb-1"><b>Observaciones : </b>' +
-            jsonData.data[0].Observaciones +
-            "</p>",
+            (gsVacio(d.Observaciones) ? "" : '<div class="gs-obs"><span>Observaciones</span>' + gsEsc(d.Observaciones) + "</div>") +
+            '<div class="gs-seccion">Cobro y hoja de ruta</div>' +
+            gsSwitch("formadepago", "Forma de pago", gsEsc(formadepago), formadepagochecked, dis, d.FormaDePago) +
+            gsSwitch("cobrarenvio", "Cobrar envío al entregar", cobrarenvio, cobrarenviochecked, dis, d.CobrarEnvio) +
+            gsSwitch("cobrarcaddy", "Cobrar Caddy", cobrarcaddy, cobrarcaddychecked, dis, d.CobrarCaddy) +
+            gsSwitch("estadohdr", "Abierto en hoja de ruta", gsEsc(jsonData[1].Estado || "—"), estadochecked, disHdr, jsonData[1].Estado),
         );
 
         $("#alert_date").click(function () {
@@ -856,9 +829,7 @@ function seguimiento(cs) {
             success: function (response) {
               var jsonData = JSON.parse(response);
               if (jsonData.success == 1) {
-                $("#estado_transclientes").html(
-                  "Estado Trans Clientes : " + EstadoSeguimiento,
-                );
+                $("#estado_transclientes").text(EstadoSeguimiento);
                 $("#alert").css("display", "none");
               }
             },
@@ -946,13 +917,8 @@ function seguimiento(cs) {
               var jsonData = JSON.parse(response);
               console.log("fdp", jsonData);
               if (jsonData.success == 1) {
-                if (formadepago_valor == "Origen") {
-                  $("#formadepago_c").val("Origen");
-                  $("#formadepago_b").html("Forma De Pago : Origen");
-                } else {
-                  $("#formadepago_c").val("Destino");
-                  $("#formadepago_b").html("Forma De Pago : Destino");
-                }
+                $("#formadepago_c").val(formadepago_valor);
+                $("#formadepago_b, #gs_chip_paga").text(formadepago_valor);
                 $("#info-alert-modal").modal("hide");
                 toast("success", "Exito", "Modificamos Forma De Pago");
               }
@@ -985,12 +951,8 @@ function seguimiento(cs) {
             success: function (response) {
               var jsonData = JSON.parse(response);
               if (jsonData.success == 1) {
-                if (cobrarenvio_valor == 1) {
-                  $("#cobrarcaddy_c").val(cobrarcaddy_valor);
-                  $("#cobrarcaddy_b").html("Cobrar Caddy : Si");
-                } else {
-                  $("#cobrarcaddy_b").html("Cobrar Caddy : No");
-                }
+                $("#cobrarcaddy_c").val(cobrarcaddy_valor);
+                $("#cobrarcaddy_b").text(cobrarcaddy_valor == 1 ? "Si" : "No");
                 $("#info-alert-modal").modal("hide");
                 toast("success", "Exito", "Modificamos Cobrar Caddy");
               }
@@ -1025,13 +987,8 @@ function seguimiento(cs) {
               try {
                 var jsonData = JSON.parse(response);
                 if (jsonData.success == 1) {
-                  if (estadohdr_valor == "Abierto") {
-                    $("#estadohdr_c").val("Abierto");
-                    $("#estadohdr_b").html("Estado en HDR : Abierto");
-                  } else {
-                    $("#estadohdr_c").val("Cerrado");
-                    $("#estadohdr_b").html("Estado en HDR : Cerrado");
-                  }
+                  $("#estadohdr_c").val(estadohdr_valor);
+                  $("#estadohdr_b").text(estadohdr_valor);
 
                   toast("success", "Éxito", "Modificamos el estado en Hoja de Ruta");
                   // actualizar DOM si es necesario
@@ -1071,12 +1028,8 @@ function seguimiento(cs) {
             success: function (response) {
               var jsonData = JSON.parse(response);
               if (jsonData.success == 1) {
-                if (cobrarenvio_valor == 1) {
-                  $("#cobrarenvio_c").val(cobrarenvio_valor);
-                  $("#cobrarenvio_b").html("Cobrar Envio : Si");
-                } else {
-                  $("#cobrarenvio_b").html("Cobrar Envio : No");
-                }
+                $("#cobrarenvio_c").val(cobrarenvio_valor);
+                $("#cobrarenvio_b").text(cobrarenvio_valor == 1 ? "Si" : "No");
                 $("#info-alert-modal").modal("hide");
                 toast("success", "Exito", "Modificamos Cobrar Envio");
               }
@@ -1234,13 +1187,18 @@ function seguimiento(cs) {
             { data: "Hora" },
             { data: "Usuario" },
             { data: "Observaciones" },
-            { data: "Estado" },
+            {
+              data: "Estado",
+              render: function (data, type) {
+                return type === "display" ? gsEstadoPill(data) : data;
+              },
+            },
             { data: "Recorrido" },
             { data: "NumerodeOrden" },
             {
               data: "id",
               render: function (data, type, row) {
-                return `<i onclick="ver_seguimiento(${row.id})" class="mdi mdi-trash-can text-danger mdi-18px ms-2" id="${row.id}" style="cursor:pointer;"></i>`;
+                return `<i onclick="ver_seguimiento(${row.id})" class="mdi mdi-trash-can-outline text-danger mdi-18px" id="${row.id}" title="Eliminar este movimiento" style="cursor:pointer;"></i>`;
               },
             },
           ],
@@ -1290,12 +1248,18 @@ function seguimiento(cs) {
         });
 
         $.ajax({
-          data: { MuestroQuicks: 1, CodigoSeguimiento: id },
+          data: { ContarFotos: 1, CodigoSeguimiento: id },
           type: "POST",
           url: "Procesos/php/fotos.php",
-          success: function (response) {
-            $("#info-alert-modal").modal("hide");
-            $("#quick").html(response).fadeIn();
+          dataType: "json",
+          success: function (res) {
+            var n = res && res.total;
+            $("#gs_fotos_count")
+              .text(n === null || n === undefined ? "?" : n)
+              .toggleClass("on", n > 0);
+          },
+          error: function () {
+            $("#gs_fotos_count").text("?");
           },
         });
 

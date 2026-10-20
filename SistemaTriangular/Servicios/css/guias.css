@@ -1,0 +1,109 @@
+/* Servicios > Seguimiento (guias.php). Se apoya en Inicio/css/panel.css (cf-*: encabezado, KPIs,
+   cards) y agrega lo propio de la ficha del envío. Variables de Bootstrap 5.3: tema claro y oscuro. */
+
+.gs-page { --gs-ok: #0acf97; --gs-warn: #ffbc00; --gs-bad: #fa5c7c; --gs-info: #39afd1; --gs-pri: #727cf5; }
+
+/* ---------- Encabezado ---------- */
+.gs-page .cf-title { display: flex; align-items: center; gap: .6rem; flex-wrap: wrap; }
+.gs-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; letter-spacing: .02em; }
+.gs-copy { border: 0; background: none; color: var(--cf-muted); padding: 0 .2rem; font-size: 1.1rem; }
+.gs-copy:hover { color: var(--gs-pri); }
+.gs-count {
+  display: inline-block; min-width: 20px; padding: 0 6px; margin-left: .35rem; border-radius: 999px;
+  font-size: .72rem; font-weight: 700; line-height: 18px; text-align: center;
+  background: var(--cf-head-bg); color: var(--cf-muted);
+}
+.gs-count.on { background: var(--gs-ok); color: #fff; }
+
+/* ---------- Buscador ---------- */
+.gs-search-wrap { display: flex; justify-content: center; }
+.gs-search { width: 100%; max-width: 760px; padding: 1.5rem; }
+.gs-label { display: block; font-size: .78rem; font-weight: 600; color: var(--cf-muted); margin-bottom: .35rem; }
+.gs-input-lg { position: relative; }
+.gs-input-lg .mdi { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1.4rem; color: var(--cf-muted); }
+.gs-input-lg input { height: 54px; padding-left: 48px; font-size: 1.15rem; font-weight: 600; letter-spacing: .03em; border-radius: 12px; }
+.gs-search-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.1rem; }
+@media (max-width: 575px) { .gs-search-alt { grid-template-columns: 1fr; } }
+.gs-search-alt input { border-radius: 10px; }
+.gs-search input.gs-dim { background: var(--cf-head-bg); }
+.gs-search-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; }
+.gs-search-foot .btn { border-radius: 10px; font-weight: 600; padding-left: 1.4rem; padding-right: 1.4rem; }
+
+/* ---------- Estado + progreso ---------- */
+.gs-progress-card { display: grid; grid-template-columns: minmax(200px, 260px) 1fr; gap: 1.5rem; align-items: center; }
+@media (max-width: 991px) { .gs-progress-card { grid-template-columns: 1fr; } }
+.gs-status { border-left: 4px solid var(--gs-c, var(--cf-muted)); padding-left: .9rem; }
+.gs-status-label { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--cf-muted); }
+.gs-status-value { font-size: 1.35rem; font-weight: 700; letter-spacing: -.01em; color: var(--gs-c, inherit); line-height: 1.25; margin: .2rem 0; }
+.gs-status-alert { color: var(--gs-bad); cursor: pointer; font-size: .78rem; font-weight: 600; }
+
+.gs-steps { display: grid; grid-template-columns: repeat(4, 1fr); position: relative; }
+.gs-step { position: relative; text-align: center; font-size: .78rem; color: var(--cf-muted); padding-top: 34px; }
+.gs-step::before { /* línea hacia el paso anterior */
+  content: ""; position: absolute; top: 13px; right: 50%; width: 100%; height: 3px; background: var(--cf-border);
+}
+.gs-step:first-child::before { display: none; }
+.gs-step-dot {
+  position: absolute; top: 0; left: 50%; transform: translateX(-50%); z-index: 1;
+  width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+  background: var(--cf-card-bg); border: 2px solid var(--cf-border); color: var(--cf-muted); font-size: .95rem;
+}
+.gs-step.done, .gs-step.current { color: var(--bs-body-color); font-weight: 600; }
+.gs-step.done::before, .gs-step.current::before { background: var(--gs-c); }
+.gs-step.done .gs-step-dot { background: var(--gs-c); border-color: var(--gs-c); color: #fff; }
+.gs-step.current .gs-step-dot { border-color: var(--gs-c); color: var(--gs-c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gs-c) 18%, transparent); }
+.gs-step.current.final .gs-step-dot { background: var(--gs-c); color: #fff; }
+
+/* ---------- KPIs de la ficha ---------- */
+.gs-page .cf-kpi { min-height: 104px; }
+.gs-page .cf-kpi-value { font-size: 1.3rem; white-space: normal; }
+
+/* ---------- Origen / destino ---------- */
+.gs-partes { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+@media (max-width: 767px) { .gs-partes { grid-template-columns: 1fr; } }
+.gs-parte { margin-bottom: 0; position: relative; }
+.gs-parte-tag { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; color: var(--cf-muted); display: flex; align-items: center; gap: .35rem; }
+.gs-parte-tag .mdi { font-size: 1rem; color: var(--gs-pri); }
+.gs-parte-nombre { font-size: 1.05rem; font-weight: 700; margin: .35rem 0 .5rem; }
+.gs-parte-linea { display: flex; gap: .45rem; font-size: .82rem; color: var(--cf-muted); margin-top: .2rem; }
+.gs-parte-linea .mdi { font-size: 1rem; }
+.gs-paga {
+  position: absolute; top: 1rem; right: 1rem; font-size: .7rem; font-weight: 700; padding: 2px 9px; border-radius: 999px;
+  color: #08a57a; background: rgba(10, 207, 151, .14);
+}
+
+/* ---------- Datos del envío ---------- */
+.gs-chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-bottom: .9rem; }
+.gs-chip {
+  display: inline-flex; align-items: center; gap: .3rem; font-size: .75rem; font-weight: 600;
+  padding: 3px 10px; border-radius: 999px; background: var(--cf-head-bg); color: var(--bs-body-color);
+}
+.gs-chip.flex { background: rgba(10, 207, 151, .14); color: #08a57a; cursor: pointer; }
+.gs-chip.simple { background: rgba(255, 188, 0, .16); color: #b88700; cursor: pointer; }
+.gs-datos { display: grid; gap: 0; }
+.gs-dato { display: flex; justify-content: space-between; gap: 1rem; padding: .5rem 0; border-bottom: 1px dashed var(--cf-border); font-size: .82rem; }
+.gs-dato:last-child { border-bottom: 0; }
+.gs-dato > span { color: var(--cf-muted); white-space: nowrap; }
+.gs-dato > b { font-weight: 600; text-align: right; word-break: break-word; }
+.gs-dato .mdi { cursor: pointer; vertical-align: -2px; }
+.gs-obs { margin-top: .75rem; padding: .7rem .8rem; border-radius: 10px; background: var(--cf-head-bg); font-size: .82rem; }
+.gs-obs span { display: block; font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--cf-muted); margin-bottom: .15rem; }
+.gs-seccion { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; font-weight: 700; color: var(--cf-muted); margin: 1.1rem 0 .4rem; }
+.gs-switch { display: flex; align-items: center; justify-content: space-between; gap: .75rem; padding: .45rem 0; font-size: .82rem; }
+.gs-switch label { color: var(--cf-muted); margin: 0; cursor: pointer; }
+.gs-switch .form-switch { display: flex; align-items: center; gap: .5rem; margin: 0; padding-left: 0; }
+.gs-switch .form-switch .form-check-input { margin: 0; float: none; cursor: pointer; }
+.gs-switch b { font-weight: 600; min-width: 58px; text-align: right; }
+
+/* ---------- Tablas (DataTables con el look de cf-table) ---------- */
+.gs-page .gs-table { width: 100% !important; font-size: .8rem; margin: 0 !important; }
+.gs-page .gs-table thead th {
+  background: var(--cf-head-bg); color: var(--cf-muted); font-size: .7rem; text-transform: uppercase;
+  letter-spacing: .05em; font-weight: 700; border-bottom: 1px solid var(--cf-border); white-space: nowrap;
+}
+.gs-page .gs-table td { vertical-align: middle; border-color: var(--cf-border); }
+.gs-page .gs-table-wrap { border: 1px solid var(--cf-border); border-radius: 10px; overflow-x: auto; }
+.gs-page .dataTables_info { font-size: .72rem; color: var(--cf-muted); padding-top: .6rem !important; }
+.gs-page .dataTables_empty { color: var(--cf-muted); padding: 1.2rem !important; }
+.gs-estado-pill { display: inline-block; font-size: .72rem; font-weight: 600; padding: 2px 9px; border-radius: 999px; background: color-mix(in srgb, var(--gs-c, var(--cf-muted)) 15%, transparent); color: var(--gs-c, inherit); white-space: nowrap; }
+.gs-sub-title { font-size: .85rem; font-weight: 700; margin: 0 0 .5rem; display: flex; align-items: center; gap: .4rem; }
