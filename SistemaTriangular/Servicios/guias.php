@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Sistema Caddy | </title>
+    <title>Sistema Caddy | Seguimiento</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />
@@ -31,6 +31,10 @@
     <link href="../hyper/dist/assets/css/unicons/css/unicons.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Estilo de las pantallas nuevas (Panel de Control / Resultados) + lo propio de esta ficha -->
+    <link href="../Inicio/css/panel.css?v=<?= @filemtime(__DIR__ . '/../Inicio/css/panel.css') ?>" rel="stylesheet" type="text/css" />
+    <link href="css/guias.css?v=<?= @filemtime(__DIR__ . '/css/guias.css') ?>" rel="stylesheet" type="text/css" />
 </head>
 
 <body>
@@ -193,86 +197,57 @@
 
 
                     <!-- Start Content-->
-                    <div class="container-fluid">
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="page-title-box">
-                                    <div class="page-title-right">
-                                        <ol class="breadcrumb m-0">
-                                            <li class="breadcrumb-item active"><a href="/SistemaTriangular/Servicios/guias.php">Seguimiento</a></li>
-                                            <!--                                             <li class="breadcrumb-item"><a href="javascript: void(0);"></a></li> -->
-                                            <li id="pagina" style="display:none" class="breadcrumb-item">Codigo Seguimiento</li>
-                                        </ol>
+                    <div class="cf-page gs-page">
+
+                        <!-- Encabezado (cambia al abrir un envío: código, guía y acciones) -->
+                        <div class="cf-header">
+                            <div>
+                                <div class="cf-eyebrow">Servicios · Seguimiento</div>
+                                <h3 class="cf-title" id="gs_titulo">Seguimiento de envíos</h3>
+                                <div class="cf-sub" id="gs_sub">Buscá un envío por código de Caddy, código del proveedor o nombre del cliente.</div>
+                            </div>
+                            <div class="cf-actions" id="gs_acciones" hidden>
+                                <button type="button" class="btn btn-light" onclick="verguia()" title="Remito / guía de carga en PDF">
+                                    <i class="mdi mdi-file-document-outline"></i><span class="ms-1">Remito</span>
+                                </button>
+                                <button type="button" class="btn btn-light" id="gs_btn_fotos" onclick="verFotosYSubir(window.seguimientoCS)" title="Fotos que subió el chofer">
+                                    <i class="mdi mdi-camera-outline"></i><span class="ms-1">Fotos</span><span class="gs-count" id="gs_fotos_count">–</span>
+                                </button>
+                                <!-- "Imprimir Rótulo" manda el ZPL directo a la Zebra y, si no hay impresora, abre el PDF del rótulo. -->
+                                <button type="button" class="btn btn-primary" onclick="imprimirRotuloConFallback()">
+                                    <i class="mdi mdi-printer"></i><span class="ms-1">Imprimir rótulo</span>
+                                </button>
+                                <button type="button" class="btn btn-light" onclick="cerrarSeguimiento()" title="Volver al buscador">
+                                    <i class="mdi mdi-magnify"></i><span class="ms-1">Otra búsqueda</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Buscador -->
+                        <div id="form_guias" class="gs-search-wrap">
+                            <div class="cf-card gs-search">
+                                <label for="inputcodigo" class="gs-label">Código de seguimiento Caddy</label>
+                                <div class="gs-input-lg">
+                                    <i class="mdi mdi-barcode-scan"></i>
+                                    <input type="text" class="form-control" id="inputcodigo" placeholder="Ej: QTXG8QBVY" autocomplete="off" autofocus>
+                                </div>
+                                <div class="gs-search-alt">
+                                    <div>
+                                        <label for="inputcodigoproveedor" class="gs-label">O código del proveedor</label>
+                                        <input type="text" class="form-control" id="inputcodigoproveedor" placeholder="Código del proveedor" autocomplete="off">
                                     </div>
-                                    <h4 class="page-title">Fecha <script>
-                                            document.write(new Date().getUTCDate() + '.' + (new Date().getUTCMonth() + 1) + '.' + new Date().getUTCFullYear())
-                                        </script>
-                                    </h4>
+                                    <div>
+                                        <label for="inputname" class="gs-label">O nombre del cliente</label>
+                                        <input type="text" class="form-control" id="inputname" placeholder="Nombre del cliente" autocomplete="off">
+                                    </div>
+                                </div>
+                                <div class="gs-search-foot">
+                                    <span class="cf-sub"><i class="mdi mdi-keyboard-return"></i> Enter para buscar</span>
+                                    <button id="remito" type="button" class="btn btn-primary"><i class="mdi mdi-magnify me-1"></i>Buscar</button>
                                 </div>
                             </div>
                         </div>
 
-                        <div id="form_guias" class="row justify-content-center align-items-center">
-                            <div class="col-12 col-md-8">
-                                <div class="card">
-                                    <div class="card-body">
-
-                                        <h4 class="header-title mb-2">Guía de Carga</h4>
-                                        <p class="text-muted font-14 mb-4">
-                                            Ingrese el Código de Seguimiento de Caddy, el Código del Proveedor o el Nombre del Cliente.
-                                        </p>
-
-                                        <!-- Códigos -->
-                                        <div class="row g-3 mb-3">
-                                            <div class="col-12 col-md-6">
-                                                <label for="inputcodigo" class="form-label">Código de Seguimiento Caddy</label>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    id="inputcodigo"
-                                                    placeholder="Ingrese el código de seguimiento"
-                                                    autocomplete="off">
-                                            </div>
-
-                                            <div class="col-12 col-md-6">
-                                                <label for="inputcodigoproveedor" class="form-label">Código de Seguimiento Proveedor</label>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    id="inputcodigoproveedor"
-                                                    placeholder="Ingrese el código del proveedor"
-                                                    autocomplete="off">
-                                            </div>
-                                        </div>
-
-                                        <!-- Nombre -->
-                                        <div class="row g-3 mb-4">
-                                            <div class="col-12">
-                                                <label for="inputname" class="form-label">Nombre del Cliente</label>
-                                                <input
-                                                    type="text"
-                                                    class="form-control"
-                                                    id="inputname"
-                                                    placeholder="Ingrese el nombre del cliente"
-                                                    autocomplete="off">
-                                            </div>
-                                        </div>
-
-                                        <!-- Botón -->
-                                        <div class="row">
-                                            <div class="col-12 text-end">
-                                                <button id="remito" class="btn btn-primary px-4">
-                                                    <i class="mdi mdi-magnify me-1"></i> Buscar
-                                                </button>
-                                            </div>
-                                        </div>
-
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- MODAL PARA CAMBIAR FECHA A REGISTRO -->
                         <!-- Fotos del envío (las sube el chofer desde la app de reparto; ver Procesos/php/fotos.php) -->
                         <div id="modal_fotos" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
                             <div class="modal-dialog modal-lg modal-dialog-scrollable">
@@ -288,6 +263,7 @@
                             </div>
                         </div>
 
+                        <!-- MODAL PARA CAMBIAR FECHA A REGISTRO -->
                         <div id="date-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="primary-header-modalLabel" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
@@ -296,327 +272,242 @@
                                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                     </div>
                                     <div class="modal-body">
-
                                         <label id="date_current"></label>
-
                                         <a>Esta modificación va a afectar todas las tablas relacionadas con el servicio.</a>
-
                                         <h5>Nueva Fecha:</h5>
-
                                         <input type="date" class="form-control" id="date_new" onblur="alert_date_new(this.value)" autocomplete="off" min="<?php echo date('Y-m-01', strtotime('-1 month')); ?>" max="<?php echo date('Y-m-d'); ?>">
-
-
-                                        <!-- <div class="form-group"> -->
-
                                         <label for="password1">Password</label>
-
                                         <input class="form-control" type="password" required="" id="password1" onblur="control_password(this.value)" placeholder="Enter your password">
-
                                     </div>
-                                    <!-- </div> -->
-
                                     <div class="modal-footer">
                                         <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
                                         <button id="button_date_blocked" type="button" class="btn btn-success"><i id="button_date" style="display:none" class="mdi mdi-18px mdi-spin mdi-reload text-white"></i> Aceptar</button>
                                     </div>
-
                                     <div class="small text-danger mb-2 ml-2">
                                         <a id="notification_text_danger">Controle la nueva fecha y el password del usuario autorizado.</a>
                                     </div>
-
-
-
                                 </div><!-- /.modal-content -->
                             </div><!-- /.modal-dialog -->
                         </div><!-- /.modal -->
 
-
-                        <div id="row_search" class="row" style="display:none">
-                            <div class="col-lg-12">
-                                <div class="card">
-                                    <div class="card-body">
-                                        <h4 class="header-title mb-3"> Informacion de Busqueda <span id="title_search" class="badge bg-primary text-white"></span></h4>
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-centered mb-0" id="search_tabla" style="font-size:12px">
-                                                <thead class="thead-light">
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Codigo</th>
-                                                        <th>Origen</th>
-                                                        <th>Destino</th>
-                                                        <th>Cod.Proveedor</th>
-                                                        <th>Estado</th>
-                                                        <th>Ver</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <tr>
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                        <!-- end table-responsive -->
+                        <!-- Resultados de la búsqueda por nombre de cliente -->
+                        <div id="row_search" style="display:none">
+                            <div class="cf-card">
+                                <div class="cf-card-head">
+                                    <div>
+                                        <h5 class="cf-card-title"><i class="mdi mdi-account-search-outline"></i>Envíos del cliente <span id="title_search" class="badge bg-primary text-white"></span></h5>
+                                        <div class="cf-card-sub">Tocá la lupa de un envío para abrir su ficha</div>
                                     </div>
+                                    <button type="button" class="btn btn-sm btn-light" onclick="cerrarSeguimiento()"><i class="mdi mdi-arrow-left"></i> Volver</button>
                                 </div>
-                            </div> <!-- end col-->
-                        </div> <!-- end row -->
-
-
-                        <!-- FIX (reportado, 2026-09-17): este id compartía el mismo
-                             "modal_seguimiento" que usa el panel lateral deslizante
-                             genérico (Funciones/js/seguimiento.js, agregado por la
-                             lupa del header). openTrackingPanel() le agrega
-                             class="tracking-panel" a CUALQUIER elemento que encuentre
-                             con ese id (sin fijarse si es compatible) - eso traía los
-                             estilos position:fixed/width:620px del panel deslizante y
-                             comprimía toda la ficha ancha de esta pantalla. Se separa
-                             en un id propio ("ficha_seguimiento") para que nunca más
-                             se pisen, aunque el panel lateral se dispare desde acá. -->
-                        <div id="ficha_seguimiento" style="display:none">
-
-                            <div id="tracker"></div>
-                            <!-- end row -->
-                            <div class="row">
-                                <div class="col-xl-8 col-lg-6">
-                                    <div class="row">
-                                        <div class="col-lg-6 ">
-                                            <div class="card ribbon-box">
-                                                <div class="card-body">
-                                                    <div id="pagaorigen" style="display:none" class="ribbon-two ribbon-two-success float-end"><span>Pagador</span></div>
-                                                    <h4 class="header-title mb-3 ml-3">Informacion de Origen</h4>
-                                                    <h5 id="ficha_cliente_origen_seguimiento"></h5>
-                                                    <i class="mdi mdi-map-marker text-success"></i><small id="ficha_cliente_origen_direcccion_seguimiento" class="list-unstyled mb-0 text-muted text-"></small>
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-
-                                        <div class="col-lg-6">
-                                            <div class="card ribbon-box">
-                                                <div class="card-body">
-                                                    <div id="pagadestino" style="display:none" class="ribbon-two ribbon-two-success float-end"><span>Pagador</span></div>
-                                                    <h4 class="header-title mb-3 ml-3">Informacion de Destino</h4>
-                                                    <h5 id="ficha_cliente_destino_seguimiento"></h5>
-                                                    <i class="mdi mdi-map-marker text-success"></i><small id="ficha_cliente_destino_direcccion_seguimiento" class="list-unstyled mb-0 text-muted"></small>
-                                                </div>
-                                            </div> <!-- end card-->
-                                        </div> <!-- end col-->
-                                    </div> <!-- end row -->
-
-
-                                    <div class="row">
-                                        <div class="col-lg-5">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title mb-3"> Informacion en Transacciones <span id="title_aforo_trans" class="badge bg-primary text-white"></span></h4>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-centered mb-0" id="aforo_tabla_trans" style="font-size:10px">
-                                                            <thead class="thead-light">
-                                                                <tr>
-                                                                    <!-- <th>Fecha</th> -->
-                                                                    <!-- <th>Codigo</th> -->
-                                                                    <th>Comprobante</th>
-                                                                    <th>Numero</th>
-                                                                    <th>Importe</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <!-- end table-responsive -->
-                                                </div>
-                                            </div>
-                                        </div>
-
-
-                                        <!-- <div class="row"> -->
-                                        <div class="col-lg-7">
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title mb-3"> Informacion en Ventas <span id="title_aforo" class="badge bg-primary text-white"></span></h4>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-centered mb-0" id="aforo_tabla" style="font-size:10px">
-                                                            <thead class="thead-light">
-                                                                <tr>
-                                                                    <th>Fecha</th>
-                                                                    <th>Codigo</th>
-                                                                    <th>Servicio</th>
-                                                                    <th>Cantidad</th>
-                                                                    <th>Precio</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                <tr>
-                                                                </tr>
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                    <!-- end table-responsive -->
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-
-                                        <!-- REPOSICIONES DINTER (a pedido, 2026-09-16): solo se muestra si este
-                                             código tuvo alguna reposición cargada desde Etiquetas por Recorrido -
-                                             para que el operador vea de un vistazo "esto llevaba repo" sin tener
-                                             que ir a buscarlo a otro lado. -->
-                                        <div class="col-lg-5" id="repo_dinter_col" hidden>
-                                            <div class="card">
-                                                <div class="card-body">
-                                                    <h4 class="header-title mb-3">
-                                                        <i class="mdi mdi-plus-box-outline text-warning"></i> Reposiciones Dinter
-                                                    </h4>
-                                                    <div class="table-responsive">
-                                                        <table class="table table-sm table-centered mb-0" id="repo_dinter_tabla" style="font-size:10px">
-                                                            <thead class="thead-light">
-                                                                <tr>
-                                                                    <th>Fecha</th>
-                                                                    <th>Hora</th>
-                                                                    <th class="text-center">Bultos</th>
-                                                                    <th>Usuario</th>
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody></tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </div> <!-- end col-->
-                                    </div>
+                                <div class="gs-table-wrap">
+                                    <table class="table table-sm table-centered mb-0 gs-table" id="search_tabla">
+                                        <thead>
+                                            <tr>
+                                                <th>Fecha</th>
+                                                <th>Codigo</th>
+                                                <th>Origen</th>
+                                                <th>Destino</th>
+                                                <th>Cod.Proveedor</th>
+                                                <th>Estado</th>
+                                                <th>Ver</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
                                 </div>
-
-
-                                <div class="col-xl-4  col-lg-4">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <h4 class="header-title mb-3" id="ficha_header_title_guia_seguimiento"> Informacion Guía</h4>
-                                            <div class="text-left">
-                                                <table id="ficha_info_guia_seguimiento" class="table table-sm table-centered table-borderless mb-0">
-                                                </table>
-                                            </div>
-
-                                            <!-- FIX (a pedido, 2026-09-16): antes eran 3 botones de impresión
-                                                 (Guía/Etiqueta PDF/Rótulo Zebra) - se consolida en 2: "Imprimir
-                                                 Rótulo" intenta mandar el ZPL directo por Zebra y, si no hay
-                                                 impresora conectada, abre el PDF del rótulo como respaldo
-                                                 automático (sin modal ni preguntar nada más). -->
-                                            <div class="d-flex flex-wrap gap-2 mt-3">
-                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="verguia()">
-                                                    <i class="mdi mdi-file-document-outline me-1"></i>Imprimir Remito (PDF)
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-primary" onclick="imprimirRotuloConFallback()">
-                                                    <i class="mdi mdi-printer me-1"></i>Imprimir Rótulo
-                                                </button>
-                                                <button type="button" class="btn btn-sm btn-light" onclick="cerrarSeguimiento()">
-                                                    <i class="mdi mdi-close me-1"></i>Cerrar
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div> <!-- end card-->
-                                </div> <!-- end card-body-->
-
-                                <!-- end row -->
-                                <div class="col-xl-12  col-lg-6">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="dropdown float-end">
-                                                <a href="#" class="dropdown-toggle arrow-none card-drop p-0" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="mdi mdi-dots-vertical"></i>
-                                                </a>
-                                                <div class="dropdown-menu dropdown-menu-end">
-                                                    <a role="button" id="enter_registration" class="dropdown-item">Agregar Registro</a>
-                                                </div>
-                                            </div>
-
-                                            <h4 id="ficha_myCenterModalLabel2" class="header-title mb-3"></h4>
-                                            <div class="text-right">
-                                                <!-- <button type="button" class="btn btn-info my-2" data-bs-dismiss="modal">Continue</button>                                             -->
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-centered mb-0" style="font-size:12px" id="ficha_seguimiento_tabla">
-                                                    <thead class="thead-light">
-                                                        <tr>
-                                                            <th>Fecha</th>
-                                                            <th>Hora</th>
-                                                            <th>Usuario</th>
-                                                            <th>Observaciones</th>
-                                                            <th>Estado</th>
-                                                            <th>Recorrido</th>
-                                                            <th>N Orden</th>
-                                                            <th>Accion</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr id="ficha_tr_seguimiento">
-                                                            <td></td>
-                                                            <td></td>
-                                                            <td></td>
-                                                            <td></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div> <!-- end col -->
-
-                                <!-- end row -->
-                                <div class="col-xl-12  col-lg-6" id="webhook_card" style="display:none">
-                                    <div class="card">
-                                        <div class="card-body">
-                                            <div class="dropdown float-end">
-                                                <a href="#" class="dropdown-toggle arrow-none card-drop p-0" data-bs-toggle="dropdown" aria-expanded="false">
-                                                    <i class="mdi mdi-dots-vertical"></i>
-                                                </a>
-                                                <div class="dropdown-menu dropdown-menu-end">
-                                                    <!-- <a role="button" id="enter_registration" class="dropdown-item">Agregar Registro</a>                                                 -->
-                                                </div>
-                                            </div>
-
-                                            <h4 id="webhook_header" class="header-title mb-3">WEBHOOK</h4>
-                                            <div class="text-right">
-                                                <!-- <button type="button" class="btn btn-info my-2" data-bs-dismiss="modal">Continue</button>                                             -->
-                                            </div>
-                                            <div class="table-responsive">
-                                                <table class="table table-sm table-centered mb-0" style="font-size:12px" id="webhook_tabla">
-                                                    <thead class="thead-light">
-                                                        <tr>
-                                                            <th>Fecha</th>
-                                                            <th>Hora</th>
-                                                            <th>Usuario</th>
-                                                            <th>Servidor</th>
-                                                            <th>Estado</th>
-                                                            <th>Send</th>
-                                                            <th>Response</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                                        <tr>
-                                                            <td></td>
-                                                            <td></td>
-                                                            <td></td>
-                                                            <td></td>
-                                                        </tr>
-                                                    </tbody>
-                                                </table>
-                                            </div>
-
-                                        </div>
-                                    </div>
-                                </div> <!-- end col -->
-
                             </div>
                         </div>
 
-                        <div class="row" id="quick"> </div>
+                        <!-- Ficha del envío. Id propio ("ficha_seguimiento", no "modal_seguimiento"): ese lo usa el panel
+                             lateral deslizante (Funciones/js/seguimiento.js) y le pisaba los estilos a esta pantalla. -->
+                        <div id="ficha_seguimiento" style="display:none">
 
-                        <!-- end row -->
-                        <!-- content -->
+                            <!-- Estado actual + progreso (lo arma pintarUltimoEstadoBadge en guias.js) -->
+                            <div class="cf-card gs-progress-card" id="gs_progreso">
+                                <div class="gs-status">
+                                    <div class="gs-status-label">Estado actual</div>
+                                    <div class="gs-status-value" id="gs_estado">–</div>
+                                    <div class="cf-sub" id="gs_estado_sub"></div>
+                                </div>
+                                <div id="tracker" class="gs-steps"></div>
+                            </div>
+
+                            <div class="cf-kpis">
+                                <div class="cf-kpi" style="--cf-accent:#727cf5">
+                                    <div class="cf-kpi-label"><i class="mdi mdi-calendar-blank-outline"></i>Fecha</div>
+                                    <div class="cf-kpi-value" id="gs_k_fecha">–</div>
+                                    <div class="cf-kpi-foot" id="gs_k_fecha_foot">&nbsp;</div>
+                                </div>
+                                <div class="cf-kpi" style="--cf-accent:#39afd1">
+                                    <div class="cf-kpi-label"><i class="mdi mdi-package-variant-closed"></i>Bultos</div>
+                                    <div class="cf-kpi-value" id="gs_k_bultos">–</div>
+                                    <div class="cf-kpi-foot" id="gs_k_bultos_foot">&nbsp;</div>
+                                </div>
+                                <div class="cf-kpi" style="--cf-accent:#ffbc00">
+                                    <div class="cf-kpi-label"><i class="mdi mdi-routes"></i>Recorrido</div>
+                                    <div class="cf-kpi-value" id="gs_k_recorrido">–</div>
+                                    <div class="cf-kpi-foot" id="gs_k_recorrido_foot">&nbsp;</div>
+                                </div>
+                                <div class="cf-kpi" style="--cf-accent:#0acf97">
+                                    <div class="cf-kpi-label"><i class="mdi mdi-map-marker-check-outline"></i>Visitas</div>
+                                    <div class="cf-kpi-value" id="gs_k_visitas">–</div>
+                                    <div class="cf-kpi-foot" id="gs_k_visitas_foot">&nbsp;</div>
+                                </div>
+                            </div>
+
+                            <div class="row g-3">
+                                <div class="col-xl-8">
+
+                                    <!-- Origen y destino ("Paga" = quién paga el envío, según Forma de Pago) -->
+                                    <div class="gs-partes">
+                                        <div class="cf-card gs-parte">
+                                            <span id="pagaorigen" class="gs-paga" style="display:none">Paga</span>
+                                            <div class="gs-parte-tag"><i class="mdi mdi-store-outline"></i>Origen</div>
+                                            <div class="gs-parte-nombre" id="ficha_cliente_origen_seguimiento"></div>
+                                            <div id="ficha_cliente_origen_direcccion_seguimiento"></div>
+                                        </div>
+                                        <div class="cf-card gs-parte">
+                                            <span id="pagadestino" class="gs-paga" style="display:none">Paga</span>
+                                            <div class="gs-parte-tag"><i class="mdi mdi-home-map-marker"></i>Destino</div>
+                                            <div class="gs-parte-nombre" id="ficha_cliente_destino_seguimiento"></div>
+                                            <div id="ficha_cliente_destino_direcccion_seguimiento"></div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Historial de seguimiento -->
+                                    <div class="cf-card">
+                                        <div class="cf-card-head">
+                                            <div>
+                                                <h5 class="cf-card-title"><i class="mdi mdi-timeline-clock-outline"></i>Historial de seguimiento</h5>
+                                                <div class="cf-card-sub" id="ficha_myCenterModalLabel2">Movimientos del envío, del más viejo al más nuevo</div>
+                                            </div>
+                                            <button type="button" id="enter_registration" class="btn btn-sm btn-light"><i class="mdi mdi-plus"></i> Agregar registro</button>
+                                        </div>
+                                        <div class="gs-table-wrap">
+                                            <table class="table table-sm table-centered mb-0 gs-table" id="ficha_seguimiento_tabla">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Hora</th>
+                                                        <th>Usuario</th>
+                                                        <th>Observaciones</th>
+                                                        <th>Estado</th>
+                                                        <th>Recorrido</th>
+                                                        <th>N Orden</th>
+                                                        <th></th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+
+                                    <!-- Facturación: líneas de venta y comprobantes en la cuenta corriente -->
+                                    <div class="cf-card">
+                                        <div class="cf-card-head">
+                                            <div>
+                                                <h5 class="cf-card-title"><i class="mdi mdi-receipt-text-outline"></i>Facturación</h5>
+                                                <div class="cf-card-sub">Lo que se cobra por este envío y dónde quedó registrado</div>
+                                            </div>
+                                            <span id="title_aforo" class="badge bg-primary text-white"></span>
+                                        </div>
+                                        <div class="row g-3">
+                                            <div class="col-lg-7">
+                                                <div class="gs-sub-title">Ventas</div>
+                                                <div class="gs-table-wrap">
+                                                    <table class="table table-sm table-centered mb-0 gs-table" id="aforo_tabla">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Fecha</th>
+                                                                <th>Codigo</th>
+                                                                <th>Servicio</th>
+                                                                <th>Cantidad</th>
+                                                                <th>Precio</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                            <div class="col-lg-5">
+                                                <div class="gs-sub-title">Transacciones <span id="title_aforo_trans" class="badge bg-primary text-white"></span></div>
+                                                <div class="gs-table-wrap">
+                                                    <table class="table table-sm table-centered mb-0 gs-table" id="aforo_tabla_trans">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Comprobante</th>
+                                                                <th>Numero</th>
+                                                                <th>Importe</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody></tbody>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Webhooks: solo aparece si el envío tuvo alguna notificación -->
+                                    <div class="cf-card" id="webhook_card" style="display:none">
+                                        <div class="cf-card-head">
+                                            <h5 class="cf-card-title" id="webhook_header"><i class="mdi mdi-webhook"></i>Notificaciones (webhooks)</h5>
+                                        </div>
+                                        <div class="gs-table-wrap">
+                                            <table class="table table-sm table-centered mb-0 gs-table" id="webhook_tabla">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Hora</th>
+                                                        <th>Usuario</th>
+                                                        <th>Servidor</th>
+                                                        <th>Estado</th>
+                                                        <th>Send</th>
+                                                        <th>Response</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="col-xl-4">
+                                    <!-- Datos del envío + interruptores de cobro y hoja de ruta (los arma guias.js) -->
+                                    <div class="cf-card">
+                                        <div class="cf-card-head">
+                                            <div>
+                                                <h5 class="cf-card-title"><i class="mdi mdi-clipboard-text-outline"></i>Datos del envío</h5>
+                                                <div class="cf-card-sub" id="ficha_header_title_guia_seguimiento"></div>
+                                            </div>
+                                        </div>
+                                        <div id="ficha_info_guia_seguimiento"></div>
+                                    </div>
+
+                                    <!-- Reposiciones Dinter: solo si el código tuvo alguna (Etiquetas por Recorrido) -->
+                                    <div class="cf-card" id="repo_dinter_col" hidden>
+                                        <div class="cf-card-head">
+                                            <h5 class="cf-card-title"><i class="mdi mdi-plus-box-outline" style="color:#ffbc00"></i>Reposiciones Dinter</h5>
+                                        </div>
+                                        <div class="gs-table-wrap">
+                                            <table class="table table-sm table-centered mb-0 gs-table" id="repo_dinter_tabla">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Fecha</th>
+                                                        <th>Hora</th>
+                                                        <th class="text-center">Bultos</th>
+                                                        <th>Usuario</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="spinner-border avatar-md text-primary" role="status" style="display:none"></div>
-                        <!-- <div class="spinner-grow avatar-md text-secondary" role="status"></div> -->
 
                     </div>
                     <!-- container -->
