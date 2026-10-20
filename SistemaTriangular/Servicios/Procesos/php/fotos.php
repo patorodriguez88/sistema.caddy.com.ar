@@ -48,6 +48,8 @@ function fotos_envio(mysqli $mysqli, string $codigo): ?array
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER     => ['X-Clave-Interna: ' . $clave],
+        // El firewall del hosting (ModSecurity) responde 406 a pedidos sin User-Agent.
+        CURLOPT_USERAGENT      => 'CaddySistema/1.0 (fotos)',
         CURLOPT_CONNECTTIMEOUT => 3,
         CURLOPT_TIMEOUT        => 6,
     ]);
