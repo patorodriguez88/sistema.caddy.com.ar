@@ -380,27 +380,11 @@
                                         <div class="cf-card-head">
                                             <div>
                                                 <h5 class="cf-card-title"><i class="mdi mdi-timeline-clock-outline"></i>Historial de seguimiento</h5>
-                                                <div class="cf-card-sub" id="ficha_myCenterModalLabel2">Movimientos del envío, del más viejo al más nuevo</div>
+                                                <div class="cf-card-sub" id="ficha_myCenterModalLabel2">Movimientos del envío, del más nuevo al más viejo</div>
                                             </div>
                                             <button type="button" id="enter_registration" class="btn btn-sm btn-light"><i class="mdi mdi-plus"></i> Agregar registro</button>
                                         </div>
-                                        <div class="gs-table-wrap">
-                                            <table class="table table-sm table-centered mb-0 gs-table" id="ficha_seguimiento_tabla">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Fecha</th>
-                                                        <th>Hora</th>
-                                                        <th>Usuario</th>
-                                                        <th>Observaciones</th>
-                                                        <th>Estado</th>
-                                                        <th>Recorrido</th>
-                                                        <th>N Orden</th>
-                                                        <th></th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody></tbody>
-                                            </table>
-                                        </div>
+                                        <div id="gs_historial" class="gs-timeline"></div>
                                     </div>
 
                                     <!-- Facturación: líneas de venta y comprobantes en la cuenta corriente -->

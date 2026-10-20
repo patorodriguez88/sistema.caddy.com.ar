@@ -150,12 +150,55 @@ function gsOcultarCarga() {
 // Las tablas de la ficha son DataTables: se destruyen antes de volver a buscar (si no, la
 // segunda búsqueda tira "Cannot reinitialise DataTable" y deja los datos del envío anterior).
 function gsResetTablas() {
-  ["#search_tabla", "#ficha_seguimiento_tabla", "#webhook_tabla"].forEach(
+  ["#search_tabla", "#webhook_tabla"].forEach(
     function (sel) {
       if ($.fn.DataTable.isDataTable(sel)) $(sel).DataTable().clear().destroy();
     },
   );
-  $("#gs_ventas, #gs_trans").empty();
+  $("#gs_ventas, #gs_trans, #gs_historial").empty();
+}
+
+// ---------- Historial de seguimiento: línea de tiempo, del más nuevo al más viejo ----------
+var GS_HISTORIAL_VISIBLES = 6;
+function gsCargarHistorial(cs) {
+  $("#gs_historial").html('<div class="gs-tl-vacio">Cargando movimientos…</div>');
+  $.post("../Funciones/php/tablas.php", { Seguimiento_Tabla: 1, CodigoSeguimiento: cs }, null, "json")
+    .done(function (res) {
+      var filas = ((res && res.data) || []).slice().reverse();
+      if (!filas.length) {
+        $("#gs_historial").html('<div class="gs-tl-vacio">Todavía no hay movimientos de seguimiento.</div>');
+        return;
+      }
+      // El último movimiento manda en el estado actual (al agregar o borrar uno se actualiza solo).
+      pintarUltimoEstadoBadge(filas[0].Estado);
+      var html = filas.map(function (r, i) {
+        var meta = [
+          '<span><i class="mdi mdi-clock-outline"></i>' + gsFecha(r.Fecha) + " " + gsEsc(String(r.Hora || "").slice(0, 5)) + "</span>",
+          gsVacio(r.Usuario) ? "" : '<span><i class="mdi mdi-account-outline"></i>' + gsEsc(r.Usuario) + "</span>",
+          gsVacio(r.Recorrido) ? "" : '<span><i class="mdi mdi-routes"></i>Rec. ' + gsEsc(r.Recorrido) + "</span>",
+          gsVacio(r.NumerodeOrden) ? "" : '<span><i class="mdi mdi-truck-outline"></i>Orden ' + gsEsc(r.NumerodeOrden) + "</span>",
+        ].join("");
+        return (
+          '<div class="gs-tl-item"' + (i >= GS_HISTORIAL_VISIBLES ? ' data-viejo="1" hidden' : "") +
+          ' style="--gs-c:' + gsColorEstado(r.Estado) + '">' +
+          '<span class="gs-tl-dot"></span>' +
+          '<div><div class="gs-tl-head">' + gsEstadoPill(r.Estado) +
+          (gsVacio(r.Observaciones) ? "" : '<span class="gs-tl-obs">' + gsEsc(r.Observaciones) + "</span>") +
+          '</div><div class="gs-tl-meta">' + meta + "</div></div>" +
+          '<button type="button" class="gs-tl-del" title="Eliminar este movimiento" onclick="ver_seguimiento(' + parseInt(r.id, 10) + ')">' +
+          '<i class="mdi mdi-trash-can-outline"></i></button></div>'
+        );
+      }).join("");
+      var ocultos = filas.length - GS_HISTORIAL_VISIBLES;
+      if (ocultos > 0) {
+        html += '<button type="button" class="gs-tl-mas" onclick="$(\'#gs_historial [data-viejo]\').prop(\'hidden\', false); $(this).remove();">' +
+          '<i class="mdi mdi-chevron-down"></i> Ver ' + ocultos + " movimiento" + (ocultos > 1 ? "s" : "") + " anterior" + (ocultos > 1 ? "es" : "") + "</button>";
+      }
+      $("#gs_historial").html(html);
+    })
+    .fail(function () {
+      $("#gs_historial").html('<div class="gs-tl-vacio text-danger">No se pudo cargar el historial.</div>');
+    });
 }
 
 // ---------- Facturación: ítems de la venta y comprobantes (listas compactas) ----------
@@ -176,11 +219,8 @@ function gsCargarFacturacion(cs) {
         var cant = parseInt(r.Cantidad, 10) || 0;
         var importe = r.Total != null && r.Total !== "" ? parseFloat(r.Total) : (parseFloat(r.Precio) || 0) * cant;
         total += importe || 0;
-        // Las líneas de seguro / cobranza van con Cantidad 0: no son bultos, no se editan.
-        var qty = cant > 0
-          ? '<input type="number" min="1" step="1" class="form-control gs-cant" value="' + cant + '" data-idpedido="' + gsEsc(r.idPedido) + '">' +
-            '<i class="mdi mdi-content-save-outline gs-cant-guardar" data-idpedido="' + gsEsc(r.idPedido) + '" title="Guardar cantidad (recalcula la tarifa)"></i>'
-          : '<span title="Línea sin bultos (seguro, cobranza…)">—</span>';
+        // Solo consulta. Las líneas de seguro / cobranza van con Cantidad 0 (no son bultos).
+        var qty = cant > 0 ? "× " + cant : '<span title="Línea sin bultos (seguro, cobranza…)">—</span>';
         html +=
           '<div class="gs-item"><div class="gs-item-main"><div class="gs-item-title" title="' + gsEsc(r.Titulo) + '">' + gsEsc(r.Titulo) + "</div>" +
           '<div class="gs-item-sub">Cód. ' + gsEsc(r.Codigo) + " · " + gsFecha(r.FechaPedido) + "</div></div>" +
@@ -207,33 +247,7 @@ function gsCargarFacturacion(cs) {
     .fail(function () { $("#gs_trans").html(vacio("No se pudieron cargar los comprobantes")); });
 }
 
-// Modificar la cantidad de una línea de Ventas (recalcula la tarifa: si Precio=0 no se toca la plata,
-// si tiene precio se escala proporcional). Delegado: la lista se vuelve a armar en cada búsqueda.
-$(document).on("click", "#gs_ventas .gs-cant-guardar", function () {
-  var idPedido = $(this).data("idpedido");
-  var nuevaCantidad = parseInt($(this).siblings(".gs-cant").val(), 10);
-  if (!nuevaCantidad || nuevaCantidad <= 0) {
-    toast("error", "Cantidad invalida", "Ingresa un numero mayor a 0.");
-    return;
-  }
-  $.post("../Funciones/php/tablas.php", { ModificarCantidadVenta: 1, idPedido: idPedido, Cantidad: nuevaCantidad }, null, "json")
-    .done(function (res) {
-      if (res.success == 1) {
-        var msg =
-          res.precioNuevo && res.precioNuevo > 0
-            ? "Cantidad: " + res.cantidadAnterior + " → " + res.cantidadNueva + ". Tarifa recalculada: $" + res.precioAnterior + " → $" + res.precioNuevo + "."
-            : "Cantidad actualizada a " + res.cantidadNueva + " (flete sin cargo, no se tocó el precio).";
-        toast("success", "Cantidad actualizada", msg);
-        gsCargarFacturacion(window.seguimientoCS);
-      } else {
-        toast("error", "No se pudo actualizar", res.error || "Error desconocido.");
-      }
-    })
-    .fail(function () { toast("error", "Error", "No se pudo actualizar la cantidad."); });
-});
-$(document).on("keydown", "#gs_ventas .gs-cant", function (e) {
-  if (e.key === "Enter") $(this).siblings(".gs-cant-guardar").click();
-});
+
 
 function changeservice(f) {
   $.ajax({
@@ -1183,36 +1197,7 @@ function seguimiento(cs) {
           },
         });
 
-        //TABLA SEGUIMIENTO
-        var datatable_seguimiento = $("#ficha_seguimiento_tabla").DataTable({
-          paging: false,
-          searching: false,
-          ajax: {
-            url: "../Funciones/php/tablas.php",
-            data: { Seguimiento_Tabla: 1, CodigoSeguimiento: id },
-            type: "post",
-          },
-          columns: [
-            { data: "Fecha", render: fechaDMY },
-            { data: "Hora" },
-            { data: "Usuario" },
-            { data: "Observaciones" },
-            {
-              data: "Estado",
-              render: function (data, type) {
-                return type === "display" ? gsEstadoPill(data) : data;
-              },
-            },
-            { data: "Recorrido" },
-            { data: "NumerodeOrden" },
-            {
-              data: "id",
-              render: function (data, type, row) {
-                return `<i onclick="ver_seguimiento(${row.id})" class="mdi mdi-trash-can-outline text-danger mdi-18px" id="${row.id}" title="Eliminar este movimiento" style="cursor:pointer;"></i>`;
-              },
-            },
-          ],
-        });
+        gsCargarHistorial(id);
 
         //TABLA WEBHOOK
         var datatable_webhook = $("#webhook_tabla").DataTable({
@@ -1331,7 +1316,7 @@ function corregir_entrega(id, info) {
         try { jsonData = JSON.parse(r); } catch (e) {}
         if (jsonData.success == 1) {
           toast("success", "Listo!", "Entrega corregida a No se pudo entregar");
-          $("#ficha_seguimiento_tabla").DataTable().ajax.reload();
+          gsCargarHistorial(window.seguimientoCS);
         } else {
           toast("error", "Error!", jsonData.error || "No se pudo corregir la entrega");
         }
@@ -1360,8 +1345,7 @@ $("#btn_confirmar_eliminacion").click(function () {
 
       if (jsonData.success == 1) {
         toast("success", "Listo!", "Seguimiento Eliminado");
-        var datatable_seguimiento = $("#ficha_seguimiento_tabla").DataTable();
-        datatable_seguimiento.ajax.reload();
+        gsCargarHistorial(window.seguimientoCS);
       } else {
         toast("error", "Error!", "No se pudo eliminar el seguimiento");
       }
@@ -1464,18 +1448,12 @@ $("#enter_registration_save").click(function () {
     success: function (response) {
       var jsonData = JSON.parse(response);
       if (jsonData.success == 1) {
-        $("#estado_transclientes").html("Estado Trans Clientes : " + state);
+        $("#estado_transclientes").text(state);
         $("#enter_registration_seguimiento-modal").modal("hide");
-        var datatable_seguimiento = $("#ficha_seguimiento_tabla").DataTable();
-        datatable_seguimiento.ajax.reload();
-        console.log("hdr", jsonData.estadohdr);
-        if (jsonData.estadohdr == "Abierto") {
-          $("#estadohdr_c").val("Abierto");
-          $("#estadohdr_b").html("Estado en HDR : Abierto");
-        } else {
-          $("#estadohdr_c").val("Cerrado");
-          $("#estadohdr_b").html("Estado en HDR : Cerrado");
-        }
+        gsCargarHistorial(window.seguimientoCS);
+        var hdr = jsonData.estadohdr == "Abierto" ? "Abierto" : "Cerrado";
+        $("#estadohdr_c").val(hdr).prop("checked", hdr == "Abierto");
+        $("#estadohdr_b").text(hdr);
 
         $.ajax({
           data: { Webhook: 1, state: state, cs: id },
