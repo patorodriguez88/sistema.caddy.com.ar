@@ -273,6 +273,21 @@
                         </div>
 
                         <!-- MODAL PARA CAMBIAR FECHA A REGISTRO -->
+                        <!-- Fotos del envío (las sube el chofer desde la app de reparto; ver Procesos/php/fotos.php) -->
+                        <div id="modal_fotos" class="modal fade" tabindex="-1" role="dialog" aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h4 class="modal-title">Fotos · <span id="codigo_foto_titulo"></span></h4>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="row" id="fotos"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         <div id="date-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="primary-header-modalLabel" aria-hidden="true">
                             <div class="modal-dialog">
                                 <div class="modal-content">
