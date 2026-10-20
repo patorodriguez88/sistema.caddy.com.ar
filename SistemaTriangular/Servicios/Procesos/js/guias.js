@@ -311,12 +311,9 @@ function imprimirRotuloConFallback() {
   );
 }
 
-// Función para abrir modal, setear código y cargar fotos
+// Fotos del envío: las trae Procesos/php/fotos.php desde la app de reparto (solo lectura).
 function verFotosYSubir(codigo) {
-  $("#codigo_foto_actual").val(codigo);
-  $("#CodigoSeguimientoHidden").val(codigo);
   $("#codigo_foto_titulo").text(codigo);
-
   $("#modal_fotos").modal("show");
 
   $.ajax({
@@ -334,105 +331,6 @@ function verFotosYSubir(codigo) {
         '<div class="text-danger">Error al cargar las fotos.</div>',
       );
     },
-  });
-}
-function verFotosYSubir(codigo) {
-  $("#codigo_foto_actual").val(codigo);
-  $("#CodigoSeguimientoHidden").val(codigo);
-  $("#codigo_foto_titulo").text(codigo);
-
-  // Mostrar modal
-  $("#modal_fotos").modal("show");
-
-  // Cargar fotos existentes
-  $.ajax({
-    data: { MuestroFotos: 1, CodigoSeguimiento: codigo },
-    type: "POST",
-    url: "Procesos/php/fotos.php",
-    beforeSend: function () {
-      $("#fotos").html('<div class="text-muted m-2">Cargando fotos...</div>');
-    },
-    success: function (response) {
-      $("#fotos").html(response);
-    },
-    error: function () {
-      $("#fotos").html(
-        '<div class="text-danger">Error al cargar las fotos.</div>',
-      );
-    },
-  });
-}
-
-// Configuración de Dropzone para que recargue galería tras subir
-if (typeof Dropzone !== "undefined") {
-  Dropzone.options.dropzoneFotos = {
-    init: function () {
-      this.on("success", function (file) {
-        let codigo = $("#codigo_foto_actual").val();
-        // Mensaje de éxito
-        $("#fotos").before(
-          '<div id="mensaje-exito" class="alert alert-success py-2">Foto subida correctamente ✅</div>',
-        );
-
-        if (codigo) {
-          verFotosYSubir(codigo); // recarga galería
-        }
-      });
-    },
-  };
-}
-// eliminar una foto\
-function eliminarFoto(codigo, nombreArchivo, idHtml) {
-  Swal.fire({
-    title: "¿Eliminar esta foto?",
-    text: "Esta acción no se puede deshacer.",
-    icon: "warning",
-    showCancelButton: true,
-    confirmButtonColor: "#dc3545",
-    cancelButtonColor: "#6c757d",
-    confirmButtonText: "Sí, eliminar",
-    cancelButtonText: "Cancelar",
-  }).then((result) => {
-    if (result.isConfirmed) {
-      $.ajax({
-        type: "POST",
-        url: "Procesos/php/eliminar_foto.php",
-        data: {
-          CodigoSeguimiento: codigo,
-          NombreArchivo: nombreArchivo,
-        },
-        success: function (response) {
-          try {
-            let res = JSON.parse(response);
-            if (res.success) {
-              $("#" + idHtml).fadeOut(300, function () {
-                $(this).remove();
-              });
-
-              Swal.fire({
-                title: "¡Eliminada!",
-                text: "La foto fue eliminada correctamente.",
-                icon: "success",
-                timer: 2000,
-                showConfirmButton: false,
-              });
-            } else {
-              Swal.fire(
-                "Error",
-                res.error || "No se pudo eliminar la foto.",
-                "error",
-              );
-            }
-          } catch (e) {
-            console.error("Error al parsear respuesta:", response);
-            Swal.fire("Error", "Respuesta inesperada del servidor.", "error");
-          }
-        },
-        error: function () {
-          Swal.fire("Error", "Error de conexión con el servidor.", "error");
-        },
-      });
-    }
   });
 }
 function cleanValue(v) {

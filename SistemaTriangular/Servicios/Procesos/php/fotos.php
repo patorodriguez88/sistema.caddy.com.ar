@@ -4,53 +4,96 @@ ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
 include_once "../../../Conexion/Conexioni.php";
 
+// Fotos del envío: las sube el chofer desde la app de reparto (reparto.caddy.com.ar), que las
+// guarda en su propio dominio. Se piden a su endpoint SistemaReparto/Proceso/php/fotos_envio.php
+// con la clave compartida `fotos_envio` (tabla ClavesInternas, misma base) y se muestran por URL.
+
+// Misma función en reparto (SistemaReparto/Proceso/php/fotos_envio.php).
+function clave_interna(mysqli $db, string $nombre): string
+{
+    $db->query("CREATE TABLE IF NOT EXISTS ClavesInternas (
+        Nombre VARCHAR(50) NOT NULL PRIMARY KEY,
+        Valor VARCHAR(100) NOT NULL,
+        Creada TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $nueva = bin2hex(random_bytes(24));
+    $st = $db->prepare("INSERT IGNORE INTO ClavesInternas (Nombre, Valor) VALUES (?, ?)");
+    $st->bind_param('ss', $nombre, $nueva);
+    $st->execute();
+    $st = $db->prepare("SELECT Valor FROM ClavesInternas WHERE Nombre = ?");
+    $st->bind_param('s', $nombre);
+    $st->execute();
+    return (string) $st->get_result()->fetch_row()[0];
+}
+
+// Lista [{nombre, url, fecha}] de las fotos del envío, o null si no se pudo consultar a reparto.
+function fotos_envio(mysqli $mysqli, string $codigo): ?array
+{
+    $codigo = trim($codigo);
+    if (!preg_match('/^[A-Za-z0-9]{4,40}$/', $codigo)) return [];
+
+    $base = [
+        'local'   => 'http://localhost:3000',
+        'sandbox' => 'https://sandbox.reparto.caddy.com.ar',
+    ][defined('ENTORNO') ? ENTORNO : 'produccion'] ?? 'https://reparto.caddy.com.ar';
+
+    try {
+        $clave = clave_interna($mysqli, 'fotos_envio');
+    } catch (Throwable $e) {
+        error_log('fotos.php clave: ' . $e->getMessage());
+        return null;
+    }
+
+    $ch = curl_init($base . '/SistemaReparto/Proceso/php/fotos_envio.php?codigo=' . rawurlencode($codigo));
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_HTTPHEADER     => ['X-Clave-Interna: ' . $clave],
+        CURLOPT_CONNECTTIMEOUT => 3,
+        CURLOPT_TIMEOUT        => 6,
+    ]);
+    $resp = curl_exec($ch);
+    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err  = curl_error($ch);
+    curl_close($ch);
+
+    $datos = json_decode((string) $resp, true);
+    if ($http !== 200 || empty($datos['success'])) {
+        error_log("fotos.php reparto HTTP $http $err " . substr((string) $resp, 0, 200));
+        return null;
+    }
+    return $datos['fotos'] ?? [];
+}
+
 if (isset($_POST['MuestroFotos']) && $_POST['MuestroFotos'] == 1) {
-    $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
-    $ruta = "../../../../AppRecorridos/Proceso/php/images/" . $CodigoSeguimiento . "/";
+    $CodigoSeguimiento = $_POST['CodigoSeguimiento'] ?? '';
+    $fotos = fotos_envio($mysqli, $CodigoSeguimiento);
 
-    if (is_dir($ruta)) {
-        $filehandle = opendir($ruta);
-        $w = 1;
-
-        while (($file = readdir($filehandle)) !== false) {
-            if ($file != "." && $file != "..") {
-                $nameimage = $ruta . $file;
-                $imgURL = $nameimage;
-                $nombreLimpio = htmlspecialchars($file);
-                $idHtml = 'foto_' . md5($file); // ID único para borrarlo desde JS
-
-                echo '<div class="col-md-4" id="' . $idHtml . '">';
-                echo '  <div class="card d-block">';
-                echo '    <div class="card-body">';
-                echo '      <h5 class="card-title">Foto ' . $w . '</h5>';
-                echo '      <h6 class="card-subtitle text-muted">Nombre: ' . $nombreLimpio . '</h6>';
-                echo '    </div>';
-                echo '    <img class="img-fluid" src="' . $imgURL . '" alt="Foto">';
-                echo '    <div class="card-body text-center">';
-                echo '      <button class="btn btn-sm btn-outline-danger" onclick="eliminarFoto(\'' . $CodigoSeguimiento . '\', \'' . $nombreLimpio . '\', \'' . $idHtml . '\')">';
-                echo '        <i class="mdi mdi-delete"></i> Eliminar';
-                echo '      </button>';
-                echo '    </div>';
-                echo '  </div>';
-                echo '</div>';
-
-                $w++;
-            }
-        }
-
-        closedir($filehandle);
+    if ($fotos === null) {
+        echo '<div class="col-12 text-danger">No se pudieron consultar las fotos en la app de reparto. Probá de nuevo en un momento.</div>';
+    } elseif (!$fotos) {
+        echo '<div class="col-12 text-muted">Este envío no tiene fotos.</div>';
     } else {
-        echo '<div class="col-12 text-danger">No se encontró la carpeta con las fotos del código ingresado.</div>';
+        foreach ($fotos as $i => $foto) {
+            $url   = htmlspecialchars($foto['url'], ENT_QUOTES, 'UTF-8');
+            $fecha = date('d/m/Y H:i', strtotime($foto['fecha']));
+
+            echo '<div class="col-md-4 mb-3">';
+            echo '  <div class="card d-block h-100">';
+            echo '    <a href="' . $url . '" target="_blank" rel="noopener"><img class="card-img-top img-fluid" src="' . $url . '" alt="Foto ' . ($i + 1) . '" loading="lazy"></a>';
+            echo '    <div class="card-body py-2">';
+            echo '      <h6 class="card-title mb-0">Foto ' . ($i + 1) . '</h6>';
+            echo '      <small class="text-muted">Subida ' . $fecha . '</small>';
+            echo '    </div>';
+            echo '  </div>';
+            echo '</div>';
+        }
     }
 }
 
 if (isset($_POST['MuestroQuicks'])) {
     $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
-    $ruta = "../../../../sandbox.reparto.caddy.com.ar/SistemaReparto/Proceso/php/images/" . $CodigoSeguimiento . "/"; // Indicar la ruta
-    $filehandle = is_dir($ruta) ? opendir($ruta) : false; // Abrir archivos de la carpeta
-    $w = 1;
-    $file = $filehandle ? readdir($filehandle) : false;
-    $total_imagenes = $filehandle ? count(glob($ruta . '{*.jpg,*.gif,*.png,*.jpeg}', GLOB_BRACE)) : 0;
+    $fotos_quick    = fotos_envio($mysqli, (string) $CodigoSeguimiento);
+    $total_imagenes = $fotos_quick === null ? '?' : count($fotos_quick);
     echo '<div class="col-12">';
     echo '<div class="card d-block">';
     echo '<div class="card-body">';
@@ -79,7 +122,7 @@ if (isset($_POST['MuestroQuicks'])) {
             </div> <!-- end col -->
         </div> <!-- end col-->
         <?php
-        if ($filehandle) {
+        if (!empty($fotos_quick)) {
             $text = 'success';
         } else {
             $text = 'muted';
