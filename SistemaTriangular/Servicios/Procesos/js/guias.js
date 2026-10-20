@@ -150,13 +150,90 @@ function gsOcultarCarga() {
 // Las tablas de la ficha son DataTables: se destruyen antes de volver a buscar (si no, la
 // segunda búsqueda tira "Cannot reinitialise DataTable" y deja los datos del envío anterior).
 function gsResetTablas() {
-  ["#search_tabla", "#ficha_seguimiento_tabla", "#aforo_tabla", "#aforo_tabla_trans", "#webhook_tabla"].forEach(
+  ["#search_tabla", "#ficha_seguimiento_tabla", "#webhook_tabla"].forEach(
     function (sel) {
       if ($.fn.DataTable.isDataTable(sel)) $(sel).DataTable().clear().destroy();
     },
   );
-  $("#aforo_tabla").off("click", ".aforo-cantidad-guardar");
+  $("#gs_ventas, #gs_trans").empty();
 }
+
+// ---------- Facturación: ítems de la venta y comprobantes (listas compactas) ----------
+function gsPesos(v) {
+  var n = parseFloat(v);
+  return "$ " + (isNaN(n) ? 0 : n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function gsCargarFacturacion(cs) {
+  var vacio = function (t) { return '<div class="gs-items-empty">' + t + "</div>"; };
+  $("#gs_ventas, #gs_trans").html(vacio("Cargando…"));
+
+  $.post("../Funciones/php/tablas.php", { Aforo_Tabla: 1, CodigoSeguimiento: cs }, null, "json")
+    .done(function (res) {
+      var filas = (res && res.data) || [];
+      if (!filas.length) return $("#gs_ventas").html(vacio("Sin ítems de venta"));
+      var total = 0, html = "";
+      filas.forEach(function (r) {
+        var cant = parseInt(r.Cantidad, 10) || 0;
+        var importe = r.Total != null && r.Total !== "" ? parseFloat(r.Total) : (parseFloat(r.Precio) || 0) * cant;
+        total += importe || 0;
+        // Las líneas de seguro / cobranza van con Cantidad 0: no son bultos, no se editan.
+        var qty = cant > 0
+          ? '<input type="number" min="1" step="1" class="form-control gs-cant" value="' + cant + '" data-idpedido="' + gsEsc(r.idPedido) + '">' +
+            '<i class="mdi mdi-content-save-outline gs-cant-guardar" data-idpedido="' + gsEsc(r.idPedido) + '" title="Guardar cantidad (recalcula la tarifa)"></i>'
+          : '<span title="Línea sin bultos (seguro, cobranza…)">—</span>';
+        html +=
+          '<div class="gs-item"><div class="gs-item-main"><div class="gs-item-title" title="' + gsEsc(r.Titulo) + '">' + gsEsc(r.Titulo) + "</div>" +
+          '<div class="gs-item-sub">Cód. ' + gsEsc(r.Codigo) + " · " + gsFecha(r.FechaPedido) + "</div></div>" +
+          '<div class="gs-item-qty">' + qty + "</div>" +
+          '<div class="gs-item-amount">' + gsPesos(importe) + "</div></div>";
+      });
+      if (filas.length > 1) {
+        html += '<div class="gs-item gs-item-total"><div class="gs-item-main">Total</div><div class="gs-item-amount">' + gsPesos(total) + "</div></div>";
+      }
+      $("#gs_ventas").html(html);
+    })
+    .fail(function () { $("#gs_ventas").html(vacio("No se pudieron cargar los ítems")); });
+
+  $.post("../Funciones/php/tablas.php", { Aforo_Tabla_Trans: 1, CodigoSeguimiento: cs }, null, "json")
+    .done(function (res) {
+      var filas = (res && res.data) || [];
+      if (!filas.length) return $("#gs_trans").html(vacio("Sin comprobantes"));
+      $("#gs_trans").html(filas.map(function (r) {
+        return '<div class="gs-item"><div class="gs-item-main"><div class="gs-item-title">' + gsEsc(r.TipoDeComprobante) + "</div>" +
+          '<div class="gs-item-sub">N° ' + gsEsc(r.NumeroComprobante) + "</div></div>" +
+          '<div class="gs-item-amount">' + gsPesos(r.Debe) + "</div></div>";
+      }).join(""));
+    })
+    .fail(function () { $("#gs_trans").html(vacio("No se pudieron cargar los comprobantes")); });
+}
+
+// Modificar la cantidad de una línea de Ventas (recalcula la tarifa: si Precio=0 no se toca la plata,
+// si tiene precio se escala proporcional). Delegado: la lista se vuelve a armar en cada búsqueda.
+$(document).on("click", "#gs_ventas .gs-cant-guardar", function () {
+  var idPedido = $(this).data("idpedido");
+  var nuevaCantidad = parseInt($(this).siblings(".gs-cant").val(), 10);
+  if (!nuevaCantidad || nuevaCantidad <= 0) {
+    toast("error", "Cantidad invalida", "Ingresa un numero mayor a 0.");
+    return;
+  }
+  $.post("../Funciones/php/tablas.php", { ModificarCantidadVenta: 1, idPedido: idPedido, Cantidad: nuevaCantidad }, null, "json")
+    .done(function (res) {
+      if (res.success == 1) {
+        var msg =
+          res.precioNuevo && res.precioNuevo > 0
+            ? "Cantidad: " + res.cantidadAnterior + " → " + res.cantidadNueva + ". Tarifa recalculada: $" + res.precioAnterior + " → $" + res.precioNuevo + "."
+            : "Cantidad actualizada a " + res.cantidadNueva + " (flete sin cargo, no se tocó el precio).";
+        toast("success", "Cantidad actualizada", msg);
+        gsCargarFacturacion(window.seguimientoCS);
+      } else {
+        toast("error", "No se pudo actualizar", res.error || "Error desconocido.");
+      }
+    })
+    .fail(function () { toast("error", "Error", "No se pudo actualizar la cantidad."); });
+});
+$(document).on("keydown", "#gs_ventas .gs-cant", function (e) {
+  if (e.key === "Enter") $(this).siblings(".gs-cant-guardar").click();
+});
 
 function changeservice(f) {
   $.ajax({
@@ -789,13 +866,17 @@ function seguimiento(cs) {
         }
         function gsSwitch(idc, label, valor, checked, disabled, valorInput) {
           return (
-            '<div class="gs-switch"><label for="' + idc + '_c">' + label + "</label>" +
+            '<div class="gs-switch' + (disabled ? ' locked" title="Bloqueado: ' + motivoBloqueo + '"' : '"') + ">" +
+            '<label for="' + idc + '_c">' + (disabled ? '<i class="mdi mdi-lock-outline"></i> ' : "") + label + "</label>" +
             '<div class="form-check form-switch"><b id="' + idc + '_b">' + valor + "</b>" +
             '<input type="checkbox" role="switch" class="form-check-input" id="' + idc + '_c" ' + checked +
             ' value="' + gsEsc(valorInput) + '" ' + disabled + "></div></div>"
           );
         }
         var valorDeclarado = parseFloat(d.ValorDeclarado);
+        var motivoBloqueo =
+          d.Facturado == 1 && d.Entregado == 1 ? "el envío ya está facturado y entregado"
+            : d.Facturado == 1 ? "el envío ya está facturado" : "el envío ya está entregado";
 
         $("#ficha_info_guia_seguimiento").html(
           '<div class="gs-chips">' +
@@ -824,6 +905,10 @@ function seguimiento(cs) {
             "</div>" +
             (gsVacio(d.Observaciones) ? "" : '<div class="gs-obs"><span>Observaciones</span>' + gsEsc(d.Observaciones) + "</div>") +
             '<div class="gs-seccion">Cobro y hoja de ruta</div>' +
+            (dis
+              ? '<div class="gs-lock-note"><i class="mdi mdi-lock-outline"></i><span>Forma de pago y cobros no se pueden cambiar: ' +
+                motivoBloqueo + ".</span></div>"
+              : "") +
             gsSwitch("formadepago", "Forma de pago", gsEsc(formadepago), formadepagochecked, dis, d.FormaDePago) +
             gsSwitch("cobrarenvio", "Cobrar envío al entregar", cobrarenvio, cobrarenviochecked, dis, d.CobrarEnvio) +
             gsSwitch("cobrarcaddy", "Cobrar Caddy", cobrarcaddy, cobrarcaddychecked, dis, d.CobrarCaddy) +
@@ -842,7 +927,7 @@ function seguimiento(cs) {
           $("#info-alert").modal("show");
         });
 
-        $("#btn_corregir").click(function () {
+        $("#btn_corregir").off("click").click(function () {
           $.ajax({
             data: {
               Corregir_estado: 1,
@@ -861,7 +946,9 @@ function seguimiento(cs) {
           });
         });
 
-        $("#cambiar-modal-close").click(function () {
+        // Los botones de los modales fijos se vuelven a enganchar en cada búsqueda: .off() antes, si no
+        // quedaban acumulados y "Aceptar" se ejecutaba también sobre el envío abierto antes.
+        $("#cambiar-modal-close").off("click").click(function () {
           console.log("solucion", $("#formadepago_c").val());
           if ($("#formadepago_c").val() == "Origen") {
             $("#formadepago_c").prop("checked", null);
@@ -910,7 +997,7 @@ function seguimiento(cs) {
           $("#forma_de_pago_texto").html("Estas por cambiar de Pagador...");
         });
 
-        $("#cambiar-modal-ok").click(function () {
+        $("#cambiar-modal-ok").off("click").click(function () {
           $("#cambiar-modal").modal("hide");
           if (val == "Origen") {
             var formadepago_valor = "Destino";
@@ -1062,21 +1149,7 @@ function seguimiento(cs) {
           });
         });
 
-        //TABLA AFORO TRANSACCIONES CLIENTE (TRANSCLIENTES)
-        var datatable_aforo_trans = $("#aforo_tabla_trans").DataTable({
-          paging: false,
-          searching: false,
-          ajax: {
-            url: "../Funciones/php/tablas.php",
-            data: { Aforo_Tabla_Trans: 1, CodigoSeguimiento: id },
-            type: "post",
-          },
-          columns: [
-            { data: "TipoDeComprobante" },
-            { data: "NumeroComprobante" },
-            { data: "Debe" },
-          ],
-        });
+        gsCargarFacturacion(id);
 
         // REPOSICIONES DINTER (a pedido, 2026-09-16): tabla chica, no hace
         // falta un DataTable completo - se pide una vez y se muestra la
@@ -1108,94 +1181,6 @@ function seguimiento(cs) {
           error: function () {
             $("#repo_dinter_col").prop("hidden", true);
           },
-        });
-
-        //TABLA AFORO
-        var datatable_aforo = $("#aforo_tabla").DataTable({
-          paging: false,
-          searching: false,
-          ajax: {
-            url: "../Funciones/php/tablas.php",
-            data: { Aforo_Tabla: 1, CodigoSeguimiento: id },
-            type: "post",
-          },
-          columns: [
-            { data: "FechaPedido" },
-            { data: "Codigo" },
-            { data: "Titulo" },
-            {
-              data: "Cantidad",
-              render: function (data, type, row) {
-                if (type !== "display") return data;
-                var cant = parseInt(data, 10) || 0;
-                // Las lineas de seguro/cobranza se guardan con Cantidad=0 -
-                // esas no son bultos, no se editan desde aca.
-                if (cant <= 0) return data;
-                return (
-                  '<input type="number" min="1" step="1" class="form-control form-control-sm aforo-cantidad-input" ' +
-                  'style="width:64px;display:inline-block" value="' +
-                  cant +
-                  '" data-idpedido="' +
-                  row.idPedido +
-                  '">' +
-                  '<i class="mdi mdi-content-save-outline text-primary aforo-cantidad-guardar" ' +
-                  'style="cursor:pointer;margin-left:6px;font-size:16px" ' +
-                  'data-idpedido="' +
-                  row.idPedido +
-                  '" title="Guardar cantidad (recalcula la tarifa)"></i>'
-                );
-              },
-            },
-            { data: "Precio" },
-          ],
-        });
-
-        // Modificar Cantidad de una linea de Ventas (recalcula tarifa segun
-        // convencion acordada: si Precio=0 no se toca la plata, si tiene
-        // precio se escala proporcional). Delegado porque DataTables
-        // re-renderiza las filas en cada reload.
-        $("#aforo_tabla").on("click", ".aforo-cantidad-guardar", function () {
-          var $icono = $(this);
-          var idPedido = $icono.data("idpedido");
-          var $input = $icono
-            .closest("td")
-            .find(".aforo-cantidad-input");
-          var nuevaCantidad = parseInt($input.val(), 10);
-
-          if (!nuevaCantidad || nuevaCantidad <= 0) {
-            toast("error", "Cantidad invalida", "Ingresa un numero mayor a 0.");
-            return;
-          }
-
-          $.ajax({
-            url: "../Funciones/php/tablas.php",
-            type: "post",
-            data: { ModificarCantidadVenta: 1, idPedido: idPedido, Cantidad: nuevaCantidad },
-            success: function (response) {
-              var res = typeof response === "string" ? JSON.parse(response) : response;
-              if (res.success == 1) {
-                var msg =
-                  res.precioNuevo && res.precioNuevo > 0
-                    ? "Cantidad: " +
-                      res.cantidadAnterior +
-                      " → " +
-                      res.cantidadNueva +
-                      ". Tarifa recalculada: $" +
-                      res.precioAnterior +
-                      " → $" +
-                      res.precioNuevo +
-                      "."
-                    : "Cantidad actualizada a " + res.cantidadNueva + " (flete sin cargo, no se tocó el precio).";
-                toast("success", "Cantidad actualizada", msg);
-                datatable_aforo.ajax.reload(null, false);
-              } else {
-                toast("error", "No se pudo actualizar", res.error || "Error desconocido.");
-              }
-            },
-            error: function () {
-              toast("error", "Error", "No se pudo actualizar la cantidad.");
-            },
-          });
         });
 
         //TABLA SEGUIMIENTO
