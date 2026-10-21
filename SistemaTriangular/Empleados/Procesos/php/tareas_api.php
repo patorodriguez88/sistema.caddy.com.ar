@@ -208,12 +208,17 @@ function tk_adjuntos(mysqli $db, int $idTarea): array
 // La carpeta de adjuntos no se sirve por URL: solo por accion=descargar (con sesión).
 function tk_carpeta_adjuntos(int $idTarea): string
 {
-    if (!is_dir(TK_ADJ_DIR)) mkdir(TK_ADJ_DIR, 0755, true);
+    if (!is_dir(TK_ADJ_DIR)) @mkdir(TK_ADJ_DIR, 0755, true);
+    if (!is_dir(TK_ADJ_DIR) || !is_writable(TK_ADJ_DIR)) {
+        error_log('tareas_api: sin permiso de escritura en ' . TK_ADJ_DIR);
+        tk_responder(['success' => 0, 'error' => 'No se pudo guardar: la carpeta de archivos (Empleados/Tareas/adjuntos) no tiene permiso de escritura en el servidor.'], 500);
+    }
     if (!is_file(TK_ADJ_DIR . '/.htaccess')) {
         file_put_contents(TK_ADJ_DIR . '/.htaccess', "Require all denied\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n");
     }
     $dir = TK_ADJ_DIR . '/' . $idTarea;
-    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    if (!is_dir($dir)) @mkdir($dir, 0755, true);
+    if (!is_dir($dir)) tk_responder(['success' => 0, 'error' => 'No se pudo crear la carpeta de archivos de la tarea en el servidor.'], 500);
     return $dir;
 }
 

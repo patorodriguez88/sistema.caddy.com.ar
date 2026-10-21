@@ -447,7 +447,11 @@ function tkSubirListos(files) {
       tkCargarLista();
     })
     .fail(function (xhr) {
-      tkError((xhr.responseJSON && xhr.responseJSON.error) || "No se pudo subir: puede que el archivo sea muy grande.");
+      var r = xhr.responseJSON;
+      tkError(
+        (r && r.error) ||
+          (xhr.status === 413 ? "El archivo es demasiado grande para el servidor." : "No se pudo subir el archivo (error " + (xhr.status || "de conexión") + ")."),
+      );
     })
     .always(function () {
       $z.removeClass("subiendo");
@@ -465,10 +469,19 @@ $("#tk_adj_zona")
     tkSubir(e.originalEvent.dataTransfer.files);
   });
 // Pegar una captura (Cmd+V / Ctrl+V) con el panel abierto, fuera de los campos de texto
+// Se leen los items del portapapeles (no solo .files): "Copiar imagen" de un navegador o una captura
+// del sistema a veces llegan solo como item de tipo archivo.
 document.addEventListener("paste", function (e) {
-  if (!TK.abierta || !$("#tk_panel").hasClass("show")) return;
-  var files = e.clipboardData && e.clipboardData.files;
-  if (!files || !files.length) return;
+  if (!TK.abierta || TK.abierta.eliminada || !$("#tk_panel").hasClass("show") || !e.clipboardData) return;
+  var files = [];
+  Array.prototype.forEach.call(e.clipboardData.items || [], function (it) {
+    if (it.kind === "file") {
+      var f = it.getAsFile();
+      if (f) files.push(f);
+    }
+  });
+  if (!files.length && e.clipboardData.files) files = Array.prototype.slice.call(e.clipboardData.files);
+  if (!files.length) return; // texto común: se pega normal en el campo
   e.preventDefault();
   tkSubir(files);
 });
