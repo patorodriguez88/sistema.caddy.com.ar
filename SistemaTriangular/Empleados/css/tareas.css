@@ -82,7 +82,7 @@
 
 /* ---------- Panel de detalle ---------- */
 /* Hyper calcula el ancho del offcanvas con su propia variable (--ct-offcanvas-width), no con la de Bootstrap */
-.tk-panel.offcanvas-end { --ct-offcanvas-width: min(880px, 94vw); --bs-offcanvas-width: min(880px, 94vw); width: min(880px, 94vw); }
+.tk-panel.offcanvas-end { --ct-offcanvas-width: min(680px, 94vw); --bs-offcanvas-width: min(680px, 94vw); width: min(680px, 94vw); }
 .tk-panel .offcanvas-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem;
   border-bottom: 1px solid var(--cf-border, rgba(0, 0, 0, .08)); padding: .8rem 1.1rem; }
 .tk-panel .offcanvas-header > :last-child { margin-left: auto; flex: none; }
