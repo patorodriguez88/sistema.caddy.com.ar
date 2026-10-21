@@ -79,6 +79,8 @@ CREATE TABLE IF NOT EXISTS ProyectosTareas_adjuntos (
   Tamano INT NOT NULL,
   Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Eliminado TINYINT(1) NOT NULL DEFAULT 0,
+  EliminadoFecha DATETIME NULL,
+  Purgado TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'El archivo ya se borró del disco (30 días después de quitarlo)',
   KEY idx_tarea (idTarea, Eliminado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 

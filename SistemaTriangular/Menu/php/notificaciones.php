@@ -1,5 +1,7 @@
 <?php
-// Notificaciones internas del topbar: cosas que pasan DENTRO del sistema y que nadie
+// Notificaciones internas del topbar: cosas que pasan DENTRO del sistema. Licencias por vencer y
+// rendiciones pendientes se sacaron (2026-10-21): se van a manejar como Tareas y después se automatizan.
+// y que nadie
 // más te avisa (a diferencia de Asana, que ya notifica en Asana). Cada alerta es una
 // consulta chica y barata; se recalculan en cada carga, no hace falta cachear.
 
@@ -7,69 +9,7 @@ include_once __DIR__ . "/../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=UTF-8');
 
-function notifLicenciasPorVencer(mysqli $mysqli): array
-{
-    $stmt = $mysqli->prepare("
-        SELECT NombreCompleto, VencimientoLicencia
-        FROM Empleados
-        WHERE Inactivo = 0
-          AND Aliados = 1
-          AND VencimientoLicencia IS NOT NULL
-          AND VencimientoLicencia <> '0000-00-00'
-          AND VencimientoLicencia <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)
-        ORDER BY VencimientoLicencia ASC
-        LIMIT 10
-    ");
-    $stmt->execute();
-    $res = $stmt->get_result();
 
-    $items = [];
-    while ($row = $res->fetch_assoc()) {
-        $vencida = $row['VencimientoLicencia'] < date('Y-m-d');
-        $items[] = [
-            'titulo' => $row['NombreCompleto'],
-            'subtitulo' => $vencida
-                ? 'Licencia vencida el ' . date('d/m/Y', strtotime($row['VencimientoLicencia']))
-                : 'Vence el ' . date('d/m/Y', strtotime($row['VencimientoLicencia'])),
-            'urgente' => $vencida,
-        ];
-    }
-    $stmt->close();
-
-    if (!$items) return [];
-
-    return [[
-        'tipo' => 'licencias',
-        'icono' => 'ri-id-card-line',
-        'color' => 'bg-warning',
-        'titulo' => 'Licencias de conducir por vencer',
-        'cantidad' => count($items),
-        'items' => $items,
-        'link' => '/SistemaTriangular/Empleados/Empleados.php',
-    ]];
-}
-
-function notifRendicionesPendientes(mysqli $mysqli): array
-{
-    $res = $mysqli->query("
-        SELECT COUNT(*) AS total
-        FROM Logistica
-        WHERE Eliminado = 0 AND Rendicion = 0 AND IFNULL(Costo_rendicion, 0) > 0
-    ");
-    $total = (int)($res ? $res->fetch_assoc()['total'] : 0);
-
-    if ($total === 0) return [];
-
-    return [[
-        'tipo' => 'rendiciones',
-        'icono' => 'ri-file-list-3-line',
-        'color' => 'bg-info',
-        'titulo' => 'Rendiciones controladas pendientes de facturar',
-        'cantidad' => $total,
-        'items' => [],
-        'link' => '/SistemaTriangular/Admin/Sales_control.php',
-    ]];
-}
 
 function notifWebhooksFallidos(mysqli $mysqli): array
 {
@@ -192,9 +132,7 @@ function notifTareas(mysqli $mysqli): array
 $notificaciones = array_merge(
     notifTareas($mysqli),
     notifEntregasFallidasHoy($mysqli),
-    notifWebhooksFallidos($mysqli),
-    notifLicenciasPorVencer($mysqli),
-    notifRendicionesPendientes($mysqli)
+    notifWebhooksFallidos($mysqli)
 );
 
 $totalGeneral = 0;

@@ -391,8 +391,43 @@ function tkPintarAdjuntos(lista) {
     }).join(""),
   );
 }
+// Fotos del celular (3-8 MB) → JPEG de 1920px como máximo al 82%: ~300-500 KB sin diferencia a la vista.
+// Las capturas PNG chicas quedan como están (el JPEG les ensucia el texto). HEIC y GIF no se tocan.
+var TK_FOTO_MAX_LADO = 1920, TK_FOTO_CALIDAD = 0.82;
+function tkComprimir(file) {
+  var esFoto = /^image\/(jpeg|png|webp)$/.test(file.type);
+  if (!esFoto || file.size < 400 * 1024 || (file.type === "image/png" && file.size < 1.5 * 1024 * 1024)) {
+    return Promise.resolve(file);
+  }
+  return new Promise(function (ok) {
+    var img = new Image(), url = URL.createObjectURL(file);
+    img.onload = function () {
+      var k = Math.min(1, TK_FOTO_MAX_LADO / Math.max(img.width, img.height));
+      var c = document.createElement("canvas");
+      c.width = Math.round(img.width * k);
+      c.height = Math.round(img.height * k);
+      var ctx = c.getContext("2d");
+      ctx.fillStyle = "#fff"; // fondo blanco para PNG con transparencia
+      ctx.fillRect(0, 0, c.width, c.height);
+      ctx.drawImage(img, 0, 0, c.width, c.height);
+      URL.revokeObjectURL(url);
+      c.toBlob(function (blob) {
+        if (!blob || blob.size >= file.size) return ok(file);
+        ok(new File([blob], (file.name || "foto").replace(/\.[^.]+$/, "") + ".jpg", { type: "image/jpeg" }));
+      }, "image/jpeg", TK_FOTO_CALIDAD);
+    };
+    img.onerror = function () { URL.revokeObjectURL(url); ok(file); };
+    img.src = url;
+  });
+}
 function tkSubir(files) {
   if (!TK.abierta || TK.abierta.eliminada || !files || !files.length) return;
+  var lista = Array.prototype.slice.call(files);
+  $("#tk_adj_zona").addClass("subiendo");
+  $("#tk_adj_texto").text("Preparando " + lista.length + (lista.length > 1 ? " archivos…" : " archivo…"));
+  Promise.all(lista.map(tkComprimir)).then(tkSubirListos);
+}
+function tkSubirListos(files) {
   var fd = new FormData();
   fd.append("accion", "subir");
   fd.append("id", TK.abierta.id);
@@ -402,7 +437,7 @@ function tkSubir(files) {
     fd.append("archivos[]", f, nombre);
   });
   var $z = $("#tk_adj_zona").addClass("subiendo");
-  var textoOriginal = $("#tk_adj_texto").html();
+  var textoOriginal = TK_ADJ_TEXTO;
   $("#tk_adj_texto").text("Subiendo " + files.length + (files.length > 1 ? " archivos…" : " archivo…"));
   $.ajax({ url: TK_API, type: "POST", data: fd, processData: false, contentType: false, dataType: "json" })
     .done(function (r) {
@@ -420,6 +455,7 @@ function tkSubir(files) {
       $("#tk_adj_input").val("");
     });
 }
+var TK_ADJ_TEXTO = $("#tk_adj_texto").html();
 $("#tk_adj_input").on("change", function () { tkSubir(this.files); });
 $("#tk_adj_zona")
   .on("dragover dragenter", function (e) { e.preventDefault(); $(this).addClass("drag"); })
