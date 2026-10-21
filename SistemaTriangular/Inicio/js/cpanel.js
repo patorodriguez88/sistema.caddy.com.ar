@@ -278,3 +278,25 @@
     $(document).on("click", ".cp-nota-editar", function () { editarNota(num(this.dataset.id), this.dataset.nota || ""); });
   });
 })();
+
+// Botón "Tareas": el número es lo que vence hoy o está atrasado (rojo si hay atrasadas, amarillo si solo
+// vencen hoy); el detalle va en el tooltip. Si la API de Tareas no responde, el botón queda sin número.
+function cargarContadorTareas() {
+  $.post("../Empleados/Procesos/php/tareas_api.php", { accion: "contador" }, null, "json").done(function (r) {
+    if (!r || r.success != 1) return;
+    var urgentes = r.atrasadas + r.hoy;
+    $("#cp-tareas-count")
+      .toggleClass("d-none", urgentes === 0)
+      .css("background", r.atrasadas ? "" : "#ffbc00")
+      .text(urgentes);
+    $("#cp-tareas").attr(
+      "title",
+      r.pendientes
+        ? r.pendientes + " pendiente" + (r.pendientes === 1 ? "" : "s") +
+            (r.atrasadas ? " · " + r.atrasadas + " atrasada" + (r.atrasadas === 1 ? "" : "s") : "") +
+            (r.hoy ? " · " + r.hoy + " vence" + (r.hoy === 1 ? "" : "n") + " hoy" : "")
+        : "No tenés tareas pendientes",
+    );
+  });
+}
+$(cargarContadorTareas);
