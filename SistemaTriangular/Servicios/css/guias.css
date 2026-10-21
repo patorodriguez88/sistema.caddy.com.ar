@@ -15,19 +15,45 @@
 }
 .gs-count.on { background: var(--gs-ok); color: #fff; }
 
-/* ---------- Buscador ---------- */
-.gs-search-wrap { display: flex; justify-content: center; }
-.gs-search { width: 100%; max-width: 760px; padding: 1.5rem; }
-.gs-label { display: block; font-size: .78rem; font-weight: 600; color: var(--cf-muted); margin-bottom: .35rem; }
-.gs-input-lg { position: relative; }
-.gs-input-lg .mdi { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); font-size: 1.4rem; color: var(--cf-muted); }
-.gs-input-lg input { height: 54px; padding-left: 48px; font-size: 1.15rem; font-weight: 600; letter-spacing: .03em; border-radius: 12px; }
-.gs-search-alt { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.1rem; }
-@media (max-width: 575px) { .gs-search-alt { grid-template-columns: 1fr; } }
-.gs-search-alt input { border-radius: 10px; }
-.gs-search input.gs-dim { background: var(--cf-head-bg); }
-.gs-search-foot { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-top: 1.25rem; }
-.gs-search-foot .btn { border-radius: 10px; font-weight: 600; padding-left: 1.4rem; padding-right: 1.4rem; }
+/* ---------- Buscador (portada) ---------- */
+.gs-hero { max-width: 700px; margin: 7vh auto 3rem; text-align: center; }
+.gs-hero-icon {
+  width: 60px; height: 60px; margin: 0 auto 1rem; border-radius: 18px; display: grid; place-items: center; font-size: 1.9rem;
+  color: var(--gs-pri); background: color-mix(in srgb, var(--gs-pri) 12%, transparent);
+}
+.gs-hero-title { font-weight: 700; letter-spacing: -.02em; margin: .25rem 0 .35rem; }
+.gs-tabs { display: inline-flex; gap: 4px; padding: 4px; margin: 1.6rem 0 1rem; border-radius: 12px; background: color-mix(in srgb, var(--cf-muted) 10%, transparent); }
+.gs-tabs button {
+  display: inline-flex; align-items: center; gap: .35rem; border: 0; background: none; border-radius: 9px;
+  padding: .45rem .95rem; font-size: .8rem; font-weight: 600; color: var(--cf-muted);
+}
+.gs-tabs button .mdi { font-size: 1rem; }
+.gs-tabs button.active { background: var(--cf-card-bg); color: var(--bs-body-color); box-shadow: 0 1px 3px rgba(16, 24, 40, .12); }
+.gs-searchbar {
+  display: flex; align-items: center; gap: .6rem; padding: 6px 6px 6px 18px; border-radius: 16px; text-align: left;
+  background: var(--cf-card-bg); border: 1px solid var(--cf-border); box-shadow: 0 10px 30px rgba(16, 24, 40, .07);
+  transition: border-color .15s, box-shadow .15s;
+}
+.gs-searchbar:focus-within { border-color: var(--gs-pri); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gs-pri) 15%, transparent), 0 10px 30px rgba(16, 24, 40, .07); }
+.gs-searchbar > .mdi { font-size: 1.45rem; color: var(--cf-muted); }
+.gs-searchbar input { flex: 1; min-width: 0; height: 48px; border: 0; outline: 0; background: transparent; color: var(--bs-body-color); font-size: 1.15rem; font-weight: 600; }
+.gs-searchbar input.gs-upper { text-transform: uppercase; letter-spacing: .04em; }
+.gs-searchbar input::placeholder { text-transform: none; letter-spacing: 0; font-weight: 500; color: var(--cf-muted); opacity: .7; }
+.gs-searchbar .btn { height: 48px; padding: 0 1.6rem; border-radius: 12px; font-weight: 600; }
+.gs-hint { margin-top: .75rem; font-size: .76rem; color: var(--cf-muted); }
+.gs-recientes { margin-top: 2.5rem; }
+.gs-recientes-title { font-size: .7rem; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; color: var(--cf-muted); margin-bottom: .7rem; }
+.gs-recientes-list { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .6rem; }
+@media (max-width: 767px) { .gs-recientes-list { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gs-reciente {
+  display: flex; align-items: center; gap: .6rem; padding: .6rem .75rem; border-radius: 12px; text-align: left; cursor: pointer;
+  background: var(--cf-card-bg); border: 1px solid var(--cf-border); transition: border-color .15s, transform .15s;
+}
+.gs-reciente:hover { border-color: var(--gs-pri); transform: translateY(-1px); }
+.gs-reciente-dot { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--gs-c, var(--cf-muted)); }
+.gs-reciente-main { min-width: 0; }
+.gs-reciente-code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 700; font-size: .82rem; }
+.gs-reciente-sub { font-size: .72rem; color: var(--cf-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ---------- Estado + progreso ---------- */
 .gs-progress-card { display: grid; grid-template-columns: minmax(200px, 260px) 1fr; gap: 1.5rem; align-items: center; }
