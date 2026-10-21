@@ -110,11 +110,56 @@ $(document).ready(function () {
   $("#inputcodigoproveedor").val("");
   $("#inputname").val("");
 });
-// Se busca por un solo criterio: al entrar a un campo se vacían y atenúan los otros dos.
-$("#inputcodigo, #inputcodigoproveedor, #inputname").on("focus", function () {
-  $("#inputcodigo, #inputcodigoproveedor, #inputname").not(this).val("").addClass("gs-dim");
-  $(this).removeClass("gs-dim");
+// Buscador: se busca por un solo criterio. El selector muestra el campo de ese criterio y vacía los otros.
+function gsTipoBusqueda(campo) {
+  var $btn = $('.gs-tabs button[data-campo="' + campo + '"]');
+  $(".gs-tabs button").removeClass("active");
+  $btn.addClass("active");
+  $("#inputcodigo, #inputcodigoproveedor, #inputname").val("").prop("hidden", true);
+  $("#" + campo).prop("hidden", false).trigger("focus");
+  $("#gs_hint").html(
+    '<i class="mdi mdi-information-outline"></i> ' + gsEsc($btn.data("hint")) +
+      ' · <i class="mdi mdi-keyboard-return"></i> Enter para buscar',
+  );
+}
+$(document).on("click", ".gs-tabs button", function () {
+  gsTipoBusqueda($(this).data("campo"));
 });
+
+// Envíos consultados hace poco (solo en este navegador): acceso rápido desde la portada.
+var GS_RECIENTES_KEY = "caddy_seguimiento_recientes";
+function gsLeerRecientes() {
+  try {
+    return JSON.parse(localStorage.getItem(GS_RECIENTES_KEY) || "[]") || [];
+  } catch (e) {
+    return [];
+  }
+}
+function gsGuardarReciente(cs, destino, estado) {
+  var lista = gsLeerRecientes().filter(function (r) { return r.cs !== cs; });
+  lista.unshift({ cs: cs, destino: destino || "", estado: estado || "" });
+  try {
+    localStorage.setItem(GS_RECIENTES_KEY, JSON.stringify(lista.slice(0, 6)));
+  } catch (e) {}
+}
+function gsPintarRecientes() {
+  var lista = gsLeerRecientes();
+  $("#gs_recientes").prop("hidden", !lista.length);
+  $("#gs_recientes_list").html(
+    lista.map(function (r) {
+      return (
+        '<div class="gs-reciente" role="button" data-cs="' + gsEsc(r.cs) + '" style="--gs-c:' + gsColorEstado(r.estado) + '">' +
+        '<span class="gs-reciente-dot" title="' + gsEsc(r.estado) + '"></span>' +
+        '<div class="gs-reciente-main"><div class="gs-reciente-code">' + gsEsc(r.cs) + "</div>" +
+        '<div class="gs-reciente-sub">' + gsEsc(r.destino || r.estado) + "</div></div></div>"
+      );
+    }).join(""),
+  );
+}
+$(document).on("click", ".gs-reciente", function () {
+  seguimiento(String($(this).data("cs")));
+});
+$(gsPintarRecientes);
 $("#inputcodigo, #inputcodigoproveedor, #inputname").on("keydown", function (e) {
   if (e.key === "Enter") {
     e.preventDefault();
@@ -366,12 +411,11 @@ function cerrarSeguimiento() {
   document.getElementById("form_guias").style.display = "";
   gsResetTablas();
   window.__ultimoEstadoGuia = null;
-  $("#gs_acciones").prop("hidden", true);
-  $("#gs_titulo").text("Seguimiento de envíos");
-  $("#gs_sub").text("Buscá un envío por código de Caddy, código del proveedor o nombre del cliente.");
+  $("#gs_header, #gs_acciones").prop("hidden", true);
   $("#pagaorigen, #pagadestino").hide();
   $("#title_aforo, #title_aforo_trans").html("");
-  $("#inputcodigo, #inputcodigoproveedor, #inputname").val("").removeClass("gs-dim");
+  gsTipoBusqueda("inputcodigo");
+  gsPintarRecientes();
 }
 
 // ============================================================
@@ -757,7 +801,8 @@ function seguimiento(cs) {
           "Guía " + gsEsc(d.NumeroComprobante) + " · " + gsEsc(d.RazonSocial) +
             ' <i class="mdi mdi-arrow-right"></i> ' + gsEsc(d.ClienteDestino),
         );
-        $("#gs_acciones").prop("hidden", false);
+        $("#gs_header, #gs_acciones").prop("hidden", false);
+        gsGuardarReciente(id, d.ClienteDestino, d.Estado);
         $("#gs_fotos_count").text("…").removeClass("on");
 
         // ORIGEN / DESTINO

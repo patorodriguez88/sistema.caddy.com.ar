@@ -199,8 +199,8 @@
                     <!-- Start Content-->
                     <div class="cf-page gs-page">
 
-                        <!-- Encabezado (cambia al abrir un envío: código, guía y acciones) -->
-                        <div class="cf-header">
+                        <!-- Encabezado de la ficha (código, guía y acciones): solo con un envío abierto -->
+                        <div class="cf-header" id="gs_header" hidden>
                             <div>
                                 <div class="cf-eyebrow">Servicios · Seguimiento</div>
                                 <h3 class="cf-title" id="gs_titulo">Seguimiento de envíos</h3>
@@ -223,28 +223,31 @@
                             </div>
                         </div>
 
-                        <!-- Buscador -->
-                        <div id="form_guias" class="gs-search-wrap">
-                            <div class="cf-card gs-search">
-                                <label for="inputcodigo" class="gs-label">Código de seguimiento Caddy</label>
-                                <div class="gs-input-lg">
-                                    <i class="mdi mdi-barcode-scan"></i>
-                                    <input type="text" class="form-control" id="inputcodigo" placeholder="Ej: QTXG8QBVY" autocomplete="off" autofocus>
-                                </div>
-                                <div class="gs-search-alt">
-                                    <div>
-                                        <label for="inputcodigoproveedor" class="gs-label">O código del proveedor</label>
-                                        <input type="text" class="form-control" id="inputcodigoproveedor" placeholder="Código del proveedor" autocomplete="off">
-                                    </div>
-                                    <div>
-                                        <label for="inputname" class="gs-label">O nombre del cliente</label>
-                                        <input type="text" class="form-control" id="inputname" placeholder="Nombre del cliente" autocomplete="off">
-                                    </div>
-                                </div>
-                                <div class="gs-search-foot">
-                                    <span class="cf-sub"><i class="mdi mdi-keyboard-return"></i> Enter para buscar</span>
-                                    <button id="remito" type="button" class="btn btn-primary"><i class="mdi mdi-magnify me-1"></i>Buscar</button>
-                                </div>
+                        <!-- Buscador (portada): un solo campo según el tipo de búsqueda + envíos consultados hace poco -->
+                        <div id="form_guias" class="gs-hero">
+                            <div class="gs-hero-icon"><i class="mdi mdi-package-variant-closed"></i></div>
+                            <div class="cf-eyebrow">Servicios · Seguimiento</div>
+                            <h3 class="gs-hero-title">¿Qué envío buscás?</h3>
+                            <div class="cf-sub">Encontrá cualquier envío y mirá dónde está, quién lo movió y cómo se facturó.</div>
+
+                            <div class="gs-tabs" role="tablist">
+                                <button type="button" class="active" data-campo="inputcodigo" data-hint="El código de 9 caracteres de la etiqueta de Caddy"><i class="mdi mdi-barcode"></i>Código Caddy</button>
+                                <button type="button" data-campo="inputcodigoproveedor" data-hint="El código con el que lo identifica el cliente (Mercado Libre, Tienda Nube…)"><i class="mdi mdi-tag-outline"></i>Cód. proveedor</button>
+                                <button type="button" data-campo="inputname" data-hint="Nombre del remitente o del destinatario: lista todos sus envíos"><i class="mdi mdi-account-outline"></i>Cliente</button>
+                            </div>
+
+                            <div class="gs-searchbar">
+                                <i class="mdi mdi-magnify"></i>
+                                <input type="text" class="gs-upper" id="inputcodigo" placeholder="Ej: QTXG8QBVY" autocomplete="off" autofocus>
+                                <input type="text" class="gs-upper" id="inputcodigoproveedor" placeholder="Código del proveedor" autocomplete="off" hidden>
+                                <input type="text" id="inputname" placeholder="Nombre del cliente" autocomplete="off" hidden>
+                                <button id="remito" type="button" class="btn btn-primary">Buscar</button>
+                            </div>
+                            <div class="gs-hint" id="gs_hint"><i class="mdi mdi-information-outline"></i> El código de 9 caracteres de la etiqueta de Caddy · <i class="mdi mdi-keyboard-return"></i> Enter para buscar</div>
+
+                            <div class="gs-recientes" id="gs_recientes" hidden>
+                                <div class="gs-recientes-title">Consultados recientemente</div>
+                                <div class="gs-recientes-list" id="gs_recientes_list"></div>
                             </div>
                         </div>
 
