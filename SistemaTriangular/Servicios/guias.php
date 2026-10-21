@@ -380,11 +380,11 @@
                                         <div class="cf-card-head">
                                             <div>
                                                 <h5 class="cf-card-title"><i class="mdi mdi-timeline-clock-outline"></i>Historial de seguimiento</h5>
-                                                <div class="cf-card-sub" id="ficha_myCenterModalLabel2">Movimientos del envío, del más nuevo al más viejo</div>
+                                                <div class="cf-card-sub" id="ficha_myCenterModalLabel2">Movimientos del envío en orden cronológico</div>
                                             </div>
                                             <button type="button" id="enter_registration" class="btn btn-sm btn-light"><i class="mdi mdi-plus"></i> Agregar registro</button>
                                         </div>
-                                        <div id="gs_historial" class="gs-timeline"></div>
+                                        <div id="gs_historial"></div>
                                     </div>
 
                                     <!-- Facturación: líneas de venta y comprobantes en la cuenta corriente -->
