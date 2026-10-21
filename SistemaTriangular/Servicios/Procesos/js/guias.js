@@ -1403,9 +1403,30 @@ $("#btn_confirmar_eliminacion").click(function () {
   });
 });
 
+// Modal "Agregar movimiento": estados como opciones con su color; arranca limpio cada vez.
+var GS_ESTADOS_REGISTRO = [
+  "A Retirar", "En Origen", "Retirado del Cliente",
+  "No se pudo Retirar", "Cargado en Hoja De Ruta", "En Transito",
+  "Entregado al Cliente", "No se pudo entregar", "Devuelto al Cliente",
+];
 $("#enter_registration").click(function () {
-  const newLocal = "show";
-  $("#enter_registration_seguimiento-modal").modal(newLocal);
+  $("#gs_reg_codigo").text(window.seguimientoCS || "");
+  $("#gs_reg_estados").html(
+    GS_ESTADOS_REGISTRO.map(function (e) {
+      return '<button type="button" class="gs-estado-opt" data-estado="' + gsEsc(e) + '" style="--gs-c:' + gsColorEstado(e) + '">' + gsEsc(e) + "</button>";
+    }).join(""),
+  );
+  $("#enter_registration_state").val("").trigger("change");
+  $("#enter_registration_obs").val("");
+  $("#enter_registration_user").val("").trigger("change");
+  $("#fecha_entrega, #hora_entrega").val("");
+  $("#enter_registration_save").prop("disabled", false);
+  $("#enter_registration_seguimiento-modal").modal("show");
+});
+$(document).on("click", "#gs_reg_estados .gs-estado-opt", function () {
+  $("#gs_reg_estados .gs-estado-opt").removeClass("active");
+  $(this).addClass("active");
+  $("#enter_registration_state").val($(this).data("estado")).trigger("change");
 });
 
 // Los selects de Estado y Usuario se auto-inicializan como select2 al cargar
@@ -1470,16 +1491,21 @@ $("#enter_registration_state").change(function () {
 //AGREGAR REGISTROS EN TABLA SEGUIMIENTO
 $("#enter_registration_save").click(function () {
   let state = $("#enter_registration_state").val();
-  let id = $("#inputcodigo").val();
+  let id = window.seguimientoCS;
   let obs = $("#enter_registration_obs").val();
   let user = $("#enter_registration_user").val();
   let fecha_entrega = $("#fecha_entrega").val();
   let hora_entrega = $("#hora_entrega").val();
   const conRepartidor = state == "Entregado al Cliente" || state == "No se pudo entregar";
+  if (!state) {
+    toast("error", "Falta el estado", "Elegí el estado del movimiento.");
+    return;
+  }
   if (conRepartidor && !user) {
     toast("error", "Falta el repartidor", "Elegí el repartidor titular del movimiento.");
     return;
   }
+  var $btnGuardar = $(this).prop("disabled", true);
   $.ajax({
     data: {
       enter_registration: 1,
@@ -1492,9 +1518,20 @@ $("#enter_registration_save").click(function () {
     },
     type: "POST",
     url: "Procesos/php/funciones.php",
+    complete: function () {
+      $btnGuardar.prop("disabled", false);
+    },
+    error: function () {
+      toast("error", "Error", "No se pudo guardar el movimiento. Probá de nuevo.");
+    },
     success: function (response) {
-      var jsonData = JSON.parse(response);
+      var jsonData = safeJsonParse(response) || {};
+      if (jsonData.success != 1) {
+        toast("error", "No se pudo guardar", jsonData.error || "Respuesta inesperada del servidor.");
+        return;
+      }
       if (jsonData.success == 1) {
+        toast("success", "Listo", "Movimiento agregado: " + state);
         $("#estado_transclientes").text(state);
         $("#enter_registration_seguimiento-modal").modal("hide");
         gsCargarHistorial(window.seguimientoCS);
