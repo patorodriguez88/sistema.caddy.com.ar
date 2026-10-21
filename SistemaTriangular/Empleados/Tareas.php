@@ -164,6 +164,18 @@
                 <button type="button" class="btn btn-primary btn-sm" id="tk_guardar"><i class="mdi mdi-content-save-outline me-1"></i>Guardar</button>
             </div>
 
+            <!-- Archivos adjuntos: fotos, PDF, Word, Excel… (se bajan solo con sesión, ver tareas_api.php) -->
+            <div class="tk-adj-box" id="tk_adj_box">
+                <div class="tk-label">Archivos <span id="tk_adj_cant"></span></div>
+                <div class="tk-adj-lista" id="tk_adjuntos"></div>
+                <label class="tk-adj-zona" id="tk_adj_zona">
+                    <i class="mdi mdi-paperclip"></i>
+                    <span id="tk_adj_texto">Arrastrá archivos acá o <u>elegilos</u> · también podés pegar una captura (Cmd+V) · hasta 10 MB</span>
+                    <input type="file" id="tk_adj_input" multiple hidden
+                           accept=".jpg,.jpeg,.png,.gif,.webp,.heic,.pdf,.doc,.docx,.xls,.xlsx,.csv,.ppt,.pptx,.txt">
+                </label>
+            </div>
+
             <div class="tk-coment-box" id="tk_coment_box">
                 <div class="tk-label">Comentarios</div>
                 <div id="tk_comentarios"></div>

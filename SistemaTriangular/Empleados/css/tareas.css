@@ -81,10 +81,13 @@
 .tk-restan { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--cf-head-bg); color: var(--cf-muted); white-space: nowrap; }
 
 /* ---------- Panel de detalle ---------- */
-.tk-panel { --bs-offcanvas-width: min(760px, 92vw); }
-.tk-panel .offcanvas-header { border-bottom: 1px solid var(--cf-border, rgba(0, 0, 0, .08)); padding: .8rem 1.1rem; }
+/* Hyper calcula el ancho del offcanvas con su propia variable (--ct-offcanvas-width), no con la de Bootstrap */
+.tk-panel.offcanvas-end { --ct-offcanvas-width: min(880px, 94vw); --bs-offcanvas-width: min(880px, 94vw); width: min(880px, 94vw); }
+.tk-panel .offcanvas-header { display: flex; align-items: center; justify-content: space-between; gap: .75rem;
+  border-bottom: 1px solid var(--cf-border, rgba(0, 0, 0, .08)); padding: .8rem 1.1rem; }
+.tk-panel .offcanvas-header > :last-child { margin-left: auto; flex: none; }
 .tk-panel .offcanvas-body { padding: 1.1rem 1.3rem 1.5rem; }
-.tk-panel-top { display: flex; align-items: center; gap: .7rem; min-width: 0; }
+.tk-panel-top { display: flex; align-items: center; gap: .7rem; min-width: 0; flex: 1; }
 .tk-panel-ref { font-size: .75rem; color: var(--bs-secondary-color, #6c757d); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .tk-btn-completar { border: 1px solid var(--bs-border-color, #dee2e6); border-radius: 8px; font-weight: 600; font-size: .78rem; }
 .tk-btn-completar:hover { border-color: #0acf97; color: #08a57a; }
@@ -139,3 +142,28 @@
 .tk-color.active { box-shadow: 0 0 0 2px var(--bs-body-bg, #fff), 0 0 0 4px var(--tk-c); }
 
 .tk-panel .btn { white-space: nowrap; }
+
+/* ---------- Archivos adjuntos ---------- */
+.tk-adj-zona {
+  display: flex; align-items: center; justify-content: center; gap: .5rem; padding: .8rem; border-radius: 10px; cursor: pointer;
+  border: 1.5px dashed var(--bs-border-color, #dee2e6); color: var(--bs-secondary-color, #6c757d); font-size: .8rem; text-align: center;
+  transition: border-color .15s, background .15s;
+}
+.tk-adj-zona:hover, .tk-adj-zona.drag { border-color: #727cf5; color: #727cf5; background: rgba(114, 124, 245, .06); }
+.tk-adj-zona .mdi { font-size: 1.3rem; }
+.tk-adj-zona.subiendo { pointer-events: none; opacity: .7; }
+.tk-adj-lista { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .5rem; margin-bottom: .6rem; }
+.tk-adj {
+  display: flex; align-items: center; gap: .6rem; padding: .45rem .55rem; border-radius: 10px; min-width: 0;
+  border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, .1)); color: var(--bs-body-color); text-decoration: none;
+}
+.tk-adj:hover { border-color: #727cf5; color: var(--bs-body-color); }
+.tk-adj-thumb { flex: none; width: 40px; height: 40px; border-radius: 8px; object-fit: cover; background: var(--bs-tertiary-bg, #f1f2f6); }
+.tk-adj-ico { flex: none; width: 40px; height: 40px; border-radius: 8px; display: grid; place-items: center; font-size: 1.35rem; color: #fff; background: var(--tk-c, #6c757d); }
+.tk-adj-info { flex: 1; min-width: 0; line-height: 1.2; }
+.tk-adj-info b { display: block; font-size: .8rem; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tk-adj-info small { font-size: .7rem; color: var(--bs-secondary-color, #6c757d); }
+.tk-adj-del { flex: none; border: 0; background: none; padding: 0 .15rem; color: var(--bs-secondary-color, #6c757d); opacity: .5; font-size: 1rem; }
+.tk-adj:hover .tk-adj-del { opacity: 1; }
+.tk-adj-del:hover { color: #fa5c7c; }
+.tk-adj-box { margin: .2rem 0 1.2rem; }
