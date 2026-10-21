@@ -49,69 +49,48 @@
                 <!-- Start Content-->
                 <div class="container-fluid">
 
-                    <!-- MODAL PARA AGREGAR REGISTRO A SEGUIMIENTO -->
-                    <div id="enter_registration_seguimiento-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="standard-modalLabel" aria-hidden="true">
-                        <div class="modal-dialog">
+                    <!-- MODAL PARA AGREGAR REGISTRO A SEGUIMIENTO (las opciones de estado las arma guias.js) -->
+                    <div id="enter_registration_seguimiento-modal" class="modal fade gs-modal" tabindex="-1" role="dialog" aria-labelledby="gs_reg_titulo" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
                             <div class="modal-content">
                                 <div class="modal-header">
-                                    <h4 class="modal-title" id="standard-modalLabel">Cargar Registro en Seguimiento</h4>
-                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                    <div>
+                                        <h4 class="modal-title" id="gs_reg_titulo">Agregar movimiento</h4>
+                                        <div class="gs-modal-sub">Envío <span class="gs-code" id="gs_reg_codigo"></span></div>
+                                    </div>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                 </div>
                                 <div class="modal-body">
+                                    <label class="gs-label">Estado</label>
+                                    <input type="hidden" id="enter_registration_state" value="">
+                                    <div class="gs-estados" id="gs_reg_estados"></div>
 
+                                    <label for="enter_registration_obs" class="gs-label mt-3">Observaciones</label>
+                                    <textarea class="form-control" id="enter_registration_obs" rows="2" placeholder="Ej: recibió el portero, se dejó aviso…"></textarea>
 
-                                    <div class="row row-cols-lg-auto g-3 align-items-center mb-3">
-                                        <div class="col-12">
-                                            <label for="enter_registration_state">Estado</label>
-                                            <select id="enter_registration_state" class="form-control select2" data-toggle="select2">
-                                                <option>Seleccione un Estado</option>
-                                                <optgroup label="Estados disponibles">
-                                                    <option value="A Retirar">A Retirar</option>
-                                                    <option value="En Origen">En Origen</option>
-                                                    <option value="Cargado en Hoja De Ruta">Cargado en Hoja De Ruta</option>
-                                                    <option value="En Transito">En Transito</option>
-                                                    <option value="Retirado del Cliente">Retirado del Cliente</option>
-                                                    <option value="No se pudo Retirar">No se pudo Retirar</option>
-                                                    <option value="Entregado al Cliente">Entregado al Cliente</option>
-                                                    <option value="No se pudo entregar">No se pudo entregar</option>
-                                                    <option value="Devuelto al Cliente">Devuelto al Cliente</option>
-                                                </optgroup>
-                                            </select>
+                                    <!-- Solo para Entregado / No se pudo entregar: el repartidor es el titular del movimiento (Externos le paga por él) -->
+                                    <div class="gs-reg-entrega" id="enter_registration_user_id" style="display:none">
+                                        <div class="gs-reg-entrega-title"><i class="mdi mdi-truck-check-outline"></i> Datos de la visita</div>
+                                        <label for="enter_registration_user" class="gs-label">Repartidor (titular del movimiento)</label>
+                                        <select id="enter_registration_user" class="form-control select2" data-toggle="select2">
+                                            <option value="">Elegí el repartidor</option>
+                                            <optgroup label="Repartidores"></optgroup>
+                                        </select>
+                                        <div class="row g-2 mt-1" id="enter_registration_datetime">
+                                            <div class="col-6">
+                                                <label for="fecha_entrega" class="gs-label">Fecha real</label>
+                                                <input type="date" class="form-control" id="fecha_entrega" />
+                                            </div>
+                                            <div class="col-6">
+                                                <label for="hora_entrega" class="gs-label">Hora real</label>
+                                                <input type="time" class="form-control" id="hora_entrega" />
+                                            </div>
                                         </div>
                                     </div>
-                                    <div class="row row-cols-lg-auto g-3 align-items-center mb-3 ">
-                                        <div class="col-12">
-                                            <label for="enter_registration_obs">Observaciones</label>
-                                            <input type="text" class="form-control" id="enter_registration_obs" placeholder="Ingrese alguna observacion...">
-                                        </div>
-                                    </div>
-
-                                    <div id="enter_registration_user_id" class="row row-cols-lg-auto g-3 align-items-center mb-3" style="display:none">
-                                        <div class="col-12">
-                                            <label for="enter_registration_user">Repartidor (titular del movimiento)</label>
-                                            <select id="enter_registration_user" class="form-control select2" data-toggle="select2">
-                                                <option value="">Seleccione un Usuario</option>
-                                                <optgroup label="Nombre de Usuario">
-                                                </optgroup>
-                                            </select>
-                                        </div>
-                                    </div>
-
-                                    <div id="enter_registration_datetime" class="row g-3 align-items-center mb-3" style="display:none">
-                                        <div class="col-6">
-                                            <label for="fecha_entrega" class="form-label">Fecha real del movimiento</label>
-                                            <input type="date" class="form-control" id="fecha_entrega" />
-                                        </div>
-                                        <div class="col-6">
-                                            <label for="hora_entrega" class="form-label">Hora real del movimiento</label>
-                                            <input type="time" class="form-control" id="hora_entrega" />
-                                        </div>
-                                    </div>
-
                                 </div>
                                 <div class="modal-footer">
-                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Close</button>
-                                    <button id="enter_registration_save" type="button" class="btn btn-primary">Save changes</button>
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                    <button id="enter_registration_save" type="button" class="btn btn-primary"><i class="mdi mdi-check me-1"></i>Guardar movimiento</button>
                                 </div>
                             </div><!-- /.modal-content -->
                         </div><!-- /.modal-dialog -->

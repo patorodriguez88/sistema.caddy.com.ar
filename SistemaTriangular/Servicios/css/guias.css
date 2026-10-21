@@ -176,3 +176,27 @@
 .gs-hist tr:hover .gs-h-del { opacity: 1; color: var(--gs-bad); }
 .gs-hist .text-muted-dash { color: var(--cf-muted); opacity: .6; }
 .gs-tl-vacio { padding: 1rem .2rem; font-size: .82rem; color: var(--cf-muted); }
+
+/* ---------- Modal "Agregar movimiento" ---------- */
+.gs-modal .modal-content { border: 0; border-radius: 16px; box-shadow: 0 20px 50px rgba(16, 24, 40, .18); }
+.gs-modal .modal-header { align-items: flex-start; border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, .08)); padding: 1.1rem 1.3rem; }
+.gs-modal .modal-title { font-weight: 700; font-size: 1.05rem; }
+.gs-modal-sub { font-size: .78rem; color: var(--bs-secondary-color, #6c757d); margin-top: .15rem; }
+.gs-modal .modal-body { padding: 1.1rem 1.3rem; }
+.gs-modal .modal-footer { border-top: 0; padding: 0 1.3rem 1.2rem; }
+.gs-modal .modal-footer .btn { border-radius: 10px; font-weight: 600; }
+.gs-modal .gs-label { display: block; font-size: .78rem; font-weight: 600; color: var(--bs-secondary-color, #6c757d); margin-bottom: .35rem; }
+.gs-modal textarea { border-radius: 10px; resize: vertical; }
+.gs-estados { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .45rem; }
+@media (max-width: 575px) { .gs-estados { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.gs-estado-opt {
+  display: flex; align-items: center; gap: .45rem; padding: .5rem .6rem; border-radius: 10px; text-align: left;
+  border: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, .1)); background: var(--bs-body-bg, #fff);
+  font-size: .76rem; font-weight: 600; line-height: 1.2; color: var(--bs-body-color);
+}
+.gs-estado-opt::before { content: ""; flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--gs-c); }
+.gs-estado-opt:hover { border-color: var(--gs-c); }
+.gs-estado-opt.active { border-color: var(--gs-c); background: color-mix(in srgb, var(--gs-c) 12%, var(--bs-body-bg, #fff)); box-shadow: 0 0 0 2px color-mix(in srgb, var(--gs-c) 30%, transparent); }
+.gs-reg-entrega { margin-top: 1rem; padding: .85rem .9rem; border-radius: 12px; background: var(--bs-tertiary-bg, #f6f7fb); }
+.gs-reg-entrega-title { font-size: .78rem; font-weight: 700; margin-bottom: .6rem; display: flex; align-items: center; gap: .35rem; }
+.gs-reg-entrega .form-control, .gs-reg-entrega .select2-container .select2-selection { border-radius: 10px; }
