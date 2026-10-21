@@ -119,7 +119,8 @@ function notifEntregasFallidasHoy(mysqli $mysqli): array
     ]];
 }
 
-// Tareas (Rec. Humanos > Tareas): menciones sin ver, tareas asignadas que todavía no abrí y atrasadas.
+// Tareas (Rec. Humanos > Tareas): mis pendientes de hoy (vencen hoy o atrasadas), más menciones sin ver y
+// tareas asignadas que todavía no abrí.
 // Va primero porque es lo único personal de la lista. Si las tablas no existen todavía, no aparece.
 function notifTareas(mysqli $mysqli): array
 {
@@ -136,10 +137,10 @@ function notifTareas(mysqli $mysqli): array
             WHERE t.Eliminado = 0
               AND (
                     (t.idResponsable = ? AND t.Completada = 0
-                      AND (v.UltimaVista IS NULL OR v.UltimaVista < t.Actualizada OR t.FechaVencimiento < CURDATE()))
+                      AND (v.UltimaVista IS NULL OR v.UltimaVista < t.Actualizada OR t.FechaVencimiento <= CURDATE()))
                  OR EXISTS (SELECT 1 FROM ProyectosTareas_menciones m WHERE m.idTarea = t.id AND m.idUsuario = ? AND m.Vista = 0)
               )
-            ORDER BY MencionDe IS NULL, t.FechaVencimiento IS NULL, t.FechaVencimiento
+            ORDER BY t.FechaVencimiento IS NULL, t.FechaVencimiento, MencionDe IS NULL
             LIMIT 30
         ");
         $st->bind_param('iiii', $yo, $yo, $yo, $yo);
@@ -156,13 +157,20 @@ function notifTareas(mysqli $mysqli): array
 
     $items = [];
     $hayAtrasadas = false;
+    $hoy = date('Y-m-d');
+    $deHoy = 0;
+    foreach ($filas as $t) {
+        if ($t['FechaVencimiento'] && $t['FechaVencimiento'] <= $hoy) $deHoy++;
+    }
     foreach (array_slice($filas, 0, 8) as $t) {
-        $atrasada = $t['FechaVencimiento'] && $t['FechaVencimiento'] < date('Y-m-d');
+        $atrasada = $t['FechaVencimiento'] && $t['FechaVencimiento'] < $hoy;
         $hayAtrasadas = $hayAtrasadas || $atrasada;
-        if ($t['MencionDe']) {
-            $sub = 'Te mencionó ' . ($nombres[(int) $t['MencionDe']] ?? 'alguien');
-        } elseif ($atrasada) {
+        if ($atrasada) {
             $sub = 'Atrasada · vencía el ' . date('d/m', strtotime($t['FechaVencimiento']));
+        } elseif ($t['FechaVencimiento'] === $hoy) {
+            $sub = 'Vence hoy';
+        } elseif ($t['MencionDe']) {
+            $sub = 'Te mencionó ' . ($nombres[(int) $t['MencionDe']] ?? 'alguien');
         } else {
             $sub = 'Nueva · de ' . ($nombres[(int) $t['idCreador']] ?? 'alguien');
         }
@@ -173,7 +181,7 @@ function notifTareas(mysqli $mysqli): array
         'tipo' => 'tareas',
         'icono' => 'ri-task-line',
         'color' => $hayAtrasadas ? 'bg-danger' : 'bg-primary',
-        'titulo' => 'Tus tareas para revisar',
+        'titulo' => $deHoy ? 'Tus tareas de hoy' : 'Novedades en tus tareas',
         'cantidad' => count($filas),
         'items' => $items,
         'link' => '/SistemaTriangular/Empleados/Tareas.php',
