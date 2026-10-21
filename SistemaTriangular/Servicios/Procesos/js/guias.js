@@ -158,43 +158,45 @@ function gsResetTablas() {
   $("#gs_ventas, #gs_trans, #gs_historial").empty();
 }
 
-// ---------- Historial de seguimiento: línea de tiempo, del más nuevo al más viejo ----------
-var GS_HISTORIAL_VISIBLES = 6;
+// ---------- Historial de seguimiento: tabla compacta, en orden cronológico ----------
+// Si hay muchos movimientos se ven los últimos GS_HISTORIAL_VISIBLES y los anteriores quedan plegados arriba.
+var GS_HISTORIAL_VISIBLES = 8;
 function gsCargarHistorial(cs) {
   $("#gs_historial").html('<div class="gs-tl-vacio">Cargando movimientos…</div>');
   $.post("../Funciones/php/tablas.php", { Seguimiento_Tabla: 1, CodigoSeguimiento: cs }, null, "json")
     .done(function (res) {
-      var filas = ((res && res.data) || []).slice().reverse();
+      var filas = (res && res.data) || [];
       if (!filas.length) {
         $("#gs_historial").html('<div class="gs-tl-vacio">Todavía no hay movimientos de seguimiento.</div>');
         return;
       }
       // El último movimiento manda en el estado actual (al agregar o borrar uno se actualiza solo).
-      pintarUltimoEstadoBadge(filas[0].Estado);
-      var html = filas.map(function (r, i) {
-        var meta = [
-          '<span><i class="mdi mdi-clock-outline"></i>' + gsFecha(r.Fecha) + " " + gsEsc(String(r.Hora || "").slice(0, 5)) + "</span>",
-          gsVacio(r.Usuario) ? "" : '<span><i class="mdi mdi-account-outline"></i>' + gsEsc(r.Usuario) + "</span>",
-          gsVacio(r.Recorrido) ? "" : '<span><i class="mdi mdi-routes"></i>Rec. ' + gsEsc(r.Recorrido) + "</span>",
-          gsVacio(r.NumerodeOrden) ? "" : '<span><i class="mdi mdi-truck-outline"></i>Orden ' + gsEsc(r.NumerodeOrden) + "</span>",
-        ].join("");
-        return (
-          '<div class="gs-tl-item"' + (i >= GS_HISTORIAL_VISIBLES ? ' data-viejo="1" hidden' : "") +
-          ' style="--gs-c:' + gsColorEstado(r.Estado) + '">' +
-          '<span class="gs-tl-dot"></span>' +
-          '<div><div class="gs-tl-head">' + gsEstadoPill(r.Estado) +
-          (gsVacio(r.Observaciones) ? "" : '<span class="gs-tl-obs">' + gsEsc(r.Observaciones) + "</span>") +
-          '</div><div class="gs-tl-meta">' + meta + "</div></div>" +
-          '<button type="button" class="gs-tl-del" title="Eliminar este movimiento" onclick="ver_seguimiento(' + parseInt(r.id, 10) + ')">' +
-          '<i class="mdi mdi-trash-can-outline"></i></button></div>'
-        );
-      }).join("");
-      var ocultos = filas.length - GS_HISTORIAL_VISIBLES;
-      if (ocultos > 0) {
-        html += '<button type="button" class="gs-tl-mas" onclick="$(\'#gs_historial [data-viejo]\').prop(\'hidden\', false); $(this).remove();">' +
-          '<i class="mdi mdi-chevron-down"></i> Ver ' + ocultos + " movimiento" + (ocultos > 1 ? "s" : "") + " anterior" + (ocultos > 1 ? "es" : "") + "</button>";
+      pintarUltimoEstadoBadge(filas[filas.length - 1].Estado);
+      var guion = '<span class="text-muted-dash">—</span>';
+      var ocultos = Math.max(0, filas.length - GS_HISTORIAL_VISIBLES);
+      var html =
+        '<div class="gs-table-wrap"><table class="gs-hist"><thead><tr>' +
+        "<th>Fecha</th><th>Estado</th><th>Observaciones</th><th>Usuario</th>" +
+        '<th class="num">Rec.</th><th class="num">Orden</th><th></th></tr></thead><tbody>';
+      if (ocultos) {
+        html += '<tr class="gs-h-mas"><td colspan="7"><button type="button" onclick="$(\'#gs_historial [data-viejo]\').prop(\'hidden\', false); $(this).closest(\'tr\').remove();">' +
+          '<i class="mdi mdi-chevron-up"></i> Ver ' + ocultos + " movimiento" + (ocultos > 1 ? "s" : "") + " anterior" + (ocultos > 1 ? "es" : "") + "</button></td></tr>";
       }
-      $("#gs_historial").html(html);
+      filas.forEach(function (r, i) {
+        var ultimo = i === filas.length - 1;
+        html +=
+          "<tr" + (i < ocultos ? ' data-viejo="1" hidden' : "") + (ultimo ? ' class="gs-h-ultimo"' : "") +
+          ' style="--gs-c:' + gsColorEstado(r.Estado) + '">' +
+          '<td class="gs-h-fecha"><b>' + gsFecha(r.Fecha) + "</b><small>" + gsEsc(String(r.Hora || "").slice(0, 5)) + "</small></td>" +
+          "<td>" + gsEstadoPill(r.Estado) + "</td>" +
+          '<td class="gs-h-obs">' + (gsVacio(r.Observaciones) ? guion : gsEsc(r.Observaciones)) + "</td>" +
+          '<td class="gs-h-user" title="' + gsEsc(r.Usuario) + '">' + (gsVacio(r.Usuario) ? guion : gsEsc(r.Usuario)) + "</td>" +
+          '<td class="num">' + (gsVacio(r.Recorrido) ? guion : gsEsc(r.Recorrido)) + "</td>" +
+          '<td class="num">' + (gsVacio(r.NumerodeOrden) ? guion : gsEsc(r.NumerodeOrden)) + "</td>" +
+          '<td class="num"><button type="button" class="gs-h-del" title="Eliminar este movimiento" onclick="ver_seguimiento(' +
+          parseInt(r.id, 10) + ')"><i class="mdi mdi-trash-can-outline"></i></button></td></tr>';
+      });
+      $("#gs_historial").html(html + "</tbody></table></div>");
     })
     .fail(function () {
       $("#gs_historial").html('<div class="gs-tl-vacio text-danger">No se pudo cargar el historial.</div>');

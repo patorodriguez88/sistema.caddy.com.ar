@@ -127,21 +127,26 @@
 .gs-switch .mdi-lock-outline { color: var(--cf-muted); font-size: .95rem; }
 .gs-lock-note { display: flex; gap: .4rem; align-items: flex-start; font-size: .75rem; color: var(--cf-muted); background: var(--cf-head-bg); border-radius: 8px; padding: .45rem .6rem; margin-bottom: .4rem; }
 
-/* ---------- Historial: línea de tiempo (antes una DataTable de 8 columnas que no entraba) ---------- */
-.gs-timeline { position: relative; }
-.gs-tl-item { position: relative; display: grid; grid-template-columns: 16px minmax(0, 1fr) auto; gap: .8rem; padding: .55rem 0; }
-.gs-tl-item::before { content: ""; position: absolute; left: 7px; top: 0; bottom: 0; width: 2px; background: var(--cf-border); }
-.gs-tl-item:first-child::before { top: 1.1rem; }
-.gs-tl-item:last-child::before { bottom: calc(100% - 1.1rem); }
-.gs-tl-item:only-child::before { display: none; }
-.gs-tl-dot { position: relative; z-index: 1; width: 16px; height: 16px; margin-top: .2rem; border-radius: 50%; background: var(--cf-card-bg); border: 3px solid var(--gs-c, var(--cf-muted)); }
-.gs-tl-item:first-child .gs-tl-dot { background: var(--gs-c); box-shadow: 0 0 0 4px color-mix(in srgb, var(--gs-c) 18%, transparent); }
-.gs-tl-head { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem .55rem; font-size: .82rem; }
-.gs-tl-obs { color: var(--bs-body-color); overflow-wrap: anywhere; }
-.gs-tl-meta { display: flex; flex-wrap: wrap; gap: .15rem .9rem; margin-top: .2rem; font-size: .74rem; color: var(--cf-muted); }
-.gs-tl-meta .mdi { margin-right: .15rem; }
-.gs-tl-del { border: 0; background: none; padding: 0 .2rem; color: var(--cf-muted); font-size: 1.1rem; opacity: .45; align-self: start; }
-.gs-tl-item:hover .gs-tl-del { opacity: 1; color: var(--gs-bad); }
-.gs-tl-mas { display: block; width: 100%; margin-top: .3rem; border: 1px dashed var(--cf-border); background: none; border-radius: 8px; padding: .4rem; font-size: .78rem; color: var(--cf-muted); }
-.gs-tl-mas:hover { color: var(--gs-pri); border-color: var(--gs-pri); }
-.gs-tl-vacio { padding: 1rem 0; font-size: .82rem; color: var(--cf-muted); }
+/* ---------- Historial: tabla compacta (columnas alineadas, entra en la card) ---------- */
+.gs-hist { width: 100%; border-collapse: separate; border-spacing: 0; font-size: .8rem; }
+.gs-hist th {
+  background: var(--cf-head-bg); color: var(--cf-muted); font-size: .68rem; text-transform: uppercase;
+  letter-spacing: .05em; font-weight: 700; padding: .5rem .6rem; border-bottom: 1px solid var(--cf-border); white-space: nowrap; text-align: left;
+}
+.gs-hist td { padding: .5rem .6rem; border-bottom: 1px solid var(--cf-border); vertical-align: middle; white-space: nowrap; }
+.gs-hist tbody tr:last-child td { border-bottom: 0; }
+.gs-hist tbody tr:hover td { background: color-mix(in srgb, var(--gs-pri) 4%, var(--cf-card-bg)); }
+.gs-hist .num { text-align: right; font-variant-numeric: tabular-nums; }
+.gs-hist .gs-h-fecha b { display: block; font-weight: 600; font-variant-numeric: tabular-nums; }
+.gs-hist .gs-h-fecha small { color: var(--cf-muted); font-variant-numeric: tabular-nums; }
+.gs-hist .gs-h-obs { white-space: normal; min-width: 160px; overflow-wrap: anywhere; }
+.gs-hist .gs-h-user { max-width: 130px; overflow: hidden; text-overflow: ellipsis; }
+.gs-hist .gs-h-ultimo td { background: color-mix(in srgb, var(--gs-c) 6%, var(--cf-card-bg)); }
+.gs-hist .gs-h-ultimo td:first-child { box-shadow: inset 3px 0 0 var(--gs-c); }
+.gs-hist .gs-h-mas td { text-align: center; padding: .35rem; }
+.gs-hist .gs-h-mas button { border: 0; background: none; font-size: .75rem; color: var(--cf-muted); }
+.gs-hist .gs-h-mas button:hover { color: var(--gs-pri); }
+.gs-hist .gs-h-del { border: 0; background: none; padding: 0; color: var(--cf-muted); font-size: 1.05rem; opacity: .5; }
+.gs-hist tr:hover .gs-h-del { opacity: 1; color: var(--gs-bad); }
+.gs-hist .text-muted-dash { color: var(--cf-muted); opacity: .6; }
+.gs-tl-vacio { padding: 1rem .2rem; font-size: .82rem; color: var(--cf-muted); }
