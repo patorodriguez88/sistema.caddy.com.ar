@@ -25,3 +25,7 @@ error_log
 # Artefactos temporales de generacion de PDFs/QR
 SistemaTriangular/**/Informes/temp/
 SistemaTriangular/**/temp/*.png
+
+# Archivos adjuntos de Tareas (los suben los usuarios; solo se versiona el .htaccess que bloquea la carpeta)
+SistemaTriangular/Empleados/Tareas/adjuntos/*
+!SistemaTriangular/Empleados/Tareas/adjuntos/.htaccess

@@ -67,6 +67,21 @@ CREATE TABLE IF NOT EXISTS ProyectosTareas_vistas (
   PRIMARY KEY (idTarea, idUsuario)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Archivos adjuntos (fotos, PDF, Word, Excel…). Se guardan en Empleados/Tareas/adjuntos/<idTarea>/ con un
+-- nombre al azar; la carpeta no se sirve por URL: se bajan por tareas_api.php?accion=descargar con sesión.
+CREATE TABLE IF NOT EXISTS ProyectosTareas_adjuntos (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  idTarea INT NOT NULL,
+  idUsuario INT NOT NULL,
+  NombreOriginal VARCHAR(255) NOT NULL,
+  Archivo VARCHAR(120) NOT NULL COMMENT 'Nombre en disco',
+  Mime VARCHAR(120) NOT NULL,
+  Tamano INT NOT NULL,
+  Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Eliminado TINYINT(1) NOT NULL DEFAULT 0,
+  KEY idx_tarea (idTarea, Eliminado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 INSERT INTO Proyectos (Nombre, Descripcion, Color, idCreador)
 SELECT 'General', 'Tareas que no son de un proyecto en particular', '#727cf5', 0
 WHERE NOT EXISTS (SELECT 1 FROM Proyectos);

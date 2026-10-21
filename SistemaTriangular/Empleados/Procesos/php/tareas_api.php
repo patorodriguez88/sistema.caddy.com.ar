@@ -17,6 +17,9 @@ date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=utf-8');
 
 const TK_DIAS_ELIMINADOS = 30;
+const TK_ADJ_MAX = 10 * 1024 * 1024; // 10 MB por archivo
+const TK_ADJ_EXT = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'heic', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'txt'];
+define('TK_ADJ_DIR', __DIR__ . '/../../Tareas/adjuntos');
 
 function tk_responder(array $data, int $http = 200): void
 {
@@ -37,7 +40,7 @@ $yo = (int) ($_SESSION['idusuario'] ?? 0);
 if (!$yo) tk_responder(['success' => 0, 'error' => 'Sesión vencida: volvé a ingresar.'], 401);
 
 try {
-    $r = $mysqli->query("SHOW TABLES LIKE 'ProyectosTareas_vistas'");
+    $r = $mysqli->query("SHOW TABLES LIKE 'ProyectosTareas_adjuntos'"); // la última tabla agregada
     if (!$r || !$r->num_rows) tk_migrar($mysqli);
 } catch (Throwable $e) {
     tk_responder(['success' => 0, 'error' => 'No se pudieron crear las tablas de tareas: ' . $e->getMessage()], 500);
@@ -182,6 +185,32 @@ function tk_tocar(mysqli $db, int $idTarea, int $usuario): void
     $db->query("UPDATE ProyectosTareas SET Actualizada = NOW() WHERE id = " . $idTarea);
     tk_marcar_vista($db, $idTarea, $usuario); // lo que hago yo no me aparece como novedad
 }
+function tk_adjuntos(mysqli $db, int $idTarea): array
+{
+    $st = $db->prepare("SELECT id, idUsuario, NombreOriginal, Mime, Tamano, Fecha FROM ProyectosTareas_adjuntos
+                        WHERE idTarea = ? AND Eliminado = 0 ORDER BY Fecha, id");
+    $st->bind_param('i', $idTarea);
+    $st->execute();
+    $lista = [];
+    foreach ($st->get_result()->fetch_all(MYSQLI_ASSOC) as $a) {
+        $lista[] = ['id' => (int) $a['id'], 'usuario' => (int) $a['idUsuario'], 'nombre' => $a['NombreOriginal'],
+                    'mime' => $a['Mime'], 'tamano' => (int) $a['Tamano'], 'fecha' => $a['Fecha'],
+                    'imagen' => strpos($a['Mime'], 'image/') === 0 && $a['Mime'] !== 'image/heic'];
+    }
+    return $lista;
+}
+// La carpeta de adjuntos no se sirve por URL: solo por accion=descargar (con sesión).
+function tk_carpeta_adjuntos(int $idTarea): string
+{
+    if (!is_dir(TK_ADJ_DIR)) mkdir(TK_ADJ_DIR, 0755, true);
+    if (!is_file(TK_ADJ_DIR . '/.htaccess')) {
+        file_put_contents(TK_ADJ_DIR . '/.htaccess', "Require all denied\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n");
+    }
+    $dir = TK_ADJ_DIR . '/' . $idTarea;
+    if (!is_dir($dir)) mkdir($dir, 0755, true);
+    return $dir;
+}
+
 function tk_fila(array $t, int $yo): array
 {
     $hoy = date('Y-m-d');
@@ -268,7 +297,7 @@ try {
                 $comentarios[] = ['id' => (int) $c['id'], 'usuario' => (int) $c['idUsuario'], 'texto' => $c['Comentario'], 'fecha' => $c['Fecha']];
             }
             $fila = tk_fila($t, $yo);
-            tk_responder(['success' => 1, 'tarea' => $fila + [
+            tk_responder(['success' => 1, 'adjuntos' => tk_adjuntos($db, (int) $t['id']), 'tarea' => $fila + [
                 'descripcion'   => (string) $t['Descripcion'],
                 'creada'        => $t['FechaAlta'],
                 'completadaEl'  => $t['CompletadaFecha'],
@@ -364,6 +393,72 @@ try {
             $st->execute();
             tk_tocar($db, $id, $yo);
             tk_responder(['success' => 1]);
+
+        case 'subir':
+            $id = (int) ($_POST['id'] ?? 0);
+            if (!tk_tarea($db, $id)) tk_responder(['success' => 0, 'error' => 'La tarea no existe o fue eliminada.']);
+            $files = $_FILES['archivos'] ?? null;
+            if (!$files || !is_array($files['name'])) tk_responder(['success' => 0, 'error' => 'No llegó ningún archivo.']);
+            $dir = tk_carpeta_adjuntos($id);
+            $subidos = [];
+            $errores = [];
+            foreach ($files['name'] as $i => $nombre) {
+                $nombre = trim(str_replace(["\0", '/', '\\'], '', (string) $nombre)) ?: 'archivo';
+                $err = $files['error'][$i];
+                $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+                if ($err === UPLOAD_ERR_INI_SIZE || $err === UPLOAD_ERR_FORM_SIZE || $files['size'][$i] > TK_ADJ_MAX) {
+                    $errores[] = "$nombre: supera los " . (TK_ADJ_MAX / 1048576) . ' MB';
+                    continue;
+                }
+                if ($err !== UPLOAD_ERR_OK) { $errores[] = "$nombre: no se pudo subir (error $err)"; continue; }
+                if (!in_array($ext, TK_ADJ_EXT, true)) { $errores[] = "$nombre: tipo de archivo no permitido"; continue; }
+                $mime = (new finfo(FILEINFO_MIME_TYPE))->file($files['tmp_name'][$i]) ?: 'application/octet-stream';
+                $archivo = bin2hex(random_bytes(12)) . '.' . $ext;
+                if (!move_uploaded_file($files['tmp_name'][$i], $dir . '/' . $archivo)) {
+                    $errores[] = "$nombre: no se pudo guardar en el servidor";
+                    continue;
+                }
+                $nombre = mb_substr($nombre, 0, 255);
+                $tam = (int) $files['size'][$i];
+                $st = $db->prepare("INSERT INTO ProyectosTareas_adjuntos (idTarea, idUsuario, NombreOriginal, Archivo, Mime, Tamano) VALUES (?,?,?,?,?,?)");
+                $st->bind_param('iisssi', $id, $yo, $nombre, $archivo, $mime, $tam);
+                $st->execute();
+                $subidos[] = $nombre;
+            }
+            if ($subidos) tk_tocar($db, $id, $yo); // el responsable lo ve como novedad
+            tk_responder(['success' => $subidos ? 1 : 0, 'subidos' => $subidos, 'errores' => $errores,
+                          'error' => $subidos ? null : ($errores ? implode(' · ', $errores) : 'No se subió nada.'),
+                          'adjuntos' => tk_adjuntos($db, $id)]);
+
+        case 'descargar':
+            $st = $db->prepare("SELECT a.*, t.Eliminado AS TareaEliminada FROM ProyectosTareas_adjuntos a
+                                JOIN ProyectosTareas t ON t.id = a.idTarea WHERE a.id = ? AND a.Eliminado = 0");
+            $idA = (int) ($_GET['id'] ?? 0);
+            $st->bind_param('i', $idA);
+            $st->execute();
+            $a = $st->get_result()->fetch_assoc();
+            $ruta = $a ? TK_ADJ_DIR . '/' . (int) $a['idTarea'] . '/' . basename($a['Archivo']) : '';
+            if (!$a || !is_file($ruta)) {
+                header('Content-Type: text/plain; charset=utf-8');
+                http_response_code(404);
+                exit('El archivo no existe.');
+            }
+            $inline = !empty($_GET['ver']) && (strpos($a['Mime'], 'image/') === 0 || $a['Mime'] === 'application/pdf');
+            header('Content-Type: ' . $a['Mime']);
+            header('Content-Length: ' . filesize($ruta));
+            header('X-Content-Type-Options: nosniff');
+            header('Cache-Control: private, max-age=3600');
+            header('Content-Disposition: ' . ($inline ? 'inline' : 'attachment') . "; filename*=UTF-8''" . rawurlencode($a['NombreOriginal']));
+            readfile($ruta);
+            exit;
+
+        case 'eliminar_adjunto':
+            $idA = (int) ($_POST['id'] ?? 0);
+            $st = $db->prepare("UPDATE ProyectosTareas_adjuntos SET Eliminado = 1 WHERE id = ?");
+            $st->bind_param('i', $idA);
+            $st->execute();
+            $idT = (int) ($db->query("SELECT idTarea FROM ProyectosTareas_adjuntos WHERE id = " . $idA)->fetch_row()[0] ?? 0);
+            tk_responder(['success' => 1, 'adjuntos' => $idT ? tk_adjuntos($db, $idT) : []]);
 
         case 'guardar_proyecto':
             $id = (int) ($_POST['id'] ?? 0);

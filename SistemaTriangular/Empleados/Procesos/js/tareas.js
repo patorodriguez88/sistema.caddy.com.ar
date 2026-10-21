@@ -297,7 +297,7 @@ function tkNueva() {
   if (TK.vista.tipo !== "proyecto" && general) proy = general.id;
   $("#tk_f_proyecto").val(proy);
   $("#tk_meta").text("Si asignás la tarea a otra persona, le llega un mail.");
-  $("#tk_coment_box").prop("hidden", true);
+  $("#tk_coment_box, #tk_adj_box").prop("hidden", true);
   $("#tk_guardar").html('<i class="mdi mdi-plus me-1"></i>Crear tarea');
   tkPanelObj().show();
   setTimeout(function () { $("#tk_f_titulo").trigger("focus"); tkAutoAlto($("#tk_f_titulo")[0]); }, 250);
@@ -336,6 +336,9 @@ function tkAbrir(id) {
     $("#tk_coment_box").prop("hidden", false);
     $(".tk-coment-nuevo").prop("hidden", t.eliminada);
     tkPintarComentarios(r.comentarios);
+    $("#tk_adj_box").prop("hidden", t.eliminada && !r.adjuntos.length);
+    $("#tk_adj_zona").prop("hidden", t.eliminada);
+    tkPintarAdjuntos(r.adjuntos);
     tkPanelObj().show();
     setTimeout(function () { tkAutoAlto($("#tk_f_titulo")[0]); }, 60);
     // Al abrirla deja de ser "nueva": se actualiza la marca en la lista y la campanita
@@ -355,6 +358,95 @@ function tkPintarComentarios(lista) {
       : '<div class="tk-meta mb-2">Todavía no hay comentarios.</div>',
   );
 }
+// ---------- archivos adjuntos ----------
+function tkTamano(b) {
+  return b >= 1048576 ? (b / 1048576).toFixed(1).replace(".", ",") + " MB" : Math.max(1, Math.round(b / 1024)) + " KB";
+}
+function tkIconoArchivo(nombre) {
+  var ext = String(nombre).split(".").pop().toLowerCase();
+  if (ext === "pdf") return ["mdi-file-pdf-box", "#e2445c"];
+  if (["xls", "xlsx", "csv"].indexOf(ext) >= 0) return ["mdi-file-excel-box", "#10a464"];
+  if (["doc", "docx"].indexOf(ext) >= 0) return ["mdi-file-word-box", "#2b6ade"];
+  if (["ppt", "pptx"].indexOf(ext) >= 0) return ["mdi-file-powerpoint-box", "#e2702b"];
+  if (["jpg", "jpeg", "png", "gif", "webp", "heic"].indexOf(ext) >= 0) return ["mdi-file-image", "#727cf5"];
+  return ["mdi-file-document-outline", "#6c757d"];
+}
+function tkPintarAdjuntos(lista) {
+  $("#tk_adj_cant").text(lista.length ? "(" + lista.length + ")" : "");
+  var soloLectura = TK.abierta && TK.abierta.eliminada;
+  $("#tk_adjuntos").html(
+    lista.map(function (a) {
+      var url = TK_API + "?accion=descargar&id=" + a.id;
+      var ver = a.imagen || /pdf$/.test(a.mime);
+      var ico = tkIconoArchivo(a.nombre);
+      return '<a class="tk-adj" href="' + url + (ver ? "&ver=1" : "") + '"' + (ver ? ' target="_blank" rel="noopener"' : "") +
+        ' title="' + tkEsc(a.nombre) + '">' +
+        (a.imagen
+          ? '<img class="tk-adj-thumb" src="' + url + '&ver=1" alt="" loading="lazy">'
+          : '<span class="tk-adj-ico" style="--tk-c:' + ico[1] + '"><i class="mdi ' + ico[0] + '"></i></span>') +
+        '<span class="tk-adj-info"><b>' + tkEsc(a.nombre) + "</b><small>" + tkTamano(a.tamano) + " · " +
+        tkEsc(tkUsuario(a.usuario).nombre.split(" ")[0]) + " · " + tkFechaHora(a.fecha) + "</small></span>" +
+        (soloLectura ? "" : '<button type="button" class="tk-adj-del" data-id="' + a.id + '" title="Quitar archivo"><i class="mdi mdi-close"></i></button>') +
+        "</a>";
+    }).join(""),
+  );
+}
+function tkSubir(files) {
+  if (!TK.abierta || TK.abierta.eliminada || !files || !files.length) return;
+  var fd = new FormData();
+  fd.append("accion", "subir");
+  fd.append("id", TK.abierta.id);
+  Array.prototype.forEach.call(files, function (f, i) {
+    // Las capturas pegadas llegan como "image.png": se les pone un nombre con fecha y hora.
+    var nombre = f.name && f.name !== "image.png" ? f.name : "captura_" + new Date().toISOString().slice(0, 19).replace(/[-:T]/g, "") + (i ? "_" + i : "") + ".png";
+    fd.append("archivos[]", f, nombre);
+  });
+  var $z = $("#tk_adj_zona").addClass("subiendo");
+  var textoOriginal = $("#tk_adj_texto").html();
+  $("#tk_adj_texto").text("Subiendo " + files.length + (files.length > 1 ? " archivos…" : " archivo…"));
+  $.ajax({ url: TK_API, type: "POST", data: fd, processData: false, contentType: false, dataType: "json" })
+    .done(function (r) {
+      if (r.adjuntos) tkPintarAdjuntos(r.adjuntos);
+      if (r.subidos && r.subidos.length) toast("success", "Archivo" + (r.subidos.length > 1 ? "s" : "") + " subido" + (r.subidos.length > 1 ? "s" : ""), r.subidos.join(", "));
+      if (r.errores && r.errores.length) toast("error", "No se subieron algunos archivos", r.errores.join(" · "));
+      tkCargarLista();
+    })
+    .fail(function (xhr) {
+      tkError((xhr.responseJSON && xhr.responseJSON.error) || "No se pudo subir: puede que el archivo sea muy grande.");
+    })
+    .always(function () {
+      $z.removeClass("subiendo");
+      $("#tk_adj_texto").html(textoOriginal);
+      $("#tk_adj_input").val("");
+    });
+}
+$("#tk_adj_input").on("change", function () { tkSubir(this.files); });
+$("#tk_adj_zona")
+  .on("dragover dragenter", function (e) { e.preventDefault(); $(this).addClass("drag"); })
+  .on("dragleave dragend drop", function () { $(this).removeClass("drag"); })
+  .on("drop", function (e) {
+    e.preventDefault();
+    tkSubir(e.originalEvent.dataTransfer.files);
+  });
+// Pegar una captura (Cmd+V / Ctrl+V) con el panel abierto, fuera de los campos de texto
+document.addEventListener("paste", function (e) {
+  if (!TK.abierta || !$("#tk_panel").hasClass("show")) return;
+  var files = e.clipboardData && e.clipboardData.files;
+  if (!files || !files.length) return;
+  e.preventDefault();
+  tkSubir(files);
+});
+$(document).on("click", ".tk-adj-del", function (e) {
+  e.preventDefault();
+  e.stopPropagation();
+  var id = $(this).data("id");
+  Swal.fire({ title: "¿Quitar el archivo?", icon: "warning", showCancelButton: true, confirmButtonText: "Sí, quitar",
+              cancelButtonText: "Cancelar", confirmButtonColor: "#fa5c7c" }).then(function (res) {
+    if (!res.isConfirmed) return;
+    tkApi("eliminar_adjunto", { id: id }).done(function (r) { tkPintarAdjuntos(r.adjuntos); }).fail(tkError);
+  });
+});
+
 document.getElementById("tk_panel").addEventListener("hidden.bs.offcanvas", function () {
   tkUrlTarea(null);
   $("#tk_mention").prop("hidden", true);
