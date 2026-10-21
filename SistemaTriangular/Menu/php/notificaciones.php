@@ -174,7 +174,8 @@ function notifTareas(mysqli $mysqli): array
         } else {
             $sub = 'Nueva · de ' . ($nombres[(int) $t['idCreador']] ?? 'alguien');
         }
-        $items[] = ['titulo' => mb_strimwidth($t['Titulo'], 0, 38, '…'), 'subtitulo' => $sub, 'urgente' => $atrasada];
+        $items[] = ['titulo' => $t['Titulo'], 'subtitulo' => $sub, 'urgente' => $atrasada,
+                    'link' => '/SistemaTriangular/Empleados/Tareas.php?tarea=' . (int) $t['id']];
     }
 
     return [[

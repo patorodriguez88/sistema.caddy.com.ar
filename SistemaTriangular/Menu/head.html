@@ -47,6 +47,33 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
   .entorno-badge--warning   { background: rgba(243, 156, 18, .16); color: #b9770e; }
   .entorno-badge--dark      { background: rgba(0, 0, 0, .1);       color: #495057; }
   .entorno-badge--secondary { background: rgba(108, 117, 125, .16); color: #6c757d; }
+  /* Campanita de notificaciones (cargarNotificaciones en Menu/js/funciones.js) */
+  .cn-menu { width: 380px; max-width: calc(100vw - 24px); border: 0; border-radius: 14px; overflow: hidden;
+    box-shadow: 0 16px 40px rgba(16, 24, 40, .16); }
+  .cn-top { display: flex; align-items: center; justify-content: space-between; padding: .85rem 1rem;
+    border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, .08)); }
+  .cn-top h6 { margin: 0; font-weight: 700; font-size: .95rem; }
+  .cn-top small { color: var(--bs-secondary-color, #6c757d); font-size: .75rem; }
+  .cn-lista { max-height: min(600px, 70vh); overflow-y: auto; padding: .4rem; }
+  .cn-grupo { padding: .35rem .3rem .45rem; border-radius: 10px; }
+  .cn-grupo + .cn-grupo { border-top: 1px solid var(--bs-border-color-translucent, rgba(0, 0, 0, .06)); margin-top: .2rem; padding-top: .55rem; }
+  .cn-head { display: flex; align-items: center; gap: .65rem; padding: .3rem .4rem; border-radius: 8px; color: var(--bs-body-color); text-decoration: none; }
+  .cn-head:hover { background: var(--bs-tertiary-bg, #f6f7fb); color: var(--bs-body-color); }
+  .cn-icon { flex: none; width: 32px; height: 32px; border-radius: 9px; display: grid; place-items: center; color: #fff; font-size: 1rem; }
+  .cn-title { flex: 1; min-width: 0; font-weight: 600; font-size: .84rem; line-height: 1.25; }
+  .cn-count { flex: none; min-width: 22px; padding: 0 7px; border-radius: 999px; font-size: .72rem; font-weight: 700; line-height: 20px; text-align: center;
+    background: var(--bs-tertiary-bg, #f1f2f6); color: var(--bs-secondary-color, #6c757d); }
+  .cn-item { display: flex; align-items: flex-start; gap: .55rem; margin-left: 2.6rem; padding: .35rem .45rem; border-radius: 8px; color: var(--bs-body-color); text-decoration: none; }
+  a.cn-item:hover { background: var(--bs-tertiary-bg, #f6f7fb); color: var(--bs-body-color); }
+  .cn-dot { flex: none; width: 6px; height: 6px; margin-top: .45rem; border-radius: 50%; background: var(--bs-secondary-color, #adb5bd); opacity: .6; }
+  .cn-item.urgente .cn-dot { background: #fa5c7c; opacity: 1; }
+  .cn-item-text { min-width: 0; display: flex; flex-direction: column; }
+  .cn-item-text b { font-weight: 500; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .cn-item-text small { font-size: .72rem; color: var(--bs-secondary-color, #6c757d); }
+  .cn-item.urgente .cn-item-text small { color: #e2445c; font-weight: 500; }
+  .cn-mas { margin-left: 2.6rem; padding: .1rem .45rem; font-size: .72rem; color: var(--bs-secondary-color, #6c757d); }
+  .cn-vacio { text-align: center; color: var(--bs-secondary-color, #6c757d); padding: 1.8rem 1rem; }
+  .cn-vacio i { display: block; font-size: 1.8rem; margin-bottom: .2rem; color: #0acf97; }
 </style>
 <!-- ========== Topbar Start ========== -->
 <div class="navbar-custom">
@@ -170,25 +197,14 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
           <i class="ri-notification-3-line font-22"></i>
           <span class="noti-icon-badge d-none" id="noti_badge"></span>
         </a>
-        <div
-          class="dropdown-menu dropdown-menu-end dropdown-menu-animated dropdown-lg py-0"
-        >
-          <div
-            class="p-2 border-top-0 border-start-0 border-end-0 border-dashed border"
-          >
-            <div class="row align-items-center">
-              <div class="col">
-                <h6 class="m-0 font-16 fw-semibold">Notificaciones</h6>
-              </div>
-              <div class="col-auto">
-                <small class="text-muted">Del sistema</small>
-              </div>
-            </div>
+        <div class="dropdown-menu dropdown-menu-end dropdown-menu-animated cn-menu p-0">
+          <div class="cn-top">
+            <h6>Notificaciones</h6>
+            <small id="noti_resumen">Del sistema</small>
           </div>
-
-          <div class="px-2" style="max-height: 340px; overflow-y: auto;" id="noti_lista">
-            <div class="text-center text-muted py-4" id="noti_cargando">
-              <i class="mdi mdi-dots-circle mdi-spin h3 mt-0 d-block"></i>
+          <div class="cn-lista" id="noti_lista">
+            <div class="cn-vacio" id="noti_cargando">
+              <i class="mdi mdi-dots-circle mdi-spin" style="color:inherit"></i>
               <small>Buscando novedades...</small>
             </div>
           </div>

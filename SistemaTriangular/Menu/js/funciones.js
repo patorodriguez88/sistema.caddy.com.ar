@@ -489,48 +489,48 @@ function cargarNotificaciones() {
       }
 
       const $lista = $("#noti_lista");
+      const grupos = res.notificaciones || [];
+      $("#noti_resumen").text(grupos.length ? res.total + (res.total == 1 ? " aviso" : " avisos") : "Del sistema");
 
-      if (!res.notificaciones || !res.notificaciones.length) {
+      if (!grupos.length) {
         $lista.html(
-          `<div class="text-center text-muted py-4">
-            <i class="ri-checkbox-circle-line d-block mb-1" style="font-size:26px;"></i>
+          `<div class="cn-vacio">
+            <i class="ri-checkbox-circle-line"></i>
             <small>Sin novedades por ahora</small>
           </div>`
         );
         return;
       }
 
+      // Cada grupo: encabezado (link a la pantalla) + hasta 5 avisos en dos renglones.
+      // Un aviso con su propio link (ej. una tarea) se abre directo.
       let html = "";
-
-      res.notificaciones.forEach(function (n) {
-        let subitems = "";
-        (n.items || []).forEach(function (item) {
-          subitems += `
-            <div class="d-flex justify-content-between align-items-center py-1 ${item.urgente ? "text-danger fw-semibold" : ""}" style="font-size:12px;">
-              <span>${escapeHtml(item.titulo)}</span>
-              <span class="text-muted">${escapeHtml(item.subtitulo)}</span>
-            </div>`;
+      grupos.forEach(function (n) {
+        const items = n.items || [];
+        let filas = "";
+        items.slice(0, 5).forEach(function (item) {
+          const tag = item.link ? "a" : "div";
+          filas += `
+            <${tag} class="cn-item ${item.urgente ? "urgente" : ""}"${item.link ? ` href="${escapeHtml(item.link)}"` : ""}>
+              <span class="cn-dot"></span>
+              <span class="cn-item-text">
+                <b>${escapeHtml(item.titulo)}</b>
+                <small>${escapeHtml(item.subtitulo)}</small>
+              </span>
+            </${tag}>`;
         });
-
+        if (n.cantidad > Math.min(items.length, 5) && items.length) {
+          filas += `<div class="cn-mas">y ${n.cantidad - Math.min(items.length, 5)} más…</div>`;
+        }
         html += `
-          <a href="${escapeHtml(n.link || "#")}" class="dropdown-item p-0 notify-item card shadow-none mb-2 border">
-            <div class="card-body">
-              <div class="d-flex align-items-center">
-                <div class="flex-shrink-0">
-                  <div class="notify-icon ${n.color}">
-                    <i class="${n.icono} font-18"></i>
-                  </div>
-                </div>
-                <div class="flex-grow-1 ms-2">
-                  <h5 class="noti-item-title fw-semibold font-14 mb-0">
-                    ${escapeHtml(n.titulo)}
-                    <span class="badge bg-secondary ms-1">${n.cantidad}</span>
-                  </h5>
-                </div>
-              </div>
-              ${subitems ? `<div class="mt-2 ps-1 border-top pt-1">${subitems}</div>` : ""}
-            </div>
-          </a>`;
+          <div class="cn-grupo">
+            <a class="cn-head" href="${escapeHtml(n.link || "#")}">
+              <span class="cn-icon ${n.color}"><i class="${n.icono}"></i></span>
+              <span class="cn-title">${escapeHtml(n.titulo)}</span>
+              <span class="cn-count">${n.cantidad}</span>
+            </a>
+            ${filas}
+          </div>`;
       });
 
       $lista.html(html);
