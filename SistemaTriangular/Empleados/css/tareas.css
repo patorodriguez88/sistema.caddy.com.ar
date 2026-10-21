@@ -81,7 +81,7 @@
 .tk-restan { font-size: .72rem; font-weight: 600; padding: 2px 8px; border-radius: 999px; background: var(--cf-head-bg); color: var(--cf-muted); white-space: nowrap; }
 
 /* ---------- Panel de detalle ---------- */
-.tk-panel { --bs-offcanvas-width: 560px; }
+.tk-panel { --bs-offcanvas-width: min(760px, 92vw); }
 .tk-panel .offcanvas-header { border-bottom: 1px solid var(--cf-border, rgba(0, 0, 0, .08)); padding: .8rem 1.1rem; }
 .tk-panel .offcanvas-body { padding: 1.1rem 1.3rem 1.5rem; }
 .tk-panel-top { display: flex; align-items: center; gap: .7rem; min-width: 0; }
@@ -98,7 +98,7 @@
 .tk-campos { display: grid; grid-template-columns: 120px 1fr; gap: .55rem .8rem; align-items: center; margin-bottom: 1.1rem; }
 .tk-campos label { margin: 0; font-size: .8rem; color: var(--bs-secondary-color, #6c757d); display: flex; align-items: center; gap: .35rem; }
 .tk-campos label .mdi { font-size: 1rem; }
-.tk-campos .form-control, .tk-campos .form-select { border-radius: 8px; max-width: 300px; }
+.tk-campos .form-control, .tk-campos .form-select { border-radius: 8px; max-width: 360px; }
 .tk-label { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--bs-secondary-color, #6c757d); margin-bottom: .4rem; }
 .tk-panel textarea.form-control { border-radius: 10px; }
 .tk-guardar-row { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin: .7rem 0 1.3rem; }
