@@ -343,6 +343,15 @@ try {
             tk_responder(['success' => 1, 'yo' => $yo, 'esAdmin' => tk_es_admin(), 'usuarios' => $usuarios, 'proyectos' => $proyectos,
                           'contadores' => ['bandeja' => $bandeja, 'eliminadas' => $eliminadas], 'diasEliminados' => TK_DIAS_ELIMINADOS]);
 
+        case 'contador':
+            // Para el botón "Tareas" del Panel de Control: mis pendientes, y cuántas vencen hoy o están atrasadas.
+            $st = $db->prepare("SELECT COUNT(*), SUM(FechaVencimiento < CURDATE()), SUM(FechaVencimiento = CURDATE())
+                                FROM ProyectosTareas WHERE idResponsable = ? AND Eliminado = 0 AND Completada = 0");
+            $st->bind_param('i', $yo);
+            $st->execute();
+            [$pend, $atr, $hoy] = $st->get_result()->fetch_row();
+            tk_responder(['success' => 1, 'pendientes' => (int) $pend, 'atrasadas' => (int) $atr, 'hoy' => (int) $hoy]);
+
         case 'listar':
             $vista = $_POST['vista'] ?? 'bandeja';
             $completadas = !empty($_POST['completadas']) ? 1 : 0;

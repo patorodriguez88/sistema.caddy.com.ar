@@ -53,6 +53,10 @@
                                 <span class="cp-badge-count d-none" id="cp-preventa-count">0</span>
                             </a>
                             <a class="btn btn-light" href="/SistemaTriangular/Logistica/HojaDeRuta2.php"><i class="mdi mdi-routes"></i><span class="ms-1">Hoja de ruta</span></a>
+                            <a class="btn btn-light position-relative" href="/SistemaTriangular/Empleados/Tareas.php" id="cp-tareas" title="Tus tareas">
+                                <i class="mdi mdi-checkbox-marked-circle-outline"></i><span class="ms-1">Tareas</span>
+                                <span class="cp-badge-count d-none" id="cp-tareas-count">0</span>
+                            </a>
                             <a class="btn btn-primary" href="/SistemaTriangular/Logistica/Mapas/RepartidoresEnVivo.php"><i class="mdi mdi-map-marker-radius-outline"></i><span class="ms-1">Repartidores en vivo</span></a>
                         </div>
                     </div>
