@@ -1,0 +1,7 @@
+# Carpeta de archivos de Tareas: nada se sirve por URL. Los adjuntos se bajan por
+# Empleados/Procesos/php/tareas_api.php?accion=descargar (con sesión).
+Require all denied
+Options -Indexes
+<IfModule !mod_authz_core.c>
+  Deny from all
+</IfModule>

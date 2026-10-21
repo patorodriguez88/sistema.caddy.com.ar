@@ -42,6 +42,12 @@ if (!$yo) tk_responder(['success' => 0, 'error' => 'Sesión vencida: volvé a in
 try {
     $r = $mysqli->query("SHOW TABLES LIKE 'ProyectosTareas_adjuntos'"); // la última tabla agregada
     if (!$r || !$r->num_rows) tk_migrar($mysqli);
+    // Columnas sumadas después de crear la tabla (donde ya existía sin ellas)
+    $r = $mysqli->query("SHOW COLUMNS FROM ProyectosTareas_adjuntos LIKE 'Purgado'");
+    if (!$r->num_rows) {
+        $mysqli->query("ALTER TABLE ProyectosTareas_adjuntos ADD COLUMN EliminadoFecha DATETIME NULL AFTER Eliminado,
+                        ADD COLUMN Purgado TINYINT(1) NOT NULL DEFAULT 0 AFTER EliminadoFecha");
+    }
 } catch (Throwable $e) {
     tk_responder(['success' => 0, 'error' => 'No se pudieron crear las tablas de tareas: ' . $e->getMessage()], 500);
 }
@@ -188,7 +194,7 @@ function tk_tocar(mysqli $db, int $idTarea, int $usuario): void
 function tk_adjuntos(mysqli $db, int $idTarea): array
 {
     $st = $db->prepare("SELECT id, idUsuario, NombreOriginal, Mime, Tamano, Fecha FROM ProyectosTareas_adjuntos
-                        WHERE idTarea = ? AND Eliminado = 0 ORDER BY Fecha, id");
+                        WHERE idTarea = ? AND Eliminado = 0 AND Purgado = 0 ORDER BY Fecha, id");
     $st->bind_param('i', $idTarea);
     $st->execute();
     $lista = [];
@@ -209,6 +215,29 @@ function tk_carpeta_adjuntos(int $idTarea): string
     $dir = TK_ADJ_DIR . '/' . $idTarea;
     if (!is_dir($dir)) mkdir($dir, 0755, true);
     return $dir;
+}
+
+// Para no llenar el disco: los archivos quitados, o de tareas eliminadas, se borran del disco a los
+// TK_DIAS_ELIMINADOS días (la fila queda con Purgado=1). No hay cron: corre como mucho una vez por día,
+// cuando alguien abre Tareas.
+function tk_limpiar_adjuntos(mysqli $db): void
+{
+    if (!is_dir(TK_ADJ_DIR)) return;
+    $marca = TK_ADJ_DIR . '/.ultima_limpieza';
+    if (is_file($marca) && filemtime($marca) > time() - 86400) return;
+    @touch($marca);
+    $dias = TK_DIAS_ELIMINADOS;
+    $res = $db->query("SELECT a.id, a.idTarea, a.Archivo FROM ProyectosTareas_adjuntos a
+                       JOIN ProyectosTareas t ON t.id = a.idTarea
+                       WHERE a.Purgado = 0
+                         AND ((a.Eliminado = 1 AND a.EliminadoFecha < DATE_SUB(NOW(), INTERVAL $dias DAY))
+                           OR (t.Eliminado = 1 AND t.EliminadoFecha < DATE_SUB(NOW(), INTERVAL $dias DAY)))
+                       LIMIT 500");
+    while ($a = $res->fetch_assoc()) {
+        $ruta = TK_ADJ_DIR . '/' . (int) $a['idTarea'] . '/' . basename($a['Archivo']);
+        if (is_file($ruta)) @unlink($ruta);
+        $db->query("UPDATE ProyectosTareas_adjuntos SET Purgado = 1 WHERE id = " . (int) $a['id']);
+    }
 }
 
 function tk_fila(array $t, int $yo): array
@@ -238,6 +267,7 @@ try {
     switch ($accion) {
 
         case 'init':
+            tk_limpiar_adjuntos($db);
             $proyectos = [];
             $res = $db->query("SELECT p.id, p.Nombre, p.Color,
                                       SUM(t.id IS NOT NULL AND t.Eliminado = 0 AND t.Completada = 0) AS Pendientes
@@ -432,7 +462,7 @@ try {
 
         case 'descargar':
             $st = $db->prepare("SELECT a.*, t.Eliminado AS TareaEliminada FROM ProyectosTareas_adjuntos a
-                                JOIN ProyectosTareas t ON t.id = a.idTarea WHERE a.id = ? AND a.Eliminado = 0");
+                                JOIN ProyectosTareas t ON t.id = a.idTarea WHERE a.id = ? AND a.Eliminado = 0 AND a.Purgado = 0");
             $idA = (int) ($_GET['id'] ?? 0);
             $st->bind_param('i', $idA);
             $st->execute();
@@ -454,7 +484,7 @@ try {
 
         case 'eliminar_adjunto':
             $idA = (int) ($_POST['id'] ?? 0);
-            $st = $db->prepare("UPDATE ProyectosTareas_adjuntos SET Eliminado = 1 WHERE id = ?");
+            $st = $db->prepare("UPDATE ProyectosTareas_adjuntos SET Eliminado = 1, EliminadoFecha = NOW() WHERE id = ?");
             $st->bind_param('i', $idA);
             $st->execute();
             $idT = (int) ($db->query("SELECT idTarea FROM ProyectosTareas_adjuntos WHERE id = " . $idA)->fetch_row()[0] ?? 0);
