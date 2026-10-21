@@ -100,7 +100,7 @@ function tkCargarInicio() {
           (ajeno ? ' title="No participás: lo ves por ser administrador"' : "") + ">" +
           '<span class="tk-dot" style="--tk-c:' + tkEsc(p.color) + '"></span><span>' + tkEsc(p.nombre) + "</span>" +
           (ajeno ? '<i class="mdi mdi-eye-outline"></i>' : "") + "<b>" + (p.pendientes || "") + "</b></a>";
-      }).join("") || '<div class="tk-nav-item text-muted"><span>Sin proyectos</span></div>',
+      }).join("") || '<a href="#" class="tk-nav-item text-muted" id="tk_crear_primero"><i class="mdi mdi-plus"></i><span>Creá tu primer proyecto</span></a>',
     );
     tkMarcarNav();
     $("#tk_f_responsable").html(
@@ -298,6 +298,12 @@ function tkUrlTarea(id) {
   history.replaceState(null, "", url.toString());
 }
 function tkNueva() {
+  // Sin proyectos no hay dónde crearla: primero se arma uno
+  if (!TK.proyectos.length) {
+    toast("info", "Primero creá un proyecto", "Las tareas van dentro de un proyecto (tuyo o de tu equipo).");
+    tkModalProyecto(null);
+    return;
+  }
   TK.abierta = null;
   $("#tk_panel").removeClass("solo-lectura");
   $("#tk_eliminada").prop("hidden", true);
@@ -307,10 +313,9 @@ function tkNueva() {
   $("#tk_f_desc").val("");
   $("#tk_f_vence").val("");
   $("#tk_f_responsable").val(TK.yo);
-  var proy = TK.vista.tipo === "proyecto" ? TK.vista.id : (TK.proyectos[0] && TK.proyectos[0].id);
-  var general = TK.proyectos.filter(function (p) { return p.nombre === "General"; })[0];
-  if (TK.vista.tipo !== "proyecto" && general) proy = general.id;
-  $("#tk_f_proyecto").val(proy);
+  // El proyecto que estoy mirando; desde la bandeja, el primero del que participo
+  var mio = TK.proyectos.filter(function (p) { return p.participo; })[0] || TK.proyectos[0];
+  $("#tk_f_proyecto").val(TK.vista.tipo === "proyecto" ? TK.vista.id : mio.id);
   $("#tk_meta").text("Si asignás la tarea a otra persona, le llega un mail.");
   $("#tk_coment_box, #tk_adj_box").prop("hidden", true);
   $("#tk_guardar").html('<i class="mdi mdi-plus me-1"></i>Crear tarea');
@@ -730,6 +735,7 @@ $(document).on("click", ".tk-color", function () {
   $(this).addClass("active");
 });
 $("#tk_btn_proyecto").on("click", function () { tkModalProyecto(null); });
+$(document).on("click", "#tk_crear_primero", function (e) { e.preventDefault(); tkModalProyecto(null); });
 $("#tk_proy_editar").on("click", function (e) {
   e.preventDefault();
   tkModalProyecto(tkProyecto(TK.vista.id));

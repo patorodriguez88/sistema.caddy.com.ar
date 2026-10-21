@@ -8,7 +8,7 @@ CREATE TABLE IF NOT EXISTS Proyectos (
   Nombre VARCHAR(120) NOT NULL,
   Descripcion TEXT NULL,
   Color VARCHAR(9) NOT NULL DEFAULT '#727cf5',
-  Todos TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = lo ven todos (ej. General); 0 = solo participantes',
+  Todos TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = lo ven todos (Visible para todos), 0 = solo participantes',
   idCreador INT NOT NULL,
   FechaAlta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Eliminado TINYINT(1) NOT NULL DEFAULT 0,
@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS Proyectos (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Participantes de cada proyecto: solo ellos lo ven (más los admins, nivel 1, y los proyectos con Todos=1).
+-- No hay proyecto por defecto: cada uno arma los suyos, solo o en equipo.
 -- Alguien de afuera asignado o mencionado ve solo esa tarea.
 CREATE TABLE IF NOT EXISTS ProyectosMiembros (
   idProyecto INT NOT NULL,
@@ -95,7 +96,3 @@ CREATE TABLE IF NOT EXISTS ProyectosTareas_adjuntos (
   Purgado TINYINT(1) NOT NULL DEFAULT 0 COMMENT 'El archivo ya se borró del disco (30 días después de quitarlo)',
   KEY idx_tarea (idTarea, Eliminado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-INSERT INTO Proyectos (Nombre, Descripcion, Color, Todos, idCreador)
-SELECT 'General', 'Tareas que no son de un proyecto en particular', '#727cf5', 1, 0
-WHERE NOT EXISTS (SELECT 1 FROM Proyectos);

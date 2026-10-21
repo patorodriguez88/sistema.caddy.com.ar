@@ -2,7 +2,7 @@
 // Rec. Humanos > Tareas (Empleados/Tareas.php): proyectos y tareas propios del sistema, tipo Asana.
 //
 // - Cada proyecto tiene participantes (ProyectosMiembros) y solo ellos lo ven; los admins (nivel 1) ven
-//   todos y los proyectos con Todos=1 (ej. General) son de todos. Alguien de afuera asignado o mencionado
+//   todos y los marcados "Visible para todos" (Todos=1) son de todos. No hay proyecto por defecto. Alguien de afuera asignado o mencionado
 //   ve solo esa tarea. La bandeja muestra las tareas donde el usuario es responsable, por vencimiento.
 // - Mail al ser asignado como responsable (por otro) y al ser @mencionado en la descripción o en un
 //   comentario. La mención se escribe como @Nombre.Apellido (ver tk_usuarios: 'handle').
@@ -50,7 +50,7 @@ try {
                         ADD COLUMN Purgado TINYINT(1) NOT NULL DEFAULT 0 AFTER EliminadoFecha");
     }
     // Participantes (sumado después): donde ya había proyectos, quedan como participantes su creador y
-    // quienes crearon o tienen tareas en él; General pasa a ser de todos.
+    // quienes crearon o tienen tareas en él.
     $r = $mysqli->query("SHOW COLUMNS FROM Proyectos LIKE 'Todos'");
     if (!$r->num_rows) {
         $mysqli->query("ALTER TABLE Proyectos ADD COLUMN Todos TINYINT(1) NOT NULL DEFAULT 0 AFTER Color");
@@ -59,7 +59,6 @@ try {
             Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY (idProyecto, idUsuario), KEY idx_usuario (idUsuario)
           ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
-        $mysqli->query("UPDATE Proyectos SET Todos = 1 WHERE Nombre = 'General'");
         $mysqli->query("INSERT IGNORE INTO ProyectosMiembros (idProyecto, idUsuario)
                         SELECT id, idCreador FROM Proyectos WHERE idCreador > 0
                         UNION SELECT idProyecto, idResponsable FROM ProyectosTareas
@@ -479,11 +478,13 @@ try {
                 $st = $db->prepare("UPDATE ProyectosTareas SET Eliminado=1, EliminadoFecha=NOW(), EliminadoPor=? WHERE id=?");
                 $st->bind_param('ii', $yo, $id);
             } else {
-                // Si su proyecto ya no existe, vuelve a "General" (o al primer proyecto vivo).
+                // Si su proyecto ya no existe, vuelve al primer proyecto del que participo.
                 $p = $db->query("SELECT Eliminado FROM Proyectos WHERE id=" . (int) $t['idProyecto'])->fetch_assoc();
                 $idProyecto = (int) $t['idProyecto'];
                 if (!$p || (int) $p['Eliminado'] === 1) {
-                    $idProyecto = (int) ($db->query("SELECT id FROM Proyectos WHERE Eliminado=0 ORDER BY Nombre='General' DESC, id LIMIT 1")->fetch_row()[0] ?? 0);
+                    $idProyecto = (int) ($db->query("SELECT p.id FROM Proyectos p JOIN ProyectosMiembros m ON m.idProyecto = p.id AND m.idUsuario = " . $yo . "
+                                                     WHERE p.Eliminado = 0 ORDER BY p.Nombre LIMIT 1")->fetch_row()[0] ?? 0);
+                    if (!$idProyecto) tk_responder(['success' => 0, 'error' => 'Su proyecto fue eliminado y no participás de ningún otro: creá un proyecto y volvé a recuperarla.']);
                 }
                 $st = $db->prepare("UPDATE ProyectosTareas SET Eliminado=0, EliminadoFecha=NULL, EliminadoPor=NULL, idProyecto=? WHERE id=?");
                 $st->bind_param('ii', $idProyecto, $id);
