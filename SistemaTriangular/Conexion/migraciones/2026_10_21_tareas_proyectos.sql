@@ -8,12 +8,24 @@ CREATE TABLE IF NOT EXISTS Proyectos (
   Nombre VARCHAR(120) NOT NULL,
   Descripcion TEXT NULL,
   Color VARCHAR(9) NOT NULL DEFAULT '#727cf5',
+  Todos TINYINT(1) NOT NULL DEFAULT 0 COMMENT '1 = lo ven todos (ej. General); 0 = solo participantes',
   idCreador INT NOT NULL,
   FechaAlta DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Eliminado TINYINT(1) NOT NULL DEFAULT 0,
   EliminadoFecha DATETIME NULL,
   EliminadoPor INT NULL,
   KEY idx_eliminado (Eliminado)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Participantes de cada proyecto: solo ellos lo ven (más los admins, nivel 1, y los proyectos con Todos=1).
+-- Alguien de afuera asignado o mencionado ve solo esa tarea.
+CREATE TABLE IF NOT EXISTS ProyectosMiembros (
+  idProyecto INT NOT NULL,
+  idUsuario INT NOT NULL,
+  idAgrego INT NULL,
+  Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (idProyecto, idUsuario),
+  KEY idx_usuario (idUsuario)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS ProyectosTareas (
@@ -84,6 +96,6 @@ CREATE TABLE IF NOT EXISTS ProyectosTareas_adjuntos (
   KEY idx_tarea (idTarea, Eliminado)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-INSERT INTO Proyectos (Nombre, Descripcion, Color, idCreador)
-SELECT 'General', 'Tareas que no son de un proyecto en particular', '#727cf5', 0
+INSERT INTO Proyectos (Nombre, Descripcion, Color, Todos, idCreador)
+SELECT 'General', 'Tareas que no son de un proyecto en particular', '#727cf5', 1, 0
 WHERE NOT EXISTS (SELECT 1 FROM Proyectos);

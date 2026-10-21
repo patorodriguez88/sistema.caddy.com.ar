@@ -192,7 +192,7 @@
 
     <!-- Nuevo / editar proyecto -->
     <div class="modal fade" id="tk_modal_proy" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-dialog-centered modal-sm">
+        <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content tk-modal">
                 <div class="modal-header">
                     <h5 class="modal-title" id="tk_p_titulo">Nuevo proyecto</h5>
@@ -203,6 +203,17 @@
                     <input type="text" class="form-control" id="tk_p_nombre" maxlength="120" placeholder="Ej: Mudanza de depósito">
                     <label class="tk-label mt-3">Color</label>
                     <div class="tk-colores" id="tk_p_colores"></div>
+
+                    <div class="tk-p-part-head">
+                        <label class="tk-label mb-0">Participantes <span id="tk_p_cant"></span></label>
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" role="switch" id="tk_p_todos">
+                            <label class="form-check-label" for="tk_p_todos">Visible para todos</label>
+                        </div>
+                    </div>
+                    <div class="tk-p-ayuda" id="tk_p_ayuda"></div>
+                    <input type="text" class="form-control form-control-sm mb-2" id="tk_p_buscar" placeholder="Buscar persona…" autocomplete="off">
+                    <div class="tk-miembros" id="tk_p_miembros"></div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>

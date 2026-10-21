@@ -1,8 +1,9 @@
 <?php
 // Rec. Humanos > Tareas (Empleados/Tareas.php): proyectos y tareas propios del sistema, tipo Asana.
 //
-// - Todos los usuarios del sistema ven todos los proyectos; la bandeja de entrada muestra las tareas
-//   donde el usuario es responsable, ordenadas por vencimiento.
+// - Cada proyecto tiene participantes (ProyectosMiembros) y solo ellos lo ven; los admins (nivel 1) ven
+//   todos y los proyectos con Todos=1 (ej. General) son de todos. Alguien de afuera asignado o mencionado
+//   ve solo esa tarea. La bandeja muestra las tareas donde el usuario es responsable, por vencimiento.
 // - Mail al ser asignado como responsable (por otro) y al ser @mencionado en la descripción o en un
 //   comentario. La mención se escribe como @Nombre.Apellido (ver tk_usuarios: 'handle').
 // - Borrado lógico (Eliminado=1): las tareas eliminadas se ven 30 días en "Eliminados" y se recuperan.
@@ -47,6 +48,22 @@ try {
     if (!$r->num_rows) {
         $mysqli->query("ALTER TABLE ProyectosTareas_adjuntos ADD COLUMN EliminadoFecha DATETIME NULL AFTER Eliminado,
                         ADD COLUMN Purgado TINYINT(1) NOT NULL DEFAULT 0 AFTER EliminadoFecha");
+    }
+    // Participantes (sumado después): donde ya había proyectos, quedan como participantes su creador y
+    // quienes crearon o tienen tareas en él; General pasa a ser de todos.
+    $r = $mysqli->query("SHOW COLUMNS FROM Proyectos LIKE 'Todos'");
+    if (!$r->num_rows) {
+        $mysqli->query("ALTER TABLE Proyectos ADD COLUMN Todos TINYINT(1) NOT NULL DEFAULT 0 AFTER Color");
+        $mysqli->query("CREATE TABLE IF NOT EXISTS ProyectosMiembros (
+            idProyecto INT NOT NULL, idUsuario INT NOT NULL, idAgrego INT NULL,
+            Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (idProyecto, idUsuario), KEY idx_usuario (idUsuario)
+          ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci");
+        $mysqli->query("UPDATE Proyectos SET Todos = 1 WHERE Nombre = 'General'");
+        $mysqli->query("INSERT IGNORE INTO ProyectosMiembros (idProyecto, idUsuario)
+                        SELECT id, idCreador FROM Proyectos WHERE idCreador > 0
+                        UNION SELECT idProyecto, idResponsable FROM ProyectosTareas
+                        UNION SELECT idProyecto, idCreador FROM ProyectosTareas");
     }
 } catch (Throwable $e) {
     tk_responder(['success' => 0, 'error' => 'No se pudieron crear las tablas de tareas: ' . $e->getMessage()], 500);
@@ -93,6 +110,30 @@ function tk_handles(mysqli $db, string $texto): array
     }
     return array_values($ids);
 }
+// ---------- Quién ve qué ----------
+function tk_es_admin(): bool
+{
+    return (int) ($_SESSION['Nivel'] ?? 0) === 1;
+}
+// Condición SQL: proyectos (alias $p) que $yo puede ver
+function tk_sql_proyecto_visible(int $yo, string $p = 'p'): string
+{
+    if (tk_es_admin()) return '1 = 1';
+    return "($p.Todos = 1 OR EXISTS (SELECT 1 FROM ProyectosMiembros pm WHERE pm.idProyecto = $p.id AND pm.idUsuario = $yo))";
+}
+// Condición SQL: tareas (alias t, con su proyecto en p) que $yo puede ver: las de sus proyectos, más las
+// que tiene asignadas, creó o donde lo mencionaron aunque no participe del proyecto.
+function tk_sql_tarea_visible(int $yo): string
+{
+    return '(' . tk_sql_proyecto_visible($yo) . " OR t.idResponsable = $yo OR t.idCreador = $yo
+            OR EXISTS (SELECT 1 FROM ProyectosTareas_menciones mm WHERE mm.idTarea = t.id AND mm.idUsuario = $yo))";
+}
+function tk_proyecto_visible(mysqli $db, int $idProyecto, int $yo): bool
+{
+    $r = $db->query("SELECT 1 FROM Proyectos p WHERE p.id = " . $idProyecto . " AND p.Eliminado = 0 AND " . tk_sql_proyecto_visible($yo));
+    return $r && $r->num_rows > 0;
+}
+
 function tk_nombre(mysqli $db, int $id): string
 {
     return tk_usuarios($db)[$id]['nombre'] ?? 'Usuario #' . $id;
@@ -168,10 +209,12 @@ function tk_menciones(mysqli $db, array $tarea, string $texto, ?int $idComentari
     return $nuevos;
 }
 
-function tk_tarea(mysqli $db, int $id, bool $incluirEliminadas = false): ?array
+// $yo > 0: solo si $yo la puede ver (si no, null igual que si no existiera).
+function tk_tarea(mysqli $db, int $id, bool $incluirEliminadas = false, int $yo = 0): ?array
 {
     $st = $db->prepare("SELECT t.*, p.Nombre AS Proyecto, p.Color AS ProyectoColor FROM ProyectosTareas t
-                        LEFT JOIN Proyectos p ON p.id = t.idProyecto WHERE t.id = ?" . ($incluirEliminadas ? '' : ' AND t.Eliminado = 0'));
+                        LEFT JOIN Proyectos p ON p.id = t.idProyecto WHERE t.id = ?" . ($incluirEliminadas ? '' : ' AND t.Eliminado = 0')
+                        . ($yo ? ' AND ' . tk_sql_tarea_visible($yo) : ''));
     $st->bind_param('i', $id);
     $st->execute();
     return $st->get_result()->fetch_assoc() ?: null;
@@ -274,21 +317,30 @@ try {
         case 'init':
             tk_limpiar_adjuntos($db);
             $proyectos = [];
-            $res = $db->query("SELECT p.id, p.Nombre, p.Color,
+            $miembros = [];
+            foreach ($db->query("SELECT idProyecto, idUsuario FROM ProyectosMiembros")->fetch_all(MYSQLI_ASSOC) as $m) {
+                $miembros[(int) $m['idProyecto']][] = (int) $m['idUsuario'];
+            }
+            $res = $db->query("SELECT p.id, p.Nombre, p.Color, p.Todos, p.idCreador,
                                       SUM(t.id IS NOT NULL AND t.Eliminado = 0 AND t.Completada = 0) AS Pendientes
                                FROM Proyectos p LEFT JOIN ProyectosTareas t ON t.idProyecto = p.id
-                               WHERE p.Eliminado = 0 GROUP BY p.id ORDER BY p.Nombre");
+                               WHERE p.Eliminado = 0 AND " . tk_sql_proyecto_visible($yo) . "
+                               GROUP BY p.id ORDER BY p.Todos DESC, p.Nombre");
             while ($p = $res->fetch_assoc()) {
-                $proyectos[] = ['id' => (int) $p['id'], 'nombre' => $p['Nombre'], 'color' => $p['Color'], 'pendientes' => (int) $p['Pendientes']];
+                $ids = $miembros[(int) $p['id']] ?? [];
+                $proyectos[] = ['id' => (int) $p['id'], 'nombre' => $p['Nombre'], 'color' => $p['Color'], 'pendientes' => (int) $p['Pendientes'],
+                                'todos' => (int) $p['Todos'] === 1, 'miembros' => $ids, 'participo' => in_array($yo, $ids, true),
+                                'creador' => (int) $p['idCreador']];
             }
             $st = $db->prepare("SELECT COUNT(*) FROM ProyectosTareas WHERE idResponsable = ? AND Eliminado = 0 AND Completada = 0");
             $st->bind_param('i', $yo);
             $st->execute();
             $bandeja = (int) $st->get_result()->fetch_row()[0];
-            $eliminadas = (int) $db->query("SELECT COUNT(*) FROM ProyectosTareas WHERE Eliminado = 1
-                                            AND EliminadoFecha >= DATE_SUB(NOW(), INTERVAL " . TK_DIAS_ELIMINADOS . " DAY)")->fetch_row()[0];
+            $eliminadas = (int) $db->query("SELECT COUNT(*) FROM ProyectosTareas t LEFT JOIN Proyectos p ON p.id = t.idProyecto
+                                            WHERE t.Eliminado = 1 AND t.EliminadoFecha >= DATE_SUB(NOW(), INTERVAL " . TK_DIAS_ELIMINADOS . " DAY)
+                                            AND " . tk_sql_tarea_visible($yo))->fetch_row()[0];
             $usuarios = array_values(array_map(fn($u) => array_diff_key($u, ['mail' => 1]), tk_usuarios($db)));
-            tk_responder(['success' => 1, 'yo' => $yo, 'usuarios' => $usuarios, 'proyectos' => $proyectos,
+            tk_responder(['success' => 1, 'yo' => $yo, 'esAdmin' => tk_es_admin(), 'usuarios' => $usuarios, 'proyectos' => $proyectos,
                           'contadores' => ['bandeja' => $bandeja, 'eliminadas' => $eliminadas], 'diasEliminados' => TK_DIAS_ELIMINADOS]);
 
         case 'listar':
@@ -301,10 +353,11 @@ try {
                      LEFT JOIN ProyectosTareas_vistas v ON v.idTarea = t.id AND v.idUsuario = ?";
             if ($vista === 'eliminados') {
                 $st = $db->prepare($base . " WHERE t.Eliminado = 1 AND t.EliminadoFecha >= DATE_SUB(NOW(), INTERVAL " . TK_DIAS_ELIMINADOS . " DAY)
-                                             ORDER BY t.EliminadoFecha DESC");
+                                             AND " . tk_sql_tarea_visible($yo) . " ORDER BY t.EliminadoFecha DESC");
                 $st->bind_param('i', $yo);
             } elseif ($vista === 'proyecto') {
                 $idP = (int) ($_POST['idProyecto'] ?? 0);
+                if (!tk_proyecto_visible($db, $idP, $yo)) tk_responder(['success' => 0, 'error' => 'No participás de ese proyecto.'], 403);
                 $st = $db->prepare($base . " WHERE t.Eliminado = 0 AND t.idProyecto = ? AND t.Completada = ?
                                              ORDER BY t.FechaVencimiento IS NULL, t.FechaVencimiento, t.id");
                 $st->bind_param('iii', $yo, $idP, $completadas);
@@ -320,8 +373,8 @@ try {
             tk_responder(['success' => 1, 'tareas' => $filas]);
 
         case 'tarea':
-            $t = tk_tarea($db, (int) ($_POST['id'] ?? 0), true);
-            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe.'], 404);
+            $t = tk_tarea($db, (int) ($_POST['id'] ?? 0), true, $yo);
+            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe o no tenés acceso.'], 404);
             tk_marcar_vista($db, (int) $t['id'], $yo);
             $st = $db->prepare("SELECT id, idUsuario, Comentario, Fecha FROM ProyectosTareas_comentarios
                                 WHERE idTarea = ? AND Eliminado = 0 ORDER BY Fecha, id");
@@ -349,15 +402,16 @@ try {
             $vence       = trim((string) ($_POST['vence'] ?? ''));
             if ($titulo === '') tk_responder(['success' => 0, 'error' => 'Poné un título a la tarea.']);
             if (!isset(tk_usuarios($db)[$responsable])) tk_responder(['success' => 0, 'error' => 'Elegí un responsable.']);
-            $st = $db->prepare("SELECT 1 FROM Proyectos WHERE id = ? AND Eliminado = 0");
-            $st->bind_param('i', $idProyecto);
-            $st->execute();
-            if (!$st->get_result()->num_rows) tk_responder(['success' => 0, 'error' => 'Elegí un proyecto.']);
+            $anterior = $id ? tk_tarea($db, $id, false, $yo) : null;
+            if ($id && !$anterior) tk_responder(['success' => 0, 'error' => 'La tarea no existe, fue eliminada o no tenés acceso.']);
+            // Se puede crear o mover a un proyecto del que participo; una tarea que veo sin participar
+            // (me la asignaron) puede quedarse en su proyecto.
+            if (!tk_proyecto_visible($db, $idProyecto, $yo) && !($anterior && (int) $anterior['idProyecto'] === $idProyecto)) {
+                tk_responder(['success' => 0, 'error' => 'Elegí un proyecto del que participes.']);
+            }
             $vence = preg_match('/^\d{4}-\d{2}-\d{2}$/', $vence) ? $vence : null;
             $titulo = mb_substr($titulo, 0, 200);
 
-            $anterior = $id ? tk_tarea($db, $id) : null;
-            if ($id && !$anterior) tk_responder(['success' => 0, 'error' => 'La tarea no existe o fue eliminada.']);
             if ($id) {
                 $st = $db->prepare("UPDATE ProyectosTareas SET Titulo=?, Descripcion=?, idProyecto=?, idResponsable=?, FechaVencimiento=? WHERE id=?");
                 $st->bind_param('ssiisi', $titulo, $descripcion, $idProyecto, $responsable, $vence, $id);
@@ -386,7 +440,7 @@ try {
         case 'completar':
             $id = (int) ($_POST['id'] ?? 0);
             $valor = !empty($_POST['completada']) ? 1 : 0;
-            if (!tk_tarea($db, $id)) tk_responder(['success' => 0, 'error' => 'La tarea no existe o fue eliminada.']);
+            if (!tk_tarea($db, $id, false, $yo)) tk_responder(['success' => 0, 'error' => 'La tarea no existe, fue eliminada o no tenés acceso.']);
             $st = $db->prepare("UPDATE ProyectosTareas SET Completada=?, CompletadaFecha=IF(?=1, NOW(), NULL), CompletadaPor=IF(?=1, ?, NULL) WHERE id=?");
             $st->bind_param('iiiii', $valor, $valor, $valor, $yo, $id);
             $st->execute();
@@ -396,8 +450,8 @@ try {
         case 'comentar':
             $id = (int) ($_POST['id'] ?? 0);
             $texto = trim((string) ($_POST['texto'] ?? ''));
-            $t = tk_tarea($db, $id);
-            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe o fue eliminada.']);
+            $t = tk_tarea($db, $id, false, $yo);
+            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe, fue eliminada o no tenés acceso.']);
             if ($texto === '') tk_responder(['success' => 0, 'error' => 'Escribí un comentario.']);
             $st = $db->prepare("INSERT INTO ProyectosTareas_comentarios (idTarea, idUsuario, Comentario) VALUES (?,?,?)");
             $st->bind_param('iis', $id, $yo, $texto);
@@ -410,8 +464,8 @@ try {
         case 'eliminar':
         case 'recuperar':
             $id = (int) ($_POST['id'] ?? 0);
-            $t = tk_tarea($db, $id, true);
-            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe.']);
+            $t = tk_tarea($db, $id, true, $yo);
+            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe o no tenés acceso.']);
             if ($accion === 'eliminar') {
                 $st = $db->prepare("UPDATE ProyectosTareas SET Eliminado=1, EliminadoFecha=NOW(), EliminadoPor=? WHERE id=?");
                 $st->bind_param('ii', $yo, $id);
@@ -431,7 +485,7 @@ try {
 
         case 'subir':
             $id = (int) ($_POST['id'] ?? 0);
-            if (!tk_tarea($db, $id)) tk_responder(['success' => 0, 'error' => 'La tarea no existe o fue eliminada.']);
+            if (!tk_tarea($db, $id, false, $yo)) tk_responder(['success' => 0, 'error' => 'La tarea no existe, fue eliminada o no tenés acceso.']);
             $files = $_FILES['archivos'] ?? null;
             if (!$files || !is_array($files['name'])) tk_responder(['success' => 0, 'error' => 'No llegó ningún archivo.']);
             $dir = tk_carpeta_adjuntos($id);
@@ -467,7 +521,8 @@ try {
 
         case 'descargar':
             $st = $db->prepare("SELECT a.*, t.Eliminado AS TareaEliminada FROM ProyectosTareas_adjuntos a
-                                JOIN ProyectosTareas t ON t.id = a.idTarea WHERE a.id = ? AND a.Eliminado = 0 AND a.Purgado = 0");
+                                JOIN ProyectosTareas t ON t.id = a.idTarea LEFT JOIN Proyectos p ON p.id = t.idProyecto
+                                WHERE a.id = ? AND a.Eliminado = 0 AND a.Purgado = 0 AND " . tk_sql_tarea_visible($yo));
             $idA = (int) ($_GET['id'] ?? 0);
             $st->bind_param('i', $idA);
             $st->execute();
@@ -489,31 +544,49 @@ try {
 
         case 'eliminar_adjunto':
             $idA = (int) ($_POST['id'] ?? 0);
+            $idT = (int) ($db->query("SELECT idTarea FROM ProyectosTareas_adjuntos WHERE id = " . $idA)->fetch_row()[0] ?? 0);
+            if (!tk_tarea($db, $idT, false, $yo)) tk_responder(['success' => 0, 'error' => 'No tenés acceso a ese archivo.'], 403);
             $st = $db->prepare("UPDATE ProyectosTareas_adjuntos SET Eliminado = 1, EliminadoFecha = NOW() WHERE id = ?");
             $st->bind_param('i', $idA);
             $st->execute();
-            $idT = (int) ($db->query("SELECT idTarea FROM ProyectosTareas_adjuntos WHERE id = " . $idA)->fetch_row()[0] ?? 0);
-            tk_responder(['success' => 1, 'adjuntos' => $idT ? tk_adjuntos($db, $idT) : []]);
+            tk_responder(['success' => 1, 'adjuntos' => tk_adjuntos($db, $idT)]);
 
         case 'guardar_proyecto':
             $id = (int) ($_POST['id'] ?? 0);
             $nombre = mb_substr(trim((string) ($_POST['nombre'] ?? '')), 0, 120);
             $color = preg_match('/^#[0-9a-fA-F]{6}$/', (string) ($_POST['color'] ?? '')) ? $_POST['color'] : '#727cf5';
             $descripcion = trim((string) ($_POST['descripcion'] ?? ''));
+            $todos = !empty($_POST['todos']) ? 1 : 0;
+            // Participantes: los elegidos (usuarios del sistema), y yo siempre (si no soy admin, si me
+            // saco a mí mismo dejaría de verlo).
+            $miembros = array_values(array_intersect(array_map('intval', (array) ($_POST['miembros'] ?? [])), array_keys(tk_usuarios($db))));
+            if (!tk_es_admin() || !$id) $miembros[] = $yo;
+            $miembros = array_values(array_unique($miembros));
             if ($nombre === '') tk_responder(['success' => 0, 'error' => 'Poné un nombre al proyecto.']);
             if ($id) {
-                $st = $db->prepare("UPDATE Proyectos SET Nombre=?, Color=?, Descripcion=? WHERE id=? AND Eliminado=0");
-                $st->bind_param('sssi', $nombre, $color, $descripcion, $id);
+                if (!tk_proyecto_visible($db, $id, $yo)) tk_responder(['success' => 0, 'error' => 'No participás de ese proyecto.'], 403);
+                $st = $db->prepare("UPDATE Proyectos SET Nombre=?, Color=?, Descripcion=?, Todos=? WHERE id=? AND Eliminado=0");
+                $st->bind_param('sssii', $nombre, $color, $descripcion, $todos, $id);
+                $st->execute();
             } else {
-                $st = $db->prepare("INSERT INTO Proyectos (Nombre, Color, Descripcion, idCreador) VALUES (?,?,?,?)");
-                $st->bind_param('sssi', $nombre, $color, $descripcion, $yo);
+                $st = $db->prepare("INSERT INTO Proyectos (Nombre, Color, Descripcion, Todos, idCreador) VALUES (?,?,?,?,?)");
+                $st->bind_param('sssii', $nombre, $color, $descripcion, $todos, $yo);
+                $st->execute();
+                $id = $db->insert_id;
             }
-            $st->execute();
-            tk_responder(['success' => 1, 'id' => $id ?: $db->insert_id]);
+            $db->query("DELETE FROM ProyectosMiembros WHERE idProyecto = " . $id
+                       . ($miembros ? " AND idUsuario NOT IN (" . implode(',', $miembros) . ")" : ''));
+            $st = $db->prepare("INSERT IGNORE INTO ProyectosMiembros (idProyecto, idUsuario, idAgrego) VALUES (?,?,?)");
+            foreach ($miembros as $m) {
+                $st->bind_param('iii', $id, $m, $yo);
+                $st->execute();
+            }
+            tk_responder(['success' => 1, 'id' => $id]);
 
         case 'eliminar_proyecto':
             // Solo vacío: las tareas se mueven o se eliminan primero (así nada se pierde sin querer).
             $id = (int) ($_POST['id'] ?? 0);
+            if (!tk_proyecto_visible($db, $id, $yo)) tk_responder(['success' => 0, 'error' => 'No participás de ese proyecto.'], 403);
             $pend = (int) $db->query("SELECT COUNT(*) FROM ProyectosTareas WHERE idProyecto=" . $id . " AND Eliminado=0")->fetch_row()[0];
             if ($pend) tk_responder(['success' => 0, 'error' => "El proyecto tiene $pend tarea(s). Movelas a otro proyecto o eliminalas primero."]);
             $st = $db->prepare("UPDATE Proyectos SET Eliminado=1, EliminadoFecha=NOW(), EliminadoPor=? WHERE id=?");

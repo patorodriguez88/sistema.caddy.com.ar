@@ -84,6 +84,7 @@ function tkTextoHtml(txt) {
 function tkCargarInicio() {
   return tkApi("init").done(function (r) {
     TK.yo = r.yo;
+    TK.esAdmin = !!r.esAdmin;
     TK.listaUsuarios = r.usuarios;
     TK.usuarios = {};
     r.usuarios.forEach(function (u) { TK.usuarios[u.id] = u; });
@@ -93,9 +94,12 @@ function tkCargarInicio() {
     $("#tk_cnt_eliminados").text(r.contadores.eliminadas || "");
     $("#tk_proyectos").html(
       r.proyectos.map(function (p) {
-        return '<a href="#" class="tk-nav-item" data-vista="proyecto" data-id="' + p.id + '">' +
+        // Admin viendo un proyecto del que no participa: ojito
+        var ajeno = !p.todos && !p.participo;
+        return '<a href="#" class="tk-nav-item" data-vista="proyecto" data-id="' + p.id + '"' +
+          (ajeno ? ' title="No participás: lo ves por ser administrador"' : "") + ">" +
           '<span class="tk-dot" style="--tk-c:' + tkEsc(p.color) + '"></span><span>' + tkEsc(p.nombre) + "</span>" +
-          "<b>" + (p.pendientes || "") + "</b></a>";
+          (ajeno ? '<i class="mdi mdi-eye-outline"></i>' : "") + "<b>" + (p.pendientes || "") + "</b></a>";
       }).join("") || '<div class="tk-nav-item text-muted"><span>Sin proyectos</span></div>',
     );
     tkMarcarNav();
@@ -114,6 +118,17 @@ function tkMarcarNav() {
   if (TK.vista.tipo === "proyecto") $('.tk-nav-item[data-vista="proyecto"][data-id="' + TK.vista.id + '"]').addClass("active");
   else $('.tk-nav-item[data-vista="' + TK.vista.tipo + '"]').addClass("active");
 }
+// Encabezado del proyecto: quiénes participan (o que es de todos)
+function tkParticipantes(p) {
+  if (!p) return "";
+  if (p.todos) return '<i class="mdi mdi-earth"></i> Visible para todos';
+  var ids = p.miembros || [];
+  var max = 6;
+  return '<span class="tk-part">' + ids.slice(0, max).map(tkAvatar).join("") +
+    (ids.length > max ? '<span class="tk-part-mas">+' + (ids.length - max) + "</span>" : "") +
+    "</span> " + ids.length + (ids.length === 1 ? " participante" : " participantes") +
+    (!p.participo ? " · no participás (lo ves por ser administrador)" : "");
+}
 function tkProyecto(id) {
   return TK.proyectos.filter(function (p) { return p.id == id; })[0];
 }
@@ -129,7 +144,7 @@ function tkIrA(tipo, id) {
     $("#tk_sub").text("Tus tareas, de la que vence primero a la última.");
   } else if (tipo === "proyecto") {
     $("#tk_titulo").html('<span class="tk-dot" style="--tk-c:' + tkEsc(p ? p.color : "") + ';width:14px;height:14px"></span>' + tkEsc(p ? p.nombre : "Proyecto"));
-    $("#tk_sub").text("Todas las tareas del proyecto, de cualquier responsable.");
+    $("#tk_sub").html(tkParticipantes(p));
   } else {
     $("#tk_titulo").text("Eliminados");
     $("#tk_sub").text("Las tareas eliminadas quedan acá " + TK.diasEliminados + " días: abrilas o tocá Recuperar para volverlas a su proyecto.");
@@ -670,9 +685,46 @@ function tkModalProyecto(p) {
       return '<button type="button" class="tk-color' + (c === color ? " active" : "") + '" data-color="' + c + '" style="--tk-c:' + c + '"></button>';
     }).join(""),
   );
+  // Participantes: yo siempre (salvo admin editando uno ajeno, que puede no estar)
+  var elegidos = p ? (p.miembros || []).slice() : [TK.yo];
+  var yoFijo = !TK.esAdmin || !p;
+  $("#tk_p_buscar").val("");
+  $("#tk_p_todos").prop("checked", p ? !!p.todos : false);
+  // Primero los que ya participan, después el resto (cada grupo por nombre)
+  var orden = TK.listaUsuarios.slice().sort(function (a, b) {
+    var pa = elegidos.indexOf(a.id) >= 0 || (a.id == TK.yo && yoFijo), pb = elegidos.indexOf(b.id) >= 0 || (b.id == TK.yo && yoFijo);
+    return pa === pb ? a.nombre.localeCompare(b.nombre) : pa ? -1 : 1;
+  });
+  $("#tk_p_miembros").html(
+    orden.map(function (u) {
+      var esYo = u.id == TK.yo;
+      return '<label class="tk-miembro" data-busca="' + tkEsc((u.nombre + " " + u.handle).toLowerCase()) + '">' +
+        '<input type="checkbox" class="form-check-input" value="' + u.id + '"' + (elegidos.indexOf(u.id) >= 0 || (esYo && yoFijo) ? " checked" : "") +
+        (esYo && yoFijo ? " disabled" : "") + ">" + tkAvatar(u.id) + "<span>" + tkEsc(u.nombre) + (esYo ? " <small>(vos)</small>" : "") + "</span></label>";
+    }).join(""),
+  );
+  tkPintarAyudaParticipantes();
   bootstrap.Modal.getOrCreateInstance(document.getElementById("tk_modal_proy")).show();
   setTimeout(function () { $("#tk_p_nombre").trigger("focus"); }, 300);
 }
+function tkPintarAyudaParticipantes() {
+  var todos = $("#tk_p_todos").is(":checked");
+  var n = $("#tk_p_miembros input:checked").length;
+  $("#tk_p_miembros").toggleClass("deshabilitado", todos);
+  $("#tk_p_cant").text(todos ? "" : "(" + n + ")");
+  $("#tk_p_ayuda").text(
+    todos
+      ? "Todos los usuarios del sistema ven este proyecto y sus tareas."
+      : "Solo los participantes ven el proyecto. Si asignás o mencionás a alguien de afuera, ve únicamente esa tarea.",
+  );
+}
+$(document).on("change", "#tk_p_todos, #tk_p_miembros input", tkPintarAyudaParticipantes);
+$("#tk_p_buscar").on("input", function () {
+  var q = $(this).val().trim().toLowerCase();
+  $("#tk_p_miembros .tk-miembro").each(function () {
+    $(this).toggle(!q || $(this).data("busca").indexOf(q) >= 0);
+  });
+});
 $(document).on("click", ".tk-color", function () {
   $(".tk-color").removeClass("active");
   $(this).addClass("active");
@@ -686,7 +738,13 @@ $("#tk_p_nombre").on("keydown", function (e) {
   if (e.key === "Enter") $("#tk_p_guardar").click();
 });
 $("#tk_p_guardar").on("click", function () {
-  tkApi("guardar_proyecto", { id: tkProyEditando, nombre: $("#tk_p_nombre").val(), color: $(".tk-color.active").data("color") })
+  tkApi("guardar_proyecto", {
+    id: tkProyEditando,
+    nombre: $("#tk_p_nombre").val(),
+    color: $(".tk-color.active").data("color"),
+    todos: $("#tk_p_todos").is(":checked") ? 1 : 0,
+    miembros: $("#tk_p_miembros input:checked").map(function () { return this.value; }).get(),
+  })
     .done(function (r) {
       bootstrap.Modal.getInstance(document.getElementById("tk_modal_proy")).hide();
       toast("success", tkProyEditando ? "Proyecto actualizado" : "Proyecto creado", "");
