@@ -1,6 +1,7 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
 include_once "../../../Funciones/generarCodigo.php";
+include_once __DIR__ . "/../../../Funciones/origen_envio.php";
 
 mysqli_set_charset($mysqli, "utf8");
 date_default_timezone_set('America/Argentina/Buenos_Aires');
@@ -350,7 +351,7 @@ if (isset($_POST['CargarVenta'])) {
 
             //INGRESAR EN SEGUIMIENTO
 
-            $observaciones_seguimiento = 'Ya tenemos tu pedido!';
+            $observaciones_seguimiento = textoOrigenEnvio('COLECTA');
 
             $sqlSeg = "INSERT INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Estado,idTransClientes,Recorrido)
             VALUES('{$fecha}','{$hora}','{$usuario}','{$sucursal}','{$codigo_seguimiento}','{$observaciones_seguimiento}','{$Estado}','{$idTransClientes}','{$recorrido}')";
