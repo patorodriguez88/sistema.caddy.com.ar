@@ -3,6 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', '1');
 
 include_once "../Conexion/Conexioni.php";
+include_once __DIR__ . "/../Funciones/origen_envio.php";
 // Escape para los textos que van dentro del SQL: un apostrofo en el nombre o la
 // direccion ("O'Higgins", "D'Ascenzi") cortaba la consulta y el pase de preventa a
 // venta quedaba colgado a mitad de camino (2026-09-29). Se escapa en cada VALUES,
@@ -628,11 +629,9 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
         $Sucursal = $_SESSION['Sucursal'];
         $Estado = 'En Origen';
-        if ($Observaciones == '') {
-            $Observaciones = 'Ya tenemos tu pedido!';
-        }
+        $ObsSeg = textoOrigenEnvio($origen);
         $sqlSeg = "INSERT IGNORE INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,Retirado,idTransClientes,Recorrido,status)
-        VALUES('{$esc($Fecha)}','{$esc($Hora)}','{$esc($Usuario)}','{$esc($Sucursal)}','{$esc($NumeroPedido)}','{$esc($Observaciones)}','{$esc($Entregado)}','{$esc($Estado)}','{$esc($Retirado)}','{$esc($idTransClientes)}','{$esc($Recorrido_Limpio)}','{$esc($status)}')";
+        VALUES('{$esc($Fecha)}','{$esc($Hora)}','{$esc($Usuario)}','{$esc($Sucursal)}','{$esc($NumeroPedido)}','{$esc($ObsSeg)}','{$esc($Entregado)}','{$esc($Estado)}','{$esc($Retirado)}','{$esc($idTransClientes)}','{$esc($Recorrido_Limpio)}','{$esc($status)}')";
         $mysqli->query($sqlSeg);
         $Cargado = $mysqli->query("UPDATE IGNORE PreVenta SET Cargado=1 WHERE id='$idPreVenta[$i]'");
 

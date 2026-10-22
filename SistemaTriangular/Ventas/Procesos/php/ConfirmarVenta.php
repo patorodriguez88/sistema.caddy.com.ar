@@ -46,6 +46,7 @@ register_shutdown_function(function () {
 });
 
 include_once "../../../Conexion/Conexioni.php";
+include_once __DIR__ . "/../../../Funciones/origen_envio.php";
 mysqli_set_charset($mysqli, "utf8");
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 $FechaActual = date('Y-m-d');
@@ -413,12 +414,10 @@ if ($Retirado == 0) {
     $Estado = 'En Origen';
 }
 
-if (empty($Observaciones)) {
-    $Observaciones = 'Ya registramos tu env io!';
-}
+$ObsSeg = textoOrigenEnvio('VENTA_MANUAL');
 
 $sqlSeg = "INSERT INTO Seguimiento(Fecha,Hora,Usuario,Sucursal,CodigoSeguimiento,Observaciones,Entregado,Estado,Retirado,idTransClientes,Recorrido)
-    VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$Seguimiento}','{$Observaciones}','{$Entregado}','{$Estado}','{$Retirado}','{$idTransClientes}','{$_POST['recorrido_t']}')";
+    VALUES('{$Fecha}','{$Hora}','{$Usuario}','{$Sucursal}','{$Seguimiento}','{$ObsSeg}','{$Entregado}','{$Estado}','{$Retirado}','{$idTransClientes}','{$_POST['recorrido_t']}')";
 $mysqli->query($sqlSeg);
 
 // Comprobamos si hay una orden abierta
