@@ -1,5 +1,8 @@
 <?php
 include_once __DIR__ . "/../Conexion/Conexioni.php";
+// Hora de Argentina para todo lo que graba Fecha/Hora acá (cambiarRecorrido, etc.): sin esto, los que
+// llegan desde un script que no la fija (ej. Logistica/Mapas/php/zonas.php) graban en UTC, 3 h adelantados.
+date_default_timezone_set('America/Argentina/Buenos_Aires');
 // HELPERS
 function normalizarImporte($valor)
 {
