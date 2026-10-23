@@ -1227,6 +1227,30 @@ $(document).ready(function () {
     });
   });
 
+  $("#sure_switch").change(function () {
+    var $sw = $(this);
+    var switchValue = $sw.is(":checked") ? 1 : 0;
+    var id = document.getElementById("codigo").value;
+    $.ajax({
+      type: "POST",
+      url: "Procesos/php/funciones.php",
+      data: { Seguro: 1, idCliente: id, switchValue: switchValue },
+      success: function (response) {
+        var jsonData = JSON.parse(response);
+        if (jsonData.success == 1) {
+          toast("success", "Exito !", switchValue ? "Seguro activado." : "Seguro desactivado.");
+        } else {
+          $sw.prop("checked", !switchValue);
+          toast("error", "Error !", jsonData.error);
+        }
+      },
+      error: function () {
+        $sw.prop("checked", !switchValue);
+        toast("error", "Error !", "No se pudo guardar el seguro.");
+      },
+    });
+  });
+
   //DESTRUIR TODAS LAS GUIAS
   var tabla_facturacion_proforma = $("#tabla_facturacion_proforma").DataTable();
   tabla_facturacion_proforma.destroy();
@@ -2111,6 +2135,7 @@ $("#buscarcliente").change(function () {
         //INTEGRACIONES
         console.log("user_id", jsonData.user_id);
         //SEGURO
+        $("#sure_switch").prop("checked", jsonData.sure == 1);
         $("#sure_perc").val(jsonData.sure_perc);
         $("#sure_min").val(jsonData.sure_min);
 

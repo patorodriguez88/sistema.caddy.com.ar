@@ -2446,6 +2446,15 @@
                                                     </div>
                                                 </div>
                                                 <div class="row">
+                                                    <div class="col-lg-12 mt-3">
+                                                        <div class="form-check form-switch">
+                                                            <input type="checkbox" class="form-check-input" id="sure_switch">
+                                                            <label class="form-check-label" for="sure_switch">Cobrar seguro sobre el valor declarado</label>
+                                                        </div>
+                                                        <small class="text-muted">Si está apagado, el valor declarado se guarda pero no se agrega el cargo del seguro en la venta.</small>
+                                                    </div>
+                                                </div>
+                                                <div class="row">
                                                     <div class="col-lg-3 mt-3">
                                                         <div class="form-group">
                                                             <label for="sure_min">Valor Minimo Seguro</label>
