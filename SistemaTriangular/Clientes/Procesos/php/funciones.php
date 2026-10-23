@@ -138,6 +138,21 @@ if (isset($_POST['Colecta'])) {
   }
 }
 
+// Seguro: activa/desactiva el cargo del seguro sobre el valor declarado (lo aplica AgregarRepoVentaWeb.php)
+if (isset($_POST['Seguro'])) {
+  $sure = (int)($_POST['switchValue'] ?? -1);
+  $idCliente = (int)($_POST['idCliente'] ?? 0);
+  if (($sure !== 0 && $sure !== 1) || $idCliente <= 0) {
+    echo json_encode(array('success' => 0, 'error' => 'Datos no válidos'));
+  } else {
+    $stmt = $mysqli->prepare("UPDATE Clientes SET sure = ? WHERE id = ? LIMIT 1");
+    $stmt->bind_param("ii", $sure, $idCliente);
+    $ok = $stmt->execute();
+    $stmt->close();
+    echo json_encode($ok ? array('success' => 1) : array('success' => 0, 'error' => 'Error al actualizar la base de datos'));
+  }
+}
+
 //SELECT NOTAS DE DEBITO Y DE CREDITO
 if (isset($_POST['cbteasoc_comprobantes'])) {
 
@@ -1039,6 +1054,7 @@ if (isset($_POST['Datos'])) {
     'CicloFacturacion' => $row['CicloFacturacion'],
     'DiasVencimiento' => $row['DiasVencimiento'] ?? 7,
     'user_id' => $row['user_id'],
+    'sure' => (int)($row['sure'] ?? 0),
     'sure_min' => $sure_min,
     'sure_perc' => $row['sure_perc'],
     'Observaciones_f' => $Observaciones_f,
