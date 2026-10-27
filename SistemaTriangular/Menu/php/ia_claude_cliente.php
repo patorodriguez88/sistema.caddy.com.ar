@@ -6,7 +6,14 @@
 define('IA_ANTHROPIC_ENDPOINT', 'https://api.anthropic.com/v1/messages');
 define('IA_ANTHROPIC_VERSION', '2023-06-01');
 define('IA_MAX_ITERACIONES_TOOLS', 6);
-define('IA_MAX_TOKENS', 1024);
+// Haiku: el asistente solo elige una herramienta fija y resume lo que devuelve, no necesita más
+// (decidido con Patricio, 27/10/2026; Sonnet costaba ~20× más). Va en el código y no en
+// claude_config.php para que el modelo no dependa del archivo de cada servidor.
+define('IA_MODELO', 'claude-haiku-5-5');
+// Haiku piensa antes de responder y ese pensamiento cuenta dentro de max_tokens: con poco margen
+// cortaba respuestas. Esfuerzo 'low' alcanza para un chat de consultas y gasta menos.
+define('IA_MAX_TOKENS', 4096);
+define('IA_ESFUERZO', 'low');
 
 // USD por millón de tokens [entrada, salida]. La escritura de cache cuesta 1,25× la entrada y la
 // lectura 0,1×. Solo para registrar el costo estimado de cada consulta en ia_logs.
@@ -63,7 +70,7 @@ function iaLlamarClaude(array $body): array
 
 function iaModelo(): string
 {
-    return defined('ANTHROPIC_MODEL') ? ANTHROPIC_MODEL : 'claude-sonnet-5';
+    return IA_MODELO;
 }
 
 // Suma el usage de cada llamada (una consulta hace varias por las vueltas de tool-use).
@@ -75,7 +82,7 @@ function iaSumarUso(array &$uso, array $respuesta): void
     $uso['cache_escritura'] += (int) ($u['cache_creation_input_tokens'] ?? 0);
     $uso['cache_lectura'] += (int) ($u['cache_read_input_tokens'] ?? 0);
     $uso['salida'] += (int) ($u['output_tokens'] ?? 0);
-    [$pIn, $pOut] = IA_PRECIOS_USD[$uso['modelo']] ?? IA_PRECIOS_USD['claude-sonnet-5'];
+    [$pIn, $pOut] = IA_PRECIOS_USD[$uso['modelo']] ?? IA_PRECIOS_USD[IA_MODELO];
     $uso['costo_usd'] = round(($uso['entrada'] * $pIn + $uso['cache_escritura'] * $pIn * 1.25
         + $uso['cache_lectura'] * $pIn * 0.1 + $uso['salida'] * $pOut) / 1000000, 6);
 }
@@ -102,6 +109,7 @@ function iaConversarConClaude(mysqli $mysqli, string $systemFijo, string $system
         $respuesta = iaLlamarClaude([
             'model' => $uso['modelo'],
             'max_tokens' => IA_MAX_TOKENS,
+            'output_config' => ['effort' => IA_ESFUERZO],
             'cache_control' => ['type' => 'ephemeral'],
             'system' => $system,
             'messages' => $messages,

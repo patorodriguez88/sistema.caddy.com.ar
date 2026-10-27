@@ -4,4 +4,4 @@
 // Se genera una API key en https://console.anthropic.com/settings/keys
 
 define('ANTHROPIC_API_KEY', 'TU_API_KEY_DE_ANTHROPIC_AQUI');
-define('ANTHROPIC_MODEL', 'claude-sonnet-5');
+// El modelo está fijo en Menu/php/ia_claude_cliente.php (IA_MODELO).
