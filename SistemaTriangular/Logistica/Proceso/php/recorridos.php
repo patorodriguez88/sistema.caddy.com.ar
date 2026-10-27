@@ -74,6 +74,26 @@ if (isset($_POST['ActivarRecorridos'])) {
     $Activo = 0;
   }
 
+  // No desactivar un recorrido con envíos pendientes: el alta de órdenes y Zonas solo listan
+  // recorridos activos y esos envíos quedarían sin poder salir (caso rec 1466, 27/10/2026).
+  if ($Activo == 0) {
+    $idRec = (int) $_POST['id'];
+    $stmt = $mysqli->prepare("SELECT r.Numero, COUNT(h.id) AS Pendientes
+        FROM Recorridos r
+        LEFT JOIN HojaDeRuta h ON h.Recorrido = r.Numero AND h.Estado = 'Abierto' AND h.Eliminado = 0 AND h.Devuelto = 0
+        LEFT JOIN TransClientes tc ON tc.id = h.idTransClientes AND tc.Eliminado = 0
+        WHERE r.id = ? AND (h.id IS NULL OR tc.id IS NOT NULL)
+        GROUP BY r.Numero");
+    $stmt->bind_param('i', $idRec);
+    $stmt->execute();
+    $rec = $stmt->get_result()->fetch_assoc();
+    $stmt->close();
+    if ($rec && (int) $rec['Pendientes'] > 0) {
+      echo json_encode(array('success' => 0, 'message' => 'El recorrido ' . $rec['Numero'] . ' tiene ' . $rec['Pendientes'] . ' envíos pendientes en Hoja de Ruta. Pasalos a otro recorrido antes de desactivarlo.'));
+      exit;
+    }
+  }
+
   $sql = "UPDATE Recorridos SET Activo='$Activo' WHERE id='$_POST[id]'";
   $mysqli->query($sql);
 

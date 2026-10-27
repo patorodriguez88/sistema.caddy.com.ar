@@ -216,6 +216,17 @@ function modificar(i, a) {
     success: function (jsonData) {
       var datatable = $("#recorridos").DataTable();
       datatable.ajax.reload();
+      if (jsonData.success != 1) {
+        $.toast({
+          heading: "No se pudo desactivar",
+          text: jsonData.message || "Error al actualizar el recorrido.",
+          position: "bottom-right",
+          stack: false,
+          icon: "warning",
+          hideAfter: 8000,
+        });
+        return;
+      }
       //   toast("success", "Exito", "Recorrido Activado.");
       if (a != 1) {
         $.toast({

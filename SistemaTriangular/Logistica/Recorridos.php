@@ -329,7 +329,7 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <!-- Funciones -->
-    <script src="Proceso/js/recorridos.js"></script>
+    <script src="Proceso/js/recorridos.js?v=<?php echo filemtime(__DIR__ . '/Proceso/js/recorridos.js'); ?>"></script>
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
     <!-- SweetAlert2 CSS -->
