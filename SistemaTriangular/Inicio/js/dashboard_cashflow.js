@@ -18,7 +18,6 @@
     // PERSONAL
     "000420700": "Personal",
     "000420800": "Personal",
-    "000421400": "Personal",
     "000402400": "Personal",
     // LOGISTICA / OPERACIONES
     "000420600": "Logistica",
@@ -26,6 +25,7 @@
     "000421600": "Logistica",
     "000421800": "Logistica",
     "000420200": "Logistica",
+    "000421400": "Logistica", // SEGUROS
     // GENERALES / ADMIN
     "000421200": "Generales",
     "000421300": "Generales",
@@ -39,19 +39,20 @@
     "000425000": "Generales",
     "0004210000": "Generales",
     "000420400": "Generales",
+    "000423600": "Generales", // GASTOS DE COMERCIALIZACION
+    "000424600": "Generales", // SERVICIO DE DISPENSER DE AGUA
     // FINANCIEROS / IMPUESTOS
     "000421000": "Financieros",
+    "000422900": "Financieros", // COMERCIO E INDUSTRIA
     "000420300": "Financieros",
     "000423900": "Financieros",
     "000423300": "Financieros",
     "000423400": "Financieros",
     "000422800": "Financieros",
     "000423200": "Financieros",
-    "000424600": "Financieros",
     "000424700": "Financieros",
     "000424800": "Financieros",
     "000423700": "Financieros",
-    "000423600": "Financieros",
   };
   function grupoDe(fila) {
     if (fila.grupo && GRUPOS.includes(fila.grupo)) return fila.grupo; // gastos extras
