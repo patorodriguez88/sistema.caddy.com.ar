@@ -641,6 +641,13 @@ controlarAccesoAlSistema(); ?>
                 >Recorridos</a
               >
               <?php endif; ?>
+              <?php if (tieneMenuPermiso('Logistica', 'Bolsines')): ?>
+              <a
+                href="/SistemaTriangular/Logistica/Bolsines.php"
+                class="dropdown-item"
+                >Bolsines</a
+              >
+              <?php endif; ?>
               <?php if (tieneMenuPermiso('Logistica', 'Control Recorridos')): ?>
               <a
                 href="/SistemaTriangular/Logistica/ControlRecorridos"
