@@ -67,16 +67,16 @@ include_once "../Conexion/Conexioni.php";
                                     <div class="row g-2">
                                         <div class="col-md-4 bo-solo-asignar">
                                             <label class="form-label" for="bo-recorrido">Recorrido</label>
-                                            <select id="bo-recorrido" class="form-select form-select-lg"></select>
+                                            <select id="bo-recorrido" class="form-select"></select>
                                         </div>
                                         <div class="col-md-3 bo-solo-asignar">
                                             <label class="form-label" for="bo-precinto">N° de precinto</label>
-                                            <input type="text" id="bo-precinto" class="form-control form-control-lg" maxlength="30" autocomplete="off">
+                                            <input type="text" id="bo-precinto" class="form-control" maxlength="30" autocomplete="off">
                                         </div>
                                         <div class="col-md-5" id="bo-codigo-wrap">
-                                            <label class="form-label" for="bo-codigo">Bolsín (escaneá el QR o escribí el número)</label>
-                                            <div class="input-group input-group-lg">
-                                                <input type="text" id="bo-codigo" class="form-control" placeholder="BOL-0001 o 1" autocomplete="off">
+                                            <label class="form-label" for="bo-codigo">Bolsín</label>
+                                            <div class="input-group">
+                                                <input type="text" id="bo-codigo" class="form-control" placeholder="Escaneá el QR o escribí el número" autocomplete="off">
                                                 <button type="button" id="bo-aplicar" class="btn btn-warning">Asignar</button>
                                             </div>
                                         </div>
