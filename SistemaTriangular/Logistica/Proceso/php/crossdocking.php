@@ -47,6 +47,14 @@ function cd_base(string $raw): string
     return preg_replace('/_\d+$/', '', $raw) ?? $raw;
 }
 
+// Etiqueta de la API (api.caddy.com.ar/etiqueta.php): el QR grande trae la URL de seguimiento,
+// sola o dentro de un JSON {"id":"https://web.caddy.com.ar/seguimiento.html?codigo=XXX"}. Se toma
+// el código de ahí; si no, se devuelve el texto tal cual.
+function cd_codigo_qr_caddy(string $raw): string
+{
+    return preg_match('/seguimiento\.html\?codigo=([A-Za-z0-9\-]+(?:_\d+)?)/i', $raw, $m) ? $m[1] : $raw;
+}
+
 // Si el QR trae JSON de Meli {"id":"..."} devuelve el id numérico como string, si no null.
 function cd_parse_meli_json(string $raw): ?string
 {
@@ -349,7 +357,7 @@ function cd_bultos_esperados(mysqli $mysqli, int $recorrido): int
 if (isset($_POST['EscanearCrossdocking'])) {
     header('Content-Type: application/json; charset=utf-8');
 
-    $raw = trim((string)($_POST['codigo'] ?? ''));
+    $raw = cd_codigo_qr_caddy(trim((string)($_POST['codigo'] ?? '')));
     if ($raw === '') {
         echo json_encode(['ok' => false, 'error' => 'CODIGO_VACIO']);
         exit;
@@ -683,7 +691,7 @@ if (isset($_REQUEST['PendientesCrossdocking'])) {
 if (isset($_POST['ControlarCrossdocking'])) {
     header('Content-Type: application/json; charset=utf-8');
 
-    $raw = trim((string)($_POST['codigo'] ?? ''));
+    $raw = cd_codigo_qr_caddy(trim((string)($_POST['codigo'] ?? '')));
     $recorridoObjetivo = (int)($_POST['recorrido'] ?? 0);
     if ($raw === '' || $recorridoObjetivo <= 0) {
         echo json_encode(['ok' => false, 'error' => 'DATOS_INVALIDOS']);
