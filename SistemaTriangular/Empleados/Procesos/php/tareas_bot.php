@@ -135,8 +135,9 @@ switch ($_POST['accion'] ?? '') {
         $st = $mysqli->prepare("INSERT INTO ProyectosTareas_adjuntos (idTarea, idUsuario, NombreOriginal, Archivo, Mime, Tamano) VALUES (?,?,?,?,?,?)");
         $st->bind_param('iisssi', $id, $autor, $nombre, $archivo, $mime, $tam);
         $st->execute();
+        $idAdjunto = $mysqli->insert_id;
         tk_tocar($db, $id, $autor);
-        tb_responder(['success' => 1, 'idAdjunto' => $mysqli->insert_id]);
+        tb_responder(['success' => 1, 'idAdjunto' => $idAdjunto]);
 
     case 'completar':
         $id = (int) ($_POST['id'] ?? 0);
