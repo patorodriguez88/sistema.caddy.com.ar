@@ -470,15 +470,19 @@ function _rotuloDatos() {
 
 // Rótulo 6,5 x 3,2 cm @ 203 dpi (520 x 256 pts) - mismo formato que la etiqueta
 // de colecta: logo + QR en columna izquierda, texto a la derecha desde X=200.
-function _rotuloZPL(x) {
+// FIX (2026-10-29): imprimía un solo rótulo "Bulto: 1/N" con el código sin sufijo. Con más de
+// un bulto la app de reparto espera BASE_1, BASE_2... (uno por bulto): ahora sale un rótulo por
+// bulto con su sufijo, igual que el panel de Seguimiento (Funciones/js/seguimiento.js).
+function _rotuloZPL(x, i, total) {
+  var csEtiqueta = total > 1 ? x.cs + "_" + i : x.cs;
   return (
     "^XA^PW520^LL256^LH0,0^CI28" +
     CADDY_LOGO_ZPL +
     "^FO215,10^A0N,20,20^FD" + x.cliente + "^FS" +
     "^FO215,35^A0N,18,18^FD" + x.domicilio + "^FS" +
-    "^FO215,57^A0N,18,18^FDId: " + x.cs + "^FS" +
+    "^FO215,57^A0N,18,18^FDId: " + csEtiqueta + "^FS" +
     "^FO215,79^A0N,18,18^FDOrigen: " + x.origen + "^FS" +
-    "^FO215,101^A0N,18,18^FDBulto: 1/" + x.cant + "^FS" +
+    "^FO215,101^A0N,18,18^FDBulto: " + i + "/" + total + "^FS" +
     "^FO215,123^A0N,18,18^FDFecha: " + x.fecha + "^FS" +
     "^FO215,148^A0N,30,30^FDRec: " + (x.recorrido || "-") + "^FS" +
     "^FO215,185^A0N,26,26^FDPos: " + (x.posicion || "-") + "^FS" +
@@ -486,7 +490,7 @@ function _rotuloZPL(x) {
     // el bloque (logo, QR, texto) corrido 15 dots a la derecha, el QR
     // arrancaba pegado al margen izquierdo físico del rótulo (ver ese
     // archivo para el detalle completo).
-    "^FO45,74^BQN,2,7^FDQA," + x.cs + "^FS" +
+    "^FO45,74^BQN,2,7^FDQA," + csEtiqueta + "^FS" +
     "^XZ"
   );
 }
@@ -504,17 +508,26 @@ function imprimirRotuloConFallback() {
     return;
   }
 
+  var total = Math.max(1, parseInt(x.cant, 10) || 1);
+
+  // Todos los bultos seguidos; si falla alguno se abre una sola vez el PDF (trae todos los bultos).
   function enviarAZebra(device) {
-    device.send(
-      _rotuloZPL(x),
-      function () {
-        toast("success", "Rótulo", "Enviado a la impresora.");
-      },
-      function () {
-        toast("warning", "Rótulo", "No se pudo imprimir por Zebra - se abrió el PDF.");
-        verrotulo();
-      },
-    );
+    var listos = 0;
+    var fallo = false;
+    for (var i = 1; i <= total; i++) {
+      device.send(
+        _rotuloZPL(x, i, total),
+        function () {
+          if (++listos === total && !fallo) toast("success", "Rótulo", total > 1 ? "Enviados " + total + " rótulos a la impresora." : "Enviado a la impresora.");
+        },
+        function () {
+          if (fallo) return;
+          fallo = true;
+          toast("warning", "Rótulo", "No se pudo imprimir por Zebra - se abrió el PDF.");
+          verrotulo();
+        },
+      );
+    }
   }
 
   if (typeof BrowserPrint === "undefined") {
