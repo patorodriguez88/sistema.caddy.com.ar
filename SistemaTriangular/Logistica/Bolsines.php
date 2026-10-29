@@ -48,7 +48,7 @@ include_once "../Conexion/Conexioni.php";
                                         <li class="breadcrumb-item active">Bolsines</li>
                                     </ol>
                                 </div>
-                                <h4 class="page-title">Bolsines de facturas</h4>
+                                <h4 class="page-title">Bolsines internos</h4>
                             </div>
                         </div>
                     </div>
