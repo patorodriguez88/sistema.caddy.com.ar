@@ -538,6 +538,20 @@ $(document).on("click", ".btn-volver-no-controlado", function () {
   });
 });
 
+function _pesosFacturar(v) {
+  return "$ " + Number(v).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+// Debajo del listado: total de las órdenes controladas que todavía no se facturaron.
+function _totalFacturar(filas) {
+  const pendientes = filas.filter((r) => parseInt(r.Rendicion) === 0 && _num(r.Costo_rendicion) > 0);
+  const total = pendientes.reduce((a, r) => a + _num(r.Costo_rendicion), 0);
+  $("#desempeno_total_facturar").html(
+    pendientes.length
+      ? "Controladas sin facturar (" + pendientes.length + "): <b>" + _pesosFacturar(total) + "</b>"
+      : "",
+  );
+}
+
 $("#desempeno_button").click(function () {
   $("#desempeno_tabla").css("display", "table");
   if ($.fn.DataTable.isDataTable("#desempeno_tabla")) {
@@ -574,6 +588,8 @@ $("#desempeno_button").click(function () {
         .data()
         .toArray();
       toggleBloqueFactura(filas);
+      // Total a facturar de todo el rango (también después de controlar o volver atrás una orden)
+      _totalFacturar($("#desempeno_tabla").DataTable().rows().data().toArray());
     },
     columns: [
       {
@@ -627,6 +643,18 @@ $("#desempeno_button").click(function () {
             var reporte_controlado = 0;
           }
           return `<td class="table-action"><a id="${row.NumerodeOrden}" onclick="report(this.id,${id},'${row.Fecha}',${row.Recorrido},${reporte_controlado});" class="action-icon"> <i class="mdi mdi-text-box-search-outline text-success"></i></a>`;
+        },
+      },
+      {
+        // Monto a facturar (pedido de Micaela, tarea #22): el total de la rendición, que existe
+        // recién al controlar la orden (Logistica.Costo_rendicion).
+        data: "Costo_rendicion",
+        className: "text-end",
+        render: function (data, type, row) {
+          const monto = _num(row.Costo_rendicion);
+          if (type !== "display") return monto;
+          if (!monto) return '<span class="text-muted" title="Se calcula al controlar la orden">—</span>';
+          return "<b>" + _pesosFacturar(monto) + "</b>";
         },
       },
       {
