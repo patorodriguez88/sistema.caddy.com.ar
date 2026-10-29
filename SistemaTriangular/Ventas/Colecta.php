@@ -4,7 +4,7 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Sistema Caddy | </title>
+    <title>Sistema Caddy | Colectas</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta content="A fully featured admin theme which can be used to build CRM, CMS, etc." name="description" />
     <meta content="Coderthemes" name="author" />
@@ -140,6 +140,7 @@
                                                         </table>
                                                         <div class="row">
                                                             <div class="col-12 text-right">
+                                                                <button id="cm_nueva" type="button" class="btn btn-outline-primary me-1"><i class="mdi mdi-plus"></i> Nueva colecta manual</button>
                                                                 <button id="aceptar" type="button" class="btn btn-success" data-bs-dismiss="modal">Aceptar</button>
                                                                 <button id="modificar_recorrido_all" type="button" class="btn btn-primary" data-bs-dismiss="modal">Cambiar de Recorrido a Seleccionados</button>
                                                             </div>
@@ -173,6 +174,74 @@
     </div>
     <!-- END wrapper -->
 
+    <!-- Colecta manual: crear (cliente + servicios a retirar + recorrido + cobro) -->
+    <div class="modal fade" id="cm_modal_nueva" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Nueva colecta manual</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-2 mb-2">
+                        <div class="col-md-6">
+                            <label class="form-label">Cliente</label>
+                            <select id="cm_cliente" class="form-select"></select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Recorrido de retiro</label>
+                            <select id="cm_recorrido" class="form-select"></select>
+                        </div>
+                    </div>
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="form-check form-switch m-0">
+                            <input class="form-check-input" type="checkbox" id="cm_cobrar">
+                            <label class="form-check-label" for="cm_cobrar">Cobrar colecta</label>
+                        </div>
+                        <div class="input-group input-group-sm" style="max-width:200px" id="cm_importe_wrap" hidden>
+                            <span class="input-group-text">$</span>
+                            <input type="number" class="form-control" id="cm_importe" min="0" step="0.01">
+                        </div>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <b>Servicios a retirar</b>
+                        <small><a href="#" id="cm_todos">Todos</a> · <a href="#" id="cm_ninguno">Ninguno</a> · <span id="cm_cuenta">0</span> elegidos</small>
+                    </div>
+                    <div id="cm_servicios" class="border rounded" style="max-height:340px;overflow:auto;font-size:12px"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="cm_crear">Generar colecta</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Colecta manual: ver / agregar / sacar servicios -->
+    <div class="modal fade" id="cm_modal_detalle" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="cm_det_titulo">Colecta</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="font-size:12px">
+                    <div id="cm_det_estado" class="mb-2"></div>
+                    <b>En la colecta</b>
+                    <div id="cm_det_hijos" class="border rounded mb-3 mt-1"></div>
+                    <div id="cm_det_agregar_box">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <b>Servicios a retirar del cliente (para agregar)</b>
+                            <button type="button" class="btn btn-sm btn-primary" id="cm_det_agregar">Agregar seleccionados</button>
+                        </div>
+                        <div id="cm_det_disponibles" class="border rounded mt-1" style="max-height:260px;overflow:auto"></div>
+                    </div>
+                    <div id="cm_det_sobrantes" class="mt-3"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Vendor js -->
     <script src="../hyper/dist/assets/js/vendor.min.js"></script>
 
@@ -194,7 +263,7 @@
     <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- Funciones -->
     <!-- <script src="js/funcionesCpanel.js"></script> -->
-    <script src="Procesos/js/colecta.js"></script>
+    <script src="Procesos/js/colecta.js?v=<?= @filemtime(__DIR__ . '/Procesos/js/colecta.js') ?>"></script>
     <script src="../Menu/js/funciones.js"></script>
     <!-- <script src="js/mapa_inicio.js"></script> -->
     <!-- SweetAlert2 CSS -->

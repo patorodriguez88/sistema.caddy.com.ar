@@ -2117,6 +2117,9 @@ $("#buscarcliente").change(function () {
 
         $("#asana_gid").val(jsonData.TareasAsana_gid).trigger("change.select2");
 
+        // "Cobrar Colecta" no se cargaba con el valor guardado (siempre aparecía apagado)
+        $("#switch3").prop("checked", jsonData.Colecta == 1);
+
         // INFO COLECTAS
         if (jsonData.Colecta == 1) {
           $("#info_facturacion").css("display", "block");

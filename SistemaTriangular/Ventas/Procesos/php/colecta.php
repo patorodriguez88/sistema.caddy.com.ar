@@ -99,7 +99,7 @@ if ($_POST['datos'] == 1) {
 
     while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
 
-        $sql_control = $mysqli->query("SELECT id,Cantidad,CodigoSeguimiento,Fecha,Cantidad_m FROM Colecta WHERE Fecha='" . $row['Fecha'] . "' AND idCliente='" . $row['idCliente'] . "'");
+        $sql_control = $mysqli->query("SELECT id,Cantidad,CodigoSeguimiento,Fecha,Cantidad_m FROM Colecta WHERE Fecha='" . $row['Fecha'] . "' AND idCliente='" . $row['idCliente'] . "'" . (colectaTieneManual($mysqli) ? " AND Manual=0" : ""));
         $dato_control = $sql_control->fetch_array(MYSQLI_ASSOC);
 
         $FechaOrdenada_update = explode('-', $dato_control['Fecha']);
@@ -140,9 +140,14 @@ if ($_POST['datos'] == 1) {
 }
 
 
-if (isset($_POST['CargarVenta'])) {
-
-    $id_colecta = $_POST['id'];
+// Genera el servicio "padre" de una colecta (cliente -> WePoint): TransClientes, Ventas, Ctasctes,
+// Seguimiento y Hoja de Ruta. Automática (Flex): hijos = todos los Flex pendientes del cliente y cargo
+// por regla (tarifa 56 si son 10 o menos). Manual: $idsHijos y $importe (0 = sin cargo) los decide el
+// operador.
+function generarColecta(mysqli $mysqli, $id_colecta, ?array $idsHijos = null, ?float $importe = null): array
+{
+    global $HoraActual;
+    $id_colecta = (int) $id_colecta;
 
     $SQL_COLECTA = $mysqli->query("SELECT Fecha,idCliente,Cantidad,ValorDeclarado,Recorrido,CodigoSeguimiento FROM Colecta WHERE id='$id_colecta'");
     $DATO_COLECTA = $SQL_COLECTA->fetch_array(MYSQLI_ASSOC);
@@ -165,8 +170,7 @@ if (isset($_POST['CargarVenta'])) {
         $mysqli->query("UPDATE Colecta SET CodigoSeguimiento='{$codigo_seguimiento}'
             WHERE id='{$id_colecta}' AND (CodigoSeguimiento IS NULL OR CodigoSeguimiento='') LIMIT 1");
         if ($mysqli->affected_rows !== 1) {
-            echo json_encode(array('success' => 0, 'error' => 'YA_PROCESADA'));
-            exit;
+            return array('success' => 0, 'error' => 'YA_PROCESADA');
         }
 
         //Genero el ultimo numero para la reposicion
@@ -190,7 +194,7 @@ if (isset($_POST['CargarVenta'])) {
         $codigo = $DATO_TARIFA['Codigo'];
         $fecha = $DATO_COLECTA['Fecha'];
         $hora = $HoraActual;
-        $titulo = 'COLECTA FLEX TARIFA ' . $DATO_TARIFA['Titulo'];
+        $titulo = ($idsHijos === null ? 'COLECTA FLEX TARIFA ' : 'COLECTA TARIFA ') . $DATO_TARIFA['Titulo'];
         $FechaOrdenada = explode('-', $DATO_COLECTA['Fecha']);
         $comentario = 'Colecta ' . $FechaOrdenada[2] . '-' . $FechaOrdenada[1] . '-' . $FechaOrdenada[0] . ' (' . $DATO_COLECTA['Cantidad'] . ') envíos';
         $precio = $DATO_TARIFA['PrecioVenta'];
@@ -238,7 +242,13 @@ if (isset($_POST['CargarVenta'])) {
         $distancia = distancia($id_origen, $id_destino);
         $kilometros = $distancia['distancia'] / 1000;
 
-        if ($cantidad <= 10) {
+        if ($importe !== null) {
+            // Colecta manual: cobra lo que puso el operador (0 = sin cargo)
+            $total = round($importe, 2);
+            $importeneto = $total;
+            $iva = round($total * 21 / 100, 2);
+            $precio = $total;
+        } elseif ($cantidad <= 10) {
             $total = $DATO_TARIFA['PrecioVenta'];
             $importeneto = $DATO_TARIFA['PrecioVenta'];
             $iva = (($DATO_TARIFA['PrecioVenta'] * 21) / 100);
@@ -319,12 +329,21 @@ if (isset($_POST['CargarVenta'])) {
             // la colecta (FALTA_COLECTAID_O_PADREID) porque idColecta quedaba NULL.
             $mysqli->query("UPDATE TransClientes SET idColecta = {$id_colecta} WHERE id = {$idTransClientes}");
 
-            $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
-            WHERE Flex = 1
-            AND idClienteOrigen = {$id_origen}
-            AND Entregado=0
-            AND Eliminado = 0
-            AND (idColecta IS NULL OR idColecta = 0)";
+            if ($idsHijos === null) {
+                $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
+                WHERE Flex = 1
+                AND idClienteOrigen = {$id_origen}
+                AND Entregado=0
+                AND Eliminado = 0
+                AND (idColecta IS NULL OR idColecta = 0)";
+            } else {
+                $ids = implode(',', array_map('intval', $idsHijos)) ?: '0';
+                $sqlUpdateHijos = "UPDATE TransClientes SET idColecta = {$id_colecta}
+                WHERE id IN ({$ids})
+                AND idClienteOrigen = {$id_origen}
+                AND Retirado = 0 AND Entregado = 0 AND Eliminado = 0
+                AND (idColecta IS NULL OR idColecta = 0)";
+            }
 
             $mysqli->query($sqlUpdateHijos);
 
@@ -390,7 +409,7 @@ if (isset($_POST['CargarVenta'])) {
             // (Colecta.CodigoSeguimiento ya quedó guardado en el reclamo atómico
             // de más arriba — no hace falta un segundo UPDATE acá.)
 
-            echo json_encode(array('success' => 1, 'codigo' => $codigo_seguimiento));
+            return array('success' => 1, 'codigo' => $codigo_seguimiento, 'idPadre' => $idTransClientes);
         } catch (\Throwable $e) {
             $idTransClientesLog = isset($idTransClientes) ? $idTransClientes : null;
             $paso = isset($idTransClientes) ? 'despues_de_transclientes' : 'transclientes';
@@ -414,12 +433,14 @@ if (isset($_POST['CargarVenta'])) {
                 error_log('colecta.php CargarVenta: no se pudo loguear en ErroresColecta: ' . $e2->getMessage());
             }
 
-            echo json_encode(array('success' => 0, 'error' => $mensajeError));
+            return array('success' => 0, 'error' => $mensajeError);
         }
-    } else {
-
-        echo json_encode(array('success' => 0));
     }
+    return array('success' => 0);
+}
+
+if (isset($_POST['CargarVenta'])) {
+    echo json_encode(generarColecta($mysqli, $_POST['id']));
 }
 
 if ($_POST['ActualizaRecorrido'] == 1) {
@@ -435,4 +456,231 @@ if ($_POST['ActualizaRecorrido'] == 1) {
         $SQL_COLECTA = $mysqli->query("UPDATE Colecta SET Recorrido='$recorrido' WHERE id='$id[$i]'");
     }
     echo json_encode(array('success' => 1));
+}
+
+// ============================================================================================
+// Colecta manual (29/10, IGALFER y cualquier cliente): el operador elige el cliente y los servicios
+// a retirar, el recorrido de retiro y si se cobra. Se pueden agregar o sacar servicios uno por uno
+// hasta que el chofer la marca como retirada del cliente (padre Retirado = 1 en la app). Migración:
+// Conexion/migraciones/2026_10_29_colecta_manual.sql.
+// ============================================================================================
+
+function colectaTieneManual(mysqli $mysqli): bool
+{
+    static $ok = null;
+    if ($ok === null) {
+        $r = $mysqli->query("SHOW COLUMNS FROM Colecta LIKE 'Manual'");
+        $ok = $r && $r->num_rows > 0;
+    }
+    return $ok;
+}
+
+function colectaJson(array $data): void
+{
+    echo json_encode($data, JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
+// Servicios "a retirar" de un cliente que todavía no están en ninguna colecta.
+const COLECTA_SQL_A_RETIRAR = "Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Retirado = 0
+    AND (idColecta IS NULL OR idColecta = 0) AND idClienteDestino <> 18587";
+
+// Colecta + su padre; editable mientras el chofer no la cerró en la app ("retirada del cliente": el
+// cierre deja 'cierre' en ColectaScans; el padre pasa a Retirado=1 ya con el primer escaneo, por eso
+// no sirve como señal).
+function colectaManualDatos(mysqli $mysqli, int $idColecta): ?array
+{
+    $st = $mysqli->prepare("SELECT c.id, c.idCliente, c.Fecha, c.Recorrido, c.CodigoSeguimiento, c.Eliminado, c.ColectaScans,
+                                   p.id AS idPadre, p.Entregado AS PadreEntregado, p.Debe AS Importe
+                            FROM Colecta c
+                            LEFT JOIN TransClientes p ON p.CodigoSeguimiento = c.CodigoSeguimiento AND p.Eliminado = 0
+                            WHERE c.id = ? LIMIT 1");
+    $st->bind_param('i', $idColecta);
+    $st->execute();
+    $c = $st->get_result()->fetch_assoc();
+    if (!$c) return null;
+    $scans = json_decode((string) $c['ColectaScans'], true);
+    $c['cerrada'] = is_array($scans) && !empty($scans['cierre']);
+    unset($c['ColectaScans']);
+    $c['editable'] = (int) $c['Eliminado'] === 0 && !empty($c['idPadre']) && !$c['cerrada'] && (int) $c['PadreEntregado'] === 0;
+    return $c;
+}
+
+// Mismo cálculo que la app de reparto (colecta_scan.php: calcularResume).
+function colectaResume(array $payload): array
+{
+    $exp = $payload['expected'] ?? [];
+    $det = $exp['servicios_detalle'] ?? [];
+    $scans = $payload['scans'] ?? [];
+    $need = [];
+    foreach ($det as $svc) $need[trim((string) $svc['cs_base'])] = (int) ($svc['paquetes'] ?? 0);
+    $have = [];
+    $paquetesOk = 0;
+    foreach ($scans as $sc) {
+        $b = trim((string) ($sc['base'] ?? ''));
+        $q = (int) ($sc['qty'] ?? 1);
+        if ($b === '') { $paquetesOk += $q; continue; }
+        $have[$b] = ($have[$b] ?? 0) + $q;
+    }
+    foreach ($have as $b => $q) $paquetesOk += ($need[$b] ?? 0) > 0 ? min($q, $need[$b]) : $q;
+    $serviciosOk = 0;
+    foreach ($need as $b => $n) if ($b !== '' && $n > 0 && ($have[$b] ?? 0) >= $n) $serviciosOk++;
+    return ['servicios_ok' => $serviciosOk, 'servicios_total' => (int) ($exp['servicios'] ?? count($det)),
+            'paquetes_ok' => $paquetesOk, 'paquetes_total' => (int) ($exp['paquetes_total'] ?? 0)];
+}
+
+// Después de agregar o sacar servicios: cantidades del padre / venta / colecta, y si el chofer ya abrió
+// la colecta, lo esperado en su foto (ColectaScans) sin perder lo que ya escaneó.
+function colectaManualActualizar(mysqli $mysqli, array $c): int
+{
+    $idColecta = (int) $c['id'];
+    $st = $mysqli->prepare("SELECT id, CodigoSeguimiento, Cantidad, CodigoProveedor, ClienteDestino
+                            FROM TransClientes WHERE idColecta = ? AND id <> ? AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0");
+    $idPadre = (int) $c['idPadre'];
+    $st->bind_param('ii', $idColecta, $idPadre);
+    $st->execute();
+    $hijos = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $cantidad = count($hijos);
+
+    $f = explode('-', (string) $c['Fecha']);
+    $comentario = 'Colecta ' . ($f[2] ?? '') . '-' . ($f[1] ?? '') . '-' . ($f[0] ?? '') . " ({$cantidad}) envíos";
+    $mysqli->query("UPDATE Colecta SET Cantidad = {$cantidad}, Cantidad_m = 0 WHERE id = {$idColecta} LIMIT 1");
+    $st = $mysqli->prepare("UPDATE TransClientes SET Cantidad = ?, Observaciones = ? WHERE id = ? LIMIT 1");
+    $st->bind_param('isi', $cantidad, $comentario, $idPadre);
+    $st->execute();
+    $st = $mysqli->prepare("UPDATE Ventas SET Cantidad = ?, Comentario = ? WHERE NumPedido = ? LIMIT 1");
+    $cs = (string) $c['CodigoSeguimiento'];
+    $st->bind_param('iss', $cantidad, $comentario, $cs);
+    $st->execute();
+
+    $r = $mysqli->query("SELECT ColectaScans FROM Colecta WHERE id = {$idColecta}")->fetch_assoc();
+    $payload = json_decode((string) ($r['ColectaScans'] ?? ''), true);
+    if (is_array($payload) && isset($payload['expected'])) {
+        $previos = [];
+        foreach ($payload['expected']['servicios_detalle'] ?? [] as $d) $previos[(int) $d['idTransCliente']] = $d;
+        $detalle = [];
+        $paquetes = 0;
+        foreach ($hijos as $h) {
+            $cant = max(1, (int) $h['Cantidad']);
+            $detalle[] = $previos[(int) $h['id']] ?? [
+                'idTransCliente' => (int) $h['id'], 'codigoProveedor' => (string) $h['CodigoProveedor'],
+                'cs_base' => trim(explode('_', (string) $h['CodigoSeguimiento'])[0]), 'cliente' => (string) $h['ClienteDestino'],
+                'paquetes' => $cant, 'es_flex' => 0, 'ml_confirmado' => 0, 'ml_status' => '',
+            ];
+            $paquetes += $cant;
+        }
+        $bases = array_column($detalle, 'cs_base');
+        $payload['scans'] = array_values(array_filter($payload['scans'] ?? [], fn($sc) => in_array($sc['base'] ?? '', $bases, true)));
+        $payload['expected']['servicios_detalle'] = $detalle;
+        $payload['expected']['servicios'] = count($detalle);
+        $payload['expected']['paquetes_total'] = $paquetes;
+        $payload['expected']['paquetes_sistema'] = $paquetes;
+        $payload['resume'] = colectaResume($payload);
+        $json = json_encode($payload, JSON_UNESCAPED_UNICODE);
+        $st = $mysqli->prepare("UPDATE Colecta SET ColectaScans = ?, ColectaScansUpdatedAt = NOW() WHERE id = ?");
+        $st->bind_param('si', $json, $idColecta);
+        $st->execute();
+    }
+    return $cantidad;
+}
+
+if (isset($_POST['ManualClientes'])) {
+    $res = $mysqli->query("SELECT t.idClienteOrigen AS id, MAX(t.RazonSocial) AS Cliente, COUNT(*) AS Servicios
+                           FROM TransClientes t WHERE " . str_replace(['Eliminado', 'Entregado', 'Devuelto', 'Retirado', 'idColecta', 'idClienteDestino'],
+                           ['t.Eliminado', 't.Entregado', 't.Devuelto', 't.Retirado', 't.idColecta', 't.idClienteDestino'], COLECTA_SQL_A_RETIRAR) . "
+                           AND t.idClienteOrigen > 0 GROUP BY t.idClienteOrigen ORDER BY Cliente");
+    colectaJson(['success' => 1, 'data' => $res->fetch_all(MYSQLI_ASSOC)]);
+}
+
+if (isset($_POST['ManualServicios'])) {
+    $idCliente = (int) ($_POST['idCliente'] ?? 0);
+    $st = $mysqli->prepare("SELECT id, Fecha, CodigoSeguimiento, CodigoProveedor, ClienteDestino, LocalidadDestino, Cantidad, Recorrido
+                            FROM TransClientes WHERE idClienteOrigen = ? AND " . COLECTA_SQL_A_RETIRAR . " ORDER BY Fecha, id");
+    $st->bind_param('i', $idCliente);
+    $st->execute();
+    $servicios = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $tarifa = $mysqli->query("SELECT PrecioVenta FROM Productos WHERE Codigo = '56'")->fetch_assoc();
+    colectaJson(['success' => 1, 'data' => $servicios, 'tarifa' => (float) ($tarifa['PrecioVenta'] ?? 0)]);
+}
+
+if (isset($_POST['ManualCrear'])) {
+    if (!colectaTieneManual($mysqli)) colectaJson(['success' => 0, 'error' => 'Falta correr la migración 2026_10_29_colecta_manual.sql.']);
+    $idCliente = (int) ($_POST['idCliente'] ?? 0);
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['ids'] ?? [])))));
+    $recorrido = trim((string) ($_POST['recorrido'] ?? ''));
+    $importe = !empty($_POST['cobrar']) ? max(0, (float) str_replace(',', '.', (string) ($_POST['importe'] ?? 0))) : 0.0;
+    if (!$idCliente || !$ids) colectaJson(['success' => 0, 'error' => 'Elegí el cliente y al menos un servicio.']);
+    $st = $mysqli->prepare("SELECT Numero FROM Recorridos WHERE Numero = ? AND Activo = 1");
+    $st->bind_param('s', $recorrido);
+    $st->execute();
+    if (!$st->get_result()->fetch_row()) colectaJson(['success' => 0, 'error' => 'Elegí el recorrido de retiro.']);
+
+    // Todos del mismo cliente, a retirar y libres
+    $lista = implode(',', $ids);
+    $validos = (int) $mysqli->query("SELECT COUNT(*) FROM TransClientes WHERE id IN ({$lista}) AND idClienteOrigen = {$idCliente} AND " . COLECTA_SQL_A_RETIRAR)->fetch_row()[0];
+    if ($validos !== count($ids)) colectaJson(['success' => 0, 'error' => 'Algún servicio ya no está a retirar, es de otro cliente o ya está en otra colecta. Actualizá la lista.']);
+    $vd = (float) $mysqli->query("SELECT SUM(ValorDeclarado) FROM TransClientes WHERE id IN ({$lista})")->fetch_row()[0];
+
+    $fecha = date('Y-m-d');
+    $usuario = (int) ($_SESSION['idusuario'] ?? 0); // Colecta.Usuario es numérico
+    // Todas las columnas obligatorias explícitas (no dependen del modo no estricto del servidor)
+    $st = $mysqli->prepare("INSERT INTO Colecta (Fecha, idCliente, Cantidad, Cantidad_m, Importe, Usuario, ValorDeclarado, Recorrido, Eliminado,
+                                ColectaScans, ColectaScansUpdatedAt, Manual) VALUES (?, ?, ?, 0, ?, ?, ?, ?, 0, '', NOW(), 1)");
+    $cant = count($ids);
+    $st->bind_param('siidids', $fecha, $idCliente, $cant, $importe, $usuario, $vd, $recorrido);
+    $st->execute();
+    $idColecta = (int) $mysqli->insert_id;
+
+    $r = generarColecta($mysqli, $idColecta, $ids, $importe);
+    if (empty($r['success'])) {
+        $mysqli->query("UPDATE Colecta SET Eliminado = 1 WHERE id = {$idColecta} AND (CodigoSeguimiento IS NULL OR CodigoSeguimiento = '') LIMIT 1");
+        colectaJson(['success' => 0, 'error' => 'No se pudo generar la colecta: ' . ($r['error'] ?? 'error desconocido')]);
+    }
+    colectaJson(['success' => 1, 'idColecta' => $idColecta, 'codigo' => $r['codigo'], 'servicios' => $cant]);
+}
+
+if (isset($_POST['ManualDetalle'])) {
+    $c = colectaManualDatos($mysqli, (int) ($_POST['idColecta'] ?? 0));
+    if (!$c) colectaJson(['success' => 0, 'error' => 'La colecta no existe.']);
+    $st = $mysqli->prepare("SELECT id, Fecha, CodigoSeguimiento, CodigoProveedor, ClienteDestino, LocalidadDestino, Cantidad, Retirado
+                            FROM TransClientes WHERE idColecta = ? AND id <> ? AND Eliminado = 0 ORDER BY id");
+    $idPadre = (int) $c['idPadre'];
+    $st->bind_param('ii', $c['id'], $idPadre);
+    $st->execute();
+    $hijos = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $disponibles = [];
+    if ($c['editable']) {
+        $st = $mysqli->prepare("SELECT id, Fecha, CodigoSeguimiento, CodigoProveedor, ClienteDestino, LocalidadDestino, Cantidad
+                                FROM TransClientes WHERE idClienteOrigen = ? AND " . COLECTA_SQL_A_RETIRAR . " ORDER BY Fecha, id");
+        $idCli = (int) $c['idCliente'];
+        $st->bind_param('i', $idCli);
+        $st->execute();
+        $disponibles = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    }
+    $sobrantes = [];
+    $r = $mysqli->query("SHOW TABLES LIKE 'ColectaSobrantes'");
+    if ($r && $r->num_rows) {
+        $sobrantes = $mysqli->query("SELECT Codigo, Usuario, Fecha FROM ColectaSobrantes WHERE idColecta = " . (int) $c['id'] . " ORDER BY id")->fetch_all(MYSQLI_ASSOC);
+    }
+    colectaJson(['success' => 1, 'colecta' => $c, 'hijos' => $hijos, 'disponibles' => $disponibles, 'sobrantes' => $sobrantes]);
+}
+
+if (isset($_POST['ManualAgregar']) || isset($_POST['ManualQuitar'])) {
+    $c = colectaManualDatos($mysqli, (int) ($_POST['idColecta'] ?? 0));
+    if (!$c) colectaJson(['success' => 0, 'error' => 'La colecta no existe.']);
+    if (!$c['editable']) colectaJson(['success' => 0, 'error' => 'El chofer ya cerró la colecta (retirada del cliente): no se puede modificar.']);
+    $idColecta = (int) $c['id'];
+    $idCliente = (int) $c['idCliente'];
+    $ids = array_values(array_unique(array_filter(array_map('intval', (array) ($_POST['ids'] ?? [])))));
+    if (!$ids) colectaJson(['success' => 0, 'error' => 'No elegiste ningún servicio.']);
+    $lista = implode(',', $ids);
+    if (isset($_POST['ManualAgregar'])) {
+        $mysqli->query("UPDATE TransClientes SET idColecta = {$idColecta} WHERE id IN ({$lista}) AND idClienteOrigen = {$idCliente} AND " . COLECTA_SQL_A_RETIRAR);
+    } else {
+        // Solo los que el chofer todavía no retiró: vuelven a quedar libres para otra colecta
+        $mysqli->query("UPDATE TransClientes SET idColecta = 0 WHERE id IN ({$lista}) AND idColecta = {$idColecta} AND id <> " . (int) $c['idPadre'] . " AND Retirado = 0");
+    }
+    $afectados = $mysqli->affected_rows;
+    $cantidad = colectaManualActualizar($mysqli, $c);
+    colectaJson(['success' => 1, 'afectados' => $afectados, 'servicios' => $cantidad]);
 }

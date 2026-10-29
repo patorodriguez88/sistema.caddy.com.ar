@@ -107,6 +107,8 @@ function abrir_tabla(){
             if(row.CodigoSeguimiento){
                 if(row.Eliminado==1){
                 return '<span class="badge bg-danger">Eliminado</span>';
+                }else if (Number(row.Manual) === 1){
+                return '<span class="badge bg-info">Manual</span> <a href="#" class="cm-ver" data-id="' + row.id + '" title="Ver / editar servicios"><i class="mdi mdi-pencil-outline mdi-18px"></i></a>';
                 }else{
                 return '<span class="badge bg-success">Cargado</span>';
                 }
@@ -309,3 +311,115 @@ function abrir_tabla(){
             });
         });
     
+// ================================================================================================
+// Colecta manual (29/10): crear eligiendo cliente y servicios a retirar, y editar (agregar / sacar)
+// hasta que el chofer la marca como retirada del cliente. Backend: Procesos/php/colecta.php (Manual*).
+// ================================================================================================
+(function () {
+  var URL = "Procesos/php/colecta.php";
+  var esc = function (t) { return $("<div>").text(t == null ? "" : t).html(); };
+  var fecha = function (f) { return String(f || "").split("-").reverse().join("/"); };
+  var post = function (data) { return $.post(URL, data, null, "json"); };
+  var colectaAbierta = 0;
+
+  function filaServicio(s, conCheck, conQuitar) {
+    return '<div class="d-flex align-items-center gap-2 px-2 py-1 border-bottom">' +
+      (conCheck ? '<input type="checkbox" class="form-check-input m-0 cm-check" value="' + s.id + '" checked>' : "") +
+      '<div class="flex-grow-1"><b>' + esc(s.CodigoSeguimiento) + "</b>" + (s.CodigoProveedor ? ' <span class="text-muted">· ' + esc(s.CodigoProveedor) + "</span>" : "") +
+      '<br><span class="text-muted">' + esc(s.ClienteDestino) + " · " + esc(s.LocalidadDestino || "") + " · " + fecha(s.Fecha) + " · " + esc(s.Cantidad) + " bulto(s)</span></div>" +
+      (conQuitar ? '<button type="button" class="btn btn-sm btn-light text-danger cm-quitar" data-id="' + s.id + '" title="Sacar de la colecta"><i class="mdi mdi-close"></i></button>' : "") +
+      "</div>";
+  }
+  function contar() { $("#cm_cuenta").text($("#cm_servicios .cm-check:checked").length); }
+
+  $("#cm_nueva").on("click", function () {
+    $("#cm_servicios").html('<div class="p-2 text-muted">Elegí el cliente.</div>');
+    $("#cm_cobrar").prop("checked", false);
+    $("#cm_importe_wrap").prop("hidden", true);
+    contar();
+    post({ ManualClientes: 1 }).done(function (r) {
+      $("#cm_cliente").html('<option value="">Elegí el cliente…</option>' + (r.data || []).map(function (c) {
+        return '<option value="' + c.id + '">' + esc(c.Cliente) + " (" + c.Servicios + " a retirar)</option>";
+      }).join(""));
+    });
+    $.post("Procesos/php/preventa.php", { BuscarRecorridos: 1, cs: "" }, function (html) { $("#cm_recorrido").html(html); });
+    $("#cm_modal_nueva").modal("show");
+  });
+
+  $("#cm_cliente").on("change", function () {
+    var id = $(this).val();
+    if (!id) return;
+    $("#cm_servicios").html('<div class="p-2 text-muted">Cargando…</div>');
+    post({ ManualServicios: 1, idCliente: id }).done(function (r) {
+      $("#cm_importe").val(r.tarifa || "");
+      $("#cm_servicios").html((r.data || []).map(function (s) { return filaServicio(s, true, false); }).join("") ||
+        '<div class="p-2 text-muted">El cliente no tiene servicios a retirar.</div>');
+      contar();
+    });
+  });
+  $(document).on("change", "#cm_servicios .cm-check", contar);
+  $("#cm_todos").on("click", function (e) { e.preventDefault(); $("#cm_servicios .cm-check").prop("checked", true); contar(); });
+  $("#cm_ninguno").on("click", function (e) { e.preventDefault(); $("#cm_servicios .cm-check").prop("checked", false); contar(); });
+  $("#cm_cobrar").on("change", function () { $("#cm_importe_wrap").prop("hidden", !this.checked); });
+
+  $("#cm_crear").on("click", function () {
+    var ids = $("#cm_servicios .cm-check:checked").map(function () { return this.value; }).get();
+    var $b = $(this).prop("disabled", true);
+    post({ ManualCrear: 1, idCliente: $("#cm_cliente").val(), ids: ids, recorrido: $("#cm_recorrido").val(),
+           cobrar: $("#cm_cobrar").is(":checked") ? 1 : 0, importe: $("#cm_importe").val() })
+      .done(function (r) {
+        if (!r.success) return Swal.fire({ icon: "warning", title: "No se generó", text: r.error });
+        $("#cm_modal_nueva").modal("hide");
+        Swal.fire({ icon: "success", title: "Colecta generada", text: "Código " + r.codigo + " con " + r.servicios + " servicio(s)." });
+        $("#colecta").DataTable().ajax.reload();
+      })
+      .fail(function () { Swal.fire({ icon: "error", title: "Error del servidor" }); })
+      .always(function () { $b.prop("disabled", false); });
+  });
+
+  function abrirDetalle(id) {
+    colectaAbierta = id;
+    post({ ManualDetalle: 1, idColecta: id }).done(function (r) {
+      if (!r.success) return Swal.fire({ icon: "warning", title: r.error });
+      var c = r.colecta;
+      $("#cm_det_titulo").text("Colecta " + (c.CodigoSeguimiento || "") + " · recorrido " + (c.Recorrido || "-"));
+      $("#cm_det_estado").html(c.editable
+        ? '<div class="alert alert-info py-1 mb-0">Se puede editar hasta que el chofer la marque como retirada del cliente.' + (Number(c.Importe) > 0 ? " Cargo: $ " + Number(c.Importe).toLocaleString("es-AR") : " Sin cargo.") + "</div>"
+        : '<div class="alert alert-secondary py-1 mb-0"><i class="mdi mdi-lock"></i> El chofer ya cerró la colecta (retirada del cliente): no se puede modificar.</div>');
+      $("#cm_det_hijos").html((r.hijos || []).map(function (s) { return filaServicio(s, false, c.editable && Number(s.Retirado) === 0); /* los ya escaneados no se sacan */ }).join("") ||
+        '<div class="p-2 text-muted">Sin servicios.</div>');
+      $("#cm_det_agregar_box").prop("hidden", !c.editable);
+      $("#cm_det_disponibles").html((r.disponibles || []).map(function (s) { return filaServicio(s, true, false); }).join("") ||
+        '<div class="p-2 text-muted">No hay otros servicios a retirar del cliente.</div>');
+      $("#cm_det_disponibles .cm-check").prop("checked", false);
+      $("#cm_det_sobrantes").html((r.sobrantes || []).length
+        ? '<div class="alert alert-warning py-1 mb-0"><b>Sobrantes</b> (el chofer los encontró y no están cargados en el sistema): ' +
+          r.sobrantes.map(function (x) { return esc(x.Codigo) + " (" + esc(x.Usuario) + ")"; }).join(", ") + "</div>"
+        : "");
+      $("#cm_modal_detalle").modal("show");
+    });
+  }
+  $(document).on("click", ".cm-ver", function (e) { e.preventDefault(); abrirDetalle($(this).data("id")); });
+
+  function editar(accion, ids) {
+    var data = { idColecta: colectaAbierta, ids: ids };
+    data[accion] = 1;
+    post(data).done(function (r) {
+      if (!r.success) return Swal.fire({ icon: "warning", title: r.error });
+      toast("success", "Listo", "La colecta quedó con " + r.servicios + " servicio(s).");
+      abrirDetalle(colectaAbierta);
+      $("#colecta").DataTable().ajax.reload();
+    });
+  }
+  $("#cm_det_agregar").on("click", function () {
+    var ids = $("#cm_det_disponibles .cm-check:checked").map(function () { return this.value; }).get();
+    if (!ids.length) return Swal.fire({ icon: "info", title: "Tildá los servicios a agregar." });
+    editar("ManualAgregar", ids);
+  });
+  $(document).on("click", ".cm-quitar", function () {
+    var id = $(this).data("id");
+    Swal.fire({ icon: "question", title: "¿Sacarlo de la colecta?", text: "Queda a retirar para otra colecta.", showCancelButton: true,
+                confirmButtonText: "Sí, sacarlo", cancelButtonText: "Cancelar" })
+      .then(function (x) { if (x.isConfirmed) editar("ManualQuitar", [id]); });
+  });
+})();
