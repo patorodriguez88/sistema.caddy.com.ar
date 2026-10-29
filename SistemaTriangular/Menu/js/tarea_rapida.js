@@ -88,6 +88,63 @@
   panel.addEventListener("hide.bs.offcanvas", () => fecha && fecha.cerrar());
 
   // Fecha de entrega + Repetir estilo Asana (fecha_asana.js, cargado antes que este archivo)
+  // ---------- Globo de novedad (una sola vez por usuario, Menu/php/avisos.php) ----------
+  const AVISO = "icono_tareas";
+  function marcarAvisoVisto() {
+    const body = new FormData();
+    body.append("clave", AVISO);
+    fetch("/SistemaTriangular/Menu/php/avisos.php", { method: "POST", body, credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } }).catch(() => {});
+  }
+  function mostrarGlobo() {
+    const icono = $("tarea_rapida_toggle");
+    if (!icono || !icono.offsetParent) return; // ícono oculto (pantalla chica, etc.)
+    const st = document.createElement("style");
+    st.textContent = `
+      .tr-globo { position: fixed; z-index: 1990; width: 300px; background: #313a46; color: #fff; border-radius: 12px; padding: 14px 16px 12px; box-shadow: 0 14px 34px -10px rgba(0,0,0,.45); font-size: .86rem; line-height: 1.45; animation: trGlobo .25s ease-out; }
+      .tr-globo::before { content: ""; position: absolute; top: -7px; left: var(--tr-flecha, 24px); width: 14px; height: 14px; background: #313a46; transform: rotate(45deg); border-radius: 2px; }
+      .tr-globo b { display: block; font-size: .95rem; margin-bottom: 4px; }
+      .tr-globo-acc { display: flex; justify-content: flex-end; gap: 8px; margin-top: 10px; }
+      .tr-globo-acc button { border: 0; border-radius: 8px; padding: 5px 12px; font-size: .82rem; font-weight: 600; }
+      .tr-globo-probar { background: #727cf5; color: #fff; }
+      .tr-globo-ok { background: rgba(255,255,255,.12); color: #fff; }
+      .tr-pulso { animation: trPulso 1.4s ease-out 3; border-radius: 50%; }
+      @keyframes trGlobo { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+      @keyframes trPulso { 0% { box-shadow: 0 0 0 0 rgba(114,124,245,.55); } 100% { box-shadow: 0 0 0 14px rgba(114,124,245,0); } }`;
+    document.head.appendChild(st);
+    const g = document.createElement("div");
+    g.className = "tr-globo";
+    g.setAttribute("role", "dialog");
+    g.innerHTML =
+      "<b>Nuevo: tareas desde cualquier pantalla</b>" +
+      "Con este ícono creás una tarea sin salir de donde estás: le ponés título, responsable y fecha, y si querés que se repita. " +
+      "Al responsable le llega un mail y la ve en Tareas." +
+      '<div class="tr-globo-acc"><button type="button" class="tr-globo-ok">Entendido</button><button type="button" class="tr-globo-probar">Probar ahora</button></div>';
+    document.body.appendChild(g);
+    const r = icono.getBoundingClientRect();
+    const left = Math.max(8, Math.min(r.left + r.width / 2 - 30, window.innerWidth - 308));
+    g.style.top = r.bottom + 10 + "px";
+    g.style.left = left + "px";
+    g.style.setProperty("--tr-flecha", r.left + r.width / 2 - left - 7 + "px");
+    icono.classList.add("tr-pulso");
+    const cerrar = () => {
+      g.remove();
+      icono.classList.remove("tr-pulso");
+      marcarAvisoVisto();
+    };
+    g.querySelector(".tr-globo-ok").addEventListener("click", cerrar);
+    g.querySelector(".tr-globo-probar").addEventListener("click", () => {
+      cerrar();
+      icono.click();
+    });
+    icono.addEventListener("click", cerrar, { once: true });
+  }
+  window.addEventListener("load", function () {
+    fetch("/SistemaTriangular/Menu/php/avisos.php?clave=" + AVISO, { credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => r && r.mostrar && setTimeout(mostrarGlobo, 800))
+      .catch(() => {});
+  });
+
   const fecha = window.FechaAsana
     ? FechaAsana.montar({ boton: $("tr_vence_btn"), fecha: $("tr_vence"), tipo: $("tr_repetir"), cada: $("tr_rep_cada"), dias: $("tr_rep_dias") })
     : null;
