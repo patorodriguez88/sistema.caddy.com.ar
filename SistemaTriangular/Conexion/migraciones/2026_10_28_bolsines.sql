@@ -31,6 +31,11 @@ CREATE TABLE IF NOT EXISTS Bolsines_movimientos (
     KEY idx_bolsin_fecha (idBolsin, Fecha)
 );
 
+-- Precinto (29/10): número del precinto con que se cierra el bolsín en cada salida. Se carga al
+-- asignarlo y queda en cada movimiento del viaje.
+ALTER TABLE Bolsines ADD COLUMN IF NOT EXISTS Precinto VARCHAR(30) NULL AFTER Recorrido;
+ALTER TABLE Bolsines_movimientos ADD COLUMN IF NOT EXISTS Precinto VARCHAR(30) NULL AFTER NumerodeOrden;
+
 -- Menú Logistica > Bolsines: mismos roles que ya ven Recorridos.
 INSERT INTO usuarios_permisos (nombre, slug, seccion, es_sistema, Eliminado)
 SELECT 'Bolsines', 'logistica_bolsines', 'Logistica', 0, 0

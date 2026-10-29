@@ -27,10 +27,12 @@ $bolsines = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
 </head>
 
 <body>
+    <?php if (empty($_GET['modal'])): // en el modal de Bolsines.php imprime el botón del modal ?>
     <div class="acciones">
         <button onclick="window.print()">Imprimir</button>
         <?= count($bolsines) ?> etiqueta(s)
     </div>
+    <?php endif; ?>
     <div class="grilla">
         <?php foreach ($bolsines as $b): $c = htmlspecialchars($b['Codigo']); ?>
             <div class="etiqueta">

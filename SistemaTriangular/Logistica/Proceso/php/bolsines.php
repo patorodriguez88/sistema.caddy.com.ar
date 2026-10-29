@@ -37,20 +37,21 @@ function bolsinPorCodigo(mysqli $db, string $codigo): ?array
     return $st->get_result()->fetch_assoc() ?: null;
 }
 
-function movimiento(mysqli $db, int $idBolsin, string $accion, ?string $recorrido, ?int $orden, string $usuario, string $obs = ''): void
+function movimiento(mysqli $db, int $idBolsin, string $accion, ?string $recorrido, ?int $orden, string $usuario, string $obs = '', ?string $precinto = null): void
 {
     $fecha = date('Y-m-d H:i:s');
-    $st = $db->prepare("INSERT INTO Bolsines_movimientos (idBolsin, Accion, Recorrido, NumerodeOrden, Usuario, Fecha, Observaciones)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)");
-    $st->bind_param('ississs', $idBolsin, $accion, $recorrido, $orden, $usuario, $fecha, $obs);
+    $st = $db->prepare("INSERT INTO Bolsines_movimientos (idBolsin, Accion, Recorrido, NumerodeOrden, Precinto, Usuario, Fecha, Observaciones)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)");
+    $st->bind_param('ississss', $idBolsin, $accion, $recorrido, $orden, $precinto, $usuario, $fecha, $obs);
     $st->execute();
 }
 
-function cambiarEstado(mysqli $db, int $id, string $estado, ?string $recorrido): void
+// El precinto es de cada salida: se carga al asignar y se borra cuando el bolsín vuelve a estar disponible.
+function cambiarEstado(mysqli $db, int $id, string $estado, ?string $recorrido, ?string $precinto = null): void
 {
     $fecha = date('Y-m-d H:i:s');
-    $st = $db->prepare("UPDATE Bolsines SET Estado = ?, Recorrido = ?, NumerodeOrden = NULL, idUsuarioChofer = NULL, FechaEstado = ? WHERE id = ?");
-    $st->bind_param('sssi', $estado, $recorrido, $fecha, $id);
+    $st = $db->prepare("UPDATE Bolsines SET Estado = ?, Recorrido = ?, Precinto = ?, NumerodeOrden = NULL, idUsuarioChofer = NULL, FechaEstado = ? WHERE id = ?");
+    $st->bind_param('ssssi', $estado, $recorrido, $precinto, $fecha, $id);
     $st->execute();
 }
 
@@ -60,7 +61,7 @@ $codigo = strtoupper(trim((string) ($_POST['codigo'] ?? '')));
 switch ($action) {
     case 'listar':
         $res = $mysqli->query("
-            SELECT b.id, b.Codigo, b.Descripcion, b.Estado, b.Recorrido, b.NumerodeOrden, b.FechaEstado,
+            SELECT b.id, b.Codigo, b.Descripcion, b.Estado, b.Recorrido, b.Precinto, b.NumerodeOrden, b.FechaEstado,
                    r.Nombre AS NombreRecorrido,
                    CONCAT(u.Nombre, ' ', u.Apellido) AS Chofer,
                    TIMESTAMPDIFF(HOUR, b.FechaEstado, NOW()) AS HorasEnEstado
@@ -118,24 +119,28 @@ switch ($action) {
         $st->execute();
         if (!$st->get_result()->fetch_assoc()) jexit(['success' => 0, 'error' => 'Elegí un recorrido activo.']);
 
+        $precinto = mb_substr(trim((string) ($_POST['precinto'] ?? '')), 0, 30);
+        $precinto = $precinto === '' ? null : $precinto;
+
         $b = bolsinPorCodigo($mysqli, $codigo);
         if (!$b) jexit(['success' => 0, 'error' => "El bolsín $codigo no existe."]);
         if ($b['Estado'] === 'En viaje') {
             jexit(['success' => 0, 'error' => "$codigo figura en viaje con el recorrido {$b['Recorrido']}. Recibilo primero."]);
         }
-        if ($b['Estado'] === 'Asignado' && (string) $b['Recorrido'] === $recorrido) {
+        if ($b['Estado'] === 'Asignado' && (string) $b['Recorrido'] === $recorrido && $precinto === $b['Precinto']) {
             jexit(['success' => 1, 'msg' => "$codigo ya estaba asignado al recorrido $recorrido."]);
         }
-        $obs = $b['Estado'] === 'Asignado' ? "Reasignado (estaba en el recorrido {$b['Recorrido']})" : '';
-        cambiarEstado($mysqli, (int) $b['id'], 'Asignado', $recorrido);
-        movimiento($mysqli, (int) $b['id'], 'asignado', $recorrido, null, $usuario, $obs);
-        jexit(['success' => 1, 'msg' => "$codigo asignado al recorrido $recorrido."]);
+        $obs = $b['Estado'] !== 'Asignado' ? ''
+            : ((string) $b['Recorrido'] !== $recorrido ? "Reasignado (estaba en el recorrido {$b['Recorrido']})" : "Cambio de precinto (antes: " . ($b['Precinto'] ?? 'sin precinto') . ")");
+        cambiarEstado($mysqli, (int) $b['id'], 'Asignado', $recorrido, $precinto);
+        movimiento($mysqli, (int) $b['id'], 'asignado', $recorrido, null, $usuario, $obs, $precinto);
+        jexit(['success' => 1, 'msg' => "$codigo asignado al recorrido $recorrido" . ($precinto !== null ? " con precinto $precinto." : " (sin precinto).")]);
 
     case 'desasignar':
         $b = bolsinPorCodigo($mysqli, $codigo);
         if (!$b || $b['Estado'] !== 'Asignado') jexit(['success' => 0, 'error' => "$codigo no está asignado."]);
         cambiarEstado($mysqli, (int) $b['id'], 'Disponible', null);
-        movimiento($mysqli, (int) $b['id'], 'desasignado', $b['Recorrido'], null, $usuario);
+        movimiento($mysqli, (int) $b['id'], 'desasignado', $b['Recorrido'], null, $usuario, '', $b['Precinto']);
         jexit(['success' => 1, 'msg' => "$codigo quedó disponible."]);
 
     case 'recibir':
@@ -145,12 +150,12 @@ switch ($action) {
         if ($b['Estado'] === 'Asignado') {
             // Nunca salió: se libera igual que desasignar.
             cambiarEstado($mysqli, (int) $b['id'], 'Disponible', null);
-            movimiento($mysqli, (int) $b['id'], 'desasignado', $b['Recorrido'], null, $usuario, 'Recibido sin haber salido');
+            movimiento($mysqli, (int) $b['id'], 'desasignado', $b['Recorrido'], null, $usuario, 'Recibido sin haber salido', $b['Precinto']);
             jexit(['success' => 1, 'msg' => "$codigo no había salido: quedó disponible."]);
         }
         cambiarEstado($mysqli, (int) $b['id'], 'Disponible', null);
-        movimiento($mysqli, (int) $b['id'], 'devuelto', $b['Recorrido'], $b['NumerodeOrden'] !== null ? (int) $b['NumerodeOrden'] : null, $usuario);
-        jexit(['success' => 1, 'msg' => "$codigo recibido en el depósito."]);
+        movimiento($mysqli, (int) $b['id'], 'devuelto', $b['Recorrido'], $b['NumerodeOrden'] !== null ? (int) $b['NumerodeOrden'] : null, $usuario, '', $b['Precinto']);
+        jexit(['success' => 1, 'msg' => "$codigo recibido en el depósito." . ($b['Precinto'] ? " Había salido con el precinto {$b['Precinto']}: controlá que sea el mismo." : '')]);
 
     case 'baja':
         $b = bolsinPorCodigo($mysqli, $codigo);
@@ -167,7 +172,7 @@ switch ($action) {
         $b = bolsinPorCodigo($mysqli, $codigo);
         if (!$b) jexit(['success' => 0, 'error' => "El bolsín $codigo no existe."]);
         $st = $mysqli->prepare("
-            SELECT m.Fecha, m.Accion, m.Recorrido, r.Nombre AS NombreRecorrido, m.NumerodeOrden, m.Usuario, m.Observaciones
+            SELECT m.Fecha, m.Accion, m.Recorrido, r.Nombre AS NombreRecorrido, m.NumerodeOrden, m.Precinto, m.Usuario, m.Observaciones
             FROM Bolsines_movimientos m
             LEFT JOIN Recorridos r ON r.Numero = m.Recorrido
             WHERE m.idBolsin = ?

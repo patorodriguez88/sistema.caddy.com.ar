@@ -22,6 +22,12 @@
     $("#bo-resultado").html(`<div class="alert alert-${ok ? "success" : "danger"} mb-0 py-2"><i class="uil-${ok ? "check-circle" : "exclamation-triangle"} me-1"></i>${esc(texto)}</div>`);
   }
 
+  // Etiquetas en un modal (iframe con BolsinesQR.php); ids vacío = todas.
+  function verQR(ids) {
+    $("#bo-qr-frame").attr("src", "BolsinesQR.php?modal=1" + (ids ? "&ids=" + ids : ""));
+    $("#bo-modal-qr").modal("show");
+  }
+
   function cargarRecorridos() {
     post({ action: "recorridos" }).done((r) => {
       const opts = ['<option value="">Elegí el recorrido…</option>'].concat(
@@ -53,20 +59,22 @@
                   <td><strong>${esc(b.Codigo)}</strong></td>
                   <td><span class="badge bo-estado-${esc(b.Estado).replace(" ", "-")}">${esc(b.Estado)}</span>${demorado ? ' <small class="text-danger">no volvió</small>' : ""}</td>
                   <td>${rec}</td>
+                  <td>${esc(b.Precinto || "")}</td>
                   <td>${chofer}</td>
                   <td>${fechaHora(b.FechaEstado)}</td>
                   <td>${esc(b.Descripcion || "")}</td>
                   <td class="text-end text-nowrap">
                     <button class="btn btn-sm btn-light bo-historial" data-codigo="${esc(b.Codigo)}" title="Historial"><i class="uil-history"></i></button>
-                    <a class="btn btn-sm btn-light" href="BolsinesQR.php?ids=${b.id}" target="_blank" title="Imprimir QR"><i class="uil-qrcode-scan"></i></a>
+                    <button class="btn btn-sm btn-light bo-qr" data-id="${b.id}" title="Imprimir QR"><i class="uil-qrcode-scan"></i></button>
                     ${b.Estado === "Asignado" ? `<button class="btn btn-sm btn-light bo-desasignar" data-codigo="${esc(b.Codigo)}" title="Sacar del recorrido"><i class="uil-times"></i></button>` : ""}
                     ${b.Estado === "En viaje" ? `<button class="btn btn-sm btn-light bo-recibir" data-codigo="${esc(b.Codigo)}" title="Recibir en depósito"><i class="uil-box"></i></button>` : ""}
+                    ${b.Estado === "Disponible" ? `<button class="btn btn-sm btn-warning bo-asignar" data-codigo="${esc(b.Codigo)}" title="Asignar a un recorrido"><i class="uil-truck"></i> Asignar</button>` : ""}
                     ${b.Estado === "Disponible" ? `<button class="btn btn-sm btn-light bo-baja" data-codigo="${esc(b.Codigo)}" title="Dar de baja"><i class="uil-trash-alt"></i></button>` : ""}
                   </td>
                 </tr>`;
               })
               .join("")
-          : '<tr><td colspan="7" class="text-center text-muted">Todavía no hay bolsines. Creá los primeros con "Nuevos bolsines".</td></tr>'
+          : '<tr><td colspan="8" class="text-center text-muted">Todavía no hay bolsines. Creá los primeros con "Nuevos bolsines".</td></tr>'
       );
 
       const dinter = r.dinter || [];
@@ -86,16 +94,24 @@
     });
   }
 
+  // Sin lectora alcanza con el número: "1" o "0001" -> BOL-0001.
+  function normalizarCodigo(codigo) {
+    codigo = String(codigo || "").trim().toUpperCase();
+    return /^\d+$/.test(codigo) ? "BOL-" + codigo.padStart(4, "0") : codigo;
+  }
+
   function procesarCodigo(codigo) {
-    codigo = codigo.trim().toUpperCase();
+    codigo = normalizarCodigo(codigo);
     if (!codigo) return;
     const data = { action: modo(), codigo };
     if (data.action === "asignar") {
       data.recorrido = $("#bo-recorrido").val();
+      data.precinto = $("#bo-precinto").val().trim();
       if (!data.recorrido) return resultado(false, "Elegí el recorrido antes de escanear.");
     }
     post(data).done((r) => {
       resultado(!!r.success, r.success ? r.msg : r.error);
+      if (r.success && data.action === "asignar") $("#bo-precinto").val(""); // el próximo bolsín lleva otro precinto
       listar();
     });
   }
@@ -116,15 +132,48 @@
     $("#bo-codigo").focus();
 
     $("input[name=bo-modo]").on("change", function () {
-      $("#bo-recorrido-wrap").toggle(modo() === "asignar");
+      const asignar = modo() === "asignar";
+      $(".bo-solo-asignar").toggle(asignar);
+      $("#bo-codigo-wrap").toggleClass("col-md-5", asignar).toggleClass("col-md-12", !asignar);
+      $("#bo-aplicar").text(asignar ? "Asignar" : "Recibir").toggleClass("btn-warning", asignar).toggleClass("btn-success", !asignar);
       $("#bo-codigo").focus();
     });
 
+    function aplicar() {
+      procesarCodigo($("#bo-codigo").val());
+      $("#bo-codigo").val("").focus();
+    }
     $("#bo-codigo").on("keydown", function (e) {
       if (e.key !== "Enter") return;
       e.preventDefault();
-      procesarCodigo($(this).val());
-      $(this).val("").focus();
+      aplicar();
+    });
+    $("#bo-aplicar").on("click", aplicar);
+
+    // Asignar desde la tabla: usa el recorrido elegido arriba o lo pregunta.
+    $(document).on("click", ".bo-asignar", function () {
+      const codigo = $(this).data("codigo");
+      Swal.fire({
+        title: "Asignar " + codigo,
+        html:
+          '<select id="bo-sw-rec" class="form-select mb-2">' + $("#bo-recorrido").html() + "</select>" +
+          '<input id="bo-sw-precinto" type="text" maxlength="30" class="form-control" placeholder="N° de precinto">',
+        didOpen: () => $("#bo-sw-rec").val($("#bo-recorrido").val() || ""),
+        showCancelButton: true,
+        confirmButtonText: "Asignar",
+        cancelButtonText: "Cancelar",
+        preConfirm: () => {
+          const recorrido = $("#bo-sw-rec").val();
+          if (!recorrido) return Swal.showValidationMessage("Elegí el recorrido.");
+          return { recorrido, precinto: $("#bo-sw-precinto").val().trim() };
+        },
+      }).then((x) => {
+        if (!x.isConfirmed) return;
+        post({ action: "asignar", codigo, recorrido: x.value.recorrido, precinto: x.value.precinto }).done((r) => {
+          resultado(!!r.success, r.success ? r.msg : r.error);
+          listar();
+        });
+      });
     });
 
     $(document).on("click", ".bo-desasignar", function () {
@@ -147,15 +196,23 @@
             .map(
               (m) => `<tr><td>${fechaHora(m.Fecha)}</td><td>${esc(nombres[m.Accion] || m.Accion)}</td>
                 <td>${m.Recorrido ? esc(m.Recorrido) + ' <small class="text-muted">' + esc(m.NombreRecorrido || "") + "</small>" : ""}</td>
-                <td>${esc(m.NumerodeOrden || "")}</td><td>${esc(m.Usuario)}</td><td>${esc(m.Observaciones || "")}</td></tr>`
+                <td>${esc(m.NumerodeOrden || "")}</td><td>${esc(m.Precinto || "")}</td><td>${esc(m.Usuario)}</td><td>${esc(m.Observaciones || "")}</td></tr>`
             )
-            .join("") || '<tr><td colspan="6" class="text-muted">Sin movimientos.</td></tr>'
+            .join("") || '<tr><td colspan="7" class="text-muted">Sin movimientos.</td></tr>'
         );
         $("#bo-modal-historial").modal("show");
       });
     });
 
-    $("#bo-imprimir-todos").on("click", () => window.open("BolsinesQR.php", "_blank"));
+    $("#bo-imprimir-todos").on("click", () => verQR(""));
+    $(document).on("click", ".bo-qr", function () {
+      verQR(String($(this).data("id")));
+    });
+    $("#bo-qr-imprimir").on("click", () => {
+      const w = document.getElementById("bo-qr-frame").contentWindow;
+      w.focus();
+      w.print();
+    });
 
     $("#bo-nuevo").on("click", function () {
       Swal.fire({
@@ -172,7 +229,7 @@
         post({ action: "crear", cantidad: x.value.cantidad, descripcion: x.value.descripcion }).done((r) => {
           if (!r.success) return resultado(false, r.error);
           listar();
-          window.open("BolsinesQR.php?ids=" + r.ids.join(","), "_blank");
+          verQR(r.ids.join(","));
         });
       });
     });
