@@ -2,6 +2,58 @@
 include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
 $esAdmin = isset($_SESSION['Nivel']) && (int)$_SESSION['Nivel'] === 1;
+
+// Volver una orden a "No controlado" (pedido de Micaela, 29/10): Costo_rendicion = 0 en Logistica y
+// los envíos con Rendido = 0. Solo si no está facturada (Rendicion = 0 y ningún envío con
+// comprobante). Precios y observaciones quedan como estaban para cuando se vuelva a controlar.
+// Queda una línea por envío en Externos_rendicion_historial.
+if (isset($_POST['VolverANoControlado'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $orden = (int)($_POST['NOrden'] ?? 0);
+    $usuario = (string)($_SESSION['Usuario'] ?? '');
+
+    $st = $mysqli->prepare("SELECT id, Rendicion, Costo_rendicion FROM Logistica WHERE NumerodeOrden = ? AND Eliminado = 0 LIMIT 1");
+    $st->bind_param('i', $orden);
+    $st->execute();
+    $log = $st->get_result()->fetch_assoc();
+    if (!$log) {
+        echo json_encode(['success' => 0, 'error' => "No existe la orden $orden."]);
+        exit;
+    }
+    $st = $mysqli->prepare("SELECT COUNT(*) FROM Externos_rendicion WHERE idRendicion = ? AND NumeroComprobante IS NOT NULL AND NumeroComprobante <> ''");
+    $st->bind_param('i', $orden);
+    $st->execute();
+    $conComprobante = (int)$st->get_result()->fetch_row()[0];
+    if ((int)$log['Rendicion'] !== 0 || $conComprobante > 0) {
+        echo json_encode(['success' => 0, 'error' => "La orden $orden ya está facturada: no se puede volver a No controlado."]);
+        exit;
+    }
+    if ((float)$log['Costo_rendicion'] == 0) {
+        echo json_encode(['success' => 1, 'msg' => "La orden $orden ya estaba como No controlado."]);
+        exit;
+    }
+
+    $fecha = date('Y-m-d H:i:s');
+    $obs = 'Vuelta a No controlado (estaba controlada por $ ' . number_format((float)$log['Costo_rendicion'], 2, ',', '.') . ')';
+    $mysqli->begin_transaction();
+    try {
+        $mysqli->query("INSERT INTO Externos_rendicion_historial
+                (idExternoRendicion, CodigoSeguimiento, idRendicion, tarifa_anterior_id, tarifa_nueva_id, precio_anterior, precio_nuevo, usuario_modifico, fecha_modificacion, observacion)
+            SELECT id, CodigoSeguimiento, idRendicion, idExternos_tarifas, idExternos_tarifas, PrecioPagado, PrecioPagado,
+                   '" . $mysqli->real_escape_string($usuario) . "', '$fecha', '" . $mysqli->real_escape_string($obs) . "'
+            FROM Externos_rendicion WHERE idRendicion = $orden AND Rendido = 1");
+        $mysqli->query("UPDATE Externos_rendicion SET Rendido = 0, FechaRendido = NULL, UsuarioRendido = NULL WHERE idRendicion = $orden");
+        $envios = $mysqli->affected_rows;
+        $mysqli->query("UPDATE Logistica SET Costo_rendicion = 0 WHERE id = " . (int)$log['id'] . " LIMIT 1");
+        $mysqli->commit();
+    } catch (Throwable $e) {
+        $mysqli->rollback();
+        echo json_encode(['success' => 0, 'error' => 'No se pudo volver a No controlado: ' . $e->getMessage()]);
+        exit;
+    }
+    echo json_encode(['success' => 1, 'msg' => "La orden $orden volvió a No controlado ($envios envíos)."]);
+    exit;
+}
 // Polígono en formato [lng, lat]
 $poligono_circunvalacion = [
     [-64.26536754051685, -31.430159003374783],
