@@ -16,16 +16,26 @@ if (isset($_POST['Webhook'])) {
   echo json_encode(array('data' => $rows));
 }
 
+// Búsqueda por número de pedido del cliente (CodigoProveedor). FIX (29/10): devolvía el primero que
+// encontraba sin decir de qué cliente era, y el mismo número se repite entre clientes (IGALFER y
+// VENEX, por ejemplo: 128 casos en 2026). Ahora devuelve todos (sin eliminados), del más nuevo al más
+// viejo, con cliente, fecha, destino y estado, para que la pantalla avise y deje elegir.
 if (isset($_POST['Buscar_CodigoProveedor'])) {
-
-  $BuscarSeguimiento = $mysqli->query("SELECT CodigoSeguimiento FROM TransClientes WHERE CodigoProveedor='$_POST[CodigoProveedor]'");
-  $row_seguimiento = $BuscarSeguimiento->fetch_array(MYSQLI_ASSOC);
-
-  if ($row_seguimiento['CodigoSeguimiento'] <> NULL) {
-    echo json_encode(array('success' => 1, 'CodigoSeguimiento' => $row_seguimiento['CodigoSeguimiento']));
-  } else {
-    echo json_encode(array('success' => 0));
+  $codigoProveedor = trim((string) ($_POST['CodigoProveedor'] ?? ''));
+  $envios = [];
+  if ($codigoProveedor !== '') {
+    $st = $mysqli->prepare("SELECT CodigoSeguimiento, RazonSocial, IngBrutosOrigen, ClienteDestino, Fecha, Estado, Entregado
+                            FROM TransClientes WHERE CodigoProveedor = ? AND Eliminado = 0 ORDER BY id DESC LIMIT 50");
+    $st->bind_param('s', $codigoProveedor);
+    $st->execute();
+    $envios = $st->get_result()->fetch_all(MYSQLI_ASSOC);
   }
+  echo json_encode([
+    'success' => $envios ? 1 : 0,
+    'CodigoSeguimiento' => $envios[0]['CodigoSeguimiento'] ?? null, // compatibilidad: el más nuevo
+    'envios' => $envios,
+    'clientes' => count(array_unique(array_column($envios, 'IngBrutosOrigen'))),
+  ]);
 }
 
 if (isset($_POST['DatosClientes'])) {

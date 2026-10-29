@@ -690,7 +690,11 @@ $("#remito").click(function () {
             return;
           }
 
-          if (jsonData.success == 1 && jsonData.CodigoSeguimiento) {
+          const envios = jsonData.envios || [];
+          if (jsonData.success == 1 && envios.length > 1) {
+            // El número de pedido se repite (mismo cliente o, peor, clientes distintos): que elija.
+            elegirEnvioProveedor(idProveedor, envios, jsonData.clientes);
+          } else if (jsonData.success == 1 && jsonData.CodigoSeguimiento) {
             seguimiento(jsonData.CodigoSeguimiento);
           } else {
             showError(
@@ -1574,3 +1578,33 @@ $("#enter_registration_save").click(function () {
     },
   });
 });
+
+// Número de pedido repetido: lista para elegir el envío, con el cliente de origen bien a la vista.
+function elegirEnvioProveedor(nro, envios, clientes) {
+  if (typeof hideLoading === "function") hideLoading();
+  var esc = function (t) { return $("<div>").text(t == null ? "" : t).html(); };
+  var aviso = clientes > 1
+    ? '<div class="alert alert-warning py-2 text-start"><i class="mdi mdi-alert"></i> <b>Atención:</b> el número de pedido <b>' + esc(nro) +
+      "</b> está en envíos de <b>" + clientes + " clientes distintos</b>. Fijate el origen antes de seguir.</div>"
+    : '<div class="alert alert-info py-2 text-start">El número de pedido <b>' + esc(nro) + "</b> está en " + envios.length + " envíos.</div>";
+  var filas = envios.map(function (e) {
+    var f = String(e.Fecha || "").split("-").reverse().join("/");
+    return '<button type="button" class="list-group-item list-group-item-action text-start sw-envio-prov" data-cs="' + esc(e.CodigoSeguimiento) + '">' +
+      "<div class=\"d-flex justify-content-between\"><b>" + esc(e.RazonSocial) + "</b><small>" + esc(f) + "</small></div>" +
+      "<small>" + esc(e.CodigoSeguimiento) + " · " + esc(e.ClienteDestino) + " · " + esc(e.Estado || (Number(e.Entregado) ? "Entregado" : "Pendiente")) + "</small></button>";
+  }).join("");
+  Swal.fire({
+    title: "Número de pedido repetido",
+    html: aviso + '<div class="list-group">' + filas + "</div>",
+    showConfirmButton: false,
+    showCancelButton: true,
+    cancelButtonText: "Cancelar",
+    width: 560,
+    didOpen: function () {
+      $(".sw-envio-prov").on("click", function () {
+        Swal.close();
+        seguimiento($(this).data("cs"));
+      });
+    },
+  });
+}
