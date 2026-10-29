@@ -740,6 +740,133 @@ if (isset($_POST['Agregar_externo'])) {
     echo json_encode(array('success' => $aliado, 'vehiculo' => $vehiculo, 'user_id' => $id_usuario));
 }
 
+// Tarifas: catalogo (nombre + precio ESPEJO vigente hoy = fallback) y
+// timeline de precios con vigencia por fecha (Externos_tarifas_precios).
+// Compartido por el reporte (controlado 0 y 1) y el estimado del listado. El precio de
+// cada servicio se resuelve por SU fecha con $precioTarifa($id, $fecha).
+function externosTarifas($mysqli)
+{
+    $tarifas = array();
+    $tarifas_nombres = array();
+    $qCat = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
+    if ($qCat) {
+        while ($r = $qCat->fetch_assoc()) {
+            $tarifas[$r['id']] = $r['Precio'];
+            $tarifas_nombres[$r['id']] = $r['Nombre'];
+        }
+    }
+
+    $tarifas_timeline = array(); // [idTarifa] => [ ['desde'=>'YYYY-MM-DD','precio'=>float], ... ] ASC
+    $qTl = $mysqli->query("SELECT idExternos_tarifas, Precio, VigenciaDesde
+                           FROM Externos_tarifas_precios ORDER BY idExternos_tarifas, VigenciaDesde ASC");
+    if ($qTl) {
+        while ($r = $qTl->fetch_assoc()) {
+            $tarifas_timeline[(int)$r['idExternos_tarifas']][] = [
+                'desde'  => substr((string)$r['VigenciaDesde'], 0, 10),
+                'precio' => (float)$r['Precio'],
+            ];
+        }
+    }
+
+    // Precio de la tarifa $id para un servicio de fecha $fecha: ultimo tramo con
+    // VigenciaDesde <= fecha; si es anterior a todo, el mas viejo; si no hay
+    // timeline (no deberia tras la migracion), cae al espejo del catalogo.
+    $precioTarifa = function ($id, $fecha) use ($tarifas_timeline, $tarifas) {
+        $id = (int)$id;
+        $fecha = substr((string)$fecha, 0, 10);
+        if (empty($tarifas_timeline[$id])) {
+            return isset($tarifas[$id]) ? (float)$tarifas[$id] : 0.0;
+        }
+        $elegido = $tarifas_timeline[$id][0]['precio']; // fallback: el mas viejo
+        foreach ($tarifas_timeline[$id] as $tramo) {
+            if ($tramo['desde'] <= $fecha) {
+                $elegido = $tramo['precio'];
+            } else {
+                break; // ordenado ASC
+            }
+        }
+        return (float)$elegido;
+    };
+    return [$tarifas, $tarifas_nombres, $precioTarifa];
+}
+
+// Monto estimado de una orden NO controlada (pedido de Micaela, 29/10: ver el monto en el listado
+// sin tener que controlarla). Mismo criterio que el informe (Reporte, controlado = 0) pero SIN
+// escribir nada: no pide km a OSRM (si no hay km guardado usa línea recta x 1.25), no crea filas en
+// Externos_rendicion y no re-precia. Si la fila ya tiene un ajuste manual, vale ese precio.
+// No suma el reparto de Debe (PrecioCobrado), que no entra en el total que paga Costo_rendicion.
+function externosEstimarOrden($mysqli, $numeroOrden, $nombreUsuario, $precioTarifa, $poligono)
+{
+    static $tarifaRecorrido = [];
+    $latOrigen = -31.445003929354897;
+    $lngOrigen = -64.17790870319338;
+
+    $st = $mysqli->prepare("SELECT Seg.Entregado, Seg.Fecha, ts.CodigoSeguimiento, ts.idClienteOrigen, ts.idClienteDestino,
+            ts.Recorrido, ts.Kilometros, cl.Latitud, cl.Longitud, ER.PrecioPagado, ER.UsuarioModifico, ER.TarifaAnteriorId
+        FROM Seguimiento AS Seg
+        JOIN TransClientes AS ts ON Seg.CodigoSeguimiento = ts.CodigoSeguimiento
+        JOIN Clientes AS cl ON ts.idClienteDestino = cl.id
+        LEFT JOIN Externos_rendicion ER ON ER.CodigoSeguimiento = ts.CodigoSeguimiento AND ER.idRendicion = Seg.NumerodeOrden
+        WHERE Seg.Eliminado = 0 AND ts.Eliminado = 0 AND Seg.NumerodeOrden = ? AND Seg.Visitas <> 0
+          AND Seg.Estado <> 'Retirado del Cliente' AND Seg.Usuario = ?
+          AND Seg.id = (
+              SELECT MAX(Seg2.id) FROM Seguimiento Seg2
+              WHERE Seg2.CodigoSeguimiento = Seg.CodigoSeguimiento
+                AND Seg2.NumerodeOrden = Seg.NumerodeOrden
+                AND Seg2.Eliminado = 0
+                AND Seg2.Visitas <> 0
+                AND Seg2.Estado <> 'Retirado del Cliente'
+                AND Seg2.Usuario = Seg.Usuario
+          )");
+    $st->bind_param('is', $numeroOrden, $nombreUsuario);
+    $st->execute();
+    $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+
+    $total = 0.0;
+    $vistos = [];
+    foreach ($filas as $row) {
+        if (isset($vistos[$row['CodigoSeguimiento']])) continue; // por si hay 2 filas en Externos_rendicion
+        $vistos[$row['CodigoSeguimiento']] = 1;
+        $override = ($row['UsuarioModifico'] !== null && $row['UsuarioModifico'] !== '')
+            || ($row['TarifaAnteriorId'] !== null && $row['TarifaAnteriorId'] !== '');
+        if ($row['PrecioPagado'] !== null && $override) {
+            $precio = (float)$row['PrecioPagado'];
+        } elseif ((int)$row['idClienteDestino'] === 18587) {
+            $precio = $precioTarifa(6, $row['Fecha']); // colecta
+        } else {
+            $clave = (int)$row['Recorrido'] . '_' . (int)$row['idClienteOrigen'];
+            if (!isset($tarifaRecorrido[$clave])) {
+                $tarifaRecorrido[$clave] = 0;
+                $q = $mysqli->query("SELECT Tarifa_externos FROM Recorridos WHERE Numero = " . (int)$row['Recorrido']
+                    . " AND Cliente = " . (int)$row['idClienteOrigen'] . " LIMIT 1");
+                if ($q && ($r = $q->fetch_row())) $tarifaRecorrido[$clave] = (int)$r[0];
+            }
+            $idTarifa = $tarifaRecorrido[$clave];
+            if ($idTarifa <= 0 || $precioTarifa($idTarifa, $row['Fecha']) <= 0) {
+                $km = (float)$row['Kilometros'];
+                if ($km <= 0 && $row['Latitud'] && $row['Longitud']) {
+                    $km = round(haversineKm($latOrigen, $lngOrigen, (float)$row['Latitud'], (float)$row['Longitud']) * 1.25, 2);
+                }
+                if ($km > 50) {
+                    $idTarifa = 4;
+                } elseif ($km > 25) {
+                    $idTarifa = 3;
+                } elseif (!puntoDentroDelAnillo($row['Latitud'], $row['Longitud'], $poligono)) {
+                    $idTarifa = 2;
+                } else {
+                    $idTarifa = 1;
+                }
+            }
+            $precio = $precioTarifa($idTarifa, $row['Fecha']);
+            if ((int)$row['idClienteOrigen'] === 47305 && (int)$row['Entregado'] !== 1) {
+                $precio = round($precio * 0.5, 2);
+            }
+        }
+        $total += $precio + (float)obtenerCobranzaIntegrada($mysqli, $row['CodigoSeguimiento'], $row['Entregado']);
+    }
+    return round($total, 2);
+}
+
 if (isset($_POST['Desempeno'])) {
 
     $SQL_EXTERNOS = $mysqli->query("SELECT Usuario FROM usuarios WHERE id='" . $_POST['id'] . "' ");
@@ -781,8 +908,14 @@ if (isset($_POST['Desempeno'])) {
 
     $ROWS = array();
 
+    $precioTarifa = null;
     while ($DATOS_CLIENTES = $SQL->fetch_array(MYSQLI_ASSOC)) {
-
+        // Sin controlar: monto estimado (se confirma al controlar la orden)
+        $DATOS_CLIENTES['Estimado'] = null;
+        if ((float)$DATOS_CLIENTES['Costo_rendicion'] == 0 && (int)$DATOS_CLIENTES['Rendicion'] === 0) {
+            if ($precioTarifa === null) [, , $precioTarifa] = externosTarifas($mysqli);
+            $DATOS_CLIENTES['Estimado'] = externosEstimarOrden($mysqli, (int)$DATOS_CLIENTES['NumerodeOrden'], $NombreUsuario, $precioTarifa, $poligono);
+        }
         $ROWS[] = $DATOS_CLIENTES;
     }
 
@@ -835,51 +968,8 @@ if (isset($_POST['Reporte'])) {
         ]);
     });
 
-    // --- Tarifas: catalogo (nombre + precio ESPEJO vigente hoy = fallback) y
-    // timeline de precios con vigencia por fecha (Externos_tarifas_precios).
-    // Compartido por los dos modos del reporte (controlado 0 y 1). El precio de
-    // cada servicio se resuelve por SU fecha con $precioTarifa($id, $fecha).
-    $tarifas = array();
-    $tarifas_nombres = array();
-    $qCat = $mysqli->query("SELECT id, Precio, Nombre FROM Externos_tarifas");
-    if ($qCat) {
-        while ($r = $qCat->fetch_assoc()) {
-            $tarifas[$r['id']] = $r['Precio'];
-            $tarifas_nombres[$r['id']] = $r['Nombre'];
-        }
-    }
-
-    $tarifas_timeline = array(); // [idTarifa] => [ ['desde'=>'YYYY-MM-DD','precio'=>float], ... ] ASC
-    $qTl = $mysqli->query("SELECT idExternos_tarifas, Precio, VigenciaDesde
-                           FROM Externos_tarifas_precios ORDER BY idExternos_tarifas, VigenciaDesde ASC");
-    if ($qTl) {
-        while ($r = $qTl->fetch_assoc()) {
-            $tarifas_timeline[(int)$r['idExternos_tarifas']][] = [
-                'desde'  => substr((string)$r['VigenciaDesde'], 0, 10),
-                'precio' => (float)$r['Precio'],
-            ];
-        }
-    }
-
-    // Precio de la tarifa $id para un servicio de fecha $fecha: ultimo tramo con
-    // VigenciaDesde <= fecha; si es anterior a todo, el mas viejo; si no hay
-    // timeline (no deberia tras la migracion), cae al espejo del catalogo.
-    $precioTarifa = function ($id, $fecha) use ($tarifas_timeline, $tarifas) {
-        $id = (int)$id;
-        $fecha = substr((string)$fecha, 0, 10);
-        if (empty($tarifas_timeline[$id])) {
-            return isset($tarifas[$id]) ? (float)$tarifas[$id] : 0.0;
-        }
-        $elegido = $tarifas_timeline[$id][0]['precio']; // fallback: el mas viejo
-        foreach ($tarifas_timeline[$id] as $tramo) {
-            if ($tramo['desde'] <= $fecha) {
-                $elegido = $tramo['precio'];
-            } else {
-                break; // ordenado ASC
-            }
-        }
-        return (float)$elegido;
-    };
+    // --- Tarifas: catalogo + timeline con vigencia por fecha (externosTarifas()).
+    [$tarifas, $tarifas_nombres, $precioTarifa] = externosTarifas($mysqli);
 
     if ($_POST['controlado'] == 0) {
         // Endpoint JSON: los errores van al log, NO a la salida (rompian el JSON

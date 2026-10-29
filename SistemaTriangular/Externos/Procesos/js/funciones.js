@@ -538,6 +538,57 @@ $(document).on("click", ".btn-volver-no-controlado", function () {
   });
 });
 
+// Monto de la orden: el controlado (Costo_rendicion) o, si no se controló, el estimado.
+function _montoFila(row) {
+  return _num(row.Costo_rendicion) || Number(row.Estimado) || 0;
+}
+
+// Flotante que suma las filas marcadas con el mouse (pedido de Micaela, 29/10): aparece con la
+// primera fila marcada y se va cuando no queda ninguna.
+function _sumaSeleccion() {
+  const $tabla = $("#desempeno_tabla");
+  let filas = [];
+  if ($.fn.DataTable.isDataTable($tabla)) {
+    filas = $tabla.DataTable().rows(".fila-sumada").data().toArray();
+  }
+  let $box = $("#desempeno_suma");
+  if (!filas.length) {
+    $box.remove();
+    return;
+  }
+  if (!$box.length) {
+    $box = $('<div id="desempeno_suma"></div>').appendTo("body");
+  }
+  const total = filas.reduce((a, r) => a + _montoFila(r), 0);
+  const estimadas = filas.filter((r) => !_num(r.Costo_rendicion)).length;
+  $box.html(
+    '<div class="d-flex justify-content-between align-items-center">' +
+      "<span>" + filas.length + (filas.length === 1 ? " orden marcada" : " órdenes marcadas") + "</span>" +
+      '<a href="javascript:void(0)" class="text-white ms-3" id="desempeno_suma_limpiar" title="Desmarcar todas"><i class="mdi mdi-close"></i></a>' +
+      "</div>" +
+      '<div class="monto">' + _pesosFacturar(total) + "</div>" +
+      (estimadas ? '<small class="text-white-50">' + estimadas + " sin controlar (estimado)</small>" : ""),
+  );
+}
+
+$(document).on("click", "#desempeno_tabla tbody tr", function (e) {
+  // Los links, botones y checkboxes de la fila siguen haciendo lo suyo
+  if ($(e.target).closest("a, button, input, label, .dtr-control").length) return;
+  if (!$(this).find("td").length || $(this).find("td.dataTables_empty").length) return;
+  $(this).toggleClass("fila-sumada");
+  _sumaSeleccion();
+});
+$(document).on("click", "#desempeno_suma_limpiar", function () {
+  if ($.fn.DataTable.isDataTable("#desempeno_tabla")) {
+    // también las marcadas en otras páginas del listado
+    $("#desempeno_tabla").DataTable().rows(".fila-sumada").nodes().to$().removeClass("fila-sumada");
+  }
+  _sumaSeleccion();
+});
+$(document).on("hidden.bs.modal", "#desempeno_modal", function () {
+  $("#desempeno_suma").remove();
+});
+
 function _pesosFacturar(v) {
   return "$ " + Number(v).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
@@ -557,6 +608,7 @@ $("#desempeno_button").click(function () {
   if ($.fn.DataTable.isDataTable("#desempeno_tabla")) {
     $("#desempeno_tabla").DataTable().clear().destroy();
   }
+  $("#desempeno_suma").remove();
 
   // inputs type=date -> ya vienen en YYYY-MM-DD (formato SQL)
   var Desde = $("#desempeno_desde").val();
@@ -590,6 +642,7 @@ $("#desempeno_button").click(function () {
       toggleBloqueFactura(filas);
       // Total a facturar de todo el rango (también después de controlar o volver atrás una orden)
       _totalFacturar($("#desempeno_tabla").DataTable().rows().data().toArray());
+      _sumaSeleccion(); // al recargar (controlar / volver atrás) las filas se rehacen
     },
     columns: [
       {
@@ -650,11 +703,13 @@ $("#desempeno_button").click(function () {
         // recién al controlar la orden (Logistica.Costo_rendicion).
         data: "Costo_rendicion",
         className: "text-end",
+        // Sin controlar se muestra el estimado (mismo cálculo que el informe; se confirma al controlar).
         render: function (data, type, row) {
-          const monto = _num(row.Costo_rendicion);
+          const monto = _montoFila(row);
           if (type !== "display") return monto;
-          if (!monto) return '<span class="text-muted" title="Se calcula al controlar la orden">—</span>';
-          return "<b>" + _pesosFacturar(monto) + "</b>";
+          if (_num(row.Costo_rendicion)) return "<b>" + _pesosFacturar(monto) + "</b>";
+          if (row.Estimado === null || row.Estimado === undefined) return '<span class="text-muted">—</span>';
+          return '<span class="text-muted fst-italic" title="Estimado: se confirma al controlar la orden">' + _pesosFacturar(monto) + " <small>(est.)</small></span>";
         },
       },
       {
