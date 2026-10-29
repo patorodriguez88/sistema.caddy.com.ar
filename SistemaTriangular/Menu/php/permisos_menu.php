@@ -287,11 +287,16 @@ function paginaActualPermitida(): bool
 
 // Al principio del menú: una sesión de repartidor o cliente (nivel conocido que no es de personal)
 // no puede ver ninguna pantalla del sistema. Solo redirige: nunca borra la sesión (si por algún
-// motivo una pantalla leyera mal la sesión, borrarla deslogueaba a la persona). Una sesión vacía
-// no se toca acá: de eso se encarga Conexioni.php como siempre. Los headers ya se enviaron (el menú
-// se incluye con la página empezada), así que se redirige desde el navegador.
+// motivo una pantalla leyera mal la sesión, borrarla deslogueaba a la persona). Los headers ya se
+// enviaron (el menú se incluye con la página empezada), así que se redirige desde el navegador.
+// Sesión vencida (29/10): las pantallas que abren la sesión sin Conexioni.php (Tareas, por ejemplo)
+// no tenían quién las mandara al login y mostraban "Tu usuario todavía no tiene un rol asignado".
 function controlarAccesoAlSistema(): void
 {
+    if (empty($_SESSION['Usuario'])) {
+        echo '<script>window.location.replace("/SistemaTriangular/inicio.php");</script></div></body></html>';
+        exit;
+    }
     $nivel = $_SESSION['Nivel'] ?? null;
     if ($nivel === null || $nivel === '' || nivelPuedeEntrarAlSistema($nivel)) {
         return;
