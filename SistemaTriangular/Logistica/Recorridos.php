@@ -257,6 +257,7 @@
                                                     <th class="text-nowrap">Envios Fijos</th>
                                                     <th class="text-nowrap">Dias Salida</th>
                                                     <th>Color</th>
+                                                    <th class="text-nowrap" title="El chofer no sale sin escanear el bolsín interno">Bolsín</th>
                                                     <!-- <th>Estado</th> -->
                                                     <th class="text-nowrap">Accion</th>
                                                 </tr>

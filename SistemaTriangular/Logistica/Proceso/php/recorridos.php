@@ -4,9 +4,31 @@ include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 header('Content-Type: application/json; charset=utf-8');
 
+// Switch "Bolsín" (2026-10-29): Recorridos.RequiereBolsin (migración 2026_10_29_recorridos_requiere_bolsin.sql).
+function recorridosTieneRequiereBolsin(mysqli $mysqli): bool
+{
+  $r = $mysqli->query("SHOW COLUMNS FROM Recorridos LIKE 'RequiereBolsin'");
+  return $r && $r->num_rows > 0;
+}
+
+if (isset($_POST['RequiereBolsin'])) {
+  if (!recorridosTieneRequiereBolsin($mysqli)) {
+    echo json_encode(array('success' => 0, 'message' => 'Falta correr la migración 2026_10_29_recorridos_requiere_bolsin.sql.'));
+    exit;
+  }
+  $id = (int) $_POST['id'];
+  $valor = !empty($_POST['valor']) ? 1 : 0;
+  $stmt = $mysqli->prepare("UPDATE Recorridos SET RequiereBolsin = ? WHERE id = ?");
+  $stmt->bind_param('ii', $valor, $id);
+  $stmt->execute();
+  echo json_encode(array('success' => 1));
+  exit;
+}
+
 if (isset($_POST['Recorridos'])) {
 
-  $sql = "SELECT Recorridos.DiaSalida,Recorridos.Numero,Recorridos.Nombre,Recorridos.Zona,Recorridos.Kilometros,Recorridos.Peajes,Recorridos.Color,
+  $colBolsin = recorridosTieneRequiereBolsin($mysqli) ? "Recorridos.RequiereBolsin," : "0 AS RequiereBolsin,";
+  $sql = "SELECT $colBolsin Recorridos.DiaSalida,Recorridos.Numero,Recorridos.Nombre,Recorridos.Zona,Recorridos.Kilometros,Recorridos.Peajes,Recorridos.Color,
   Recorridos.CodigoProductos,Clientes.nombrecliente,Productos.PrecioVenta,Recorridos.Activo,Recorridos.id,COUNT(EntregasFijas.id)as Total FROM `Recorridos` 
   LEFT JOIN Clientes ON Recorridos.Cliente=Clientes.id
   LEFT JOIN Productos ON Productos.Codigo=Recorridos.CodigoProductos

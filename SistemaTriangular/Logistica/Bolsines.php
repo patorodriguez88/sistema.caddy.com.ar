@@ -90,10 +90,10 @@ include_once "../Conexion/Conexioni.php";
                         <div class="col-lg-5">
                             <div class="card">
                                 <div class="card-body">
-                                    <h5 class="card-title mb-1">Recorridos con pedidos de Dinter</h5>
-                                    <p class="text-muted small mb-2">Sin bolsín asignado el chofer no puede confirmar la salida en Warehouse.</p>
+                                    <h5 class="card-title mb-1">Recorridos que requieren bolsín</h5>
+                                    <p class="text-muted small mb-2">Se marcan con el switch "Bolsín" en Logística &gt; Recorridos. Sin bolsín asignado el chofer no puede salir.</p>
                                     <table class="table table-sm mb-0">
-                                        <thead><tr><th>Recorrido</th><th class="text-end">Pedidos</th><th class="text-end">Bolsines</th></tr></thead>
+                                        <thead><tr><th>Recorrido</th><th class="text-end">Entregas</th><th class="text-end">Bolsines</th></tr></thead>
                                         <tbody id="bo-dinter"></tbody>
                                     </table>
                                 </div>
