@@ -517,6 +517,27 @@ $("#crear_externo").click(function () {
   });
 })();
 
+// Volver una orden controlada (sin facturar) a "No controlado".
+$(document).on("click", ".btn-volver-no-controlado", function () {
+  const orden = $(this).data("orden");
+  Swal.fire({
+    icon: "question",
+    title: "Orden " + orden,
+    text: "¿Volverla a No controlado? Se puede volver a controlar después; los precios quedan como estaban.",
+    showCancelButton: true,
+    confirmButtonText: "Sí, volver a No controlado",
+    cancelButtonText: "Cancelar",
+  }).then((r) => {
+    if (!r.isConfirmed) return;
+    $.post("Procesos/php/funciones.php", { VolverANoControlado: 1, NOrden: orden }, null, "json")
+      .done((res) => {
+        Swal.fire({ icon: res.success ? "success" : "error", title: res.success ? res.msg : res.error });
+        if (res.success && $.fn.DataTable.isDataTable("#desempeno_tabla")) $("#desempeno_tabla").DataTable().ajax.reload(null, false);
+      })
+      .fail(() => Swal.fire({ icon: "error", title: "No se pudo conectar con el servidor." }));
+  });
+});
+
 $("#desempeno_button").click(function () {
   $("#desempeno_tabla").css("display", "table");
   if ($.fn.DataTable.isDataTable("#desempeno_tabla")) {
@@ -578,7 +599,10 @@ $("#desempeno_button").click(function () {
         render: function (data, type, row) {
           if (row.Rendicion == 0) {
             if (row.Costo_rendicion != 0) {
-              return `<span class="badge bg-success">Controlado</span>`;
+              return (
+                `<span class="badge bg-success">Controlado</span>` +
+                ` <a href="javascript:void(0)" class="text-muted btn-volver-no-controlado" data-orden="${row.NumerodeOrden}" title="Volver a No controlado"><i class="mdi mdi-undo-variant"></i></a>`
+              );
             } else {
               return `<span class="badge bg-danger">No Controlado</span>`;
             }
