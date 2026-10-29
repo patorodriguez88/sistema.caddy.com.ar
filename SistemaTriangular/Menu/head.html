@@ -315,53 +315,56 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
   </div>
 </div>
 <!-- ========== Topbar End ========== -->
+<!-- Nueva tarea desde cualquier pantalla, con el formato del panel de Tareas (estilo Asana) -->
+<style>
+  #tarea-rapida-offcanvas { width: 460px; }
+  #tarea-rapida-offcanvas .offcanvas-header { border-bottom: 1px solid var(--bs-border-color-translucent, rgba(0,0,0,.08)); padding: .8rem 1.3rem; }
+  #tarea-rapida-offcanvas .offcanvas-body { padding: 1.1rem 1.4rem 1.4rem; }
+  .tr-titulo { width: 100%; border: 1px solid transparent; border-radius: 8px; padding: .25rem .5rem; margin: 0 -.5rem .9rem; resize: none; overflow: hidden;
+    font-size: 1.45rem; font-weight: 600; letter-spacing: -.02em; line-height: 1.25; background: transparent; color: var(--bs-body-color); }
+  .tr-titulo::placeholder, .tr-desc::placeholder { color: var(--bs-secondary-color, #9aa0a6); }
+  .tr-titulo:hover, .tr-desc:hover { border-color: var(--bs-border-color, #dee2e6); }
+  .tr-titulo:focus, .tr-desc:focus { outline: 0; border-color: #727cf5; box-shadow: 0 0 0 3px rgba(114,124,245,.15); }
+  .tr-campos { display: grid; grid-template-columns: 130px 1fr; gap: .65rem .6rem; align-items: center; margin-bottom: 1.3rem; }
+  .tr-campos label { margin: 0; font-size: .86rem; color: var(--bs-body-color, #212529); }
+  .tr-sec { font-size: 1rem; font-weight: 600; margin-bottom: .4rem; color: var(--bs-body-color, #212529); }
+  .tr-desc { width: 100%; border: 1px solid transparent; border-radius: 8px; padding: .4rem .5rem; margin: 0 -.5rem; resize: vertical; min-height: 110px;
+    background: transparent; color: var(--bs-body-color); font-size: .92rem; line-height: 1.5; }
+</style>
 <div
   class="offcanvas offcanvas-end"
   tabindex="-1"
   id="tarea-rapida-offcanvas"
   aria-labelledby="tareaRapidaLabel"
-  style="width: 420px"
 >
-  <div class="offcanvas-header border-bottom">
-    <div>
-      <h5 class="offcanvas-title mb-0" id="tareaRapidaLabel">Nueva tarea</h5>
-      <small class="text-muted">Se crea sin salir de esta pantalla</small>
-    </div>
+  <div class="offcanvas-header">
+    <h5 class="offcanvas-title mb-0" id="tareaRapidaLabel">Nueva tarea</h5>
     <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
   </div>
   <div class="offcanvas-body">
     <form id="tr_form" autocomplete="off">
-      <div class="mb-2">
-        <label class="form-label" for="tr_titulo">Título</label>
-        <input type="text" id="tr_titulo" class="form-control" maxlength="200" placeholder="¿Qué hay que hacer?">
+      <textarea id="tr_titulo" class="tr-titulo" rows="1" maxlength="200" placeholder="Escribe el nombre de la tarea"></textarea>
+      <div class="tr-campos">
+        <label for="tr_resp_btn">Responsable</label>
+        <div><button id="tr_resp_btn"></button><select id="tr_responsable"></select></div>
+        <label for="tr_vence_btn">Fecha de entrega</label>
+        <div>
+          <button id="tr_vence_btn"></button>
+          <input type="hidden" id="tr_vence">
+          <input type="hidden" id="tr_repetir">
+          <input type="hidden" id="tr_rep_cada" value="1">
+          <input type="hidden" id="tr_rep_dias">
+        </div>
+        <label for="tr_proy_btn">Proyecto</label>
+        <div><button id="tr_proy_btn"></button><select id="tr_proyecto"></select></div>
       </div>
-      <div class="mb-2">
-        <label class="form-label" for="tr_proyecto">Proyecto</label>
-        <select id="tr_proyecto" class="form-select"></select>
-      </div>
-      <div class="mb-2">
-        <label class="form-label" for="tr_responsable">Responsable</label>
-        <select id="tr_responsable" class="form-select"></select>
-      </div>
-      <div class="mb-2">
-        <label class="form-label d-block" for="tr_vence_btn">Fecha de entrega</label>
-        <button id="tr_vence_btn"></button>
-        <input type="hidden" id="tr_vence">
-        <input type="hidden" id="tr_repetir">
-        <input type="hidden" id="tr_rep_cada" value="1">
-        <input type="hidden" id="tr_rep_dias">
-      </div>
-      <div class="mb-3">
-        <label class="form-label" for="tr_descripcion">Descripción</label>
-        <textarea id="tr_descripcion" class="form-control" rows="5" placeholder="Detalle (opcional). Para avisarle a alguien escribí @Nombre.Apellido"></textarea>
-      </div>
-      <div class="d-grid">
+      <div class="tr-sec">Descripción</div>
+      <textarea id="tr_descripcion" class="tr-desc" rows="4" placeholder="¿De qué se trata esta tarea? (escribí @Nombre.Apellido para avisarle a alguien)"></textarea>
+      <div class="d-flex align-items-center justify-content-between mt-3">
+        <a href="/SistemaTriangular/Empleados/Tareas.php" class="small">Ir a Tareas</a>
         <button type="submit" id="tr_guardar" class="btn btn-primary"><i class="ri-add-line"></i> Crear tarea</button>
       </div>
       <div id="tr_mensaje" class="mt-3"></div>
-      <div class="text-center mt-2">
-        <a href="/SistemaTriangular/Empleados/Tareas.php" class="small">Ir a Tareas</a>
-      </div>
     </form>
   </div>
 </div>
