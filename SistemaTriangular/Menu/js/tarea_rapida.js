@@ -23,13 +23,20 @@
   function api(params) {
     const body = new FormData();
     Object.keys(params).forEach((k) => body.append(k, params[k]));
-    return fetch(API, { method: "POST", body, credentials: "same-origin" }).then((r) => {
-      if (r.status === 401) {
-        location.href = "/SistemaTriangular/inicio.php";
-        throw new Error("Sesión vencida");
-      }
-      return r.json();
-    });
+    // X-Requested-With: así Conexioni.php responde 401 (y no redirige al login) si la sesión venció.
+    return fetch(API, { method: "POST", body, credentials: "same-origin", headers: { "X-Requested-With": "XMLHttpRequest" } })
+      .then((r) => r.text().then((texto) => ({ r, texto })))
+      .then(({ r, texto }) => {
+        if (r.status === 401 || r.redirected || /^\s*</.test(texto)) {
+          location.href = "/SistemaTriangular/inicio.php";
+          throw new Error("Tu sesión venció: volvé a ingresar.");
+        }
+        try {
+          return JSON.parse(texto);
+        } catch (e) {
+          throw new Error("El servidor no respondió bien (HTTP " + r.status + (texto ? "" : ", respuesta vacía") + "). Avisale a sistemas.");
+        }
+      });
   }
 
   function mensaje(tipo, html) {
