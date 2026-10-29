@@ -23,8 +23,15 @@
   }
 
   // Etiquetas en un modal (iframe con BolsinesQR.php); ids vacío = todas.
+  // El modal toma el tamaño de lo que muestra: angosto con una etiqueta, ancho con varias, y el
+  // alto del contenido (hasta 75% de la pantalla).
   function verQR(ids) {
-    $("#bo-qr-frame").attr("src", "BolsinesQR.php?modal=1" + (ids ? "&ids=" + ids : ""));
+    const cantidad = ids ? String(ids).split(",").length : bolsines.length;
+    $("#bo-qr-dialog")
+      .removeClass("modal-lg modal-xl")
+      .css("max-width", cantidad === 1 ? "420px" : "")
+      .addClass(cantidad === 1 ? "" : cantidad <= 3 ? "modal-lg" : "modal-xl");
+    $("#bo-qr-frame").css("height", "320px").attr("src", "BolsinesQR.php?modal=1" + (ids ? "&ids=" + ids : ""));
     $("#bo-modal-qr").modal("show");
   }
 
@@ -207,6 +214,12 @@
     $("#bo-imprimir-todos").on("click", () => verQR(""));
     $(document).on("click", ".bo-qr", function () {
       verQR(String($(this).data("id")));
+    });
+    $("#bo-qr-frame").on("load", function () {
+      try {
+        const alto = this.contentWindow.document.documentElement.scrollHeight;
+        $(this).css("height", Math.min(alto + 4, Math.round(window.innerHeight * 0.75)) + "px");
+      } catch (e) {}
     });
     $("#bo-qr-imprimir").on("click", () => {
       const w = document.getElementById("bo-qr-frame").contentWindow;

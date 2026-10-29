@@ -159,14 +159,14 @@ include_once "../Conexion/Conexioni.php";
 
     <!-- Etiquetas QR (BolsinesQR.php adentro de un iframe, para imprimir sin salir de la pantalla) -->
     <div class="modal fade" id="bo-modal-qr" tabindex="-1">
-        <div class="modal-dialog modal-xl">
+        <div class="modal-dialog modal-dialog-centered" id="bo-qr-dialog">
             <div class="modal-content">
                 <div class="modal-header">
                     <h5 class="modal-title">Etiquetas QR</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <iframe id="bo-qr-frame" style="width:100%;height:70vh;border:0"></iframe>
+                    <iframe id="bo-qr-frame" style="width:100%;height:320px;border:0;display:block"></iframe>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
