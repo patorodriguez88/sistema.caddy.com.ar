@@ -16,6 +16,8 @@ $bolsines = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
     <title>Bolsines QR</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 0; padding: 10mm; }
+        body.modal { padding: 16px; }
+        body.modal .grilla { justify-content: center; }
         .grilla { display: flex; flex-wrap: wrap; gap: 6mm; }
         .etiqueta { width: 60mm; border: 1px dashed #999; padding: 4mm; text-align: center; page-break-inside: avoid; }
         .etiqueta img { width: 44mm; height: 44mm; }
@@ -26,7 +28,7 @@ $bolsines = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
     </style>
 </head>
 
-<body>
+<body class="<?= empty($_GET['modal']) ? '' : 'modal' ?>">
     <?php if (empty($_GET['modal'])): // en el modal de Bolsines.php imprime el botón del modal ?>
     <div class="acciones">
         <button onclick="window.print()">Imprimir</button>
