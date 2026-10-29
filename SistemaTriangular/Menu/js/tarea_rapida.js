@@ -15,10 +15,6 @@
     return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
   }
 
-  function hoy() {
-    const d = new Date();
-    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-  }
 
   function api(params) {
     const body = new FormData();
@@ -65,14 +61,16 @@
   function limpiar() {
     $("tr_titulo").value = "";
     $("tr_descripcion").value = "";
-    $("tr_vence").value = hoy();
+    $("tr_vence").value = "";
     $("tr_repetir").value = "";
+    $("tr_rep_cada").value = 1;
+    $("tr_rep_dias").value = "";
+    if (fecha) fecha.refrescar();
     if (datos) $("tr_responsable").value = String(datos.yo);
   }
 
   panel.addEventListener("show.bs.offcanvas", function () {
     mensaje("", "");
-    if (!$("tr_vence").value) $("tr_vence").value = hoy();
     if (datos) return;
     $("tr_guardar").disabled = true;
     mensaje("light", '<i class="mdi mdi-loading mdi-spin"></i> Cargando proyectos…');
@@ -87,6 +85,12 @@
       .catch((e) => mensaje("danger", esc(e.message)));
   });
   panel.addEventListener("shown.bs.offcanvas", () => $("tr_titulo").focus());
+  panel.addEventListener("hide.bs.offcanvas", () => fecha && fecha.cerrar());
+
+  // Fecha de entrega + Repetir estilo Asana (fecha_asana.js, cargado antes que este archivo)
+  const fecha = window.FechaAsana
+    ? FechaAsana.montar({ boton: $("tr_vence_btn"), fecha: $("tr_vence"), tipo: $("tr_repetir"), cada: $("tr_rep_cada"), dias: $("tr_rep_dias") })
+    : null;
 
   $("tr_form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -103,6 +107,8 @@
       vence: $("tr_vence").value,
       descripcion: $("tr_descripcion").value.trim(),
       repetirTipo: $("tr_repetir").value, // al completarla se crea la siguiente (tareas_api.php)
+      repetirCada: $("tr_rep_cada").value,
+      repetirDias: $("tr_rep_dias").value,
     })
       .then((r) => {
         if (!r.success) throw new Error(r.error || "No se pudo crear la tarea.");

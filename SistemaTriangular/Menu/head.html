@@ -338,26 +338,17 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
         <label class="form-label" for="tr_proyecto">Proyecto</label>
         <select id="tr_proyecto" class="form-select"></select>
       </div>
-      <div class="row g-2 mb-2">
-        <div class="col-7">
-          <label class="form-label" for="tr_responsable">Responsable</label>
-          <select id="tr_responsable" class="form-select"></select>
-        </div>
-        <div class="col-5">
-          <label class="form-label" for="tr_vence">Vence</label>
-          <input type="date" id="tr_vence" class="form-control">
-        </div>
+      <div class="mb-2">
+        <label class="form-label" for="tr_responsable">Responsable</label>
+        <select id="tr_responsable" class="form-select"></select>
       </div>
       <div class="mb-2">
-        <label class="form-label" for="tr_repetir">Repetir</label>
-        <select id="tr_repetir" class="form-select">
-          <option value="">No se repite</option>
-          <option value="dia">Todos los días</option>
-          <option value="habil">Días hábiles (lun a vie)</option>
-          <option value="semana">Cada semana (mismo día)</option>
-          <option value="mes">Cada mes (mismo día)</option>
-          <option value="anio">Cada año</option>
-        </select>
+        <label class="form-label d-block" for="tr_vence_btn">Fecha de entrega</label>
+        <button id="tr_vence_btn"></button>
+        <input type="hidden" id="tr_vence">
+        <input type="hidden" id="tr_repetir">
+        <input type="hidden" id="tr_rep_cada" value="1">
+        <input type="hidden" id="tr_rep_dias">
       </div>
       <div class="mb-3">
         <label class="form-label" for="tr_descripcion">Descripción</label>
@@ -373,6 +364,7 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
     </form>
   </div>
 </div>
+<script src="/SistemaTriangular/Menu/js/fecha_asana.js?v=<?= @filemtime(__DIR__ . '/js/fecha_asana.js') ?>" defer></script>
 <script src="/SistemaTriangular/Menu/js/tarea_rapida.js?v=<?= @filemtime(__DIR__ . '/js/tarea_rapida.js') ?>" defer></script>
 <?php if ($esSuperAdministrador): ?>
 <div

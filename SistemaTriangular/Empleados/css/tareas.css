@@ -102,15 +102,7 @@
 .tk-campos label { margin: 0; font-size: .8rem; color: var(--bs-secondary-color, #6c757d); display: flex; align-items: center; gap: .35rem; }
 .tk-campos label .mdi { font-size: 1rem; }
 .tk-campos .form-control, .tk-campos .form-select { border-radius: 8px; max-width: 360px; }
-/* Repetir (tareas que se repiten) */
-.tk-repetir { display: flex; flex-wrap: wrap; align-items: center; gap: .4rem; max-width: 360px; }
-.tk-repetir > select { flex: 1 1 100%; }
-.tk-rep-extra { display: flex; align-items: center; gap: .35rem; font-size: .8rem; color: var(--bs-secondary-color, #6c757d); }
-.tk-rep-extra input { width: 58px !important; }
-.tk-rep-dias { display: flex; gap: .25rem; }
-.tk-rep-dias button { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--bs-border-color, #dee2e6); background: transparent; font-size: .75rem; font-weight: 700; color: var(--bs-secondary-color, #6c757d); padding: 0; }
-.tk-rep-dias button.on { background: var(--bs-primary, #727cf5); border-color: var(--bs-primary, #727cf5); color: #fff; }
-.tk-rep-ayuda { flex: 1 1 100%; font-size: .72rem; color: var(--bs-secondary-color, #6c757d); }
+/* Tareas que se repiten: ícono en la lista */
 .tk-repite { color: var(--bs-primary, #727cf5); }
 .tk-label { display: block; font-size: .72rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--bs-secondary-color, #6c757d); margin-bottom: .4rem; }
 .tk-panel textarea.form-control { border-radius: 10px; }

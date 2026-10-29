@@ -294,27 +294,31 @@ function tkRepetirTexto(r) {
 function tkTextoProxima(r) {
   return r && r.proxima ? "Se creó la siguiente para el " + tkFecha(r.proxima.vence) + "." : "";
 }
+// Fecha de entrega + Repetir: selector estilo Asana (Menu/js/fecha_asana.js) sobre inputs ocultos.
 function tkRepetirPoner(r) {
   $("#tk_f_repetir").val(r ? r.tipo : "");
   $("#tk_f_rep_cada").val(r ? r.cada : 1);
-  var dias = r && r.dias ? String(r.dias).split(",") : [];
-  $("#tk_f_rep_dias button").each(function () { $(this).toggleClass("on", dias.indexOf(String($(this).data("d"))) >= 0); });
-  tkRepetirVista();
+  $("#tk_f_rep_dias").val(r && r.dias ? r.dias : "");
+  tkFechaRefrescar();
 }
-function tkRepetirVista() {
-  var tipo = $("#tk_f_repetir").val();
-  $("#tk_f_rep_extra").prop("hidden", !TK_UNIDAD[tipo]);
-  $("#tk_f_rep_unidad").text(TK_UNIDAD[tipo] ? TK_UNIDAD[tipo][1] : "");
-  $("#tk_f_rep_dias").prop("hidden", tipo !== "semana");
-  $("#tk_f_rep_ayuda").prop("hidden", !tipo);
-  // Semanal sin días marcados: se toma el día del vencimiento (o hoy)
-  if (tipo === "semana" && !$("#tk_f_rep_dias button.on").length) {
-    var f = $("#tk_f_vence").val() ? new Date($("#tk_f_vence").val() + "T12:00:00") : new Date();
-    $('#tk_f_rep_dias button[data-d="' + (f.getDay() || 7) + '"]').addClass("on");
-  }
+function tkFechaRefrescar() {
+  var b = document.getElementById("tk_f_vence_btn");
+  if (b && b._fa) b._fa.refrescar();
 }
-$("#tk_f_repetir").on("change", tkRepetirVista);
-$(document).on("click", "#tk_f_rep_dias button", function () { $(this).toggleClass("on"); });
+$(function () {
+  if (!window.FechaAsana) return;
+  FechaAsana.montar({
+    boton: document.getElementById("tk_f_vence_btn"),
+    fecha: document.getElementById("tk_f_vence"),
+    tipo: document.getElementById("tk_f_repetir"),
+    cada: document.getElementById("tk_f_rep_cada"),
+    dias: document.getElementById("tk_f_rep_dias"),
+  });
+});
+$("#tk_panel").on("hide.bs.offcanvas", function () {
+  var b = document.getElementById("tk_f_vence_btn");
+  if (b && b._fa) b._fa.cerrar();
+});
 
 // ---------- panel de detalle ----------
 var tkPanel = null;
@@ -572,7 +576,7 @@ $("#tk_guardar").on("click", function () {
     vence: $("#tk_f_vence").val(),
     repetirTipo: $("#tk_f_repetir").val(),
     repetirCada: $("#tk_f_rep_cada").val(),
-    repetirDias: $("#tk_f_rep_dias button.on").map(function () { return $(this).data("d"); }).get().join(","),
+    repetirDias: $("#tk_f_rep_dias").val(),
   })
     .done(function (r) {
       var avisados = (r.avisados || []).map(function (id) { return tkUsuario(id).nombre; });
