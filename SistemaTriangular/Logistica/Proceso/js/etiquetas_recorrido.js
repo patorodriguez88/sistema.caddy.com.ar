@@ -177,12 +177,12 @@
             CADDY_LOGO_ZPL +
             "^FO215,10^A0N,20,20^FD" + zplLimpio((d.ClienteDestino || "-").substring(0, 26)) + "^FS" +
             "^FO215,35^A0N,18,18^FD" + zplLimpio((d.DomicilioDestino || "").substring(0, 30)) + "^FS" +
-            "^FO215,57^A0N,18,18^FDId: " + d.CodigoSeguimiento + "^FS" +
+            "^FO215,57^A0N,18,18^FDId: " + codigoBulto(d, bultoActual, bultoTotal, esRepo) + "^FS" +
             "^FO215,79^A0N,18,18^FDOrigen: " + zplLimpio((d.OrigenNombre || "").substring(0, 26)) + "^FS" +
             lineaBulto +
             "^FO215,123^A0N,18,18^FDFecha: " + fechaTexto() + "^FS" +
             "^FO215,148^A0N,30,30^FDRec: " + (d.Recorrido || "-") + "^FS" +
-            "^FO45,74^BQN,2,7^FDQA," + d.CodigoSeguimiento + "^FS" +
+            "^FO45,74^BQN,2,7^FDQA," + codigoBulto(d, bultoActual, bultoTotal, esRepo) + "^FS" +
             "^XZ"
         );
     }
@@ -249,10 +249,10 @@
             "^FO610,24^A0N," + sizeContador + "," + sizeContador + "^FB180,1,0,R,0^FD" + textoContador + "^FS" +
             "^FO30,104^GB740,3,3^FS" +
             // Código grande, centrado
-            "^FO30,116^A0N,40,40^FB740,1,0,C,0^FD" + d.CodigoSeguimiento + "^FS" +
+            "^FO30,116^A0N,40,40^FB740,1,0,C,0^FD" + codigoBulto(d, nroBulto, totalBultos, esRepo) + "^FS" +
             "^FO30,172^GB740,3,3^FS" +
             // QR a la izquierda (mag 7) y datos de destino a la derecha.
-            "^FO40,180^BQN,2,7^FDQA," + d.CodigoSeguimiento + "^FS" +
+            "^FO40,180^BQN,2,7^FDQA," + codigoBulto(d, nroBulto, totalBultos, esRepo) + "^FS" +
             "^FO260,185^A0N,28,28^FB490,1,0,L,0^FD" + cliente + "^FS" +
             "^FO260,216^A0N,22,22^FB490,2,0,L,0^FD" + domicilio + "^FS" +
             "^FO260,270^A0N,22,22^FB490,1,0,L,0^FD" + localidad + (cp ? " (" + cp + ")" : "") + "^FS" +
@@ -282,6 +282,19 @@
 
     function tipoEtiquetaSeleccionado() {
         return $tipoEtiqueta.val(); // "rotulo" | "etiqueta"
+    }
+
+    // FIX (2026-10-29): el QR llevaba siempre el código sin sufijo, aunque se imprimiera una
+    // etiqueta por bulto. La app de reparto espera BASE_1, BASE_2... cuando Cantidad > 1 (cada
+    // bulto es un ítem aparte en Warehouse): con 2 etiquetas iguales el segundo bulto daba "Ya
+    // escaneado" y el escaneo quedaba trabado. Mismo criterio que Rotulospdf.php y el panel de
+    // Seguimiento. En una reposición el contador es el de la repo (1/N), pero el sufijo sigue la
+    // numeración del envío: d.Cantidad ya es el total con la repo, así que los bultos nuevos son
+    // los últimos (si había 2 y se suma 1, el nuevo es _3).
+    function codigoBulto(d, nroBulto, totalBultos, esRepo) {
+        var cantidad = Math.max(1, parseInt(d.Cantidad, 10) || 1);
+        var nro = esRepo ? cantidad - totalBultos + nroBulto : nroBulto;
+        return cantidad > 1 ? d.CodigoSeguimiento + "_" + nro : d.CodigoSeguimiento;
     }
 
     function construirZpl(d, nroBulto, totalBultos, esRepo) {
