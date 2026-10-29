@@ -42,13 +42,20 @@
   function cargarCombos() {
     // Solo proyectos donde puedo crear: los de todos y los que participo.
     const proyectos = (datos.proyectos || []).filter((p) => p.todos || p.participo);
-    const ultimo = localStorageGet("tr_proyecto");
+    // El último que usé; si tengo uno solo, ese.
+    const ultimo = localStorageGet("tr_proyecto") || (proyectos.length === 1 ? String(proyectos[0].id) : "");
+    // data-color / data-ini: los usa SelectAsana (fecha_asana.js) para el cuadradito y el avatar
     $("tr_proyecto").innerHTML =
-      '<option value="">Elegí el proyecto…</option>' +
-      proyectos.map((p) => '<option value="' + p.id + '"' + (String(p.id) === ultimo ? " selected" : "") + ">" + esc(p.nombre) + "</option>").join("");
+      '<option value=""></option>' +
+      proyectos.map((p) => '<option value="' + p.id + '" data-color="' + esc(p.color) + '"' + (String(p.id) === ultimo ? " selected" : "") + ">" + esc(p.nombre) + "</option>").join("");
     $("tr_responsable").innerHTML = (datos.usuarios || [])
-      .map((u) => '<option value="' + u.id + '"' + (u.id === datos.yo ? " selected" : "") + ">" + esc(u.nombre) + (u.id === datos.yo ? " (yo)" : "") + "</option>")
+      .map((u) => '<option value="' + u.id + '" data-ini="' + esc(u.iniciales) + '"' + (u.id === datos.yo ? " selected" : "") + ">" + esc(u.nombre) + (u.id === datos.yo ? " (yo)" : "") + "</option>")
       .join("");
+    refrescarSelects();
+  }
+
+  function refrescarSelects() {
+    [selResp, selProy].forEach((s) => s && s.refrescar());
   }
 
   function localStorageGet(k) {
@@ -67,7 +74,20 @@
     $("tr_rep_dias").value = "";
     if (fecha) fecha.refrescar();
     if (datos) $("tr_responsable").value = String(datos.yo);
+    refrescarSelects();
+    autoAlto();
   }
+
+  // El título crece con el texto (como en el panel de Tareas)
+  function autoAlto() {
+    const t = $("tr_titulo");
+    t.style.height = "auto";
+    t.style.height = t.scrollHeight + "px";
+  }
+  $("tr_titulo").addEventListener("input", autoAlto);
+  $("tr_titulo").addEventListener("keydown", (e) => {
+    if (e.key === "Enter") { e.preventDefault(); $("tr_descripcion").focus(); }
+  });
 
   panel.addEventListener("show.bs.offcanvas", function () {
     mensaje("", "");
@@ -85,7 +105,7 @@
       .catch((e) => mensaje("danger", esc(e.message)));
   });
   panel.addEventListener("shown.bs.offcanvas", () => $("tr_titulo").focus());
-  panel.addEventListener("hide.bs.offcanvas", () => fecha && fecha.cerrar());
+  panel.addEventListener("hide.bs.offcanvas", () => [fecha, selResp, selProy].forEach((c) => c && c.cerrar()));
 
   // Fecha de entrega + Repetir estilo Asana (fecha_asana.js, cargado antes que este archivo)
   // ---------- Globo de novedad (una sola vez por usuario, Menu/php/avisos.php) ----------
@@ -148,6 +168,9 @@
   const fecha = window.FechaAsana
     ? FechaAsana.montar({ boton: $("tr_vence_btn"), fecha: $("tr_vence"), tipo: $("tr_repetir"), cada: $("tr_rep_cada"), dias: $("tr_rep_dias") })
     : null;
+  // Responsable y Proyecto: lista con buscador estilo Asana sobre los <select>
+  const selResp = window.SelectAsana ? SelectAsana.montar({ boton: $("tr_resp_btn"), select: $("tr_responsable"), vacio: "Sin responsable", tipo: "persona" }) : null;
+  const selProy = window.SelectAsana ? SelectAsana.montar({ boton: $("tr_proy_btn"), select: $("tr_proyecto"), vacio: "Elegí el proyecto", tipo: "proyecto" }) : null;
 
   $("tr_form").addEventListener("submit", function (e) {
     e.preventDefault();
