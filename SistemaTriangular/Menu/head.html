@@ -125,7 +125,7 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
       <span
         class="text-muted d-none d-sm-inline-block"
         style="font-size: 10px; white-space: nowrap; align-self: flex-end; margin-bottom: 8px;"
-        >v.26.10.16</span
+        >v.26.10.15</span
       >
 
       <!-- Sidebar Menu Toggle Button -->
@@ -209,6 +209,20 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
             </div>
           </div>
         </div>
+      </li>
+
+      <!-- Nueva tarea desde cualquier pantalla (Menu/js/tarea_rapida.js) -->
+      <li>
+        <a
+          class="nav-link"
+          data-bs-toggle="offcanvas"
+          href="#tarea-rapida-offcanvas"
+          role="button"
+          aria-controls="tarea-rapida-offcanvas"
+          title="Nueva tarea"
+        >
+          <i class="ri-task-line font-22"></i>
+        </a>
       </li>
 
       <li class="d-none d-sm-inline-block">
@@ -300,6 +314,55 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
   </div>
 </div>
 <!-- ========== Topbar End ========== -->
+<div
+  class="offcanvas offcanvas-end"
+  tabindex="-1"
+  id="tarea-rapida-offcanvas"
+  aria-labelledby="tareaRapidaLabel"
+  style="width: 420px"
+>
+  <div class="offcanvas-header border-bottom">
+    <div>
+      <h5 class="offcanvas-title mb-0" id="tareaRapidaLabel">Nueva tarea</h5>
+      <small class="text-muted">Se crea sin salir de esta pantalla</small>
+    </div>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="offcanvas-body">
+    <form id="tr_form" autocomplete="off">
+      <div class="mb-2">
+        <label class="form-label" for="tr_titulo">Título</label>
+        <input type="text" id="tr_titulo" class="form-control" maxlength="200" placeholder="¿Qué hay que hacer?">
+      </div>
+      <div class="mb-2">
+        <label class="form-label" for="tr_proyecto">Proyecto</label>
+        <select id="tr_proyecto" class="form-select"></select>
+      </div>
+      <div class="row g-2 mb-2">
+        <div class="col-7">
+          <label class="form-label" for="tr_responsable">Responsable</label>
+          <select id="tr_responsable" class="form-select"></select>
+        </div>
+        <div class="col-5">
+          <label class="form-label" for="tr_vence">Vence</label>
+          <input type="date" id="tr_vence" class="form-control">
+        </div>
+      </div>
+      <div class="mb-3">
+        <label class="form-label" for="tr_descripcion">Descripción</label>
+        <textarea id="tr_descripcion" class="form-control" rows="5" placeholder="Detalle (opcional). Para avisarle a alguien escribí @Nombre.Apellido"></textarea>
+      </div>
+      <div class="d-grid">
+        <button type="submit" id="tr_guardar" class="btn btn-primary"><i class="ri-add-line"></i> Crear tarea</button>
+      </div>
+      <div id="tr_mensaje" class="mt-3"></div>
+      <div class="text-center mt-2">
+        <a href="/SistemaTriangular/Empleados/Tareas.php" class="small">Ir a Tareas</a>
+      </div>
+    </form>
+  </div>
+</div>
+<script src="/SistemaTriangular/Menu/js/tarea_rapida.js?v=<?= @filemtime(__DIR__ . '/js/tarea_rapida.js') ?>" defer></script>
 <?php if ($esSuperAdministrador): ?>
 <div
   class="offcanvas offcanvas-end"
