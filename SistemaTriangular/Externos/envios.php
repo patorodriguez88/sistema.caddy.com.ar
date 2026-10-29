@@ -181,12 +181,14 @@
                                                             <th>Serv.</th>
                                                             <th>Estado</th>
                                                             <th>Informe</th>
+                                                            <th class="text-end">A facturar</th>
                                                             <th>Accion</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                     </tbody>
                                                 </table>
+                                                <div class="text-end mt-2" id="desempeno_total_facturar" style="font-size:12px"></div>
                                             </div>
 
                                             <!-- Formulario de factura (visible solo si hay checkboxes marcados) -->
