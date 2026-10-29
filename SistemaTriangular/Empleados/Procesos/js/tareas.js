@@ -234,6 +234,7 @@ function tkPintarLista() {
       (tipo === "bandeja" ? '<th class="tk-col-user">Asignada por</th>' : "") + '<th class="tk-col-vence">Vence</th>';
     fila = function (t) {
       var sub = [];
+      if (t.repetir) sub.push('<span class="tk-repite" title="Se repite"><i class="mdi mdi-repeat"></i> ' + tkEsc(tkRepetirTexto(t.repetir)) + "</span>");
       if (t.comentarios) sub.push('<span><i class="mdi mdi-comment-outline"></i> ' + t.comentarios + "</span>");
       return '<td class="tk-col-check"><button type="button" class="tk-check' + (t.completada ? " on" : "") + '" data-id="' + t.id + '" title="' +
         (t.completada ? "Marcar pendiente" : "Marcar completada") + '"><i class="mdi mdi-check"></i></button></td>' +
@@ -268,8 +269,8 @@ $(document).on("click", ".tk-check", function (e) {
   var $b = $(this), nueva = !$b.hasClass("on");
   $b.toggleClass("on", nueva);
   tkApi("completar", { id: $b.data("id"), completada: nueva ? 1 : 0 })
-    .done(function () {
-      toast("success", nueva ? "Tarea completada" : "Tarea pendiente otra vez", "");
+    .done(function (r) {
+      toast("success", nueva ? "Tarea completada" : "Tarea pendiente otra vez", tkTextoProxima(r));
       tkRefrescar();
     })
     .fail(function (e) { $b.toggleClass("on", !nueva); tkError(e); });
@@ -278,6 +279,42 @@ $(document).on("click", ".tk-recuperar", function (e) {
   e.stopPropagation();
   tkRecuperar($(this).data("id"));
 });
+
+// ---------- tareas que se repiten ----------
+var TK_DIAS = ["", "lun", "mar", "mié", "jue", "vie", "sáb", "dom"];
+var TK_UNIDAD = { dia: ["día", "días"], semana: ["semana", "semanas"], mes: ["mes", "meses"], anio: ["año", "años"] };
+function tkRepetirTexto(r) {
+  if (!r) return "";
+  if (r.tipo === "habil") return "Días hábiles";
+  var u = TK_UNIDAD[r.tipo] || ["", ""];
+  var txt = r.cada > 1 ? "Cada " + r.cada + " " + u[1] : { dia: "Todos los días", semana: "Cada semana", mes: "Cada mes", anio: "Cada año" }[r.tipo];
+  if (r.tipo === "semana" && r.dias) txt += " (" + String(r.dias).split(",").map(function (d) { return TK_DIAS[d]; }).join(", ") + ")";
+  return txt;
+}
+function tkTextoProxima(r) {
+  return r && r.proxima ? "Se creó la siguiente para el " + tkFecha(r.proxima.vence) + "." : "";
+}
+function tkRepetirPoner(r) {
+  $("#tk_f_repetir").val(r ? r.tipo : "");
+  $("#tk_f_rep_cada").val(r ? r.cada : 1);
+  var dias = r && r.dias ? String(r.dias).split(",") : [];
+  $("#tk_f_rep_dias button").each(function () { $(this).toggleClass("on", dias.indexOf(String($(this).data("d"))) >= 0); });
+  tkRepetirVista();
+}
+function tkRepetirVista() {
+  var tipo = $("#tk_f_repetir").val();
+  $("#tk_f_rep_extra").prop("hidden", !TK_UNIDAD[tipo]);
+  $("#tk_f_rep_unidad").text(TK_UNIDAD[tipo] ? TK_UNIDAD[tipo][1] : "");
+  $("#tk_f_rep_dias").prop("hidden", tipo !== "semana");
+  $("#tk_f_rep_ayuda").prop("hidden", !tipo);
+  // Semanal sin días marcados: se toma el día del vencimiento (o hoy)
+  if (tipo === "semana" && !$("#tk_f_rep_dias button.on").length) {
+    var f = $("#tk_f_vence").val() ? new Date($("#tk_f_vence").val() + "T12:00:00") : new Date();
+    $('#tk_f_rep_dias button[data-d="' + (f.getDay() || 7) + '"]').addClass("on");
+  }
+}
+$("#tk_f_repetir").on("change", tkRepetirVista);
+$(document).on("click", "#tk_f_rep_dias button", function () { $(this).toggleClass("on"); });
 
 // ---------- panel de detalle ----------
 var tkPanel = null;
@@ -312,6 +349,7 @@ function tkNueva() {
   $("#tk_f_titulo").val("");
   $("#tk_f_desc").val("");
   $("#tk_f_vence").val("");
+  tkRepetirPoner(null);
   $("#tk_f_responsable").val(TK.yo);
   // El proyecto que estoy mirando; desde la bandeja, el primero del que participo
   var mio = TK.proyectos.filter(function (p) { return p.participo; })[0] || TK.proyectos[0];
@@ -343,6 +381,7 @@ function tkAbrir(id) {
     $("#tk_f_titulo").val(t.titulo);
     $("#tk_f_desc").val(t.descripcion);
     $("#tk_f_vence").val(t.vence || "");
+    tkRepetirPoner(t.repetir);
     $("#tk_f_responsable").val(t.responsable);
     if (!$("#tk_f_proyecto option[value='" + t.proyecto.id + "']").length) {
       $("#tk_f_proyecto").append('<option value="' + t.proyecto.id + '">' + tkEsc(t.proyecto.nombre) + "</option>");
@@ -531,6 +570,9 @@ $("#tk_guardar").on("click", function () {
     idProyecto: $("#tk_f_proyecto").val(),
     idResponsable: $("#tk_f_responsable").val(),
     vence: $("#tk_f_vence").val(),
+    repetirTipo: $("#tk_f_repetir").val(),
+    repetirCada: $("#tk_f_rep_cada").val(),
+    repetirDias: $("#tk_f_rep_dias button.on").map(function () { return $(this).data("d"); }).get().join(","),
   })
     .done(function (r) {
       var avisados = (r.avisados || []).map(function (id) { return tkUsuario(id).nombre; });
@@ -545,8 +587,8 @@ $("#tk_completar").on("click", function () {
   if (!TK.abierta) return;
   var nueva = !TK.abierta.completada;
   tkApi("completar", { id: TK.abierta.id, completada: nueva ? 1 : 0 })
-    .done(function () {
-      toast("success", nueva ? "Tarea completada" : "Tarea pendiente otra vez", "");
+    .done(function (r) {
+      toast("success", nueva ? "Tarea completada" : "Tarea pendiente otra vez", tkTextoProxima(r));
       tkRefrescar();
       tkAbrir(TK.abierta.id);
     })
