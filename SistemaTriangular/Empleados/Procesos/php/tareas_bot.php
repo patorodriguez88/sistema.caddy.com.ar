@@ -5,7 +5,7 @@
 // - Sin sesión: se autentica con el header X-Tareas-Token. Acá solo está el sha256 de la clave; la
 //   clave vive en la Mac de Patricio (~/.caddy_tareas_token). Para revocar: borrar este archivo o
 //   cambiar el hash.
-// - Acciones, siempre sobre el proyecto Sistema: 'crear', 'comentar' y 'completar'. No lee ni toca otra cosa.
+// - Acciones, siempre sobre el proyecto Sistema: 'crear', 'comentar', 'adjuntar' y 'completar'. No lee ni toca otra cosa.
 // - Por defecto creador, responsable y autor son Patricio (sin mails). Si se pasa 'creador', 'responsable'
 //   o 'autor' (usuarios.id), los mails salen igual que desde la pantalla: al responsable si se la asignó
 //   otro y a los @mencionados (funciones de tareas_funciones.php).
@@ -107,6 +107,36 @@ switch ($_POST['accion'] ?? '') {
         $idComentario = $mysqli->insert_id;
         tk_tocar($db, $id, $autor);
         tb_responder(['success' => 1, 'idComentario' => $idComentario, 'avisados' => tk_menciones($db, $t, $texto, $idComentario, $autor)]);
+
+    case 'adjuntar':
+        // Un archivo (campo 'archivo') a una tarea, igual que la pantalla (tareas_api.php: subir).
+        $id = (int) ($_POST['id'] ?? 0);
+        $autor = tb_usuario($db, 'autor');
+        $t = tk_tarea($db, $id);
+        if (!$t || (int) $t['idProyecto'] !== $idProyecto) tb_responder(['success' => 0, 'error' => 'La tarea no existe o no es del proyecto ' . TB_PROYECTO . '.']);
+        $f = $_FILES['archivo'] ?? null;
+        if (!$f || $f['error'] !== UPLOAD_ERR_OK) tb_responder(['success' => 0, 'error' => 'No llegó el archivo.']);
+        $nombre = mb_substr(trim(str_replace(["\0", '/', '\\'], '', (string) $f['name'])) ?: 'archivo', 0, 255);
+        $ext = strtolower(pathinfo($nombre, PATHINFO_EXTENSION));
+        if ($f['size'] > 10 * 1024 * 1024 || !in_array($ext, ['jpg', 'jpeg', 'png', 'gif', 'webp', 'pdf', 'xlsx', 'docx', 'csv', 'txt'], true)) {
+            tb_responder(['success' => 0, 'error' => 'Tipo de archivo no permitido o más de 10 MB.']);
+        }
+        $raiz = __DIR__ . '/../../Tareas/adjuntos'; // misma carpeta que la pantalla, bloqueada por .htaccess
+        if (!is_dir($raiz)) @mkdir($raiz, 0755, true);
+        if (!is_file($raiz . '/.htaccess')) {
+            file_put_contents($raiz . '/.htaccess', "Require all denied\n<IfModule !mod_authz_core.c>\n  Deny from all\n</IfModule>\n");
+        }
+        $dir = $raiz . '/' . $id;
+        if (!is_dir($dir)) @mkdir($dir, 0755, true);
+        $archivo = bin2hex(random_bytes(12)) . '.' . $ext;
+        if (!move_uploaded_file($f['tmp_name'], $dir . '/' . $archivo)) tb_responder(['success' => 0, 'error' => 'No se pudo guardar el archivo.']);
+        $mime = (new finfo(FILEINFO_MIME_TYPE))->file($dir . '/' . $archivo) ?: 'application/octet-stream';
+        $tam = (int) $f['size'];
+        $st = $mysqli->prepare("INSERT INTO ProyectosTareas_adjuntos (idTarea, idUsuario, NombreOriginal, Archivo, Mime, Tamano) VALUES (?,?,?,?,?,?)");
+        $st->bind_param('iisssi', $id, $autor, $nombre, $archivo, $mime, $tam);
+        $st->execute();
+        tk_tocar($db, $id, $autor);
+        tb_responder(['success' => 1, 'idAdjunto' => $mysqli->insert_id]);
 
     case 'completar':
         $id = (int) ($_POST['id'] ?? 0);
