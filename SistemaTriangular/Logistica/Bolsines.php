@@ -23,7 +23,7 @@ include_once "../Conexion/Conexioni.php";
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
 
     <style>
-        #bo-codigo { font-size: 1.4rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
+        #bo-codigo { font-weight: 600; letter-spacing: .05em; text-transform: uppercase; }
         .bo-modo .btn { min-width: 150px; }
         .bo-estado-Disponible { background-color: #0acf97; }
         .bo-estado-Asignado { background-color: #ffbc00; color: #1a1a1a; }
@@ -64,14 +64,21 @@ include_once "../Conexion/Conexioni.php";
                                         <input type="radio" class="btn-check" name="bo-modo" id="bo-modo-recibir" value="recibir">
                                         <label class="btn btn-outline-success" for="bo-modo-recibir"><i class="uil-box"></i> Recibir en depósito</label>
                                     </div>
-                                    <div class="row g-2 align-items-end">
-                                        <div class="col-md-5" id="bo-recorrido-wrap">
-                                            <label class="form-label">Recorrido</label>
-                                            <select id="bo-recorrido" class="form-select"></select>
+                                    <div class="row g-2">
+                                        <div class="col-md-4 bo-solo-asignar">
+                                            <label class="form-label" for="bo-recorrido">Recorrido</label>
+                                            <select id="bo-recorrido" class="form-select form-select-lg"></select>
                                         </div>
-                                        <div class="col-md-7">
-                                            <label class="form-label">Escaneá el QR del bolsín</label>
-                                            <input type="text" id="bo-codigo" class="form-control" placeholder="BOL-0001" autocomplete="off">
+                                        <div class="col-md-3 bo-solo-asignar">
+                                            <label class="form-label" for="bo-precinto">N° de precinto</label>
+                                            <input type="text" id="bo-precinto" class="form-control form-control-lg" maxlength="30" autocomplete="off">
+                                        </div>
+                                        <div class="col-md-5" id="bo-codigo-wrap">
+                                            <label class="form-label" for="bo-codigo">Bolsín (escaneá el QR o escribí el número)</label>
+                                            <div class="input-group input-group-lg">
+                                                <input type="text" id="bo-codigo" class="form-control" placeholder="BOL-0001 o 1" autocomplete="off">
+                                                <button type="button" id="bo-aplicar" class="btn btn-warning">Asignar</button>
+                                            </div>
                                         </div>
                                     </div>
                                     <div id="bo-resultado" class="mt-3"></div>
@@ -112,6 +119,7 @@ include_once "../Conexion/Conexioni.php";
                                                     <th>Código</th>
                                                     <th>Estado</th>
                                                     <th>Recorrido</th>
+                                                    <th>Precinto</th>
                                                     <th>Chofer / Orden</th>
                                                     <th>Desde</th>
                                                     <th>Descripción</th>
@@ -141,9 +149,28 @@ include_once "../Conexion/Conexioni.php";
                 </div>
                 <div class="modal-body">
                     <table class="table table-sm">
-                        <thead><tr><th>Fecha</th><th>Movimiento</th><th>Recorrido</th><th>Orden</th><th>Usuario</th><th>Obs.</th></tr></thead>
+                        <thead><tr><th>Fecha</th><th>Movimiento</th><th>Recorrido</th><th>Orden</th><th>Precinto</th><th>Usuario</th><th>Obs.</th></tr></thead>
                         <tbody id="bo-historial"></tbody>
                     </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Etiquetas QR (BolsinesQR.php adentro de un iframe, para imprimir sin salir de la pantalla) -->
+    <div class="modal fade" id="bo-modal-qr" tabindex="-1">
+        <div class="modal-dialog modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Etiquetas QR</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    <iframe id="bo-qr-frame" style="width:100%;height:70vh;border:0"></iframe>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="button" id="bo-qr-imprimir" class="btn btn-primary"><i class="uil-print"></i> Imprimir</button>
                 </div>
             </div>
         </div>
