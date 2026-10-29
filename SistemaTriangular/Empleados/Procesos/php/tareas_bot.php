@@ -5,7 +5,8 @@
 // - Sin sesión: se autentica con el header X-Tareas-Token. Acá solo está el sha256 de la clave; la
 //   clave vive en la Mac de Patricio (~/.caddy_tareas_token). Para revocar: borrar este archivo o
 //   cambiar el hash.
-// - Acciones, siempre sobre el proyecto Sistema: 'crear', 'comentar', 'adjuntar' y 'completar'. No lee ni toca otra cosa.
+// - Acciones, siempre sobre el proyecto Sistema: 'crear', 'comentar', 'adjuntar', 'descargar' (un adjunto, para
+//   ver las capturas que mandan en los pedidos) y 'completar'. No lee ni toca otra cosa.
 // - Por defecto creador, responsable y autor son Patricio (sin mails). Si se pasa 'creador', 'responsable'
 //   o 'autor' (usuarios.id), los mails salen igual que desde la pantalla: al responsable si se la asignó
 //   otro y a los @mencionados (funciones de tareas_funciones.php).
@@ -138,6 +139,22 @@ switch ($_POST['accion'] ?? '') {
         $idAdjunto = $mysqli->insert_id;
         tk_tocar($db, $id, $autor);
         tb_responder(['success' => 1, 'idAdjunto' => $idAdjunto]);
+
+    case 'descargar':
+        $idAdj = (int) ($_POST['idAdjunto'] ?? 0);
+        $st = $mysqli->prepare("SELECT a.idTarea, a.NombreOriginal, a.Archivo, a.Mime FROM ProyectosTareas_adjuntos a
+                                JOIN ProyectosTareas t ON t.id = a.idTarea AND t.Eliminado = 0
+                                WHERE a.id = ? AND a.Eliminado = 0 AND t.idProyecto = ?");
+        $st->bind_param('ii', $idAdj, $idProyecto);
+        $st->execute();
+        $a = $st->get_result()->fetch_assoc();
+        $ruta = $a ? __DIR__ . '/../../Tareas/adjuntos/' . (int) $a['idTarea'] . '/' . basename($a['Archivo']) : '';
+        if (!$a || !is_file($ruta)) tb_responder(['success' => 0, 'error' => 'El adjunto no existe o no es del proyecto ' . TB_PROYECTO . '.'], 404);
+        header('Content-Type: ' . $a['Mime']);
+        header('Content-Disposition: inline; filename="' . str_replace('"', '', $a['NombreOriginal']) . '"');
+        header('Content-Length: ' . filesize($ruta));
+        readfile($ruta);
+        exit;
 
     case 'completar':
         $id = (int) ($_POST['id'] ?? 0);
