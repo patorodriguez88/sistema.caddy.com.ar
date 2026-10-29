@@ -40,7 +40,7 @@ $bolsines = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
             <div class="etiqueta">
                 <img src="../Funciones/php/qr.php?s=8&d=<?= urlencode($b['Codigo']) ?>" alt="<?= $c ?>">
                 <div class="codigo"><?= $c ?></div>
-                <div class="leyenda">Caddy · Bolsín de facturas<br>Vuelve siempre al depósito</div>
+                <div class="leyenda">Caddy · Bolsín Interno<br>Vuelve siempre al depósito</div>
                 <?php if (trim((string) $b['Descripcion']) !== ''): ?>
                     <div class="leyenda"><?= htmlspecialchars($b['Descripcion']) ?></div>
                 <?php endif; ?>
