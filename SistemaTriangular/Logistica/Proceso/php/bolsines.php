@@ -73,20 +73,22 @@ switch ($action) {
         $data = [];
         while ($r = $res->fetch_assoc()) $data[] = $r;
 
-        // Recorridos con pedidos de Dinter (importación) pendientes de entregar y cuántos
-        // bolsines tienen: en la app no se puede confirmar la salida de esos recorridos sin bolsín.
-        $res = $mysqli->query("
-            SELECT h.Recorrido, r.Nombre, COUNT(DISTINCT t.id) AS Pedidos,
-                   (SELECT COUNT(*) FROM Bolsines b WHERE b.Eliminado = 0 AND b.Recorrido = h.Recorrido AND b.Estado IN ('Asignado', 'En viaje')) AS Bolsines
-            FROM HojaDeRuta h
-            JOIN TransClientes t ON t.id = h.idTransClientes AND t.Eliminado = 0
-            LEFT JOIN Recorridos r ON r.Numero = h.Recorrido
-            WHERE h.Estado = 'Abierto' AND h.Eliminado = 0 AND h.Devuelto = 0
-              AND t.Origen = 'IMPORTACION_DINTER' AND t.Entregado = 0
-            GROUP BY h.Recorrido, r.Nombre
-            ORDER BY h.Recorrido");
+        // Recorridos con el switch "Bolsín" (Logística > Recorridos), sus entregas pendientes y
+        // cuántos bolsines tienen: en la app esos recorridos no salen sin bolsín.
         $dinter = [];
-        while ($r = $res->fetch_assoc()) $dinter[] = $r;
+        $col = $mysqli->query("SHOW COLUMNS FROM Recorridos LIKE 'RequiereBolsin'");
+        if ($col && $col->num_rows) {
+            $res = $mysqli->query("
+                SELECT r.Numero AS Recorrido, r.Nombre,
+                       (SELECT COUNT(*) FROM HojaDeRuta h JOIN TransClientes t ON t.id = h.idTransClientes AND t.Eliminado = 0
+                         WHERE h.Recorrido = r.Numero AND h.Estado = 'Abierto' AND h.Eliminado = 0 AND h.Devuelto = 0
+                           AND t.Retirado = 1 AND t.Entregado = 0) AS Pedidos,
+                       (SELECT COUNT(*) FROM Bolsines b WHERE b.Eliminado = 0 AND b.Recorrido = r.Numero AND b.Estado IN ('Asignado', 'En viaje')) AS Bolsines
+                FROM Recorridos r
+                WHERE r.Activo = 1 AND r.RequiereBolsin = 1
+                ORDER BY r.Numero");
+            while ($r = $res->fetch_assoc()) $dinter[] = $r;
+        }
 
         jexit(['success' => 1, 'data' => $data, 'dinter' => $dinter]);
 

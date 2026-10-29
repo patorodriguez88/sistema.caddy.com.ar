@@ -96,7 +96,7 @@
                 </tr>`
               )
               .join("")
-          : '<tr><td colspan="3" class="text-muted">No hay pedidos de Dinter pendientes.</td></tr>'
+          : '<tr><td colspan="3" class="text-muted">Ningún recorrido requiere bolsín. Se activa con el switch "Bolsín" en Logística &gt; Recorridos.</td></tr>'
       );
     });
   }

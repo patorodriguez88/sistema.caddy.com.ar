@@ -126,6 +126,15 @@ var datatable = $("#recorridos").DataTable({
         return `<i class="mdi mdi-18px mdi-truck" style="color:#${hex}"></i>`;
       },
     },
+    {
+      // Bolsín interno obligatorio: la app de reparto no deja salir al chofer sin escanearlo.
+      data: "RequiereBolsin",
+      orderable: false,
+      render: (d, t, r) => `
+        <div class="form-check form-switch m-0">
+          <input class="form-check-input sw-bolsin" type="checkbox" data-id="${r.id}" ${Number(d) === 1 ? "checked" : ""} title="Requiere bolsín interno">
+        </div>`,
+    },
     // {
     //   data: "Activo",
     //   defaultContent: 0,
@@ -206,6 +215,26 @@ function eliminar_fijo(i) {
       });
     });
 }
+
+$(document).on("change", ".sw-bolsin", function () {
+  const $sw = $(this);
+  const valor = $sw.is(":checked") ? 1 : 0;
+  $.post("Proceso/php/recorridos.php", { RequiereBolsin: 1, id: $sw.data("id"), valor: valor }, null, "json")
+    .done((r) => {
+      if (r.success != 1) {
+        $sw.prop("checked", !valor);
+        $.toast({ heading: "No se pudo guardar", text: r.message || "Error al actualizar el recorrido.", position: "bottom-right", icon: "warning" });
+        return;
+      }
+      $.toast({
+        heading: valor ? "Requiere bolsín" : "Sin bolsín obligatorio",
+        text: valor ? "El chofer no va a poder salir sin escanear el bolsín interno." : "El recorrido ya no exige bolsín.",
+        position: "bottom-right",
+        icon: "success",
+      });
+    })
+    .fail(() => $sw.prop("checked", !valor));
+});
 
 function modificar(i, a) {
   $.ajax({
