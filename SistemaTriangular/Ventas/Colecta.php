@@ -116,6 +116,9 @@
 
 
                                                 <div class="col-lg-12 mt-3">
+                                                    <div class="text-end mb-2">
+                                                        <button id="cm_nueva" type="button" class="btn btn-outline-primary"><i class="mdi mdi-plus"></i> Nueva colecta manual</button>
+                                                    </div>
                                                     <div class="tab-content">
                                                         <table id="colecta" class="table dt-responsive w-100" style="font-size:10px">
                                                             <thead>
@@ -139,8 +142,7 @@
                                                             </tbody>
                                                         </table>
                                                         <div class="row">
-                                                            <div class="col-12 text-right">
-                                                                <button id="cm_nueva" type="button" class="btn btn-outline-primary me-1"><i class="mdi mdi-plus"></i> Nueva colecta manual</button>
+                                                            <div class="col-12 text-end">
                                                                 <button id="aceptar" type="button" class="btn btn-success" data-bs-dismiss="modal">Aceptar</button>
                                                                 <button id="modificar_recorrido_all" type="button" class="btn btn-primary" data-bs-dismiss="modal">Cambiar de Recorrido a Seleccionados</button>
                                                             </div>
