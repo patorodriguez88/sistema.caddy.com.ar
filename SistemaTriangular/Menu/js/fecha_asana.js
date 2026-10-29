@@ -1,4 +1,9 @@
-// Selector de "Fecha de entrega" estilo Asana (Tareas y panel rápido de Nueva tarea). Un botón muestra
+// Componentes estilo Asana para Tareas y el panel rápido de Nueva tarea.
+// - FechaAsana: selector de "Fecha de entrega" con la repetición adentro.
+// - SelectAsana: botón con avatar/color que abre una lista con buscador sobre un <select> (oculto);
+//   cada <option> puede traer data-ini (iniciales) o data-color. Responsable y Proyecto.
+//
+// FechaAsana (Tareas y panel rápido de Nueva tarea). Un botón muestra
 // la fecha ("Sin fecha de entrega", "Hoy", "30 oct"...) y abre un calendario flotante con mes, semana
 // de lunes a domingo, "Borrar" y el ícono de repetir, que despliega la periodicidad. Guarda los
 // valores en inputs ocultos: fecha (YYYY-MM-DD), tipo (dia|habil|semana|mes|anio), cada y dias
@@ -44,7 +49,16 @@
   .fa-rep-dias { display: flex; gap: .25rem; }
   .fa-rep-dias button { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--bs-border-color, #dcdce2); background: none; font-size: .75rem; font-weight: 700; color: var(--bs-secondary-color, #6c757d); cursor: pointer; padding: 0; }
   .fa-rep-dias button.on { background: #4573d2; border-color: #4573d2; color: #fff; }
-  .fa-rep-res { font-size: .78rem; color: var(--bs-secondary-color, #6c757d); }`;
+  .fa-rep-res { font-size: .78rem; color: var(--bs-secondary-color, #6c757d); }
+  .sa-av { width: 28px; height: 28px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-size: .7rem; font-weight: 700; color: #fff; background: #727cf5; flex: none; }
+  .sa-av.vacio { background: none; border: 1.5px dashed var(--bs-secondary-color, #9aa0a6); color: var(--bs-secondary-color, #6c757d); font-size: 1rem; }
+  .sa-cuad { width: 14px; height: 14px; border-radius: 4px; background: var(--sa-c, #9aa5f8); flex: none; }
+  .sa-pop { position: fixed; z-index: 2000; width: 280px; max-height: 320px; display: flex; flex-direction: column; background: var(--bs-body-bg, #fff); color: var(--bs-body-color, #212529); border: 1px solid var(--bs-border-color, #e3e3e8); border-radius: 10px; box-shadow: 0 12px 32px -8px rgba(0,0,0,.25); font-size: .88rem; }
+  .sa-pop input { margin: 8px; border: 1px solid var(--bs-border-color, #dcdce2); border-radius: 6px; padding: 6px 8px; background: var(--bs-body-bg, #fff); color: inherit; }
+  .sa-lista { overflow: auto; padding: 0 6px 6px; }
+  .sa-op { display: flex; align-items: center; gap: .55rem; width: 100%; background: none; border: 0; border-radius: 6px; padding: 6px 8px; text-align: left; color: inherit; cursor: pointer; }
+  .sa-op:hover, .sa-op.sel { background: var(--bs-tertiary-bg, #f0f0f3); }
+  .sa-op .sa-av { width: 24px; height: 24px; font-size: .62rem; }`;
 
   function css() {
     if (document.getElementById("fa-css")) return;
@@ -239,5 +253,84 @@
     return api;
   }
 
+  // ---------- SelectAsana ----------
+  const COLORES_AV = ["#727cf5", "#0acf97", "#fa5c7c", "#ffbc00", "#39afd1", "#6b5eae", "#ff679b", "#02a8b5"];
+  const escH = (t) => String(t == null ? "" : t).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+  function iconoOpcion(op, tipo) {
+    if (tipo === "proyecto") return '<span class="sa-cuad" style="--sa-c:' + escH(op.dataset.color || "#9aa5f8") + '"></span>';
+    const ini = op.dataset.ini || op.textContent.trim().slice(0, 2).toUpperCase();
+    return '<span class="sa-av" style="background:' + COLORES_AV[(+op.value || 0) % COLORES_AV.length] + '">' + escH(ini) + "</span>";
+  }
+
+  function montarSelect(op) {
+    css();
+    const { boton, select, vacio, tipo } = op;
+    let pop = null;
+
+    function refrescar() {
+      const o = select.options[select.selectedIndex];
+      boton.innerHTML = o && select.value
+        ? iconoOpcion(o, tipo) + '<span class="fa-txt">' + escH(o.textContent) + "</span>"
+        : (tipo === "proyecto" ? '<span class="sa-cuad" style="--sa-c:#d8d8de"></span>' : '<span class="sa-av vacio"><i class="mdi mdi-account-outline"></i></span>') +
+          '<span class="fa-txt vacio">' + escH(vacio) + "</span>";
+    }
+    function cerrar() {
+      if (!pop) return;
+      pop.remove();
+      pop = null;
+      document.removeEventListener("mousedown", afuera, true);
+    }
+    function afuera(e) {
+      if (pop && !pop.contains(e.target) && !boton.contains(e.target)) cerrar();
+    }
+    function lista(q) {
+      q = (q || "").toLowerCase();
+      pop.querySelector(".sa-lista").innerHTML = [...select.options]
+        .filter((o) => o.value && o.textContent.toLowerCase().includes(q))
+        .map((o) => '<button type="button" class="sa-op' + (o.value === select.value ? " sel" : "") + '" data-v="' + escH(o.value) + '">' + iconoOpcion(o, tipo) + "<span>" + escH(o.textContent) + "</span></button>")
+        .join("") || '<div class="fa-rep-res" style="padding:6px 8px">Sin resultados</div>';
+    }
+    function abrir() {
+      if (pop) return cerrar();
+      if (boton.disabled) return;
+      pop = document.createElement("div");
+      pop.className = "sa-pop";
+      pop.innerHTML = '<input type="text" placeholder="Buscar…"><div class="sa-lista"></div>';
+      document.body.appendChild(pop);
+      lista("");
+      const r = boton.getBoundingClientRect();
+      let top = r.bottom + 6;
+      if (top + pop.offsetHeight > window.innerHeight - 8) top = Math.max(8, r.top - pop.offsetHeight - 6);
+      pop.style.top = top + "px";
+      pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 288)) + "px";
+      const input = pop.querySelector("input");
+      input.addEventListener("input", () => lista(input.value));
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Escape") cerrar();
+        if (e.key === "Enter") { e.preventDefault(); const b = pop.querySelector(".sa-op"); if (b) b.click(); }
+      });
+      pop.addEventListener("click", (e) => {
+        const b = e.target.closest(".sa-op");
+        if (!b) return;
+        select.value = b.dataset.v;
+        select.dispatchEvent(new Event("change", { bubbles: true }));
+        refrescar();
+        cerrar();
+      });
+      input.focus();
+      document.addEventListener("mousedown", afuera, true);
+    }
+
+    select.style.display = "none";
+    boton.type = "button";
+    boton.classList.add("fa-trigger");
+    boton.addEventListener("click", abrir);
+    refrescar();
+    const api = { refrescar, cerrar };
+    boton._sa = api;
+    return api;
+  }
+
   window.FechaAsana = { montar, textoRepetir };
+  window.SelectAsana = { montar: montarSelect };
 })();

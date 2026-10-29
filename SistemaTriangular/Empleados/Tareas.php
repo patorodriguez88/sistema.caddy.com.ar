@@ -127,15 +127,16 @@
 
     <!-- Detalle / alta de tarea (panel lateral) -->
     <div class="offcanvas offcanvas-end tk-panel" tabindex="-1" id="tk_panel" aria-labelledby="tk_panel_titulo">
+        <!-- Formato Asana (29/10): barra con Marcar como finalizada, título grande y filas etiqueta / valor -->
         <div class="offcanvas-header">
             <div class="tk-panel-top">
-                <button type="button" class="btn btn-sm tk-btn-completar" id="tk_completar"><i class="mdi mdi-check"></i> <span>Marcar completada</span></button>
+                <button type="button" class="btn tk-btn-completar" id="tk_completar"><i class="mdi mdi-check"></i> <span>Marcar como finalizada</span></button>
                 <span class="tk-panel-ref" id="tk_panel_titulo"></span>
             </div>
-            <div class="d-flex align-items-center gap-1">
-                <button type="button" class="btn btn-sm btn-light" id="tk_copiar_link" title="Copiar link de la tarea"><i class="mdi mdi-link-variant"></i></button>
-                <button type="button" class="btn btn-sm btn-light text-danger" id="tk_eliminar" title="Eliminar tarea"><i class="mdi mdi-trash-can-outline"></i></button>
-                <button type="button" class="btn-close ms-1" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+            <div class="tk-panel-acc">
+                <button type="button" class="tk-ico-btn" id="tk_copiar_link" title="Copiar link de la tarea"><i class="mdi mdi-link-variant"></i></button>
+                <button type="button" class="tk-ico-btn" id="tk_eliminar" title="Eliminar tarea"><i class="mdi mdi-trash-can-outline"></i></button>
+                <button type="button" class="tk-ico-btn" data-bs-dismiss="offcanvas" aria-label="Cerrar" title="Cerrar"><i class="mdi mdi-arrow-collapse-right"></i></button>
             </div>
         </div>
         <div class="offcanvas-body">
@@ -145,12 +146,15 @@
                 <button type="button" class="btn btn-sm btn-primary" id="tk_recuperar"><i class="mdi mdi-backup-restore"></i> Recuperar</button>
             </div>
 
-            <textarea class="tk-f-titulo" id="tk_f_titulo" rows="1" placeholder="Título de la tarea" maxlength="200"></textarea>
+            <textarea class="tk-f-titulo" id="tk_f_titulo" rows="1" placeholder="Escribe el nombre de la tarea" maxlength="200"></textarea>
 
             <div class="tk-campos">
-                <label for="tk_f_responsable"><i class="mdi mdi-account-outline"></i>Responsable</label>
-                <select class="form-select form-select-sm" id="tk_f_responsable"></select>
-                <label for="tk_f_vence_btn"><i class="mdi mdi-calendar-outline"></i>Fecha de entrega</label>
+                <label for="tk_f_resp_btn">Responsable</label>
+                <div>
+                    <button id="tk_f_resp_btn"></button>
+                    <select id="tk_f_responsable"></select>
+                </div>
+                <label for="tk_f_vence_btn">Fecha de entrega</label>
                 <div>
                     <button id="tk_f_vence_btn"></button>
                     <input type="hidden" id="tk_f_vence">
@@ -158,12 +162,15 @@
                     <input type="hidden" id="tk_f_rep_cada" value="1">
                     <input type="hidden" id="tk_f_rep_dias">
                 </div>
-                <label for="tk_f_proyecto"><i class="mdi mdi-folder-outline"></i>Proyecto</label>
-                <select class="form-select form-select-sm" id="tk_f_proyecto"></select>
+                <label for="tk_f_proy_btn">Proyecto</label>
+                <div>
+                    <button id="tk_f_proy_btn"></button>
+                    <select id="tk_f_proyecto"></select>
+                </div>
             </div>
 
-            <label class="tk-label" for="tk_f_desc">Descripción</label>
-            <textarea class="form-control tk-mencionable" id="tk_f_desc" rows="4" placeholder="Detalle de la tarea. Escribí @ para mencionar a alguien: le llega un mail."></textarea>
+            <div class="tk-sec">Descripción</div>
+            <textarea class="tk-f-desc tk-mencionable" id="tk_f_desc" rows="4" placeholder="¿De qué se trata esta tarea? (escribí @ para mencionar a alguien: le llega un mail)"></textarea>
 
             <div class="tk-guardar-row">
                 <span class="tk-meta" id="tk_meta"></span>
@@ -172,7 +179,7 @@
 
             <!-- Archivos adjuntos: fotos, PDF, Word, Excel… (se bajan solo con sesión, ver tareas_api.php) -->
             <div class="tk-adj-box" id="tk_adj_box">
-                <div class="tk-label">Archivos <span id="tk_adj_cant"></span></div>
+                <div class="tk-sec">Archivos <span id="tk_adj_cant"></span></div>
                 <div class="tk-adj-lista" id="tk_adjuntos"></div>
                 <label class="tk-adj-zona" id="tk_adj_zona">
                     <i class="mdi mdi-paperclip"></i>
@@ -183,11 +190,14 @@
             </div>
 
             <div class="tk-coment-box" id="tk_coment_box">
-                <div class="tk-label">Comentarios</div>
+                <div class="tk-sec">Comentarios</div>
                 <div id="tk_comentarios"></div>
                 <div class="tk-coment-nuevo">
-                    <textarea class="form-control tk-mencionable" id="tk_f_coment" rows="2" placeholder="Escribí un comentario… (@ para mencionar)"></textarea>
-                    <button type="button" class="btn btn-primary btn-sm" id="tk_comentar" title="Comentar (Ctrl+Enter)"><i class="mdi mdi-send"></i></button>
+                    <textarea class="tk-mencionable" id="tk_f_coment" rows="2" placeholder="Agrega un comentario o una @mención a un compañero de equipo"></textarea>
+                    <div class="tk-coment-pie">
+                        <button type="button" class="tk-ico-btn tk-coment-mencion" title="Mencionar a alguien"><i class="mdi mdi-at"></i></button>
+                        <button type="button" class="tk-coment-enviar" id="tk_comentar" title="Comentar (Ctrl+Enter)"><i class="mdi mdi-arrow-up"></i></button>
+                    </div>
                 </div>
             </div>
         </div>

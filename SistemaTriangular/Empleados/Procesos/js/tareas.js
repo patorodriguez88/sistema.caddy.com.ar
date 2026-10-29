@@ -105,12 +105,13 @@ function tkCargarInicio() {
     tkMarcarNav();
     $("#tk_f_responsable").html(
       r.usuarios.map(function (u) {
-        return '<option value="' + u.id + '">' + tkEsc(u.nombre) + (u.id == TK.yo ? " (vos)" : "") + "</option>";
+        return '<option value="' + u.id + '" data-ini="' + tkEsc(u.iniciales) + '">' + tkEsc(u.nombre) + (u.id == TK.yo ? " (vos)" : "") + "</option>";
       }).join(""),
     );
     $("#tk_f_proyecto").html(
-      r.proyectos.map(function (p) { return '<option value="' + p.id + '">' + tkEsc(p.nombre) + "</option>"; }).join(""),
+      r.proyectos.map(function (p) { return '<option value="' + p.id + '" data-color="' + tkEsc(p.color) + '">' + tkEsc(p.nombre) + "</option>"; }).join(""),
     );
+    tkSelRefrescar();
   }).fail(tkError);
 }
 function tkMarcarNav() {
@@ -305,7 +306,18 @@ function tkFechaRefrescar() {
   var b = document.getElementById("tk_f_vence_btn");
   if (b && b._fa) b._fa.refrescar();
 }
+// Responsable y Proyecto: lista con buscador estilo Asana sobre los <select> (SelectAsana)
+function tkSelRefrescar() {
+  ["tk_f_resp_btn", "tk_f_proy_btn"].forEach(function (id) {
+    var b = document.getElementById(id);
+    if (b && b._sa) b._sa.refrescar();
+  });
+}
 $(function () {
+  if (window.SelectAsana) {
+    SelectAsana.montar({ boton: document.getElementById("tk_f_resp_btn"), select: document.getElementById("tk_f_responsable"), vacio: "Sin responsable", tipo: "persona" });
+    SelectAsana.montar({ boton: document.getElementById("tk_f_proy_btn"), select: document.getElementById("tk_f_proyecto"), vacio: "Sin proyecto", tipo: "proyecto" });
+  }
   if (!window.FechaAsana) return;
   FechaAsana.montar({
     boton: document.getElementById("tk_f_vence_btn"),
@@ -316,8 +328,17 @@ $(function () {
   });
 });
 $("#tk_panel").on("hide.bs.offcanvas", function () {
-  var b = document.getElementById("tk_f_vence_btn");
-  if (b && b._fa) b._fa.cerrar();
+  ["tk_f_vence_btn", "tk_f_resp_btn", "tk_f_proy_btn"].forEach(function (id) {
+    var b = document.getElementById(id);
+    if (b && b._fa) b._fa.cerrar();
+    if (b && b._sa) b._sa.cerrar();
+  });
+});
+// Botón @ de la caja de comentario: escribe la @ y abre la lista de personas
+$(document).on("click", ".tk-coment-mencion", function () {
+  var $t = $("#tk_f_coment");
+  var v = $t.val();
+  $t.val(v + (v && !/\s$/.test(v) ? " @" : "@")).trigger("focus").trigger("input");
 });
 
 // ---------- panel de detalle ----------
@@ -358,6 +379,7 @@ function tkNueva() {
   // El proyecto que estoy mirando; desde la bandeja, el primero del que participo
   var mio = TK.proyectos.filter(function (p) { return p.participo; })[0] || TK.proyectos[0];
   $("#tk_f_proyecto").val(TK.vista.tipo === "proyecto" ? TK.vista.id : mio.id);
+  tkSelRefrescar();
   $("#tk_meta").text("Si asignás la tarea a otra persona, le llega un mail.");
   $("#tk_coment_box, #tk_adj_box").prop("hidden", true);
   $("#tk_guardar").html('<i class="mdi mdi-plus me-1"></i>Crear tarea');
@@ -380,7 +402,7 @@ function tkAbrir(id) {
     }
     $("#tk_completar, #tk_eliminar").prop("hidden", t.eliminada);
     $("#tk_copiar_link").prop("hidden", false);
-    $("#tk_completar").toggleClass("on", t.completada).find("span").text(t.completada ? "Completada" : "Marcar completada");
+    $("#tk_completar").toggleClass("on", t.completada).find("span").text(t.completada ? "Finalizada" : "Marcar como finalizada");
     $("#tk_panel_titulo").html('<span class="tk-chip-proy"><span class="tk-dot" style="--tk-c:' + tkEsc(t.proyecto.color) + '"></span><span>' + tkEsc(t.proyecto.nombre) + "</span></span>");
     $("#tk_f_titulo").val(t.titulo);
     $("#tk_f_desc").val(t.descripcion);
@@ -391,6 +413,7 @@ function tkAbrir(id) {
       $("#tk_f_proyecto").append('<option value="' + t.proyecto.id + '">' + tkEsc(t.proyecto.nombre) + "</option>");
     }
     $("#tk_f_proyecto").val(t.proyecto.id);
+    tkSelRefrescar();
     $("#tk_meta").html(
       "Creada por " + tkEsc(tkUsuario(t.creador).nombre) + " el " + tkFecha(t.creada) +
         (t.completada && t.completadaPor ? " · completada por " + tkEsc(tkUsuario(t.completadaPor).nombre) + " el " + tkFecha(t.completadaEl) : ""),
