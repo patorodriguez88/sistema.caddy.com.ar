@@ -58,6 +58,35 @@
         vertical-align: middle;
     }
 
+    /* Filas marcadas con el mouse para sumar (flotante #desempeno_suma) */
+    #desempeno_tabla tbody tr {
+        cursor: pointer;
+    }
+
+    #desempeno_tabla tbody tr.fila-sumada > td {
+        background-color: rgba(114, 124, 245, .18) !important;
+        box-shadow: none;
+    }
+
+    #desempeno_suma {
+        position: fixed;
+        right: 24px;
+        bottom: 24px;
+        z-index: 2000;
+        background: #313a46;
+        color: #fff;
+        border-radius: 10px;
+        padding: 10px 14px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, .25);
+        font-size: 13px;
+        min-width: 220px;
+    }
+
+    #desempeno_suma .monto {
+        font-size: 20px;
+        font-weight: 700;
+    }
+
     #desempeno_modal .modal-body {
         padding: .75rem;
     }
