@@ -153,6 +153,85 @@ function tk_tarea(mysqli $db, int $id, bool $incluirEliminadas = false, int $yo 
     $st->execute();
     return $st->get_result()->fetch_assoc() ?: null;
 }
+// ---------- Tareas que se repiten (como en Asana) ----------
+// RepetirTipo: dia | habil (lunes a viernes) | semana | mes | anio. RepetirCada: cada N (dia, semana,
+// mes, anio). RepetirDias: días de la semana para "semana", ISO 1=lunes..7=domingo ("1,3,5").
+const TK_REPETIR_TIPOS = ['dia', 'habil', 'semana', 'mes', 'anio'];
+
+// Valores del formulario → [tipo|null, cada, dias|null] válidos para guardar.
+function tk_repetir_normalizar($tipo, $cada, $dias): array
+{
+    $tipo = in_array($tipo, TK_REPETIR_TIPOS, true) ? $tipo : null;
+    if ($tipo === null) return [null, 1, null];
+    $cada = max(1, min(99, (int) $cada));
+    $lista = array_values(array_unique(array_filter(array_map('intval', explode(',', (string) $dias)), fn($d) => $d >= 1 && $d <= 7)));
+    sort($lista);
+    return [$tipo, $tipo === 'habil' ? 1 : $cada, $tipo === 'semana' && $lista ? implode(',', $lista) : null];
+}
+
+// Próximo vencimiento a partir del anterior ($base, o hoy si no tenía). Si queda en el pasado (se
+// completó tarde) se sigue avanzando hasta hoy o después, para no crear la siguiente ya atrasada.
+function tk_proxima_fecha(?string $base, string $tipo, int $cada, ?string $dias, ?string $hoy = null): string
+{
+    $hoy = new DateTimeImmutable($hoy ?? date('Y-m-d'));
+    $fecha = $base ? new DateTimeImmutable($base) : $hoy;
+    $diaMes = (int) $fecha->format('j'); // "cada mes" respeta el día original aunque un mes sea más corto
+    $semanaBase = (new DateTimeImmutable($fecha->format('o-\WW-1')));
+    $diasSemana = $dias ? array_map('intval', explode(',', $dias)) : [];
+    for ($i = 0; $i < 1000; $i++) {
+        switch ($tipo) {
+            case 'dia':
+                $fecha = $fecha->modify("+$cada day");
+                break;
+            case 'habil':
+                do { $fecha = $fecha->modify('+1 day'); } while ((int) $fecha->format('N') >= 6);
+                break;
+            case 'semana':
+                if (!$diasSemana) {
+                    $fecha = $fecha->modify("+$cada week");
+                    break;
+                }
+                // El próximo día marcado que caiga en una semana "de turno" (cada N semanas desde la base).
+                do {
+                    $fecha = $fecha->modify('+1 day');
+                    $semanas = intdiv((int) $semanaBase->diff(new DateTimeImmutable($fecha->format('o-\WW-1')))->days, 7);
+                } while (!in_array((int) $fecha->format('N'), $diasSemana, true) || $semanas % $cada !== 0);
+                break;
+            case 'mes':
+                $primero = $fecha->modify('first day of this month')->modify("+$cada month");
+                $fecha = $primero->setDate((int) $primero->format('Y'), (int) $primero->format('n'), min($diaMes, (int) $primero->format('t')));
+                break;
+            case 'anio':
+                $primero = $fecha->modify('first day of this month')->modify("+$cada year");
+                $fecha = $primero->setDate((int) $primero->format('Y'), (int) $primero->format('n'), min($diaMes, (int) $primero->format('t')));
+                break;
+        }
+        if ($fecha >= $hoy) break;
+    }
+    return $fecha->format('Y-m-d');
+}
+
+// Al completar una tarea que se repite: crea la siguiente (una sola vez por tarea, aunque la
+// desmarquen y la vuelvan a completar). Devuelve [id, vence] de la nueva, o null.
+function tk_crear_repeticion(mysqli $db, array $t, int $yo): ?array
+{
+    if (empty($t['RepetirTipo']) || !empty($t['RepeticionId'])) return null;
+    $vence = tk_proxima_fecha($t['FechaVencimiento'] ?: null, $t['RepetirTipo'], (int) $t['RepetirCada'], $t['RepetirDias'] ?: null);
+    $st = $db->prepare("INSERT INTO ProyectosTareas (Titulo, Descripcion, idProyecto, idResponsable, idCreador, FechaVencimiento,
+                            RepetirTipo, RepetirCada, RepetirDias, FechaAlta, Actualizada)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())");
+    $idProyecto = (int) $t['idProyecto'];
+    $idResponsable = (int) $t['idResponsable'];
+    $idCreador = (int) $t['idCreador'];
+    $cada = (int) $t['RepetirCada'];
+    $st->bind_param('ssiiissis', $t['Titulo'], $t['Descripcion'], $idProyecto, $idResponsable, $idCreador, $vence, $t['RepetirTipo'], $cada, $t['RepetirDias']);
+    $st->execute();
+    $nueva = (int) $db->insert_id;
+    $db->query("UPDATE ProyectosTareas SET RepeticionId = $nueva WHERE id = " . (int) $t['id']);
+    tk_tocar($db, $nueva, $yo);
+    return ['id' => $nueva, 'vence' => $vence];
+}
+
 function tk_marcar_vista(mysqli $db, int $idTarea, int $usuario): void
 {
     $st = $db->prepare("INSERT INTO ProyectosTareas_vistas (idTarea, idUsuario, UltimaVista) VALUES (?, ?, NOW())

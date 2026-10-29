@@ -64,6 +64,15 @@ try {
                         UNION SELECT idProyecto, idResponsable FROM ProyectosTareas
                         UNION SELECT idProyecto, idCreador FROM ProyectosTareas");
     }
+    // Tareas que se repiten (29/10): al completarla se crea la siguiente (tk_crear_repeticion).
+    $r = $mysqli->query("SHOW COLUMNS FROM ProyectosTareas LIKE 'RepetirTipo'");
+    if (!$r->num_rows) {
+        $mysqli->query("ALTER TABLE ProyectosTareas
+            ADD COLUMN RepetirTipo VARCHAR(10) NULL COMMENT 'dia | habil | semana | mes | anio',
+            ADD COLUMN RepetirCada TINYINT NOT NULL DEFAULT 1,
+            ADD COLUMN RepetirDias VARCHAR(20) NULL COMMENT 'semana: 1=lunes..7=domingo',
+            ADD COLUMN RepeticionId INT NULL COMMENT 'la tarea que se creó al completar esta'");
+    }
 } catch (Throwable $e) {
     tk_responder(['success' => 0, 'error' => 'No se pudieron crear las tablas de tareas: ' . $e->getMessage()], 500);
 }
@@ -141,6 +150,7 @@ function tk_fila(array $t, int $yo): array
         'eliminadaEl'  => $t['EliminadoFecha'],
         'eliminadaPor' => $t['EliminadoPor'] !== null ? (int) $t['EliminadoPor'] : null,
         'diasRestantes' => $t['EliminadoFecha'] ? max(0, TK_DIAS_ELIMINADOS - (int) floor((time() - strtotime($t['EliminadoFecha'])) / 86400)) : null,
+        'repetir'      => !empty($t['RepetirTipo']) ? ['tipo' => $t['RepetirTipo'], 'cada' => (int) $t['RepetirCada'], 'dias' => (string) $t['RepetirDias']] : null,
     ];
 }
 
@@ -256,15 +266,18 @@ try {
             }
             $vence = preg_match('/^\d{4}-\d{2}-\d{2}$/', $vence) ? $vence : null;
             $titulo = mb_substr($titulo, 0, 200);
+            [$repTipo, $repCada, $repDias] = tk_repetir_normalizar($_POST['repetirTipo'] ?? '', $_POST['repetirCada'] ?? 1, $_POST['repetirDias'] ?? '');
 
             if ($id) {
-                $st = $db->prepare("UPDATE ProyectosTareas SET Titulo=?, Descripcion=?, idProyecto=?, idResponsable=?, FechaVencimiento=? WHERE id=?");
-                $st->bind_param('ssiisi', $titulo, $descripcion, $idProyecto, $responsable, $vence, $id);
+                $st = $db->prepare("UPDATE ProyectosTareas SET Titulo=?, Descripcion=?, idProyecto=?, idResponsable=?, FechaVencimiento=?,
+                                    RepetirTipo=?, RepetirCada=?, RepetirDias=? WHERE id=?");
+                $st->bind_param('ssiissisi', $titulo, $descripcion, $idProyecto, $responsable, $vence, $repTipo, $repCada, $repDias, $id);
                 $st->execute();
             } else {
-                $st = $db->prepare("INSERT INTO ProyectosTareas (Titulo, Descripcion, idProyecto, idResponsable, idCreador, FechaVencimiento)
-                                    VALUES (?,?,?,?,?,?)");
-                $st->bind_param('ssiiis', $titulo, $descripcion, $idProyecto, $responsable, $yo, $vence);
+                $st = $db->prepare("INSERT INTO ProyectosTareas (Titulo, Descripcion, idProyecto, idResponsable, idCreador, FechaVencimiento,
+                                    RepetirTipo, RepetirCada, RepetirDias)
+                                    VALUES (?,?,?,?,?,?,?,?,?)");
+                $st->bind_param('ssiiissis', $titulo, $descripcion, $idProyecto, $responsable, $yo, $vence, $repTipo, $repCada, $repDias);
                 $st->execute();
                 $id = $db->insert_id;
             }
@@ -285,12 +298,13 @@ try {
         case 'completar':
             $id = (int) ($_POST['id'] ?? 0);
             $valor = !empty($_POST['completada']) ? 1 : 0;
-            if (!tk_tarea($db, $id, false, $yo)) tk_responder(['success' => 0, 'error' => 'La tarea no existe, fue eliminada o no tenés acceso.']);
+            $t = tk_tarea($db, $id, false, $yo);
+            if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe, fue eliminada o no tenés acceso.']);
             $st = $db->prepare("UPDATE ProyectosTareas SET Completada=?, CompletadaFecha=IF(?=1, NOW(), NULL), CompletadaPor=IF(?=1, ?, NULL) WHERE id=?");
             $st->bind_param('iiiii', $valor, $valor, $valor, $yo, $id);
             $st->execute();
             tk_tocar($db, $id, $yo);
-            tk_responder(['success' => 1]);
+            tk_responder(['success' => 1, 'proxima' => $valor ? tk_crear_repeticion($db, $t, $yo) : null]);
 
         case 'comentar':
             $id = (int) ($_POST['id'] ?? 0);

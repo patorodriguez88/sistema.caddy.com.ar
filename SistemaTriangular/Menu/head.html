@@ -125,7 +125,7 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
       <span
         class="text-muted d-none d-sm-inline-block"
         style="font-size: 10px; white-space: nowrap; align-self: flex-end; margin-bottom: 8px;"
-        >v.26.10.16</span
+        >v.26.10.17</span
       >
 
       <!-- Sidebar Menu Toggle Button -->
@@ -347,6 +347,17 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
           <label class="form-label" for="tr_vence">Vence</label>
           <input type="date" id="tr_vence" class="form-control">
         </div>
+      </div>
+      <div class="mb-2">
+        <label class="form-label" for="tr_repetir">Repetir</label>
+        <select id="tr_repetir" class="form-select">
+          <option value="">No se repite</option>
+          <option value="dia">Todos los días</option>
+          <option value="habil">Días hábiles (lun a vie)</option>
+          <option value="semana">Cada semana (mismo día)</option>
+          <option value="mes">Cada mes (mismo día)</option>
+          <option value="anio">Cada año</option>
+        </select>
       </div>
       <div class="mb-3">
         <label class="form-label" for="tr_descripcion">Descripción</label>

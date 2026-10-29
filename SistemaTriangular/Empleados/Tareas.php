@@ -154,6 +154,26 @@
                 <input type="date" class="form-control form-control-sm" id="tk_f_vence">
                 <label for="tk_f_proyecto"><i class="mdi mdi-folder-outline"></i>Proyecto</label>
                 <select class="form-select form-select-sm" id="tk_f_proyecto"></select>
+                <label for="tk_f_repetir"><i class="mdi mdi-repeat"></i>Repetir</label>
+                <div class="tk-repetir">
+                    <select class="form-select form-select-sm" id="tk_f_repetir">
+                        <option value="">No se repite</option>
+                        <option value="dia">Todos los días</option>
+                        <option value="habil">Días hábiles (lun a vie)</option>
+                        <option value="semana">Cada semana</option>
+                        <option value="mes">Cada mes</option>
+                        <option value="anio">Cada año</option>
+                    </select>
+                    <div class="tk-rep-extra" id="tk_f_rep_extra" hidden>
+                        <span>cada</span>
+                        <input type="number" class="form-control form-control-sm" id="tk_f_rep_cada" min="1" max="99" value="1">
+                        <span id="tk_f_rep_unidad">semanas</span>
+                    </div>
+                    <div class="tk-rep-dias" id="tk_f_rep_dias" hidden>
+                        <button type="button" data-d="1">L</button><button type="button" data-d="2">M</button><button type="button" data-d="3">M</button><button type="button" data-d="4">J</button><button type="button" data-d="5">V</button><button type="button" data-d="6">S</button><button type="button" data-d="7">D</button>
+                    </div>
+                    <small class="tk-rep-ayuda" id="tk_f_rep_ayuda" hidden>Al completarla se crea la siguiente.</small>
+                </div>
             </div>
 
             <label class="tk-label" for="tk_f_desc">Descripción</label>

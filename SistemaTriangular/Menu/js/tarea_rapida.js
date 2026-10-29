@@ -66,6 +66,7 @@
     $("tr_titulo").value = "";
     $("tr_descripcion").value = "";
     $("tr_vence").value = hoy();
+    $("tr_repetir").value = "";
     if (datos) $("tr_responsable").value = String(datos.yo);
   }
 
@@ -101,6 +102,7 @@
       idResponsable: $("tr_responsable").value,
       vence: $("tr_vence").value,
       descripcion: $("tr_descripcion").value.trim(),
+      repetirTipo: $("tr_repetir").value, // al completarla se crea la siguiente (tareas_api.php)
     })
       .then((r) => {
         if (!r.success) throw new Error(r.error || "No se pudo crear la tarea.");
