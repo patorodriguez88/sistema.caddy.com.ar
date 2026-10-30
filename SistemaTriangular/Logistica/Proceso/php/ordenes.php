@@ -1135,6 +1135,16 @@ if (isset($_POST['CerrarOrdenGuardar'])) {
 
     $mysqli->commit();
 
+    // 5) Cargo del recorrido en la cta. cte. del cliente (después del commit: si falla, la orden
+    // igual queda cerrada y se puede cargar a mano con "Ingresar Recorridos").
+    try {
+      require_once __DIR__ . '/../../../Funciones/php/cargo_recorrido.php';
+      $idLog = (int) ($mysqli->query("SELECT id FROM Logistica WHERE NumerodeOrden = '" . $mysqli->real_escape_string((string) $numeroOrden) . "' AND Eliminado = 0 LIMIT 1")->fetch_row()[0] ?? 0);
+      if ($idLog) cargarRecorridoEnCtaCte($mysqli, $idLog, (string) ($_SESSION['Usuario'] ?? ''));
+    } catch (Throwable $e) {
+      error_log('ordenes.php cargo recorrido: ' . $e->getMessage());
+    }
+
     echo json_encode([
       'success' => 1,
       'message' => 'Orden cerrada correctamente.'
