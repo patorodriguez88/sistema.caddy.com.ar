@@ -763,6 +763,28 @@ function seguimiento(cs) {
           $(".breadcrumb-item active")
             .removeClass("breadcrumb-item active")
             .addClass("breadcrumb-item");
+        } else if (jsonData.preventa) {
+          // No es un envío pero sí un pedido que entró: decir en qué quedó
+          gsOcultarCarga();
+          const p = jsonData.preventa;
+          const pedido = (p.Observaciones || "") + (p.idProveedor ? " (nº " + p.idProveedor + ")" : "");
+          let estado;
+          if (Number(p.Eliminado) === 1) {
+            estado = p.EliminoUsuario
+              ? "Se <b>eliminó en Pendientes</b> sin aceptarse: lo eliminó <b>" + gsEsc(p.EliminoUsuario) + "</b> el " + gsEsc(fechaDMY(String(p.EliminoFecha).slice(0, 10), "display")) + " a las " + gsEsc(String(p.EliminoFecha).slice(11, 16)) + "."
+              : "Se <b>eliminó en Pendientes</b> sin aceptarse (antes del 30/10/2026 no se registraba quién).";
+          } else if (Number(p.Cargado) === 1) {
+            estado = "Se aceptó, pero el envío no está activo (puede haberse eliminado después).";
+          } else {
+            estado = "Está en <b>Pendientes</b>, todavía sin aceptar.";
+          }
+          Swal.fire({
+            icon: "info",
+            title: "El código " + gsEsc(id) + " no es un envío",
+            html:
+              "Es un pedido que entró el " + gsEsc(fechaDMY(p.Fecha, "display")) + " de <b>" + gsEsc(p.RazonSocial) + "</b> para <b>" + gsEsc(p.ClienteDestino) + "</b>" +
+              (pedido.trim() ? "<br><small>" + gsEsc(pedido) + "</small>" : "") + "<br><br>" + estado,
+          });
         } else {
           gsOcultarCarga();
           toast("error", "Error !", "No existen datos para el codigo " + id);

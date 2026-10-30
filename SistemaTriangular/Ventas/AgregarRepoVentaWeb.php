@@ -808,15 +808,4 @@ unset($_SESSION['NCliente']);
 unset($_SESSION['NClienteDestino_t']);
 
 
-if (($_GET['Eliminar'] ?? '') == 'si') {
-
-    $idPreVenta = $_GET['id'];
-
-    $sql = "UPDATE PreVenta SET Eliminado=1 WHERE id='$idPreVenta'";
-
-    $mysqli->query($sql);
-
-    header("location:Pendientes.php");
-}
-
 // header("location:Pendientes.php");

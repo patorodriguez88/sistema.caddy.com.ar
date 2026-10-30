@@ -95,12 +95,33 @@ if (isset($_POST['ActualizaRecorrido']) || isset($_POST['ActualizaRecorrido_all'
 if (isset($_POST['EliminarPreventa']) || isset($_POST['Eliminar_all'])) {
     $ids = pv_ids($_POST['id'] ?? []);
     if (!$ids) pv_out(['success' => 0, 'error' => 'No se recibieron registros']);
-    $st = $mysqli->prepare("UPDATE PreVenta SET Eliminado = 1 WHERE id = ? AND Cargado = 0 LIMIT 1");
+    $st = $mysqli->prepare("UPDATE PreVenta SET Eliminado = 1 WHERE id = ? AND Cargado = 0 AND Eliminado = 0 LIMIT 1");
+    // Trazabilidad (30/10): quién eliminó cada preventa y cuándo. Antes no quedaba registro y no se
+    // podía saber por qué un paquete con etiqueta impresa no estaba en el sistema. Se ve al buscar el
+    // código en Servicios > Seguimiento (Funciones/php/tablas.php, Seguimiento_Visitas).
+    $mysqli->query("CREATE TABLE IF NOT EXISTS PreVentaEliminadas (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        idPreVenta INT NOT NULL,
+        CodigoSeguimiento VARCHAR(50) NOT NULL DEFAULT '',
+        Usuario VARCHAR(80) NOT NULL DEFAULT '',
+        Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        KEY idx_codigo (CodigoSeguimiento),
+        KEY idx_preventa (idPreVenta)
+    )");
+    $log = $mysqli->prepare("INSERT INTO PreVentaEliminadas (idPreVenta, CodigoSeguimiento, Usuario, Fecha)
+                             SELECT id, IFNULL(CodigoSeguimiento, ''), ?, NOW() FROM PreVenta WHERE id = ?");
+    $usuario = (string)($_SESSION['Usuario'] ?? '');
     $n = 0;
     foreach ($ids as $id) {
         $st->bind_param('i', $id);
         $st->execute();
-        $n += $st->affected_rows;
+        if ($st->affected_rows > 0) {
+            $n++;
+            if ($log) {
+                $log->bind_param('si', $usuario, $id);
+                $log->execute();
+            }
+        }
     }
     pv_out(['success' => 1, 'actualizados' => $n, 'total_recibidos' => count($ids)]);
 }

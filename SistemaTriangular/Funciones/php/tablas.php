@@ -66,7 +66,26 @@ if (isset($_POST['Seguimiento_Visitas'])) {
   if (($row_seguimiento['Visitas'] ?? null) !== null) {
     echo json_encode(array('success' => 1, 'Visitas' => $row_seguimiento['Visitas'], 'Notas' => $row_seguimiento['Notas'] ?? null));
   } else {
-    echo json_encode(array('success' => 0, 'Notas' => $row_seguimiento['Notas'] ?? null));
+    // No es un envío: ¿es una preventa (pedido que entró y no se aceptó)? Pasa con etiquetas que el
+    // cliente imprime al cargar el pedido y después la preventa se elimina en Pendientes.
+    $preventa = null;
+    $hayRegistro = ($r = $mysqli->query("SHOW TABLES LIKE 'PreVentaEliminadas'")) && $r->num_rows > 0;
+    $st = !$hayRegistro ? false : $mysqli->prepare("SELECT p.id, p.Fecha, p.RazonSocial, p.ClienteDestino, p.idProveedor, p.Observaciones, p.Eliminado, p.Cargado,
+                                   e.Usuario AS EliminoUsuario, e.Fecha AS EliminoFecha
+                            FROM PreVenta p
+                            LEFT JOIN PreVentaEliminadas e ON e.idPreVenta = p.id
+                            WHERE p.CodigoSeguimiento = ? ORDER BY p.id DESC, e.id DESC LIMIT 1");
+    if (!$st) { // sin la tabla de registro todavía (nadie eliminó desde el 30/10)
+      $st = $mysqli->prepare("SELECT id, Fecha, RazonSocial, ClienteDestino, idProveedor, Observaciones, Eliminado, Cargado,
+                                     NULL AS EliminoUsuario, NULL AS EliminoFecha
+                              FROM PreVenta WHERE CodigoSeguimiento = ? ORDER BY id DESC LIMIT 1");
+    }
+    if ($st) {
+      $st->bind_param('s', $CodigoSeguimiento);
+      $st->execute();
+      $preventa = $st->get_result()->fetch_assoc() ?: null;
+    }
+    echo json_encode(array('success' => 0, 'Notas' => $row_seguimiento['Notas'] ?? null, 'preventa' => $preventa));
   }
 }
 
