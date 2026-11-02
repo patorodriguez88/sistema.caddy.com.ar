@@ -25,6 +25,25 @@
     <link href="../hyper/dist/assets/css/remixicon/remixicon.css" rel="stylesheet" type="text/css" />
     <link href="../hyper/dist/assets/css/mdi/css/materialdesignicons.min.css" rel="stylesheet" type="text/css" />
     <link href="../assets/css/dripicons.min.css" rel="stylesheet" type="text/css" />
+    <style>
+        /* Impresión de la vista previa del comprobante (botón Imprimir de #factura_proforma). La hoja es
+           más angosta que la pantalla y DataTables Responsive escondía la columna Importe (dtr-hidden):
+           al imprimir van todas las columnas, sin flechas de orden ni el "Showing x of y". */
+        @media print {
+            body, .content-page, .card { background: #fff !important; }
+            #factura_proforma .card { box-shadow: none !important; }
+            #factura_proforma table.dataTable .dtr-hidden { display: table-cell !important; }
+            #factura_proforma table.dataTable tr.child { display: none !important; }
+            #factura_proforma table.dataTable td.dtr-control::before,
+            #factura_proforma table.dataTable th::before,
+            #factura_proforma table.dataTable th::after { display: none !important; }
+            #factura_proforma table.dataTable th { padding-right: 6px !important; }
+            #factura_proforma .dataTables_info, #factura_proforma .dt-info,
+            #factura_proforma .dataTables_paginate, #factura_proforma .dt-paging,
+            #factura_proforma .dataTables_length, #factura_proforma .dataTables_filter { display: none !important; }
+            #factura_proforma tr { page-break-inside: avoid; }
+        }
+    </style>
 </head>
 
 <body>
