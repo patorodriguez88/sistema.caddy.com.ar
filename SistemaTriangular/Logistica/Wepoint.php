@@ -175,7 +175,6 @@ include_once "../Conexion/Conexioni.php";
                     </div>
 
                     <input type="hidden" id="numero_orden">
-                    <input type="hidden" id="token_wepoint" value="1151|P71sPbHBcXnLtfse2bPEOukFfWeF04GCT2VgZDEe32332f90">
 
                     <!-- TABLA DE INGRESO AL WAREHOUSE -->
                     <div class="row" style="display:none;" id="seccion_colectas">
