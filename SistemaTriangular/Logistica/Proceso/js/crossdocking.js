@@ -875,16 +875,12 @@
                     beep(esDup ? "dup" : "ok");
 
                     var horaCorta = (resp.hora || "").slice(0, 5);
-                    // Modo operativo de Logística > Wepoint: cómo le fue al alta/recepción en Wepoint
-                    var wp = resp.wepoint;
-                    var wpTexto = !wp ? "" : wp.ok && wp.recibido
-                        ? " · Wepoint ✓ " + (wp.modalidad === "crossdock" ? "crossdock" : "tránsito")
-                        : " · Wepoint ⚠ " + (wp.mensaje || "no se recibió");
                     agregarAlFeed(
                         esDup ? "dup" : "ok",
                         resp.codigoEtiqueta,
-                        horaCorta + " · Rec " + (resp.recorrido || "-") + " · " + (resp.clienteDestino || matchLabel(resp.match)) + wpTexto
+                        horaCorta + " · Rec " + (resp.recorrido || "-") + " · " + (resp.clienteDestino || matchLabel(resp.match))
                     );
+                    mandarColaWepoint();
 
                     tocarRecorrido(resp.recorrido, resp.recorridoNombre, resp.recorridoColor, resp.hora, resp.recorridoEscaneadosHoy, resp.recorridoEsperados);
 
@@ -910,6 +906,18 @@
                 contadores.err++;
                 actualizarContadores();
             },
+        });
+    }
+
+    // El escaneo ya quedó anotado para Wepoint; esto se lo manda sin esperar (si hay otro envío en
+    // curso, el server no hace nada y lo levanta el próximo o el cron). El estado se ve en
+    // Logística > Wepoint.
+    var colaWepointEnCurso = false;
+    function mandarColaWepoint() {
+        if (colaWepointEnCurso) return;
+        colaWepointEnCurso = true;
+        $.post("Proceso/php/wepoint.php", { ProcesarCola: 1 }).always(function () {
+            colaWepointEnCurso = false;
         });
     }
 
