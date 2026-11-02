@@ -421,3 +421,85 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
 
     return ['ok' => count($ok), 'error' => count($filas) - count($ok)];
 }
+
+// ---------------------------------------------------------------------------------------------
+// Retiros en el depósito: si el destinatario retiró el paquete en Wepoint, el envío de Caddy se
+// cierra como entregado (igual que una entrega cargada a mano en Seguimiento), así no queda en
+// Pendientes ni se puede volver a asignar a un recorrido. Lo corre el cron.
+// ---------------------------------------------------------------------------------------------
+function wepoint_cerrar_retiros(mysqli $mysqli, int $dias = 3): int
+{
+    $desde = date('Y-m-d', strtotime("-$dias days"));
+    [$http, , $resp] = wepoint_request('GET', '/api/v2/integraciones/caddy/bultos?' . http_build_query([
+        'vista' => 'salieron', 'desde' => $desde, 'hasta' => date('Y-m-d'),
+    ]), null, 20);
+    $json = json_decode((string)$resp, true);
+    if ($http !== 200 || !is_array($json)) {
+        return 0;
+    }
+
+    // Por envío de Caddy: las piezas retiradas y el último retiro
+    $retiros = [];
+    foreach ($json['data']['bultos'] ?? [] as $b) {
+        if (($b['estado'] ?? '') !== 'Retirado en depósito' || empty($b['id_caddy'])) {
+            continue;
+        }
+        $id = (int)$b['id_caddy'];
+        $retiros[$id]['piezas'] = ($retiros[$id]['piezas'] ?? 0) + 1;
+        if (($b['salida'] ?? '') >= ($retiros[$id]['salida'] ?? '')) {
+            $retiros[$id] = array_merge($retiros[$id], ['salida' => $b['salida'], 'nombre' => $b['retiro'] ?? '', 'dni' => $b['retiro_dni'] ?? '']);
+        }
+    }
+    if (!$retiros) {
+        return 0;
+    }
+
+    $abiertos = $mysqli->query("SELECT id, CodigoSeguimiento, Cantidad, Recorrido, NumerodeOrden FROM TransClientes
+        WHERE id IN (" . implode(',', array_keys($retiros)) . ") AND Entregado = 0 AND Eliminado = 0")->fetch_all(MYSQLI_ASSOC);
+
+    $estadoId = (int)($mysqli->query("SELECT id FROM Estados WHERE Estado = 'Entregado al Cliente' LIMIT 1")->fetch_assoc()['id'] ?? 0);
+    $cerrados = 0;
+    foreach ($abiertos as $tc) {
+        $r = $retiros[(int)$tc['id']];
+        if ($r['piezas'] < max(1, (int)$tc['Cantidad'])) {
+            continue; // todavía no retiró todas las piezas
+        }
+        $codigo = $mysqli->real_escape_string((string)$tc['CodigoSeguimiento']);
+        $ultimo = $mysqli->query("SELECT Destino, Avisado, idCliente, Retirado, Visitas FROM Seguimiento
+            WHERE CodigoSeguimiento = '$codigo' AND Eliminado = 0 ORDER BY id DESC LIMIT 1")->fetch_assoc() ?: [];
+        [$fecha, $hora] = array_pad(explode(' ', (string)$r['salida']), 2, '00:00:00');
+        $obs = 'Retirado en el depósito de Wepoint por ' . trim($r['nombre'] . ($r['dni'] ? " (DNI {$r['dni']})" : ''));
+
+        $st = $mysqli->prepare("INSERT INTO Seguimiento (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones,
+            Entregado, Estado, NombreCompleto, Dni, Destino, Avisado, idCliente, Retirado, Visitas, idTransClientes,
+            Recorrido, Devuelto, state_id, NumerodeOrden, status)
+            VALUES (?, ?, 'Wepoint', '', ?, ?, 1, 'Entregado al Cliente', ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, 'delivered')");
+        $hora = substr($hora, 0, 5);
+        $destino = (string)($ultimo['Destino'] ?? '');
+        $avisado = (int)($ultimo['Avisado'] ?? 0);
+        $idCliente = (int)($ultimo['idCliente'] ?? 0);
+        $retirado = (int)($ultimo['Retirado'] ?? 0);
+        $visitas = (int)($ultimo['Visitas'] ?? 0) + 1;
+        $idTc = (int)$tc['id'];
+        $recorrido = (string)$tc['Recorrido'];
+        $orden = (int)$tc['NumerodeOrden'];
+        $nombre = mb_substr((string)$r['nombre'], 0, 100);
+        $dni = mb_substr((string)$r['dni'], 0, 20);
+        $codigoRaw = (string)$tc['CodigoSeguimiento'];
+        $st->bind_param('sssssssiiiiisii', $fecha, $hora, $codigoRaw, $obs, $nombre, $dni, $destino, $avisado, $idCliente, $retirado, $visitas, $idTc, $recorrido, $estadoId, $orden);
+        if (!$st->execute()) {
+            $st->close();
+            continue;
+        }
+        $st->close();
+
+        $info = $mysqli->real_escape_string('Wepoint (retiro en depósito) ' . date('Y-m-d H:i'));
+        $mysqli->query("UPDATE TransClientes SET Estado = 'Entregado al Cliente', Entregado = 1, infoABM = '$info'
+            WHERE id = $idTc AND Entregado = 0 AND Eliminado = 0 LIMIT 1");
+        $mysqli->query("UPDATE HojaDeRuta SET Estado = 'Cerrado' WHERE Seguimiento = '$codigo' AND Eliminado = 0");
+        $mysqli->query("UPDATE Roadmap SET Estado = 'Cerrado' WHERE Seguimiento = '$codigo' AND Eliminado = 0");
+        $cerrados++;
+    }
+
+    return $cerrados;
+}
