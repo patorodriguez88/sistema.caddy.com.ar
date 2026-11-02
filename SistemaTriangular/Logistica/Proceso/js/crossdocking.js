@@ -875,10 +875,15 @@
                     beep(esDup ? "dup" : "ok");
 
                     var horaCorta = (resp.hora || "").slice(0, 5);
+                    // Modo operativo de Logística > Wepoint: cómo le fue al alta/recepción en Wepoint
+                    var wp = resp.wepoint;
+                    var wpTexto = !wp ? "" : wp.ok && wp.recibido
+                        ? " · Wepoint ✓ " + (wp.modalidad === "crossdock" ? "crossdock" : "tránsito")
+                        : " · Wepoint ⚠ " + (wp.mensaje || "no se recibió");
                     agregarAlFeed(
                         esDup ? "dup" : "ok",
                         resp.codigoEtiqueta,
-                        horaCorta + " · Rec " + (resp.recorrido || "-") + " · " + (resp.clienteDestino || matchLabel(resp.match))
+                        horaCorta + " · Rec " + (resp.recorrido || "-") + " · " + (resp.clienteDestino || matchLabel(resp.match)) + wpTexto
                     );
 
                     tocarRecorrido(resp.recorrido, resp.recorridoNombre, resp.recorridoColor, resp.hora, resp.recorridoEscaneadosHoy, resp.recorridoEsperados);

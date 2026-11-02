@@ -4,66 +4,11 @@ date_default_timezone_set('America/Argentina/Cordoba');
 ini_set('display_errors', '1');
 ini_set('display_startup_errors', '1');
 error_reporting(E_ALL);
-const ID_WEPOINT = 18587; //ID DE WEPOINT
 // ✅ conexión disponible para TODOS los handlers
 if (!isset($mysqli)) {
     include_once '../../../Conexion/Conexioni.php';
 }
-
-// URL y token de la API de Wepoint (usuario de integración de la empresa Caddy): están en
-// Conexion/wepoint_config.php, fuera del repositorio (ver wepoint_config.example.php).
-function wepoint_config(): array
-{
-    static $config = null;
-    if ($config === null) {
-        $archivo = __DIR__ . '/../../../Conexion/wepoint_config.php';
-        if (is_file($archivo)) {
-            require_once $archivo;
-        }
-        $config = [
-            'url' => rtrim(defined('WEPOINT_API_URL') ? WEPOINT_API_URL : '', '/'),
-            'token' => defined('WEPOINT_API_TOKEN') ? WEPOINT_API_TOKEN : '',
-        ];
-    }
-    return $config;
-}
-
-function wepoint_url(string $path): string
-{
-    return wepoint_config()['url'] . $path;
-}
-
-function wepoint_token(): string
-{
-    $token = wepoint_config()['token'];
-    return $token === '' ? '' : 'Bearer ' . $token;
-}
-
-/** @return array{0:int,1:string,2:string|false} [http, error de curl, cuerpo] */
-function wepoint_request(string $method, string $path, ?array $body = null): array
-{
-    if (wepoint_config()['url'] === '' || wepoint_token() === '') {
-        return [0, 'Falta configurar Conexion/wepoint_config.php', false];
-    }
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => wepoint_url($path),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 60,
-        CURLOPT_CUSTOMREQUEST => $method,
-        CURLOPT_POSTFIELDS => $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => [
-            'Accept: application/json',
-            'Content-Type: application/json',
-            'Authorization: ' . wepoint_token(),
-        ],
-    ]);
-    $resp = curl_exec($ch);
-    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    curl_close($ch);
-    return [$http, $err, $resp];
-}
+require_once __DIR__ . '/wepoint_lib.php'; // ID_WEPOINT, conexión con Wepoint y armado del aviso
 
 /** ===========================================================
  * PRECHECK EGRESO: cuenta cuántos códigos de la orden tienen id_wepoint (id_bulto) y devuelve el detalle
@@ -643,14 +588,13 @@ register_shutdown_function(function () {
 // (cada uno con su etiqueta y su destinatario final); si la colecta no tiene hijos, el padre.
 // ==========================================================================
 
-const WEPOINT_MODALIDADES = ['transito', 'crossdock', 'almacenamiento'];
-
 /** Bultos que se le avisan a Wepoint por un padre/servicio pendiente. [padre, filas] */
 function wepoint_bultos_de_grupo(mysqli $mysqli, int $idPadre): array
 {
     $idWepoint = ID_WEPOINT;
     $st = $mysqli->prepare("SELECT id, idColecta FROM TransClientes
-        WHERE id = ? AND idClienteDestino = ? AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0
+        WHERE id = ? AND (idClienteDestino = ? OR Wepoint_status = 'Ingreso')
+          AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0
           AND (wepoint_id = 0 OR wepoint_id IS NULL)");
     $st->bind_param('ii', $idPadre, $idWepoint);
     $st->execute();
@@ -660,15 +604,15 @@ function wepoint_bultos_de_grupo(mysqli $mysqli, int $idPadre): array
         return [null, []];
     }
 
-    $campos = "TC.id, TC.CodigoSeguimiento, TC.Cantidad, TC.idClienteOrigen, TC.RazonSocial, TC.DomicilioOrigen,
-               TC.TelefonoOrigen, CO.Mail AS MailOrigen, TC.ClienteDestino, TC.TelefonoDestino, TC.DomicilioDestino,
-               TC.LocalidadDestino, TC.ProvinciaDestino, TC.Ancho, TC.Largo, TC.Alto, TC.Peso, TC.Flex,
-               TC.ValorDeclarado, TC.Observaciones, TC.idClienteDestino,
-               (SELECT MAX(HR.ImporteCobranza) FROM HojaDeRuta HR WHERE HR.idTransClientes = TC.id AND HR.Eliminado = 0) AS Cobranza";
+    $campos = wepoint_campos_tc();
 
     $filas = [];
+    $tieneHijos = false;
     $idColecta = (int)$padre['idColecta'];
     if ($idColecta > 0) {
+        $r = $mysqli->query("SELECT COUNT(*) AS n FROM TransClientes WHERE idColecta = {$idColecta} AND id <> {$idPadre} AND Eliminado = 0");
+        $tieneHijos = (int)$r->fetch_assoc()['n'] > 0;
+
         $st = $mysqli->prepare("SELECT $campos FROM TransClientes TC LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen
             WHERE TC.idColecta = ? AND TC.id <> ? AND TC.Eliminado = 0 AND TC.Entregado = 0 AND TC.Devuelto = 0
               AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
@@ -678,7 +622,9 @@ function wepoint_bultos_de_grupo(mysqli $mysqli, int $idPadre): array
         $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
         $st->close();
     }
-    if (!$filas) {
+    // Si la colecta tiene hijos, los que ya entraron (p. ej. por CrossDocking) no se vuelven a mandar
+    // y el padre no es un bulto: solo cuando no tiene hijos se manda el padre.
+    if (!$filas && !$tieneHijos) {
         $st = $mysqli->prepare("SELECT $campos FROM TransClientes TC LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen WHERE TC.id = ?");
         $st->bind_param('i', $idPadre);
         $st->execute();
@@ -686,13 +632,22 @@ function wepoint_bultos_de_grupo(mysqli $mysqli, int $idPadre): array
         $st->close();
     }
 
-    // Lo que tiene destino final sigue viaje (crossdock); lo que va a Wepoint se queda (tránsito).
     foreach ($filas as &$f) {
-        $f['ModalidadSugerida'] = (int)$f['idClienteDestino'] === ID_WEPOINT ? 'transito' : 'crossdock';
+        $f['ModalidadSugerida'] = wepoint_modalidad_sugerida($f);
     }
     unset($f);
 
     return [$padre, $filas];
+}
+
+// Modo de ingreso (manual / operativo)
+if (isset($_POST['ModoIngreso'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $modo = isset($_POST['modo'])
+        ? wepoint_guardar_modo($mysqli, (string)$_POST['modo'], (string)($_SESSION['Usuario'] ?? 'Sistema'))
+        : wepoint_modo($mysqli);
+    echo json_encode(['ok' => true, 'modo' => $modo]);
+    exit;
 }
 
 // Lista: un renglón por colecta (o servicio suelto a Wepoint) pendiente de avisar
@@ -707,6 +662,8 @@ if (isset($_POST['IngresosPendientes']) && (int)$_POST['IngresosPendientes'] ===
                  WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id
                    AND H.Eliminado = 0 AND H.Entregado = 0 AND H.Devuelto = 0
                    AND (H.wepoint_id = 0 OR H.wepoint_id IS NULL)) AS Hijos,
+               (SELECT COUNT(*) FROM TransClientes H
+                 WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id AND H.Eliminado = 0) AS HijosTotal,
                (SELECT COALESCE(SUM(GREATEST(H.Cantidad, 1)), 0) FROM TransClientes H
                  WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id
                    AND H.Eliminado = 0 AND H.Entregado = 0 AND H.Devuelto = 0
@@ -718,9 +675,42 @@ if (isset($_POST['IngresosPendientes']) && (int)$_POST['IngresosPendientes'] ===
         ORDER BY P.Fecha DESC, P.id DESC");
     $st->bind_param('ii', $idWepoint, $dias);
     $st->execute();
+    $padres = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $st->close();
     $rows = [];
-    foreach ($st->get_result()->fetch_all(MYSQLI_ASSOC) as $r) {
+
+    // Escaneados en CrossDocking que no se le pudieron avisar a Wepoint (sueltos: los hijos de una
+    // colecta aparecen dentro de su colecta)
+    $sc = $mysqli->prepare("SELECT id, Wepoint_f, CodigoSeguimiento, RazonSocial, DomicilioOrigen, Recorrido, NumerodeOrden, Cantidad
+        FROM TransClientes
+        WHERE Wepoint_status = 'Ingreso' AND idClienteDestino <> ? AND (idColecta IS NULL OR idColecta = 0)
+          AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0
+          AND (wepoint_id = 0 OR wepoint_id IS NULL)
+          AND Wepoint_f >= CURDATE() - INTERVAL ? DAY
+        ORDER BY Wepoint_f DESC, id DESC");
+    $sc->bind_param('ii', $idWepoint, $dias);
+    $sc->execute();
+    foreach ($sc->get_result()->fetch_all(MYSQLI_ASSOC) as $r) {
+        $rows[] = [
+            'id' => (int)$r['id'],
+            'tipo' => 'CrossDocking',
+            'idColecta' => 0,
+            'Fecha' => $r['Wepoint_f'],
+            'Codigo' => $r['CodigoSeguimiento'],
+            'Origen' => $r['RazonSocial'],
+            'Domicilio' => $r['DomicilioOrigen'],
+            'Recorrido' => $r['Recorrido'],
+            'NumerodeOrden' => (int)$r['NumerodeOrden'],
+            'Envios' => 1,
+            'Piezas' => max(1, (int)$r['Cantidad']),
+        ];
+    }
+    $sc->close();
+    foreach ($padres as $r) {
         $hijos = (int)$r['Hijos'];
+        if ((int)$r['HijosTotal'] > 0 && $hijos === 0) {
+            continue; // todos sus envíos ya entraron a Wepoint (p. ej. escaneados en CrossDocking)
+        }
         $rows[] = [
             'id' => (int)$r['id'],
             'tipo' => (int)$r['idColecta'] > 0 ? 'Colecta' : 'Servicio',
@@ -735,7 +725,7 @@ if (isset($_POST['IngresosPendientes']) && (int)$_POST['IngresosPendientes'] ===
             'Piezas' => $hijos > 0 ? (int)$r['PiezasHijos'] : max(1, (int)$r['Cantidad']),
         ];
     }
-    $st->close();
+    usort($rows, fn($a, $b) => strcmp((string)$b['Fecha'], (string)$a['Fecha']) ?: $b['id'] <=> $a['id']);
 
     echo json_encode(['data' => $rows], JSON_UNESCAPED_UNICODE);
     exit;
@@ -795,37 +785,7 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
             $sinRemitente[] = $codigo;
             continue;
         }
-        $modalidad = $modalidades[$f['id']] ?? $f['ModalidadSugerida'];
-        $bultos[] = [
-            'codigo_seguimiento' => $codigo,
-            'id_caddy' => (int)$f['id'],
-            'piezas' => max(1, (int)$f['Cantidad']),
-            'modalidad' => in_array($modalidad, WEPOINT_MODALIDADES, true) ? $modalidad : $f['ModalidadSugerida'],
-            'observaciones' => $f['Observaciones'] ?: null,
-            'valor_declarado' => (float)$f['ValorDeclarado'],
-            'contrareembolso' => (float)$f['Cobranza'],
-            'es_flex' => (int)$f['Flex'] === 1,
-            'remitente' => array_filter([
-                'id' => (int)$f['idClienteOrigen'],
-                'nombre' => mb_substr(trim((string)$f['RazonSocial']), 0, 100),
-                'telefono' => mb_substr(trim((string)$f['TelefonoOrigen']), 0, 50),
-                'email' => filter_var(trim((string)$f['MailOrigen']), FILTER_VALIDATE_EMAIL) ?: null,
-                'direccion' => mb_substr(trim((string)$f['DomicilioOrigen']), 0, 255),
-            ], fn($v) => $v !== null && $v !== ''),
-            'destinatario' => array_filter([
-                'nombre' => mb_substr(trim((string)$f['ClienteDestino']), 0, 100),
-                'telefono' => mb_substr(trim((string)$f['TelefonoDestino']), 0, 50),
-                'direccion' => mb_substr(trim((string)$f['DomicilioDestino']), 0, 255),
-                'ciudad' => mb_substr(trim((string)$f['LocalidadDestino']), 0, 100),
-                'provincia' => mb_substr(trim((string)$f['ProvinciaDestino']), 0, 100),
-            ], fn($v) => $v !== ''),
-            'medidas' => [
-                'ancho' => (int)$f['Ancho'],
-                'largo' => (int)$f['Largo'],
-                'alto' => (int)$f['Alto'],
-                'peso' => (int)ceil((float)$f['Peso']),
-            ],
-        ];
+        $bultos[] = wepoint_bulto_payload($f, $modalidades[$f['id']] ?? $f['ModalidadSugerida']);
     }
 
     if (!$bultos) {
@@ -840,7 +800,19 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     }
 
     $noRef = (int)$padre['idColecta'] > 0 ? 'COLECTA-' . (int)$padre['idColecta'] : 'SERVICIO-' . $idPadre;
+    $filas = array_values(array_filter($filas, fn($f) => !isset($excluir[(int)$f['id']])));
     $payload = ['referencia' => $noRef, 'fecha' => date('Y-m-d'), 'bultos' => $bultos];
+    // Lo que ya se escaneó en CrossDocking está físicamente en el depósito: se da por recibido
+    $escaneados = array_column(array_filter($filas, fn($f) => $f['Wepoint_status'] === 'Ingreso'), 'id');
+    $recibir = [];
+    foreach ($bultos as $b) {
+        if (in_array($b['id_caddy'], $escaneados)) {
+            $recibir = array_merge($recibir, wepoint_series($b));
+        }
+    }
+    if ($recibir) {
+        $payload['recibir'] = $recibir;
+    }
     [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/preavisos', $payload);
     $json = json_decode((string)$resp, true);
 
@@ -858,44 +830,7 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
 
     $data = $json['data'] ?? [];
     $nroOIB = (string)($data['nro_orden_ingreso_bulto'] ?? '');
-    $now = date('Y-m-d H:i:s');
-    $usuario = $_SESSION['Usuario'] ?? 'Sistema';
-    $estado = 'IN OK';
-    $tipo = 'IN';
-    $idsPorCodigo = array_column(array_map(fn($b) => [$b['codigo_seguimiento'], $b['id_caddy']], $bultos), 1, 0);
-
-    // Un row por pieza (id_wepoint = id del bulto en Wepoint); cada envío y el padre quedan
-    // marcados como avisados (wepoint_id = último row de wepoint_api).
-    $ins = $mysqli->prepare("INSERT INTO wepoint_api
-        (`Time`, `no_referencia`, `nro_orden_ingreso_bulto`, `CodigoSeguimiento`, `CodigoSeguimiento_enviado`,
-         `id_wepoint`, `Usuario`, `Estado`, `tipo`, `http_code`)
-        VALUES (?,?,?,?,?,?,?,?,?,?)");
-    $upd = $mysqli->prepare("UPDATE TransClientes SET wepoint_id = ? WHERE id = ? AND (wepoint_id = 0 OR wepoint_id IS NULL)");
-
-    $enviados = [];
-    $ultimoId = 0;
-    foreach (array_merge($data['nuevos'] ?? [], $data['ya_informados'] ?? []) as $envio) {
-        $codigo = (string)$envio['codigo_seguimiento'];
-        foreach ($envio['bultos'] ?? [] as $pieza) {
-            $serie = (string)$pieza['nro_serie'];
-            $idBulto = (int)$pieza['id_bulto'];
-            $ins->bind_param('sssssisssi', $now, $noRef, $nroOIB, $codigo, $serie, $idBulto, $usuario, $estado, $tipo, $http);
-            $ins->execute();
-            $ultimoId = $ins->insert_id ?: $ultimoId;
-        }
-        if ($ultimoId && isset($idsPorCodigo[$codigo])) {
-            $idTc = (int)$idsPorCodigo[$codigo];
-            $upd->bind_param('ii', $ultimoId, $idTc);
-            $upd->execute();
-        }
-        $enviados[] = $codigo;
-    }
-    if ($ultimoId && $enviados) {
-        $upd->bind_param('ii', $ultimoId, $idPadre);
-        $upd->execute();
-    }
-    $ins->close();
-    $upd->close();
+    $enviados = wepoint_guardar_respuesta($mysqli, $data, $bultos, $noRef, $http, [$idPadre]);
 
     echo json_encode([
         'ok' => true,

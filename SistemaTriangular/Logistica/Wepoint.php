@@ -53,7 +53,18 @@ include_once "../Conexion/Conexioni.php";
                                         <li class="breadcrumb-item active">Wepoint</li>
                                     </ol>
                                 </div>
-                                <h4 class="page-title">Wepoint <small class="text-muted fw-normal">depósito</small></h4>
+                                <h4 class="page-title d-flex align-items-center flex-wrap gap-3">
+                                    <span>Wepoint <small class="text-muted fw-normal">depósito</small></span>
+                                    <span class="d-inline-flex align-items-center gap-2 fs-6 fw-normal">
+                                        <span class="text-muted">Ingreso:</span>
+                                        <span class="btn-group btn-group-sm" role="group">
+                                            <input type="radio" class="btn-check" name="wp-modo" id="wp-modo-manual" value="manual">
+                                            <label class="btn btn-outline-secondary" for="wp-modo-manual" title="Se revisa y se manda desde esta pantalla">Manual</label>
+                                            <input type="radio" class="btn-check" name="wp-modo" id="wp-modo-operativo" value="operativo">
+                                            <label class="btn btn-outline-success" for="wp-modo-operativo" title="Cada escaneo en CrossDocking entra y se recibe en Wepoint">Operativo</label>
+                                        </span>
+                                    </span>
+                                </h4>
                             </div>
                         </div>
                     </div>
@@ -126,9 +137,13 @@ include_once "../Conexion/Conexioni.php";
                             <div class="tab-content">
                                 <!-- Para enviar a Wepoint -->
                                 <div class="tab-pane show active" id="wp-tab-ingreso">
+                                    <div id="wp-aviso-operativo" class="alert alert-success py-2" style="display:none">
+                                        <i class="uil-bolt"></i> <strong>Modo operativo:</strong> lo que se escanea en CrossDocking entra solo a Wepoint y queda recibido
+                                        (Flex como crossdock, el resto en tránsito). Acá queda lo que no se escaneó o no se pudo avisar.
+                                    </div>
                                     <div class="row g-2 align-items-center mb-2">
                                         <div class="col-md-5">
-                                            <p class="text-muted mb-0">Colectas y envíos con destino Wepoint que todavía no se le avisaron. Abrí una para elegir qué hace Wepoint con cada envío y mandarla.</p>
+                                            <p class="text-muted mb-0">Colectas y envíos con destino Wepoint, o escaneados en CrossDocking, que todavía no se le avisaron. Abrí uno para elegir qué hace Wepoint con cada envío y mandarlo.</p>
                                         </div>
                                         <div class="col-md-7 d-flex gap-2 justify-content-md-end">
                                             <select id="wp-dias" class="form-select w-auto">
