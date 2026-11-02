@@ -634,122 +634,173 @@ register_shutdown_function(function () {
         ], JSON_UNESCAPED_UNICODE);
     }
 });
-//COLECTAS
-if (isset($_POST['Colectas']) && (int)$_POST['Colectas'] === 1) {
-    header('Content-Type: application/json; charset=utf-8');
+// ==========================================================================
+// INGRESO A WEPOINT POR COLECTA
+// Lo pendiente de avisar son los servicios con destino Wepoint (18587) que todavía no se
+// mandaron: el "padre" de cada colecta (cliente -> Wepoint) o un servicio suelto a Wepoint.
+// No depende de la orden de logística (si el recorrido no tenía una abierta quedaba en 0 y se
+// mezclaba con todo lo viejo). Lo que llega físicamente al depósito son los hijos de la colecta
+// (cada uno con su etiqueta y su destinatario final); si la colecta no tiene hijos, el padre.
+// ==========================================================================
 
+const WEPOINT_MODALIDADES = ['transito', 'crossdock', 'almacenamiento'];
+
+/** Bultos que se le avisan a Wepoint por un padre/servicio pendiente. [padre, filas] */
+function wepoint_bultos_de_grupo(mysqli $mysqli, int $idPadre): array
+{
     $idWepoint = ID_WEPOINT;
-
-    // Agrego TODAS las columnas que usás en el front
-    $sql = "SELECT 
-                Recorrido,
-                SUM(Cantidad) as Cantidad,                                
-                NumerodeOrden,
-                Transportista
-            FROM TransClientes
-            WHERE idClienteDestino = ?
-              AND Entregado = 0
-              AND Eliminado = 0
-              AND Devuelto = 0
-              AND Haber= 0 
-              AND (wepoint_id = 0 OR wepoint_id IS NULL)
-              GROUP BY NumerodeOrden";
-
-    $rows = [];
-    if ($st = $mysqli->prepare($sql)) {
-        $st->bind_param('i', $idWepoint);
-        if ($st->execute()) {
-            $res = $st->get_result();
-            while ($r = $res->fetch_assoc()) {
-                $rows[] = $r;
-            }
-        } else {
-            echo json_encode(['data' => [], 'error' => $st->error]);
-            $st->close();
-            exit;
-        }
-        $st->close();
-    } else {
-        echo json_encode(['data' => [], 'error' => $mysqli->error]);
-        exit;
+    $st = $mysqli->prepare("SELECT id, idColecta FROM TransClientes
+        WHERE id = ? AND idClienteDestino = ? AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0
+          AND (wepoint_id = 0 OR wepoint_id IS NULL)");
+    $st->bind_param('ii', $idPadre, $idWepoint);
+    $st->execute();
+    $padre = $st->get_result()->fetch_assoc();
+    $st->close();
+    if (!$padre) {
+        return [null, []];
     }
 
-    // DataTables espera { data: [...] }
+    $campos = "TC.id, TC.CodigoSeguimiento, TC.Cantidad, TC.idClienteOrigen, TC.RazonSocial, TC.DomicilioOrigen,
+               TC.TelefonoOrigen, CO.Mail AS MailOrigen, TC.ClienteDestino, TC.TelefonoDestino, TC.DomicilioDestino,
+               TC.LocalidadDestino, TC.ProvinciaDestino, TC.Ancho, TC.Largo, TC.Alto, TC.Peso, TC.Flex,
+               TC.ValorDeclarado, TC.Observaciones, TC.idClienteDestino,
+               (SELECT MAX(HR.ImporteCobranza) FROM HojaDeRuta HR WHERE HR.idTransClientes = TC.id AND HR.Eliminado = 0) AS Cobranza";
+
+    $filas = [];
+    $idColecta = (int)$padre['idColecta'];
+    if ($idColecta > 0) {
+        $st = $mysqli->prepare("SELECT $campos FROM TransClientes TC LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen
+            WHERE TC.idColecta = ? AND TC.id <> ? AND TC.Eliminado = 0 AND TC.Entregado = 0 AND TC.Devuelto = 0
+              AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
+            ORDER BY TC.id");
+        $st->bind_param('ii', $idColecta, $idPadre);
+        $st->execute();
+        $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+        $st->close();
+    }
+    if (!$filas) {
+        $st = $mysqli->prepare("SELECT $campos FROM TransClientes TC LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen WHERE TC.id = ?");
+        $st->bind_param('i', $idPadre);
+        $st->execute();
+        $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+        $st->close();
+    }
+
+    // Lo que tiene destino final sigue viaje (crossdock); lo que va a Wepoint se queda (tránsito).
+    foreach ($filas as &$f) {
+        $f['ModalidadSugerida'] = (int)$f['idClienteDestino'] === ID_WEPOINT ? 'transito' : 'crossdock';
+    }
+    unset($f);
+
+    return [$padre, $filas];
+}
+
+// Lista: un renglón por colecta (o servicio suelto a Wepoint) pendiente de avisar
+if (isset($_POST['IngresosPendientes']) && (int)$_POST['IngresosPendientes'] === 1) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $dias = max(1, min(365, (int)($_POST['dias'] ?? 30)));
+    $idWepoint = ID_WEPOINT;
+    $st = $mysqli->prepare("SELECT P.id, P.idColecta, P.Fecha, P.CodigoSeguimiento, P.RazonSocial, P.DomicilioOrigen,
+               P.Recorrido, P.NumerodeOrden, P.Cantidad,
+               (SELECT COUNT(*) FROM TransClientes H
+                 WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id
+                   AND H.Eliminado = 0 AND H.Entregado = 0 AND H.Devuelto = 0
+                   AND (H.wepoint_id = 0 OR H.wepoint_id IS NULL)) AS Hijos,
+               (SELECT COALESCE(SUM(GREATEST(H.Cantidad, 1)), 0) FROM TransClientes H
+                 WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id
+                   AND H.Eliminado = 0 AND H.Entregado = 0 AND H.Devuelto = 0
+                   AND (H.wepoint_id = 0 OR H.wepoint_id IS NULL)) AS PiezasHijos
+        FROM TransClientes P
+        WHERE P.idClienteDestino = ? AND P.Eliminado = 0 AND P.Entregado = 0 AND P.Devuelto = 0 AND P.Haber = 0
+          AND (P.wepoint_id = 0 OR P.wepoint_id IS NULL)
+          AND P.Fecha >= CURDATE() - INTERVAL ? DAY
+        ORDER BY P.Fecha DESC, P.id DESC");
+    $st->bind_param('ii', $idWepoint, $dias);
+    $st->execute();
+    $rows = [];
+    foreach ($st->get_result()->fetch_all(MYSQLI_ASSOC) as $r) {
+        $hijos = (int)$r['Hijos'];
+        $rows[] = [
+            'id' => (int)$r['id'],
+            'tipo' => (int)$r['idColecta'] > 0 ? 'Colecta' : 'Servicio',
+            'idColecta' => (int)$r['idColecta'],
+            'Fecha' => $r['Fecha'],
+            'Codigo' => $r['CodigoSeguimiento'],
+            'Origen' => $r['RazonSocial'],
+            'Domicilio' => $r['DomicilioOrigen'],
+            'Recorrido' => $r['Recorrido'],
+            'NumerodeOrden' => (int)$r['NumerodeOrden'],
+            'Envios' => $hijos > 0 ? $hijos : 1,
+            'Piezas' => $hijos > 0 ? (int)$r['PiezasHijos'] : max(1, (int)$r['Cantidad']),
+        ];
+    }
+    $st->close();
+
     echo json_encode(['data' => $rows], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// ENVÍO DEL AVISO PREVIO DE BULTOS A WEPOINT
-// Un elemento por servicio (código de seguimiento) con sus piezas, el cliente de Caddy que lo
-// manda (en Wepoint queda como dueño del bulto) y qué se hace con él en el depósito
-// (crossdock, transito o almacenamiento; por defecto tránsito). Wepoint crea un bulto por pieza
-// (CODIGO o CODIGO_n, como la etiqueta) y devuelve el id de cada uno, que se guarda en
-// wepoint_api para armar después el egreso. Reenviar la misma orden no duplica en Wepoint.
-if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
+// Detalle: los bultos que se le van a avisar a Wepoint por esa colecta
+if (isset($_POST['IngresoDetalle']) && (int)$_POST['IngresoDetalle'] === 1) {
     header('Content-Type: application/json; charset=utf-8');
 
-    $numeroOrden = (int)($_POST['NumerodeOrden'] ?? $_POST['j'] ?? 0);
-    if ($numeroOrden <= 0) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'message' => 'Falta NumerodeOrden']);
+    [$padre, $filas] = wepoint_bultos_de_grupo($mysqli, (int)($_POST['id'] ?? 0));
+    if (!$padre) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'message' => 'Ya se avisó o no está pendiente']);
         exit;
     }
 
-    $excluir = $_POST['ExcluirCodigos'] ?? [];
-    if (!is_array($excluir)) {
-        $excluir = json_decode((string)$excluir, true) ?: [];
-    }
-    $excluir = array_flip(array_map('strval', $excluir));
+    echo json_encode(['ok' => true, 'data' => array_map(fn($f) => [
+        'id' => (int)$f['id'],
+        'Codigo' => $f['CodigoSeguimiento'],
+        'Piezas' => max(1, (int)$f['Cantidad']),
+        'Destino' => $f['ClienteDestino'],
+        'Domicilio' => trim($f['DomicilioDestino'] . ', ' . $f['LocalidadDestino'], ', '),
+        'Flex' => (int)$f['Flex'] === 1,
+        'Modalidad' => $f['ModalidadSugerida'],
+    ], $filas)], JSON_UNESCAPED_UNICODE);
+    exit;
+}
 
-    // codigo => modalidad elegida en la pantalla
+// Envío del aviso previo a Wepoint (POST /api/v2/integraciones/caddy/preavisos): un elemento por
+// envío con sus piezas, el cliente de origen (en Wepoint queda como dueño) y la modalidad elegida.
+// Wepoint crea un bulto por pieza (CODIGO o CODIGO_n, como la etiqueta) y devuelve el id de cada
+// uno, que se guarda en wepoint_api para armar después el egreso. Reenviar no duplica en Wepoint.
+if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
+    header('Content-Type: application/json; charset=utf-8');
+
+    $idPadre = (int)($_POST['id'] ?? 0);
+    [$padre, $filas] = wepoint_bultos_de_grupo($mysqli, $idPadre);
+    if (!$padre) {
+        http_response_code(404);
+        echo json_encode(['ok' => false, 'message' => 'Ya se avisó o no está pendiente']);
+        exit;
+    }
+
+    $excluir = $_POST['Excluir'] ?? [];
+    $excluir = array_flip(array_map('intval', is_array($excluir) ? $excluir : (json_decode((string)$excluir, true) ?: [])));
     $modalidades = $_POST['Modalidades'] ?? [];
-    if (!is_array($modalidades)) {
-        $modalidades = json_decode((string)$modalidades, true) ?: [];
-    }
-    $permitidas = ['crossdock', 'transito', 'almacenamiento'];
-
-    $sql = "SELECT TC.id, TC.CodigoSeguimiento, TC.Cantidad, TC.idClienteOrigen, TC.RazonSocial,
-                   TC.DomicilioOrigen, TC.TelefonoOrigen, CO.Mail AS MailOrigen,
-                   TC.ClienteDestino, TC.TelefonoDestino, TC.DomicilioDestino, TC.LocalidadDestino,
-                   TC.ProvinciaDestino, TC.Ancho, TC.Largo, TC.Alto, TC.Peso, TC.Flex, TC.ValorDeclarado,
-                   TC.Observaciones,
-                   (SELECT MAX(HR.ImporteCobranza) FROM HojaDeRuta HR
-                     WHERE HR.idTransClientes = TC.id AND HR.Eliminado = 0) AS Cobranza
-            FROM TransClientes TC
-            LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen
-            WHERE TC.idClienteDestino = ?
-              AND TC.NumerodeOrden = ?
-              AND TC.Eliminado = 0
-              AND TC.Entregado = 0
-              AND TC.Devuelto = 0
-              AND TC.Haber = 0
-              AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)";
-
-    $idWepoint = ID_WEPOINT;
-    $st = $mysqli->prepare($sql);
-    $st->bind_param('ii', $idWepoint, $numeroOrden);
-    $st->execute();
-    $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
-    $st->close();
+    $modalidades = is_array($modalidades) ? $modalidades : (json_decode((string)$modalidades, true) ?: []);
 
     $bultos = [];
     $sinRemitente = [];
     foreach ($filas as $f) {
         $codigo = trim((string)$f['CodigoSeguimiento']);
-        if ($codigo === '' || isset($excluir[$codigo])) {
+        if ($codigo === '' || isset($excluir[(int)$f['id']])) {
             continue;
         }
         if ((int)$f['idClienteOrigen'] <= 0) {
             $sinRemitente[] = $codigo;
             continue;
         }
-
-        $modalidad = $modalidades[$codigo] ?? 'transito';
+        $modalidad = $modalidades[$f['id']] ?? $f['ModalidadSugerida'];
         $bultos[] = [
             'codigo_seguimiento' => $codigo,
             'id_caddy' => (int)$f['id'],
             'piezas' => max(1, (int)$f['Cantidad']),
-            'modalidad' => in_array($modalidad, $permitidas, true) ? $modalidad : 'transito',
+            'modalidad' => in_array($modalidad, WEPOINT_MODALIDADES, true) ? $modalidad : $f['ModalidadSugerida'],
             'observaciones' => $f['Observaciones'] ?: null,
             'valor_declarado' => (float)$f['ValorDeclarado'],
             'contrareembolso' => (float)$f['Cobranza'],
@@ -782,13 +833,13 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
         echo json_encode([
             'ok' => false,
             'message' => $sinRemitente
-                ? 'Los servicios no tienen cliente de origen: ' . implode(', ', $sinRemitente)
-                : 'No hay servicios pendientes de enviar en esta orden',
+                ? 'Los envíos no tienen cliente de origen: ' . implode(', ', $sinRemitente)
+                : 'No quedó ningún envío para avisar',
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    $noRef = 'ORD-' . $numeroOrden;
+    $noRef = (int)$padre['idColecta'] > 0 ? 'COLECTA-' . (int)$padre['idColecta'] : 'SERVICIO-' . $idPadre;
     $payload = ['referencia' => $noRef, 'fecha' => date('Y-m-d'), 'bultos' => $bultos];
     [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/preavisos', $payload);
     $json = json_decode((string)$resp, true);
@@ -796,11 +847,11 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     if ($http < 200 || $http >= 300 || !is_array($json)) {
         http_response_code($http ?: 502);
         echo json_encode([
+            'ok' => false,
             'http_code' => $http,
             'curl_error' => $err,
-            'wepoint_raw' => $resp,
-            'sent' => $payload,
-            'message' => $json['message'] ?? 'Wepoint rechazó el aviso',
+            'message' => $json['message'] ?? ($err ?: 'Wepoint rechazó el aviso'),
+            'errors' => $json['errors'] ?? null,
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
@@ -811,19 +862,20 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     $usuario = $_SESSION['Usuario'] ?? 'Sistema';
     $estado = 'IN OK';
     $tipo = 'IN';
+    $idsPorCodigo = array_column(array_map(fn($b) => [$b['codigo_seguimiento'], $b['id_caddy']], $bultos), 1, 0);
 
-    // Un row por pieza (id_wepoint = id del bulto en Wepoint); el envío queda marcado como enviado.
+    // Un row por pieza (id_wepoint = id del bulto en Wepoint); cada envío y el padre quedan
+    // marcados como avisados (wepoint_id = último row de wepoint_api).
     $ins = $mysqli->prepare("INSERT INTO wepoint_api
         (`Time`, `no_referencia`, `nro_orden_ingreso_bulto`, `CodigoSeguimiento`, `CodigoSeguimiento_enviado`,
          `id_wepoint`, `Usuario`, `Estado`, `tipo`, `http_code`)
         VALUES (?,?,?,?,?,?,?,?,?,?)");
-    $upd = $mysqli->prepare("UPDATE TransClientes SET wepoint_id = ?
-        WHERE CodigoSeguimiento = ? AND Eliminado = 0 AND (wepoint_id = 0 OR wepoint_id IS NULL)");
+    $upd = $mysqli->prepare("UPDATE TransClientes SET wepoint_id = ? WHERE id = ? AND (wepoint_id = 0 OR wepoint_id IS NULL)");
 
     $enviados = [];
+    $ultimoId = 0;
     foreach (array_merge($data['nuevos'] ?? [], $data['ya_informados'] ?? []) as $envio) {
         $codigo = (string)$envio['codigo_seguimiento'];
-        $ultimoId = 0;
         foreach ($envio['bultos'] ?? [] as $pieza) {
             $serie = (string)$pieza['nro_serie'];
             $idBulto = (int)$pieza['id_bulto'];
@@ -831,84 +883,29 @@ if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
             $ins->execute();
             $ultimoId = $ins->insert_id ?: $ultimoId;
         }
-        if ($ultimoId) {
-            $upd->bind_param('is', $ultimoId, $codigo);
+        if ($ultimoId && isset($idsPorCodigo[$codigo])) {
+            $idTc = (int)$idsPorCodigo[$codigo];
+            $upd->bind_param('ii', $ultimoId, $idTc);
             $upd->execute();
         }
         $enviados[] = $codigo;
+    }
+    if ($ultimoId && $enviados) {
+        $upd->bind_param('ii', $ultimoId, $idPadre);
+        $upd->execute();
     }
     $ins->close();
     $upd->close();
 
     echo json_encode([
-        'http_code' => $http,
-        'no_referencia' => $noRef,
+        'ok' => true,
+        'referencia' => $noRef,
         'nro_orden_ingreso_bulto' => $nroOIB,
-        'cantidad' => array_sum(array_column($bultos, 'piezas')),
+        'piezas' => array_sum(array_column($bultos, 'piezas')),
         'enviados' => $enviados,
         'rechazados' => $data['rechazados'] ?? [],
         'sin_remitente' => $sinRemitente,
-        'excluidos' => array_keys($excluir),
-        'wepoint_raw' => $resp,
     ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-// === Handler: Servicios por Orden (lista de CodigoSeguimiento) ===
-if (isset($_POST['ServiciosPorOrden']) && (int)$_POST['ServiciosPorOrden'] === 1) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    $numeroOrden = isset($_POST['NumerodeOrden']) ? (int)$_POST['NumerodeOrden'] : 0;
-    if ($numeroOrden <= 0) {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'message' => 'Falta NumerodeOrden']);
-        exit;
-    }
-
-    if (!isset($mysqli)) {
-        include_once '../../../Conexion/Conexioni.php';
-    }
-    if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'message' => 'No hay conexión a base de datos ($mysqli)']);
-        exit;
-    }
-
-    $sql = "SELECT CodigoSeguimiento,RazonSocial AS Origen, ClienteDestino AS Destino,Cantidad
-            FROM TransClientes            
-            WHERE idClienteDestino = ?
-              AND NumerodeOrden = ?
-              AND Entregado = 0
-              AND Devuelto = 0
-              AND Eliminado = 0
-              AND Haber = 0
-              AND (wepoint_id = 0 OR wepoint_id IS NULL)";
-
-    $rows = [];
-    $idWepoint = ID_WEPOINT;
-
-    if ($st = $mysqli->prepare($sql)) {
-
-        $st->bind_param('ii', $idWepoint, $numeroOrden);
-
-        if ($st->execute()) {
-            $res = $st->get_result();
-            while ($r = $res->fetch_assoc()) {
-                $rows[] = $r;
-            }
-        } else {
-            http_response_code(500);
-            echo json_encode(['ok' => false, 'message' => $st->error, 'data' => []]);
-            $st->close();
-            exit;
-        }
-        $st->close();
-    } else {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'message' => $mysqli->error, 'data' => []]);
-        exit;
-    }
-
-    echo json_encode(['data' => $rows], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -970,7 +967,7 @@ if (isset($_POST['Todas']) && (int)$_POST['Todas'] === 1) {
     $rows = [];
 
     // Seleccioná columnas explícitas
-    $sql = "SELECT  `Time` AS Fecha,`no_referencia`, `nro_orden_ingreso_bulto` AS NumerodeOrden, `CodigoSeguimiento_enviado`, `Usuario`, `id_wepoint`,`Estado` FROM wepoint_api";
+    $sql = "SELECT  `Time` AS Fecha,`no_referencia`, `nro_orden_ingreso_bulto` AS NumerodeOrden, `CodigoSeguimiento_enviado`, `Usuario`, `id_wepoint`,`Estado` FROM wepoint_api ORDER BY id DESC";
 
     if ($res = $mysqli->query($sql)) {
         while ($r = $res->fetch_assoc()) {
