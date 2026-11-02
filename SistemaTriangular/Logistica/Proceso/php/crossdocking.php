@@ -498,7 +498,9 @@ if (isset($_POST['EscanearCrossdocking'])) {
         $recorridoNum ?: null
     );
 
-    $wepoint = !$esRepetido && wepoint_modo($mysqli) === 'operativo'
+    // También en un escaneo repetido: si antes estaba en manual o Wepoint no respondió, volver a
+    // escanear lo recibe (Wepoint no duplica: lo ya recibido vuelve como ya_recibidos).
+    $wepoint = wepoint_modo($mysqli) === 'operativo'
         ? cd_avisar_wepoint($mysqli, $idTC, $bultoSufijo)
         : null;
 
