@@ -39,6 +39,59 @@ ini_set('display_errors', '1');
 if (!isset($mysqli)) {
     include_once '../../../Conexion/Conexioni.php';
 }
+require_once __DIR__ . '/wepoint_lib.php';
+
+/**
+ * Modo operativo de Logística > Wepoint: el bulto escaneado acá se da de alta en Wepoint (aviso
+ * previo del envío completo, Flex = crossdock y el resto tránsito) y se da por recibido, sin
+ * escanearlo de nuevo en Wepoint. Todos los escaneos del día van a la misma orden de ingreso.
+ * Si Wepoint no responde, el escaneo en Caddy sigue igual y el envío queda pendiente en
+ * Logística > Wepoint para mandarlo a mano.
+ */
+function cd_avisar_wepoint(mysqli $mysqli, int $idTC, ?string $sufijo): array
+{
+    $st = $mysqli->prepare("SELECT " . wepoint_campos_tc() . " FROM TransClientes TC
+                             LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen WHERE TC.id = ?");
+    $st->bind_param('i', $idTC);
+    $st->execute();
+    $fila = $st->get_result()->fetch_assoc();
+    $st->close();
+
+    if (!$fila || (int)$fila['idClienteOrigen'] <= 0) {
+        return ['ok' => false, 'mensaje' => 'Sin cliente de origen: no se avisó a Wepoint'];
+    }
+
+    $bulto = wepoint_bulto_payload($fila, wepoint_modalidad_sugerida($fila));
+    $serie = $bulto['piezas'] > 1 ? $bulto['codigo_seguimiento'] . '_' . ($sufijo ?: '1') : $bulto['codigo_seguimiento'];
+    $noRef = 'CROSSDOCKING-' . date('Y-m-d');
+
+    [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/preavisos', [
+        'referencia' => $noRef,
+        'fecha' => date('Y-m-d'),
+        'recibir' => [$serie],
+        'bultos' => [$bulto],
+    ], 8);
+    $json = json_decode((string)$resp, true);
+
+    if ($http < 200 || $http >= 300 || !is_array($json)) {
+        error_log("CrossDocking -> Wepoint ($serie): HTTP $http $err " . substr((string)$resp, 0, 300));
+        return ['ok' => false, 'mensaje' => 'Wepoint no respondió: queda pendiente en Logística > Wepoint'];
+    }
+
+    $data = $json['data'] ?? [];
+    wepoint_guardar_respuesta($mysqli, $data, [$bulto], $noRef, $http);
+    $recepcion = $data['recepcion'] ?? [];
+    $rechazo = $data['rechazados'][0]['motivo'] ?? null;
+
+    return [
+        'ok' => $rechazo === null,
+        'recibido' => in_array($serie, array_merge($recepcion['recibidos'] ?? [], $recepcion['ya_recibidos'] ?? []), true),
+        'serie' => $serie,
+        'modalidad' => $bulto['modalidad'],
+        'orden' => $data['nro_orden_ingreso_bulto'] ?? null,
+        'mensaje' => $rechazo,
+    ];
+}
 
 // Igual criterio que parseCaddyBase() de colecta_scan.php: "BASE_2" -> "BASE"
 function cd_base(string $raw): string
@@ -445,6 +498,10 @@ if (isset($_POST['EscanearCrossdocking'])) {
         $recorridoNum ?: null
     );
 
+    $wepoint = !$esRepetido && wepoint_modo($mysqli) === 'operativo'
+        ? cd_avisar_wepoint($mysqli, $idTC, $bultoSufijo)
+        : null;
+
     $bultoTotal = max(1, (int)($row['Cantidad'] ?? 1));
     $bultoActual = min($bultoTotal, cd_bultos_escaneados_hoy($mysqli, $ahoraFecha, $idTC));
 
@@ -478,6 +535,7 @@ if (isset($_POST['EscanearCrossdocking'])) {
         'yaIngresado'       => $esRepetido,
         'wepointFAnterior'  => $marca['wepointFAnterior'],
         'hora'              => $marca['hora'],
+        'wepoint'           => $wepoint,
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

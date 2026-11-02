@@ -9,6 +9,12 @@
     almacenamiento: "Almacenamiento",
   };
 
+  const TIPOS = {
+    Colecta: "bg-primary-lighten text-primary",
+    Servicio: "bg-secondary-lighten text-secondary",
+    CrossDocking: "bg-warning-lighten text-warning",
+  };
+
   let pendientes = [];
   let actual = null; // colecta abierta en el modal
 
@@ -58,7 +64,7 @@
         <tr data-id="${p.id}">
           <td>${fecha(p.Fecha)}</td>
           <td>
-            <span class="badge ${p.tipo === "Colecta" ? "bg-primary-lighten text-primary" : "bg-secondary-lighten text-secondary"} me-1">${p.tipo}</span>
+            <span class="badge ${TIPOS[p.tipo] || "bg-secondary-lighten text-secondary"} me-1" ${p.tipo === "CrossDocking" ? 'title="Escaneado en CrossDocking pero Wepoint no lo recibió"' : ""}>${p.tipo}</span>
             <strong>${esc(p.Origen)}</strong>
             <div class="text-muted small">${esc(p.Domicilio)}</div>
           </td>
@@ -176,8 +182,36 @@
       .always(() => $btn.html('<i class="uil-cloud-upload"></i> Enviar a Wepoint').prop("disabled", false));
   }
 
+  function mostrarModo(modo) {
+    $(`#wp-modo-${modo}`).prop("checked", true);
+    $("#wp-aviso-operativo").toggle(modo === "operativo");
+  }
+
+  function cambiarModo() {
+    const modo = $('input[name="wp-modo"]:checked').val();
+    const operativo = modo === "operativo";
+    Swal.fire({
+      icon: "question",
+      title: operativo ? "¿Pasar a modo operativo?" : "¿Pasar a modo manual?",
+      text: operativo
+        ? "Cada bulto que se escanee en CrossDocking se da de alta y se recibe en Wepoint en el momento (Flex como crossdock, el resto en tránsito)."
+        : "El escaneo en CrossDocking deja de avisar a Wepoint: los envíos se revisan y se mandan desde esta pantalla.",
+      showCancelButton: true,
+      confirmButtonText: "Sí, cambiar",
+      cancelButtonText: "Cancelar",
+    }).then((r) => {
+      if (!r.isConfirmed) {
+        mostrarModo(operativo ? "manual" : "operativo");
+        return;
+      }
+      $.post(URL_WEPOINT, { ModoIngreso: 1, modo }, null, "json").done((resp) => mostrarModo(resp.modo));
+    });
+  }
+
   $(function () {
     cargar();
+    $.post(URL_WEPOINT, { ModoIngreso: 1 }, null, "json").done((r) => mostrarModo(r.modo));
+    $('input[name="wp-modo"]').on("change", cambiarModo);
     $("#wp-dias").on("change", cargar);
     $("#wp-refrescar").on("click", cargar);
     $("#wp-buscar").on("input", pintar);
