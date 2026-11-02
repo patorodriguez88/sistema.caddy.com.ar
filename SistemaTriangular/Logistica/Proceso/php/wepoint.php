@@ -580,267 +580,68 @@ register_shutdown_function(function () {
     }
 });
 // ==========================================================================
-// INGRESO A WEPOINT POR COLECTA
-// Lo pendiente de avisar son los servicios con destino Wepoint (18587) que todavía no se
-// mandaron: el "padre" de cada colecta (cliente -> Wepoint) o un servicio suelto a Wepoint.
-// No depende de la orden de logística (si el recorrido no tenía una abierta quedaba en 0 y se
-// mezclaba con todo lo viejo). Lo que llega físicamente al depósito son los hijos de la colecta
-// (cada uno con su etiqueta y su destinatario final); si la colecta no tiene hijos, el padre.
+// PANEL DE WEPOINT (Logística > Wepoint)
+// Lo que se escanea en CrossDocking (ingreso) y lo que carga el chofer en la app de reparto
+// (salida) va a la cola wepoint_cola y se le manda a Wepoint sin frenar el escaneo. Acá se ve lo
+// que Wepoint todavía no confirmó, lo que tiene en el depósito y lo que salió.
 // ==========================================================================
 
-/** Bultos que se le avisan a Wepoint por un padre/servicio pendiente. [padre, filas] */
-function wepoint_bultos_de_grupo(mysqli $mysqli, int $idPadre): array
-{
-    $idWepoint = ID_WEPOINT;
-    $st = $mysqli->prepare("SELECT id, idColecta FROM TransClientes
-        WHERE id = ? AND (idClienteDestino = ? OR Wepoint_status = 'Ingreso')
-          AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0
-          AND (wepoint_id = 0 OR wepoint_id IS NULL)");
-    $st->bind_param('ii', $idPadre, $idWepoint);
-    $st->execute();
-    $padre = $st->get_result()->fetch_assoc();
-    $st->close();
-    if (!$padre) {
-        return [null, []];
-    }
-
-    $campos = wepoint_campos_tc();
-
-    $filas = [];
-    $tieneHijos = false;
-    $idColecta = (int)$padre['idColecta'];
-    if ($idColecta > 0) {
-        $r = $mysqli->query("SELECT COUNT(*) AS n FROM TransClientes WHERE idColecta = {$idColecta} AND id <> {$idPadre} AND Eliminado = 0");
-        $tieneHijos = (int)$r->fetch_assoc()['n'] > 0;
-
-        $st = $mysqli->prepare("SELECT $campos FROM TransClientes TC LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen
-            WHERE TC.idColecta = ? AND TC.id <> ? AND TC.Eliminado = 0 AND TC.Entregado = 0 AND TC.Devuelto = 0
-              AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
-            ORDER BY TC.id");
-        $st->bind_param('ii', $idColecta, $idPadre);
-        $st->execute();
-        $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
-        $st->close();
-    }
-    // Si la colecta tiene hijos, los que ya entraron (p. ej. por CrossDocking) no se vuelven a mandar
-    // y el padre no es un bulto: solo cuando no tiene hijos se manda el padre.
-    if (!$filas && !$tieneHijos) {
-        $st = $mysqli->prepare("SELECT $campos FROM TransClientes TC LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen WHERE TC.id = ?");
-        $st->bind_param('i', $idPadre);
-        $st->execute();
-        $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
-        $st->close();
-    }
-
-    foreach ($filas as &$f) {
-        $f['ModalidadSugerida'] = wepoint_modalidad_sugerida($f);
-    }
-    unset($f);
-
-    return [$padre, $filas];
-}
-
-// Modo de ingreso (manual / operativo)
-if (isset($_POST['ModoIngreso'])) {
+// Manda la cola a Wepoint (lo llama CrossDocking después de cada escaneo y el panel cada tanto).
+// Suelta la sesión antes: si no, el próximo escaneo de la misma persona esperaría a que termine.
+if (isset($_POST['ProcesarCola'])) {
     header('Content-Type: application/json; charset=utf-8');
-    $modo = isset($_POST['modo'])
-        ? wepoint_guardar_modo($mysqli, (string)$_POST['modo'], (string)($_SESSION['Usuario'] ?? 'Sistema'))
-        : wepoint_modo($mysqli);
-    echo json_encode(['ok' => true, 'modo' => $modo]);
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+    echo json_encode(['ok' => true] + wepoint_procesar_cola($mysqli));
     exit;
 }
 
-// Lista: un renglón por colecta (o servicio suelto a Wepoint) pendiente de avisar
-if (isset($_POST['IngresosPendientes']) && (int)$_POST['IngresosPendientes'] === 1) {
+// Lo que Wepoint todavía no confirmó, y cuánto se confirmó hoy
+if (isset($_POST['ColaWepoint'])) {
     header('Content-Type: application/json; charset=utf-8');
-
-    $dias = max(1, min(365, (int)($_POST['dias'] ?? 30)));
-    $idWepoint = ID_WEPOINT;
-    $st = $mysqli->prepare("SELECT P.id, P.idColecta, P.Fecha, P.CodigoSeguimiento, P.RazonSocial, P.DomicilioOrigen,
-               P.Recorrido, P.NumerodeOrden, P.Cantidad,
-               (SELECT COUNT(*) FROM TransClientes H
-                 WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id
-                   AND H.Eliminado = 0 AND H.Entregado = 0 AND H.Devuelto = 0
-                   AND (H.wepoint_id = 0 OR H.wepoint_id IS NULL)) AS Hijos,
-               (SELECT COUNT(*) FROM TransClientes H
-                 WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id AND H.Eliminado = 0) AS HijosTotal,
-               (SELECT COALESCE(SUM(GREATEST(H.Cantidad, 1)), 0) FROM TransClientes H
-                 WHERE P.idColecta > 0 AND H.idColecta = P.idColecta AND H.id <> P.id
-                   AND H.Eliminado = 0 AND H.Entregado = 0 AND H.Devuelto = 0
-                   AND (H.wepoint_id = 0 OR H.wepoint_id IS NULL)) AS PiezasHijos
-        FROM TransClientes P
-        WHERE P.idClienteDestino = ? AND P.Eliminado = 0 AND P.Entregado = 0 AND P.Devuelto = 0 AND P.Haber = 0
-          AND (P.wepoint_id = 0 OR P.wepoint_id IS NULL)
-          AND P.Fecha >= CURDATE() - INTERVAL ? DAY
-        ORDER BY P.Fecha DESC, P.id DESC");
-    $st->bind_param('ii', $idWepoint, $dias);
-    $st->execute();
-    $padres = $st->get_result()->fetch_all(MYSQLI_ASSOC);
-    $st->close();
-    $rows = [];
-
-    // Escaneados en CrossDocking que no se le pudieron avisar a Wepoint (sueltos: los hijos de una
-    // colecta aparecen dentro de su colecta)
-    $sc = $mysqli->prepare("SELECT id, Wepoint_f, CodigoSeguimiento, RazonSocial, DomicilioOrigen, Recorrido, NumerodeOrden, Cantidad
-        FROM TransClientes
-        WHERE Wepoint_status = 'Ingreso' AND idClienteDestino <> ? AND (idColecta IS NULL OR idColecta = 0)
-          AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0 AND Haber = 0
-          AND (wepoint_id = 0 OR wepoint_id IS NULL)
-          AND Wepoint_f >= CURDATE() - INTERVAL ? DAY
-        ORDER BY Wepoint_f DESC, id DESC");
-    $sc->bind_param('ii', $idWepoint, $dias);
-    $sc->execute();
-    foreach ($sc->get_result()->fetch_all(MYSQLI_ASSOC) as $r) {
-        $rows[] = [
-            'id' => (int)$r['id'],
-            'tipo' => 'CrossDocking',
-            'idColecta' => 0,
-            'Fecha' => $r['Wepoint_f'],
-            'Codigo' => $r['CodigoSeguimiento'],
-            'Origen' => $r['RazonSocial'],
-            'Domicilio' => $r['DomicilioOrigen'],
-            'Recorrido' => $r['Recorrido'],
-            'NumerodeOrden' => (int)$r['NumerodeOrden'],
-            'Envios' => 1,
-            'Piezas' => max(1, (int)$r['Cantidad']),
-        ];
-    }
-    $sc->close();
-    foreach ($padres as $r) {
-        $hijos = (int)$r['Hijos'];
-        if ((int)$r['HijosTotal'] > 0 && $hijos === 0) {
-            continue; // todos sus envíos ya entraron a Wepoint (p. ej. escaneados en CrossDocking)
-        }
-        $rows[] = [
-            'id' => (int)$r['id'],
-            'tipo' => (int)$r['idColecta'] > 0 ? 'Colecta' : 'Servicio',
-            'idColecta' => (int)$r['idColecta'],
-            'Fecha' => $r['Fecha'],
-            'Codigo' => $r['CodigoSeguimiento'],
-            'Origen' => $r['RazonSocial'],
-            'Domicilio' => $r['DomicilioOrigen'],
-            'Recorrido' => $r['Recorrido'],
-            'NumerodeOrden' => (int)$r['NumerodeOrden'],
-            'Envios' => $hijos > 0 ? $hijos : 1,
-            'Piezas' => $hijos > 0 ? (int)$r['PiezasHijos'] : max(1, (int)$r['Cantidad']),
-        ];
-    }
-    usort($rows, fn($a, $b) => strcmp((string)$b['Fecha'], (string)$a['Fecha']) ?: $b['id'] <=> $a['id']);
-
-    echo json_encode(['data' => $rows], JSON_UNESCAPED_UNICODE);
+    wepoint_cola_tabla($mysqli);
+    $pendientes = $mysqli->query("SELECT c.id, c.tipo, c.codigo, c.serie, c.fecha, c.recorrido, c.chofer, c.estado,
+               c.intentos, c.proximo_intento, c.ultimo_error, c.creado_en, TC.RazonSocial AS Origen, TC.ClienteDestino AS Destino
+        FROM wepoint_cola c LEFT JOIN TransClientes TC ON TC.id = c.id_tc
+        WHERE c.estado IN ('pendiente', 'error')
+        ORDER BY c.creado_en DESC LIMIT 1000")->fetch_all(MYSQLI_ASSOC);
+    $hoy = $mysqli->query("SELECT tipo, COUNT(*) AS n FROM wepoint_cola WHERE estado = 'ok' AND enviado_en >= CURDATE() GROUP BY tipo")
+        ->fetch_all(MYSQLI_ASSOC);
+    echo json_encode(['ok' => true, 'data' => $pendientes, 'confirmados_hoy' => array_column($hoy, 'n', 'tipo')], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-// Detalle: los bultos que se le van a avisar a Wepoint por esa colecta
-if (isset($_POST['IngresoDetalle']) && (int)$_POST['IngresoDetalle'] === 1) {
+// Reintentar ya (todo lo que falló, o los ids indicados)
+if (isset($_POST['ReintentarCola'])) {
     header('Content-Type: application/json; charset=utf-8');
-
-    [$padre, $filas] = wepoint_bultos_de_grupo($mysqli, (int)($_POST['id'] ?? 0));
-    if (!$padre) {
-        http_response_code(404);
-        echo json_encode(['ok' => false, 'message' => 'Ya se avisó o no está pendiente']);
-        exit;
+    wepoint_cola_tabla($mysqli);
+    $ids = array_filter(array_map('intval', json_decode((string)($_POST['ids'] ?? '[]'), true) ?: []));
+    $donde = $ids ? 'id IN (' . implode(',', $ids) . ')' : "estado = 'error'";
+    $mysqli->query("UPDATE wepoint_cola SET proximo_intento = NOW() WHERE estado IN ('pendiente', 'error') AND $donde");
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
     }
-
-    echo json_encode(['ok' => true, 'data' => array_map(fn($f) => [
-        'id' => (int)$f['id'],
-        'Codigo' => $f['CodigoSeguimiento'],
-        'Piezas' => max(1, (int)$f['Cantidad']),
-        'Destino' => $f['ClienteDestino'],
-        'Domicilio' => trim($f['DomicilioDestino'] . ', ' . $f['LocalidadDestino'], ', '),
-        'Flex' => (int)$f['Flex'] === 1,
-        'Modalidad' => $f['ModalidadSugerida'],
-    ], $filas)], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => true] + wepoint_procesar_cola($mysqli));
     exit;
 }
 
-// Envío del aviso previo a Wepoint (POST /api/v2/integraciones/caddy/preavisos): un elemento por
-// envío con sus piezas, el cliente de origen (en Wepoint queda como dueño) y la modalidad elegida.
-// Wepoint crea un bulto por pieza (CODIGO o CODIGO_n, como la etiqueta) y devuelve el id de cada
-// uno, que se guarda en wepoint_api para armar después el egreso. Reenviar no duplica en Wepoint.
-if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
+// Lo que Wepoint tiene en el depósito (vista=en_deposito) o lo que salió entre fechas (vista=salieron)
+if (isset($_POST['BultosWepoint'])) {
     header('Content-Type: application/json; charset=utf-8');
-
-    $idPadre = (int)($_POST['id'] ?? 0);
-    [$padre, $filas] = wepoint_bultos_de_grupo($mysqli, $idPadre);
-    if (!$padre) {
-        http_response_code(404);
-        echo json_encode(['ok' => false, 'message' => 'Ya se avisó o no está pendiente']);
-        exit;
-    }
-
-    $excluir = $_POST['Excluir'] ?? [];
-    $excluir = array_flip(array_map('intval', is_array($excluir) ? $excluir : (json_decode((string)$excluir, true) ?: [])));
-    $modalidades = $_POST['Modalidades'] ?? [];
-    $modalidades = is_array($modalidades) ? $modalidades : (json_decode((string)$modalidades, true) ?: []);
-
-    $bultos = [];
-    $sinRemitente = [];
-    foreach ($filas as $f) {
-        $codigo = trim((string)$f['CodigoSeguimiento']);
-        if ($codigo === '' || isset($excluir[(int)$f['id']])) {
-            continue;
-        }
-        if ((int)$f['idClienteOrigen'] <= 0) {
-            $sinRemitente[] = $codigo;
-            continue;
-        }
-        $bultos[] = wepoint_bulto_payload($f, $modalidades[$f['id']] ?? $f['ModalidadSugerida']);
-    }
-
-    if (!$bultos) {
-        http_response_code(422);
-        echo json_encode([
-            'ok' => false,
-            'message' => $sinRemitente
-                ? 'Los envíos no tienen cliente de origen: ' . implode(', ', $sinRemitente)
-                : 'No quedó ningún envío para avisar',
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
-    }
-
-    $noRef = (int)$padre['idColecta'] > 0 ? 'COLECTA-' . (int)$padre['idColecta'] : 'SERVICIO-' . $idPadre;
-    $filas = array_values(array_filter($filas, fn($f) => !isset($excluir[(int)$f['id']])));
-    $payload = ['referencia' => $noRef, 'fecha' => date('Y-m-d'), 'bultos' => $bultos];
-    // Lo que ya se escaneó en CrossDocking está físicamente en el depósito: se da por recibido
-    $escaneados = array_column(array_filter($filas, fn($f) => $f['Wepoint_status'] === 'Ingreso'), 'id');
-    $recibir = [];
-    foreach ($bultos as $b) {
-        if (in_array($b['id_caddy'], $escaneados)) {
-            $recibir = array_merge($recibir, wepoint_series($b));
-        }
-    }
-    if ($recibir) {
-        $payload['recibir'] = $recibir;
-    }
-    [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/preavisos', $payload);
+    $params = array_filter([
+        'vista' => ($_POST['vista'] ?? '') === 'salieron' ? 'salieron' : 'en_deposito',
+        'desde' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_POST['desde'] ?? '')) ? $_POST['desde'] : null,
+        'hasta' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_POST['hasta'] ?? '')) ? $_POST['hasta'] : null,
+    ]);
+    [$http, $err, $resp] = wepoint_request('GET', '/api/v2/integraciones/caddy/bultos?' . http_build_query($params), null, 20);
     $json = json_decode((string)$resp, true);
-
-    if ($http < 200 || $http >= 300 || !is_array($json)) {
-        http_response_code($http ?: 502);
-        echo json_encode([
-            'ok' => false,
-            'http_code' => $http,
-            'curl_error' => $err,
-            'message' => $json['message'] ?? ($err ?: 'Wepoint rechazó el aviso'),
-            'errors' => $json['errors'] ?? null,
-        ], JSON_UNESCAPED_UNICODE);
+    if ($http !== 200 || !is_array($json)) {
+        http_response_code(502);
+        echo json_encode(['ok' => false, 'message' => $http ? "Wepoint respondió HTTP $http" : ($err ?: 'Wepoint no responde')]);
         exit;
     }
-
-    $data = $json['data'] ?? [];
-    $nroOIB = (string)($data['nro_orden_ingreso_bulto'] ?? '');
-    $enviados = wepoint_guardar_respuesta($mysqli, $data, $bultos, $noRef, $http, [$idPadre]);
-
-    echo json_encode([
-        'ok' => true,
-        'referencia' => $noRef,
-        'nro_orden_ingreso_bulto' => $nroOIB,
-        'piezas' => array_sum(array_column($bultos, 'piezas')),
-        'enviados' => $enviados,
-        'rechazados' => $data['rechazados'] ?? [],
-        'sin_remitente' => $sinRemitente,
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => true] + ($json['data'] ?? []), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
