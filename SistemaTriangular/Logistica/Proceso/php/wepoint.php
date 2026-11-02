@@ -10,35 +10,60 @@ if (!isset($mysqli)) {
     include_once '../../../Conexion/Conexioni.php';
 }
 
-//LOGIN
-if (isset($_POST['login_wepoint'])) {
-    $curl = curl_init();
-
-    curl_setopt_array($curl, array(
-        CURLOPT_URL => 'https://sandbox-lv.wepoint.ar/api/auth/login',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_ENCODING => '',
-        CURLOPT_MAXREDIRS => 10,
-        CURLOPT_TIMEOUT => 0,
-        CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => '{
-        "email": "prodriguez@caddy.com.ar",
-        "password": "pato4986"
-        }',
-        CURLOPT_HTTPHEADER => array(
-            'Accept: application/json',
-            'Content-Type: application/json'
-        ),
-    ));
-
-    $response = curl_exec($curl);
-
-    curl_close($curl);
-    echo $response;
+// URL y token de la API de Wepoint (usuario de integración de la empresa Caddy): están en
+// Conexion/wepoint_config.php, fuera del repositorio (ver wepoint_config.example.php).
+function wepoint_config(): array
+{
+    static $config = null;
+    if ($config === null) {
+        $archivo = __DIR__ . '/../../../Conexion/wepoint_config.php';
+        if (is_file($archivo)) {
+            require_once $archivo;
+        }
+        $config = [
+            'url' => rtrim(defined('WEPOINT_API_URL') ? WEPOINT_API_URL : '', '/'),
+            'token' => defined('WEPOINT_API_TOKEN') ? WEPOINT_API_TOKEN : '',
+        ];
+    }
+    return $config;
 }
 
+function wepoint_url(string $path): string
+{
+    return wepoint_config()['url'] . $path;
+}
+
+function wepoint_token(): string
+{
+    $token = wepoint_config()['token'];
+    return $token === '' ? '' : 'Bearer ' . $token;
+}
+
+/** @return array{0:int,1:string,2:string|false} [http, error de curl, cuerpo] */
+function wepoint_request(string $method, string $path, ?array $body = null): array
+{
+    if (wepoint_config()['url'] === '' || wepoint_token() === '') {
+        return [0, 'Falta configurar Conexion/wepoint_config.php', false];
+    }
+    $ch = curl_init();
+    curl_setopt_array($ch, [
+        CURLOPT_URL => wepoint_url($path),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 60,
+        CURLOPT_CUSTOMREQUEST => $method,
+        CURLOPT_POSTFIELDS => $body === null ? null : json_encode($body, JSON_UNESCAPED_UNICODE),
+        CURLOPT_HTTPHEADER => [
+            'Accept: application/json',
+            'Content-Type: application/json',
+            'Authorization: ' . wepoint_token(),
+        ],
+    ]);
+    $resp = curl_exec($ch);
+    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $err = curl_error($ch);
+    curl_close($ch);
+    return [$http, $err, $resp];
+}
 
 /** ===========================================================
  * PRECHECK EGRESO: cuenta cuántos códigos de la orden tienen id_wepoint (id_bulto) y devuelve el detalle
@@ -220,10 +245,7 @@ if (isset($_POST['DetalleEgresoPorOrden']) && (int)$_POST['DetalleEgresoPorOrden
     ini_set('display_errors', 1);
 
     // Token para consultar estado en WePoint
-    $token = isset($_POST['token']) ? trim($_POST['token']) : '';
-    if ($token !== '' && stripos($token, 'Bearer ') !== 0) {
-        $token = 'Bearer ' . $token;
-    }
+    $token = wepoint_token();
 
     $orden = isset($_POST['NumerodeOrden']) ? (int)$_POST['NumerodeOrden'] : 0;
     if ($orden <= 0) {
@@ -402,7 +424,7 @@ function wepoint_get_bulto_estado(string $token, int $idWe): array
 {
     $ch = curl_init();
     curl_setopt_array($ch, [
-        CURLOPT_URL => 'https://sandbox-lv.wepoint.ar/api/v2/bultos/' . $idWe,
+        CURLOPT_URL => wepoint_url('/api/v2/bultos/' . $idWe),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
@@ -445,11 +467,10 @@ if (isset($_POST['CrearEgreso']) && (int)$_POST['CrearEgreso'] === 1) {
     header('Content-Type: application/json; charset=utf-8');
 
     // Token
-    $token = isset($_POST['token']) ? trim($_POST['token']) : '';
-    if ($token !== '' && stripos($token, 'Bearer ') !== 0) $token = 'Bearer ' . $token;
+    $token = wepoint_token();
     if ($token === '') {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'message' => 'Falta token']);
+        http_response_code(500);
+        echo json_encode(['ok' => false, 'message' => 'Falta configurar Conexion/wepoint_config.php']);
         exit;
     }
 
@@ -543,7 +564,7 @@ if (isset($_POST['CrearEgreso']) && (int)$_POST['CrearEgreso'] === 1) {
     // cURL al endpoint v2 egresos/bultos
     $ch = curl_init();
     curl_setopt_array($ch, [
-        CURLOPT_URL => 'https://sandbox-lv.wepoint.ar/api/v2/egresos/bultos',
+        CURLOPT_URL => wepoint_url('/api/v2/egresos/bultos'),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_ENCODING => '',
         CURLOPT_MAXREDIRS => 10,
@@ -613,237 +634,6 @@ register_shutdown_function(function () {
         ], JSON_UNESCAPED_UNICODE);
     }
 });
-function post_wepoint_oib($token, $payloadArr)
-{
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL => 'https://sandbox-lv.wepoint.ar/api/orden-ingreso/create',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 30,
-        CURLOPT_CUSTOMREQUEST => 'POST',
-        CURLOPT_POSTFIELDS => json_encode($payloadArr, JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER => [
-            'Accept: application/json',
-            'Content-Type: application/json',
-            'Authorization: ' . $token,
-        ],
-    ]);
-    $resp = curl_exec($ch);
-    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err  = curl_error($ch);
-    curl_close($ch);
-    return [$http, $err, $resp];
-}
-/**
- * 
- * Devuelve el id_proveedor de WePoint.
- * - Intenta con el “natural” si lo tenés (p.ej. mapeo propio). Si no, o si falla, cae al flujo pedido:
- *   HR.idTransClientes -> TransClientes.idClienteOrigen -> Clientes.wepoint_id (si hay)
- *   Si no hay, crea proveedor en WePoint con datos de Clientes y actualiza su wepoint_id.
- *
- * @return array [bool ok, int|0 wepointProveedorId, array|null debug]
- */
-function resolver_wepoint_proveedor(mysqli $mysqli, string $token, array $hrRow)
-{
-    // 1) Con idTransClientes obtener idClienteOrigen
-    $idClienteOrigen = null;
-    if (!empty($hrRow['idTransClientes'])) {
-        if ($st = $mysqli->prepare("SELECT idClienteOrigen FROM TransClientes WHERE id = ? LIMIT 1")) {
-            $st->bind_param('i', $hrRow['idTransClientes']);
-            if ($st->execute()) {
-                $res = $st->get_result()->fetch_assoc();
-                $idClienteOrigen = $res['idClienteOrigen'] ?? null;
-            }
-            $st->close();
-        }
-    }
-    if (empty($idClienteOrigen)) {
-        return [false, 0, ['msg' => 'No se pudo resolver idClienteOrigen desde TransClientes', 'idTransClientes' => $hrRow['idTransClientes'] ?? null]];
-    }
-
-    // 2) Buscar en Clientes ese id
-    if ($st = $mysqli->prepare("SELECT id, nombrecliente, Telefono, Mail, Direccion, wepoint_id FROM Clientes WHERE id = ? LIMIT 1")) {
-        $st->bind_param('i', $idClienteOrigen);
-        if ($st->execute()) {
-            $cli = $st->get_result()->fetch_assoc();
-        }
-        $st->close();
-    }
-    if (empty($cli)) {
-        return [false, 0, ['msg' => 'Cliente origen no existe en Clientes', 'cliente_id' => $idClienteOrigen]];
-    }
-
-    // 3) Si ya tiene wepoint_id ⇒ usarlo como proveedor
-    $wpProvId = (int)($cli['wepoint_id'] ?? 0);
-    if ($wpProvId > 0) {
-        return [true, $wpProvId, ['source' => 'Clientes.wepoint_id']];
-    }
-
-    // 4) No tiene wepoint_id ⇒ crearlo como proveedor en WePoint
-    list($ok, $newProvId, $raw, $sent) = wepoint_create_proveedor($token, $cli);
-    if (!$ok || !$newProvId) {
-        return [false, 0, [
-            'msg' => 'No se pudo crear proveedor en WePoint',
-            'wepoint_sent' => $sent,
-            'wepoint_response' => $raw
-        ]];
-    }
-
-    // 5) Guardar el id de proveedor en Clientes.wepoint_id (o en tu campo para proveedores)
-    if ($upd = $mysqli->prepare('UPDATE Clientes SET wepoint_id = ? WHERE id = ? LIMIT 1')) {
-        $upd->bind_param('ii', $newProvId, $cli['id']);
-        $upd->execute();
-        $upd->close();
-    }
-
-    return [true, (int)$newProvId, ['source' => 'created']];
-}
-function wepoint_create_proveedor(string $token, array $provData)
-{
-    // Normalización mínima y defaults
-    $nombre    = trim((string)($provData['nombre'] ?? $provData['nombrecliente'] ?? 'Proveedor sin nombre'));
-    $telefono  = trim((string)($provData['telefono'] ?? $provData['Telefono'] ?? ''));
-    $direccion = trim((string)($provData['direccion'] ?? $provData['Direccion'] ?? ''));
-
-    $rawEmail = $provData['email'] ?? $provData['Mail'] ?? '';
-    // 2) Separar por coma, punto y coma o espacios usando regex
-    $emails = preg_split('/[,\s;]+/', $rawEmail, -1, PREG_SPLIT_NO_EMPTY);
-    // 3) Limpiar y quedarnos con el primer email válido
-    $emailLimpio = '';
-    if (is_array($emails)) {
-        foreach ($emails as $e) {
-            $e = trim($e);
-            if (filter_var($e, FILTER_VALIDATE_EMAIL)) {
-                $emailLimpio = $e;
-                break;
-            }
-        }
-    }
-    $body = [
-        'nombre'    => $nombre,
-        'telefono'  => $telefono,
-        'email'     => $emailLimpio,
-        'direccion' => $direccion,
-    ];
-
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => 'https://sandbox-lv.wepoint.ar/api/proveedores/create',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 30,
-        CURLOPT_CUSTOMREQUEST  => 'POST',
-        CURLOPT_POSTFIELDS     => json_encode($body, JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER     => [
-            'Accept: application/json',
-            'Content-Type: application/json',
-            'Authorization: ' . $token,
-        ],
-    ]);
-
-    $resp = curl_exec($ch);
-    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err  = curl_error($ch);
-    curl_close($ch);
-
-    if ($err) {
-        return [false, "cURL error: $err", null, $body];
-    }
-    $json = json_decode($resp, true);
-
-    if ($http >= 200 && $http < 300) {
-        // según API: suele venir en data.id_proveedor
-        $id = $json['data']['id_proveedor'] ?? $json['id_proveedor'] ?? null;
-        if ($id) return [true, (int)$id, $json, $body];
-        return [false, 'Respuesta sin id_proveedor', $json, $body];
-    }
-
-    return [false, "HTTP $http", $json, $body];
-}
-
-function wepoint_create_cliente(string $token, array $cli)
-{
-    $norm = static function ($v) {
-        $s = trim((string)$v);
-        return preg_replace('/\s+/', ' ', $s);
-    };
-    $normPhone = static function ($v) {
-        return preg_replace('/\D+/', '', (string)$v);
-    };
-    $nonnull = static function ($v) {
-        $s = trim((string)$v);
-        return ($s === '') ? null : $s;
-    };
-
-    $nombre = $norm($cli['CL_Nombre'] ?? '');
-    $dir    = $norm($cli['CL_Direccion'] ?? '');
-
-    // 🔧 PROVINCIA con fallback robusto (Cliente -> HR -> default)
-    $provRaw = $cli['CL_Provincia'] ?? $cli['Provincia'] ?? '';
-    $prov    = $norm($provRaw);
-    if ($prov === '') {
-        $prov = 'Córdoba'; // default si sigue vacío
-    }
-
-    $ciudad = $norm($cli['CL_Ciudad'] ?? '');
-    $cp     = $norm($cli['CL_CodigoPostal'] ?? '5000');
-    $barrio = $norm($cli['CL_Barrio'] ?? '');
-    $entre  = $norm($cli['CL_EntreCalles'] ?? '');
-
-    $emailRaw = $cli['CL_Email'] ?? '';
-    $email    = $nonnull($emailRaw);
-
-    // Teléfono: Cliente -> HR -> dummy
-    $telCli   = $normPhone($cli['CL_Telefono'] ?? '');
-    $telHR    = $normPhone($cli['Celular']     ?? '');
-    $telefono = $telCli !== '' ? $telCli : ($telHR !== '' ? $telHR : '0000000000');
-
-    $body = [
-        'nombre'        => $nombre,
-        'telefono'      => $telefono,
-        'email'         => $email,
-        'direccion'     => $dir,
-        'provincia'     => $prov,            // ✅ nunca vacío
-        'ciudad'        => $ciudad,
-        'codigo_postal' => $cp,
-        'barrio'        => $barrio,
-        'entre_calles'  => ($entre === '') ? null : $entre,
-    ];
-
-    $ch = curl_init();
-    curl_setopt_array($ch, [
-        CURLOPT_URL            => 'https://sandbox-lv.wepoint.ar/api/clientes/create',
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT        => 30,
-        CURLOPT_CUSTOMREQUEST  => 'POST',
-        CURLOPT_POSTFIELDS     => json_encode($body, JSON_UNESCAPED_UNICODE),
-        CURLOPT_HTTPHEADER     => [
-            'Accept: application/json',
-            'Content-Type: application/json',
-            'Authorization: ' . $token, // ojo con los dos puntos
-        ],
-    ]);
-    $resp = curl_exec($ch);
-    $http = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err  = curl_error($ch);
-    curl_close($ch);
-
-    if ($err) return [false, "cURL error: $err", null, $body];
-
-    $json = json_decode($resp, true);
-    if ($http >= 200 && $http < 300) {
-        $id = $json['id']
-            ?? ($json['data']['id'] ?? null)
-            ?? ($json['id_cliente'] ?? ($json['data']['id_cliente'] ?? null));
-        if ($id) return [true, (int)$id, $json, $body];
-        return [false, 'Respuesta sin id', $json, $body];
-    }
-    return [false, "HTTP $http", $json, $body];
-}
-
-// ini_set('display_errors', 1);
-// ini_set('display_startup_errors', 1);
-// error_reporting(E_ALL);
-
 //COLECTAS
 if (isset($_POST['Colectas']) && (int)$_POST['Colectas'] === 1) {
     header('Content-Type: application/json; charset=utf-8');
@@ -889,572 +679,177 @@ if (isset($_POST['Colectas']) && (int)$_POST['Colectas'] === 1) {
     exit;
 }
 
-// ENVÍO DE ORDEN DE INGRESO DE BULTOS
-
+// ENVÍO DEL AVISO PREVIO DE BULTOS A WEPOINT
+// Un elemento por servicio (código de seguimiento) con sus piezas, el cliente de Caddy que lo
+// manda (en Wepoint queda como dueño del bulto) y qué se hace con él en el depósito
+// (crossdock, transito o almacenamiento; por defecto tránsito). Wepoint crea un bulto por pieza
+// (CODIGO o CODIGO_n, como la etiqueta) y devuelve el id de cada uno, que se guarda en
+// wepoint_api para armar después el egreso. Reenviar la misma orden no duplica en Wepoint.
 if (isset($_POST['Ejecutar']) && (int)$_POST['Ejecutar'] === 1) {
     header('Content-Type: application/json; charset=utf-8');
 
-    // 1) Token (normalizar con Bearer)
-    $token = isset($_POST['token']) ? trim($_POST['token']) : '';
-    if ($token !== '' && stripos($token, 'Bearer ') !== 0) {
-        $token = 'Bearer ' . $token;
-    }
-    if ($token === '') {
-        http_response_code(400);
-        echo json_encode(['ok' => false, 'message' => 'Falta token para Authorization']);
-        exit;
-    }
-
-    // 2) NumerodeOrden (acepta alias 'j')
-    $numeroOrden = null;
-    if (!empty($_POST['NumerodeOrden'])) {
-        $numeroOrden = (int)$_POST['NumerodeOrden'];
-    } elseif (!empty($_POST['j'])) {
-        $numeroOrden = (int)$_POST['j'];
-    }
-    if (!$numeroOrden) {
+    $numeroOrden = (int)($_POST['NumerodeOrden'] ?? $_POST['j'] ?? 0);
+    if ($numeroOrden <= 0) {
         http_response_code(400);
         echo json_encode(['ok' => false, 'message' => 'Falta NumerodeOrden']);
         exit;
     }
 
-    // justo después de leer $numeroOrden / token...
-    $excluirCodigos = [];
-    if (isset($_POST['ExcluirCodigos'])) {
-        // puede venir como JSON string o como array de inputs
-        if (is_array($_POST['ExcluirCodigos'])) {
-            $excluirCodigos = array_map('strval', $_POST['ExcluirCodigos']);
-        } else {
-            $tmp = json_decode((string)$_POST['ExcluirCodigos'], true);
-            if (is_array($tmp)) $excluirCodigos = array_map('strval', $tmp);
-        }
+    $excluir = $_POST['ExcluirCodigos'] ?? [];
+    if (!is_array($excluir)) {
+        $excluir = json_decode((string)$excluir, true) ?: [];
     }
-    $exSet = array_flip($excluirCodigos);
+    $excluir = array_flip(array_map('strval', $excluir));
 
-    // 3) Defaults opcionales
-    $no_referencia = isset($_POST['no_referencia']) ? (string)$_POST['no_referencia'] : '';
-    $fecha         = isset($_POST['fecha'])         ? (string)$_POST['fecha']         : '';
-    $notas         = isset($_POST['notas'])         ? (string)$_POST['notas']         : '';
-
-    // 4) Conexión a DB
-    if (!isset($mysqli) || !($mysqli instanceof mysqli)) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'message' => 'No hay conexión a base de datos ($mysqli)']);
-        exit;
+    // codigo => modalidad elegida en la pantalla
+    $modalidades = $_POST['Modalidades'] ?? [];
+    if (!is_array($modalidades)) {
+        $modalidades = json_decode((string)$modalidades, true) ?: [];
     }
+    $permitidas = ['crossdock', 'transito', 'almacenamiento'];
 
+    $sql = "SELECT TC.id, TC.CodigoSeguimiento, TC.Cantidad, TC.idClienteOrigen, TC.RazonSocial,
+                   TC.DomicilioOrigen, TC.TelefonoOrigen, CO.Mail AS MailOrigen,
+                   TC.ClienteDestino, TC.TelefonoDestino, TC.DomicilioDestino, TC.LocalidadDestino,
+                   TC.ProvinciaDestino, TC.Ancho, TC.Largo, TC.Alto, TC.Peso, TC.Flex, TC.ValorDeclarado,
+                   TC.Observaciones,
+                   (SELECT MAX(HR.ImporteCobranza) FROM HojaDeRuta HR
+                     WHERE HR.idTransClientes = TC.id AND HR.Eliminado = 0) AS Cobranza
+            FROM TransClientes TC
+            LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen
+            WHERE TC.idClienteDestino = ?
+              AND TC.NumerodeOrden = ?
+              AND TC.Eliminado = 0
+              AND TC.Entregado = 0
+              AND TC.Devuelto = 0
+              AND TC.Haber = 0
+              AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)";
 
-    // 5) Traer HojaDeRuta + Clientes
-    $sql = "SELECT 
-    HR.id, HR.Fecha, HR.Hora, HR.Recorrido, HR.Localizacion, HR.Ciudad, HR.Provincia, HR.Pais,
-    HR.Cliente, HR.Titulo, HR.Observaciones, HR.Usuario, HR.Asignado, HR.Estado, HR.NumerodeOrden,
-    HR.Posicion, HR.Seguimiento, HR.idCliente, HR.Celular, HR.TramoMapa, HR.Eliminado, HR.Avisado,
-    HR.ImporteCobranza, HR.NumeroRepo, HR.KmO, HR.Tiempo, HR.idTransClientes, HR.TimeStamp, HR.Devuelto,
-    HR.Servicio, HR.Posicion_retiro, HR.Hora_retiro,
-    CL.wepoint_id,
-    CL.nombrecliente AS CL_Nombre,
-    CL.Telefono      AS CL_Telefono,
-    CL.Mail          AS CL_Email,
-    CL.Direccion     AS CL_Direccion,
-    CL.Provincia     AS CL_Provincia,
-    CL.Ciudad        AS CL_Ciudad,
-    CL.CodigoPostal  AS CL_CodigoPostal,
-    CL.Barrio        AS CL_Barrio,
-    TC.Ancho  AS TC_Ancho,
-    TC.Largo  AS TC_Largo,
-    TC.Alto   AS TC_Alto,
-    TC.Peso   AS TC_Peso, 
-    TC.CodigoSeguimiento AS CodigoSeguimiento,
-    TC.Flex AS TC_Flex,
-    TC.Cantidad AS Cantidad
-    FROM TransClientes AS TC
-    JOIN HojaDeRuta AS HR ON HR.idTransClientes = TC.id
-    JOIN Clientes   AS CL ON HR.idCliente = CL.id    
-    WHERE 
-    TC.idClienteDestino= ?
-    AND TC.Eliminado = 0
-    AND TC.Entregado = 0
-    AND TC.Devuelto = 0
-    AND TC.Haber = 0
-    AND (TC.wepoint_id = 0 OR TC.wepoint_id IS NULL)
-    AND TC.NumerodeOrden = ? ;";
-
-    // $sql = "SELECT 
-    // HR.id, HR.Fecha, HR.Hora, HR.Recorrido, HR.Localizacion, HR.Ciudad, HR.Provincia, HR.Pais,
-    // HR.Cliente, HR.Titulo, HR.Observaciones, HR.Usuario, HR.Asignado, HR.Estado, HR.NumerodeOrden,
-    // HR.Posicion, HR.Seguimiento, HR.idCliente, HR.Celular, HR.TramoMapa, HR.Eliminado, HR.Avisado,
-    // HR.ImporteCobranza, HR.NumeroRepo, HR.KmO, HR.Tiempo, HR.idTransClientes, HR.TimeStamp, HR.Devuelto,
-    // HR.Servicio, HR.Posicion_retiro, HR.Hora_retiro,
-    // CL.wepoint_id,
-    // CL.nombrecliente AS CL_Nombre,
-    // CL.Telefono      AS CL_Telefono,
-    // CL.Mail          AS CL_Email,
-    // CL.Direccion     AS CL_Direccion,
-    // CL.Provincia     AS CL_Provincia,
-    // CL.Ciudad        AS CL_Ciudad,
-    // CL.CodigoPostal  AS CL_CodigoPostal,
-    // CL.Barrio        AS CL_Barrio,
-    // TC.Ancho  AS TC_Ancho,
-    // TC.Largo  AS TC_Largo,
-    // TC.Alto   AS TC_Alto,
-    // TC.Peso   AS TC_Peso, 
-    // TC.CodigoSeguimiento AS CodigoSeguimiento,
-    // TC.Flex AS TC_Flex,
-    // TC.Cantidad AS Cantidad
-    // FROM HojaDeRuta AS HR
-    // JOIN Clientes   AS CL ON HR.idCliente = CL.id
-    // LEFT JOIN TransClientes AS TC ON HR.idTransClientes = TC.id
-    // WHERE HR.Eliminado = 0
-    // AND HR.Estado   = 'Abierto'
-    // AND HR.NumerodeOrden = ?";
-
-    if (!$stmt = $mysqli->prepare($sql)) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'message' => 'Error preparando consulta', 'error' => $mysqli->error]);
-        exit;
-    }
     $idWepoint = ID_WEPOINT;
+    $st = $mysqli->prepare($sql);
+    $st->bind_param('ii', $idWepoint, $numeroOrden);
+    $st->execute();
+    $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $st->close();
 
-    $stmt->bind_param('ii', $idWepoint, $numeroOrden);
-
-    if (!$stmt->execute()) {
-        http_response_code(500);
-        echo json_encode(['ok' => false, 'message' => 'Error ejecutando consulta', 'error' => $stmt->error]);
-        $stmt->close();
-        exit;
-    }
-    $res  = $stmt->get_result();
-    $rows = [];
-    while ($r = $res->fetch_assoc()) {
-        $rows[] = $r;
-    }
-    $stmt->close();
-
-    if (empty($rows)) {
-        http_response_code(404);
-        echo json_encode(['ok' => false, 'message' => 'No hay renglones en HojaDeRuta para esa orden (Abierto / Eliminado=0)']);
-        exit;
-    }
-
-    // 6) Crear clientes faltantes en WePoint y actualizar wepoint_id en DB
-    $clientesVistos = []; // idCliente => wepoint_id
-    foreach ($rows as $r) {
-        $idCli = (int)$r['idCliente'];
-        if (isset($clientesVistos[$idCli])) continue;
-
-        $actual = (int)($r['wepoint_id'] ?? 0);
-        if ($actual > 0) {
-            $clientesVistos[$idCli] = $actual;
+    $bultos = [];
+    $sinRemitente = [];
+    foreach ($filas as $f) {
+        $codigo = trim((string)$f['CodigoSeguimiento']);
+        if ($codigo === '' || isset($excluir[$codigo])) {
+            continue;
+        }
+        if ((int)$f['idClienteOrigen'] <= 0) {
+            $sinRemitente[] = $codigo;
             continue;
         }
 
-        list($ok, $newId, $raw, $sent) = wepoint_create_cliente($token, $r);
-        $rawArr = is_array($raw) ? $raw : json_decode((string)$raw, true);
-
-        if ($ok) {
-            // si vino null pero la API trae id en otro campo, levantarlo
-            if ($newId === null && is_array($rawArr)) {
-                $newId = $rawArr['data']['id_cliente'] ?? $rawArr['id_cliente'] ?? null;
-            }
-
-            if ($newId) {
-                $clientesVistos[$idCli] = (int)$newId;
-
-                if ($upd = $mysqli->prepare('UPDATE Clientes SET wepoint_id = ? WHERE id = ? LIMIT 1')) {
-                    $upd->bind_param('ii', $clientesVistos[$idCli], $idCli);
-                    $upd->execute();
-                    $upd->close();
-                }
-            } else {
-                // Éxito sin id explícito: seguir sin actualizar la tabla local
-                // (si preferís abortar, reemplazá por un http_response_code(502)+exit)
-                $clientesVistos[$idCli] = 0;
-                // file_put_contents('wepoint_warn.log', json_encode($rawArr).PHP_EOL, FILE_APPEND);
-            }
-        } else {
-            http_response_code(502);
-            echo json_encode([
-                'ok' => false,
-                'message' => 'No se pudo crear el cliente en WePoint (API devolvió error)',
-                'cliente_id' => $idCli,
-                'wepoint_sent' => $sent,
-                'wepoint_response' => $raw,
-            ]);
-            exit;
-        }
+        $modalidad = $modalidades[$codigo] ?? 'transito';
+        $bultos[] = [
+            'codigo_seguimiento' => $codigo,
+            'id_caddy' => (int)$f['id'],
+            'piezas' => max(1, (int)$f['Cantidad']),
+            'modalidad' => in_array($modalidad, $permitidas, true) ? $modalidad : 'transito',
+            'observaciones' => $f['Observaciones'] ?: null,
+            'valor_declarado' => (float)$f['ValorDeclarado'],
+            'contrareembolso' => (float)$f['Cobranza'],
+            'es_flex' => (int)$f['Flex'] === 1,
+            'remitente' => array_filter([
+                'id' => (int)$f['idClienteOrigen'],
+                'nombre' => mb_substr(trim((string)$f['RazonSocial']), 0, 100),
+                'telefono' => mb_substr(trim((string)$f['TelefonoOrigen']), 0, 50),
+                'email' => filter_var(trim((string)$f['MailOrigen']), FILTER_VALIDATE_EMAIL) ?: null,
+                'direccion' => mb_substr(trim((string)$f['DomicilioOrigen']), 0, 255),
+            ], fn($v) => $v !== null && $v !== ''),
+            'destinatario' => array_filter([
+                'nombre' => mb_substr(trim((string)$f['ClienteDestino']), 0, 100),
+                'telefono' => mb_substr(trim((string)$f['TelefonoDestino']), 0, 50),
+                'direccion' => mb_substr(trim((string)$f['DomicilioDestino']), 0, 255),
+                'ciudad' => mb_substr(trim((string)$f['LocalidadDestino']), 0, 100),
+                'provincia' => mb_substr(trim((string)$f['ProvinciaDestino']), 0, 100),
+            ], fn($v) => $v !== ''),
+            'medidas' => [
+                'ancho' => (int)$f['Ancho'],
+                'largo' => (int)$f['Largo'],
+                'alto' => (int)$f['Alto'],
+                'peso' => (int)ceil((float)$f['Peso']),
+            ],
+        ];
     }
 
-    // 7) Defaults finales
-    // Intentar obtener el NombreChofer de la tabla Logistica para esta orden
-    $nombreChofer = '';
-    if ($qch = $mysqli->prepare("SELECT NombreChofer FROM Logistica WHERE Eliminado=0 AND NumerodeOrden = ? LIMIT 1")) {
-        $qch->bind_param('i', $numeroOrden);
-        if ($qch->execute()) {
-            $rch = $qch->get_result()->fetch_assoc();
-            if ($rch && isset($rch['NombreChofer'])) {
-                $nombreChofer = trim((string)$rch['NombreChofer']);
-            }
-        }
-        $qch->close();
-    }
-    if ($no_referencia === '') {
-        // Usar siempre el propio número de orden como no_referencia
-        $no_referencia = (string)$numeroOrden;
-    }
-    if ($fecha === '') {
-        $fecha = (string)($rows[0]['Fecha'] ?? date('Y-m-d'));
-    }
-    if ($notas === '') {
-        if ($nombreChofer !== '') {
-            $notas = 'Hoja de Ruta de ' . $nombreChofer;
-        } elseif (!empty($rows[0]['Observaciones'])) {
-            $notas = "";
-        }
-    }
-
-    // 8) Mapear filas -> detalle_orden_ingreso_bulto usando wepoint_id y dimensiones de TransClientes
-    $detalle = [];
-    $serieUsadas = []; // set local para evitar duplicados en el mismo payload
-    $nroSerieLocked = []; // trackea si el nro_serie proviene de CodigoSeguimiento (locked)
-    $nroSerieToCodigoSeg = []; // mapear nro_serie => CodigoSeguimiento
-
-    $slug = static function ($s) {
-        $s = strtoupper(trim((string)$s));
-        // solo letras/números (quita espacios y símbolos)
-        $s = preg_replace('/[^A-Z0-9]/', '', $s);
-        // si queda vacío, usa un random de 8
-        return $s !== '' ? $s : substr(strtoupper(bin2hex(random_bytes(4))), 0, 8);
-    };
-
-    $serieUnica = function ($base, &$set) {
-        $try = $base;
-        $i = 1;
-        while (isset($set[$try])) {
-            $try = $base . '-' . $i; // o agregar random si prefieres
-            $i++;
-        }
-        $set[$try] = true;
-        return $try;
-    };
-    // Dimensiones mínimas
-    // Normalizador de decimales: redondea a 2 decimales y evita colas de flotantes
-    $normDec = static function ($v, $min = 0.01, $dec = 2) {
-        $n = (float)$v;
-        if (!($n > 0)) $n = $min;
-        return (float) sprintf("%.{$dec}f", $n);
-    };
-
-    $precioCalc = static function ($importe, $dec = 2) {
-        $n = (float)$importe;
-        if ($n <= 0) $n = 0.01;
-        return (float) sprintf("%.{$dec}f", $n);
-    };
-    // 216699,216702
-    foreach ($rows as $row) {
-        // Cantidad de piezas a replicar (mínimo 1)
-        $cantidad = isset($row['Cantidad']) ? (int)$row['Cantidad'] : 1;
-        if ($cantidad <= 0) $cantidad = 1;
-
-        // 1) Resolver/crear el proveedor en WePoint
-        list($provOk, $wpProveedorId, $provDebug) = resolver_wepoint_proveedor($mysqli, $token, $row);
-        if (!$provOk || $wpProveedorId <= 0) {
-            http_response_code(422);
-            echo json_encode([
-                'ok' => false,
-                'message' => 'No se pudo resolver/crear el proveedor en WePoint',
-                'debug' => $provDebug,
-                'row_ref' => [
-                    'idTransClientes' => $row['idTransClientes'] ?? null,
-                    'NumerodeOrden'   => $row['NumerodeOrden'] ?? null,
-                    'Seguimiento'     => $row['Seguimiento'] ?? null,
-                ],
-            ], JSON_UNESCAPED_UNICODE);
-            exit;
-        }
-
-        $idCli      = (int)$row['idCliente'];
-        $wpClientId = (int)($clientesVistos[$idCli] ?? ($row['wepoint_id'] ?? 0));
-        if ($wpClientId <= 0) {
-            http_response_code(422);
-            echo json_encode(['ok' => false, 'message' => 'No se pudo resolver id_cliente']);
-            exit;
-        }
-
-        $importe = isset($row['ImporteCobranza']) ? (float)$row['ImporteCobranza'] : 0.0;
-
-        // Saltar servicios excluidos por CodigoSeguimiento (excluye TODAS sus piezas)
-        $codigoSeg = (string)($row['CodigoSeguimiento'] ?? $row['Seguimiento'] ?? '');
-        if ($codigoSeg !== '' && isset($exSet[$codigoSeg])) {
-            continue; // descartado por el usuario
-        }
-
-        // Base de nro_serie: debe ser el CodigoSeguimiento; si está vacío, generamos fallback
-        $lockedBase = false;
-        if ($codigoSeg !== '') {
-            $baseSerie = $codigoSeg;
-            $lockedBase = true; // proviene de CodigoSeguimiento
-        } else {
-            $baseSerie = $slug('ORD-' . $numeroOrden . '-' . ($row['idTransClientes'] ?? 'X'));
-            $lockedBase = false; // fallback
-        }
-
-        // Normalizar es_flex desde TC_Flex
-        $esFlex = 0;
-        if (isset($row['TC_Flex'])) {
-            $v = $row['TC_Flex'];
-            if (is_string($v)) {
-                $vv = strtolower(trim($v));
-                $esFlex = in_array($vv, ['1', 'true', 't', 'si', 'sí', 'y', 'yes', 'on'], true) ? 1 : 0;
-            } else {
-                $esFlex = ((int)$v) ? 1 : 0;
-            }
-        }
-
-        // Replicar una entrada por cada pieza
-        for ($i = 1; $i <= $cantidad; $i++) {
-            // Si hay múltiples piezas, sufijamos _1, _2, ... sobre el CodigoSeguimiento/base
-            $nroSerieBase = ($cantidad > 1) ? ($baseSerie . '_' . $i) : $baseSerie;
-
-            // Asegurar unicidad en este payload
-            $nroSerie = $nroSerieBase;
-            if (isset($serieUsadas[$nroSerie])) {
-                // si ya existe y la base NO es locked (fallback), tratamos de generar una variante única
-                if (!$lockedBase) {
-                    $nroSerie = $serieUnica($nroSerieBase, $serieUsadas);
-                } else {
-                    // si es locked y colisiona (muy raro con sufijo), lo dejamos tal cual para que el 422 lo reporte
-                }
-            } else {
-                $serieUsadas[$nroSerie] = true;
-            }
-
-            // marcar locked/unlocked por índice de detalle (para reintentos 422)
-            $nroSerieLocked[] = $lockedBase;
-            $nroSerieToCodigoSeg[$nroSerie] = $codigoSeg;
-
-            $detalle[] = [
-                'nro_serie'              => $nroSerie,
-                'id_cliente'             => $wpClientId,
-                'destinatario_nombre'    => (string)($row['Cliente'] ?? $row['Titulo'] ?? ''),
-                'id_proveedor'           => $wpProveedorId,
-                'ancho'                  => $normDec($row['TC_Ancho'] ?? null),
-                'largo'                  => $normDec($row['TC_Largo'] ?? null),
-                'alto'                   => $normDec($row['TC_Alto']  ?? null),
-                'peso'                   => $normDec($row['TC_Peso']  ?? null),
-                'precio'                 => $precioCalc($importe),
-                'es_contrareembolso'     => (int)($importe > 0),
-                'es_flex'                => $esFlex,
-                'destinatario_telefono'  => (string)($row['Celular'] ?? ''),
-                'destinatario_email'     => (string)($row['CL_Email'] ?? ''),
-                'destinatario_direccion' => (string)($row['Localizacion'] ?? ''),
-                'destinatario_provincia' => (string)($row['Provincia'] ?? ''),
-                'destinatario_ciudad'    => (string)($row['Ciudad'] ?? ''),
-            ];
-        }
-
-        // actualizar cantidad total después de replicar
-        $cantidadTotal = count($detalle);
-    }
-
-
-    // 9) Payload y POST a WePoint (con reintento por nro_serie duplicado)
-    $payloadArr = [
-        'no_referencia' => $no_referencia,
-        'fecha'         => $fecha,
-        'notas'         => $notas,
-        'detalle_orden_ingreso_bulto' => $detalle,
-    ];
-
-    // 1er intento
-    list($http, $err, $resp) = post_wepoint_oib($token, $payloadArr);
-
-    // ¿Hubo 422 por nro_serie duplicado? Reintentar regenerando sólo los conflictivos
-    if ($http === 422) {
-        $asArray = json_decode($resp, true);
-
-        // Detectar por texto o por estructura "errors"
-        $hayDuplicados = false;
-        if (is_array($asArray)) {
-            // Caso estructurado
-            if (!empty($asArray['errors']) && is_array($asArray['errors'])) {
-                foreach ($asArray['errors'] as $campo => $msgs) {
-                    if (preg_match('/detalle_orden_ingreso_bulto\.(\d+)\.nro_serie/', $campo, $m)) {
-                        $idx = (int)$m[1];
-                        if (isset($payloadArr['detalle_orden_ingreso_bulto'][$idx])) {
-                            // Si el nro_serie proviene de CodigoSeguimiento (locked), NO lo alteramos
-                            $isLocked = isset($nroSerieLocked[$idx]) ? (bool)$nroSerieLocked[$idx] : false;
-                            if (!$isLocked) {
-                                $payloadArr['detalle_orden_ingreso_bulto'][$idx]['nro_serie'] =
-                                    'ORD' . $numeroOrden . '-' . strtoupper(bin2hex(random_bytes(4)));
-                            }
-                            $hayDuplicados = true;
-                        }
-                    }
-                }
-            }
-        } else {
-            // Caso texto plano
-            if (strpos($resp, 'nro de serie ya existe') !== false) {
-                // como fallback, regenerar TODOS por si no vino índice claro
-                foreach ($payloadArr['detalle_orden_ingreso_bulto'] as $i => $b) {
-                    $isLocked = isset($nroSerieLocked[$i]) ? (bool)$nroSerieLocked[$i] : false;
-                    if (!$isLocked) {
-                        $payloadArr['detalle_orden_ingreso_bulto'][$i]['nro_serie'] =
-                            'ORD' . $numeroOrden . '-' . strtoupper(bin2hex(random_bytes(4)));
-                    }
-                }
-                $hayDuplicados = true;
-            }
-        }
-
-        if ($hayDuplicados) {
-            // Reintento
-            list($http, $err, $resp) = post_wepoint_oib($token, $payloadArr);
-        }
-    }
-
-    // === Procesar respuesta de WePoint e insertar tracking ===
-    $decoded = json_decode($resp, true);
-
-    // Solo consideramos éxito cuando es 2xx
-    if ($http >= 200 && $http < 300) {
-        // Inicializaciones para evitar warnings si no hay updates a TransClientes
-        $updated = 0;
-        $idsAfectados = [];
-        // Extraer no_referencia y nro_orden_ingreso_bulto desde la respuesta si no vinieron set
-        $noRef  = $no_referencia ?: ($decoded['data']['no_referencia'] ?? ($decoded['no_referencia'] ?? ''));
-        $nroOIB = $decoded['data']['nro_orden_ingreso_bulto'] ?? ($decoded['nro_orden_ingreso_bulto'] ?? '');
-
-        // Seguridad: si falta alguno, seguimos, pero lo registramos vacío
-        $now     = date('Y-m-d H:i:s');
-        $Usuario = $_SESSION['Usuario'] ?? 'Sistema';
-
-        // Armar mapa nro_serie => id_detalle_orden_ingreso_bulto desde la respuesta
-        $mapSerieToIdDetalle = [];
-        if (isset($decoded['data']['detalle_orden_ingreso_bulto']) && is_array($decoded['data']['detalle_orden_ingreso_bulto'])) {
-            foreach ($decoded['data']['detalle_orden_ingreso_bulto'] as $det) {
-                $idDet  = $det['id_detalle_orden_ingreso_bulto'] ?? null;
-                $nroSer = $det['bulto']['nro_serie'] ?? null;
-                if ($idDet && $nroSer) {
-                    $mapSerieToIdDetalle[(string)$nroSer] = (int)$idDet;
-                }
-            }
-        }
-
-        // Insertar un row por cada nro_serie reconocido en la respuesta
-        if (!empty($mapSerieToIdDetalle)) {
-            $sqlIns = "
-                INSERT INTO wepoint_api
-                  (`Time`, `no_referencia`, `nro_orden_ingreso_bulto`,
-                   `CodigoSeguimiento`, `CodigoSeguimiento_enviado`,
-                   `id_wepoint`, `Usuario`, `Estado`, `tipo`, `http_code`)
-                VALUES (?,?,?,?,?,?,?,?,?,?)
-            ";
-            if ($ins = $mysqli->prepare($sqlIns)) {
-                foreach ($mapSerieToIdDetalle as $serieEnviada => $idWe) {
-                    // base que originó ese nro_serie; si no existe, caemos al mismo nro_serie
-                    $codigoBase = $nroSerieToCodigoSeg[$serieEnviada] ?? $serieEnviada;
-
-                    // respetar exclusiones del usuario
-                    if (!empty($exSet) && isset($exSet[$codigoBase])) continue;
-
-                    $estado   = 'IN OK';
-                    $tipo     = 'IN';
-                    $httpCode = (int)$http;
-
-                    $ins->bind_param(
-                        'ssssssissi',
-                        $now,        // Time
-                        $noRef,      // no_referencia
-                        $nroOIB,     // nro_orden_ingreso_bulto
-                        $codigoBase, // CodigoSeguimiento (base)
-                        $serieEnviada, // CodigoSeguimiento_enviado (nro_serie)
-                        $idWe,       // id_wepoint
-                        $Usuario,    // Usuario
-                        $estado,     // Estado
-                        $tipo,       // tipo
-                        $httpCode    // http_code
-                    );
-                    if (!$ins->execute()) {
-                        http_response_code(500);
-                        echo json_encode([
-                            'ok' => false,
-                            'message' => 'Falló INSERT en wepoint_api',
-                            'mysqli_error' => $mysqli->error,
-                            'stmt_error' => $ins->error,
-                            'values' => [
-                                'Time' => $now,
-                                'no_referencia' => $noRef,
-                                'nro_orden_ingreso_bulto' => $nroOIB,
-                                'CodigoSeguimiento' => $codigoBase,
-                                'CodigoSeguimiento_enviado' => $serieEnviada,
-                                'id_wepoint' => $idWe,
-                                'Usuario' => $Usuario,
-                                'Estado' => 'IN OK',
-                                'tipo' => 'IN',
-                                'http_code' => $httpCode,
-                            ]
-                        ], JSON_UNESCAPED_UNICODE);
-                        $ins->close();
-                        exit;
-                    } else {
-                        //AGREGO EL ID CARGADO EN $ins
-                        $lastId = $ins->insert_id;
-                        $sql = "UPDATE TransClientes SET Wepoint_id = ? WHERE CodigoSeguimiento= ? AND Eliminado = 0 AND (Wepoint_id = 0 OR Wepoint_id IS NULL)";
-                        $stmt = $mysqli->prepare($sql);
-                        $stmt->bind_param('is', $lastId, $codigoBase);
-                        if (!$stmt->execute()) {
-                            http_response_code(500);
-                            echo json_encode([
-                                'ok' => false,
-                                'message' => 'Falló UPDATE en TransClientes',
-                                'mysqli_error' => $mysqli->error,
-                                'stmt_error' => $stmt->error,
-                                'values' => [
-                                    'wepoint_id' => $idWe,
-                                    'CodigoSeguimiento' => $codigoBase,
-                                ]
-                            ], JSON_UNESCAPED_UNICODE);
-                            $stmt->close();
-                            exit;
-                        }
-                    }
-                }
-                $ins->close();
-            } else {
-                http_response_code(500);
-                echo json_encode([
-                    'ok' => false,
-                    'message' => 'Prepare INSERT wepoint_api falló',
-                    'mysqli_error' => $mysqli->error,
-                    'sql' => $sqlIns
-                ], JSON_UNESCAPED_UNICODE);
-                exit;
-            }
-        }
-
+    if (!$bultos) {
+        http_response_code(422);
         echo json_encode([
-            'http_code'                  => $http,
-            'wepoint_raw'                => $resp,
-            'sent'                       => $payloadArr,
-            'no_referencia'              => $noRef,
-            'nro_orden_ingreso_bulto'    => $nroOIB,
-            'cantidad'                   => $cantidadTotal,
-            'excluidos'                  => $excluirCodigos,
-            'transclientes_actualizados' => $updated,
-            'ids_actualizados'           => $idsAfectados,
+            'ok' => false,
+            'message' => $sinRemitente
+                ? 'Los servicios no tienen cliente de origen: ' . implode(', ', $sinRemitente)
+                : 'No hay servicios pendientes de enviar en esta orden',
         ], JSON_UNESCAPED_UNICODE);
         exit;
     }
 
-    // Si llegó acá, WePoint devolvió error definitivo
-    http_response_code($http ?: 502);
+    $noRef = 'ORD-' . $numeroOrden;
+    $payload = ['referencia' => $noRef, 'fecha' => date('Y-m-d'), 'bultos' => $bultos];
+    [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/preavisos', $payload);
+    $json = json_decode((string)$resp, true);
+
+    if ($http < 200 || $http >= 300 || !is_array($json)) {
+        http_response_code($http ?: 502);
+        echo json_encode([
+            'http_code' => $http,
+            'curl_error' => $err,
+            'wepoint_raw' => $resp,
+            'sent' => $payload,
+            'message' => $json['message'] ?? 'Wepoint rechazó el aviso',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
+    $data = $json['data'] ?? [];
+    $nroOIB = (string)($data['nro_orden_ingreso_bulto'] ?? '');
+    $now = date('Y-m-d H:i:s');
+    $usuario = $_SESSION['Usuario'] ?? 'Sistema';
+    $estado = 'IN OK';
+    $tipo = 'IN';
+
+    // Un row por pieza (id_wepoint = id del bulto en Wepoint); el envío queda marcado como enviado.
+    $ins = $mysqli->prepare("INSERT INTO wepoint_api
+        (`Time`, `no_referencia`, `nro_orden_ingreso_bulto`, `CodigoSeguimiento`, `CodigoSeguimiento_enviado`,
+         `id_wepoint`, `Usuario`, `Estado`, `tipo`, `http_code`)
+        VALUES (?,?,?,?,?,?,?,?,?,?)");
+    $upd = $mysqli->prepare("UPDATE TransClientes SET wepoint_id = ?
+        WHERE CodigoSeguimiento = ? AND Eliminado = 0 AND (wepoint_id = 0 OR wepoint_id IS NULL)");
+
+    $enviados = [];
+    foreach (array_merge($data['nuevos'] ?? [], $data['ya_informados'] ?? []) as $envio) {
+        $codigo = (string)$envio['codigo_seguimiento'];
+        $ultimoId = 0;
+        foreach ($envio['bultos'] ?? [] as $pieza) {
+            $serie = (string)$pieza['nro_serie'];
+            $idBulto = (int)$pieza['id_bulto'];
+            $ins->bind_param('sssssisssi', $now, $noRef, $nroOIB, $codigo, $serie, $idBulto, $usuario, $estado, $tipo, $http);
+            $ins->execute();
+            $ultimoId = $ins->insert_id ?: $ultimoId;
+        }
+        if ($ultimoId) {
+            $upd->bind_param('is', $ultimoId, $codigo);
+            $upd->execute();
+        }
+        $enviados[] = $codigo;
+    }
+    $ins->close();
+    $upd->close();
+
     echo json_encode([
-        'http_code'   => $http,
-        'curl_error'  => $err,
+        'http_code' => $http,
+        'no_referencia' => $noRef,
+        'nro_orden_ingreso_bulto' => $nroOIB,
+        'cantidad' => array_sum(array_column($bultos, 'piezas')),
+        'enviados' => $enviados,
+        'rechazados' => $data['rechazados'] ?? [],
+        'sin_remitente' => $sinRemitente,
+        'excluidos' => array_keys($excluir),
         'wepoint_raw' => $resp,
-        'sent'        => $payloadArr,
-        'message'     => 'WePoint rechazó el payload',
     ], JSON_UNESCAPED_UNICODE);
     exit;
 }

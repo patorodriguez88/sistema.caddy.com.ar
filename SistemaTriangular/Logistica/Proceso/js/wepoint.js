@@ -6,6 +6,21 @@ function getExSet(orden) {
   if (!ExcluirPorOrden.has(orden)) ExcluirPorOrden.set(orden, new Set());
   return ExcluirPorOrden.get(orden);
 }
+
+// mapa: orden -> { codigo: modalidad } (qué hace Wepoint con cada servicio; por defecto tránsito)
+const ModalidadPorOrden = new Map();
+const MODALIDADES_WEPOINT = {
+  transito: "Tránsito (espera retiro o reenvío)",
+  crossdock: "Crossdock (sale en el próximo recorrido)",
+  almacenamiento: "Almacenamiento (paga estadía)",
+};
+function getModalidades(orden) {
+  if (!ModalidadPorOrden.has(orden)) ModalidadPorOrden.set(orden, {});
+  return ModalidadPorOrden.get(orden);
+}
+$(document).on("change", ".svc-modalidad", function () {
+  getModalidades(String($(this).data("orden")))[String($(this).data("codigo"))] = $(this).val();
+});
 //HANDLER QUE MODIFICA EN TIEMPO REAL LA CANTIDAD DE SERVICIOS DE LA TABLA PRINCIPAL
 $(document).on("click", ".svc-exclude", function () {
   const orden = String($(this).data("orden") || "");
@@ -284,6 +299,7 @@ function showServiciosModal(orden, items) {
             <th style="width:32%">Destino</th>
             <th style="width:20%">Código</th>
            <th style="width:20%">Bultos</th> 
+            <th style="width:22%">En Wepoint</th>
             <th style="width:10%" class="text-center">Acción</th>
           </tr>
         </thead>
@@ -311,6 +327,13 @@ function showServiciosModal(orden, items) {
          <td><i class="mdi mdi-account-outline me-1"></i>${destino}</td>
          <td><span class="badge bg-primary-subtle text-primary border">${codigo}</span></td>
          <td class="text-center">${cantidad}</td>
+         <td>
+           <select class="form-select form-select-sm svc-modalidad" data-orden="${orden}" data-codigo="${codigo}">
+             ${Object.entries(MODALIDADES_WEPOINT)
+               .map(([valor, texto]) => `<option value="${valor}" ${(getModalidades(String(orden))[codigo] ?? "transito") === valor ? "selected" : ""}>${texto}</option>`)
+               .join("")}
+           </select>
+         </td>
          <td class="text-center">
            <i class="mdi mdi-close-circle-outline text-danger svc-exclude"
               style="cursor:pointer"
@@ -370,7 +393,6 @@ $(document).on("click", ".ver-servicios", function (e) {
 $(document).on("click", ".enviar-api", function () {
   const orden = $(this).data("orden");
   const cantidad = $(this).data("cantidad"); // 👈 ya lo tenés en el <i>
-  const token = $("#token_wepoint").val(); // o window.WEPOINT_TOKEN
   // calcular cantidad efectiva descontando excluidos para esta orden
   const getExSetSafe = (o) => {
     try {
@@ -424,9 +446,9 @@ $(document).on("click", ".enviar-api", function () {
       type: "POST",
       data: {
         Ejecutar: 1,
-        token: token,
         NumerodeOrden: orden,
         ExcluirCodigos: excluirCodigos,
+        Modalidades: JSON.stringify(getModalidades(String(orden))),
       },
       success: function (resp) {
         let json = resp;
@@ -637,13 +659,12 @@ $(document).on("click", "#btn_egreso", function () {
 //   // abrir modal primero (feedback inmediato)
 //   $("#modalCodigosEgreso").modal("show");
 
-//   const token = $("#token_wepoint").val(); // o window.WEPOINT_TOKEN
-
+// 
 //   $.ajax({
 //     url: "../Logistica/Proceso/php/wepoint.php",
 //     method: "POST",
 //     dataType: "json",
-//     data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden, token: token },
+//     data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden },
 //     beforeSend: function () {
 //       Swal.fire({
 //         title: "Consultando estado en WePoint…",
@@ -865,14 +886,13 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
   // abrir modal primero (feedback inmediato)
   $("#modalCodigosEgreso").modal("show");
 
-  const token = $("#token_wepoint").val(); // o window.WEPOINT_TOKEN
   let slowWarningTimer = null; // 👈 faltaba esto
 
   $.ajax({
     url: "../Logistica/Proceso/php/wepoint.php",
     method: "POST",
     dataType: "json",
-    data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden, token: token },
+    data: { DetalleEgresoPorOrden: 1, NumerodeOrden: orden },
     beforeSend: function () {
       Swal.fire({
         title: "Consultando estado en WePoint…",
@@ -1069,9 +1089,8 @@ $(document).on("click", ".ver-codigos-orden", function (e) {
 
 $(document).on("click", ".enviar-egreso", function () {
   const orden = $(this).data("orden") || $("#modalCodigosEgreso").data("orden");
-  const token = $("#token_wepoint").val();
-  if (!orden || !token) {
-    Swal.fire({ icon: "error", title: "Falta token u orden" });
+  if (!orden) {
+    Swal.fire({ icon: "error", title: "Falta la orden" });
     return;
   }
 
@@ -1112,7 +1131,6 @@ $(document).on("click", ".enviar-egreso", function () {
       dataType: "json",
       data: {
         CrearEgreso: 1,
-        token: token,
         NumerodeOrden: orden,
         ids_bulto: JSON.stringify(ids), // 👈 mandamos SOLO las piezas elegidas
       },
