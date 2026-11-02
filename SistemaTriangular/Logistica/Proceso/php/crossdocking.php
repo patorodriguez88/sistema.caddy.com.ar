@@ -394,6 +394,25 @@ if (isset($_POST['EscanearCrossdocking'])) {
 
     $row = $resuelto['row'];
     $base = cd_base($raw);
+    // Multi-bulto leído SIN sufijo (2/11, caso I40G1OMDV de Tienda Nube: la etiqueta del cliente trae
+    // el mismo código en todos los bultos): antes se grababa sin sufijo, la tarjeta lo contaba pero la
+    // lista seguía mostrando _1 y _2 pendientes, y el rótulo WePoint salía sin _N. Se le asigna el
+    // primer bulto que falta hoy; el rótulo sale con ese _N y es el que identifica ese bulto desde ahí.
+    // Si ya estaban todos, cuenta como repetido del último.
+    $cantidadEnvio = max(1, (int)($row['Cantidad'] ?? 1));
+    if (!$tieneSufijo && $cantidadEnvio > 1) {
+        $hechos = cd_sufijos_escaneados_hoy($mysqli, $ahoraFecha, (int)$row['id']);
+        $libre = $cantidadEnvio;
+        for ($i = 1; $i <= $cantidadEnvio; $i++) {
+            if (!in_array((string)$i, $hechos, true)) {
+                $libre = $i;
+                break;
+            }
+        }
+        $tieneSufijo = true;
+        $m = [1 => (string)$libre];
+        $bultoSufijo = (string)$libre;
+    }
     // Si el código escaneado traía sufijo _N (bulto puntual), lo mantenemos en
     // el rótulo mostrado aunque CodigoSeguimiento en la base esté sin sufijo.
     $codigoEtiqueta = $tieneSufijo
