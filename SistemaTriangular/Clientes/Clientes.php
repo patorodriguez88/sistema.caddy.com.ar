@@ -3108,6 +3108,7 @@ En la siguiente tabla figuran los clientes relacionados con el cliente principal
                                                                 <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                                                 <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
                                                                 <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>
+                                                                <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer me-1"></i> Imprimir</a>
                                                                 <a id="cancelarfactura_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
                                                         </div>
@@ -3307,6 +3308,7 @@ En la siguiente tabla figuran los clientes relacionados con el cliente principal
                                                                 <!-- <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#success-alert-modal">Success Alert</button> -->
                                                                 <!-- <a id="Facturacion_recorridos_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#Facturacion_recorridos_modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
                                                                 <!-- <a id="info-header-modal_button" type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#info-header-modal"><i class="mdi mdi-check-bold me-1"></i> Confirmar</a>   -->
+                                                                <a href="javascript:window.print()" class="btn btn-primary"><i class="mdi mdi-printer me-1"></i> Imprimir</a>
                                                                 <a id="cancelarfactura_detalle_boton" href="javascript: void(0);" class="btn btn-danger"><i class="mdi mdi-close-thick me-1"></i>Cancelar</a>
                                                             </div>
                                                         </div>
