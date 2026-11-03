@@ -445,6 +445,10 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
     foreach ($mal as $motivo => $idsMal) {
         wepoint_cola_marcar($mysqli, $idsMal, false, $motivo);
     }
+    $okIds = array_flip($ok);
+    foreach (array_unique(array_map(fn($f) => (int)$f['id_tc'], array_filter($filas, fn($f) => isset($okIds[$f['id']])))) as $idTc) {
+        wepoint_seguimiento($mysqli, $idTc, 'Ingresó al depósito de Wepoint');
+    }
 
     return ['ok' => count($ok), 'error' => count($filas) - count($ok) + count($sinOrigenRows)];
 }
@@ -480,6 +484,12 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
         }
     }
     wepoint_cola_marcar($mysqli, $ok, true, null, $data['nro_orden_egreso_bulto'] ?? null);
+    $egresados = array_flip(array_map($base, $data['egresados'] ?? []));
+    foreach ($filas as $f) {
+        if (isset($egresados[$f['codigo']])) {
+            wepoint_seguimiento($mysqli, (int)$f['id_tc'], 'Salió del depósito de Wepoint' . (!empty($data['nro_orden_egreso_bulto']) ? " ({$data['nro_orden_egreso_bulto']})" : ''));
+        }
+    }
     foreach ($mal as $motivo => $idsMal) {
         wepoint_cola_marcar($mysqli, $idsMal, false, $motivo);
     }
@@ -492,6 +502,106 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
 // cierra como entregado (igual que una entrega cargada a mano en Seguimiento), así no queda en
 // Pendientes ni se puede volver a asignar a un recorrido. Lo corre el cron.
 // ---------------------------------------------------------------------------------------------
+/**
+ * Deja asentado en Seguimiento un movimiento del envío en el depósito de Wepoint, como "Movimiento
+ * Interno": no cambia el estado del envío, Tienda Nube no lo publica y no dispara webhooks. Copia
+ * Visitas de la última fila (el webhook de Meli las toma de ahí). Una sola vez por texto.
+ */
+function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $obs, ?string $cuando = null): bool
+{
+    $st = $mysqli->prepare("SELECT 1 FROM Seguimiento WHERE idTransClientes = ? AND Observaciones = ? AND Eliminado = 0 LIMIT 1");
+    $st->bind_param('is', $idTc, $obs);
+    $st->execute();
+    $existe = (bool)$st->get_result()->fetch_row();
+    $st->close();
+    $tc = $mysqli->query("SELECT CodigoSeguimiento, Recorrido, NumerodeOrden FROM TransClientes WHERE id = $idTc AND Eliminado = 0")->fetch_assoc();
+    if ($existe || !$tc) {
+        return false;
+    }
+
+    $ultimo = $mysqli->query("SELECT Destino, Avisado, idCliente, Retirado, Visitas FROM Seguimiento
+        WHERE idTransClientes = $idTc AND Eliminado = 0 ORDER BY id DESC LIMIT 1")->fetch_assoc() ?: [];
+    static $estado = null;
+    $estado ??= $mysqli->query("SELECT id, Estado FROM Estados WHERE Slug = 'internal_shift' ORDER BY id LIMIT 1")->fetch_assoc()
+        ?: ['id' => 0, 'Estado' => 'Movimiento Interno'];
+
+    $st = $mysqli->prepare("INSERT INTO Seguimiento (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones,
+        Entregado, Estado, Destino, Avisado, idCliente, Retirado, Visitas, idTransClientes, TimeStamp,
+        Recorrido, Devuelto, Webhook, state_id, NumerodeOrden, status, Eliminado)
+        VALUES (DATE(?), DATE_FORMAT(?, '%H:%i'), 'Wepoint', '', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 0, 0, ?, ?, 'internal_shift', 0)");
+    $cuando = $cuando ?: date('Y-m-d H:i:s');
+    $codigo = (string)$tc['CodigoSeguimiento'];
+    $nombreEstado = (string)$estado['Estado'];
+    $destino = (string)($ultimo['Destino'] ?? '');
+    $avisado = (int)($ultimo['Avisado'] ?? 0);
+    $idCliente = (int)($ultimo['idCliente'] ?? 0);
+    $retirado = (int)($ultimo['Retirado'] ?? 0);
+    $visitas = (int)($ultimo['Visitas'] ?? 0);
+    $recorrido = (string)$tc['Recorrido'];
+    $estadoId = (int)$estado['id'];
+    $orden = (string)$tc['NumerodeOrden'];
+    $st->bind_param('ssssssiiiiisis', $cuando, $cuando, $codigo, $obs, $nombreEstado, $destino, $avisado, $idCliente, $retirado, $visitas, $idTc, $recorrido, $estadoId, $orden);
+    $ok = $st->execute();
+    $st->close();
+
+    return $ok;
+}
+
+/** Lo que entró a Wepoint y todavía no tiene su línea en Seguimiento (lo de antes de que existiera). */
+function wepoint_seguimiento_pendientes(mysqli $mysqli, int $dias = 1): int
+{
+    if (!wepoint_activo()) {
+        return 0;
+    }
+    wepoint_cola_tabla($mysqli);
+    $filas = $mysqli->query("SELECT i.id_tc, MIN(i.enviado_en) AS entro FROM wepoint_cola i
+        WHERE i.tipo = 'ingreso' AND i.estado = 'ok' AND i.fecha >= CURDATE() - INTERVAL $dias DAY
+          AND NOT EXISTS (SELECT 1 FROM Seguimiento sg WHERE sg.idTransClientes = i.id_tc AND sg.Eliminado = 0
+                          AND sg.Observaciones = 'Ingresó al depósito de Wepoint')
+        GROUP BY i.id_tc LIMIT 300")->fetch_all(MYSQLI_ASSOC);
+    $n = 0;
+    foreach ($filas as $f) {
+        $n += (int)wepoint_seguimiento($mysqli, (int)$f['id_tc'], 'Ingresó al depósito de Wepoint', $f['entro'] ?: null);
+    }
+
+    return $n;
+}
+
+/**
+ * Lo que salió de Caddy sin pasar por Warehouse (Flex leído con la app de Meli, recorrido sin control
+ * de escaneo, entregado o devuelto) también sale de Wepoint: si un envío que entró por la cola tiene
+ * después una salida de warehouse o un cierre en Seguimiento, se encola su salida.
+ *
+ * @return int envíos encolados
+ */
+function wepoint_conciliar_salidas(mysqli $mysqli, int $dias = 3): int
+{
+    if (!wepoint_activo()) {
+        return 0;
+    }
+    wepoint_cola_tabla($mysqli);
+    $filas = $mysqli->query("SELECT e.id_tc, e.codigo, e.Recorrido FROM (
+            SELECT i.id_tc, i.codigo, MIN(i.creado_en) AS entro, TC.Recorrido
+            FROM wepoint_cola i
+            JOIN TransClientes TC ON TC.id = i.id_tc AND TC.Eliminado = 0
+            WHERE i.tipo = 'ingreso' AND i.estado = 'ok' AND i.fecha >= CURDATE() - INTERVAL $dias DAY
+              AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.tipo = 'salida' AND s.id_tc = i.id_tc)
+            GROUP BY i.id_tc, i.codigo, TC.Recorrido
+        ) e
+        WHERE EXISTS (SELECT 1 FROM Seguimiento sg
+            WHERE sg.idTransClientes = e.id_tc AND sg.Eliminado = 0 AND sg.Usuario <> 'Wepoint'
+              AND TIMESTAMP(sg.Fecha, sg.Hora) >= e.entro
+              AND (sg.status IN ('last_mile', 'warehouse_validated', 'delivered', '1st_visit_fail', 'returned_to_origin')
+                   OR sg.Estado IN ('Entregado al Cliente', 'No se pudo entregar', 'Devuelto al Cliente')))
+        LIMIT 500")->fetch_all(MYSQLI_ASSOC);
+
+    foreach ($filas as $f) {
+        wepoint_encolar($mysqli, 'salida', (int)$f['id_tc'], (string)$f['codigo'], (string)$f['codigo'], 'Wepoint', (string)(int)$f['Recorrido'], 'Salió sin escaneo en Warehouse');
+    }
+
+    return count($filas);
+}
+
 function wepoint_cerrar_retiros(mysqli $mysqli, int $dias = 3): int
 {
     if (!wepoint_activo()) {

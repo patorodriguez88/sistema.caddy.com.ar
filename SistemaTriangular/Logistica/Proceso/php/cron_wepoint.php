@@ -14,8 +14,11 @@ $_SERVER['HTTP_HOST'] = $argv[1] ?? 'sistema.caddy.com.ar';
 require __DIR__ . '/../../../Conexion/conexion_publica.php';
 require __DIR__ . '/wepoint_lib.php';
 
+$conciliadas = wepoint_conciliar_salidas($mysqli);
 $resultado = wepoint_procesar_cola($mysqli);
+$resultado['salidas_conciliadas'] = $conciliadas;
+$resultado['seguimientos'] = wepoint_seguimiento_pendientes($mysqli);
 $resultado['retiros_cerrados'] = wepoint_cerrar_retiros($mysqli);
-if ($resultado['ingresos'] || $resultado['salidas'] || $resultado['errores'] || $resultado['retiros_cerrados']) {
+if ($resultado['ingresos'] || $resultado['salidas'] || $resultado['errores'] || $resultado['retiros_cerrados'] || $conciliadas || $resultado['seguimientos']) {
     echo date('Y-m-d H:i:s') . ' ' . json_encode($resultado) . "\n";
 }
