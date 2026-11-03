@@ -135,7 +135,10 @@ include_once "../Conexion/Conexioni.php";
                                 <div class="tab-pane show active" id="wp-tab-cola">
                                     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
                                         <p class="text-muted mb-0">Lo escaneado en CrossDocking o cargado por los choferes que Wepoint todavía no confirmó. Se reintenta solo; normalmente está vacío.</p>
-                                        <button type="button" id="wp-reintentar" class="btn btn-sm btn-warning"><i class="uil-redo"></i> Reintentar ahora</button>
+                                        <div class="d-flex gap-2">
+                                            <button type="button" id="wp-reagrupar" class="btn btn-sm btn-outline-primary" title="Arma en Wepoint una recepción por recorrido de colecta con lo recibido ese día"><i class="uil-truck-loading"></i> Ordenar recepciones por recorrido</button>
+                                            <button type="button" id="wp-reintentar" class="btn btn-sm btn-warning"><i class="uil-redo"></i> Reintentar ahora</button>
+                                        </div>
                                     </div>
                                     <div class="table-responsive wp-tabla">
                                         <table class="table table-sm table-hover table-centered mb-0">

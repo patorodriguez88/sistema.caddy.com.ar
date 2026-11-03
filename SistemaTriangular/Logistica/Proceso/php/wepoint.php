@@ -626,6 +626,40 @@ if (isset($_POST['ReintentarCola'])) {
     exit;
 }
 
+// Ordena en Wepoint las recepciones de un día por recorrido de colecta (lo recibido antes de que el
+// aviso mandara la colecta quedó todo junto). Lo cerrado o firmado en Wepoint no se toca.
+if (isset($_POST['ReagruparRecepciones'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    $fecha = preg_match('/^\d{4}-\d{2}-\d{2}$/', (string)($_POST['fecha'] ?? '')) ? $_POST['fecha'] : date('Y-m-d');
+    wepoint_cola_tabla($mysqli);
+    $st = $mysqli->prepare("SELECT DISTINCT id_tc, codigo FROM wepoint_cola WHERE tipo = 'ingreso' AND fecha = ?");
+    $st->bind_param('s', $fecha);
+    $st->execute();
+    $envios = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $st->close();
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        session_write_close();
+    }
+
+    $porEnvio = wepoint_colectas($mysqli, array_column($envios, 'id_tc'));
+    $colectas = [];
+    foreach ($envios as $e) {
+        if (isset($porEnvio[(int)$e['id_tc']])) {
+            $colectas[$e['codigo']] = $porEnvio[(int)$e['id_tc']];
+        }
+    }
+
+    [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/recepciones/reagrupar', ['fecha' => $fecha, 'colectas' => (object)$colectas], 60);
+    $json = json_decode((string)$resp, true);
+    if ($http !== 200 || !is_array($json)) {
+        http_response_code(502);
+        echo json_encode(['ok' => false, 'message' => $http ? "Wepoint respondió HTTP $http" . (!empty($json['message']) ? ': ' . $json['message'] : '') : ($err ?: 'Wepoint no responde')], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+    echo json_encode(['ok' => true, 'fecha' => $fecha, 'envios' => count($envios), 'con_colecta' => count($colectas)] + ($json['data'] ?? []), JSON_UNESCAPED_UNICODE);
+    exit;
+}
+
 // Lo que Wepoint tiene en el depósito (vista=en_deposito) o lo que salió entre fechas (vista=salieron)
 if (isset($_POST['BultosWepoint'])) {
     header('Content-Type: application/json; charset=utf-8');
