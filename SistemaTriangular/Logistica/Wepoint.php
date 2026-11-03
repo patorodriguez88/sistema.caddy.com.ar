@@ -57,6 +57,11 @@ include_once "../Conexion/Conexioni.php";
                         </div>
                     </div>
 
+                    <div class="alert alert-warning d-none" id="wp-apagado">
+                        <i class="mdi mdi-power-plug-off-outline me-1"></i>
+                        La integración con Wepoint está <strong>apagada</strong> (WEPOINT_ACTIVO en Conexion/wepoint_config.php): CrossDocking no le avisa nada y la cola no se manda.
+                    </div>
+
                     <!-- Indicadores -->
                     <div class="row wp-kpi">
                         <div class="col-6 col-xl-3">

@@ -119,6 +119,7 @@
         errores ? `${num(errores)} con error · se reintenta solo` : `hoy confirmados: ${num(hoyOk.ingreso)} ingresos, ${num(hoyOk.salida)} salidas`
       );
       $("#wp-badge-cola").text(datos.cola.length || "");
+      $("#wp-apagado").toggleClass("d-none", r.activo !== false);
     });
   }
 
