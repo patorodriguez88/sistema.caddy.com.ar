@@ -183,6 +183,34 @@
     });
     $("#wp-buscar").on("input", pintar);
     $("#wp-desde, #wp-hasta").on("change", () => cargarSalieron().always(pintar));
+    $("#wp-reagrupar").on("click", function () {
+      Swal.fire({
+        title: "Ordenar recepciones por recorrido",
+        html: "Lo recibido ese día que quedó en una recepción sin recorrido pasa a la recepción de su colecta. Lo cerrado o firmado en Wepoint no se toca.",
+        input: "date",
+        inputValue: hoy(),
+        showCancelButton: true,
+        confirmButtonText: "Ordenar",
+        cancelButtonText: "Cancelar",
+        showLoaderOnConfirm: true,
+        preConfirm: (fecha) =>
+          $.post(URL_WEPOINT, { ReagruparRecepciones: 1, fecha }, null, "json").catch((x) => {
+            Swal.showValidationMessage((x.responseJSON && x.responseJSON.message) || "No se pudo ordenar");
+          }),
+        allowOutsideClick: () => !Swal.isLoading(),
+      }).then((res) => {
+        if (!res.isConfirmed || !res.value) return;
+        const r = res.value;
+        const lista = Object.entries(r.recepciones || {})
+          .map(([nombre, n]) => `<li>${esc(nombre)}: ${num(n)} bulto(s)</li>`)
+          .join("");
+        Swal.fire({
+          icon: "success",
+          title: `Se movieron ${num(r.movidos)} bulto(s)`,
+          html: `${num(r.con_colecta)} de ${num(r.envios)} envíos del ${esc(r.fecha)} tienen colecta.<ul class="text-start mt-2">${lista}</ul>`,
+        });
+      });
+    });
     $("#wp-reintentar").on("click", function () {
       const $btn = $(this).prop("disabled", true);
       $.post(URL_WEPOINT, { ReintentarCola: 1 }, null, "json")
