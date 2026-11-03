@@ -94,7 +94,9 @@ function wepoint_campos_tc(): string
 
 /**
  * Quién trajo cada envío al depósito: el recorrido de su colecta y el chofer, la patente y la orden
- * de ese recorrido en la fecha de la colecta. Wepoint arma una recepción por recorrido con esto.
+ * de ese recorrido en la fecha de la colecta; si no vino por colecta (servicio con retiro), el
+ * recorrido y la orden del retiro ("Retirado del Cliente" en Seguimiento). Wepoint arma una
+ * recepción por recorrido con esto.
  *
  * @param int[] $ids TransClientes.id
  * @return array<int,array{recorrido:string,chofer:?string,patente:?string,orden:?string}>
@@ -133,6 +135,31 @@ function wepoint_colectas(mysqli $mysqli, array $ids): array
         ];
     }
     $orden->close();
+
+    // Sin colecta, o colecta sin orden de ese día: el repartidor que hizo el retiro (la línea de
+    // Seguimiento trae su orden)
+    $sinColecta = array_values(array_filter($ids, fn($id) => empty($porEnvio[$id]['chofer'])));
+    if ($sinColecta) {
+        $retiros = $mysqli->query("SELECT sg.idTransClientes AS id, sg.Recorrido, L.NombreChofer, L.Patente, L.NumerodeOrden
+            FROM Seguimiento sg
+            JOIN (SELECT idTransClientes, MAX(id) AS id FROM Seguimiento
+                  WHERE idTransClientes IN (" . implode(',', $sinColecta) . ") AND Eliminado = 0
+                    AND (status = 'pickup_ready' OR Estado = 'Retirado del Cliente')
+                  GROUP BY idTransClientes) u ON u.id = sg.id
+            LEFT JOIN Logistica L ON L.NumerodeOrden = sg.NumerodeOrden AND L.Eliminado = 0 AND sg.NumerodeOrden > 0")->fetch_all(MYSQLI_ASSOC);
+        foreach ($retiros as $r) {
+            $recorrido = trim((string)$r['Recorrido']);
+            if ($recorrido === '' || $recorrido === '0' || (isset($porEnvio[(int)$r['id']]) && trim((string)($r['NombreChofer'] ?? '')) === '')) {
+                continue; // la colecta ya dio el recorrido y el retiro no agrega el chofer
+            }
+            $porEnvio[(int)$r['id']] = [
+                'recorrido' => mb_substr($recorrido, 0, 20),
+                'chofer' => trim((string)($r['NombreChofer'] ?? '')) !== '' ? mb_substr(trim($r['NombreChofer']), 0, 100) : null,
+                'patente' => trim((string)($r['Patente'] ?? '')) !== '' ? mb_substr(trim($r['Patente']), 0, 20) : null,
+                'orden' => !empty($r['NumerodeOrden']) ? (string)$r['NumerodeOrden'] : null,
+            ];
+        }
+    }
 
     return $porEnvio;
 }
