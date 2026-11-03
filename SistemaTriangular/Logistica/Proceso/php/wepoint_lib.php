@@ -92,6 +92,51 @@ function wepoint_campos_tc(): string
             (SELECT MAX(HR.ImporteCobranza) FROM HojaDeRuta HR WHERE HR.idTransClientes = TC.id AND HR.Eliminado = 0) AS Cobranza";
 }
 
+/**
+ * Quién trajo cada envío al depósito: el recorrido de su colecta y el chofer, la patente y la orden
+ * de ese recorrido en la fecha de la colecta. Wepoint arma una recepción por recorrido con esto.
+ *
+ * @param int[] $ids TransClientes.id
+ * @return array<int,array{recorrido:string,chofer:?string,patente:?string,orden:?string}>
+ */
+function wepoint_colectas(mysqli $mysqli, array $ids): array
+{
+    $ids = array_values(array_filter(array_map('intval', $ids)));
+    if (!$ids) {
+        return [];
+    }
+    $filas = $mysqli->query("SELECT TC.id, C.Recorrido, C.Fecha FROM TransClientes TC
+        JOIN Colecta C ON C.id = TC.idColecta
+        WHERE TC.id IN (" . implode(',', $ids) . ") AND TC.idColecta > 0")->fetch_all(MYSQLI_ASSOC);
+
+    $porEnvio = [];
+    $orden = $mysqli->prepare("SELECT NombreChofer, Patente, NumerodeOrden FROM Logistica
+        WHERE Recorrido = ? AND Fecha = ? AND Eliminado = 0 ORDER BY id DESC LIMIT 1");
+    $ordenes = [];
+    foreach ($filas as $f) {
+        $recorrido = trim((string)$f['Recorrido']);
+        if ($recorrido === '' || $recorrido === '0') {
+            continue;
+        }
+        $clave = $recorrido . '|' . $f['Fecha'];
+        if (!array_key_exists($clave, $ordenes)) {
+            $orden->bind_param('ss', $recorrido, $f['Fecha']);
+            $orden->execute();
+            $ordenes[$clave] = $orden->get_result()->fetch_assoc() ?: [];
+        }
+        $o = $ordenes[$clave];
+        $porEnvio[(int)$f['id']] = [
+            'recorrido' => mb_substr($recorrido, 0, 20),
+            'chofer' => trim((string)($o['NombreChofer'] ?? '')) !== '' ? mb_substr(trim($o['NombreChofer']), 0, 100) : null,
+            'patente' => trim((string)($o['Patente'] ?? '')) !== '' ? mb_substr(trim($o['Patente']), 0, 20) : null,
+            'orden' => !empty($o['NumerodeOrden']) ? (string)$o['NumerodeOrden'] : null,
+        ];
+    }
+    $orden->close();
+
+    return $porEnvio;
+}
+
 /** Piezas de la fila (CODIGO o CODIGO_n, como las numera Wepoint). */
 function wepoint_series(array $bulto): array
 {
@@ -349,6 +394,7 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
     $envios = $mysqli->query("SELECT " . wepoint_campos_tc() . " FROM TransClientes TC
         LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen WHERE TC.id IN (" . implode(',', $ids) . ")")->fetch_all(MYSQLI_ASSOC);
 
+    $colectas = wepoint_colectas($mysqli, $ids);
     $bultos = [];
     $sinOrigen = [];
     foreach ($envios as $e) {
@@ -356,7 +402,8 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
             $sinOrigen[(int)$e['id']] = true;
             continue;
         }
-        $bultos[] = wepoint_bulto_payload($e, wepoint_modalidad_sugerida($e));
+        $bultos[] = wepoint_bulto_payload($e, wepoint_modalidad_sugerida($e))
+            + (isset($colectas[(int)$e['id']]) ? ['colecta' => $colectas[(int)$e['id']]] : []);
     }
 
     $sinOrigenRows = array_column(array_filter($filas, fn($f) => isset($sinOrigen[(int)$f['id_tc']])), 'id');
