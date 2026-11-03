@@ -24,9 +24,20 @@ function wepoint_config(): array
         $config = [
             'url' => rtrim(defined('WEPOINT_API_URL') ? WEPOINT_API_URL : '', '/'),
             'token' => defined('WEPOINT_API_TOKEN') ? WEPOINT_API_TOKEN : '',
+            'activo' => defined('WEPOINT_ACTIVO') ? (bool)WEPOINT_ACTIVO : true,
         ];
     }
     return $config;
+}
+
+/**
+ * Llave general (WEPOINT_ACTIVO en wepoint_config.php): apagada, CrossDocking no anota nada para
+ * Wepoint y no se manda ni se cierra nada. Sin config (URL o token) también queda apagada.
+ */
+function wepoint_activo(): bool
+{
+    $c = wepoint_config();
+    return $c['activo'] && $c['url'] !== '' && $c['token'] !== '';
 }
 
 function wepoint_url(string $path): string
@@ -225,12 +236,16 @@ function wepoint_cola_tabla(mysqli $mysqli): void
         creado_en DATETIME NOT NULL,
         enviado_en DATETIME NULL,
         UNIQUE KEY uq_wepoint_cola (tipo, serie, fecha),
-        KEY ix_wepoint_cola_estado (estado, proximo_intento)
+        KEY ix_wepoint_cola_estado (estado, proximo_intento),
+        KEY ix_wepoint_cola_tc (id_tc, tipo)
     )");
 }
 
 function wepoint_encolar(mysqli $mysqli, string $tipo, int $idTc, string $codigo, string $serie, string $usuario, ?string $recorrido = null, ?string $chofer = null): void
 {
+    if (!wepoint_activo()) {
+        return;
+    }
     wepoint_cola_tabla($mysqli);
     // Repetido el mismo día: no se duplica, y si había fallado se reintenta ya
     $st = $mysqli->prepare("INSERT INTO wepoint_cola (tipo, id_tc, codigo, serie, fecha, recorrido, chofer, usuario, creado_en)
@@ -269,6 +284,9 @@ function wepoint_cola_marcar(mysqli $mysqli, array $ids, bool $ok, ?string $mens
  */
 function wepoint_procesar_cola(mysqli $mysqli, int $limite = 300): array
 {
+    if (!wepoint_activo()) {
+        return ['ingresos' => 0, 'salidas' => 0, 'errores' => 0, 'apagado' => true];
+    }
     wepoint_cola_tabla($mysqli);
     $r = $mysqli->query("SELECT GET_LOCK('wepoint_cola', 0) AS ok")->fetch_assoc();
     if ((int)$r['ok'] !== 1) {
@@ -429,6 +447,9 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
 // ---------------------------------------------------------------------------------------------
 function wepoint_cerrar_retiros(mysqli $mysqli, int $dias = 3): int
 {
+    if (!wepoint_activo()) {
+        return 0;
+    }
     $desde = date('Y-m-d', strtotime("-$dias days"));
     [$http, , $resp] = wepoint_request('GET', '/api/v2/integraciones/caddy/bultos?' . http_build_query([
         'vista' => 'salieron', 'desde' => $desde, 'hasta' => date('Y-m-d'),

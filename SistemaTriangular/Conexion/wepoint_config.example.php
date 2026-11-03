@@ -9,3 +9,7 @@
 
 define('WEPOINT_API_URL', 'https://testing.wepoint.ar'); // producción: https://sistema.wepoint.ar
 define('WEPOINT_API_TOKEN', 'TOKEN_DEL_USUARIO_DE_INTEGRACION');
+
+// Llave general: en false, CrossDocking no le avisa nada a Wepoint, la cola no se manda y no se
+// cierran retiros (lo que estaba en la cola espera). Sin definir = encendida.
+define('WEPOINT_ACTIVO', false);
