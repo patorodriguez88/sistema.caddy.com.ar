@@ -16,6 +16,24 @@ function ordColExiste(mysqli $mysqli, string $tabla, string $col): bool
   return $cache[$key] = ($res && $res->num_rows > 0);
 }
 
+/**
+ * ¿El usuario logueado puede permitir que una orden arranque sin escanear? Permiso por usuario
+ * (usuarios.PuedeOmitirEscaneo, se tilda en Empleados > Usuarios), mismo patrón que
+ * PuedeEliminarPagos; Nivel 1 siempre. Se lee de la base y no de la sesión para que tildarlo o
+ * destildarlo valga en el momento, sin volver a entrar. Sin la columna (base sin migrar) sigue
+ * como antes: todos pueden.
+ */
+function ordPuedeOmitirEscaneo(mysqli $mysqli): bool
+{
+  if ((int) ($_SESSION['Nivel'] ?? 0) === 1) return true;
+  if (!ordColExiste($mysqli, 'usuarios', 'PuedeOmitirEscaneo')) return true;
+  $id = (int) ($_SESSION['idusuario'] ?? 0);
+  if ($id <= 0) return false;
+  $res = $mysqli->query("SELECT PuedeOmitirEscaneo FROM usuarios WHERE id = {$id} LIMIT 1");
+  $row = $res ? $res->fetch_assoc() : null;
+  return (int) ($row['PuedeOmitirEscaneo'] ?? 0) === 1;
+}
+
 //ESTO SE EJECUTAL AL ABRIR EL MODAL PARA CARGAR LA ORDEN
 
 if (isset($_POST['MonetizarRecorrido'])) {
@@ -462,7 +480,7 @@ if (isset($_POST['Logistica'])) {
     $rows[] = $row;
   }
 
-  echo json_encode(array('data' => $rows));
+  echo json_encode(array('data' => $rows, 'puedeOmitirEscaneo' => ordPuedeOmitirEscaneo($mysqli)));
 }
 
 // TOGGLE del control de escaneo en Warehouse para una orden.
@@ -486,6 +504,12 @@ if (isset($_POST['ToggleOmitirEscaneo'])) {
 
   if (!ordColExiste($mysqli, 'Logistica', 'OmitirControlEscaneo')) {
     echo json_encode(['success' => 0, 'message' => 'Falta correr la migración OmitirControlEscaneo en esta base.']);
+    exit;
+  }
+
+  // Volver a exigir el escaneo lo puede hacer cualquiera; permitir que arranque sin escanear, no.
+  if ($Valor === 1 && !ordPuedeOmitirEscaneo($mysqli)) {
+    echo json_encode(['success' => 0, 'message' => 'No tenés permiso para omitir el escaneo. Lo habilita un administrador en Empleados > Usuarios (columna "Omitir Escaneo").']);
     exit;
   }
 

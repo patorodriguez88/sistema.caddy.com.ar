@@ -359,6 +359,7 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
                                                             <th>Acceso</th>
                                                             <th title="Permiso independiente del Nivel para borrar pagos (Ctasctes)">Eliminar Pagos</th>
                                                             <th title="Permiso independiente del Nivel para gestionar Gastos Extras (Admin/GastosExtras.php)">Gastos Extras</th>
+                                                            <th title="Permiso independiente del Nivel para permitir en Logística > Órdenes que un recorrido arranque sin escanear">Omitir Escaneo</th>
                                                             <th></th>
                                                         </tr>
                                                     </thead>
@@ -502,7 +503,7 @@ $puedeGestionarRoles = usuarioPuedeGestionarRoles($mysqli);
     <!-- Funciones -->
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Procesos/js/usuarios.js"></script>
+    <script src="Procesos/js/usuarios.js?v=20261103a"></script>
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 
