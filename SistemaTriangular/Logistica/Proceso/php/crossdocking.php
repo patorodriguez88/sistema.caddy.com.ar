@@ -367,15 +367,17 @@ function cd_bultos_esperados(mysqli $mysqli, int $recorrido): int
     return (int)($st->get_result()->fetch_assoc()['n'] ?? 0);
 }
 
-if (isset($_POST['EscanearCrossdocking'])) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    $raw = cd_codigo_qr_caddy(trim((string)($_POST['codigo'] ?? '')));
+/**
+ * Un escaneo de CrossDocking: resuelve la etiqueta (Caddy, Meli, proveedor), marca el ingreso en
+ * Caddy, lo anota para Wepoint y devuelve el rótulo. Lo usan esta pantalla y la recepción desde
+ * Wepoint (wepoint_entrada.php), que escanea lo mismo sin entrar a Caddy.
+ */
+function cd_escanear(mysqli $mysqli, string $codigo, int $proveedorForzado = 0): array
+{
+    $raw = cd_codigo_qr_caddy(trim($codigo));
     if ($raw === '') {
-        echo json_encode(['ok' => false, 'error' => 'CODIGO_VACIO']);
-        exit;
+        return ['ok' => false, 'error' => 'CODIGO_VACIO'];
     }
-    $proveedorForzado = (int)($_POST['proveedorForzado'] ?? 0);
 
     $ahoraFecha = date('Y-m-d');
     $ahoraHora  = date('H:i:s');
@@ -388,21 +390,19 @@ if (isset($_POST['EscanearCrossdocking'])) {
     $resuelto = cd_resolver($mysqli, $raw, $proveedorForzado);
     if (!$resuelto) {
         cd_log_evento($mysqli, $ahoraFecha, $ahoraHora, $raw, $bultoSufijo, 'no_match', null, null, null);
-        echo json_encode(['ok' => false, 'error' => 'NO_MATCH', 'codigo' => $raw]);
-        exit;
+        return ['ok' => false, 'error' => 'NO_MATCH', 'codigo' => $raw];
     }
 
     if ($resuelto['tipo'] === 'AMBIGUO') {
         // No se loguea como no_match ni se marca nada todavía — se le
         // devuelve la lista al operador y se espera a que elija. El
         // reintento (con proveedorForzado) sí queda logueado normal.
-        echo json_encode([
+        return [
             'ok' => false,
             'error' => 'AMBIGUO',
             'codigo' => $raw,
             'candidatos' => $resuelto['candidatos'],
-        ], JSON_UNESCAPED_UNICODE);
-        exit;
+        ];
     }
 
     $row = $resuelto['row'];
@@ -470,7 +470,7 @@ if (isset($_POST['EscanearCrossdocking'])) {
     $recEscaneadosHoy = $recorridoNum > 0 ? cd_escaneados_hoy_recorrido($mysqli, $ahoraFecha, $recorridoNum) : 0;
     $recEsperados = $recorridoNum > 0 ? max($recEscaneadosHoy, cd_bultos_esperados($mysqli, $recorridoNum)) : 0;
 
-    echo json_encode([
+    return [
         'ok'                => true,
         'match'             => $resuelto['tipo'],
         'idTransClientes'   => $idTC,
@@ -493,7 +493,12 @@ if (isset($_POST['EscanearCrossdocking'])) {
         'yaIngresado'       => $esRepetido,
         'wepointFAnterior'  => $marca['wepointFAnterior'],
         'hora'              => $marca['hora'],
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+}
+
+if (isset($_POST['EscanearCrossdocking'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(cd_escanear($mysqli, (string)($_POST['codigo'] ?? ''), (int)($_POST['proveedorForzado'] ?? 0)), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -764,4 +769,7 @@ if (isset($_POST['ControlarCrossdocking'])) {
     exit;
 }
 
-echo json_encode(['ok' => false, 'error' => 'ACCION_DESCONOCIDA']);
+// Incluido como librería (wepoint_entrada.php usa cd_escanear): sin acción de pantalla, no responde nada
+if (!defined('CD_COMO_LIBRERIA')) {
+    echo json_encode(['ok' => false, 'error' => 'ACCION_DESCONOCIDA']);
+}
