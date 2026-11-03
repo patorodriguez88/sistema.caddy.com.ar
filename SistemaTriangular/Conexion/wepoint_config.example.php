@@ -13,3 +13,7 @@ define('WEPOINT_API_TOKEN', 'TOKEN_DEL_USUARIO_DE_INTEGRACION');
 // Llave general: en false, CrossDocking no le avisa nada a Wepoint, la cola no se manda y no se
 // cierran retiros (lo que estaba en la cola espera). Sin definir = encendida.
 define('WEPOINT_ACTIVO', false);
+
+// Recepción desde Wepoint (Logistica/Proceso/php/wepoint_entrada.php): token que Wepoint manda para
+// escanear como en CrossDocking. Va también en CADDY_SISTEMA_TOKEN de la API de Wepoint.
+define('WEPOINT_ENTRADA_TOKEN', 'UN_TOKEN_LARGO_Y_SECRETO');
