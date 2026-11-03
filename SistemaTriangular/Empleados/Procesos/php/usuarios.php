@@ -82,6 +82,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             requiereGestionRoles($mysqli);
             toggleGastosExtras($mysqli);
             break;
+        case 'toggle_omitir_escaneo':
+            requiereGestionRoles($mysqli);
+            toggleOmitirEscaneo($mysqli);
+            break;
         case 'puede_gestionar_roles':
             echo json_encode(['puede' => usuarioPuedeGestionarRoles($mysqli)]);
             break;
@@ -245,7 +249,7 @@ function listarUsuarios($mysqli)
 {
     $sql = "SELECT u.id, u.Nombre AS nombre, u.Apellido AS apellido, u.Usuario, u.NIVEL,
                    u.NotificacionAccesoEnviada, u.NotificacionAccesoFecha, u.UltimoAcceso,
-                   u.PuedeEliminarPagos, u.PuedeGestionarGastosExtras,
+                   u.PuedeEliminarPagos, u.PuedeGestionarGastosExtras, u.PuedeOmitirEscaneo,
                    r.id AS rol_id, r.nombre AS rol
             FROM usuarios u
             LEFT JOIN usuarios_roles r ON u.rol_id = r.id AND r.Eliminado = 0
@@ -343,6 +347,28 @@ function toggleGastosExtras($mysqli)
     }
 
     $stmt = $mysqli->prepare("UPDATE usuarios SET PuedeGestionarGastosExtras = ? WHERE id = ? LIMIT 1");
+    $stmt->bind_param("ii", $activo, $id);
+    if ($stmt->execute()) {
+        echo json_encode(['success' => true]);
+    } else {
+        echo json_encode(['success' => false, 'error' => $mysqli->error]);
+    }
+    $stmt->close();
+}
+
+// Mismo patrón: quién puede permitir en Logística > Órdenes que un recorrido arranque sin escanear
+// los bultos ("ESCANEO OMITIDO", Logistica.OmitirControlEscaneo). Ver ordPuedeOmitirEscaneo() en
+// Logistica/Proceso/php/ordenes.php.
+function toggleOmitirEscaneo($mysqli)
+{
+    $id = intval($_POST['usuario_id'] ?? 0);
+    $activo = !empty($_POST['activo']) ? 1 : 0;
+    if ($id <= 0) {
+        echo json_encode(['success' => false, 'error' => 'Usuario inválido.']);
+        return;
+    }
+
+    $stmt = $mysqli->prepare("UPDATE usuarios SET PuedeOmitirEscaneo = ? WHERE id = ? LIMIT 1");
     $stmt->bind_param("ii", $activo, $id);
     if ($stmt->execute()) {
         echo json_encode(['success' => true]);

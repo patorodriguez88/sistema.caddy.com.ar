@@ -262,7 +262,7 @@ function listarUsuarios() {
 
       if (usuarios.length === 0) {
         tabla.append(
-          `<tr><td colspan="8" class="caddy-tabla-vacia">
+          `<tr><td colspan="9" class="caddy-tabla-vacia">
             <i class="uil-users-alt"></i>
             No hay usuarios de sistema para mostrar.
           </td></tr>`
@@ -293,6 +293,7 @@ function listarUsuarios() {
 
         const puedeEliminarPagos = Number(user.PuedeEliminarPagos) === 1;
         const puedeGastosExtras = Number(user.PuedeGestionarGastosExtras) === 1;
+        const puedeOmitirEscaneo = Number(user.PuedeOmitirEscaneo) === 1;
 
         tabla.append(
           `<tr>
@@ -311,6 +312,11 @@ function listarUsuarios() {
                 <input type="checkbox" class="form-check-input chk-gastos-extras" data-id="${user.id}" ${puedeGastosExtras ? "checked" : ""} title="Permite gestionar Gastos Extras (Admin/GastosExtras.php), independiente del Nivel">
               </div>
             </td>
+            <td class="text-center">
+              <div class="form-check form-switch d-inline-block">
+                <input type="checkbox" class="form-check-input chk-omitir-escaneo" data-id="${user.id}" ${puedeOmitirEscaneo ? "checked" : ""} title="Permite habilitar en Órdenes que un recorrido arranque sin escanear los bultos, independiente del Nivel">
+              </div>
+            </td>
             <td>
               <button type="button" class="${btnClass}" data-id="${user.id}" data-mail="${user.Usuario}" title="Reenviar acceso: genera una contraseña temporal nueva y la manda por mail">
                 <i class="uil-repeat"></i>
@@ -324,7 +330,7 @@ function listarUsuarios() {
     .catch(() => {
       tabla.empty();
       tabla.append(
-        `<tr><td colspan="8" class="caddy-tabla-vacia">
+        `<tr><td colspan="9" class="caddy-tabla-vacia">
           <i class="uil-exclamation-triangle"></i>
           No se pudo cargar la lista de usuarios. Puede faltar una migración de base de datos — avisá a sistemas.
         </td></tr>`
@@ -562,3 +568,16 @@ function inicializarTablaRolesPermisos() {
     ],
   });
 }
+
+$(document).on("change", ".chk-omitir-escaneo", function () {
+  const $chk = $(this);
+  const usuario_id = $chk.data("id");
+  const activo = $chk.is(":checked") ? 1 : 0;
+
+  post("toggle_omitir_escaneo", { usuario_id, activo }).then((r) => {
+    if (!r.success) {
+      $chk.prop("checked", !activo); // revertir el switch si falló
+      Swal.fire("No se pudo guardar", r.error || "Error desconocido.", "error");
+    }
+  });
+});

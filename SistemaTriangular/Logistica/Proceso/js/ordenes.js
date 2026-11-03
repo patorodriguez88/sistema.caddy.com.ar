@@ -7,6 +7,8 @@ $("#ordenes").on("click", ".btn-cargar-orden", function (e) {
 });
 
 // CONTROL DE ESCANEO EN WAREHOUSE
+// Lo devuelve el listado de órdenes: si es false, el chip "ESCANEO OBLIGATORIO" no se puede tocar.
+let puedeOmitirEscaneo = true;
 // Prende/apaga Logistica.OmitirControlEscaneo de la orden. Con 1, el recorrido
 // puede arrancar en la app de reparto sin escanear los bultos en Warehouse.
 $("#ordenes").on("click", ".btn-toggle-escaneo", function (e) {
@@ -792,6 +794,11 @@ function init_datatable(fechas = "") {
       data: { Logistica: 1, Fechas: fechas },
       processing: true,
       type: "post",
+      dataSrc: function (json) {
+        // Permiso del usuario para permitir arrancar sin escanear (usuarios.PuedeOmitirEscaneo)
+        puedeOmitirEscaneo = json.puedeOmitirEscaneo !== false;
+        return json.data;
+      },
     },
     columns: [
       {
@@ -877,10 +884,14 @@ function init_datatable(fechas = "") {
                     title="Habilitado por ${row.OmitirControlEscaneo_Por || "-"}${row.OmitirControlEscaneo_Fecha ? " el " + row.OmitirControlEscaneo_Fecha : ""}. Click para volver a exigir escaneo.">
                    <span class="badge bg-danger"><i class="mdi mdi-barcode-off"></i> ESCANEO OMITIDO</span>
                  </a>`
-              : `<a href="#" class="btn-toggle-escaneo d-inline-block mt-1" data-no="${row.NumerodeOrden}" data-valor="1"
+              : puedeOmitirEscaneo
+              ? `<a href="#" class="btn-toggle-escaneo d-inline-block mt-1" data-no="${row.NumerodeOrden}" data-valor="1"
                     title="Click para permitir que este recorrido arranque sin escanear en Warehouse.">
                    <span class="badge bg-light text-dark border"><i class="mdi mdi-barcode-scan"></i> ESCANEO OBLIGATORIO</span>
-                 </a>`;
+                 </a>`
+              : `<span class="d-inline-block mt-1" title="Solo los usuarios habilitados en Empleados > Usuarios pueden permitir que arranque sin escanear.">
+                   <span class="badge bg-light text-dark border"><i class="mdi mdi-barcode-scan"></i> ESCANEO OBLIGATORIO</span>
+                 </span>`;
             const btnCargar =
               row.Estado === "Alta" || row.Estado === "Pendiente"
                 ? `<a href="#" class="btn-cargar-orden" data-no="${row.NumerodeOrden}" title="Cargar Orden">
