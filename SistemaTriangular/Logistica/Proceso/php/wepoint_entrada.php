@@ -3,7 +3,8 @@
 // hace lo mismo que un escaneo de CrossDocking (resuelve la etiqueta, marca el ingreso en Caddy, lo
 // anota para Wepoint y arma el rótulo) y le devuelve además el aviso del envío para que Wepoint lo
 // dé de alta y lo reciba en el momento. Sin sesión: se autentica con WEPOINT_ENTRADA_TOKEN de
-// Conexion/wepoint_config.php. POST JSON {codigo, proveedorForzado?, operador?}.
+// Conexion/wepoint_config.php. POST JSON {codigo, proveedorForzado?, operador?}, o {accion: 'estado'}
+// para el tablero del día.
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -35,6 +36,11 @@ $_SESSION = ['Usuario' => 'Wepoint' . ($operador !== '' ? ": $operador" : '')];
 
 define('CD_COMO_LIBRERIA', true);
 require_once __DIR__ . '/crossdocking.php';
+// Tablero del día (lo mismo que muestra la pantalla de CrossDocking)
+if (($in['accion'] ?? '') === 'estado') {
+    $responder(200, cd_estado($mysqli, (string)($in['fecha'] ?? '')));
+}
+
 $r = cd_escanear($mysqli, (string)($in['codigo'] ?? ''), (int)($in['proveedorForzado'] ?? 0));
 if (empty($r['ok'])) {
     $responder(200, $r);

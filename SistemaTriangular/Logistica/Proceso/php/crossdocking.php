@@ -521,10 +521,12 @@ if (isset($_POST['EscanearCrossdocking'])) {
  * (cd_bultos_escaneados_hoy).
  * GET/POST: EstadoCrossdocking=1, opcional fecha=YYYY-MM-DD (default hoy)
  */
-if (isset($_REQUEST['EstadoCrossdocking'])) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    $fecha = trim((string)($_REQUEST['fecha'] ?? ''));
+/**
+ * El tablero del día: escaneado por recorrido (con lo que se espera) y los últimos escaneos, de
+ * cualquier operador (esta pantalla o la recepción desde Wepoint).
+ */
+function cd_estado(mysqli $mysqli, string $fecha): array
+{
     if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
         $fecha = date('Y-m-d');
     }
@@ -584,15 +586,31 @@ if (isset($_REQUEST['EstadoCrossdocking'])) {
             'posicion'          => cd_info_posicion($mysqli, cd_base((string)$row['CodigoSeguimiento'])),
             'numeroOrden'       => (int)($row['NumerodeOrden'] ?? 0),
             'hora'              => (string)($row['Wepoint_h'] ?? ''),
+            'usuario'           => cd_ultimo_usuario($mysqli, $fecha, $idTC),
         ];
     }
 
-    echo json_encode([
+    return [
         'ok' => true,
         'fecha' => $fecha,
         'porRecorrido' => $porRecorrido,
         'items' => $items,
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+}
+
+// Quién escaneó último el envío ese día (operador de CrossDocking o "Wepoint: …")
+function cd_ultimo_usuario(mysqli $mysqli, string $fecha, int $idTC): string
+{
+    $st = $mysqli->prepare("SELECT usuario FROM crossdocking_eventos WHERE fecha=? AND idTransClientes=? AND resultado IN ('ok','dup')
+                             ORDER BY id DESC LIMIT 1");
+    $st->bind_param('si', $fecha, $idTC);
+    $st->execute();
+    return (string)($st->get_result()->fetch_assoc()['usuario'] ?? '');
+}
+
+if (isset($_REQUEST['EstadoCrossdocking'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(cd_estado($mysqli, trim((string)($_REQUEST['fecha'] ?? ''))), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
