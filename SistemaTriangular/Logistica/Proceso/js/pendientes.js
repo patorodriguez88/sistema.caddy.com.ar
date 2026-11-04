@@ -488,8 +488,8 @@ $("#modificardir_ok").click(function () {
 
 $(document).ready(function () {
 // Marcas de Wepoint en la lista de servicios (pendientes.php -> wepoint_info_envios): el paquete
-// está en el depósito / en un egreso, y el cambio de recorrido pedido a Wepoint (pendiente,
-// aceptado o rechazado con su motivo).
+// está en el depósito / en un egreso, y el cambio de recorrido que espera a Wepoint. Lo que Wepoint
+// resolvió (aceptado o rechazado con el motivo) queda en Seguimiento.
 function badgesWepoint(w) {
   if (!w) return "";
   var esc = function (t) {
@@ -508,12 +508,8 @@ function badgesWepoint(w) {
     var destino = c.recorrido_destino && c.recorrido_destino !== c.recorrido_origen ? "al recorrido " + esc(c.recorrido_destino) : "al egreso";
     if (c.estado === "pendiente" || c.estado === "aplicando") {
       html += `<br/><span class='badge bg-warning text-dark mt-1' style='font-size:10px' title='Pedido por ${esc(c.usuario)}'><i class='mdi mdi-timer-sand'></i> Cambio ${destino} pedido a Wepoint</span>`;
-    } else if (c.estado === "rechazado") {
-      html += `<br/><span class='badge bg-danger mt-1' style='font-size:10px;white-space:normal;text-align:left' title='Pedido por ${esc(c.usuario)}'><i class='mdi mdi-close-circle-outline'></i> Wepoint rechazó el cambio ${destino}${c.motivo ? ": " + esc(c.motivo) : ""}</span>`;
     } else if (c.estado === "error") {
       html += `<br/><span class='badge bg-danger mt-1' style='font-size:10px;white-space:normal;text-align:left'><i class='mdi mdi-alert-outline'></i> ${esc(c.motivo)}</span>`;
-    } else if (c.estado === "aplicado") {
-      html += `<br/><span class='badge bg-success mt-1' style='font-size:10px'><i class='mdi mdi-check'></i> Cambio aceptado por Wepoint</span>`;
     }
   }
   return html;

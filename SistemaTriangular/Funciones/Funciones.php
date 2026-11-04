@@ -304,8 +304,8 @@ function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recor
 // recibe la misma forma de respuesta.
 // Si el paquete está en Wepoint y el recorrido de origen o de destino tiene un egreso solicitado,
 // no se mueve: se le pide el cambio a Wepoint y se aplica cuando lo acepte ($autorizadoPorWepoint,
-// Logistica/Proceso/php/wepoint_egresos.php).
-function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn = 10, bool $autorizadoPorWepoint = false): array
+// Logistica/Proceso/php/wepoint_egresos.php). $notaSeguimiento se suma al comentario de Seguimiento.
+function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn = 10, bool $autorizadoPorWepoint = false, ?string $notaSeguimiento = null): array
 {
     if ($cs === '' || $r === '') {
         return ['success' => 0, 'message' => 'Faltan parámetros: cs y/o r.'];
@@ -572,7 +572,7 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
         }
 
         // 5.c) Seguimiento
-        $Observaciones = 'CMS: Cambio a Recorrido ' . $r;
+        $Observaciones = mb_substr('CMS: Cambio a Recorrido ' . $r . ($notaSeguimiento ? ' · ' . $notaSeguimiento : ''), 0, 200);
         $Entregado     = 0;
         $Devuelto      = 0;
         $Estado_id     = $estadoIdIn;

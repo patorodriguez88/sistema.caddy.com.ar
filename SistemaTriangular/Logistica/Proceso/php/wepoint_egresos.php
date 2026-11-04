@@ -287,7 +287,11 @@ function wepoint_cargar_funciones(): void
     require_once __DIR__ . '/../../../Funciones/Funciones.php';
 }
 
-/** Un cambio que resolvió Wepoint: aceptado se aplica en Caddy, rechazado queda anotado. Una sola vez. */
+/**
+ * Un cambio que resolvió Wepoint, una sola vez: aceptado se aplica en Caddy (el comentario del
+ * Movimiento Interno dice que lo aprobó Wepoint, a nombre de quien lo pidió); rechazado queda
+ * como Movimiento Interno en Seguimiento con el motivo.
+ */
 function wepoint_egreso_resolver_cambio(mysqli $mysqli, int $idCambio, string $estadoWp, ?string $motivo): void
 {
     if ($idCambio <= 0 || !in_array($estadoWp, ['Aceptado', 'Rechazado'], true)) {
@@ -298,27 +302,36 @@ function wepoint_egreso_resolver_cambio(mysqli $mysqli, int $idCambio, string $e
         return; // ya resuelto (llega en el aviso del egreso de origen y en el de destino)
     }
     $c = $mysqli->query("SELECT * FROM wepoint_egreso_cambios WHERE id = $idCambio")->fetch_assoc();
+    $idTc = (int)$c['id_tc'];
+    $pedidoPor = $c['usuario'] ?: 'Caddy';
+    $mueve = (int)$c['recorrido_destino'] > 0 && (int)$c['recorrido_destino'] !== (int)$c['recorrido_origen'];
+    $que = $mueve ? "el cambio a Recorrido {$c['recorrido_destino']}" : "sumarlo al egreso del Recorrido {$c['recorrido_destino']}";
+    $nros = array_column($mysqli->query("SELECT nro_oeb FROM wepoint_egresos WHERE id IN (" . (int)$c['egreso_origen'] . ', ' . (int)$c['egreso_destino'] . ") AND nro_oeb <> ''")->fetch_all(MYSQLI_ASSOC), 'nro_oeb');
+    $oeb = $nros ? ' (' . implode(', ', $nros) . ')' : '';
 
     if ($estadoWp === 'Rechazado') {
         $st = $mysqli->prepare("UPDATE wepoint_egreso_cambios SET estado = 'rechazado', motivo = ?, resuelto_en = NOW() WHERE id = ?");
         $st->bind_param('si', $motivo, $idCambio);
         $st->execute();
         $st->close();
+        wepoint_seguimiento($mysqli, $idTc, 'internal_shift', mb_substr("Wepoint rechazó $que$oeb pedido por $pedidoPor" . ($motivo ? ": $motivo" : '') . " [#$idCambio]", 0, 200));
         return;
     }
 
-    $tc = $mysqli->query("SELECT Recorrido FROM TransClientes WHERE id = {$c['id_tc']}")->fetch_assoc();
+    $tc = $mysqli->query("SELECT Recorrido FROM TransClientes WHERE id = $idTc")->fetch_assoc();
     $resultado = ['success' => 1, 'message' => ''];
-    if ($tc && (int)$c['recorrido_destino'] > 0 && (int)$tc['Recorrido'] !== (int)$c['recorrido_destino']) {
+    if ($tc && $mueve && (int)$tc['Recorrido'] !== (int)$c['recorrido_destino']) {
         wepoint_cargar_funciones();
         $usuarioAntes = $_SESSION['Usuario'] ?? null;
-        $_SESSION['Usuario'] = mb_substr('Wepoint (pedido por ' . ($c['usuario'] ?: 'Caddy') . ')', 0, 50);
-        $resultado = cambiarRecorrido($mysqli, (string)$c['codigo'], (string)$c['recorrido_destino'], (int)$c['estado_id'], true);
+        $_SESSION['Usuario'] = mb_substr($pedidoPor, 0, 50);
+        $resultado = cambiarRecorrido($mysqli, (string)$c['codigo'], (string)$c['recorrido_destino'], (int)$c['estado_id'], true, "aprobado por Wepoint$oeb");
         if ($usuarioAntes === null) {
             unset($_SESSION['Usuario']);
         } else {
             $_SESSION['Usuario'] = $usuarioAntes;
         }
+    } elseif (!$mueve) {
+        wepoint_seguimiento($mysqli, $idTc, 'internal_shift', mb_substr("Wepoint aceptó $que$oeb [#$idCambio]", 0, 200));
     }
     $nuevo = !empty($resultado['success']) ? 'aplicado' : 'error';
     $nota = !empty($resultado['success']) ? null : mb_substr('Wepoint lo aceptó pero no se pudo cambiar: ' . ($resultado['message'] ?? ''), 0, 255);
@@ -396,8 +409,8 @@ function wepoint_egresos_para_hdr(mysqli $mysqli): array
 
 /**
  * Lo de Wepoint de cada servicio para la lista de Hoja de Ruta: si está en el depósito, en qué
- * egreso, y el último cambio de recorrido pedido a Wepoint (el pendiente siempre; el resuelto, por
- * dos días, para que se vea si lo rechazó y por qué).
+ * egreso, y el cambio de recorrido pedido a Wepoint que espera respuesta (o que Wepoint aceptó y no
+ * se pudo aplicar). Lo resuelto queda en Seguimiento.
  *
  * @param int[] $ids TransClientes.id
  * @return array<int,array{en_deposito:bool,egreso:?array,cambio:?array}>
@@ -423,7 +436,7 @@ function wepoint_info_envios(mysqli $mysqli, array $ids): array
     foreach ($mysqli->query("SELECT c.id_tc, c.estado, c.recorrido_origen, c.recorrido_destino, c.motivo, c.usuario, c.creado_en, c.resuelto_en
         FROM wepoint_egreso_cambios c
         JOIN (SELECT id_tc, MAX(id) AS id FROM wepoint_egreso_cambios WHERE id_tc IN ($lista) GROUP BY id_tc) u ON u.id = c.id
-        WHERE c.estado = 'pendiente' OR c.resuelto_en >= NOW() - INTERVAL 2 DAY")->fetch_all(MYSQLI_ASSOC) as $f) {
+        WHERE c.estado IN ('pendiente', 'aplicando') OR (c.estado = 'error' AND c.resuelto_en >= NOW() - INTERVAL 2 DAY)")->fetch_all(MYSQLI_ASSOC) as $f) {
         $info[(int)$f['id_tc']]['cambio'] = $f;
     }
 
