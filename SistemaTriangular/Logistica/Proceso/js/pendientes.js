@@ -490,7 +490,7 @@ $(document).ready(function () {
 // Marcas de Wepoint en la lista de servicios (pendientes.php -> wepoint_info_envios): el paquete
 // está en el depósito / en un egreso, y el cambio de recorrido que espera a Wepoint. Lo que Wepoint
 // resolvió (aceptado o rechazado con el motivo) queda en Seguimiento.
-function badgesWepoint(w) {
+function badgesWepoint(w, row) {
   if (!w) return "";
   var esc = function (t) {
     return $("<div>").text(t == null ? "" : String(t)).html();
@@ -500,8 +500,11 @@ function badgesWepoint(w) {
     html += `<br/><span class='badge bg-primary mt-1' style='font-size:10px'><i class='mdi mdi-warehouse'></i> En Wepoint</span>`;
   }
   if (w.egreso) {
-    var est = w.egreso.estado === "aceptado" ? "preparando" : "esperando a Wepoint";
-    html += ` <span class='badge bg-info mt-1' style='font-size:10px' title='Está en el egreso de Wepoint: no se mueve de recorrido sin que Wepoint lo acepte'><i class='mdi mdi-lock-outline'></i> Egreso ${esc(w.egreso.nro)} · ${est}</span>`;
+    var est = w.egreso.motivo ? w.egreso.motivo : w.egreso.estado === "aceptado" ? "preparando" : "esperando a Wepoint";
+    html += ` <span class='badge bg-info mt-1' style='font-size:10px' title='Está en una orden de egreso de Wepoint: no se mueve de recorrido sin que Wepoint lo acepte'><i class='mdi mdi-lock-outline'></i> Egreso ${esc(w.egreso.nro)} · ${esc(est)}</span>`;
+  } else if (w.en_deposito && row && Number(row.Recorrido) === 80) {
+    // Recorrido 80 (DEPOSITO): el envío suelto se saca de Wepoint con su propia orden de egreso
+    html += ` <a href='#' class='badge bg-dark mt-1' style='font-size:10px' onclick='pedirEgresoEnvioWepoint(${Number(row.id)}, ${JSON.stringify(String(row.CodigoSeguimiento))}); return false;'><i class='mdi mdi-export'></i> Pedir egreso a Wepoint</a>`;
   }
   var c = w.cambio;
   if (c) {
@@ -514,6 +517,38 @@ function badgesWepoint(w) {
   }
   return html;
 }
+
+// Orden de egreso de Wepoint para un envío del recorrido 80, con su motivo (modal en HojaDeRuta2.php)
+function pedirEgresoEnvioWepoint(id, codigo) {
+  $("#wepoint-envio-codigo").text(codigo);
+  $("#wepoint-envio-motivo").val("");
+  $("#wepoint-envio-ok").data("id", id).prop("disabled", false);
+  $("#wepoint-envio-modal").modal("show");
+}
+
+$(document).on("click", "#wepoint-envio-ok", function () {
+  var motivo = $("#wepoint-envio-motivo").val();
+  if (!motivo) {
+    toast("error", "Wepoint", "Elegí el motivo del egreso.");
+    return;
+  }
+  var $btn = $(this).prop("disabled", true);
+  $.ajax({
+    data: { WepointPedirEgresoEnvio: 1, id: $btn.data("id"), motivo: motivo },
+    type: "POST",
+    url: "Proceso/php/pendientes.php",
+    dataType: "json",
+    success: function (r) {
+      $("#wepoint-envio-modal").modal("hide");
+      toast(r.ok ? "success" : "error", "Wepoint", r.mensaje);
+      $("#seguimiento").DataTable().ajax.reload(null, false);
+    },
+    error: function () {
+      $btn.prop("disabled", false);
+      toast("error", "Wepoint", "No se pudo pedir el egreso. Reintentá de nuevo.");
+    },
+  });
+});
 
   var datatable = $("#seguimiento").DataTable({
     dom: "Bfrtip",
@@ -709,7 +744,7 @@ function badgesWepoint(w) {
               `<a href='#' class='badge bg-danger mt-1 ms-1' style='font-size:9px' onclick='resolver_colecta_bulto(${row.id},"DevolverColecta"); return false;'>Devolver</a>`;
           }
 
-          var wepoint = badgesWepoint(row.Wepoint);
+          var wepoint = badgesWepoint(row.Wepoint, row);
 
           var badgeServicio =
             `<a value='${servicio}' href='#' class='badge bg-${color} mb-1 mt-1' style='font-size:10px' onclick='servicio_mod(${row.id},${row.Retirado})'>${servicio}</a>`;

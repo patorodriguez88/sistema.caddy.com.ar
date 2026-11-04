@@ -260,6 +260,36 @@
                     </div><!-- /.modal-dialog -->
                 </div><!-- /.modal -->
                 <!--                   MODAL ELIMINAR -->
+                <!-- Egreso de Wepoint de un envío del recorrido 80 (Proceso/js/pendientes.js, pedirEgresoEnvioWepoint) -->
+                <div id="wepoint-envio-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="wepoint-envio-modalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header modal-colored-header bg-dark">
+                                <h4 class="modal-title" id="wepoint-envio-modalLabel"><i class="mdi mdi-export"></i> Pedir egreso a Wepoint</h4>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-2">Envío <strong id="wepoint-envio-codigo"></strong>: Wepoint emite la orden de egreso y lo entrega en mano, registrando quién lo retira.</p>
+                                <label for="wepoint-envio-motivo" class="form-label">Motivo</label>
+                                <select id="wepoint-envio-motivo" class="form-select mb-2">
+                                    <option value="">Elegí el motivo…</option>
+                                    <option value="retira_destinatario">Retira el destinatario</option>
+                                    <option value="retira_comisionista">Retira un comisionista</option>
+                                    <option value="redespacho">Redespacho (otro transporte)</option>
+                                    <option value="retira_caddy">Lo retira Caddy</option>
+                                    <option value="devolucion">Devolución al remitente</option>
+                                </select>
+                                <div class="alert alert-warning mb-0 py-2">
+                                    <i class="mdi mdi-lock-outline"></i> Desde que lo pidas, el envío no se puede sacar del recorrido 80 sin que Wepoint lo libere.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                <button id="wepoint-envio-ok" type="button" class="btn btn-dark"><i class="mdi mdi-send"></i> Pedir egreso</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <!-- Egreso de Wepoint: confirmación (Proceso/js/funciones_hdr.js, solicitarEgresoWepoint) -->
                 <div id="wepoint-egreso-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="wepoint-egreso-modalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
@@ -270,7 +300,7 @@
                             </div>
                             <div class="modal-body">
                                 <p class="mb-2">Recorrido <strong id="wepoint-egreso-recorrido"></strong>: <strong id="wepoint-egreso-cantidad"></strong> en el depósito de Wepoint.</p>
-                                <p class="mb-2">Wepoint recibe la orden de egreso y prepara el pedido para cuando pase el chofer.</p>
+                                <p class="mb-2">Wepoint emite la orden de egreso y prepara el pedido para cuando pase el chofer.</p>
                                 <div class="alert alert-warning mb-0 py-2">
                                     <i class="mdi mdi-lock-outline"></i> Desde que lo solicites, esos paquetes no se pueden sacar del recorrido ni se pueden sumar otros que estén en Wepoint: el cambio se le pide a Wepoint y se hace cuando lo acepte.
                                 </div>

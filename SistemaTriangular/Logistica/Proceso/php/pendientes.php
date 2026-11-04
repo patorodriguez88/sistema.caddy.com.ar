@@ -353,6 +353,14 @@ if (isset($_POST['BuscarDatos'])) {
 }
 
 
+// Orden de egreso de Wepoint para un envío del recorrido 80 (DEPOSITO), con su motivo
+if (isset($_POST['WepointPedirEgresoEnvio'])) {
+  header('Content-Type: application/json; charset=utf-8');
+  require_once __DIR__ . '/wepoint_egresos.php';
+  echo json_encode(wepoint_egreso_solicitar_envio($mysqli, (int)$_POST['id'], (string)$_POST['motivo'], (string)($_SESSION['Usuario'] ?? 'sistema')), JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
 if (isset($_POST['Pendientes'])) {
 
   if (isset($_POST['Recorrido'])) {
