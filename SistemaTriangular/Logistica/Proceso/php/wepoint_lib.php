@@ -474,7 +474,7 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
     }
     $okIds = array_flip($ok);
     foreach (array_unique(array_map(fn($f) => (int)$f['id_tc'], array_filter($filas, fn($f) => isset($okIds[$f['id']])))) as $idTc) {
-        wepoint_seguimiento($mysqli, $idTc, 'Ingresó al depósito de Wepoint');
+        wepoint_seguimiento($mysqli, $idTc, WEPOINT_ESTADO_INGRESO, 'Ingresó al depósito de Wepoint');
     }
 
     return ['ok' => count($ok), 'error' => count($filas) - count($ok) + count($sinOrigenRows)];
@@ -514,7 +514,7 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
     $egresados = array_flip(array_map($base, $data['egresados'] ?? []));
     foreach ($filas as $f) {
         if (isset($egresados[$f['codigo']])) {
-            wepoint_seguimiento($mysqli, (int)$f['id_tc'], 'Salió del depósito de Wepoint' . (!empty($data['nro_orden_egreso_bulto']) ? " ({$data['nro_orden_egreso_bulto']})" : ''));
+            wepoint_seguimiento($mysqli, (int)$f['id_tc'], WEPOINT_ESTADO_SALIDA, 'Salió del depósito de Wepoint' . (!empty($data['nro_orden_egreso_bulto']) ? " ({$data['nro_orden_egreso_bulto']})" : ''));
         }
     }
     foreach ($mal as $motivo => $idsMal) {
@@ -529,12 +529,17 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
 // cierra como entregado (igual que una entrega cargada a mano en Seguimiento), así no queda en
 // Pendientes ni se puede volver a asignar a un recorrido. Lo corre el cron.
 // ---------------------------------------------------------------------------------------------
+/** Estados de Seguimiento propios del depósito de Wepoint (migración 2026_11_04_estados_wepoint.sql). */
+const WEPOINT_ESTADO_INGRESO = 'wepoint_in';  // "En centro de distribución" (lo ve el destinatario)
+const WEPOINT_ESTADO_SALIDA = 'wepoint_out';  // "Salió del depósito" (interno)
+
 /**
- * Deja asentado en Seguimiento un movimiento del envío en el depósito de Wepoint, como "Movimiento
- * Interno": no cambia el estado del envío, Tienda Nube no lo publica y no dispara webhooks. Copia
- * Visitas de la última fila (el webhook de Meli las toma de ahí). Una sola vez por texto.
+ * Deja asentado en Seguimiento un movimiento del envío en el depósito de Wepoint con su estado
+ * propio ($slug, WEPOINT_ESTADO_*): no dispara webhooks ni avisos y Tienda Nube no lo publica; si
+ * el destinatario lo ve lo decide Estados.Mostrar. Sin la migración cae a "Movimiento Interno".
+ * Copia Visitas de la última fila (el webhook de Meli las toma de ahí). Una sola vez por texto.
  */
-function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $obs, ?string $cuando = null): bool
+function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $obs, ?string $cuando = null): bool
 {
     $st = $mysqli->prepare("SELECT 1 FROM Seguimiento WHERE idTransClientes = ? AND Observaciones = ? AND Eliminado = 0 LIMIT 1");
     $st->bind_param('is', $idTc, $obs);
@@ -548,14 +553,20 @@ function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $obs, ?string $cu
 
     $ultimo = $mysqli->query("SELECT Destino, Avisado, idCliente, Retirado, Visitas FROM Seguimiento
         WHERE idTransClientes = $idTc AND Eliminado = 0 ORDER BY id DESC LIMIT 1")->fetch_assoc() ?: [];
-    static $estado = null;
-    $estado ??= $mysqli->query("SELECT id, Estado FROM Estados WHERE Slug = 'internal_shift' ORDER BY id LIMIT 1")->fetch_assoc()
-        ?: ['id' => 0, 'Estado' => 'Movimiento Interno'];
+    static $estados = [];
+    if (!isset($estados[$slug])) {
+        $st = $mysqli->prepare("SELECT id, Estado, Slug FROM Estados WHERE Slug IN (?, 'internal_shift') ORDER BY Slug = ? DESC, id LIMIT 1");
+        $st->bind_param('ss', $slug, $slug);
+        $st->execute();
+        $estados[$slug] = $st->get_result()->fetch_assoc() ?: ['id' => 0, 'Estado' => 'Movimiento Interno', 'Slug' => 'internal_shift'];
+        $st->close();
+    }
+    $estado = $estados[$slug];
 
     $st = $mysqli->prepare("INSERT INTO Seguimiento (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones,
         Entregado, Estado, Destino, Avisado, idCliente, Retirado, Visitas, idTransClientes, TimeStamp,
-        Recorrido, Devuelto, Webhook, state_id, NumerodeOrden, status, Eliminado)
-        VALUES (DATE(?), DATE_FORMAT(?, '%H:%i'), 'Wepoint', '', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 0, 0, ?, ?, 'internal_shift', 0)");
+        Recorrido, Devuelto, Webhook, Estado_id, state_id, NumerodeOrden, status, Eliminado)
+        VALUES (DATE(?), DATE_FORMAT(?, '%H:%i'), 'Wepoint', '', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 0, 0, ?, ?, ?, ?, 0)");
     $cuando = $cuando ?: date('Y-m-d H:i:s');
     $codigo = (string)$tc['CodigoSeguimiento'];
     $nombreEstado = (string)$estado['Estado'];
@@ -567,7 +578,8 @@ function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $obs, ?string $cu
     $recorrido = (string)$tc['Recorrido'];
     $estadoId = (int)$estado['id'];
     $orden = (string)$tc['NumerodeOrden'];
-    $st->bind_param('ssssssiiiiisis', $cuando, $cuando, $codigo, $obs, $nombreEstado, $destino, $avisado, $idCliente, $retirado, $visitas, $idTc, $recorrido, $estadoId, $orden);
+    $status = (string)$estado['Slug'];
+    $st->bind_param('ssssssiiiiisiiss', $cuando, $cuando, $codigo, $obs, $nombreEstado, $destino, $avisado, $idCliente, $retirado, $visitas, $idTc, $recorrido, $estadoId, $estadoId, $orden, $status);
     $ok = $st->execute();
     $st->close();
 
@@ -588,7 +600,7 @@ function wepoint_seguimiento_pendientes(mysqli $mysqli, int $dias = 1): int
         GROUP BY i.id_tc LIMIT 300")->fetch_all(MYSQLI_ASSOC);
     $n = 0;
     foreach ($filas as $f) {
-        $n += (int)wepoint_seguimiento($mysqli, (int)$f['id_tc'], 'Ingresó al depósito de Wepoint', $f['entro'] ?: null);
+        $n += (int)wepoint_seguimiento($mysqli, (int)$f['id_tc'], WEPOINT_ESTADO_INGRESO, 'Ingresó al depósito de Wepoint', $f['entro'] ?: null);
     }
 
     return $n;
