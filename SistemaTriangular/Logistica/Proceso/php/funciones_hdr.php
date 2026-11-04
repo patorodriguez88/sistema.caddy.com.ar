@@ -45,7 +45,7 @@ function wepointEnCard(int $recorrido, ?array $egreso, int $enDeposito): string
   if ($egreso && in_array($egreso['estado'], ['solicitado', 'aceptado'], true)) {
     $estado = $egreso['estado'] === 'solicitado'
       ? '<i class="mdi mdi-timer-sand"></i> Esperando que Wepoint lo acepte'
-      : '<i class="mdi mdi-package-variant-closed"></i> Wepoint lo está preparando';
+      : '<i class="mdi mdi-package-variant-closed"></i> Orden emitida: Wepoint lo está preparando';
     $cambios = (int)$egreso['cambios_pendientes'] > 0
       ? '<br><i class="mdi mdi-swap-horizontal"></i> ' . (int)$egreso['cambios_pendientes'] . ' cambio(s) esperando a Wepoint'
       : '';
@@ -58,7 +58,10 @@ function wepointEnCard(int $recorrido, ?array $egreso, int $enDeposito): string
     $html .= '<div class="text-danger small mt-2"><i class="mdi mdi-close-circle-outline"></i> Wepoint rechazó el egreso'
       . ($egreso['motivo'] ? ': ' . htmlspecialchars((string)$egreso['motivo']) : '') . '</div>';
   }
-  if ($enDeposito > 0) {
+  if ($recorrido === WEPOINT_RECORRIDO_DEPOSITO && $enDeposito > 0) {
+    // En el DEPOSITO el egreso se pide por envío (con su motivo), desde la lista del recorrido
+    $html .= '<div class="text-muted small mt-2"><i class="mdi mdi-warehouse"></i> ' . $enDeposito . ' en Wepoint: el egreso se pide por envío desde la Hoja de Ruta</div>';
+  } elseif ($enDeposito > 0) {
     $html .= '<button type="button" onclick="solicitarEgresoWepoint(' . $recorrido . ', ' . $enDeposito . ')" class="btn w-100 btn-outline-primary mt-2">'
       . '<i class="mdi mdi-warehouse"></i> Solicitar egreso a Wepoint (' . $enDeposito . ')</button>';
   }

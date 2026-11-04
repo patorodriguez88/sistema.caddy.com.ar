@@ -1,18 +1,31 @@
 <?php
-// Egreso de Wepoint solicitado desde Hoja de Ruta: antes de que el chofer pase, se le pide a Wepoint
-// que prepare lo que de un recorrido está en su depósito.
-//  - Al solicitarlo, esos paquetes quedan trabados en el recorrido: cambiarRecorrido() no los saca
-//    ni mete otros que estén en Wepoint; en vez de cambiarlos le pide el cambio a Wepoint
-//    (wepoint_egreso_cambios) y lo aplica recién cuando Wepoint lo acepta.
-//  - Wepoint acepta o rechaza el egreso y los cambios; avisa por wepoint_entrada.php (accion
-//    'egreso') y además el cron lo consulta (wepoint_egresos_sincronizar).
-//  - Cuando el chofer carga, la salida va por la cola de siempre y Wepoint la anota en este egreso;
-//    al salir todo, el egreso se cierra y el recorrido se libera.
+// Órdenes de egreso de Wepoint que pide Caddy (en Wepoint un bulto solo sale con una orden del
+// cliente). Wepoint las emite en el momento, sin aceptarlas:
+//  - De un recorrido, desde Hoja de Ruta: Wepoint prepara lo que de ese recorrido tiene, para cuando
+//    pase el chofer.
+//  - De un envío, solo desde el recorrido 80 (DEPOSITO), con un motivo: retira el destinatario, un
+//    comisionista, redespacho, lo retira Caddy o devolución. Wepoint lo entrega en mano desde la
+//    orden y avisa a quién: comisionista y redespacho quedan "Redespachado" en Seguimiento
+//    ("Entregado al Cliente" lo carga el operador cuando se confirma la entrega).
+//  - Pedida la orden, esos paquetes quedan trabados en el recorrido: cambiarRecorrido() no los saca
+//    ni mete otros que estén en Wepoint; le pide el cambio a Wepoint (wepoint_egreso_cambios) y lo
+//    aplica recién cuando Wepoint lo acepta (es lo único que Wepoint resuelve).
+//  - Wepoint avisa por wepoint_entrada.php (accion 'egreso') y además el cron lo consulta.
 // Solo los paquetes que están en Wepoint (entraron por la cola y no salieron) se traban: el resto
 // del recorrido se mueve como siempre.
 require_once __DIR__ . '/wepoint_lib.php';
 
 const WEPOINT_EGRESO_ABIERTO = ['solicitado', 'aceptado'];
+/** Recorrido de Caddy del depósito: solo desde acá se pide el egreso de un envío suelto. */
+const WEPOINT_RECORRIDO_DEPOSITO = 80;
+/** Motivos del egreso de un envío (las claves son las de Wepoint, OrdenEgresoBulto::ENTREGAS). */
+const WEPOINT_MOTIVOS_EGRESO = [
+    'retira_destinatario' => 'Retira el destinatario',
+    'retira_comisionista' => 'Retira un comisionista',
+    'redespacho' => 'Redespacho (otro transporte)',
+    'retira_caddy' => 'Lo retira Caddy',
+    'devolucion' => 'Devolución al remitente',
+];
 
 function wepoint_egreso_tablas(mysqli $mysqli): void
 {
@@ -59,6 +72,13 @@ function wepoint_egreso_tablas(mysqli $mysqli): void
         KEY ix_wepoint_egreso_cambios_tc (id_tc, estado),
         KEY ix_wepoint_egreso_cambios_estado (estado)
     )");
+    // Egreso de un recorrido o de un envío (con su motivo)
+    $columnas = array_column($mysqli->query("SELECT COLUMN_NAME FROM information_schema.COLUMNS
+        WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'wepoint_egresos'")->fetch_all(MYSQLI_ASSOC), 'COLUMN_NAME');
+    if (!in_array('tipo', $columnas, true)) {
+        $mysqli->query("ALTER TABLE wepoint_egresos ADD COLUMN tipo VARCHAR(10) NOT NULL DEFAULT 'recorrido' AFTER recorrido,
+            ADD COLUMN motivo_egreso VARCHAR(30) NULL AFTER tipo, ADD COLUMN id_tc INT NULL AFTER motivo_egreso");
+    }
     $hecho = true;
 }
 
@@ -69,11 +89,11 @@ function wepoint_en_deposito(mysqli $mysqli, int $idTc): bool
         AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = $idTc AND s.tipo = 'salida') LIMIT 1")->fetch_row();
 }
 
-/** Egreso abierto (solicitado o aceptado) de un recorrido. */
+/** Orden de egreso abierta de un recorrido entero (no las de un envío suelto). */
 function wepoint_egreso_de_recorrido(mysqli $mysqli, int $recorrido): ?array
 {
     wepoint_egreso_tablas($mysqli);
-    return $mysqli->query("SELECT * FROM wepoint_egresos WHERE recorrido = $recorrido AND estado IN ('solicitado', 'aceptado')
+    return $mysqli->query("SELECT * FROM wepoint_egresos WHERE recorrido = $recorrido AND tipo = 'recorrido' AND estado IN ('solicitado', 'aceptado')
         ORDER BY id DESC LIMIT 1")->fetch_assoc() ?: null;
 }
 
@@ -140,6 +160,9 @@ function wepoint_egreso_solicitar(mysqli $mysqli, int $recorrido, string $usuari
         return ['ok' => false, 'mensaje' => 'La integración con Wepoint está apagada.'];
     }
     wepoint_egreso_tablas($mysqli);
+    if ($recorrido === WEPOINT_RECORRIDO_DEPOSITO) {
+        return ['ok' => false, 'mensaje' => 'Del recorrido ' . WEPOINT_RECORRIDO_DEPOSITO . ' (DEPOSITO) el egreso se pide por envío, con su motivo.'];
+    }
     if ($abierto = wepoint_egreso_de_recorrido($mysqli, $recorrido)) {
         return ['ok' => false, 'mensaje' => "El recorrido $recorrido ya tiene un egreso en Wepoint ({$abierto['estado']}).", 'egreso' => $abierto];
     }
@@ -163,6 +186,7 @@ function wepoint_egreso_solicitar(mysqli $mysqli, int $recorrido, string $usuari
         'codigos' => array_values($envios),
         'orden' => $ordenTxt,
         'solicitado_por' => $usuario,
+        'tipo' => 'recorrido',
     ], 30);
     $data = json_decode((string)$resp, true)['data'] ?? null;
     if ($http < 200 || $http >= 300 || !is_array($data)) {
@@ -182,7 +206,66 @@ function wepoint_egreso_solicitar(mysqli $mysqli, int $recorrido, string $usuari
     $egreso = $mysqli->query("SELECT * FROM wepoint_egresos WHERE id = $id")->fetch_assoc();
     $n = count($data['incluidos'] ?? []);
 
-    return ['ok' => true, 'mensaje' => "Egreso solicitado a Wepoint ({$data['nro_orden_egreso_bulto']}): $n envío" . ($n === 1 ? '' : 's') . '. Queda trabado hasta que el chofer lo cargue.', 'egreso' => $egreso];
+    return ['ok' => true, 'mensaje' => "Orden de egreso emitida en Wepoint ({$data['nro_orden_egreso_bulto']}): $n envío" . ($n === 1 ? '' : 's') . '. Queda trabado hasta que el chofer lo cargue.', 'egreso' => $egreso];
+}
+
+/**
+ * Orden de egreso de un envío suelto: solo si está en el recorrido 80 (DEPOSITO) y en Wepoint.
+ *
+ * @return array{ok:bool,mensaje:string}
+ */
+function wepoint_egreso_solicitar_envio(mysqli $mysqli, int $idTc, string $motivo, string $usuario): array
+{
+    if (!wepoint_activo()) {
+        return ['ok' => false, 'mensaje' => 'La integración con Wepoint está apagada.'];
+    }
+    if (!isset(WEPOINT_MOTIVOS_EGRESO[$motivo])) {
+        return ['ok' => false, 'mensaje' => 'Elegí el motivo del egreso.'];
+    }
+    wepoint_egreso_tablas($mysqli);
+    $tc = $mysqli->query("SELECT CodigoSeguimiento, Recorrido FROM TransClientes WHERE id = $idTc AND Eliminado = 0 AND Entregado = 0 AND Devuelto = 0")->fetch_assoc();
+    if (!$tc) {
+        return ['ok' => false, 'mensaje' => 'El servicio no está pendiente.'];
+    }
+    $codigo = (string)$tc['CodigoSeguimiento'];
+    if ((int)$tc['Recorrido'] !== WEPOINT_RECORRIDO_DEPOSITO) {
+        return ['ok' => false, 'mensaje' => "Para pedir el egreso de $codigo pasalo primero al recorrido " . WEPOINT_RECORRIDO_DEPOSITO . ' (DEPOSITO).'];
+    }
+    if (!wepoint_en_deposito($mysqli, $idTc)) {
+        return ['ok' => false, 'mensaje' => "$codigo no está en Wepoint (no tuvo ingreso o ya salió)."];
+    }
+    if ($ya = wepoint_egreso_de_envio($mysqli, $idTc)) {
+        return ['ok' => false, 'mensaje' => "$codigo ya está en la orden de egreso {$ya['nro_oeb']}."];
+    }
+
+    $rec = WEPOINT_RECORRIDO_DEPOSITO;
+    $st = $mysqli->prepare("INSERT INTO wepoint_egresos (recorrido, tipo, motivo_egreso, id_tc, estado, solicitado_por, solicitado_en) VALUES (?, 'envio', ?, ?, 'solicitado', ?, NOW())");
+    $st->bind_param('isis', $rec, $motivo, $idTc, $usuario);
+    $st->execute();
+    $id = (int)$st->insert_id;
+    $st->close();
+
+    [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/egresos', [
+        'caddy_egreso_id' => $id,
+        'recorrido' => $rec,
+        'codigos' => [$codigo],
+        'solicitado_por' => $usuario,
+        'tipo' => 'envio',
+        'motivo' => $motivo,
+    ], 30);
+    $json = json_decode((string)$resp, true);
+    $data = $json['data'] ?? null;
+    if ($http < 200 || $http >= 300 || !is_array($data) || empty($data['id_orden_egreso_bulto'])) {
+        $mysqli->query("DELETE FROM wepoint_egresos WHERE id = $id");
+        if (is_array($data) && !empty($data['en_otro_egreso'])) {
+            return ['ok' => false, 'mensaje' => "$codigo ya está en otra orden de egreso de Wepoint."];
+        }
+        $motivoError = $http ? ($json['message'] ?? "Wepoint respondió HTTP $http") : ($err ?: 'Wepoint no responde');
+        return ['ok' => false, 'mensaje' => "No se pudo pedir el egreso: $motivoError"];
+    }
+
+    wepoint_egreso_aplicar($mysqli, $data);
+    return ['ok' => true, 'mensaje' => "Orden de egreso emitida en Wepoint ({$data['nro_orden_egreso_bulto']}): " . WEPOINT_MOTIVOS_EGRESO[$motivo] . ". $codigo queda trabado hasta que Wepoint lo entregue."];
 }
 
 /**
@@ -244,6 +327,7 @@ function wepoint_egreso_aplicar(mysqli $mysqli, array $e): void
         'Entregado al transportista' => 'cerrado',
         default => null,
     };
+    $antes = $mysqli->query("SELECT estado FROM wepoint_egresos WHERE id = $id")->fetch_row()[0] ?? null;
     if ($estado !== null) {
         $st = $mysqli->prepare("UPDATE wepoint_egresos SET estado = ?, id_wepoint = ?, nro_oeb = ?, motivo = ?, actualizado_en = NOW(),
             cerrado_en = IF(? IN ('rechazado', 'cerrado') AND cerrado_en IS NULL, NOW(), cerrado_en) WHERE id = ? AND estado <> 'cerrado'");
@@ -269,6 +353,44 @@ function wepoint_egreso_aplicar(mysqli $mysqli, array $e): void
 
     foreach ($e['cambios'] ?? [] as $c) {
         wepoint_egreso_resolver_cambio($mysqli, (int)($c['caddy_cambio_id'] ?? 0), (string)($c['estado'] ?? ''), $c['motivo_rechazo'] ?? null);
+    }
+
+    // Entregado en mano desde la orden (no con el chofer): una sola vez, al cerrarse
+    if ($estado === 'cerrado' && $antes !== null && $antes !== 'cerrado' && !empty($e['entrega'])) {
+        wepoint_egreso_registrar_entrega($mysqli, $id, (string)($e['nro_orden_egreso_bulto'] ?? ''), $e['entrega']);
+    }
+}
+
+/**
+ * Wepoint entregó en mano lo de la orden: sale de Wepoint (la cola lo da por salido) y queda en
+ * Seguimiento a quién. Comisionista y redespacho: "Redespachado". El destinatario: lo cierra como
+ * entregado wepoint_cerrar_retiros(). Caddy o devolución: queda anotado que salió.
+ */
+function wepoint_egreso_registrar_entrega(mysqli $mysqli, int $idEgreso, string $nroOeb, array $entrega): void
+{
+    $quien = trim(($entrega['nombre'] ?? '') . (!empty($entrega['documento']) ? " ({$entrega['documento']})" : ''));
+    $oeb = $nroOeb !== '' ? " · $nroOeb" : '';
+    [$slug, $obs] = match ((string)($entrega['tipo'] ?? '')) {
+        'retira_comisionista' => ['redispatched', "Retirado de Wepoint por el comisionista $quien" . (!empty($entrega['transporte']) ? " ({$entrega['transporte']})" : '') . $oeb],
+        'redespacho' => ['redispatched', 'Redespachado por ' . ($entrega['transporte'] ?: 'otro transporte') . ", retiró $quien de Wepoint$oeb"],
+        'retira_destinatario' => [WEPOINT_ESTADO_SALIDA, "Retirado en Wepoint por el destinatario $quien$oeb"],
+        'retira_caddy' => [WEPOINT_ESTADO_SALIDA, "Retirado de Wepoint por Caddy: $quien$oeb"],
+        'devolucion' => [WEPOINT_ESTADO_SALIDA, "Salió de Wepoint para devolución al remitente: $quien$oeb"],
+        default => [WEPOINT_ESTADO_SALIDA, "Entregado por Wepoint a $quien$oeb"],
+    };
+    $cuando = (string)($entrega['fecha'] ?? '') ?: null;
+
+    foreach ($mysqli->query("SELECT id_tc, codigo FROM wepoint_egreso_items WHERE id_egreso = $idEgreso")->fetch_all(MYSQLI_ASSOC) as $it) {
+        $idTc = (int)$it['id_tc'];
+        // Ya no está en Wepoint: la salida queda anotada como enviada (no hay nada que mandarle)
+        $st = $mysqli->prepare("INSERT IGNORE INTO wepoint_cola (tipo, id_tc, codigo, serie, fecha, recorrido, chofer, estado, nro_orden, usuario, creado_en, enviado_en)
+            VALUES ('salida', ?, ?, ?, CURDATE(), ?, ?, 'ok', ?, 'Wepoint', NOW(), NOW())");
+        $rec = (string)WEPOINT_RECORRIDO_DEPOSITO;
+        $chofer = mb_substr($quien, 0, 100);
+        $st->bind_param('isssss', $idTc, $it['codigo'], $it['codigo'], $rec, $chofer, $nroOeb);
+        $st->execute();
+        $st->close();
+        wepoint_seguimiento($mysqli, $idTc, $slug, mb_substr($obs, 0, 200), $cuando);
     }
 }
 
@@ -397,8 +519,8 @@ function wepoint_egresos_para_hdr(mysqli $mysqli): array
     $porRecorrido = [];
     $abiertos = $mysqli->query("SELECT e.*, (SELECT COUNT(*) FROM wepoint_egreso_items it WHERE it.id_egreso = e.id) AS envios,
             (SELECT COUNT(*) FROM wepoint_egreso_cambios c WHERE c.estado = 'pendiente' AND (c.egreso_origen = e.id OR c.egreso_destino = e.id)) AS cambios_pendientes
-        FROM wepoint_egresos e WHERE e.estado IN ('solicitado', 'aceptado')
-           OR (e.estado = 'rechazado' AND e.cerrado_en >= NOW() - INTERVAL 12 HOUR)
+        FROM wepoint_egresos e WHERE e.tipo = 'recorrido' AND (e.estado IN ('solicitado', 'aceptado')
+           OR (e.estado = 'rechazado' AND e.cerrado_en >= NOW() - INTERVAL 12 HOUR))
         ORDER BY e.id")->fetch_all(MYSQLI_ASSOC);
     foreach ($abiertos as $e) {
         $porRecorrido[(int)$e['recorrido']] = $e; // el último manda
@@ -429,9 +551,9 @@ function wepoint_info_envios(mysqli $mysqli, array $ids): array
         AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = i.id_tc AND s.tipo = 'salida')")->fetch_all(MYSQLI_ASSOC) as $f) {
         $info[(int)$f['id_tc']]['en_deposito'] = true;
     }
-    foreach ($mysqli->query("SELECT it.id_tc, e.nro_oeb, e.estado FROM wepoint_egreso_items it JOIN wepoint_egresos e ON e.id = it.id_egreso
+    foreach ($mysqli->query("SELECT it.id_tc, e.nro_oeb, e.estado, e.tipo, e.motivo_egreso FROM wepoint_egreso_items it JOIN wepoint_egresos e ON e.id = it.id_egreso
         WHERE it.id_tc IN ($lista) AND e.estado IN ('solicitado', 'aceptado')")->fetch_all(MYSQLI_ASSOC) as $f) {
-        $info[(int)$f['id_tc']]['egreso'] = ['nro' => $f['nro_oeb'], 'estado' => $f['estado']];
+        $info[(int)$f['id_tc']]['egreso'] = ['nro' => $f['nro_oeb'], 'estado' => $f['estado'], 'motivo' => WEPOINT_MOTIVOS_EGRESO[$f['motivo_egreso']] ?? null];
     }
     foreach ($mysqli->query("SELECT c.id_tc, c.estado, c.recorrido_origen, c.recorrido_destino, c.motivo, c.usuario, c.creado_en, c.resuelto_en
         FROM wepoint_egreso_cambios c
