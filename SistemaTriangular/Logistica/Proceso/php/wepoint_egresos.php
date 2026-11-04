@@ -393,3 +393,43 @@ function wepoint_egresos_para_hdr(mysqli $mysqli): array
 
     return $porRecorrido;
 }
+
+/**
+ * Lo de Wepoint de cada servicio para la lista de Hoja de Ruta: si está en el depósito, en qué
+ * egreso, y el último cambio de recorrido pedido a Wepoint (el pendiente siempre; el resuelto, por
+ * dos días, para que se vea si lo rechazó y por qué).
+ *
+ * @param int[] $ids TransClientes.id
+ * @return array<int,array{en_deposito:bool,egreso:?array,cambio:?array}>
+ */
+function wepoint_info_envios(mysqli $mysqli, array $ids): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+    if (!$ids || !wepoint_activo()) {
+        return [];
+    }
+    wepoint_egreso_tablas($mysqli);
+    $lista = implode(',', $ids);
+    $info = [];
+
+    foreach ($mysqli->query("SELECT DISTINCT i.id_tc FROM wepoint_cola i WHERE i.id_tc IN ($lista) AND i.tipo = 'ingreso' AND i.estado = 'ok'
+        AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = i.id_tc AND s.tipo = 'salida')")->fetch_all(MYSQLI_ASSOC) as $f) {
+        $info[(int)$f['id_tc']]['en_deposito'] = true;
+    }
+    foreach ($mysqli->query("SELECT it.id_tc, e.nro_oeb, e.estado FROM wepoint_egreso_items it JOIN wepoint_egresos e ON e.id = it.id_egreso
+        WHERE it.id_tc IN ($lista) AND e.estado IN ('solicitado', 'aceptado')")->fetch_all(MYSQLI_ASSOC) as $f) {
+        $info[(int)$f['id_tc']]['egreso'] = ['nro' => $f['nro_oeb'], 'estado' => $f['estado']];
+    }
+    foreach ($mysqli->query("SELECT c.id_tc, c.estado, c.recorrido_origen, c.recorrido_destino, c.motivo, c.usuario, c.creado_en, c.resuelto_en
+        FROM wepoint_egreso_cambios c
+        JOIN (SELECT id_tc, MAX(id) AS id FROM wepoint_egreso_cambios WHERE id_tc IN ($lista) GROUP BY id_tc) u ON u.id = c.id
+        WHERE c.estado = 'pendiente' OR c.resuelto_en >= NOW() - INTERVAL 2 DAY")->fetch_all(MYSQLI_ASSOC) as $f) {
+        $info[(int)$f['id_tc']]['cambio'] = $f;
+    }
+
+    foreach ($info as $id => $i) {
+        $info[$id] = ['en_deposito' => $i['en_deposito'] ?? false, 'egreso' => $i['egreso'] ?? null, 'cambio' => $i['cambio'] ?? null];
+    }
+
+    return $info;
+}

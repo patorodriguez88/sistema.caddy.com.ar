@@ -445,6 +445,14 @@ if (isset($_POST['Pendientes'])) {
     $rows[] = $row;
   }
 
+  // Lo de Wepoint de cada servicio: en el depósito, en un egreso, cambio pedido/rechazado
+  require_once __DIR__ . '/wepoint_egresos.php';
+  $wepoint = wepoint_info_envios($mysqli, array_column($rows, 'id'));
+  foreach ($rows as &$r) {
+    $r['Wepoint'] = $wepoint[(int)$r['id']] ?? null;
+  }
+  unset($r);
+
   echo json_encode(array('data' => $rows, 'lat' => $lat));
 }
 
