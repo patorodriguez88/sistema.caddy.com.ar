@@ -170,6 +170,26 @@ if ($Vacio->num_rows == 0) {
 // Cálculo de cantidad total y saldo total
 $CantidadTotal = fetch_single_row($mysqli, "SELECT SUM(Cantidad) AS CantTotal FROM Ventas WHERE idCliente='$ClienteOrigen' AND fechaPedido='$FechaActual' AND terminado=0 AND Usuario='$Usuario'");
 $Cantidad = $CantidadTotal['CantTotal'] ?? 0;
+
+// Bultos del envío (TransClientes.Cantidad, Funciones/php/bultos.php). Con servicios que se cobran por
+// bulto son la suma de las cantidades, como siempre. Si hay alguno por pallet / viaje, su cantidad es
+// lo que se cobra (1 pallet) y los bultos físicos (75) los indica el operador en "Bultos a etiquetar".
+require_once __DIR__ . '/../../../Funciones/php/bultos.php';
+if (productosTieneCobroPorBulto($mysqli)) {
+    $porTipo = fetch_single_row($mysqli, "SELECT
+            SUM(IF(IFNULL(p.CobroPorBulto, 1) = 1, v.Cantidad, 0)) AS PorBulto,
+            SUM(IFNULL(p.CobroPorBulto, 1) = 0) AS Pallets
+        FROM Ventas v LEFT JOIN Productos p ON p.Codigo = v.Codigo
+        WHERE v.idCliente='$ClienteOrigen' AND v.fechaPedido='$FechaActual' AND v.terminado=0 AND v.Usuario='$Usuario'");
+    if ((int) ($porTipo['Pallets'] ?? 0) > 0) {
+        $bultosPallet = (int) ($_POST['bultos_t'] ?? 0);
+        if ($bultosPallet <= 0) {
+            echo json_encode(['error' => 1, 'message' => 'Indicá cuántos bultos a etiquetar lleva el envío (hay un servicio que se cobra por pallet / viaje).']);
+            exit();
+        }
+        $Cantidad = (int) ($porTipo['PorBulto'] ?? 0) + $bultosPallet;
+    }
+}
 $Total = fetch_single_row($mysqli, "SELECT SUM(Total) AS Saldo FROM Ventas WHERE idCliente='$ClienteOrigen' AND fechaPedido='$FechaActual' AND terminado=0 AND Usuario='$Usuario'")['Saldo'] ?? 0;
 
 // Configuración del estado y transportista

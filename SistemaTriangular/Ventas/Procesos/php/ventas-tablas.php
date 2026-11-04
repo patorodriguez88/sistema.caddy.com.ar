@@ -1,5 +1,6 @@
 <?php
 include_once "../../../Conexion/Conexioni.php";
+require_once __DIR__ . "/../../../Funciones/php/bultos.php";
 date_default_timezone_set('America/Argentina/Buenos_Aires'); //America/Argentina/Cordoba
 $FechaActual = date('Y-m-d');
 
@@ -24,7 +25,12 @@ if (isset($_POST['Servicios'])) {
 
 if (isset($_POST['datos'])) {
 
-  $sql = "SELECT idPedido,Codigo,Titulo,Cantidad,Precio,Total,Comentario FROM Ventas WHERE idCliente='$idCliente' AND terminado='0' AND NumeroRepo='$NumeroRepo' AND FechaPedido='$FechaActual' AND Eliminado=0";
+  // CobroPorBulto: 0 = servicio por pallet/viaje -> Venta Simple pide aparte los bultos a etiquetar
+  // (Funciones/php/bultos.php).
+  $selCobro = productosTieneCobroPorBulto($mysqli)
+    ? "IFNULL((SELECT p.CobroPorBulto FROM Productos p WHERE p.Codigo = Ventas.Codigo LIMIT 1), 1)"
+    : "1";
+  $sql = "SELECT idPedido,Codigo,Titulo,Cantidad,Precio,Total,Comentario, {$selCobro} AS CobroPorBulto FROM Ventas WHERE idCliente='$idCliente' AND terminado='0' AND NumeroRepo='$NumeroRepo' AND FechaPedido='$FechaActual' AND Eliminado=0";
   $ResultadoTesoreria = $mysqli->query($sql);
   $rows = array();
   while ($row = $ResultadoTesoreria->fetch_array(MYSQLI_ASSOC)) {

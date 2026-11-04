@@ -622,6 +622,24 @@
                                                     </div>
                                                 </div>
 
+                                                <!-- Bultos físicos: solo con servicios que se cobran por pallet / viaje
+                                                     (Productos.CobroPorBulto = 0). Con los que se cobran por bulto la
+                                                     cantidad de la venta ya son los bultos, como siempre. -->
+                                                <div id="bultos_wrap" class="alert alert-warning mt-3 mb-0 d-none">
+                                                    <div class="row g-2 align-items-center">
+                                                        <div class="col-md-8">
+                                                            <i class="mdi mdi-package-variant-closed me-1"></i>
+                                                            <b>Hay un servicio que se cobra por pallet / viaje.</b>
+                                                            La cantidad de arriba es lo que se cobra: indicá cuántos <b>bultos</b> van físicamente
+                                                            (son las etiquetas que se imprimen y lo que escanean depósito y el chofer).
+                                                        </div>
+                                                        <div class="col-md-4">
+                                                            <label for="bultos_t" class="form-label mb-1">Bultos a etiquetar</label>
+                                                            <input type="number" min="1" step="1" id="bultos_t" class="form-control" placeholder="Ej: 75">
+                                                        </div>
+                                                    </div>
+                                                </div>
+
                                                 <!-- Acciones -->
                                                 <div class="mt-4 d-flex justify-content-end align-items-center gap-3">
                                                     <input type="hidden" name="km_nc" id="km_nc">
@@ -680,9 +698,9 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Procesos/js/funciones.js"></script>
+    <script src="Procesos/js/funciones.js?v=20261104a"></script>
     <script src="Procesos/js/validar_venta.js?v=<?php echo @filemtime(__DIR__ . '/Procesos/js/validar_venta.js') ?: time(); ?>"></script>
-    <script src="Procesos/js/confirmar_venta.js"></script>
+    <script src="Procesos/js/confirmar_venta.js?v=20261104a"></script>
     <script src="Procesos/js/redespacho.js"></script>
     <script src="Procesos/js/select2_clientes.js"></script>
     <script src="Procesos/js/cotizacion_a_venta.js?v=<?php echo @filemtime(__DIR__ . '/Procesos/js/cotizacion_a_venta.js') ?: time(); ?>"></script>
