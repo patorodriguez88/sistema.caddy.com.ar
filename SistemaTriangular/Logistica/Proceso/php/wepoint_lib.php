@@ -541,18 +541,22 @@ const WEPOINT_ESTADO_SALIDA = 'wepoint_out';  // "Salió del depósito" (interno
  */
 function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $obs, ?string $cuando = null): bool
 {
-    $st = $mysqli->prepare("SELECT 1 FROM Seguimiento WHERE idTransClientes = ? AND Observaciones = ? AND Eliminado = 0 LIMIT 1");
-    $st->bind_param('is', $idTc, $obs);
-    $st->execute();
-    $existe = (bool)$st->get_result()->fetch_row();
-    $st->close();
     $tc = $mysqli->query("SELECT CodigoSeguimiento, Recorrido, NumerodeOrden FROM TransClientes WHERE id = $idTc AND Eliminado = 0")->fetch_assoc();
-    if ($existe || !$tc) {
+    if (!$tc) {
         return false;
     }
-
-    $ultimo = $mysqli->query("SELECT Destino, Avisado, idCliente, Retirado, Visitas FROM Seguimiento
-        WHERE idTransClientes = $idTc AND Eliminado = 0 ORDER BY id DESC LIMIT 1")->fetch_assoc() ?: [];
+    // Por código (Seguimiento tiene índice por CodigoSeguimiento, no por idTransClientes)
+    $codigo = (string)$tc['CodigoSeguimiento'];
+    $st = $mysqli->prepare("SELECT Observaciones, Destino, Avisado, idCliente, Retirado, Visitas FROM Seguimiento
+        WHERE CodigoSeguimiento = ? AND idTransClientes = ? AND Eliminado = 0 ORDER BY id DESC");
+    $st->bind_param('si', $codigo, $idTc);
+    $st->execute();
+    $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
+    $st->close();
+    if (in_array($obs, array_column($filas, 'Observaciones'), true)) {
+        return false;
+    }
+    $ultimo = $filas[0] ?? [];
     static $estados = [];
     if (!isset($estados[$slug])) {
         $st = $mysqli->prepare("SELECT id, Estado, Slug FROM Estados WHERE Slug IN (?, 'internal_shift') ORDER BY Slug = ? DESC, id LIMIT 1");
@@ -568,7 +572,6 @@ function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $ob
         Recorrido, Devuelto, Webhook, Estado_id, state_id, NumerodeOrden, status, Eliminado)
         VALUES (DATE(?), DATE_FORMAT(?, '%H:%i'), 'Wepoint', '', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 0, 0, ?, ?, ?, ?, 0)");
     $cuando = $cuando ?: date('Y-m-d H:i:s');
-    $codigo = (string)$tc['CodigoSeguimiento'];
     $nombreEstado = (string)$estado['Estado'];
     $destino = (string)($ultimo['Destino'] ?? '');
     $avisado = (int)($ultimo['Avisado'] ?? 0);
@@ -594,8 +597,9 @@ function wepoint_seguimiento_pendientes(mysqli $mysqli, int $dias = 1): int
     }
     wepoint_cola_tabla($mysqli);
     $filas = $mysqli->query("SELECT i.id_tc, MIN(i.enviado_en) AS entro FROM wepoint_cola i
+        JOIN TransClientes TC ON TC.id = i.id_tc
         WHERE i.tipo = 'ingreso' AND i.estado = 'ok' AND i.fecha >= CURDATE() - INTERVAL $dias DAY
-          AND NOT EXISTS (SELECT 1 FROM Seguimiento sg WHERE sg.idTransClientes = i.id_tc AND sg.Eliminado = 0
+          AND NOT EXISTS (SELECT 1 FROM Seguimiento sg WHERE sg.CodigoSeguimiento = TC.CodigoSeguimiento AND sg.Eliminado = 0
                           AND sg.Observaciones = 'Ingresó al depósito de Wepoint')
         GROUP BY i.id_tc LIMIT 300")->fetch_all(MYSQLI_ASSOC);
     $n = 0;
@@ -609,26 +613,27 @@ function wepoint_seguimiento_pendientes(mysqli $mysqli, int $dias = 1): int
 /**
  * Lo que salió de Caddy sin pasar por Warehouse (Flex leído con la app de Meli, recorrido sin control
  * de escaneo, entregado o devuelto) también sale de Wepoint: si un envío que entró por la cola tiene
- * después una salida de warehouse o un cierre en Seguimiento, se encola su salida.
+ * después una salida de warehouse o un cierre en Seguimiento, se encola su salida. Mira todo lo que
+ * sigue en Wepoint de los últimos $dias días (un envío en tránsito o almacenado puede quedar semanas).
  *
  * @return int envíos encolados
  */
-function wepoint_conciliar_salidas(mysqli $mysqli, int $dias = 3): int
+function wepoint_conciliar_salidas(mysqli $mysqli, int $dias = 60): int
 {
     if (!wepoint_activo()) {
         return 0;
     }
     wepoint_cola_tabla($mysqli);
     $filas = $mysqli->query("SELECT e.id_tc, e.codigo, e.Recorrido FROM (
-            SELECT i.id_tc, i.codigo, MIN(i.creado_en) AS entro, TC.Recorrido
+            SELECT i.id_tc, i.codigo, MIN(i.creado_en) AS entro, TC.Recorrido, TC.CodigoSeguimiento
             FROM wepoint_cola i
             JOIN TransClientes TC ON TC.id = i.id_tc AND TC.Eliminado = 0
             WHERE i.tipo = 'ingreso' AND i.estado = 'ok' AND i.fecha >= CURDATE() - INTERVAL $dias DAY
               AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.tipo = 'salida' AND s.id_tc = i.id_tc)
-            GROUP BY i.id_tc, i.codigo, TC.Recorrido
+            GROUP BY i.id_tc, i.codigo, TC.Recorrido, TC.CodigoSeguimiento
         ) e
         WHERE EXISTS (SELECT 1 FROM Seguimiento sg
-            WHERE sg.idTransClientes = e.id_tc AND sg.Eliminado = 0 AND sg.Usuario <> 'Wepoint'
+            WHERE sg.CodigoSeguimiento = e.CodigoSeguimiento AND sg.Eliminado = 0 AND sg.Usuario <> 'Wepoint'
               AND TIMESTAMP(sg.Fecha, sg.Hora) >= e.entro
               AND (sg.status IN ('last_mile', 'warehouse_validated', 'delivered', '1st_visit_fail', 'returned_to_origin')
                    OR sg.Estado IN ('Entregado al Cliente', 'No se pudo entregar', 'Devuelto al Cliente')))
