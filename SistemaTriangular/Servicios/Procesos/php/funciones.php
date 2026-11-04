@@ -199,9 +199,34 @@ if (isset($_POST['ModificarDatosVentas'])) {
   $Resultado = $mysqli->query($sql);
   $row = $Resultado->fetch_array(MYSQLI_ASSOC);
 
+  // Cantidad de este renglón antes del cambio y bultos del envío (ver abajo).
+  $stCant = $mysqli->prepare("SELECT v.Cantidad AS CantVenta, t.Cantidad AS Bultos
+                                FROM Ventas v JOIN TransClientes t ON t.id = ?
+                               WHERE v.idPedido = ? LIMIT 1");
+  $idTransCant = (int) $_POST['idTrans'];
+  $idPedidoCant = (int) $_POST['idPedido'];
+  $stCant->bind_param('ii', $idTransCant, $idPedidoCant);
+  $stCant->execute();
+  $cantAntes = $stCant->get_result()->fetch_assoc();
+  $stCant->close();
 
   if ($mysqli->query("UPDATE Ventas SET Codigo='$_POST[codigo]',Titulo='$_POST[titulo]',Precio='$_POST[precio]',Cantidad='$_POST[cantidad]',Total='$_POST[total]',infoABM='$info',comentario='$_POST[observaciones]' WHERE idPedido='$_POST[idPedido]'")) {
     $successventas = 1;
+
+    // FIX (4/11/2026, XBNWNT8V5): cambiar la cantidad acá solo tocaba la venta y el envío seguía
+    // con los bultos viejos (etiqueta, colecta, app de reparto decían 2 y la venta 4). Si este
+    // renglón era el que copiaba los bultos (misma cantidad que TransClientes.Cantidad), los bultos
+    // pasan a la cantidad nueva, igual que "Modificar cantidad" de Etiquetas
+    // (Logistica/Proceso/php/etiquetas_recorrido.php). Los renglones con otra cantidad (cobranza,
+    // seguro, etc.) no tocan los bultos.
+    $cantNueva = (int) $_POST['cantidad'];
+    if ($cantAntes && $cantNueva > 0 && (int) $cantAntes['CantVenta'] === (int) $cantAntes['Bultos']
+        && $cantNueva !== (int) $cantAntes['Bultos']) {
+      $stBultos = $mysqli->prepare("UPDATE TransClientes SET Cantidad = ? WHERE id = ? AND Eliminado = 0 LIMIT 1");
+      $stBultos->bind_param('ii', $cantNueva, $idTransCant);
+      $stBultos->execute();
+      $stBultos->close();
+    }
     // FIX (reportado vía Asana, 2026-09-17): a los clientes con
     // Clientes.CobranzaIntegradaNoFactura=1 (ej. IGALFER) la línea de fee
     // (COBRANZA INTEGRADA X% / COBRO A CUENTA) se les carga con
