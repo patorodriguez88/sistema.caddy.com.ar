@@ -643,13 +643,10 @@ function cd_sufijos_escaneados_hoy(mysqli $mysqli, string $fecha, int $idTC): ar
  * cada envío multi-bulto en sus sufijos _N pendientes puntuales.
  * GET/POST: PendientesCrossdocking=1, recorrido=<numero>
  */
-if (isset($_REQUEST['PendientesCrossdocking'])) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    $recorrido = (int)($_REQUEST['recorrido'] ?? 0);
+function cd_pendientes(mysqli $mysqli, int $recorrido): array
+{
     if ($recorrido <= 0) {
-        echo json_encode(['ok' => false, 'error' => 'RECORRIDO_INVALIDO']);
-        exit;
+        return ['ok' => false, 'error' => 'RECORRIDO_INVALIDO'];
     }
 
     $fecha = date('Y-m-d');
@@ -715,14 +712,19 @@ if (isset($_REQUEST['PendientesCrossdocking'])) {
     $escaneadosHoy = cd_escaneados_hoy_recorrido($mysqli, $fecha, $recorrido);
     $esperados = max($escaneadosHoy, cd_bultos_esperados($mysqli, $recorrido));
 
-    echo json_encode([
+    return [
         'ok' => true,
         'recorrido' => $recorrido,
         'recorridoNombre' => $recInfo['nombre'],
         'pendientes' => $pendientes,
         'escaneadosHoy' => $escaneadosHoy,
         'esperados' => $esperados,
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+}
+
+if (isset($_REQUEST['PendientesCrossdocking'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(cd_pendientes($mysqli, (int)($_REQUEST['recorrido'] ?? 0)), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -745,14 +747,11 @@ if (isset($_REQUEST['PendientesCrossdocking'])) {
  *
  * POST: ControlarCrossdocking=1, codigo=<texto>, recorrido=<numero>
  */
-if (isset($_POST['ControlarCrossdocking'])) {
-    header('Content-Type: application/json; charset=utf-8');
-
-    $raw = cd_codigo_qr_caddy(trim((string)($_POST['codigo'] ?? '')));
-    $recorridoObjetivo = (int)($_POST['recorrido'] ?? 0);
+function cd_controlar(mysqli $mysqli, string $codigo, int $recorridoObjetivo): array
+{
+    $raw = cd_codigo_qr_caddy(trim($codigo));
     if ($raw === '' || $recorridoObjetivo <= 0) {
-        echo json_encode(['ok' => false, 'error' => 'DATOS_INVALIDOS']);
-        exit;
+        return ['ok' => false, 'error' => 'DATOS_INVALIDOS'];
     }
 
     $tieneSufijo = preg_match('/_(\d+)$/', $raw, $m) === 1;
@@ -760,13 +759,12 @@ if (isset($_POST['ControlarCrossdocking'])) {
 
     $resuelto = cd_resolver($mysqli, $raw);
     if (!$resuelto || $resuelto['tipo'] === 'AMBIGUO') {
-        echo json_encode([
+        return [
             'ok' => true,
             'pertenece' => false,
             'codigo' => $raw,
             'motivo' => $resuelto ? 'AMBIGUO' : 'NO_MATCH',
-        ]);
-        exit;
+        ];
     }
 
     $row = $resuelto['row'];
@@ -775,7 +773,7 @@ if (isset($_POST['ControlarCrossdocking'])) {
     $codigoEtiqueta = $tieneSufijo ? $codigoBase . '_' . $m[1] : (string)$row['CodigoSeguimiento'];
     $recorridoReal = (int)($row['Recorrido'] ?? 0);
 
-    echo json_encode([
+    return [
         'ok'                => true,
         'pertenece'         => $recorridoReal === $recorridoObjetivo,
         'idTransClientes'   => $idTC,
@@ -783,7 +781,12 @@ if (isset($_POST['ControlarCrossdocking'])) {
         'codigoEtiqueta'    => $codigoEtiqueta,
         'clienteDestino'    => (string)($row['ClienteDestino'] ?? ''),
         'recorridoReal'     => $recorridoReal ?: null,
-    ], JSON_UNESCAPED_UNICODE);
+    ];
+}
+
+if (isset($_POST['ControlarCrossdocking'])) {
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(cd_controlar($mysqli, (string)($_POST['codigo'] ?? ''), (int)($_POST['recorrido'] ?? 0)), JSON_UNESCAPED_UNICODE);
     exit;
 }
 
