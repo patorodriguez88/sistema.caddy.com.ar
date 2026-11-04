@@ -109,6 +109,10 @@ if (isset($_POST['Paquetes'])) {
 // así que se corrige ahí. Ventas.Cantidad se mantiene sincronizado (mismo
 // criterio que ya usa Ventas/Procesos/php/colecta.php al reconciliar una
 // colecta) para que no queden dos "cantidades" distintas del mismo envío.
+// FIX (4/11/2026): solo el/los renglones que copiaban los bultos (misma
+// cantidad que TransClientes.Cantidad antes del cambio) y que se cobran por
+// bulto. Antes pisaba TODOS los renglones: el de VALOR DECLARADO (cantidad 1)
+// o un "1 PALLET" pasaban a 75. Ver Funciones/php/bultos.php.
 // ==================================================
 if (isset($_POST['ModificarCantidad'])) {
     $id = intval($_POST['id'] ?? 0);
@@ -119,7 +123,7 @@ if (isset($_POST['ModificarCantidad'])) {
         exit;
     }
 
-    $st = $mysqli->prepare("SELECT CodigoSeguimiento FROM TransClientes WHERE id=? AND Eliminado=0 LIMIT 1");
+    $st = $mysqli->prepare("SELECT CodigoSeguimiento, Cantidad FROM TransClientes WHERE id=? AND Eliminado=0 LIMIT 1");
     $st->bind_param('i', $id);
     $st->execute();
     $fila = $st->get_result()->fetch_assoc();
@@ -135,11 +139,13 @@ if (isset($_POST['ModificarCantidad'])) {
     $upd1->bind_param('ii', $cantidad, $id);
     $ok1 = $upd1->execute();
 
-    // Sin LIMIT 1 a propósito: si por algún motivo el envío tiene más de una
-    // línea en Ventas (mismo NumPedido), todas tienen que reflejar la misma
-    // cantidad corregida - no solo la primera que encuentre.
-    $upd2 = $mysqli->prepare("UPDATE Ventas SET Cantidad=? WHERE NumPedido=?");
-    $upd2->bind_param('is', $cantidad, $codigoSeguimiento);
+    require_once __DIR__ . '/../../../Funciones/php/bultos.php';
+    $bultosAntes = (int) $fila['Cantidad'];
+    $soloPorBulto = productosTieneCobroPorBulto($mysqli)
+        ? " AND NOT EXISTS (SELECT 1 FROM Productos p WHERE p.Codigo = Ventas.Codigo AND p.CobroPorBulto = 0)"
+        : "";
+    $upd2 = $mysqli->prepare("UPDATE Ventas SET Cantidad=? WHERE NumPedido=? AND Cantidad=?" . $soloPorBulto);
+    $upd2->bind_param('isi', $cantidad, $codigoSeguimiento, $bultosAntes);
     $ok2 = $upd2->execute();
 
     if ($ok1) {

@@ -218,9 +218,12 @@ if (isset($_POST['ModificarDatosVentas'])) {
     // renglón era el que copiaba los bultos (misma cantidad que TransClientes.Cantidad), los bultos
     // pasan a la cantidad nueva, igual que "Modificar cantidad" de Etiquetas
     // (Logistica/Proceso/php/etiquetas_recorrido.php). Los renglones con otra cantidad (cobranza,
-    // seguro, etc.) no tocan los bultos.
+    // seguro, etc.) no tocan los bultos, ni los de servicios que se cobran por pallet / viaje: ahí la
+    // cantidad es lo que se cobra y los bultos van aparte (Funciones/php/bultos.php).
+    require_once __DIR__ . '/../../../Funciones/php/bultos.php';
     $cantNueva = (int) $_POST['cantidad'];
-    if ($cantAntes && $cantNueva > 0 && (int) $cantAntes['CantVenta'] === (int) $cantAntes['Bultos']
+    if ($cantAntes && $cantNueva > 0 && !ventaNoEsPorBulto($mysqli, (string) ($_POST['codigo'] ?? ''))
+        && (int) $cantAntes['CantVenta'] === (int) $cantAntes['Bultos']
         && $cantNueva !== (int) $cantAntes['Bultos']) {
       $stBultos = $mysqli->prepare("UPDATE TransClientes SET Cantidad = ? WHERE id = ? AND Eliminado = 0 LIMIT 1");
       $stBultos->bind_param('ii', $cantNueva, $idTransCant);

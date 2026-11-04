@@ -1,3 +1,13 @@
+// Con un servicio que se cobra por pallet / viaje (CobroPorBulto = 0) se piden aparte los bultos
+// físicos; con los de por bulto la cantidad ya son los bultos y el campo no aparece.
+function mostrarBultosVenta(filas) {
+  const hayPallet = filas.some(function (f) {
+    return Number(f.CobroPorBulto) === 0;
+  });
+  $("#bultos_wrap").toggleClass("d-none", !hayPallet);
+  if (!hayPallet) $("#bultos_t").val("");
+}
+
 function ver_tabla_servicios() {
   console.log("tabla servicios");
   if (document.getElementById("id_origen").value == null) {
@@ -13,6 +23,10 @@ function ver_tabla_servicios() {
       url: "Procesos/php/ventas-tablas.php",
       data: { id_cliente: cliente, datos: 1 },
       type: "post",
+      dataSrc: function (json) {
+        mostrarBultosVenta(json.data || []);
+        return json.data || [];
+      },
     },
     columns: [
       { data: "Codigo" },

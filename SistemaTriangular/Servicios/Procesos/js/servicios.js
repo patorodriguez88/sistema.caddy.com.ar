@@ -110,6 +110,18 @@ var datatable = $("#servicios").DataTable({
       },
     },
     {
+      // Productos.CobroPorBulto: por bulto (la cantidad son los bultos) o por pallet/viaje (la
+      // cantidad es lo que se cobra; los bultos se piden aparte en Venta Simple).
+      data: "CobroPorBulto",
+      render: function (data, type, row) {
+        if (data === undefined || data === null) return "";
+        const porBulto = Number(data) !== 0;
+        return porBulto
+          ? `<a href="#" class="btn-cobro-bulto" data-id="${row.id}" data-valor="0" title="Click para pasarlo a por pallet / viaje"><span class="badge bg-light text-dark border">Por bulto</span></a>`
+          : `<a href="#" class="btn-cobro-bulto" data-id="${row.id}" data-valor="1" title="Click para pasarlo a por bulto"><span class="badge bg-warning text-dark">Por pallet / viaje</span></a>`;
+      },
+    },
+    {
       data: "id",
       render: function (data, type, row) {
         if (row.Inactivo == 1) {
@@ -461,4 +473,21 @@ $("#staticBackdrop").on("hidden.bs.modal", function () {
   $("#btn_loading_inc").css("display", "none");
   $("#btn_acept_inc").css("display", "block");
   $("#btn_close_int").css("display", "block");
+});
+
+$("#servicios").on("click", ".btn-cobro-bulto", function (e) {
+  e.preventDefault();
+  const id = $(this).data("id");
+  const valor = String($(this).data("valor"));
+  const texto =
+    valor === "0"
+      ? "Pasa a cobrarse POR PALLET / VIAJE: la cantidad de la venta es lo que se cobra y en Venta Simple se piden aparte los bultos a etiquetar."
+      : "Pasa a cobrarse POR BULTO: la cantidad de la venta son los bultos (como la mayoría de los servicios).";
+  Swal.fire({ icon: "question", title: "¿Cambiar cómo se cobra?", text: texto, showCancelButton: true, confirmButtonText: "Sí, cambiar", cancelButtonText: "Cancelar" }).then((r) => {
+    if (!r.isConfirmed) return;
+    $.post("Procesos/php/servicios.php", { CambiarCobroPorBulto: 1, id: id, valor: valor }, null, "json").done(function (j) {
+      if (Number(j.success) === 1) $("#servicios").DataTable().ajax.reload(null, false);
+      else Swal.fire("Error", "No se pudo guardar.", "error");
+    });
+  });
 });

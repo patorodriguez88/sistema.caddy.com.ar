@@ -118,6 +118,18 @@ if (isset($_POST['ActivarServicios'])) {
     }
 }
 
+// Cómo se cobra el servicio (Productos.CobroPorBulto, ver Funciones/php/bultos.php): por bulto (la
+// cantidad son los bultos) o por pallet/viaje (la cantidad es lo que se cobra y los bultos van aparte).
+if (isset($_POST['CambiarCobroPorBulto'])) {
+    $id = (int) ($_POST['id'] ?? 0);
+    $valor = ($_POST['valor'] ?? '1') === '0' ? 0 : 1;
+    $st = $mysqli->prepare("UPDATE Productos SET CobroPorBulto = ? WHERE id = ? LIMIT 1");
+    $st->bind_param('ii', $valor, $id);
+    echo json_encode(array('success' => $st->execute() ? 1 : 0));
+    $st->close();
+    exit;
+}
+
 //BUSCO EL PROXIMO NUMERO DE RECORRIDO
 
 if (isset($_POST['Prod_num'])) {

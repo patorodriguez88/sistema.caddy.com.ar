@@ -25,6 +25,15 @@ document
     // usuario (el submit), para que el navegador no la bloquee como popup.
     // Le ponemos la URL real recién cuando el server confirma la venta; si
     // falla, se cierra. (window.open() desde el callback AJAX = popup blocker.)
+    // Servicio por pallet / viaje: sin los bultos a etiquetar no se puede confirmar.
+    if (!$("#bultos_wrap").hasClass("d-none") && !(parseInt($("#bultos_t").val(), 10) > 0)) {
+      _liberarEnvio();
+      $("#warning-redespacho-modal").modal("show");
+      $("#warning-redespacho-text").html("Indicá cuántos <b>bultos a etiquetar</b> lleva el envío (el servicio se cobra por pallet / viaje).");
+      $("#bultos_t").focus();
+      return;
+    }
+
     var guiaWin = window.open("", "_blank");
     if (guiaWin) {
       try {
@@ -72,6 +81,8 @@ document
       // Venta generada desde una cotizacion (cotizacion_a_venta.js): ConfirmarVenta
       // le graba el codigo de seguimiento a esa cotizacion.
       cotizacion_id: (document.getElementById("cotizacion_id") || {}).value || "",
+      // Bultos físicos si hay un servicio por pallet / viaje (ConfirmarVenta.php)
+      bultos_t: $("#bultos_wrap").hasClass("d-none") ? "" : $("#bultos_t").val(),
     };
 
     console.log("Datos enviados:", data);
