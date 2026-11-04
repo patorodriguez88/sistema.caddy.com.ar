@@ -302,7 +302,10 @@ function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recor
 // tiene Webhook=1, encola el aviso a quien corresponda (origen/destino) vía encolarWebhookRecorrido().
 // Devuelve el mismo array que antes se echoeaba directo — cualquier llamador (HTTP o server-side)
 // recibe la misma forma de respuesta.
-function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn = 10): array
+// Si el paquete está en Wepoint y el recorrido de origen o de destino tiene un egreso solicitado,
+// no se mueve: se le pide el cambio a Wepoint y se aplica cuando lo acepte ($autorizadoPorWepoint,
+// Logistica/Proceso/php/wepoint_egresos.php).
+function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn = 10, bool $autorizadoPorWepoint = false): array
 {
     if ($cs === '' || $r === '') {
         return ['success' => 0, 'message' => 'Faltan parámetros: cs y/o r.'];
@@ -325,9 +328,10 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
     $ordenAnterior = '';
     $importeServicio = 0.0;
     $recorridoAnterior = '';
+    $idTc = 0;
 
     if ($stmt = $mysqli->prepare("
-        SELECT NumerodeOrden, Debe, Recorrido
+        SELECT NumerodeOrden, Debe, Recorrido, id
         FROM TransClientes
         WHERE CodigoSeguimiento = ?
           AND Eliminado = 0
@@ -338,12 +342,13 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
     ")) {
         $stmt->bind_param('s', $cs);
         $stmt->execute();
-        $stmt->bind_result($ordenAnteriorDB, $debeDB, $recorridoAnteriorDB);
+        $stmt->bind_result($ordenAnteriorDB, $debeDB, $recorridoAnteriorDB, $idTcDB);
 
         if ($stmt->fetch()) {
             $ordenAnterior = (string)$ordenAnteriorDB;
             $importeServicio = normalizarImporte($debeDB);
             $recorridoAnterior = (string)$recorridoAnteriorDB;
+            $idTc = (int)$idTcDB;
         }
 
         $stmt->close();
@@ -405,6 +410,23 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
             'recorrido_anterior' => $recorridoAnterior,
             'recorrido_nuevo' => $r
         ];
+    }
+
+    // ---- 2.2) Paquete en Wepoint con un egreso solicitado: se pide el cambio a Wepoint ----
+    if (!$autorizadoPorWepoint && $idTc > 0) {
+        require_once __DIR__ . '/../Logistica/Proceso/php/wepoint_egresos.php';
+        $bloqueo = wepoint_egreso_bloqueo($mysqli, $idTc, (int)$r);
+        if ($bloqueo) {
+            $pedido = wepoint_egreso_pedir_cambio($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $bloqueo, $Usuario);
+            return [
+                'success' => 0,
+                'code' => 'WEPOINT_EGRESO',
+                'pedido_a_wepoint' => $pedido['ok'] ? 1 : 0,
+                'message' => $pedido['mensaje'],
+                'recorrido_anterior' => $recorridoAnterior,
+                'recorrido_nuevo' => $r
+            ];
+        }
     }
 
     // ---- 3) Validación administrativa sobre órdenes afectadas ----

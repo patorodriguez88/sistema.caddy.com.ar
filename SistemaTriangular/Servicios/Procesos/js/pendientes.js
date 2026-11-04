@@ -382,9 +382,11 @@ $("#modificarrecorrido_ok").on("click", async function () {
         showConfirmButton: false,
       });
     } else {
+      // Paquete en Wepoint con egreso en curso: no es un error, quedó pedido a Wepoint
+      const aWepoint = data.code === "WEPOINT_EGRESO";
       Swal.fire({
-        icon: "error",
-        title: "Registro No Actualizado",
+        icon: aWepoint ? (data.pedido_a_wepoint ? "info" : "warning") : "error",
+        title: aWepoint ? "Pedido a Wepoint" : "Registro No Actualizado",
         text: data.message || "No pudimos actualizar el Recorrido.",
       });
     }

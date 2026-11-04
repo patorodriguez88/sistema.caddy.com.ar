@@ -19,6 +19,8 @@ $resultado = wepoint_procesar_cola($mysqli);
 $resultado['salidas_conciliadas'] = $conciliadas;
 $resultado['seguimientos'] = wepoint_seguimiento_pendientes($mysqli);
 $resultado['retiros_cerrados'] = wepoint_cerrar_retiros($mysqli);
+require_once __DIR__ . '/wepoint_egresos.php';
+$resultado['egresos'] = wepoint_egresos_sincronizar($mysqli);
 if ($resultado['ingresos'] || $resultado['salidas'] || $resultado['errores'] || $resultado['retiros_cerrados'] || $conciliadas || $resultado['seguimientos']) {
     echo date('Y-m-d H:i:s') . ' ' . json_encode($resultado) . "\n";
 }

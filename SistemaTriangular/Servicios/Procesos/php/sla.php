@@ -126,6 +126,8 @@ if(isset($_POST['ActualizaRecorrido'])){
     echo json_encode([
         'success' => $resultado['success'],
         'message' => $resultado['message'] ?? '',
+        'code' => $resultado['code'] ?? null,
+        'pedido_a_wepoint' => $resultado['pedido_a_wepoint'] ?? 0,
         'Recorrido' => $_POST['r'],
         'CodigoSeguimiento' => $_POST['cs'],
     ]);

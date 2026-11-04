@@ -824,9 +824,11 @@ $("#modificarrecorrido_ok").click(function () {
           showConfirmButton: false,
         });
       } else {
+        // Paquete en Wepoint con egreso en curso: no es un error, quedó pedido a Wepoint
+        const aWepoint = data.code === "WEPOINT_EGRESO";
         Swal.fire({
-          icon: "error",
-          title: "Error",
+          icon: aWepoint ? (data.pedido_a_wepoint ? "info" : "warning") : "error",
+          title: aWepoint ? "Pedido a Wepoint" : "Error",
           text: data.message,
         });
       }

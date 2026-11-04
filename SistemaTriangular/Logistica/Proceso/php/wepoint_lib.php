@@ -473,8 +473,10 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
         wepoint_cola_marcar($mysqli, $idsMal, false, $motivo);
     }
     $okIds = array_flip($ok);
+    require_once __DIR__ . '/wepoint_egresos.php';
     foreach (array_unique(array_map(fn($f) => (int)$f['id_tc'], array_filter($filas, fn($f) => isset($okIds[$f['id']])))) as $idTc) {
         wepoint_seguimiento($mysqli, $idTc, WEPOINT_ESTADO_INGRESO, 'Ingresó al depósito de Wepoint');
+        wepoint_egreso_sumar_llegado($mysqli, $idTc); // su recorrido ya pidió el egreso: se le pide sumarlo
     }
 
     return ['ok' => count($ok), 'error' => count($filas) - count($ok) + count($sinOrigenRows)];
