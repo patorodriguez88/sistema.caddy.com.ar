@@ -3,8 +3,8 @@
 // hace lo mismo que un escaneo de CrossDocking (resuelve la etiqueta, marca el ingreso en Caddy, lo
 // anota para Wepoint y arma el rótulo) y le devuelve además el aviso del envío para que Wepoint lo
 // dé de alta y lo reciba en el momento. Sin sesión: se autentica con WEPOINT_ENTRADA_TOKEN de
-// Conexion/wepoint_config.php. POST JSON {codigo, proveedorForzado?, operador?}, o {accion: 'estado'}
-// para el tablero del día.
+// Conexion/wepoint_config.php. POST JSON {codigo, proveedorForzado?, operador?}, o {accion: 'estado' | 'pendientes' | 'controlar'}
+// para el tablero del día, lo que falta de un recorrido y el control final.
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -39,6 +39,13 @@ require_once __DIR__ . '/crossdocking.php';
 // Tablero del día (lo mismo que muestra la pantalla de CrossDocking)
 if (($in['accion'] ?? '') === 'estado') {
     $responder(200, cd_estado($mysqli, (string)($in['fecha'] ?? '')));
+}
+// Lo que falta escanear de un recorrido, y el control final de un recorrido (no marca nada)
+if (($in['accion'] ?? '') === 'pendientes') {
+    $responder(200, cd_pendientes($mysqli, (int)($in['recorrido'] ?? 0)));
+}
+if (($in['accion'] ?? '') === 'controlar') {
+    $responder(200, cd_controlar($mysqli, (string)($in['codigo'] ?? ''), (int)($in['recorrido'] ?? 0)));
 }
 
 $r = cd_escanear($mysqli, (string)($in['codigo'] ?? ''), (int)($in['proveedorForzado'] ?? 0));
