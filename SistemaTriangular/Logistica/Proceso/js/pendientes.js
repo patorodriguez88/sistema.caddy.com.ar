@@ -486,7 +486,6 @@ $("#modificardir_ok").click(function () {
   });
 });
 
-$(document).ready(function () {
 // Marcas de Wepoint en la lista de servicios (pendientes.php -> wepoint_info_envios): el paquete
 // está en el depósito / en un egreso, y el cambio de recorrido que espera a Wepoint. Lo que Wepoint
 // resolvió (aceptado o rechazado con el motivo) queda en Seguimiento.
@@ -550,6 +549,7 @@ $(document).on("click", "#wepoint-envio-ok", function () {
   });
 });
 
+$(document).ready(function () {
   var datatable = $("#seguimiento").DataTable({
     dom: "Bfrtip",
     buttons: buildDtButtons(["pageLength"]),
