@@ -4,7 +4,8 @@
 // anota para Wepoint y arma el rótulo) y le devuelve además el aviso del envío para que Wepoint lo
 // dé de alta y lo reciba en el momento. Sin sesión: se autentica con WEPOINT_ENTRADA_TOKEN de
 // Conexion/wepoint_config.php. POST JSON {codigo, proveedorForzado?, operador?}, o {accion: 'estado' | 'pendientes' | 'controlar'}
-// para el tablero del día, lo que falta de un recorrido y el control final.
+// para el tablero del día, lo que falta de un recorrido y el control final, o {accion: 'egreso'}
+// con cómo quedaron los egresos solicitados desde Hoja de Ruta (wepoint_egresos.php).
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=utf-8');
 
@@ -33,6 +34,17 @@ if (!wepoint_activo()) {
 $in = json_decode((string)file_get_contents('php://input'), true) ?: $_POST;
 $operador = mb_substr(trim((string)($in['operador'] ?? '')), 0, 40);
 $_SESSION = ['Usuario' => 'Wepoint' . ($operador !== '' ? ": $operador" : '')];
+
+// Wepoint resolvió un egreso que Caddy solicitó desde Hoja de Ruta (aceptado, rechazado, cambios, salió todo)
+if (($in['accion'] ?? '') === 'egreso') {
+    require_once __DIR__ . '/wepoint_egresos.php';
+    foreach ((array)($in['egresos'] ?? []) as $egreso) {
+        if (is_array($egreso)) {
+            wepoint_egreso_aplicar($mysqli, $egreso);
+        }
+    }
+    $responder(200, ['ok' => true]);
+}
 
 define('CD_COMO_LIBRERIA', true);
 require_once __DIR__ . '/crossdocking.php';

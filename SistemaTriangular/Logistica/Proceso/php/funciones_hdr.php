@@ -30,7 +30,47 @@ if (isset($_POST['Color'])) {
   }
 }
 
+// Egreso de Wepoint: se le pide a Wepoint que prepare lo que del recorrido está en su depósito
+// (wepoint_egresos.php). Desde ahí esos paquetes no se mueven de recorrido sin que Wepoint acepte.
+if (isset($_POST['WepointSolicitarEgreso'])) {
+  header('Content-Type: application/json; charset=utf-8');
+  require_once __DIR__ . '/wepoint_egresos.php';
+  echo json_encode(wepoint_egreso_solicitar($mysqli, (int)$_POST['Recorrido'], (string)($_SESSION['Usuario'] ?? 'sistema')), JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
+/** Lo de Wepoint en la card del recorrido: el egreso en curso, o el botón para solicitarlo. */
+function wepointEnCard(int $recorrido, ?array $egreso, int $enDeposito): string
+{
+  if ($egreso && in_array($egreso['estado'], ['solicitado', 'aceptado'], true)) {
+    $estado = $egreso['estado'] === 'solicitado'
+      ? '<i class="mdi mdi-timer-sand"></i> Esperando que Wepoint lo acepte'
+      : '<i class="mdi mdi-package-variant-closed"></i> Wepoint lo está preparando';
+    $cambios = (int)$egreso['cambios_pendientes'] > 0
+      ? '<br><i class="mdi mdi-swap-horizontal"></i> ' . (int)$egreso['cambios_pendientes'] . ' cambio(s) esperando a Wepoint'
+      : '';
+    return '<div class="alert alert-info py-1 px-2 mt-2 mb-0 small" title="Los paquetes que están en Wepoint no se mueven de recorrido sin que Wepoint lo acepte">'
+      . '<strong>Egreso Wepoint ' . htmlspecialchars((string)$egreso['nro_oeb']) . '</strong> · ' . (int)$egreso['envios'] . ' envío(s)<br>'
+      . $estado . $cambios . '</div>';
+  }
+  $html = '';
+  if ($egreso && $egreso['estado'] === 'rechazado') {
+    $html .= '<div class="text-danger small mt-2"><i class="mdi mdi-close-circle-outline"></i> Wepoint rechazó el egreso'
+      . ($egreso['motivo'] ? ': ' . htmlspecialchars((string)$egreso['motivo']) : '') . '</div>';
+  }
+  if ($enDeposito > 0) {
+    $html .= '<button type="button" onclick="solicitarEgresoWepoint(' . $recorrido . ', ' . $enDeposito . ')" class="btn w-100 btn-outline-primary mt-2">'
+      . '<i class="mdi mdi-warehouse"></i> Solicitar egreso a Wepoint (' . $enDeposito . ')</button>';
+  }
+  return $html;
+}
+
 if (isset($_POST['FormaDePago'])) {
+  require_once __DIR__ . '/wepoint_egresos.php';
+  $wpActivo = wepoint_activo();
+  $wpEgresos = $wpActivo ? wepoint_egresos_para_hdr($mysqli) : [];
+  $wpEnDeposito = $wpActivo ? wepoint_en_deposito_por_recorrido($mysqli) : [];
+
   $BuscarRecorridos = $mysqli->query("SELECT Recorrido FROM HojaDeRuta WHERE Estado='Abierto' AND Recorrido<>0 AND Eliminado='0' AND Devuelto='0' AND Seguimiento<>'' GROUP BY Recorrido");
 
   // Se junta primero toda la info de cada card (en vez de imprimir en el
@@ -213,6 +253,10 @@ WHERE HojaDeRuta.Recorrido='$fila[Recorrido]' AND HojaDeRuta.Eliminado=0 AND Tra
     }
     if (isset($fila['Recorrido'])) {
       echo '<button value="' . $fila['Recorrido'] . '" Onclick="veo(this.value);" id="boton_abrir_hdr" type="button" class="btn w-100 btn-outline-success mt-2"><i class="mdi mdi-folder-marker"></i> Abrir Hoja de Ruta</button>';
+      if ($wpActivo) {
+        $nRec = (int)$fila['Recorrido'];
+        echo wepointEnCard($nRec, $wpEgresos[$nRec] ?? null, $wpEnDeposito[$nRec] ?? 0);
+      }
     }
     //   echo '<span class="text-nowrap text-right"></span>';
 

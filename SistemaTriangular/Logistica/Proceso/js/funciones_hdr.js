@@ -75,6 +75,33 @@ function paneles() {
   });
 }
 
+// Egreso de Wepoint: le pide a Wepoint que prepare lo que del recorrido está en su depósito. Desde
+// ahí esos paquetes no se mueven de recorrido sin que Wepoint acepte el cambio.
+function solicitarEgresoWepoint(recorrido, enDeposito) {
+  if (!confirm("¿Solicitar a Wepoint el egreso del recorrido " + recorrido + " (" + enDeposito + " envío(s) en su depósito)?\n\n" +
+    "Desde que lo solicites, esos paquetes no se pueden sacar del recorrido ni sumar otros sin que Wepoint acepte el cambio.")) {
+    return;
+  }
+  $.ajax({
+    data: { WepointSolicitarEgreso: 1, Recorrido: recorrido },
+    type: "POST",
+    url: "Proceso/php/funciones_hdr.php",
+    dataType: "json",
+    beforeSend: function () {
+      mostrarModalCarga("#info-alert-modal", "Solicitando el egreso a Wepoint...");
+    },
+    success: function (r) {
+      ocultarModalCarga("#info-alert-modal");
+      toast(r.ok ? "success" : "error", "Wepoint", r.mensaje);
+      paneles();
+    },
+    error: function () {
+      ocultarModalCarga("#info-alert-modal");
+      toast("error", "Wepoint", "No se pudo solicitar el egreso. Reintentá de nuevo.");
+    },
+  });
+}
+
 //BOTONERA CAMBIAR RECORRIDO
 $("#cambiar_recorrido").click(function () {
   $("#hdractivas").show();
