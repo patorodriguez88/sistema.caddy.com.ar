@@ -260,6 +260,28 @@
                     </div><!-- /.modal-dialog -->
                 </div><!-- /.modal -->
                 <!--                   MODAL ELIMINAR -->
+                <!-- Egreso de Wepoint: confirmación (Proceso/js/funciones_hdr.js, solicitarEgresoWepoint) -->
+                <div id="wepoint-egreso-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="wepoint-egreso-modalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header modal-colored-header bg-primary">
+                                <h4 class="modal-title" id="wepoint-egreso-modalLabel"><i class="mdi mdi-warehouse"></i> Solicitar egreso a Wepoint</h4>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-2">Recorrido <strong id="wepoint-egreso-recorrido"></strong>: <strong id="wepoint-egreso-cantidad"></strong> en el depósito de Wepoint.</p>
+                                <p class="mb-2">Wepoint recibe la orden de egreso y prepara el pedido para cuando pase el chofer.</p>
+                                <div class="alert alert-warning mb-0 py-2">
+                                    <i class="mdi mdi-lock-outline"></i> Desde que lo solicites, esos paquetes no se pueden sacar del recorrido ni se pueden sumar otros que estén en Wepoint: el cambio se le pide a Wepoint y se hace cuando lo acepte.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                                <button id="wepoint-egreso-ok" type="button" class="btn btn-primary"><i class="mdi mdi-send"></i> Solicitar egreso</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <div id="warning-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="warning-header-modalLabel" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered">
                         <div class="modal-content">
