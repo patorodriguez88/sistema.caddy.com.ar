@@ -487,6 +487,38 @@ $("#modificardir_ok").click(function () {
 });
 
 $(document).ready(function () {
+// Marcas de Wepoint en la lista de servicios (pendientes.php -> wepoint_info_envios): el paquete
+// está en el depósito / en un egreso, y el cambio de recorrido pedido a Wepoint (pendiente,
+// aceptado o rechazado con su motivo).
+function badgesWepoint(w) {
+  if (!w) return "";
+  var esc = function (t) {
+    return $("<div>").text(t == null ? "" : String(t)).html();
+  };
+  var html = "";
+  if (w.en_deposito) {
+    html += `<br/><span class='badge bg-primary mt-1' style='font-size:10px'><i class='mdi mdi-warehouse'></i> En Wepoint</span>`;
+  }
+  if (w.egreso) {
+    var est = w.egreso.estado === "aceptado" ? "preparando" : "esperando a Wepoint";
+    html += ` <span class='badge bg-info mt-1' style='font-size:10px' title='Está en el egreso de Wepoint: no se mueve de recorrido sin que Wepoint lo acepte'><i class='mdi mdi-lock-outline'></i> Egreso ${esc(w.egreso.nro)} · ${est}</span>`;
+  }
+  var c = w.cambio;
+  if (c) {
+    var destino = c.recorrido_destino && c.recorrido_destino !== c.recorrido_origen ? "al recorrido " + esc(c.recorrido_destino) : "al egreso";
+    if (c.estado === "pendiente" || c.estado === "aplicando") {
+      html += `<br/><span class='badge bg-warning text-dark mt-1' style='font-size:10px' title='Pedido por ${esc(c.usuario)}'><i class='mdi mdi-timer-sand'></i> Cambio ${destino} pedido a Wepoint</span>`;
+    } else if (c.estado === "rechazado") {
+      html += `<br/><span class='badge bg-danger mt-1' style='font-size:10px;white-space:normal;text-align:left' title='Pedido por ${esc(c.usuario)}'><i class='mdi mdi-close-circle-outline'></i> Wepoint rechazó el cambio ${destino}${c.motivo ? ": " + esc(c.motivo) : ""}</span>`;
+    } else if (c.estado === "error") {
+      html += `<br/><span class='badge bg-danger mt-1' style='font-size:10px;white-space:normal;text-align:left'><i class='mdi mdi-alert-outline'></i> ${esc(c.motivo)}</span>`;
+    } else if (c.estado === "aplicado") {
+      html += `<br/><span class='badge bg-success mt-1' style='font-size:10px'><i class='mdi mdi-check'></i> Cambio aceptado por Wepoint</span>`;
+    }
+  }
+  return html;
+}
+
   var datatable = $("#seguimiento").DataTable({
     dom: "Bfrtip",
     buttons: buildDtButtons(["pageLength"]),
@@ -681,13 +713,15 @@ $(document).ready(function () {
               `<a href='#' class='badge bg-danger mt-1 ms-1' style='font-size:9px' onclick='resolver_colecta_bulto(${row.id},"DevolverColecta"); return false;'>Devolver</a>`;
           }
 
+          var wepoint = badgesWepoint(row.Wepoint);
+
           var badgeServicio =
             `<a value='${servicio}' href='#' class='badge bg-${color} mb-1 mt-1' style='font-size:10px' onclick='servicio_mod(${row.id},${row.Retirado})'>${servicio}</a>`;
 
           if (row.Retirado == 1) {
-            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-success' style='font-size:10px'>${row.Hora}</a>${colectaAlert}${colectaTrabada}</td></td>`;
+            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-success' style='font-size:10px'>${row.Hora}</a>${colectaAlert}${colectaTrabada}${wepoint}</td></td>`;
           } else {
-            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-warning' style='font-size:10px'>${row.Hora_retiro}</a><br/><a href='#' class='badge bg-success mt-1' style='font-size:10px'>${row.Hora}</a>${colectaAlert}${colectaTrabada}</td></td>`;
+            return `<td class="table-action"><a>${row.NumeroComprobante}</a><br/><a>${row.CodigoSeguimiento}</a><br/><a><b>${badgeServicio}</b></a><br/><a href='#' class='badge bg-warning' style='font-size:10px'>${row.Hora_retiro}</a><br/><a href='#' class='badge bg-success mt-1' style='font-size:10px'>${row.Hora}</a>${colectaAlert}${colectaTrabada}${wepoint}</td></td>`;
           }
         },
       },
