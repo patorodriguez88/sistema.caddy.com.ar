@@ -115,5 +115,54 @@
       .always(function () { $btn.prop("disabled", false); });
   });
 
+  function cargarProductos() {
+    $.post(URL, { accion: "productos" }, null, "json").done(function (r) {
+      if (!r || !r.ok) return;
+      $("#as-productos tbody").html(
+        r.productos.map((p) => `<tr>
+          <td class="text-start">${esc(p.CodigoProducto)}</td>
+          <td class="text-start">${esc(p.Nombre)}</td>
+          <td><button type="button" class="btn btn-light btn-sm as-producto-editar" data-id="${p.id}" data-codigo="${esc(p.CodigoProducto)}" data-nombre="${esc(p.Nombre)}"><i class="mdi mdi-pencil me-1"></i>Editar</button></td>
+        </tr>`).join("") || '<tr><td colspan="3" class="text-muted">Todavía no hay productos.</td></tr>'
+      );
+    });
+  }
+
+  function guardarProducto(datos, alGuardar) {
+    $.post(URL, Object.assign({ accion: "producto_guardar" }, datos), null, "json")
+      .done(function (r) {
+        if (!r || !r.ok) {
+          Swal.fire("No se guardó", (r && r.error) || "Error desconocido", "error");
+          return;
+        }
+        if (alGuardar) alGuardar();
+        cargarProductos();
+        cargarHistorial();
+      })
+      .fail(function (x) { Swal.fire("Error", "No se pudo guardar (" + x.status + ").", "error"); });
+  }
+
+  $("#as-producto-agregar").on("click", function () {
+    guardarProducto({ codigo: $("#as-producto-codigo").val(), nombre: $("#as-producto-nombre").val() }, function () {
+      $("#as-producto-codigo, #as-producto-nombre").val("");
+    });
+  });
+
+  $(document).on("click", ".as-producto-editar", function () {
+    const $b = $(this);
+    Swal.fire({
+      title: "Producto " + $b.data("codigo"),
+      input: "text",
+      inputLabel: "Nombre",
+      inputValue: String($b.data("nombre")),
+      showCancelButton: true,
+      confirmButtonText: "Guardar",
+      cancelButtonText: "Cancelar",
+    }).then(function (r) {
+      if (r.isConfirmed) guardarProducto({ id: $b.data("id"), nombre: r.value });
+    });
+  });
+
   cargarHistorial();
+  cargarProductos();
 })();
