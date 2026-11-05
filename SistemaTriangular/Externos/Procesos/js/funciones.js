@@ -1,5 +1,8 @@
 var filtro = "";
 
+$("#filtro_activos, #filtro_inactivos, #filtro_todos").click(function () {
+  $(this).addClass("active").siblings().removeClass("active");
+});
 $("#filtro_activos").click(function () {
   filtro = "activo";
   actualizarTabla();
