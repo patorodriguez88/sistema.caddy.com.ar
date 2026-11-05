@@ -241,7 +241,9 @@ function leerPlanilla(string $path, int $maxFilas = 0): array
     $filas = [];
     $primera = true;
 
-    foreach ($sheet->getRowIterator() as $row) {
+    // Hasta la última fila con datos: LibreOffice puede guardar filas vacías hasta la 1.048.576 y
+    // recorrerlas todas corta el script por tiempo ("No se pudo procesar el archivo").
+    foreach ($sheet->getRowIterator(1, max(1, $sheet->getHighestDataRow())) as $row) {
         $celdas = [];
         $it = $row->getCellIterator('A', $ultimaColumna);
         $it->setIterateOnlyExistingCells(false);
