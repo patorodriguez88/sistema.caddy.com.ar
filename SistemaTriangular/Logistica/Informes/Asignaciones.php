@@ -196,9 +196,9 @@ foreach ($recorridos as $idx => $rr) {
 
         $proveedorCliente = mysqli_fetch_one(
             $mysqli,
-            "SELECT nombrecliente, Direccion FROM Clientes WHERE idProveedor = ? LIMIT 1",
+            "SELECT nombrecliente, Direccion FROM Clientes WHERE id = ? LIMIT 1",
             'i',
-            [(int)($asignacion['idProveedor'] ?? 0)]
+            [(int)$item['idClienteDestino']]
         ) ?? [];
 
         $huboRecorridos = true;
