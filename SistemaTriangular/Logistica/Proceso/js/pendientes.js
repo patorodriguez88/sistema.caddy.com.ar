@@ -502,7 +502,10 @@ function badgesWepoint(w, row) {
   if (w.activa === false) return html;
   if (w.egreso) {
     var est = w.egreso.motivo ? w.egreso.motivo : w.egreso.estado === "aceptado" ? "preparando" : "esperando a Wepoint";
-    html += ` <span class='badge bg-info mt-1' style='font-size:10px' title='Está en una orden de egreso de Wepoint: no se mueve de recorrido sin que Wepoint lo acepte'><i class='mdi mdi-lock-outline'></i> Egreso ${esc(w.egreso.nro)} · ${esc(est)}</span>`;
+    html += ` <span class='badge bg-info mt-1' style='font-size:10px' title='Está en una orden de egreso de Wepoint: cuando Wepoint empieza a armarla, los cambios los tiene que aceptar'><i class='mdi mdi-package-variant-closed'></i> Egreso ${esc(w.egreso.nro)} · ${esc(est)}</span>`;
+    if (w.egreso.id) {
+      html += ` <a href='#' class='badge bg-danger mt-1' style='font-size:10px' onclick='cancelarEgresoWepoint(${Number(w.egreso.id)}, ${JSON.stringify(String(w.egreso.nro || ""))}); return false;'><i class='mdi mdi-close-circle-outline'></i> Cancelar egreso</a>`;
+    }
   } else if (w.en_deposito && row && Number(row.Recorrido) === 80) {
     // Recorrido 80 (DEPOSITO): el envío suelto se saca de Wepoint con su propia orden de egreso
     html += ` <a href='#' class='badge bg-dark mt-1' style='font-size:10px' onclick='pedirEgresoEnvioWepoint(${Number(row.id)}, ${JSON.stringify(String(row.CodigoSeguimiento))}); return false;'><i class='mdi mdi-export'></i> Pedir egreso a Wepoint</a>`;

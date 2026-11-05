@@ -107,6 +107,40 @@ $(document).on("click", "#wepoint-egreso-ok", function () {
   });
 });
 
+// Cancelar la orden de egreso de Wepoint: sin picking se anula; con el picking arrancado se le pide
+function cancelarEgresoWepoint(idEgreso, nro) {
+  $("#wepoint-cancelar-nro").text(nro || "");
+  $("#wepoint-cancelar-ok").data("id", idEgreso).prop("disabled", false);
+  $("#wepoint-cancelar-modal").modal("show");
+}
+
+$(document).on("click", "#wepoint-cancelar-ok", function () {
+  var $btn = $(this).prop("disabled", true);
+  $.ajax({
+    data: { WepointCancelarEgreso: 1, idEgreso: $btn.data("id") },
+    type: "POST",
+    url: "Proceso/php/funciones_hdr.php",
+    dataType: "json",
+    beforeSend: function () {
+      $("#wepoint-cancelar-modal").modal("hide");
+      mostrarModalCarga("#info-alert-modal", "Cancelando la orden en Wepoint...");
+    },
+    success: function (r) {
+      ocultarModalCarga("#info-alert-modal");
+      toast(r.ok ? "success" : "error", "Wepoint", r.mensaje);
+      paneles();
+      $(".dataTable").each(function () {
+        var tabla = $(this).DataTable();
+        if (tabla.ajax && tabla.ajax.url()) tabla.ajax.reload(null, false);
+      });
+    },
+    error: function () {
+      ocultarModalCarga("#info-alert-modal");
+      toast("error", "Wepoint", "No se pudo cancelar. Reintentá de nuevo.");
+    },
+  });
+});
+
 //BOTONERA CAMBIAR RECORRIDO
 $("#cambiar_recorrido").click(function () {
   $("#hdractivas").show();
