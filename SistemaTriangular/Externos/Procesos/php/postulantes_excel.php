@@ -18,21 +18,22 @@ function postulantes_error(int $codigo, string $mensaje): void
     exit;
 }
 
-/** La web y el sistema están en la misma cuenta del hosting, pero la carpeta de la web no se sabe de antemano. */
+/** La web y el sistema están en la misma cuenta del hosting, pero la carpeta de la web no se sabe de antemano: el más reciente. */
+function postulantes_base(): string
+{
+    return preg_match('#^(/home\d*/[^/]+)/#', __DIR__, $m) ? $m[1] : dirname(__DIR__, 5);
+}
+
 function postulantes_archivo(): ?string
 {
-    $base = preg_match('#^(/home\d*/[^/]+)/#', __DIR__, $m) ? $m[1] : dirname(__DIR__, 5);
-    $candidatos = array_merge(
-        [dirname(__DIR__, 5) . '/web.caddy.com.ar/logs/choferes.csv'],
-        glob($base . '/web.caddy.com.ar*/logs/choferes.csv') ?: [],
-        glob($base . '/*/web.caddy.com.ar*/logs/choferes.csv') ?: []
-    );
-    foreach ($candidatos as $archivo) {
-        if (is_readable($archivo)) {
-            return $archivo;
-        }
+    $base = postulantes_base();
+    $candidatos = [];
+    foreach (['', '/*', '/*/*', '/*/*/*'] as $nivel) {
+        $candidatos = array_merge($candidatos, glob($base . $nivel . '/logs/choferes.csv') ?: []);
     }
-    return null;
+    $candidatos = array_filter($candidatos, 'is_readable');
+    usort($candidatos, fn($a, $b) => filemtime($b) <=> filemtime($a));
+    return $candidatos[0] ?? null;
 }
 
 if (!tieneMenuPermiso('Rec.Humanos', 'Externos')) {
@@ -40,7 +41,7 @@ if (!tieneMenuPermiso('Rec.Humanos', 'Externos')) {
 }
 $archivo = postulantes_archivo();
 if ($archivo === null) {
-    postulantes_error(404, 'No se encontró el archivo de postulantes de la web (logs/choferes.csv).');
+    postulantes_error(404, 'No se encontró el archivo de postulantes de la web (logs/choferes.csv) dentro de ' . postulantes_base() . '. Puede ser que nadie se haya postulado todavía o que el archivo esté en otra carpeta.');
 }
 $fh = fopen($archivo, 'r');
 if (!$fh) {
