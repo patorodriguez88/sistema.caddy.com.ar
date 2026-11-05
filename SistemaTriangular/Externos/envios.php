@@ -697,6 +697,7 @@
                                         <div class="col-md-6 text-end">
                                             <a id="button_liquidaciones" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
                                             <a id="button_agregar_externo" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
+                                            <a href="Procesos/php/postulantes_excel.php" target="_blank" rel="noopener" class="btn btn-primary btn-sm ml-1 btn-rounded" title="Los que se postularon en Trabajá con nosotros de la web"><i class="mdi mdi-file-excel-outline"></i> Postulantes web</a>
                                             <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
                                             <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
                                             <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
