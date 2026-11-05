@@ -74,14 +74,14 @@
                                     <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                                 </div>
-                                <div id="query_selector_recorrido_t" class="col-lg-12 mt-3">
+                                <div id="query_selector_recorrido_t" class="modal-body">
                                     <div class="selector-recorrido form-group">
-                                        <label>Seleccionar Recorrido</label>
+                                        <label class="form-label">Seleccionar Recorrido</label>
                                         <select id="recorrido_t" name="recorrido_t" class="form-control" data-toggle="select2" required></select>
 
                                     </div>
                                 </div>
-                                <div class="modal-footer mt-3">
+                                <div class="modal-footer">
                                     <input type="hidden" id="cs_modificar_REC">
                                     <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                     <button id="modificarrecorrido_ok" type="button" class="btn btn-primary">Guardar Cambios</button>

@@ -58,18 +58,18 @@ if($_SESSION['Usuario']==''){
                                   <h4 class="modal-title" id="myCenterModalLabel_rec">MODIFICAR RECORRIDO #</h4>
                                   <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                               </div>
-                            <div class="col-lg-12 mt-3">
+                            <div class="modal-body">
                               <div class="selector-recorrido form-group">
 <!--                                 <div class="custom-control custom-switch">
                                   <input type="checkbox" class="custom-control-input" id="customSwitchRecorrido" name="my-checkbox-recorrido" onclick="todoslosrec();">
                                  <label class="custom-control-label mb-1" for="customSwitchRecorrido">Recorrido | Todos</label>
                                 </div> -->
-                                <label>Seleccionar Recorrido</label>   
+                                <label class="form-label">Seleccionar Recorrido</label>   
                                 <select id="recorrido_t" name="recorrido_t" class="form-control" data-toggle="select2" required></select>
                                 </select>
                               </div>
                             </div>
-                            <div class="modal-footer mt-3">
+                            <div class="modal-footer">
                                 <input type="hidden" id="cs_modificar_REC">
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cerrar</button>
                                 <button id="modificarrecorrido_ok" type="button" class="btn btn-primary">Guardar Cambios</button>
