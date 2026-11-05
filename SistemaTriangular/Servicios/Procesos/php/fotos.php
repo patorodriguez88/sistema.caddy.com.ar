@@ -146,7 +146,11 @@ if (isset($_POST['Pagador'])) {
 if (isset($_POST['Corregir_estado'])) {
     $CodigoSeguimiento = $_POST['CodigoSeguimiento'];
     $Estado = $_POST['Estado'];
-    $mysqli->query("UPDATE TransClientes SET Estado='$Estado' WHERE CodigoSeguimiento='$CodigoSeguimiento' AND Eliminado=0 LIMIT 1");
+    $info = ($_SESSION['Usuario'] ?? '') . ' ' . date('Y-m-d H:i') . ' corrigió el estado';
+    $st = $mysqli->prepare("UPDATE TransClientes SET Estado = ?, infoABM = ? WHERE CodigoSeguimiento = ? AND Eliminado = 0 LIMIT 1");
+    $st->bind_param('sss', $Estado, $info, $CodigoSeguimiento);
+    $st->execute();
+    $st->close();
     echo json_encode(array('success' => 1));
 }
     ?>
