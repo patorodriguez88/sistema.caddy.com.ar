@@ -429,8 +429,8 @@ function wepoint_egreso_aplicar(mysqli $mysqli, array $e): void
 
 /**
  * Wepoint entregó en mano lo de la orden: sale de Wepoint (la cola lo da por salido) y queda en
- * Seguimiento a quién. Comisionista y redespacho: "Redespachado". El destinatario: lo cierra como
- * entregado wepoint_cerrar_retiros(). Caddy o devolución: queda anotado que salió.
+ * Seguimiento a quién. Comisionista y redespacho: "Redespachado". El destinatario: queda entregado
+ * como un pedido normal (wepoint_cerrar_entregado). Caddy o devolución: queda anotado que salió.
  */
 function wepoint_egreso_registrar_entrega(mysqli $mysqli, int $idEgreso, string $nroOeb, array $entrega): void
 {
@@ -456,6 +456,11 @@ function wepoint_egreso_registrar_entrega(mysqli $mysqli, int $idEgreso, string 
         $st->bind_param('isssss', $idTc, $it['codigo'], $it['codigo'], $rec, $chofer, $nroOeb);
         $st->execute();
         $st->close();
+        if (($entrega['tipo'] ?? '') === 'retira_destinatario') {
+            $dni = trim((string)preg_replace('/^(DNI|Doc\.)\s*/', '', (string)($entrega['documento'] ?? '')));
+            wepoint_cerrar_entregado($mysqli, $idTc, mb_substr($obs, 0, 200), (string)($entrega['nombre'] ?? ''), $dni, $cuando);
+            continue;
+        }
         wepoint_seguimiento($mysqli, $idTc, $slug, mb_substr($obs, 0, 200), $cuando);
     }
 }
