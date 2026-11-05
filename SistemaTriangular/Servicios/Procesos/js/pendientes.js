@@ -92,6 +92,13 @@ var datatable = $("#seguimiento").DataTable({
         } else {
           wepoint = "";
         }
+        // Lo que informa Wepoint: en qué estado, recepción, posición, egreso y envío
+        if (row.WepointTraza) {
+          var trazaTexto = [row.WepointTraza.estado, row.WepointTraza.orb, row.WepointTraza.posiciones, row.WepointTraza.oeb, row.WepointTraza.envio].filter(Boolean).join(" · ");
+          if (trazaTexto) {
+            wepoint += `<br><span class="badge bg-light text-dark" style="white-space:normal;text-align:left">${$("<div>").text(trazaTexto).html()}</span>`;
+          }
+        }
         if (row.FechaPrometida != null) {
           // Convertir a solo YYYY-MM-DD
           const hoy = new Date();

@@ -695,8 +695,12 @@ function wepoint_info_envios(mysqli $mysqli, array $ids): array
         $info[(int)$f['id_tc']]['cambio'] = $f;
     }
 
+    foreach (wepoint_trazabilidad_de($mysqli, $ids) as $id => $t) {
+        $info[$id]['traza'] = $t;
+    }
+
     foreach ($info as $id => $i) {
-        $info[$id] = ['activa' => wepoint_activo($mysqli), 'en_deposito' => $i['en_deposito'] ?? false, 'egreso' => $i['egreso'] ?? null, 'cambio' => $i['cambio'] ?? null];
+        $info[$id] = ['activa' => wepoint_activo($mysqli), 'en_deposito' => $i['en_deposito'] ?? false, 'egreso' => $i['egreso'] ?? null, 'cambio' => $i['cambio'] ?? null, 'traza' => $i['traza'] ?? null];
     }
 
     return $info;

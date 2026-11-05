@@ -1010,6 +1010,9 @@ function seguimiento(cs) {
             gsDato("Valor declarado", isNaN(valorDeclarado) || !valorDeclarado ? "" : "$ " + valorDeclarado.toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })) +
             gsDato("Kilómetros", gsEsc(d.Kilometros)) +
             gsDato("Warehouse (WePoint)", gsEsc(warehouse)) +
+            (typeof wepointTrazaFilas === "function" ? wepointTrazaFilas(d.WepointTraza) : []).map(function (f) {
+              return gsDato(f[0], gsEsc(f[1]));
+            }).join("") +
             "</div>" +
             (gsVacio(d.Observaciones) ? "" : '<div class="gs-obs"><span>Observaciones</span>' + gsEsc(d.Observaciones) + "</div>") +
             '<div class="gs-seccion">Cobro y hoja de ruta</div>' +

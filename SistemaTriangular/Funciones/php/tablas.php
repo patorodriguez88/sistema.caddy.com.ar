@@ -103,6 +103,16 @@ if (isset($_POST['Seguimiento_Modal'])) {
   $BuscarHDR = $mysqli->query("SELECT Estado, Posicion, Posicion_retiro FROM HojaDeRuta WHERE Seguimiento='$_POST[CodigoSeguimiento]'");
   $row_hdr = $BuscarHDR->fetch_array(MYSQLI_ASSOC);
 
+  // Cómo está en Wepoint: si falla, Seguimiento se muestra igual
+  if (!empty($rows[0]['id'])) {
+    try {
+      require_once __DIR__ . '/../../Logistica/Proceso/php/wepoint_lib.php';
+      $rows[0]['WepointTraza'] = wepoint_trazabilidad_de($mysqli, [(int)$rows[0]['id']])[(int)$rows[0]['id']] ?? null;
+    } catch (Throwable $e) {
+      error_log('Seguimiento, trazabilidad de Wepoint: ' . $e->getMessage());
+    }
+  }
+
   echo json_encode(array('data' => $rows, $rows_seguimiento, $row_hdr));
 }
 //TABLA AFORO TRANSACCIONES (TRANSCLIENTES)
