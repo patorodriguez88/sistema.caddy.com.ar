@@ -245,10 +245,14 @@ if (isset($_POST['ModificarDatosVentas'])) {
     if ($mysqli->query("UPDATE TransClientes SET Debe='{$rowV['Total']}' WHERE id='{$_POST['idTrans']}' AND Eliminado='0' AND TipoDeComprobante='Remito' LIMIT 1")) {
       $successtrans = 1;
 
-      $mysqli->query("UPDATE Ctasctes SET Debe='$rowV[Total]' WHERE idTransClientes='$_POST[idTrans]' AND Eliminado='0' LIMIT 1");
-      $result = $mysqli->affected_rows;
+      // FIX (4/11/2026): antes se decidía con affected_rows, que da 0 también cuando el importe no
+      // cambió: guardar dos veces el mismo importe insertaba otro cargo en la cuenta corriente
+      // (XBNWNT8V5 quedó con 4 movimientos). Se mira si el cargo existe.
+      $idTransCta = (int) $_POST['idTrans'];
+      $ctaExistente = $mysqli->query("SELECT id FROM Ctasctes WHERE idTransClientes = {$idTransCta} AND Eliminado = '0' ORDER BY id LIMIT 1")->fetch_assoc();
 
-      if ($result <> 0) {
+      if ($ctaExistente) {
+        $mysqli->query("UPDATE Ctasctes SET Debe='$rowV[Total]' WHERE id = " . (int) $ctaExistente['id'] . " LIMIT 1");
         $successctasctes = 1;
       } else {
         $successctasctes = 0;
