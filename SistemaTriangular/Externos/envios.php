@@ -687,20 +687,21 @@
                         <div class="col-xl-12 col-lg-12 order-lg-2 order-xl-1">
                             <div class="card">
                                 <div class="card-body">
-                                    <h4 class="header-title mt-2">Listado de Repartidores Externos</h4>
-
-                                    <div class="row mb-3 align-items-center">
-                                        <div class="col-md-6">
-                                            <div id="externos_botones"></div>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                        <h4 class="header-title my-0">Listado de Repartidores Externos</h4>
+                                        <div class="d-flex flex-wrap gap-2">
+                                            <a href="Procesos/php/postulantes_excel.php" target="_blank" rel="noopener" class="btn btn-light btn-sm" title="Los que se postularon en Trabajá con nosotros de la web"><i class="mdi mdi-file-excel-outline me-1"></i>Postulantes web</a>
+                                            <a id="button_liquidaciones" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-light btn-sm"><i class="mdi mdi-cash-multiple me-1"></i>Liquidaciones</a>
+                                            <a id="button_agregar_externo" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-primary btn-sm"><i class="mdi mdi-plus me-1"></i>Agregar Repartidor</a>
                                         </div>
+                                    </div>
 
-                                        <div class="col-md-6 text-end">
-                                            <a id="button_liquidaciones" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Liquidaciones</a>
-                                            <a id="button_agregar_externo" href="#" data-bs-toggle="modal" data-bs-target="#add-new-modal" class="btn btn-success btn-sm ml-1 btn-rounded">Agregar Repartidor</a>
-                                            <a href="Procesos/php/postulantes_excel.php" target="_blank" rel="noopener" class="btn btn-primary btn-sm ml-1 btn-rounded" title="Los que se postularon en Trabajá con nosotros de la web"><i class="mdi mdi-file-excel-outline"></i> Postulantes web</a>
-                                            <button id="filtro_activos" type="button" class="btn btn-sm btn-success ml-1 btn-rounded">Activos</button>
-                                            <button id="filtro_inactivos" type="button" class="btn btn-sm btn-danger ml-1 btn-rounded">Inactivos</button>
-                                            <button id="filtro_todos" type="button" class="btn btn-sm btn-info ml-1 btn-rounded">Todos</button>
+                                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+                                        <div id="externos_botones"></div>
+                                        <div class="btn-group btn-group-sm" role="group" aria-label="Filtrar por estado">
+                                            <button id="filtro_activos" type="button" class="btn btn-outline-secondary">Activos</button>
+                                            <button id="filtro_inactivos" type="button" class="btn btn-outline-secondary">Inactivos</button>
+                                            <button id="filtro_todos" type="button" class="btn btn-outline-secondary active">Todos</button>
                                         </div>
                                     </div>
 
