@@ -315,6 +315,16 @@ $esSuperAdministrador = intval($_SESSION['Nivel'] ?? 0) === 1;
   </div>
 </div>
 <!-- ========== Topbar End ========== -->
+<style>
+  /* app.min.css (Hyper) no trae color para modal-colored-header: el título y la X quedaban oscuros sobre el fondo de color.
+     bg-warning queda con letra oscura, se lee mejor sobre el amarillo. */
+  .modal-colored-header:is(.bg-primary, .bg-secondary, .bg-success, .bg-danger, .bg-info, .bg-dark) .modal-title {
+    color: #fff;
+  }
+  .modal-colored-header:is(.bg-primary, .bg-secondary, .bg-success, .bg-danger, .bg-info, .bg-dark) .btn-close {
+    filter: invert(1) grayscale(100%) brightness(200%);
+  }
+</style>
 <!-- Nueva tarea desde cualquier pantalla, con el formato del panel de Tareas (estilo Asana) -->
 <style>
   #tarea-rapida-offcanvas { width: 460px; }
