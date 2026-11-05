@@ -332,6 +332,7 @@ function loadTrackingPanel(id) {
       var datatable_seguimiento = $("#seguimiento_tabla").DataTable({
         paging: false,
         searching: false,
+        order: [[0, "desc"]],
         ajax: {
           url: "../Funciones/php/tablas.php",
           data: { Seguimiento_Tabla: 1, CodigoSeguimiento: id },
@@ -341,7 +342,11 @@ function loadTrackingPanel(id) {
           {
             data: null,
             title: "Fecha | Hora",
-            render: function (_data, _type, row) {
+            render: function (_data, type, row) {
+              // Se ordena por la fecha real: como texto, "28.10" quedaba antes que "05.11".
+              if (type === "sort" || type === "type") {
+                return row.Fecha + " " + row.Hora + " " + String(row.id).padStart(10, "0");
+              }
               const dateParts = String(row.Fecha || "").split("-");
               const date = dateParts.length === 3
                 ? dateParts[2] + "." + dateParts[1] + "." + dateParts[0].slice(-2)
