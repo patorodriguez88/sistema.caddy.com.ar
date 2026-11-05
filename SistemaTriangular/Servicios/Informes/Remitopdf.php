@@ -12,9 +12,8 @@ declare(strict_types=1);
 // mysql_* (eliminada por completo desde PHP 7 - el archivo viejo ya no
 // podia ni ejecutar bajo el PHP 8.3 de este sistema).
 //
-// La formula de seguro/IVA se mantiene identica a la version anterior
-// (0.7% sobre el excedente de $5000 de Valor Declarado, IVA 21%) - no se
-// audito ni se cambio ese calculo, solo se porto el motor.
+// Los importes salen de las lineas de Ventas tal cual (Total de cada linea,
+// IVA 21% incluido); el seguro ya viene como su propia linea (codigo 164).
 
 require_once __DIR__ . '/../../Logistica/Informes/hdr_pdf_helpers.php';
 require_once __DIR__ . '/../../Conexion/Conexioni.php';
@@ -24,8 +23,6 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-const SEGURO_UMBRAL = 5000.0; // a partir de este Valor Declarado se cobra seguro
-const SEGURO_TASA = 0.007;    // 0.7% sobre el excedente del umbral
 const IVA_TASA = 0.21;
 
 class RemitoPDF extends HdrPdfBase
@@ -489,51 +486,48 @@ function renderPagina(
     $pdf->Row(['CODIGO', 'SERVICIO', 'OBSERV.', 'CANT.', 'PRECIO', 'I.V.A.', 'TOTAL'], $p['primaryC']);
     $pdf->SetTextColor(...$p['darkText']);
 
-    // Seguro/IVA - misma formula que la version anterior: se recalcula por
-    // cada item (usando siempre el mismo Valor Declarado del pedido, no del
-    // item), y la fila de TOTAL al final refleja el ultimo item procesado
-    // mas el ajuste de seguro - asi se comportaba tambien el documento
-    // viejo. No se corrigio a un acumulado real para no cambiar los montos
-    // que ya viene mostrando este documento en produccion sin que se pida
-    // explicitamente esa revision.
-    $IvaTotalLabel = '0,00';
-    $TotalFinalLabel = '0,00';
+    // TOTAL de cada linea = Ventas.Total (lo que se factura, IVA incluido) y
+    // la fila final es la suma real de las lineas. Antes la fila final era
+    // solo la ULTIMA linea mas un seguro recalculado (0.7% del excedente de
+    // $5000), que ademas duplicaba la linea de seguro que ya viene en Ventas.
+    // Se usa Total y no Precio*Cantidad porque la linea de seguro tiene
+    // Cantidad 0 y su importe solo esta en Total.
+    $sumaNeto = 0.0;
+    $sumaIva = 0.0;
+    $sumaTotal = 0.0;
 
     foreach ($items as $item) {
-        $precio = (float)$item['Precio'];
         $cantidad = (float)$item['Cantidad'];
-        $importeNeto = ($cantidad * $precio) / (1 + IVA_TASA);
-        $ivaPrecio = ($precio * $cantidad) - $importeNeto;
+        $totalLinea = (float)$item['Total'];
+        $importeNeto = $totalLinea / (1 + IVA_TASA);
+        $ivaLinea = $totalLinea - $importeNeto;
 
-        if ($ValorDeclarado > SEGURO_UMBRAL) {
-            $seguro = $ValorDeclarado * SEGURO_TASA;
-            $totalNeto = $importeNeto + (($ValorDeclarado - SEGURO_UMBRAL) * SEGURO_TASA);
-            $ivaSeguro = $seguro * IVA_TASA;
-            $ivaTotal = $ivaPrecio + $ivaSeguro;
-        } else {
-            $totalNeto = $importeNeto;
-            $ivaTotal = $ivaPrecio;
-        }
-        $totalFinal = $totalNeto + ($totalNeto * IVA_TASA);
+        $sumaNeto += $importeNeto;
+        $sumaIva += $ivaLinea;
+        $sumaTotal += $totalLinea;
 
-        $IvaTotalLabel = number_format($ivaTotal, 2, ',', '.');
-        $TotalFinalLabel = number_format($totalFinal, 2, ',', '.');
-
-        $precioLabel = $mostrarPrecio ? number_format($precio, 2, ',', '.') : '';
         $pdf->SetFont('Arial', '', 6.5);
         $pdf->Row([
             (string)$item['Codigo'],
             (string)$item['Titulo'],
             (string)$item['Comentario'],
             etiquetaBultos((int)$cantidad),
-            '$ ' . number_format($importeNeto, 2, ',', '.'),
-            '$ ' . number_format($ivaPrecio, 2, ',', '.'),
-            $precioLabel !== '' ? '$ ' . $precioLabel : '',
+            $mostrarPrecio ? '$ ' . number_format($importeNeto, 2, ',', '.') : '',
+            $mostrarPrecio ? '$ ' . number_format($ivaLinea, 2, ',', '.') : '',
+            $mostrarPrecio ? '$ ' . number_format($totalLinea, 2, ',', '.') : '',
         ]);
     }
 
     $pdf->SetFont('Arial', 'B', 7);
-    $pdf->Row(['', '', 'TOTAL:', etiquetaBultos((int)$TotalCant), '', '$ ' . $IvaTotalLabel, '$ ' . $TotalFinalLabel], $p['grayBg']);
+    $pdf->Row([
+        '',
+        '',
+        'TOTAL:',
+        etiquetaBultos((int)$TotalCant),
+        $mostrarPrecio ? '$ ' . number_format($sumaNeto, 2, ',', '.') : '',
+        $mostrarPrecio ? '$ ' . number_format($sumaIva, 2, ',', '.') : '',
+        $mostrarPrecio ? '$ ' . number_format($sumaTotal, 2, ',', '.') : '',
+    ], $p['grayBg']);
 
     bloqueFirmas($pdf, $tipo === 'RETIRO' ? 'Firma de Caddy' : 'Firma del Cliente', $dobleFirma);
 }
@@ -578,20 +572,12 @@ function agregarRemito(RemitoPDF $pdf, mysqli $mysqli, string $CodigoSeguimiento
 
     $items = db_fetch_all(
         $mysqli,
-        "SELECT Codigo, Titulo, Comentario, Precio, Cantidad
+        "SELECT Codigo, Titulo, Comentario, Precio, Cantidad, Total
            FROM Ventas
           WHERE NumPedido = ? AND Eliminado = 0",
         's',
         [$CodigoSeguimiento]
     );
-
-    $totalesFila = mysqli_fetch_one(
-        $mysqli,
-        "SELECT SUM(Total) AS Total, SUM(Cantidad) AS TotalCantidad
-           FROM Ventas WHERE NumPedido = ?",
-        's',
-        [$CodigoSeguimiento]
-    ) ?? [];
 
     // El contra-reembolso NO es un monto por linea: es UN valor del pedido que
     // Ventas guarda repetido en el CobrarEnvio de cada linea (mercaderia + linea de
@@ -605,9 +591,10 @@ function agregarRemito(RemitoPDF $pdf, mysqli $mysqli, string $CodigoSeguimiento
         's',
         [$CodigoSeguimiento]
     );
-    $totalesFila['Cobranza'] = $cobranzaFila['CobrarEnvio'] ?? 0;
-    $TotalCant = (float)($totalesFila['TotalCantidad'] ?? 0);
-    $Cobranza = (float)($totalesFila['Cobranza'] ?? 0);
+    // Bultos de las mismas lineas que se listan (antes se sumaban tambien las
+    // eliminadas).
+    $TotalCant = (float)array_sum(array_column($items, 'Cantidad'));
+    $Cobranza = (float)($cobranzaFila['CobrarEnvio'] ?? 0);
 
     $ValorDeclarado = (float)($fila['ValorDeclarado'] ?? 0);
     $Retirado = (int)($fila['Retirado'] ?? 0);
