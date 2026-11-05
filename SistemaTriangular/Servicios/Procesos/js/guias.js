@@ -863,6 +863,10 @@ function seguimiento(cs) {
         $("#gs_k_fecha").text(gsFecha(d.Fecha) || "–");
         $("#gs_k_fecha_foot").text(gsVacio(d.FechaPrometida) ? "Sin fecha prometida" : "Prometida: " + gsFecha(d.FechaPrometida));
         $("#gs_k_bultos").text(d.Cantidad || "–");
+        // Lápiz para corregir los bultos: no en entregados, devueltos ni en el padre de una colecta.
+        window.gsEnvioBultos = { id: d.id, cs: d.CodigoSeguimiento };
+        $("#gs_bultos_editar").prop("hidden", Number(d.Entregado) === 1 || Number(d.Devuelto) === 1 || Number(d.idClienteDestino) === 18587);
+        gsBultosUltimoCambio();
         $("#gs_k_bultos_foot").text(gsVacio(d.EntregaEn) ? " " : "Entrega en " + String(d.EntregaEn).toLowerCase());
         $("#gs_k_recorrido").text(gsVacio(d.Recorrido) ? "Sin asignar" : d.Recorrido);
         $("#gs_k_recorrido_foot").text(
@@ -1630,3 +1634,95 @@ function elegirEnvioProveedor(nro, envios, clientes) {
     },
   });
 }
+
+// BULTOS DEL ENVÍO (Funciones/php/bultos.php). Antes de tocar el importe muestra cuánto queda: se
+// confirma, o se cambian solo los bultos (por ejemplo, un cliente con precio fijo).
+function gsBultosUltimoCambio() {
+  var env = window.gsEnvioBultos;
+  if (!env || !env.id) return;
+  $.post("Procesos/php/funciones.php", { BultosUltimoCambio: 1, id_transclientes: env.id }, null, "json").done(function (j) {
+    if (!j || !j.ultimo) return;
+    var u = j.ultimo;
+    $("#gs_k_bultos_foot").attr("title", "De " + u.Antes + " a " + u.Despues + " por " + u.Usuario + " el " + u.Fecha).text("Corregido por " + u.Usuario);
+  });
+}
+
+$(document).on("click", "#gs_bultos_editar", function (e) {
+  e.preventDefault();
+  var env = window.gsEnvioBultos;
+  if (!env || !env.id) return;
+  var pesos = function (n) {
+    return "$ " + Number(n).toLocaleString("es-AR", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+  var guardar = function (bultos, soloBultos) {
+    $.post("Procesos/php/funciones.php", { ModificarBultos: 1, id_transclientes: env.id, bultos: bultos, solo_bultos: soloBultos ? 1 : 0 }, null, "json")
+      .done(function (j) {
+        if (!j || Number(j.success) !== 1) {
+          Swal.fire("No se pudo cambiar", (j && j.error) || "Error desconocido.", "error");
+          return;
+        }
+        $("#gs_k_bultos").text(j.nuevo);
+        gsBultosUltimoCambio();
+        gsCargarFacturacion(env.cs);
+        Swal.fire({
+          icon: "success",
+          title: "Bultos actualizados",
+          html: "El envío pasó de <b>" + j.antes + "</b> a <b>" + j.nuevo + "</b> bulto(s)." +
+            (j.importeNuevo !== null ? "<br>Importe: <b>" + pesos(j.importeNuevo) + "</b>." : "<br>El importe no cambió.") +
+            "<br><br>Si ya estaban impresas, volvé a imprimir las etiquetas.",
+        });
+      })
+      .fail(function () {
+        Swal.fire("No se pudo cambiar", "Falló la comunicación con el servidor.", "error");
+      });
+  };
+
+  Swal.fire({
+    title: "Corregir bultos",
+    text: "Son los bultos físicos: las etiquetas que se imprimen y lo que escanean depósito y el chofer.",
+    input: "number",
+    inputValue: $("#gs_k_bultos").text(),
+    inputAttributes: { min: 1, step: 1 },
+    showCancelButton: true,
+    confirmButtonText: "Siguiente",
+    cancelButtonText: "Cancelar",
+    inputValidator: function (v) {
+      return parseInt(v, 10) > 0 ? null : "Indicá una cantidad de bultos.";
+    },
+  }).then(function (r) {
+    if (!r.isConfirmed) return;
+    var bultos = parseInt(r.value, 10);
+    $.post("Procesos/php/funciones.php", { BultosPrevisualizar: 1, id_transclientes: env.id, bultos: bultos }, null, "json").done(function (j) {
+      if (!j || Number(j.success) !== 1) {
+        Swal.fire("No se puede cambiar", (j && j.error) || "Error desconocido.", "error");
+        return;
+      }
+      if (!j.recalcula) {
+        Swal.fire({
+          icon: "question",
+          title: "¿Cambiar de " + j.antes + " a " + j.nuevo + " bultos?",
+          text: "El importe de la venta no cambia.",
+          showCancelButton: true,
+          confirmButtonText: "Sí, cambiar",
+          cancelButtonText: "Cancelar",
+        }).then(function (c) {
+          if (c.isConfirmed) guardar(bultos, true);
+        });
+        return;
+      }
+      Swal.fire({
+        icon: "warning",
+        title: "De " + j.antes + " a " + j.nuevo + " bultos",
+        html: "El servicio se cobra por bulto. Con la curva de descuento el importe pasa de<br><b>" + pesos(j.importeAntes) + "</b> a <b>" + pesos(j.importeNuevo) + "</b>.",
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonText: "Cambiar y recalcular",
+        denyButtonText: "Solo los bultos",
+        cancelButtonText: "Cancelar",
+      }).then(function (c) {
+        if (c.isConfirmed) guardar(bultos, false);
+        else if (c.isDenied) guardar(bultos, true);
+      });
+    });
+  });
+});

@@ -144,7 +144,9 @@ if (isset($_POST['ModificarCantidad'])) {
     $soloPorBulto = productosTieneCobroPorBulto($mysqli)
         ? " AND NOT EXISTS (SELECT 1 FROM Productos p WHERE p.Codigo = Ventas.Codigo AND p.CobroPorBulto = 0)"
         : "";
-    $upd2 = $mysqli->prepare("UPDATE Ventas SET Cantidad=? WHERE NumPedido=? AND Cantidad=?" . $soloPorBulto);
+    // Valor declarado, cobranza, seguro y colecta tienen su propia cantidad (mismo criterio que renglonEsDeBultos()).
+    $upd2 = $mysqli->prepare("UPDATE Ventas SET Cantidad=? WHERE NumPedido=? AND Cantidad=?
+        AND Titulo NOT REGEXP '^[[:space:]]*(VALOR DECLARADO|COBRANZA|COBRO A CUENTA|SEGURO|COLECTA)'" . $soloPorBulto);
     $upd2->bind_param('isi', $cantidad, $codigoSeguimiento, $bultosAntes);
     $ok2 = $upd2->execute();
 

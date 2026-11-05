@@ -4,6 +4,31 @@ require_once __DIR__ . '/../../../Funciones/php/eliminar_envio.php';
 require_once('../../../Google/geolocalizar.php');
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
+// Corregir los bultos del envío desde la ficha de seguimiento (Funciones/php/bultos.php).
+if (isset($_POST['BultosPrevisualizar']) || isset($_POST['ModificarBultos']) || isset($_POST['BultosUltimoCambio'])) {
+  require_once __DIR__ . '/../../../Funciones/php/bultos.php';
+  header('Content-Type: application/json; charset=utf-8');
+  $idTransBultos = (int) ($_POST['id_transclientes'] ?? 0);
+
+  if (isset($_POST['BultosUltimoCambio'])) {
+    $hayTabla = $mysqli->query("SHOW TABLES LIKE 'BultosCambios'")->num_rows > 0;
+    $ultimo = $hayTabla ? $mysqli->query("SELECT Antes, Despues, Usuario, Fecha FROM BultosCambios WHERE idTransClientes = {$idTransBultos} ORDER BY id DESC LIMIT 1")->fetch_assoc() : null;
+    echo json_encode(['success' => 1, 'ultimo' => $ultimo]);
+    exit;
+  }
+
+  $nuevoBultos = (int) ($_POST['bultos'] ?? 0);
+  $r = isset($_POST['ModificarBultos'])
+    ? bultosAplicar($mysqli, $idTransBultos, $nuevoBultos, (string) ($_POST['solo_bultos'] ?? '0') !== '1', (string) ($_SESSION['Usuario'] ?? ''))
+    : bultosCalcular($mysqli, $idTransBultos, $nuevoBultos);
+  if (!empty($r['error'])) {
+    echo json_encode(['success' => 0, 'error' => $r['error']]);
+    exit;
+  }
+  echo json_encode(['success' => 1, 'antes' => $r['antes'], 'nuevo' => $r['nuevo'], 'recalcula' => !empty($r['renglon']), 'importeAntes' => $r['importeAntes'], 'importeNuevo' => $r['importeNuevo']]);
+  exit;
+}
+
 if (isset($_POST['usuarios_registration'])) {
   $query = "SELECT Usuario,NombreCompleto FROM Empleados where Inactivo=0 ORDER BY Usuario ASC";
   $result = $mysqli->query($query);
@@ -222,7 +247,7 @@ if (isset($_POST['ModificarDatosVentas'])) {
     // cantidad es lo que se cobra y los bultos van aparte (Funciones/php/bultos.php).
     require_once __DIR__ . '/../../../Funciones/php/bultos.php';
     $cantNueva = (int) $_POST['cantidad'];
-    if ($cantAntes && $cantNueva > 0 && !ventaNoEsPorBulto($mysqli, (string) ($_POST['codigo'] ?? ''))
+    if ($cantAntes && $cantNueva > 0 && renglonEsDeBultos($mysqli, (string) ($_POST['codigo'] ?? ''), (string) ($_POST['titulo'] ?? ''))
         && (int) $cantAntes['CantVenta'] === (int) $cantAntes['Bultos']
         && $cantNueva !== (int) $cantAntes['Bultos']) {
       $stBultos = $mysqli->prepare("UPDATE TransClientes SET Cantidad = ? WHERE id = ? AND Eliminado = 0 LIMIT 1");

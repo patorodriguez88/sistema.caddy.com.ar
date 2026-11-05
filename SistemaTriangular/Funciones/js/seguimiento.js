@@ -311,7 +311,7 @@ function loadTrackingPanel(id) {
 
       $("#info_guia_seguimiento").html(
         '<div class="tracking-guide-grid">' +
-          '<div class="tracking-guide-item"><span>Cantidad</span><strong>' + guide.Cantidad + "</strong></div>" +
+          '<div class="tracking-guide-item"><span>Bultos</span><strong>' + guide.Cantidad + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Warehouse (WePoint)</span><strong>' + whWepoint + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Entregar en</span><strong>' + guide.EntregaEn + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Cod. proveedor</span><strong>' + guide.CodigoProveedor + "</strong></div>" +
