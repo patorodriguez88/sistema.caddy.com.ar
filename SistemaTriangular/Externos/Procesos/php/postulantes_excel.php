@@ -18,45 +18,48 @@ function postulantes_error(int $codigo, string $mensaje): void
     exit;
 }
 
-/** La web y el sistema están en la misma cuenta del hosting, pero la carpeta de la web no se sabe de antemano: el más reciente. */
+/** La web y el sistema están en la misma cuenta del hosting: hoy el archivo está en /caddy.com.ar/logs, pero la carpeta puede cambiar. */
 function postulantes_base(): string
 {
     return preg_match('#^(/home\d*/[^/]+)/#', __DIR__, $m) ? $m[1] : dirname(__DIR__, 5);
 }
 
-function postulantes_archivo(): ?string
+/** Todos los que haya: la web cambió de carpeta y cada una guardó los suyos. */
+function postulantes_archivos(): array
 {
     $base = postulantes_base();
     $candidatos = [];
     foreach (['', '/*', '/*/*', '/*/*/*'] as $nivel) {
         $candidatos = array_merge($candidatos, glob($base . $nivel . '/logs/choferes.csv') ?: []);
     }
-    $candidatos = array_filter($candidatos, 'is_readable');
-    usort($candidatos, fn($a, $b) => filemtime($b) <=> filemtime($a));
-    return $candidatos[0] ?? null;
+    return array_values(array_filter(array_unique($candidatos), 'is_readable'));
 }
 
 if (!tieneMenuPermiso('Rec.Humanos', 'Externos')) {
     postulantes_error(403, 'No tenés permiso para descargar este archivo.');
 }
-$archivo = postulantes_archivo();
-if ($archivo === null) {
+$archivos = postulantes_archivos();
+if (!$archivos) {
     postulantes_error(404, 'No se encontró el archivo de postulantes de la web (logs/choferes.csv) dentro de ' . postulantes_base() . '. Puede ser que nadie se haya postulado todavía o que el archivo esté en otra carpeta.');
 }
-$fh = fopen($archivo, 'r');
-if (!$fh) {
-    postulantes_error(500, 'No se pudo leer el archivo de postulantes.');
-}
 
-$encabezado = fgetcsv($fh, 0, ';', '"', '\\') ?: [];
+$encabezado = [];
 $filas = [];
-while (($fila = fgetcsv($fh, 0, ';', '"', '\\')) !== false) {
-    if ($fila !== [null]) {
-        $filas[] = $fila;
+foreach ($archivos as $archivo) {
+    $fh = fopen($archivo, 'r');
+    if (!$fh) {
+        postulantes_error(500, 'No se pudo leer el archivo de postulantes.');
     }
+    $encabezado = (fgetcsv($fh, 0, ';', '"', '\\') ?: []) ?: $encabezado;
+    while (($fila = fgetcsv($fh, 0, ';', '"', '\\')) !== false) {
+        if ($fila !== [null]) {
+            $filas[implode('|', $fila)] = $fila; // la misma postulación en dos archivos cuenta una vez
+        }
+    }
+    fclose($fh);
 }
-fclose($fh);
-$filas = array_reverse($filas); // los últimos que se postularon, arriba
+$filas = array_values($filas);
+usort($filas, fn($a, $b) => strcmp((string)$b[0], (string)$a[0])); // los últimos que se postularon, arriba
 
 $titulos = array_map(fn($t) => ucfirst(str_replace('_', ' ', (string) $t)), $encabezado);
 $spreadsheet = new Spreadsheet();
