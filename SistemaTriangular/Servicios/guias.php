@@ -323,7 +323,7 @@
                                 </div>
                                 <div class="cf-kpi" style="--cf-accent:#39afd1">
                                     <div class="cf-kpi-label"><i class="mdi mdi-package-variant-closed"></i>Bultos</div>
-                                    <div class="cf-kpi-value" id="gs_k_bultos">–</div>
+                                    <div class="cf-kpi-value"><span id="gs_k_bultos">–</span> <a href="#" id="gs_bultos_editar" class="font-14 ms-1" title="Corregir los bultos del envío" hidden><i class="mdi mdi-pencil"></i></a></div>
                                     <div class="cf-kpi-foot" id="gs_k_bultos_foot">&nbsp;</div>
                                 </div>
                                 <div class="cf-kpi" style="--cf-accent:#ffbc00">
