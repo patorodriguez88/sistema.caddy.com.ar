@@ -304,7 +304,9 @@ function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recor
 // recibe la misma forma de respuesta.
 // Si el paquete está en Wepoint y el recorrido de origen o de destino tiene un egreso solicitado,
 // no se mueve: se le pide el cambio a Wepoint y se aplica cuando lo acepte ($autorizadoPorWepoint,
-// Logistica/Proceso/php/wepoint_egresos.php). $notaSeguimiento se suma al comentario de Seguimiento.
+// Logistica/Proceso/php/wepoint_egresos.php). Con la conexión desactivada o Wepoint sin responder
+// Caddy no se frena: se mueve y se le avisa a Wepoint después. $notaSeguimiento se suma al comentario
+// de Seguimiento.
 function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn = 10, bool $autorizadoPorWepoint = false, ?string $notaSeguimiento = null): array
 {
     if ($cs === '' || $r === '') {
@@ -413,11 +415,16 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
     }
 
     // ---- 2.2) Paquete en Wepoint con un egreso solicitado: se pide el cambio a Wepoint ----
+    $avisarAWepoint = null;
     if (!$autorizadoPorWepoint && $idTc > 0) {
         require_once __DIR__ . '/../Logistica/Proceso/php/wepoint_egresos.php';
         $bloqueo = wepoint_egreso_bloqueo($mysqli, $idTc, (int)$r);
-        if ($bloqueo) {
-            $pedido = wepoint_egreso_pedir_cambio($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $bloqueo, $Usuario);
+        $pedido = $bloqueo && wepoint_activo($mysqli)
+            ? wepoint_egreso_pedir_cambio($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $bloqueo, $Usuario)
+            : null;
+        if ($bloqueo && (!$pedido || !empty($pedido['caida']))) {
+            $avisarAWepoint = $bloqueo; // desactivada o sin responder: se mueve y se avisa después
+        } elseif ($bloqueo) {
             return [
                 'success' => 0,
                 'code' => 'WEPOINT_EGRESO',
@@ -640,6 +647,10 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
         }
 
         $mysqli->commit();
+
+        if ($avisarAWepoint) {
+            wepoint_egreso_anotar_movido($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $avisarAWepoint, $Usuario);
+        }
 
         // Webhook: best-effort, fuera de la transacción del cambio de recorrido en sí.
         // El cambio de recorrido ya está commiteado en este punto: una falla acá nunca debe
