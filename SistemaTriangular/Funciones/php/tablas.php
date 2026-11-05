@@ -118,9 +118,16 @@ if (isset($_POST['Aforo_Tabla_Trans'])) {
 
 if (isset($_POST['Compruebo'])) {
 
-  $UltimoEstadosql = $mysqli->query("SELECT id,Estado FROM Seguimiento WHERE CodigoSeguimiento='$_POST[CodigoSeguimiento]' ORDER BY id DESC LIMIT 0,1");
-  $UltimoEstado = $UltimoEstadosql->fetch_array(MYSQLI_ASSOC);
-  echo json_encode(array('data' => $UltimoEstado['Estado']));
+  // data = último movimiento, el que se muestra. control = último que cambia el estado del envío, el
+  // que tiene que coincidir con TransClientes.Estado: los movimientos internos (cambio de recorrido y
+  // depósito de Wepoint) no lo cambian, y "No se pudo entregar" se sigue contando en los cierres de orden.
+  $st = $mysqli->prepare("SELECT Estado FROM Seguimiento WHERE CodigoSeguimiento = ? AND IFNULL(Eliminado, 0) = 0 ORDER BY id DESC");
+  $st->bind_param('s', $_POST['CodigoSeguimiento']);
+  $st->execute();
+  $estados = array_column($st->get_result()->fetch_all(MYSQLI_ASSOC), 'Estado');
+  $st->close();
+  $reales = array_values(array_diff($estados, ['Movimiento Interno', 'En centro de distribución', 'Salió del depósito']));
+  echo json_encode(array('data' => $estados[0] ?? null, 'control' => $reales[0] ?? null));
 }
 
 //WHATSAPP

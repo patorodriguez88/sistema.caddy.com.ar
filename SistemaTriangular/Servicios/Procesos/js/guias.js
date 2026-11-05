@@ -1,5 +1,6 @@
 var button_ver = 0;
 var state = 0;
+var EstadoControl = null;
 
 // ---------- Ficha del envío: helpers de presentación ----------
 function gsEsc(v) {
@@ -940,7 +941,10 @@ function seguimiento(cs) {
 
             // Sin movimientos de seguimiento no hay nada que corregir: antes mostraba la alerta
             // igual y "Corregir" dejaba el estado de transacciones vacío.
-            var incoherente = !gsVacio(state) && state != Estado;
+            // Se compara contra el último movimiento que cambia el estado: los internos (cambio de
+            // recorrido, depósito de Wepoint) no van a Transacciones.
+            EstadoControl = jsonDataEstado.control;
+            var incoherente = !gsVacio(EstadoControl) && EstadoControl != Estado;
             $("#alert").css("display", incoherente ? "inline-block" : "none");
             $("#gs_estado_sub").html(
               gsVacio(state)
@@ -1036,15 +1040,16 @@ function seguimiento(cs) {
             data: {
               Corregir_estado: 1,
               CodigoSeguimiento: id,
-              Estado: EstadoSeguimiento,
+              Estado: EstadoControl,
             },
             type: "POST",
             url: "Procesos/php/fotos.php",
             success: function (response) {
               var jsonData = JSON.parse(response);
               if (jsonData.success == 1) {
-                $("#estado_transclientes").text(EstadoSeguimiento);
+                $("#estado_transclientes").text(EstadoControl);
                 $("#alert").css("display", "none");
+                $("#gs_estado_sub").text("Último movimiento de seguimiento");
               }
             },
           });
