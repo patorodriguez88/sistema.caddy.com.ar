@@ -115,6 +115,40 @@
                         </div>
                     </div>
 
+                    <div class="cf-card">
+                        <div class="cf-card-head">
+                            <div>
+                                <h5 class="cf-card-title"><i class="mdi mdi-newspaper-variant-outline"></i>Productos</h5>
+                                <div class="cf-card-sub">El código es el que trae el archivo de Dinter. El nombre es el que ven el chofer y la planilla.</div>
+                            </div>
+                        </div>
+                        <div class="row g-2 align-items-end mb-3">
+                            <div class="col-md-3">
+                                <label class="form-label" for="as-producto-codigo">Código</label>
+                                <input id="as-producto-codigo" type="number" min="1" class="form-control">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="as-producto-nombre">Nombre</label>
+                                <input id="as-producto-nombre" type="text" maxlength="100" class="form-control">
+                            </div>
+                            <div class="col-md-3">
+                                <button type="button" class="btn btn-primary w-100" id="as-producto-agregar"><i class="mdi mdi-plus me-1"></i>Agregar producto</button>
+                            </div>
+                        </div>
+                        <div class="cf-table-wrap">
+                            <table class="cf-table cp-table" id="as-productos">
+                                <thead>
+                                    <tr>
+                                        <th class="text-start">Código</th>
+                                        <th class="text-start">Nombre</th>
+                                        <th></th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
                 </div>
             </div>
             <div id="menuhyper_footer"></div>

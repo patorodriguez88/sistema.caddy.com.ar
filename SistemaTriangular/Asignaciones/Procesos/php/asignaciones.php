@@ -13,6 +13,7 @@ header('Content-Type: application/json; charset=utf-8');
 
 // Los recorridos de diarios son los de Dinter con este producto (Recorridos.CodigoProductos): hoy 1017, 1019 y 1021.
 const ASIG_PRODUCTO_DIARIOS = 181;
+const ASIG_RELACION_DINTER = 36;
 
 function asig_out(array $a): void
 {
@@ -68,7 +69,7 @@ function asig_analizar(mysqli $mysqli, array $asignaciones, array $envios, strin
             $stProd->execute();
             $p = $stProd->get_result()->fetch_assoc();
             $lotes[$k] = ['producto' => $a['producto'], 'edicion' => $a['edicion'], 'nombre' => $p['Nombre'] ?? '', 'relacion' => (int)($p['Relacion'] ?? 0),
-                'kioscos' => 0, 'ejemplares' => 0, 'error' => $p ? '' : 'El producto ' . $a['producto'] . ' no está dado de alta en Asignaciones.'];
+                'kioscos' => 0, 'ejemplares' => 0, 'error' => $p ? '' : 'El producto ' . $a['producto'] . ' no está dado de alta: cargalo abajo en Productos y volvé a tocar Revisar.'];
         }
         $lotes[$k]['kioscos']++;
         $lotes[$k]['ejemplares'] += $a['cantidad'];
@@ -81,7 +82,7 @@ function asig_analizar(mysqli $mysqli, array $asignaciones, array $envios, strin
         }
     }
     unset($l);
-    $relacion = (int)(array_values($lotes)[0]['relacion'] ?? 36) ?: 36;
+    $relacion = (int)(array_values($lotes)[0]['relacion'] ?? 0) ?: ASIG_RELACION_DINTER;
     $fechaEnvios = $fecha ?: $sugerida;
 
     $recorridos = [];
@@ -166,6 +167,37 @@ try {
             FROM Asignaciones a LEFT JOIN AsignacionesProductos p ON p.CodigoProducto = a.CodigoProducto
             WHERE a.Fecha IS NOT NULL GROUP BY a.Fecha, a.CodigoProducto, a.Edicion, a.Relacion ORDER BY a.Fecha DESC, a.CodigoProducto LIMIT 15");
         asig_out(['ok' => true, 'lotes' => $r->fetch_all(MYSQLI_ASSOC)]);
+    }
+
+    if ($accion === 'productos') {
+        $r = $mysqli->query("SELECT id, Nombre, CodigoProducto, Relacion FROM AsignacionesProductos ORDER BY Nombre, CodigoProducto");
+        asig_out(['ok' => true, 'productos' => $r->fetch_all(MYSQLI_ASSOC)]);
+    }
+
+    // El código es el que viene en el archivo de Dinter: una vez dado de alta solo se cambia el nombre.
+    if ($accion === 'producto_guardar') {
+        $id = (int)($_POST['id'] ?? 0);
+        $nombre = mb_substr(trim((string)($_POST['nombre'] ?? '')), 0, 100);
+        if ($nombre === '') asig_out(['ok' => false, 'error' => 'Escribí el nombre del producto.']);
+        if ($id > 0) {
+            $st = $mysqli->prepare("UPDATE AsignacionesProductos SET Nombre = ? WHERE id = ? LIMIT 1");
+            $st->bind_param('si', $nombre, $id);
+            $st->execute();
+            asig_out(['ok' => true]);
+        }
+        $codigo = (int)($_POST['codigo'] ?? 0);
+        if ($codigo <= 0) asig_out(['ok' => false, 'error' => 'Escribí el código del producto.']);
+        $relacion = ASIG_RELACION_DINTER;
+        $st = $mysqli->prepare("SELECT Nombre FROM AsignacionesProductos WHERE CodigoProducto = ? AND Relacion = ? LIMIT 1");
+        $st->bind_param('ii', $codigo, $relacion);
+        $st->execute();
+        if ($ya = $st->get_result()->fetch_assoc()) {
+            asig_out(['ok' => false, 'error' => "El código $codigo ya existe: {$ya['Nombre']}."]);
+        }
+        $st = $mysqli->prepare("INSERT INTO AsignacionesProductos (Nombre, Descripcion, CodigoProducto, Relacion) VALUES (?, '', ?, ?)");
+        $st->bind_param('sii', $nombre, $codigo, $relacion);
+        $st->execute();
+        asig_out(['ok' => true]);
     }
 
     if ($accion === 'previsualizar') {
