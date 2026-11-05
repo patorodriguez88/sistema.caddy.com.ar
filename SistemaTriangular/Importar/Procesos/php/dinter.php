@@ -13,76 +13,13 @@
 //   2) confirmar: se vuelve a matchear en el servidor y se cargan en PreVenta solo las filas
 //      elegidas que matchean con un único cliente, con el recorrido que confirmó el operador.
 include_once "../../../Conexion/Conexioni.php";
+require_once __DIR__ . '/dinter_lib.php';
 header('Content-Type: application/json; charset=utf-8');
 
 function dinter_out(array $a): void
 {
     echo json_encode($a, JSON_UNESCAPED_UNICODE);
     exit;
-}
-
-// "33.510,00" / "33510,00" / "33510.00" -> 33510.0
-function dinter_importe($v): float
-{
-    $s = preg_replace('/[^\d.,\-]/', '', (string)$v);
-    if ($s === '' || $s === '-') return 0.0;
-    $coma = strrpos($s, ',');
-    $punto = strrpos($s, '.');
-    if ($coma !== false && ($punto === false || $coma > $punto)) {
-        $s = str_replace('.', '', $s);
-        $s = str_replace(',', '.', $s);
-    } else {
-        $s = str_replace(',', '', $s);
-    }
-    return round((float)$s, 2);
-}
-
-// Lee el archivo subido y devuelve [[nro, cantidad, importe, recorrido, linea], ...]
-function dinter_leer(array $archivo): array
-{
-    if (($archivo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        throw new RuntimeException('No se pudo subir el archivo.');
-    }
-    $ext = strtolower(pathinfo((string)$archivo['name'], PATHINFO_EXTENSION));
-    $filas = [];
-    if (in_array($ext, ['xlsx', 'xls'], true)) {
-        require_once __DIR__ . '/../../../vendor/autoload.php';
-        $hoja = \PhpOffice\PhpSpreadsheet\IOFactory::load($archivo['tmp_name'])->getActiveSheet();
-        foreach ($hoja->toArray(null, true, false, false) as $i => $r) {
-            $filas[] = [$r[0] ?? '', $r[1] ?? '', $r[2] ?? '', $r[3] ?? '', $i + 1];
-        }
-    } elseif (in_array($ext, ['csv', 'txt'], true)) {
-        $texto = (string)file_get_contents($archivo['tmp_name']);
-        $texto = preg_replace('/^\xEF\xBB\xBF/', '', $texto);
-        if (!mb_check_encoding($texto, 'UTF-8')) {
-            $texto = mb_convert_encoding($texto, 'UTF-8', 'ISO-8859-1');
-        }
-        $lineas = preg_split('/\r\n|\r|\n/', $texto);
-        $delim = substr_count($lineas[0] ?? '', ';') >= substr_count($lineas[0] ?? '', ',') ? ';' : ',';
-        foreach ($lineas as $i => $l) {
-            if (trim($l) === '') continue;
-            $r = str_getcsv($l, $delim);
-            $filas[] = [$r[0] ?? '', $r[1] ?? '', $r[2] ?? '', $r[3] ?? '', $i + 1];
-        }
-    } else {
-        throw new RuntimeException('Formato no soportado: subí un .csv o un Excel (.xlsx).');
-    }
-
-    $out = [];
-    foreach ($filas as [$nro, $cant, $imp, $rec, $linea]) {
-        $nroTxt = trim((string)$nro);
-        // Encabezado o fila vacía: el número de cliente tiene que ser numérico
-        if ($nroTxt === '' || !preg_match('/^\d+$/', $nroTxt)) continue;
-        $out[] = [
-            'linea' => $linea,
-            'nro' => (int)$nroTxt,
-            'nro_txt' => $nroTxt,
-            'cantidad' => max(1, (int)preg_replace('/\D/', '', (string)$cant)),
-            'importe' => dinter_importe($imp),
-            'rec_dinter' => trim((string)$rec),
-        ];
-    }
-    return $out;
 }
 
 // Matchea las filas contra Clientes y arma la sugerencia de recorrido Caddy
@@ -250,13 +187,8 @@ try {
             dinter_out(['ok' => false, 'error' => 'No existe el cliente de origen.']);
         }
 
-        $ins = $mysqli->prepare("INSERT INTO PreVenta
-            (Fecha, RazonSocial, NCliente, TipoDeComprobante, NumeroComprobante, Cantidad, ClienteDestino,
-             idClienteDestino, DomicilioDestino, LocalidadDestino, NumeroVenta, DomicilioOrigen, LocalidadOrigen,
-             Usuario, Cargado, EntregaEn, Eliminado, Recorrido, idProveedor, FechaEntrega, ValorDeclarado, Origen)
-            VALUES (CURDATE(), ?, ?, 'SOLICITUD WEB', 49, ?, ?, ?, ?, ?, 0, ?, ?, ?, 0, 'Domicilio', 0, ?, ?, ?, ?, 'IMPORTACION_DINTER')");
+        $ins = dinter_preventa_stmt($mysqli);
         $usuario = (string)($_SESSION['Usuario'] ?? '');
-        $origenTxt = (string)$origen;
         $cargadas = 0;
         $salteadas = [];
 
@@ -272,15 +204,7 @@ try {
                 $salteadas[] = 'Línea ' . $f['linea'] . ' (' . $f['nro_txt'] . '): falta elegir el recorrido de Caddy.';
                 continue;
             }
-            $c = $f['cliente'];
-            $recTxt = (string)$rec;
-            $idProv = (string)$f['nro'];
-            $ins->bind_param(
-                'ssisissssssssd',
-                $cliOrigen['nombrecliente'], $origenTxt, $f['cantidad'], $c['nombre'], $c['id'], $c['direccion'], $c['ciudad'],
-                $cliOrigen['Direccion'], $cliOrigen['Ciudad'], $usuario, $recTxt, $idProv, $fechaEntrega, $f['importe']
-            );
-            $ins->execute();
+            dinter_preventa_insertar($ins, $cliOrigen, $origen, $f['cantidad'], $f['cliente'], $usuario, $rec, (int)$f['nro'], $fechaEntrega, $f['importe']);
             $cargadas++;
         }
         $mysqli->commit();
