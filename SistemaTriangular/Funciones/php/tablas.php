@@ -121,7 +121,7 @@ if (isset($_POST['Compruebo'])) {
   // data = último movimiento, el que se muestra. control = último que cambia el estado del envío, el
   // que tiene que coincidir con TransClientes.Estado: los movimientos internos (cambio de recorrido y
   // depósito de Wepoint) no lo cambian, y "No se pudo entregar" se sigue contando en los cierres de orden.
-  $st = $mysqli->prepare("SELECT Estado FROM Seguimiento WHERE CodigoSeguimiento = ? AND IFNULL(Eliminado, 0) = 0 ORDER BY id DESC");
+  $st = $mysqli->prepare("SELECT Estado FROM Seguimiento WHERE CodigoSeguimiento = ? AND IFNULL(Eliminado, 0) = 0 ORDER BY Fecha DESC, Hora DESC, id DESC");
   $st->bind_param('s', $_POST['CodigoSeguimiento']);
   $st->execute();
   $estados = array_column($st->get_result()->fetch_all(MYSQLI_ASSOC), 'Estado');
@@ -163,7 +163,7 @@ RazonSocial like '%$_POST[Variable]%' OR ClienteDestino like '%$_POST[Variable]%
 }
 
 if (isset($_POST['Seguimiento_Tabla'])) {
-  $BuscarSeguimiento = $mysqli->query("SELECT * FROM Seguimiento WHERE CodigoSeguimiento='$_POST[CodigoSeguimiento]' AND Eliminado='0'");
+  $BuscarSeguimiento = $mysqli->query("SELECT * FROM Seguimiento WHERE CodigoSeguimiento='$_POST[CodigoSeguimiento]' AND Eliminado='0' ORDER BY Fecha, Hora, id");
   $rows_seguimiento = array();
   while ($row_seguimiento = $BuscarSeguimiento->fetch_array(MYSQLI_ASSOC)) {
     $rows_seguimiento[] = $row_seguimiento;
