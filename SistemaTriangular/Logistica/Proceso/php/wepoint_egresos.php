@@ -27,6 +27,19 @@ const WEPOINT_MOTIVOS_EGRESO = [
     'devolucion' => 'Devolución al remitente',
 ];
 
+/**
+ * Lo que pidió el operador queda como Movimiento Interno (a su nombre): sin avisos, solo lo ve la
+ * oficina. El pedido ya salió a Wepoint: si esta línea falla no se informa como error.
+ */
+function wepoint_egreso_anotar(mysqli $mysqli, int $idTc, string $obs, string $usuario): void
+{
+    try {
+        wepoint_seguimiento($mysqli, $idTc, 'internal_shift', mb_substr($obs, 0, 200), null, mb_substr($usuario, 0, 50));
+    } catch (Throwable $e) {
+        error_log("wepoint_egreso_anotar $idTc: " . $e->getMessage());
+    }
+}
+
 function wepoint_egreso_tablas(mysqli $mysqli): void
 {
     static $hecho = false;
@@ -205,6 +218,9 @@ function wepoint_egreso_solicitar(mysqli $mysqli, int $recorrido, string $usuari
     wepoint_egreso_aplicar($mysqli, $data);
     $egreso = $mysqli->query("SELECT * FROM wepoint_egresos WHERE id = $id")->fetch_assoc();
     $n = count($data['incluidos'] ?? []);
+    foreach (array_intersect($envios, array_map('strval', $data['incluidos'] ?? [])) as $idTc => $codigo) {
+        wepoint_egreso_anotar($mysqli, (int)$idTc, "Se pidió a Wepoint el egreso del Recorrido $recorrido ({$data['nro_orden_egreso_bulto']})", $usuario);
+    }
 
     return ['ok' => true, 'mensaje' => "Orden de egreso emitida en Wepoint ({$data['nro_orden_egreso_bulto']}): $n envío" . ($n === 1 ? '' : 's') . '. Queda trabado hasta que el chofer lo cargue.', 'egreso' => $egreso];
 }
@@ -265,6 +281,7 @@ function wepoint_egreso_solicitar_envio(mysqli $mysqli, int $idTc, string $motiv
     }
 
     wepoint_egreso_aplicar($mysqli, $data);
+    wepoint_egreso_anotar($mysqli, $idTc, "Se dio la orden a Wepoint de entregar el envío ({$data['nro_orden_egreso_bulto']}): " . WEPOINT_MOTIVOS_EGRESO[$motivo], $usuario);
     return ['ok' => true, 'mensaje' => "Orden de egreso emitida en Wepoint ({$data['nro_orden_egreso_bulto']}): " . WEPOINT_MOTIVOS_EGRESO[$motivo] . ". $codigo queda trabado hasta que Wepoint lo entregue."];
 }
 
@@ -306,6 +323,9 @@ function wepoint_egreso_pedir_cambio(mysqli $mysqli, int $idTc, string $codigo, 
         return ['ok' => false, 'caida' => !$http || $http >= 500, 'mensaje' => "El paquete $codigo está en un egreso de Wepoint y no se pudo pedir el cambio: $motivo"];
     }
 
+    $queAnota = $origen && !$destino ? "sacarlo del egreso y pasarlo al Recorrido $recorridoDestino" : "pasarlo al egreso del Recorrido $recorridoDestino";
+    wepoint_egreso_anotar($mysqli, $idTc, "Se pidió a Wepoint $queAnota. Espera su respuesta [#$id]", $usuario);
+
     $que = $origen && $destino ? "pasarlo al egreso del recorrido $recorridoDestino" : ($origen ? 'sacarlo del egreso' : "sumarlo al egreso del recorrido $recorridoDestino");
     return ['ok' => true, 'mensaje' => "El paquete $codigo está en Wepoint con un egreso en curso: se le pidió a Wepoint $que. El cambio de recorrido se hace cuando Wepoint lo acepte."];
 }
@@ -323,7 +343,9 @@ function wepoint_egreso_anotar_movido(mysqli $mysqli, int $idTc, string $codigo,
         VALUES (?, ?, ?, ?, ?, ?, ?, 'por_informar', ?, NOW())");
     $st->bind_param('isiiiiis', $idTc, $codigo, $recorridoOrigen, $recorridoDestino, $estadoId, $origen, $destino, $usuario);
     $st->execute();
+    $idCambio = (int)$st->insert_id;
     $st->close();
+    wepoint_egreso_anotar($mysqli, $idTc, "Cambio al Recorrido $recorridoDestino sin confirmación de Wepoint (sin conexión): se le avisa cuando vuelva [#$idCambio]", $usuario);
     if ($origen) {
         $mysqli->query("DELETE FROM wepoint_egreso_items WHERE id_egreso = $origen AND id_tc = $idTc");
     }
