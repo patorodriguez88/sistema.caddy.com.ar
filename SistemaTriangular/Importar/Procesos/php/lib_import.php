@@ -529,15 +529,16 @@ function localidadPorCp(mysqli $db, int $cp): string
 }
 
 /**
- * Firma de un envío para deduplicar: mismo cliente + destinatario + dirección +
- * CP + localidad => se considera el mismo pedido. (En Plataforma está en config_import.php.)
+ * Firma de un envío para deduplicar: mismo cliente, destinatario, dirección, CP, localidad, número de
+ * pedido, cantidad y valor declarado => es el mismo pedido. (En Plataforma está en config_import.php.)
  */
-function firmaEnvio(int $nCliente, string $nombre, string $direccion, string $cp, string $ciudad): string
+function firmaEnvio(int $nCliente, string $nombre, string $direccion, string $cp, string $ciudad, string $idProveedor, $cantidad, $valorDeclarado): string
 {
     $norm = function ($s) {
         $s = trim((string) $s);
         $s = function_exists('mb_strtolower') ? mb_strtolower($s, 'UTF-8') : strtolower($s);
         return preg_replace('/\s+/', ' ', $s);
     };
-    return md5($nCliente . '|' . $norm($nombre) . '|' . $norm($direccion) . '|' . $norm($cp) . '|' . $norm($ciudad));
+    return md5($nCliente . '|' . $norm($nombre) . '|' . $norm($direccion) . '|' . $norm($cp) . '|' . $norm($ciudad)
+        . '|' . $norm($idProveedor) . '|' . (int) $cantidad . '|' . number_format((float) $valorDeclarado, 2, '.', ''));
 }
