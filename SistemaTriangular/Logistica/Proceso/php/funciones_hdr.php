@@ -31,11 +31,19 @@ if (isset($_POST['Color'])) {
 }
 
 // Egreso de Wepoint: se le pide a Wepoint que prepare lo que del recorrido está en su depósito
-// (wepoint_egresos.php). Desde ahí esos paquetes no se mueven de recorrido sin que Wepoint acepte.
+// (wepoint_egresos.php). Mientras no arranque el picking los cambios se aplican solos; después los acepta Wepoint.
 if (isset($_POST['WepointSolicitarEgreso'])) {
   header('Content-Type: application/json; charset=utf-8');
   require_once __DIR__ . '/wepoint_egresos.php';
   echo json_encode(wepoint_egreso_solicitar($mysqli, (int)$_POST['Recorrido'], (string)($_SESSION['Usuario'] ?? 'sistema')), JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
+// Cancelar la orden de egreso: sin picking se anula; con el picking arrancado se le pide a Wepoint
+if (isset($_POST['WepointCancelarEgreso'])) {
+  header('Content-Type: application/json; charset=utf-8');
+  require_once __DIR__ . '/wepoint_egresos.php';
+  echo json_encode(wepoint_egreso_cancelar($mysqli, (int)$_POST['idEgreso'], (string)($_SESSION['Usuario'] ?? 'sistema')), JSON_UNESCAPED_UNICODE);
   exit;
 }
 
@@ -49,9 +57,12 @@ function wepointEnCard(int $recorrido, ?array $egreso, int $enDeposito): string
     $cambios = (int)$egreso['cambios_pendientes'] > 0
       ? '<br><i class="mdi mdi-swap-horizontal"></i> ' . (int)$egreso['cambios_pendientes'] . ' cambio(s) esperando a Wepoint'
       : '';
-    return '<div class="alert alert-info py-1 px-2 mt-2 mb-0 small" title="Los paquetes que están en Wepoint no se mueven de recorrido sin que Wepoint lo acepte">'
+    return '<div class="alert alert-info py-1 px-2 mt-2 mb-0 small" title="Hasta que Wepoint empiece a armarla los cambios se aplican solos; después los tiene que aceptar">'
       . '<strong>Egreso Wepoint ' . htmlspecialchars((string)$egreso['nro_oeb']) . '</strong> · ' . (int)$egreso['envios'] . ' envío(s)<br>'
-      . $estado . $cambios . '</div>';
+      . $estado . $cambios
+      . ($egreso['motivo'] ? '<br><i class="mdi mdi-information-outline"></i> ' . htmlspecialchars((string)$egreso['motivo']) : '')
+      . '<button type="button" class="btn btn-sm btn-outline-danger w-100 mt-1" onclick="cancelarEgresoWepoint(' . (int)$egreso['id'] . ', ' . htmlspecialchars(json_encode((string)$egreso['nro_oeb']), ENT_QUOTES) . ')"><i class="mdi mdi-close-circle-outline"></i> Cancelar egreso</button>'
+      . '</div>';
   }
   $html = '';
   if ($egreso && $egreso['estado'] === 'rechazado') {

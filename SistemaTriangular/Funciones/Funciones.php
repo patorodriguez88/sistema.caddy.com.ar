@@ -303,7 +303,7 @@ function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recor
 // Devuelve el mismo array que antes se echoeaba directo — cualquier llamador (HTTP o server-side)
 // recibe la misma forma de respuesta.
 // Si el paquete está en Wepoint y el recorrido de origen o de destino tiene un egreso solicitado,
-// no se mueve: se le pide el cambio a Wepoint y se aplica cuando lo acepte ($autorizadoPorWepoint,
+// se le pide el cambio a Wepoint: sin picking arrancado se aplica en el momento; si no, cuando lo acepte ($autorizadoPorWepoint,
 // Logistica/Proceso/php/wepoint_egresos.php). Con la conexión desactivada o Wepoint sin responder
 // Caddy no se frena: se mueve y se le avisa a Wepoint después. $notaSeguimiento se suma al comentario
 // de Seguimiento.
@@ -414,32 +414,6 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
         ];
     }
 
-    // ---- 2.2) Paquete en Wepoint con un egreso solicitado: se pide el cambio a Wepoint ----
-    $avisarAWepoint = null;
-    if (!$autorizadoPorWepoint && $idTc > 0) {
-        require_once __DIR__ . '/../Logistica/Proceso/php/wepoint_egresos.php';
-        $bloqueo = wepoint_egreso_bloqueo($mysqli, $idTc, (int)$r);
-        $pedido = $bloqueo && wepoint_activo($mysqli)
-            ? wepoint_egreso_pedir_cambio($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $bloqueo, $Usuario)
-            : null;
-        // Cambio de recorrido con el paquete todavía en el depósito de Wepoint: queda dicho en el movimiento.
-        if (!$notaSeguimiento && wepoint_configurado() && wepoint_en_deposito($mysqli, $idTc)) {
-            $notaSeguimiento = 'el paquete está en Wepoint';
-        }
-        if ($bloqueo && (!$pedido || !empty($pedido['caida']))) {
-            $avisarAWepoint = $bloqueo; // desactivada o sin responder: se mueve y se avisa después
-        } elseif ($bloqueo) {
-            return [
-                'success' => 0,
-                'code' => 'WEPOINT_EGRESO',
-                'pedido_a_wepoint' => $pedido['ok'] ? 1 : 0,
-                'message' => $pedido['mensaje'],
-                'recorrido_anterior' => $recorridoAnterior,
-                'recorrido_nuevo' => $r
-            ];
-        }
-    }
-
     // ---- 3) Validación administrativa sobre órdenes afectadas ----
     // Solo validar destino si efectivamente existe una orden destino
     if ($NO != 0 && !ordenNoFacturada($mysqli, $NO)) {
@@ -479,6 +453,37 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
 
         if (!$refAnteriorVieja && !ordenNoFacturada($mysqli, $ordenAnterior)) {
             return ['success' => 0, 'message' => motivoOrdenBloqueada($mysqli, $ordenAnterior)];
+        }
+    }
+
+    // ---- 3.1) Paquete en Wepoint con un egreso solicitado: se pide el cambio a Wepoint ----
+    // Después de validar: lo que Caddy va a rechazar no le tiene que cambiar la orden a Wepoint
+    $avisarAWepoint = null;
+    if (!$autorizadoPorWepoint && $idTc > 0) {
+        require_once __DIR__ . '/../Logistica/Proceso/php/wepoint_egresos.php';
+        $bloqueo = wepoint_egreso_bloqueo($mysqli, $idTc, (int)$r);
+        $pedido = $bloqueo && wepoint_activo($mysqli)
+            ? wepoint_egreso_pedir_cambio($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $bloqueo, $Usuario)
+            : null;
+        // Cambio de recorrido con el paquete todavía en el depósito de Wepoint: queda dicho en el movimiento.
+        if (!$notaSeguimiento && wepoint_configurado() && wepoint_en_deposito($mysqli, $idTc)) {
+            $notaSeguimiento = 'el paquete está en Wepoint';
+        }
+        // La orden todavía no se empezó a armar: Wepoint ya la actualizó y el cambio se hizo
+        if (!empty($pedido['aplicado'])) {
+            return $pedido['resultado'];
+        }
+        if ($bloqueo && (!$pedido || !empty($pedido['caida']))) {
+            $avisarAWepoint = $bloqueo; // desactivada o sin responder: se mueve y se avisa después
+        } elseif ($bloqueo) {
+            return [
+                'success' => 0,
+                'code' => 'WEPOINT_EGRESO',
+                'pedido_a_wepoint' => $pedido['ok'] ? 1 : 0,
+                'message' => $pedido['mensaje'],
+                'recorrido_anterior' => $recorridoAnterior,
+                'recorrido_nuevo' => $r
+            ];
         }
     }
 

@@ -280,7 +280,7 @@
                                     <option value="devolucion">Devolución al remitente</option>
                                 </select>
                                 <div class="alert alert-warning mb-0 py-2">
-                                    <i class="mdi mdi-lock-outline"></i> Desde que lo pidas, el envío no se puede sacar del recorrido 80 sin que Wepoint lo libere.
+                                    <i class="mdi mdi-lock-outline"></i> Hasta que Wepoint empiece a armarla podés cambiar el envío o cancelar la orden sin pedir permiso. Después, lo tiene que aceptar Wepoint.
                                 </div>
                             </div>
                             <div class="modal-footer">
@@ -302,12 +302,31 @@
                                 <p class="mb-2">Recorrido <strong id="wepoint-egreso-recorrido"></strong>: <strong id="wepoint-egreso-cantidad"></strong> en el depósito de Wepoint.</p>
                                 <p class="mb-2">Wepoint emite la orden de egreso y prepara el pedido para cuando pase el chofer.</p>
                                 <div class="alert alert-warning mb-0 py-2">
-                                    <i class="mdi mdi-lock-outline"></i> Desde que lo solicites, esos paquetes no se pueden sacar del recorrido ni se pueden sumar otros que estén en Wepoint: el cambio se le pide a Wepoint y se hace cuando lo acepte.
+                                    <i class="mdi mdi-lock-outline"></i> Hasta que Wepoint empiece a armarla podés cambiar paquetes o cancelarla sin pedir permiso. Después, lo tiene que aceptar Wepoint.
                                 </div>
                             </div>
                             <div class="modal-footer">
                                 <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
                                 <button id="wepoint-egreso-ok" type="button" class="btn btn-primary"><i class="mdi mdi-send"></i> Solicitar egreso</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Cancelar orden de egreso de Wepoint (Proceso/js/funciones_hdr.js, cancelarEgresoWepoint) -->
+                <div id="wepoint-cancelar-modal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="wepoint-cancelar-modalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header modal-colored-header bg-danger">
+                                <h4 class="modal-title" id="wepoint-cancelar-modalLabel"><i class="mdi mdi-close-circle-outline"></i> Cancelar egreso de Wepoint</h4>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                            </div>
+                            <div class="modal-body">
+                                <p class="mb-2">¿Cancelar la orden <strong id="wepoint-cancelar-nro"></strong>?</p>
+                                <p class="mb-0">Si Wepoint todavía no empezó a armarla, se anula en el momento y los paquetes quedan libres. Si ya empezó, se le pide y se aplica cuando lo acepte.</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Volver</button>
+                                <button id="wepoint-cancelar-ok" type="button" class="btn btn-danger"><i class="mdi mdi-close"></i> Cancelar egreso</button>
                             </div>
                         </div>
                     </div>
