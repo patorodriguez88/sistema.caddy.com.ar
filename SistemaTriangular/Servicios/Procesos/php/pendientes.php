@@ -47,6 +47,18 @@ if (isset($_POST['Pendientes'])) {
       $rows[] = $row;
     }
 
+    // Cómo está cada uno en Wepoint: si falla, la lista se muestra igual
+    try {
+      require_once __DIR__ . '/../../../Logistica/Proceso/php/wepoint_lib.php';
+      $traza = wepoint_trazabilidad_de($mysqli, array_column($rows, 'id'));
+      foreach ($rows as &$fila) {
+        $fila['WepointTraza'] = $traza[(int)$fila['id']] ?? null;
+      }
+      unset($fila);
+    } catch (Throwable $e) {
+      error_log('Pendientes, trazabilidad de Wepoint: ' . $e->getMessage());
+    }
+
     echo json_encode(array('data' => $rows));
   } else {
 

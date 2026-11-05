@@ -498,6 +498,13 @@ function badgesWepoint(w, row) {
   if (w.en_deposito) {
     html += `<br/><span class='badge bg-primary mt-1' style='font-size:10px'><i class='mdi mdi-warehouse'></i> En Wepoint</span>`;
   }
+  if (w.traza) {
+    var traza = [w.traza.estado, w.traza.orb, w.traza.posiciones, w.traza.oeb, w.traza.envio].filter(Boolean).join(" · ");
+    if (traza) {
+      var ingreso = String(w.traza.ingreso_at || "").split(" ")[0].split("-").reverse().join(".");
+      html += `<br/><span class='badge bg-light text-dark mt-1' style='font-size:10px;white-space:normal;text-align:left'>${ingreso ? esc(ingreso) + " · " : ""}${esc(traza)}</span>`;
+    }
+  }
   // Conexión desactivada: no hay órdenes que pedir ni trabas, solo se informa que está en Wepoint
   if (w.activa === false) return html;
   if (w.egreso) {

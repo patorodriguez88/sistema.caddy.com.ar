@@ -429,6 +429,105 @@ function wepoint_guardar_respuesta(mysqli $mysqli, array $data, array $bultos, s
 // Cola: un row por pieza, tipo (ingreso: escaneo en CrossDocking / salida: carga del chofer en la
 // app de reparto) y día. La app de reparto escribe en la misma tabla (misma base).
 // ---------------------------------------------------------------------------------------------
+/**
+ * Cómo está cada envío en Wepoint: la foto que manda Wepoint (estado, órdenes de ingreso, recepción,
+ * egreso y envío, posiciones y fechas reales). La muestran Pendientes, Hoja de Ruta y Seguimiento.
+ */
+function wepoint_trazabilidad_tabla(mysqli $mysqli): void
+{
+    static $hecho = false;
+    if ($hecho) {
+        return;
+    }
+    $hecho = true;
+    $mysqli->query("CREATE TABLE IF NOT EXISTS wepoint_trazabilidad (
+        id_tc INT NOT NULL PRIMARY KEY,
+        codigo VARCHAR(100) NOT NULL,
+        estado VARCHAR(30) NULL,
+        piezas INT NOT NULL DEFAULT 0,
+        en_deposito INT NOT NULL DEFAULT 0,
+        oib VARCHAR(50) NULL,
+        orb VARCHAR(255) NULL,
+        oeb VARCHAR(255) NULL,
+        envio VARCHAR(255) NULL,
+        transportista VARCHAR(255) NULL,
+        posiciones VARCHAR(255) NULL,
+        ingreso_at DATETIME NULL,
+        salida_at DATETIME NULL,
+        actualizado_en DATETIME NOT NULL
+    )");
+}
+
+/** Guarda la foto de cada envío (se puede repetir). @return int envíos guardados */
+function wepoint_trazabilidad_guardar(mysqli $mysqli, array $envios): int
+{
+    wepoint_trazabilidad_tabla($mysqli);
+    $texto = fn($v, int $max) => $v === null || $v === '' ? null : mb_substr((string)$v, 0, $max);
+    $fecha = fn($v) => is_string($v) && preg_match('/^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}:\d{2})?$/', $v) ? $v : null;
+    $guardar = $mysqli->prepare("INSERT INTO wepoint_trazabilidad
+        (id_tc, codigo, estado, piezas, en_deposito, oib, orb, oeb, envio, transportista, posiciones, ingreso_at, salida_at, actualizado_en)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+        ON DUPLICATE KEY UPDATE codigo = VALUES(codigo), estado = VALUES(estado), piezas = VALUES(piezas), en_deposito = VALUES(en_deposito),
+            oib = VALUES(oib), orb = VALUES(orb), oeb = VALUES(oeb), envio = VALUES(envio), transportista = VALUES(transportista),
+            posiciones = VALUES(posiciones), ingreso_at = VALUES(ingreso_at), salida_at = VALUES(salida_at), actualizado_en = NOW()");
+    // Las marcas de TransClientes: solo si el envío no tenía ingreso (no se pisa lo que escaneó CrossDocking)
+    $marca = $mysqli->prepare("UPDATE TransClientes SET Wepoint_f = DATE(?), Wepoint_h = TIME(?), Wepoint_status = IF(IFNULL(Wepoint_status, '') = '', 'Ingreso', Wepoint_status)
+        WHERE id = ? AND (Wepoint_f IS NULL OR Wepoint_f = '0000-00-00') LIMIT 1");
+    $guardados = 0;
+    foreach ($envios as $e) {
+        $id = (int)($e['id_caddy'] ?? 0);
+        $codigo = trim((string)($e['codigo'] ?? ''));
+        if ($id <= 0 || $codigo === '') {
+            continue;
+        }
+        $tc = $mysqli->query("SELECT id, CodigoSeguimiento FROM TransClientes WHERE id = $id")->fetch_assoc();
+        if (!$tc || (string)$tc['CodigoSeguimiento'] !== $codigo) {
+            error_log("wepoint_trazabilidad: el envío $id no coincide con el código $codigo");
+            continue;
+        }
+        $estado = $texto($e['estado'] ?? null, 30);
+        $piezas = (int)($e['piezas'] ?? 0);
+        $enDeposito = (int)($e['en_deposito'] ?? 0);
+        $oib = $texto($e['oib'] ?? null, 50);
+        $orb = $texto($e['orb'] ?? null, 255);
+        $oeb = $texto($e['oeb'] ?? null, 255);
+        $envio = $texto($e['envio'] ?? null, 255);
+        $transportista = $texto($e['transportista'] ?? null, 255);
+        $posiciones = $texto($e['posiciones'] ?? null, 255);
+        $ingreso = $fecha($e['ingreso_at'] ?? null);
+        $salida = $fecha($e['salida_at'] ?? null);
+        $guardar->bind_param('issiissssssss', $id, $codigo, $estado, $piezas, $enDeposito, $oib, $orb, $oeb, $envio, $transportista, $posiciones, $ingreso, $salida);
+        $guardar->execute();
+        if ($ingreso !== null) {
+            $marca->bind_param('ssi', $ingreso, $ingreso, $id);
+            $marca->execute();
+        }
+        $guardados++;
+    }
+    $guardar->close();
+    $marca->close();
+
+    return $guardados;
+}
+
+/** La foto de estos envíos. @param int[] $ids @return array<int,array> por id de TransClientes */
+function wepoint_trazabilidad_de(mysqli $mysqli, array $ids): array
+{
+    $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
+    if (!$ids) {
+        return [];
+    }
+    wepoint_trazabilidad_tabla($mysqli);
+    $porEnvio = [];
+    foreach (array_chunk($ids, 1000) as $parte) {
+        foreach ($mysqli->query("SELECT * FROM wepoint_trazabilidad WHERE id_tc IN (" . implode(',', $parte) . ")")->fetch_all(MYSQLI_ASSOC) as $f) {
+            $porEnvio[(int)$f['id_tc']] = $f;
+        }
+    }
+
+    return $porEnvio;
+}
+
 function wepoint_cola_tabla(mysqli $mysqli): void
 {
     $mysqli->query("CREATE TABLE IF NOT EXISTS wepoint_cola (

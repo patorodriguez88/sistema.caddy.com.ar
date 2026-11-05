@@ -30,6 +30,32 @@ function formatWepoint(fecha, hora, status) {
   return st + " · " + fDMY + (h ? " " + h : "");
 }
 
+// Lo que Wepoint informa del envío (wepoint_trazabilidad): filas [etiqueta, valor] de lo que tenga.
+function wepointTrazaFilas(t) {
+  if (!t) return [];
+  var fecha = function (v) {
+    var p = String(v || "").split(" ");
+    return p[0] ? p[0].split("-").reverse().join(".") + (p[1] ? " " + p[1].slice(0, 5) : "") : "";
+  };
+  var piezas = Number(t.piezas) > 1 ? " (" + t.en_deposito + " de " + t.piezas + " en depósito)" : "";
+  return [
+    ["Estado en Wepoint", (t.estado || "") + piezas],
+    ["Ingresó a Wepoint", fecha(t.ingreso_at)],
+    ["Orden de ingreso", t.oib],
+    ["Recepción", t.orb],
+    ["Posición", t.posiciones],
+    ["Orden de egreso", t.oeb],
+    ["Envío", t.envio ? t.envio + (t.transportista ? " · " + t.transportista : "") : ""],
+    ["Salió de Wepoint", fecha(t.salida_at)],
+  ].filter(function (f) {
+    return f[1];
+  });
+}
+
+function wepointTextoSeguro(v) {
+  return $("<div>").text(v == null ? "" : String(v)).html();
+}
+
 // Encabezado del panel: se arma en 2 pasos (Visitas y ultimo estado llegan por
 // ajax separados), asi que guardamos el estado y re-renderizamos.
 var _thState = { id: null, visitas: null, estado: null };
@@ -320,6 +346,9 @@ function loadTrackingPanel(id) {
         '<div class="tracking-guide-grid">' +
           '<div class="tracking-guide-item"><span>Bultos</span><strong>' + guide.Cantidad + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Warehouse (WePoint)</span><strong>' + whWepoint + "</strong></div>" +
+          wepointTrazaFilas(guide.WepointTraza).map(function (f) {
+            return '<div class="tracking-guide-item"><span>' + f[0] + "</span><strong>" + wepointTextoSeguro(f[1]) + "</strong></div>";
+          }).join("") +
           '<div class="tracking-guide-item"><span>Entregar en</span><strong>' + guide.EntregaEn + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Cod. proveedor</span><strong>' + guide.CodigoProveedor + "</strong></div>" +
           '<div class="tracking-guide-item"><span>Valor declarado</span><strong>' + guide.ValorDeclarado + "</strong></div>" +

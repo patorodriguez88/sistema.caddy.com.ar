@@ -61,6 +61,11 @@ if (($in['accion'] ?? '') === 'egreso') {
     $responder(200, ['ok' => true]);
 }
 
+// Cómo quedó cada envío en Wepoint (Pendientes, Hoja de Ruta y Seguimiento lo muestran)
+if (($in['accion'] ?? '') === 'trazabilidad') {
+    $responder(200, ['ok' => true, 'guardados' => wepoint_trazabilidad_guardar($mysqli, (array)($in['envios'] ?? []))]);
+}
+
 define('CD_COMO_LIBRERIA', true);
 require_once __DIR__ . '/crossdocking.php';
 // Tablero del día (lo mismo que muestra la pantalla de CrossDocking)
