@@ -257,11 +257,11 @@ if ($accion === 'subir') {
     // Dedup igual que Plataforma: pendientes o cargados en los últimos 7 días.
     $vistas = [];
     $rq = $mysqli->query(
-        "SELECT ClienteDestino, DomicilioDestino, cpdestino, LocalidadDestino FROM Importaciones
+        "SELECT ClienteDestino, DomicilioDestino, cpdestino, LocalidadDestino, idProveedor, Cantidad, ValorDeclarado FROM Importaciones
           WHERE TRIM(NCliente) = '$nCliente' AND Eliminado = 0 AND (Cargado = 0 OR Fecha >= CURDATE() - INTERVAL 7 DAY)"
     );
     while ($rq && $e = $rq->fetch_assoc()) {
-        $vistas[firmaEnvio($nCliente, $e['ClienteDestino'], $e['DomicilioDestino'], $e['cpdestino'], $e['LocalidadDestino'])] = true;
+        $vistas[firmaEnvio($nCliente, $e['ClienteDestino'], $e['DomicilioDestino'], $e['cpdestino'], $e['LocalidadDestino'], (string) $e['idProveedor'], $e['Cantidad'], $e['ValorDeclarado'])] = true;
     }
 
     $colsExistentes = columnasImportaciones($mysqli);
@@ -282,7 +282,12 @@ if ($accion === 'subir') {
             $avisos[] = "Fila $num: falta " . implode(', ', $falta) . ' — no se cargó.';
             continue;
         }
-        $firma = firmaEnvio($nCliente, $nombre, $direccion, (string) $cp, $ciudad);
+        $firma = firmaEnvio(
+            $nCliente, $nombre, $direccion, (string) $cp, $ciudad,
+            substr(impNormStr(valorCampo($fila, $mapeo, 'id_origen')), 0, 20), // como queda grabado
+            max(1, impNormInt(valorCampo($fila, $mapeo, 'cantidad')) ?: 1),
+            impNormFloat(valorCampo($fila, $mapeo, 'valor_declarado'))
+        );
         if (isset($vistas[$firma])) {
             $avisos[] = "Fila $num ($nombre): ya estaba cargada — se salteó.";
             continue;
