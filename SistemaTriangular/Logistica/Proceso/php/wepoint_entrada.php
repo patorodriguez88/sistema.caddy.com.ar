@@ -27,11 +27,26 @@ $token = (string)($_SERVER['HTTP_X_WEPOINT_TOKEN'] ?? '') ?: preg_replace('/^Bea
 if (!defined('WEPOINT_ENTRADA_TOKEN') || WEPOINT_ENTRADA_TOKEN === '' || !hash_equals((string)WEPOINT_ENTRADA_TOKEN, $token)) {
     $responder(401, ['ok' => false, 'error' => 'NO_AUTORIZADO']);
 }
-if (!wepoint_activo()) {
+if (!wepoint_configurado()) {
     $responder(503, ['ok' => false, 'error' => 'APAGADO', 'mensaje' => 'La integración con Wepoint está apagada en Caddy.']);
 }
 
 $in = json_decode((string)file_get_contents('php://input'), true) ?: $_POST;
+
+// El interruptor de Wepoint (Integraciones): funcionan con la conexión desactivada
+if (($in['accion'] ?? '') === 'conexion') {
+    wepoint_conexion_guardar($mysqli, !empty($in['activa']));
+    $responder(200, ['ok' => true]);
+}
+if (($in['accion'] ?? '') === 'cola_pendiente') {
+    $responder(200, ['ok' => true] + wepoint_cola_acumulada($mysqli));
+}
+if (($in['accion'] ?? '') === 'descartar_cola') {
+    $responder(200, ['ok' => true, 'descartados' => wepoint_cola_descartar($mysqli)]);
+}
+if (!wepoint_activo($mysqli)) {
+    $responder(503, ['ok' => false, 'error' => 'APAGADO', 'mensaje' => 'La conexión con Wepoint está desactivada.']);
+}
 $operador = mb_substr(trim((string)($in['operador'] ?? '')), 0, 40);
 $_SESSION = ['Usuario' => 'Wepoint' . ($operador !== '' ? ": $operador" : '')];
 

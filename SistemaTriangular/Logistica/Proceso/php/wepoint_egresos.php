@@ -112,7 +112,7 @@ function wepoint_egreso_de_envio(mysqli $mysqli, int $idTc): ?array
  */
 function wepoint_egreso_bloqueo(mysqli $mysqli, int $idTc, int $recorridoDestino): ?array
 {
-    if (!wepoint_activo() || !wepoint_en_deposito($mysqli, $idTc)) {
+    if (!wepoint_configurado() || !wepoint_en_deposito($mysqli, $idTc)) {
         return null;
     }
     $origen = wepoint_egreso_de_envio($mysqli, $idTc);
@@ -156,8 +156,8 @@ function wepoint_en_deposito_por_recorrido(mysqli $mysqli): array
  */
 function wepoint_egreso_solicitar(mysqli $mysqli, int $recorrido, string $usuario): array
 {
-    if (!wepoint_activo()) {
-        return ['ok' => false, 'mensaje' => 'La integración con Wepoint está apagada.'];
+    if (!wepoint_activo($mysqli)) {
+        return ['ok' => false, 'mensaje' => 'La conexión con Wepoint está desactivada.'];
     }
     wepoint_egreso_tablas($mysqli);
     if ($recorrido === WEPOINT_RECORRIDO_DEPOSITO) {
@@ -216,8 +216,8 @@ function wepoint_egreso_solicitar(mysqli $mysqli, int $recorrido, string $usuari
  */
 function wepoint_egreso_solicitar_envio(mysqli $mysqli, int $idTc, string $motivo, string $usuario): array
 {
-    if (!wepoint_activo()) {
-        return ['ok' => false, 'mensaje' => 'La integración con Wepoint está apagada.'];
+    if (!wepoint_activo($mysqli)) {
+        return ['ok' => false, 'mensaje' => 'La conexión con Wepoint está desactivada.'];
     }
     if (!isset(WEPOINT_MOTIVOS_EGRESO[$motivo])) {
         return ['ok' => false, 'mensaje' => 'Elegí el motivo del egreso.'];
@@ -302,11 +302,55 @@ function wepoint_egreso_pedir_cambio(mysqli $mysqli, int $idTc, string $codigo, 
     if ($http < 200 || $http >= 300) {
         $mysqli->query("DELETE FROM wepoint_egreso_cambios WHERE id = $id");
         $motivo = $http ? (json_decode((string)$resp, true)['message'] ?? "Wepoint respondió HTTP $http") : ($err ?: 'Wepoint no responde');
-        return ['ok' => false, 'mensaje' => "El paquete $codigo está en un egreso de Wepoint y no se pudo pedir el cambio: $motivo"];
+        // Wepoint no responde: quien llama no frena a Caddy (mueve y avisa cuando vuelva)
+        return ['ok' => false, 'caida' => !$http || $http >= 500, 'mensaje' => "El paquete $codigo está en un egreso de Wepoint y no se pudo pedir el cambio: $motivo"];
     }
 
     $que = $origen && $destino ? "pasarlo al egreso del recorrido $recorridoDestino" : ($origen ? 'sacarlo del egreso' : "sumarlo al egreso del recorrido $recorridoDestino");
     return ['ok' => true, 'mensaje' => "El paquete $codigo está en Wepoint con un egreso en curso: se le pidió a Wepoint $que. El cambio de recorrido se hace cuando Wepoint lo acepte."];
+}
+
+/**
+ * Con la conexión desactivada o Wepoint sin responder no hay traba: el cambio se hizo. Se anota para
+ * avisarle a Wepoint cuando vuelva y el envío deja de estar en la orden de origen.
+ */
+function wepoint_egreso_anotar_movido(mysqli $mysqli, int $idTc, string $codigo, int $recorridoOrigen, int $recorridoDestino, int $estadoId, array $bloqueo, string $usuario): void
+{
+    wepoint_egreso_tablas($mysqli);
+    $origen = $bloqueo['origen'] ? (int)$bloqueo['origen']['id'] : null;
+    $destino = $bloqueo['destino'] ? (int)$bloqueo['destino']['id'] : null;
+    $st = $mysqli->prepare("INSERT INTO wepoint_egreso_cambios (id_tc, codigo, recorrido_origen, recorrido_destino, estado_id, egreso_origen, egreso_destino, estado, usuario, creado_en)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 'por_informar', ?, NOW())");
+    $st->bind_param('isiiiiis', $idTc, $codigo, $recorridoOrigen, $recorridoDestino, $estadoId, $origen, $destino, $usuario);
+    $st->execute();
+    $st->close();
+    if ($origen) {
+        $mysqli->query("DELETE FROM wepoint_egreso_items WHERE id_egreso = $origen AND id_tc = $idTc");
+    }
+}
+
+/** Le avisa a Wepoint lo que se movió sin poder pedírselo (si no responde, en el próximo cron). */
+function wepoint_egresos_informar(mysqli $mysqli): int
+{
+    $n = 0;
+    foreach ($mysqli->query("SELECT * FROM wepoint_egreso_cambios WHERE estado = 'por_informar' ORDER BY id LIMIT 100")->fetch_all(MYSQLI_ASSOC) as $c) {
+        [$http] = wepoint_request('POST', '/api/v2/integraciones/caddy/egresos/cambios', [
+            'caddy_cambio_id' => (int)$c['id'],
+            'codigo' => $c['codigo'],
+            'egreso_origen' => $c['egreso_origen'] !== null ? (int)$c['egreso_origen'] : null,
+            'egreso_destino' => $c['egreso_destino'] !== null ? (int)$c['egreso_destino'] : null,
+            'recorrido_origen' => (int)$c['recorrido_origen'],
+            'recorrido_destino' => (int)$c['recorrido_destino'],
+            'solicitado_por' => $c['usuario'],
+            'informado' => true,
+        ], 20);
+        if ($http < 200 || $http >= 300) {
+            break;
+        }
+        $mysqli->query("UPDATE wepoint_egreso_cambios SET estado = 'informado', resuelto_en = NOW() WHERE id = " . (int)$c['id']);
+        $n++;
+    }
+    return $n;
 }
 
 /**
@@ -324,7 +368,7 @@ function wepoint_egreso_aplicar(mysqli $mysqli, array $e): void
         'Solicitada' => 'solicitado',
         'Emitida', 'En proceso' => 'aceptado',
         'Rechazada' => 'rechazado',
-        'Entregado al transportista' => 'cerrado',
+        'Entregado al transportista', 'Anulada' => 'cerrado',
         default => null,
     };
     $antes = $mysqli->query("SELECT estado FROM wepoint_egresos WHERE id = $id")->fetch_row()[0] ?? null;
@@ -471,10 +515,11 @@ function wepoint_egreso_resolver_cambio(mysqli $mysqli, int $idCambio, string $e
  */
 function wepoint_egresos_sincronizar(mysqli $mysqli): int
 {
-    if (!wepoint_activo()) {
+    if (!wepoint_activo($mysqli)) {
         return 0;
     }
     wepoint_egreso_tablas($mysqli);
+    wepoint_egresos_informar($mysqli); // antes de consultar: si no, los envíos de la orden vuelven a aparecer
     $ids = array_map('intval', array_column($mysqli->query("SELECT id FROM wepoint_egresos WHERE estado IN ('solicitado', 'aceptado')
         UNION SELECT egreso_origen FROM wepoint_egreso_cambios WHERE estado = 'pendiente' AND egreso_origen IS NOT NULL
         UNION SELECT egreso_destino FROM wepoint_egreso_cambios WHERE estado = 'pendiente' AND egreso_destino IS NOT NULL
@@ -540,7 +585,7 @@ function wepoint_egresos_para_hdr(mysqli $mysqli): array
 function wepoint_info_envios(mysqli $mysqli, array $ids): array
 {
     $ids = array_values(array_unique(array_filter(array_map('intval', $ids))));
-    if (!$ids || !wepoint_activo()) {
+    if (!$ids || !wepoint_configurado()) {
         return [];
     }
     wepoint_egreso_tablas($mysqli);
@@ -563,7 +608,7 @@ function wepoint_info_envios(mysqli $mysqli, array $ids): array
     }
 
     foreach ($info as $id => $i) {
-        $info[$id] = ['en_deposito' => $i['en_deposito'] ?? false, 'egreso' => $i['egreso'] ?? null, 'cambio' => $i['cambio'] ?? null];
+        $info[$id] = ['activa' => wepoint_activo($mysqli), 'en_deposito' => $i['en_deposito'] ?? false, 'egreso' => $i['egreso'] ?? null, 'cambio' => $i['cambio'] ?? null];
     }
 
     return $info;

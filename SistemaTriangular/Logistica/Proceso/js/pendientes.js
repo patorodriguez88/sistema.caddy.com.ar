@@ -498,6 +498,8 @@ function badgesWepoint(w, row) {
   if (w.en_deposito) {
     html += `<br/><span class='badge bg-primary mt-1' style='font-size:10px'><i class='mdi mdi-warehouse'></i> En Wepoint</span>`;
   }
+  // Conexión desactivada: no hay órdenes que pedir ni trabas, solo se informa que está en Wepoint
+  if (w.activa === false) return html;
   if (w.egreso) {
     var est = w.egreso.motivo ? w.egreso.motivo : w.egreso.estado === "aceptado" ? "preparando" : "esperando a Wepoint";
     html += ` <span class='badge bg-info mt-1' style='font-size:10px' title='Está en una orden de egreso de Wepoint: no se mueve de recorrido sin que Wepoint lo acepte'><i class='mdi mdi-lock-outline'></i> Egreso ${esc(w.egreso.nro)} · ${esc(est)}</span>`;

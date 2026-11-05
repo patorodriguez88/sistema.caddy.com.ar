@@ -608,7 +608,7 @@ if (isset($_POST['ColaWepoint'])) {
         ORDER BY c.creado_en DESC LIMIT 1000")->fetch_all(MYSQLI_ASSOC);
     $hoy = $mysqli->query("SELECT tipo, COUNT(*) AS n FROM wepoint_cola WHERE estado = 'ok' AND enviado_en >= CURDATE() GROUP BY tipo")
         ->fetch_all(MYSQLI_ASSOC);
-    echo json_encode(['ok' => true, 'activo' => wepoint_activo(), 'data' => $pendientes, 'confirmados_hoy' => array_column($hoy, 'n', 'tipo')], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['ok' => true, 'activo' => wepoint_activo($mysqli), 'data' => $pendientes, 'confirmados_hoy' => array_column($hoy, 'n', 'tipo')], JSON_UNESCAPED_UNICODE);
     exit;
 }
 

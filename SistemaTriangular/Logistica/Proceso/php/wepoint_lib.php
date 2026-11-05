@@ -31,13 +31,154 @@ function wepoint_config(): array
 }
 
 /**
- * Llave general (WEPOINT_ACTIVO en wepoint_config.php): apagada, CrossDocking no anota nada para
- * Wepoint y no se manda ni se cierra nada. Sin config (URL o token) también queda apagada.
+ * Freno de emergencia (WEPOINT_ACTIVO en wepoint_config.php): apagado, o sin config (URL o token),
+ * Caddy no anota nada para Wepoint.
  */
-function wepoint_activo(): bool
+function wepoint_configurado(): bool
 {
     $c = wepoint_config();
     return $c['activo'] && $c['url'] !== '' && $c['token'] !== '';
+}
+
+/**
+ * La conexión está activa: configurada y encendida en Wepoint (Integraciones). Desactivada, cada
+ * sistema sigue solo: los movimientos se acumulan en la cola, no se manda nada y no hay trabas.
+ */
+function wepoint_activo(mysqli $mysqli): bool
+{
+    return wepoint_configurado() && wepoint_conexion($mysqli)['activa'];
+}
+
+/** @return array{activa:bool,apagada_en:?string} lo último que dijo Wepoint (sin fila, activa) */
+function wepoint_conexion(mysqli $mysqli, bool $releer = false): array
+{
+    static $estado = null;
+    if ($estado === null || $releer) {
+        $mysqli->query("CREATE TABLE IF NOT EXISTS wepoint_conexion (
+            id TINYINT PRIMARY KEY,
+            activa TINYINT(1) NOT NULL DEFAULT 1,
+            apagada_en DATETIME NULL,
+            actualizado_en DATETIME NOT NULL
+        )");
+        $f = $mysqli->query("SELECT activa, apagada_en FROM wepoint_conexion WHERE id = 1")->fetch_assoc();
+        $estado = ['activa' => $f ? (bool)$f['activa'] : true, 'apagada_en' => $f['apagada_en'] ?? null];
+    }
+    return $estado;
+}
+
+/** Guarda lo que dijo Wepoint. apagada_en queda hasta conciliar lo que pasó mientras estuvo apagada. */
+function wepoint_conexion_guardar(mysqli $mysqli, bool $activa): void
+{
+    $antes = wepoint_conexion($mysqli, true);
+    $a = (int)$activa;
+    $apagada = !$activa && $antes['activa'] ? date('Y-m-d H:i:s') : $antes['apagada_en'];
+    $st = $mysqli->prepare("REPLACE INTO wepoint_conexion (id, activa, apagada_en, actualizado_en) VALUES (1, ?, ?, NOW())");
+    $st->bind_param('is', $a, $apagada);
+    $st->execute();
+    $st->close();
+    wepoint_conexion($mysqli, true);
+}
+
+/** Cron: pregunta el estado. Si Wepoint no responde queda el último conocido. */
+function wepoint_conexion_actualizar(mysqli $mysqli): void
+{
+    if (!wepoint_configurado()) {
+        return;
+    }
+    [$http, , $resp] = wepoint_request('GET', '/api/v2/integraciones/caddy/conexion', null, 10);
+    $data = json_decode((string)$resp, true)['data'] ?? null;
+    if ($http === 200 && isset($data['activa'])) {
+        wepoint_conexion_guardar($mysqli, (bool)$data['activa']);
+    }
+}
+
+/** Lo acumulado desde que se apagó (lo que espera en la cola). @return array{ingresos:int,salidas:int} */
+function wepoint_cola_acumulada(mysqli $mysqli): array
+{
+    wepoint_cola_tabla($mysqli);
+    $apagada = wepoint_conexion($mysqli, true)['apagada_en'];
+    $r = ['ingresos' => 0, 'salidas' => 0];
+    if ($apagada === null) {
+        return $r;
+    }
+    $st = $mysqli->prepare("SELECT tipo, COUNT(*) AS n FROM wepoint_cola WHERE estado IN ('pendiente', 'error') AND creado_en >= ? GROUP BY tipo");
+    $st->bind_param('s', $apagada);
+    $st->execute();
+    foreach ($st->get_result()->fetch_all(MYSQLI_ASSOC) as $f) {
+        $r[$f['tipo'] === 'ingreso' ? 'ingresos' : 'salidas'] = (int)$f['n'];
+    }
+    $st->close();
+    return $r;
+}
+
+/** Al reactivar sin mandar lo acumulado: esas filas quedan "descartado" y no se envían. */
+function wepoint_cola_descartar(mysqli $mysqli): int
+{
+    wepoint_cola_tabla($mysqli);
+    $apagada = wepoint_conexion($mysqli, true)['apagada_en'];
+    if ($apagada === null) {
+        return 0;
+    }
+    $st = $mysqli->prepare("UPDATE wepoint_cola SET estado = 'descartado' WHERE estado IN ('pendiente', 'error') AND creado_en >= ?");
+    $st->bind_param('s', $apagada);
+    $st->execute();
+    $n = $st->affected_rows;
+    $st->close();
+    return $n;
+}
+
+/** Desde cuándo mirar lo que salió de Wepoint: lo normal, o desde que se apagó la conexión. */
+function wepoint_mirar_desde(mysqli $mysqli, int $dias = 3): string
+{
+    $normal = date('Y-m-d', strtotime("-$dias days"));
+    $apagada = wepoint_conexion($mysqli)['apagada_en'];
+    return $apagada !== null && substr($apagada, 0, 10) < $normal ? substr($apagada, 0, 10) : $normal;
+}
+
+/**
+ * Reactivada la conexión: lo que salió de Wepoint mientras estuvo apagada (órdenes manuales) deja de
+ * figurar en el depósito. Hecho esto, se olvida la fecha de apagado.
+ */
+function wepoint_conciliar_al_reactivar(mysqli $mysqli): int
+{
+    if (!wepoint_activo($mysqli) || wepoint_conexion($mysqli)['apagada_en'] === null) {
+        return 0;
+    }
+    wepoint_cola_tabla($mysqli);
+    [$http, , $resp] = wepoint_request('GET', '/api/v2/integraciones/caddy/bultos?' . http_build_query([
+        'vista' => 'salieron', 'desde' => wepoint_mirar_desde($mysqli), 'hasta' => date('Y-m-d'),
+    ]), null, 30);
+    $json = json_decode((string)$resp, true);
+    if ($http !== 200 || !is_array($json)) {
+        return 0; // se reintenta en el próximo cron
+    }
+    $envios = [];
+    foreach ($json['data']['bultos'] ?? [] as $b) {
+        if (!empty($b['id_caddy'])) {
+            $id = (int)$b['id_caddy'];
+            $envios[$id]['piezas'] = ($envios[$id]['piezas'] ?? 0) + 1;
+            $envios[$id]['nombre'] = $b['retiro'] ?? '';
+        }
+    }
+    $n = 0;
+    foreach ($envios as $idTc => $e) {
+        $tc = $mysqli->query("SELECT CodigoSeguimiento, Cantidad FROM TransClientes WHERE id = $idTc AND Eliminado = 0")->fetch_assoc();
+        $hay = $mysqli->query("SELECT 1 FROM wepoint_cola WHERE id_tc = $idTc AND tipo = 'salida' LIMIT 1")->fetch_row();
+        if (!$tc || $hay || $e['piezas'] < max(1, (int)$tc['Cantidad'])) {
+            continue;
+        }
+        $codigo = (string)$tc['CodigoSeguimiento'];
+        $st = $mysqli->prepare("INSERT IGNORE INTO wepoint_cola (tipo, id_tc, codigo, serie, fecha, estado, usuario, creado_en, enviado_en)
+            VALUES ('salida', ?, ?, ?, CURDATE(), 'ok', 'Wepoint', NOW(), NOW())");
+        $st->bind_param('iss', $idTc, $codigo, $codigo);
+        $st->execute();
+        $st->close();
+        wepoint_seguimiento($mysqli, $idTc, WEPOINT_ESTADO_SALIDA, 'Salió de Wepoint con la conexión desactivada' . ($e['nombre'] ? ": {$e['nombre']}" : ''));
+        $n++;
+    }
+    $mysqli->query("UPDATE wepoint_conexion SET apagada_en = NULL WHERE id = 1 AND activa = 1");
+    wepoint_conexion($mysqli, true);
+    return $n;
 }
 
 function wepoint_url(string $path): string
@@ -315,7 +456,8 @@ function wepoint_cola_tabla(mysqli $mysqli): void
 
 function wepoint_encolar(mysqli $mysqli, string $tipo, int $idTc, string $codigo, string $serie, string $usuario, ?string $recorrido = null, ?string $chofer = null): void
 {
-    if (!wepoint_activo()) {
+    // Con la conexión desactivada también se anota: se acumula hasta que se reactive
+    if (!wepoint_configurado()) {
         return;
     }
     wepoint_cola_tabla($mysqli);
@@ -356,10 +498,14 @@ function wepoint_cola_marcar(mysqli $mysqli, array $ids, bool $ok, ?string $mens
  */
 function wepoint_procesar_cola(mysqli $mysqli, int $limite = 300): array
 {
-    if (!wepoint_activo()) {
+    if (!wepoint_activo($mysqli)) {
         return ['ingresos' => 0, 'salidas' => 0, 'errores' => 0, 'apagado' => true];
     }
     wepoint_cola_tabla($mysqli);
+    // Se descartó el ingreso de un envío (al reactivar): su salida tampoco tiene nada que avisar
+    $mysqli->query("UPDATE wepoint_cola s SET s.estado = 'descartado' WHERE s.tipo = 'salida' AND s.estado IN ('pendiente', 'error')
+        AND EXISTS (SELECT 1 FROM (SELECT id_tc FROM wepoint_cola WHERE tipo = 'ingreso' AND estado = 'descartado') d WHERE d.id_tc = s.id_tc)
+        AND NOT EXISTS (SELECT 1 FROM (SELECT id_tc FROM wepoint_cola WHERE tipo = 'ingreso' AND estado = 'ok') o WHERE o.id_tc = s.id_tc)");
     $r = $mysqli->query("SELECT GET_LOCK('wepoint_cola', 0) AS ok")->fetch_assoc();
     if ((int)$r['ok'] !== 1) {
         return ['ingresos' => 0, 'salidas' => 0, 'errores' => 0, 'ocupado' => true];
@@ -594,7 +740,7 @@ function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $ob
 /** Lo que entró a Wepoint y todavía no tiene su línea en Seguimiento (lo de antes de que existiera). */
 function wepoint_seguimiento_pendientes(mysqli $mysqli, int $dias = 1): int
 {
-    if (!wepoint_activo()) {
+    if (!wepoint_activo($mysqli)) {
         return 0;
     }
     wepoint_cola_tabla($mysqli);
@@ -622,7 +768,7 @@ function wepoint_seguimiento_pendientes(mysqli $mysqli, int $dias = 1): int
  */
 function wepoint_conciliar_salidas(mysqli $mysqli, int $dias = 60): int
 {
-    if (!wepoint_activo()) {
+    if (!wepoint_activo($mysqli)) {
         return 0;
     }
     wepoint_cola_tabla($mysqli);
@@ -650,10 +796,10 @@ function wepoint_conciliar_salidas(mysqli $mysqli, int $dias = 60): int
 
 function wepoint_cerrar_retiros(mysqli $mysqli, int $dias = 3): int
 {
-    if (!wepoint_activo()) {
+    if (!wepoint_activo($mysqli)) {
         return 0;
     }
-    $desde = date('Y-m-d', strtotime("-$dias days"));
+    $desde = wepoint_mirar_desde($mysqli, $dias);
     [$http, , $resp] = wepoint_request('GET', '/api/v2/integraciones/caddy/bultos?' . http_build_query([
         'vista' => 'salieron', 'desde' => $desde, 'hasta' => date('Y-m-d'),
     ]), null, 20);

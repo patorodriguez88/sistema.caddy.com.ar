@@ -59,7 +59,7 @@ include_once "../Conexion/Conexioni.php";
 
                     <div class="alert alert-warning d-none" id="wp-apagado">
                         <i class="mdi mdi-power-plug-off-outline me-1"></i>
-                        La integración con Wepoint está <strong>apagada</strong> (WEPOINT_ACTIVO en Conexion/wepoint_config.php): CrossDocking no le avisa nada y la cola no se manda.
+                        La conexión con Wepoint está <strong>desactivada</strong> (Integraciones en Wepoint, o WEPOINT_ACTIVO en Conexion/wepoint_config.php): lo que se escanea se acumula en la cola y se manda cuando se reactive.
                     </div>
 
                     <!-- Indicadores -->

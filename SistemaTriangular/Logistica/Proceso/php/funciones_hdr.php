@@ -70,7 +70,7 @@ function wepointEnCard(int $recorrido, ?array $egreso, int $enDeposito): string
 
 if (isset($_POST['FormaDePago'])) {
   require_once __DIR__ . '/wepoint_egresos.php';
-  $wpActivo = wepoint_activo();
+  $wpActivo = wepoint_activo($mysqli);
   $wpEgresos = $wpActivo ? wepoint_egresos_para_hdr($mysqli) : [];
   $wpEnDeposito = $wpActivo ? wepoint_en_deposito_por_recorrido($mysqli) : [];
 

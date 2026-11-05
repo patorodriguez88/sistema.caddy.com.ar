@@ -14,11 +14,13 @@ $_SERVER['HTTP_HOST'] = $argv[1] ?? 'sistema.caddy.com.ar';
 require __DIR__ . '/../../../Conexion/conexion_publica.php';
 require __DIR__ . '/wepoint_lib.php';
 
+wepoint_conexion_actualizar($mysqli); // primero: lo que sigue depende de si la conexión está activa
 $conciliadas = wepoint_conciliar_salidas($mysqli);
 $resultado = wepoint_procesar_cola($mysqli);
 $resultado['salidas_conciliadas'] = $conciliadas;
 $resultado['seguimientos'] = wepoint_seguimiento_pendientes($mysqli);
 $resultado['retiros_cerrados'] = wepoint_cerrar_retiros($mysqli);
+$resultado['salieron_con_conexion_apagada'] = wepoint_conciliar_al_reactivar($mysqli); // al final: borra la fecha de apagado
 require_once __DIR__ . '/wepoint_egresos.php';
 $resultado['egresos'] = wepoint_egresos_sincronizar($mysqli);
 if ($resultado['ingresos'] || $resultado['salidas'] || $resultado['errores'] || $resultado['retiros_cerrados'] || $conciliadas || $resultado['seguimientos']) {
