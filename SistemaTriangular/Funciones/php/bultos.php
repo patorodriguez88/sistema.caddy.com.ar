@@ -122,6 +122,10 @@ function bultosAplicar(mysqli $mysqli, int $idTrans, int $nuevo, bool $tocarImpo
         if ($facturado) return ['error' => 'El envío ya está facturado: no se puede recalcular el importe. Elegí cambiar solo los bultos.'];
     }
 
+    // Antes de la transacción: un CREATE TABLE hace commit implícito y dejaría sin rollback lo anterior.
+    $mysqli->query("CREATE TABLE IF NOT EXISTS BultosCambios (id INT AUTO_INCREMENT PRIMARY KEY, idTransClientes INT NOT NULL,
+        CodigoSeguimiento VARCHAR(50) NOT NULL, Antes INT NOT NULL, Despues INT NOT NULL, ImporteAntes DECIMAL(12,2) NULL,
+        ImporteDespues DECIMAL(12,2) NULL, Usuario VARCHAR(100) NOT NULL, Fecha DATETIME NOT NULL, KEY idx_trans (idTransClientes))");
     $mysqli->begin_transaction();
     try {
         $st = $mysqli->prepare("UPDATE TransClientes SET Cantidad = ? WHERE id = ? LIMIT 1");
@@ -166,9 +170,6 @@ function bultosAplicar(mysqli $mysqli, int $idTrans, int $nuevo, bool $tocarImpo
             $st->close();
         }
 
-        $mysqli->query("CREATE TABLE IF NOT EXISTS BultosCambios (id INT AUTO_INCREMENT PRIMARY KEY, idTransClientes INT NOT NULL,
-            CodigoSeguimiento VARCHAR(50) NOT NULL, Antes INT NOT NULL, Despues INT NOT NULL, ImporteAntes DECIMAL(12,2) NULL,
-            ImporteDespues DECIMAL(12,2) NULL, Usuario VARCHAR(100) NOT NULL, Fecha DATETIME NOT NULL, KEY idx_trans (idTransClientes))");
         $st = $mysqli->prepare("INSERT INTO BultosCambios (idTransClientes, CodigoSeguimiento, Antes, Despues, ImporteAntes, ImporteDespues, Usuario, Fecha)
                                 VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
         $impAntes = $c['renglon'] ? $c['importeAntes'] : null;
