@@ -687,7 +687,7 @@ const WEPOINT_ESTADO_SALIDA = 'wepoint_out';  // "Salió del depósito" (interno
  * el destinatario lo ve lo decide Estados.Mostrar. Sin la migración cae a "Movimiento Interno".
  * Copia Visitas de la última fila (el webhook de Meli las toma de ahí). Una sola vez por texto.
  */
-function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $obs, ?string $cuando = null): bool
+function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $obs, ?string $cuando = null, string $usuario = 'Wepoint'): bool
 {
     $tc = $mysqli->query("SELECT CodigoSeguimiento, Recorrido, NumerodeOrden FROM TransClientes WHERE id = $idTc AND Eliminado = 0")->fetch_assoc();
     if (!$tc) {
@@ -718,7 +718,7 @@ function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $ob
     $st = $mysqli->prepare("INSERT INTO Seguimiento (Fecha, Hora, Usuario, Sucursal, CodigoSeguimiento, Observaciones,
         Entregado, Estado, Destino, Avisado, idCliente, Retirado, Visitas, idTransClientes, TimeStamp,
         Recorrido, Devuelto, Webhook, Estado_id, state_id, NumerodeOrden, status, Eliminado)
-        VALUES (DATE(?), DATE_FORMAT(?, '%H:%i'), 'Wepoint', '', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 0, 0, ?, ?, ?, ?, 0)");
+        VALUES (DATE(?), DATE_FORMAT(?, '%H:%i'), ?, '', ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, NOW(), ?, 0, 0, ?, ?, ?, ?, 0)");
     $cuando = $cuando ?: date('Y-m-d H:i:s');
     $nombreEstado = (string)$estado['Estado'];
     $destino = (string)($ultimo['Destino'] ?? '');
@@ -730,7 +730,7 @@ function wepoint_seguimiento(mysqli $mysqli, int $idTc, string $slug, string $ob
     $estadoId = (int)$estado['id'];
     $orden = (string)$tc['NumerodeOrden'];
     $status = (string)$estado['Slug'];
-    $st->bind_param('ssssssiiiiisiiss', $cuando, $cuando, $codigo, $obs, $nombreEstado, $destino, $avisado, $idCliente, $retirado, $visitas, $idTc, $recorrido, $estadoId, $estadoId, $orden, $status);
+    $st->bind_param('sssssssiiiiisiiss', $cuando, $cuando, $usuario, $codigo, $obs, $nombreEstado, $destino, $avisado, $idCliente, $retirado, $visitas, $idTc, $recorrido, $estadoId, $estadoId, $orden, $status);
     $ok = $st->execute();
     $st->close();
 

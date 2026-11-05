@@ -422,6 +422,10 @@ function cambiarRecorrido(mysqli $mysqli, string $cs, string $r, int $estadoIdIn
         $pedido = $bloqueo && wepoint_activo($mysqli)
             ? wepoint_egreso_pedir_cambio($mysqli, $idTc, $cs, (int)$recorridoAnterior, (int)$r, $estadoIdIn, $bloqueo, $Usuario)
             : null;
+        // Cambio de recorrido con el paquete todavía en el depósito de Wepoint: queda dicho en el movimiento.
+        if (!$notaSeguimiento && wepoint_configurado() && wepoint_en_deposito($mysqli, $idTc)) {
+            $notaSeguimiento = 'el paquete está en Wepoint';
+        }
         if ($bloqueo && (!$pedido || !empty($pedido['caida']))) {
             $avisarAWepoint = $bloqueo; // desactivada o sin responder: se mueve y se avisa después
         } elseif ($bloqueo) {
