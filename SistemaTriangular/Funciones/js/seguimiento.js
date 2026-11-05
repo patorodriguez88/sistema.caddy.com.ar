@@ -80,8 +80,15 @@ function renderTrackingHeader() {
 // #modal_seguimiento no existe en la página actual se inyecta acá mismo
 // (mismo markup que ya usan esas pantallas). openTrackingPanel() la llama
 // sola, así que cualquier pantalla que ya la use queda cubierta también.
+//
+// Hoja de Ruta, Sla, Redespachos y Seguimiento2 traen una versión vieja del bloque, sin la tabla de
+// movimientos o sin los botones de etiqueta y guía: se reemplaza por la completa.
 function ensureTrackingPanelMarkup() {
-  if (document.getElementById("modal_seguimiento")) return;
+  const actual = document.getElementById("modal_seguimiento");
+  if (actual) {
+    if (actual.querySelector("#seguimiento_tabla") && actual.querySelector("#tracking-label-link")) return;
+    actual.remove();
+  }
 
   var html =
     '<div id="modal_seguimiento" class="tracking-panel" aria-hidden="true">' +
