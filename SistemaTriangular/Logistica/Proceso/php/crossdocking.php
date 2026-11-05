@@ -598,6 +598,155 @@ function cd_estado(mysqli $mysqli, string $fecha): array
     ];
 }
 
+/**
+ * Lo que trae cada chofer, para controlarlo en el depósito: por recorrido y fecha de colecta, los
+ * bultos planificados, los que levantó (escaneados en la app de reparto, ColectaScans) y los ya
+ * recibidos. Suma los retiros que no son colecta ("Retirado del Cliente"), que vienen en el mismo
+ * camión. Si el chofer no escaneó, se controla contra lo planificado (y la tarjeta lo dice).
+ * Hoy se ve siempre; de días anteriores, solo lo que todavía falta recibir.
+ */
+function cd_colectas(mysqli $mysqli, ?string $hoy = null): array
+{
+    $hoy = $hoy ?: date('Y-m-d');
+    $desde = date('Y-m-d', strtotime("$hoy -3 days"));
+    $manana = date('Y-m-d', strtotime("$hoy +1 day")); // el chofer puede arrancar la colecta de mañana la noche anterior
+
+    $envios = []; // id de TransClientes => datos para la tarjeta
+    $tarjetas = [];
+    $tarjeta = function (string $fecha, int $recorrido) use (&$tarjetas) {
+        $clave = "$fecha|$recorrido";
+        $tarjetas[$clave] ??= ['fecha' => $fecha, 'recorrido' => $recorrido, 'planificados' => 0, 'levantados' => 0, 'retiros' => 0,
+            'recibidos' => 0, 'de_mas' => 0, 'faltan' => 0, 'chofer_escaneo' => true, 'faltantes' => [], 'no_levantados' => []];
+        return $clave;
+    };
+
+    // 1) Colectas: lo levantado sale de lo que el chofer escaneó en la app
+    $st = $mysqli->prepare("SELECT id, Fecha, Recorrido, CodigoSeguimiento, ColectaScans FROM Colecta
+        WHERE Eliminado = 0 AND Recorrido > 0 AND Fecha BETWEEN ? AND ?");
+    $st->bind_param('ss', $desde, $manana);
+    $st->execute();
+    $colectas = [];
+    foreach ($st->get_result()->fetch_all(MYSQLI_ASSOC) as $c) {
+        $payload = json_decode((string)$c['ColectaScans'], true);
+        $scans = is_array($payload['scans'] ?? null) ? $payload['scans'] : [];
+        $escaneo = $scans || !empty($payload['cierre']);
+        if ($c['Fecha'] > $hoy && !$escaneo) {
+            continue; // de mañana y todavía no arrancó
+        }
+        $have = [];
+        foreach ($scans as $sc) {
+            $base = trim((string)($sc['base'] ?? ''));
+            if ($base !== '') {
+                $have[$base] = ($have[$base] ?? 0) + (int)($sc['qty'] ?? 1);
+            }
+        }
+        $colectas[(int)$c['id']] = ['clave' => $tarjeta((string)$c['Fecha'], (int)$c['Recorrido']), 'padre' => (string)$c['CodigoSeguimiento'], 'escaneo' => $escaneo, 'have' => $have];
+    }
+    $st->close();
+
+    $campos = "tc.id, tc.CodigoSeguimiento, tc.Cantidad, tc.ClienteDestino, tc.LocalidadDestino, tc.RazonSocial, tc.Wepoint_status, tc.Entregado, tc.Devuelto";
+    if ($colectas) {
+        $hijos = $mysqli->query("SELECT $campos, tc.idColecta FROM TransClientes tc
+            WHERE tc.idColecta IN (" . implode(',', array_keys($colectas)) . ") AND tc.Eliminado = 0 AND tc.idClienteDestino <> 18587")->fetch_all(MYSQLI_ASSOC);
+        foreach ($hijos as $h) {
+            $c = $colectas[(int)$h['idColecta']];
+            if ($h['CodigoSeguimiento'] === $c['padre']) {
+                continue;
+            }
+            $cantidad = max(1, (int)$h['Cantidad']);
+            $base = trim(explode('_', (string)$h['CodigoSeguimiento'])[0]);
+            $levantado = $c['escaneo'] ? min($cantidad, $c['have'][$base] ?? 0) : $cantidad;
+            $tarjetas[$c['clave']]['planificados'] += $cantidad;
+            if (!$c['escaneo']) {
+                $tarjetas[$c['clave']]['chofer_escaneo'] = false;
+            }
+            $envios[(int)$h['id']] = $h + ['clave' => $c['clave'], 'cantidad' => $cantidad, 'levantado' => $levantado, 'tipo' => 'colecta'];
+        }
+    }
+
+    // 2) Retiros que no son colecta. Seguimiento no tiene índice por fecha: se miran sus últimas filas
+    // (por id) para que refrescar la pantalla no recorra toda la tabla.
+    $ultimoId = (int)($mysqli->query("SELECT MAX(id) FROM Seguimiento")->fetch_row()[0] ?? 0);
+    $st = $mysqli->prepare("SELECT sg.Fecha, sg.Recorrido, $campos FROM Seguimiento sg
+        JOIN TransClientes tc ON tc.id = sg.idTransClientes
+        WHERE sg.id > ? AND sg.Fecha BETWEEN ? AND ? AND sg.Eliminado = 0 AND sg.Recorrido > 0
+          AND (sg.status = 'pickup_ready' OR sg.Estado = 'Retirado del Cliente')
+          AND tc.Eliminado = 0 AND tc.Entregado = 0 AND tc.Devuelto = 0 AND tc.idClienteDestino <> 18587
+          AND (tc.idColecta IS NULL OR tc.idColecta = 0)
+        ORDER BY sg.id");
+    $piso = max(0, $ultimoId - 150000);
+    $st->bind_param('iss', $piso, $desde, $manana);
+    $st->execute();
+    foreach ($st->get_result()->fetch_all(MYSQLI_ASSOC) as $r) {
+        $cantidad = max(1, (int)$r['Cantidad']);
+        $clave = $tarjeta((string)$r['Fecha'], (int)$r['Recorrido']);
+        // Si se retiró dos veces queda el último retiro (ORDER BY id)
+        $envios[(int)$r['id']] = $r + ['clave' => $clave, 'cantidad' => $cantidad, 'levantado' => $cantidad, 'tipo' => 'retiro'];
+    }
+    $st->close();
+
+    // 3) Lo recibido en el depósito, en CrossDocking o desde Wepoint
+    $recibidos = [];
+    if ($envios) {
+        $filas = $mysqli->query("SELECT idTransClientes AS id, COUNT(DISTINCT COALESCE(bulto_sufijo, '-')) AS n FROM crossdocking_eventos
+            WHERE idTransClientes IN (" . implode(',', array_keys($envios)) . ") AND fecha >= '$desde' AND resultado IN ('ok','dup')
+            GROUP BY idTransClientes")->fetch_all(MYSQLI_ASSOC);
+        foreach ($filas as $f) {
+            $recibidos[(int)$f['id']] = (int)$f['n'];
+        }
+    }
+
+    foreach ($envios as $id => $e) {
+        $t = &$tarjetas[$e['clave']];
+        $recibido = min($e['cantidad'], max($recibidos[$id] ?? 0, $e['Wepoint_status'] === 'Ingreso' && $e['cantidad'] === 1 ? 1 : 0));
+        if ($e['tipo'] === 'retiro') {
+            $t['retiros'] += $e['cantidad'];
+        }
+        $t['levantados'] += $e['levantado'];
+        $t['recibidos'] += min($recibido, $e['levantado']);
+        $t['de_mas'] += max(0, $recibido - $e['levantado']);
+        $fila = ['codigo' => (string)$e['CodigoSeguimiento'], 'clienteDestino' => (string)$e['ClienteDestino'], 'localidadDestino' => (string)$e['LocalidadDestino'], 'origen' => (string)$e['RazonSocial'], 'tipo' => $e['tipo']];
+        // Entregado o devuelto sin pasar por el depósito: ya no se lo espera
+        $cerrado = (int)$e['Entregado'] === 1 || (int)$e['Devuelto'] === 1;
+        $falta = $cerrado ? 0 : max(0, $e['levantado'] - $recibido);
+        if ($falta > 0) {
+            $t['faltan'] += $falta;
+            $t['faltantes'][] = $fila + ['bultos' => $falta];
+        }
+        if (!$cerrado && $e['cantidad'] > $e['levantado'] + max(0, $recibido - $e['levantado'])) {
+            $t['no_levantados'][] = $fila + ['bultos' => $e['cantidad'] - $e['levantado'] - max(0, $recibido - $e['levantado'])];
+        }
+        unset($t);
+    }
+
+    // 4) Quién es el chofer de cada recorrido ese día. Lo de días anteriores solo si falta algo.
+    $orden = $mysqli->prepare("SELECT NombreChofer, Patente, NumerodeOrden FROM Logistica WHERE Recorrido = ? AND Fecha = ? AND Eliminado = 0 ORDER BY id DESC LIMIT 1");
+    $salida = [];
+    foreach ($tarjetas as $t) {
+        if ($t['fecha'] < $hoy && $t['faltan'] === 0) {
+            continue;
+        }
+        if ($t['levantados'] === 0 && $t['planificados'] === 0) {
+            continue;
+        }
+        $recorrido = (string)$t['recorrido'];
+        $orden->bind_param('ss', $recorrido, $t['fecha']);
+        $orden->execute();
+        $o = $orden->get_result()->fetch_assoc() ?: [];
+        $salida[] = $t + cd_info_recorrido($mysqli, $t['recorrido']) + [
+            'a_recibir' => $t['recibidos'] + $t['faltan'],
+            'chofer' => trim((string)($o['NombreChofer'] ?? '')) ?: null,
+            'patente' => trim((string)($o['Patente'] ?? '')) ?: null,
+            'orden' => !empty($o['NumerodeOrden']) ? (string)$o['NumerodeOrden'] : null,
+        ];
+    }
+    $orden->close();
+    // Lo que falta arriba, y después lo más nuevo
+    usort($salida, fn($a, $b) => [$b['faltan'] > 0, $b['fecha'], $a['recorrido']] <=> [$a['faltan'] > 0, $a['fecha'], $b['recorrido']]);
+
+    return ['ok' => true, 'hoy' => $hoy, 'colectas' => $salida];
+}
+
 // Quién escaneó último el envío ese día (operador de CrossDocking o "Wepoint: …")
 function cd_ultimo_usuario(mysqli $mysqli, string $fecha, int $idTC): string
 {
