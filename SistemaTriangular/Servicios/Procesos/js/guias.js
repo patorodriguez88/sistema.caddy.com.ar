@@ -217,7 +217,8 @@ function gsCargarHistorial(cs) {
         return;
       }
       // El último movimiento manda en el estado actual (al agregar o borrar uno se actualiza solo).
-      pintarUltimoEstadoBadge(filas[filas.length - 1].Estado);
+      // Las filas vienen por fecha y hora; el estado actual es el último que se cargó.
+      pintarUltimoEstadoBadge(filas.reduce((a, b) => (Number(b.id) > Number(a.id) ? b : a)).Estado);
       var guion = '<span class="text-muted-dash">—</span>';
       var ocultos = Math.max(0, filas.length - GS_HISTORIAL_VISIBLES);
       var html =

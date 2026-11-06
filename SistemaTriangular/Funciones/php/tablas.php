@@ -128,10 +128,12 @@ if (isset($_POST['Aforo_Tabla_Trans'])) {
 
 if (isset($_POST['Compruebo'])) {
 
+  // Por orden de carga, no por fecha: un Entregado cargado después con la hora real (más vieja) sigue siendo
+  // el estado actual, aunque en el historial quede antes que el En Origen.
   // data = último movimiento, el que se muestra. control = último que cambia el estado del envío, el
   // que tiene que coincidir con TransClientes.Estado: los movimientos internos (cambio de recorrido y
   // depósito de Wepoint) no lo cambian, y "No se pudo entregar" se sigue contando en los cierres de orden.
-  $st = $mysqli->prepare("SELECT Estado FROM Seguimiento WHERE CodigoSeguimiento = ? AND IFNULL(Eliminado, 0) = 0 ORDER BY Fecha DESC, Hora DESC, id DESC");
+  $st = $mysqli->prepare("SELECT Estado FROM Seguimiento WHERE CodigoSeguimiento = ? AND IFNULL(Eliminado, 0) = 0 ORDER BY id DESC");
   $st->bind_param('s', $_POST['CodigoSeguimiento']);
   $st->execute();
   $estados = array_column($st->get_result()->fetch_all(MYSQLI_ASSOC), 'Estado');
