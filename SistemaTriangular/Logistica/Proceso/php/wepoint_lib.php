@@ -730,10 +730,20 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
 /** Lo que cargó el chofer de un recorrido: sale del depósito de Wepoint. */
 function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas): array
 {
+    // Los datos del repartidor para la orden de envío: la orden de ese recorrido hoy
+    $st = $mysqli->prepare("SELECT NombreChofer, Patente, NumerodeOrden FROM Logistica WHERE Recorrido = ? AND Eliminado = 0 AND Fecha <= CURDATE() ORDER BY Fecha DESC, id DESC LIMIT 1");
+    $st->bind_param('s', $recorrido);
+    $st->execute();
+    $orden = $st->get_result()->fetch_assoc() ?: [];
+    $st->close();
+    $chofer = trim((string)($filas[0]['chofer'] ?? '')) ?: trim((string)($orden['NombreChofer'] ?? ''));
+
     [$http, $err, $resp] = wepoint_request('POST', '/api/v2/integraciones/caddy/salidas', [
         'codigos' => array_values(array_unique(array_column($filas, 'codigo'))),
         'recorrido' => $recorrido,
-        'chofer' => $filas[0]['chofer'] ?? null,
+        'chofer' => $chofer !== '' ? mb_substr($chofer, 0, 100) : null,
+        'patente' => trim((string)($orden['Patente'] ?? '')) !== '' ? mb_substr(trim($orden['Patente']), 0, 20) : null,
+        'orden' => !empty($orden['NumerodeOrden']) ? (string)$orden['NumerodeOrden'] : null,
     ], 30);
     $json = json_decode((string)$resp, true);
 
