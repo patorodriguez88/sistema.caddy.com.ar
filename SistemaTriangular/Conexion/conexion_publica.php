@@ -2,6 +2,8 @@
 // Conexión a la base para pantallas públicas (sin sesión iniciada), como recuperación
 // de contraseña. Mismo criterio de detección de entorno que usa conect.php.
 
+date_default_timezone_set('America/Argentina/Cordoba'); // lo usan también los cron: toda fecha y hora que se graba es la de Córdoba
+
 $host = strtolower($_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? ''));
 $host = preg_replace('/:\d+$/', '', $host);
 $host = preg_replace('/^www\./', '', $host);
@@ -43,3 +45,4 @@ if ($mysqli->connect_error) {
 }
 
 $mysqli->set_charset("utf8");
+$mysqli->query("SET time_zone = '-03:00'");

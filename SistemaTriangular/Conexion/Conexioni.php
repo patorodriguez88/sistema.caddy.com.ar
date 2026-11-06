@@ -42,6 +42,7 @@ class Conexion
 
     public function __construct()
     {
+        date_default_timezone_set('America/Argentina/Cordoba'); // el servidor está en UTC: toda fecha y hora que se graba es la de Córdoba
         $datos = $this->cargarDatosConexion();
 
         $this->server   = $datos['server'] ?? 'localhost';
