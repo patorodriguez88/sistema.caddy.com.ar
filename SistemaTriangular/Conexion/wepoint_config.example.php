@@ -17,3 +17,7 @@ define('WEPOINT_ACTIVO', false);
 // Recepción desde Wepoint (Logistica/Proceso/php/wepoint_entrada.php): token que Wepoint manda para
 // escanear como en CrossDocking. Va también en CADDY_SISTEMA_TOKEN de la API de Wepoint.
 define('WEPOINT_ENTRADA_TOKEN', 'UN_TOKEN_LARGO_Y_SECRETO');
+
+// Colecta confirmada → orden de ingreso previa. Sin definir: solo habilitado en ENTORNO=sandbox.
+// Activar en producción únicamente después de validar ambos sistemas en testing.
+// define('WEPOINT_COLECTAS_ACTIVAS', false);
