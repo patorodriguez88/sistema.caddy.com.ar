@@ -2,6 +2,7 @@
 include_once "../../../Conexion/Conexioni.php";
 include_once "../../../Funciones/generarCodigo.php";
 include_once __DIR__ . "/../../../Funciones/origen_envio.php";
+require_once __DIR__ . "/../../../Logistica/Proceso/php/wepoint_colectas.php";
 
 mysqli_set_charset($mysqli, "utf8");
 date_default_timezone_set('America/Argentina/Buenos_Aires');
@@ -409,6 +410,7 @@ function generarColecta(mysqli $mysqli, $id_colecta, ?array $idsHijos = null, ?f
             // (Colecta.CodigoSeguimiento ya quedó guardado en el reclamo atómico
             // de más arriba — no hace falta un segundo UPDATE acá.)
 
+            wepoint_colecta_notificar($mysqli, $id_colecta, true);
             return array('success' => 1, 'codigo' => $codigo_seguimiento, 'idPadre' => $idTransClientes);
         } catch (\Throwable $e) {
             $idTransClientesLog = isset($idTransClientes) ? $idTransClientes : null;
@@ -454,6 +456,7 @@ if ($_POST['ActualizaRecorrido'] == 1) {
     for ($i = 0; $i < count($id); $i++) {
 
         $SQL_COLECTA = $mysqli->query("UPDATE Colecta SET Recorrido='$recorrido' WHERE id='$id[$i]'");
+        wepoint_colecta_notificar($mysqli, (int) $id[$i], true);
     }
     echo json_encode(array('success' => 1));
 }
@@ -581,6 +584,7 @@ function colectaManualActualizar(mysqli $mysqli, array $c): int
         $st->bind_param('si', $json, $idColecta);
         $st->execute();
     }
+    wepoint_colecta_notificar($mysqli, $idColecta, true);
     return $cantidad;
 }
 

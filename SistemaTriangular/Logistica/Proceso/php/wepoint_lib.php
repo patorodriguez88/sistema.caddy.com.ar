@@ -124,6 +124,11 @@ function wepoint_cola_descartar(mysqli $mysqli): int
     $st->execute();
     $n = $st->affected_rows;
     $st->close();
+    if ($mysqli->query("SHOW TABLES LIKE 'wepoint_colectas'")->fetch_row()) {
+        $st = $mysqli->prepare("UPDATE wepoint_colectas SET estado = 'descartado' WHERE estado IN ('pendiente', 'error') AND actualizado_en >= ?");
+        $st->bind_param('s', $apagada); $st->execute();
+        $n += $st->affected_rows; $st->close();
+    }
     return $n;
 }
 
@@ -662,6 +667,24 @@ function wepoint_agrupar(array $filas, string $campo): array
 /** Ingresos escaneados un mismo día: aviso previo de cada envío + recibir las piezas leídas. */
 function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): array
 {
+    require_once __DIR__ . '/wepoint_colectas.php';
+    if (wepoint_colectas_habilitadas()) {
+        $idsTc = implode(',', array_map(fn ($f) => (int) $f['id_tc'], $filas));
+        $idsColecta = array_column($mysqli->query("SELECT DISTINCT idColecta FROM TransClientes WHERE id IN ($idsTc) AND idColecta > 0")->fetch_all(MYSQLI_ASSOC), 'idColecta');
+        wepoint_colectas_procesar($mysqli, null, $idsColecta);
+        // Si todavía falta publicar la colecta, no crear un ingreso diario con sus escaneos.
+        $idsTc = implode(',', array_map(fn ($f) => (int) $f['id_tc'], $filas));
+        $bloqueados = $mysqli->query("SELECT TC.id FROM TransClientes TC JOIN wepoint_colectas W ON W.id_colecta = TC.idColecta
+            WHERE TC.id IN ($idsTc) AND W.estado IN ('pendiente', 'error')")->fetch_all(MYSQLI_ASSOC);
+        $bloqueados = array_flip(array_column($bloqueados, 'id'));
+        $esperan = array_values(array_filter($filas, fn ($f) => isset($bloqueados[$f['id_tc']])));
+        if ($esperan) {
+            wepoint_cola_marcar($mysqli, array_column($esperan, 'id'), false, 'Esperando sincronización de la orden de ingreso de la colecta');
+            $resto = array_values(array_filter($filas, fn ($f) => !isset($bloqueados[$f['id_tc']])));
+            $r = $resto ? wepoint_mandar_ingresos($mysqli, $fecha, $resto) : ['ok' => 0, 'error' => 0];
+            return ['ok' => $r['ok'], 'error' => $r['error'] + count($esperan)];
+        }
+    }
     $ids = array_values(array_unique(array_map(fn($f) => (int)$f['id_tc'], $filas)));
     $envios = $mysqli->query("SELECT " . wepoint_campos_tc() . " FROM TransClientes TC
         LEFT JOIN Clientes CO ON CO.id = TC.idClienteOrigen WHERE TC.id IN (" . implode(',', $ids) . ")")->fetch_all(MYSQLI_ASSOC);

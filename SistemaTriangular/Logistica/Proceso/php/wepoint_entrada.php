@@ -68,6 +68,15 @@ if (($in['accion'] ?? '') === 'trazabilidad') {
 
 define('CD_COMO_LIBRERIA', true);
 require_once __DIR__ . '/crossdocking.php';
+// Diagnóstico autenticado del nuevo preaviso; no crea tablas ni procesa la cola.
+if (($in['accion'] ?? '') === 'colectas_integracion') {
+    require_once __DIR__ . '/wepoint_colectas.php';
+    $instalada = (bool) $mysqli->query("SHOW TABLES LIKE 'wepoint_colectas'")->fetch_row();
+    $colectas = $instalada ? $mysqli->query("SELECT id_colecta, version, estado, nro_ingreso, ultimo_error, actualizado_en, enviado_en
+        FROM wepoint_colectas ORDER BY actualizado_en DESC LIMIT 20")->fetch_all(MYSQLI_ASSOC) : [];
+    $responder(200, ['ok' => true, 'habilitada' => wepoint_colectas_habilitadas(), 'wepoint_url' => wepoint_config()['url'], 'instalada' => $instalada, 'colectas' => $colectas]);
+}
+
 // Tablero del día (lo mismo que muestra la pantalla de CrossDocking)
 if (($in['accion'] ?? '') === 'estado') {
     $responder(200, cd_estado($mysqli, (string)($in['fecha'] ?? '')));
@@ -86,6 +95,20 @@ if (($in['accion'] ?? '') === 'controlar') {
 $r = cd_escanear($mysqli, (string)($in['codigo'] ?? ''), (int)($in['proveedorForzado'] ?? 0));
 if (empty($r['ok'])) {
     $responder(200, $r);
+}
+
+// Antes de devolver un alta al escáner de Wepoint, la colecta tiene que estar publicada.
+// Si falló el preaviso, el escaneo físico queda en cola y se recibe cuando se resuelve el error.
+require_once __DIR__ . '/wepoint_colectas.php';
+if (wepoint_colectas_habilitadas()) {
+    $idEntrada = (int) $r['idTransClientes'];
+    $colectaEntrada = $mysqli->query("SELECT idColecta FROM TransClientes WHERE id = $idEntrada")->fetch_assoc();
+    wepoint_colectas_procesar($mysqli, null, [(int) ($colectaEntrada['idColecta'] ?? 0)]);
+    $pendiente = $mysqli->query("SELECT W.estado FROM TransClientes TC JOIN wepoint_colectas W ON W.id_colecta = TC.idColecta
+        WHERE TC.id = $idEntrada AND W.estado IN ('pendiente', 'error')")->fetch_assoc();
+    if ($pendiente) {
+        $responder(200, ['ok' => false, 'error' => 'COLECTA_PENDIENTE', 'mensaje' => 'Escaneo guardado. Falta sincronizar la orden de ingreso de la colecta; se reintentará por cola.']);
+    }
 }
 
 // El aviso del envío, igual que lo arma la cola (wepoint_mandar_ingresos)
