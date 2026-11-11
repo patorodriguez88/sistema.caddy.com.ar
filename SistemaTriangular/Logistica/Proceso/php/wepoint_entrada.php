@@ -74,7 +74,13 @@ if (($in['accion'] ?? '') === 'colectas_integracion') {
     $instalada = (bool) $mysqli->query("SHOW TABLES LIKE 'wepoint_colectas'")->fetch_row();
     $colectas = $instalada ? $mysqli->query("SELECT id_colecta, version, estado, nro_ingreso, ultimo_error, actualizado_en, enviado_en
         FROM wepoint_colectas ORDER BY actualizado_en DESC LIMIT 20")->fetch_all(MYSQLI_ASSOC) : [];
-    $responder(200, ['ok' => true, 'habilitada' => wepoint_colectas_habilitadas(), 'wepoint_url' => wepoint_config()['url'], 'instalada' => $instalada, 'colectas' => $colectas]);
+    $comprobacion = [];
+    if (!empty($in['verificar_api'])) {
+        // GET de un ID inexistente: 404 confirma ruta, token y empresa sin crear órdenes.
+        [$http] = wepoint_request('GET', '/api/v2/integraciones/caddy/colectas/0', null, 10);
+        $comprobacion['api_preavisos_http'] = $http;
+    }
+    $responder(200, ['ok' => true, 'habilitada' => wepoint_colectas_habilitadas(), 'wepoint_url' => wepoint_config()['url'], 'instalada' => $instalada, 'colectas' => $colectas] + $comprobacion);
 }
 
 // Tablero del día (lo mismo que muestra la pantalla de CrossDocking)
