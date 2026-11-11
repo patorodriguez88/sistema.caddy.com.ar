@@ -54,6 +54,17 @@ $st->execute();
 $idProyecto = (int) ($st->get_result()->fetch_assoc()['id'] ?? 0);
 if (!$idProyecto) tb_responder(['success' => 0, 'error' => 'No existe el proyecto ' . TB_PROYECTO . '.'], 500);
 
+// Proyectos donde además se puede comentar, adjuntar, leer adjuntos y completar (crear sigue siendo solo
+// en TB_PROYECTO). Caddy Generales: ahí operaciones carga los reclamos (2026-11-11, tarea 43).
+$idsPermitidos = [$idProyecto];
+foreach (['Caddy Generales'] as $nombreExtra) {
+    $st = $mysqli->prepare("SELECT id FROM Proyectos WHERE Nombre = ? AND Eliminado = 0 ORDER BY id LIMIT 1");
+    $st->bind_param('s', $nombreExtra);
+    $st->execute();
+    $idExtra = (int) ($st->get_result()->fetch_assoc()['id'] ?? 0);
+    if ($idExtra) $idsPermitidos[] = $idExtra;
+}
+
 $usuario = TB_USUARIO;
 switch ($_POST['accion'] ?? '') {
     case 'crear':
@@ -100,7 +111,7 @@ switch ($_POST['accion'] ?? '') {
         $texto = trim((string) ($_POST['texto'] ?? ''));
         $autor = tb_usuario($db, 'autor');
         $t = tk_tarea($db, $id);
-        if (!$t || (int) $t['idProyecto'] !== $idProyecto) tb_responder(['success' => 0, 'error' => 'La tarea no existe o no es del proyecto ' . TB_PROYECTO . '.']);
+        if (!$t || !in_array((int) $t['idProyecto'], $idsPermitidos, true)) tb_responder(['success' => 0, 'error' => 'La tarea no existe o no es de un proyecto habilitado.']);
         if ($texto === '') tb_responder(['success' => 0, 'error' => 'Falta el texto.']);
         $st = $mysqli->prepare("INSERT INTO ProyectosTareas_comentarios (idTarea, idUsuario, Comentario) VALUES (?,?,?)");
         $st->bind_param('iis', $id, $autor, $texto);
@@ -114,7 +125,7 @@ switch ($_POST['accion'] ?? '') {
         $id = (int) ($_POST['id'] ?? 0);
         $autor = tb_usuario($db, 'autor');
         $t = tk_tarea($db, $id);
-        if (!$t || (int) $t['idProyecto'] !== $idProyecto) tb_responder(['success' => 0, 'error' => 'La tarea no existe o no es del proyecto ' . TB_PROYECTO . '.']);
+        if (!$t || !in_array((int) $t['idProyecto'], $idsPermitidos, true)) tb_responder(['success' => 0, 'error' => 'La tarea no existe o no es de un proyecto habilitado.']);
         $f = $_FILES['archivo'] ?? null;
         if (!$f || $f['error'] !== UPLOAD_ERR_OK) tb_responder(['success' => 0, 'error' => 'No llegó el archivo.']);
         $nombre = mb_substr(trim(str_replace(["\0", '/', '\\'], '', (string) $f['name'])) ?: 'archivo', 0, 255);
@@ -142,14 +153,15 @@ switch ($_POST['accion'] ?? '') {
 
     case 'descargar':
         $idAdj = (int) ($_POST['idAdjunto'] ?? 0);
+        $listaIds = implode(',', array_map('intval', $idsPermitidos));
         $st = $mysqli->prepare("SELECT a.idTarea, a.NombreOriginal, a.Archivo, a.Mime FROM ProyectosTareas_adjuntos a
                                 JOIN ProyectosTareas t ON t.id = a.idTarea AND t.Eliminado = 0
-                                WHERE a.id = ? AND a.Eliminado = 0 AND t.idProyecto = ?");
-        $st->bind_param('ii', $idAdj, $idProyecto);
+                                WHERE a.id = ? AND a.Eliminado = 0 AND t.idProyecto IN ($listaIds)");
+        $st->bind_param('i', $idAdj);
         $st->execute();
         $a = $st->get_result()->fetch_assoc();
         $ruta = $a ? __DIR__ . '/../../Tareas/adjuntos/' . (int) $a['idTarea'] . '/' . basename($a['Archivo']) : '';
-        if (!$a || !is_file($ruta)) tb_responder(['success' => 0, 'error' => 'El adjunto no existe o no es del proyecto ' . TB_PROYECTO . '.'], 404);
+        if (!$a || !is_file($ruta)) tb_responder(['success' => 0, 'error' => 'El adjunto no existe o no es de un proyecto habilitado.'], 404);
         header('Content-Type: ' . $a['Mime']);
         header('Content-Disposition: inline; filename="' . str_replace('"', '', $a['NombreOriginal']) . '"');
         header('Content-Length: ' . filesize($ruta));
@@ -159,8 +171,8 @@ switch ($_POST['accion'] ?? '') {
     case 'completar':
         $id = (int) ($_POST['id'] ?? 0);
         $st = $mysqli->prepare("UPDATE ProyectosTareas SET Completada = 1, CompletadaFecha = NOW(), CompletadaPor = ?, Actualizada = NOW()
-                                WHERE id = ? AND idProyecto = ? AND Eliminado = 0 AND Completada = 0");
-        $st->bind_param('iii', $usuario, $id, $idProyecto);
+                                WHERE id = ? AND idProyecto IN (" . implode(',', array_map('intval', $idsPermitidos)) . ") AND Eliminado = 0 AND Completada = 0");
+        $st->bind_param('ii', $usuario, $id);
         $st->execute();
         tb_responder(['success' => 1, 'cambiada' => $st->affected_rows]);
 
