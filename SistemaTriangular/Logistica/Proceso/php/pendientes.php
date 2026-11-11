@@ -315,6 +315,15 @@ if (isset($_POST['ActualizarDireccion'])) {
                       Observaciones='$_POST[obs]',ActivarCoordenadas='$switch' WHERE id='$_POST[id]' LIMIT 1");
 
   $sql0 = $mysqli->query("UPDATE `TransClientes` SET DomicilioDestino='$_POST[Direccion]',Observaciones='$_POST[obs]' WHERE idClienteDestino='$_POST[id]' AND CodigoSeguimiento='$_POST[cs]' LIMIT 1");
+  // La localidad del envío también: antes quedaba la vieja aunque el operador corrigiera la ciudad (tarea 43, UFCUONIMR).
+  $ciudadNueva = trim((string) ($_POST['ciudad'] ?? ''));
+  if ($ciudadNueva !== '') {
+    $stLoc = $mysqli->prepare("UPDATE TransClientes SET LocalidadDestino = ? WHERE idClienteDestino = ? AND CodigoSeguimiento = ? LIMIT 1");
+    $idCli = (string) $_POST['id'];
+    $csLoc = (string) $_POST['cs'];
+    $stLoc->bind_param('sss', $ciudadNueva, $idCli, $csLoc);
+    $stLoc->execute();
+  }
 
   $sql1 = $mysqli->query("UPDATE `HojaDeRuta` SET Localizacion='$_POST[Direccion]' WHERE Seguimiento='$_POST[cs]' AND idCliente='$_POST[id]' LIMIT 1");
 

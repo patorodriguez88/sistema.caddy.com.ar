@@ -18,6 +18,34 @@ if (isset($_GET['Recorrido_t'])) {
 
 
 
+// Localidad que mandó el cliente, validada contra nuestra tabla Localidades por el CP (2026-11-11, tarea 43,
+// IGALFER). Devuelve el nombre de Localidades si Ciudad y CP coinciden entre sí (ej. BERROTARAN + 5817 ->
+// "Berrotaran"; CAPITAL/CORDOBA + 5000..5023 -> "Córdoba"), o '' si no se puede confiar en ese par.
+// Los que mandan Ciudad y CP coherentes no necesitan que Google les "corrija" la localidad: con una
+// dirección corta ("Sarmiento 245") Google elegía la calle de otra ciudad y el envío quedaba mal.
+function localidadValidadaPorCp(mysqli $mysqli, string $ciudad, string $cp): string
+{
+    $cp = preg_replace('/\D/', '', $cp);
+    $norm = function ($s) {
+        $s = mb_strtolower(trim((string) $s), 'UTF-8');
+        $s = strtr($s, ['á' => 'a', 'é' => 'e', 'í' => 'i', 'ó' => 'o', 'ú' => 'u', 'ü' => 'u', 'ñ' => 'n']);
+        return preg_replace('/[^a-z0-9]+/', ' ', $s);
+    };
+    $ciudadN = trim($norm($ciudad));
+    if ($cp === '' || $ciudadN === '') return '';
+    if ((int) $cp >= 5000 && (int) $cp <= 5023) {
+        return in_array($ciudadN, ['cordoba', 'capital', 'cordoba capital', 'cba', 'ciudad de cordoba'], true) ? 'Córdoba' : '';
+    }
+    $st = $mysqli->prepare("SELECT Localidad FROM Localidades WHERE Cp = ?");
+    $st->bind_param('s', $cp);
+    $st->execute();
+    $res = $st->get_result();
+    while ($l = $res->fetch_assoc()) {
+        if (trim($norm($l['Localidad'])) === $ciudadN) return $l['Localidad'];
+    }
+    return '';
+}
+
 //FUNCION PARA GENERAR CODIGOS ALEATORIOS DE 6 DIGIGITOS
 function generarCodigo($longitud)
 {
@@ -242,7 +270,16 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
             require_once('../Google/geolocalizar.php');
 
-            $datosmapa = geolocalizar($row['Direccion']);
+            // Si Ciudad y CP del cliente son coherentes (tabla Localidades), se respetan: se geolocaliza la
+            // dirección DENTRO de esa ciudad y no se pisan Ciudad/CP con lo que adivine Google (tarea 43).
+            $localidadCliente = localidadValidadaPorCp($mysqli, (string) ($row['Ciudad'] ?? ''), (string) ($row['CodigoPostal'] ?? ''));
+            $consultaGeo = $row['Direccion'];
+            if ($localidadCliente !== '' && mb_stripos($consultaGeo, $localidadCliente) === false) {
+                $consultaGeo .= ', ' . $localidadCliente . ', Córdoba, Argentina';
+            }
+            if ($localidadCliente !== '') $_SESSION['LocalidadDestino_t'] = $localidadCliente;
+
+            $datosmapa = geolocalizar($consultaGeo);
             $latitud = $datosmapa[0] ?? '';
             $longitud = $datosmapa[1] ?? '';
 
@@ -275,11 +312,16 @@ for ($i = 0; $i < count($idPreVenta); $i++) {
 
                 $sets   = "Latitud='" . $mysqli->real_escape_string($latitud) . "',"
                         . "Longitud='" . $mysqli->real_escape_string($longitud) . "'";
-                if ($cpGeo !== '')  $sets .= ",CodigoPostal='" . $mysqli->real_escape_string($cpGeo) . "'";
-                if ($locGeo !== '' && $provinciaAceptable) $sets .= ",Ciudad='" . $mysqli->real_escape_string($locGeo) . "'";
+                if ($localidadCliente !== '') {
+                    // Ciudad y CP del cliente validados: se dejan, solo se normaliza el nombre de la ciudad.
+                    $sets .= ",Ciudad='" . $mysqli->real_escape_string($localidadCliente) . "'";
+                } else {
+                    if ($cpGeo !== '')  $sets .= ",CodigoPostal='" . $mysqli->real_escape_string($cpGeo) . "'";
+                    if ($locGeo !== '' && $provinciaAceptable) $sets .= ",Ciudad='" . $mysqli->real_escape_string($locGeo) . "'";
+                    // reflejar en la sesion lo que se va a usar en el remito / carga
+                    if ($locGeo !== '' && $provinciaAceptable) $_SESSION['LocalidadDestino_t'] = $locGeo;
+                }
                 $mysqli->query("UPDATE Clientes SET $sets WHERE id='$idClienteDestinoPreVenta' LIMIT 1");
-                // reflejar en la sesion lo que se va a usar en el remito / carga
-                if ($locGeo !== '' && $provinciaAceptable) $_SESSION['LocalidadDestino_t'] = $locGeo;
             }
         }
 
