@@ -5,12 +5,14 @@ require_once __DIR__ . '/wepoint_lib.php';
 
 function wepoint_colectas_habilitadas(): bool
 {
-    // Primera etapa: solamente sandbox. Producción necesita activación explícita posterior.
-    return wepoint_configurado() && (defined('WEPOINT_COLECTAS_ACTIVAS')
-        ? (bool) WEPOINT_COLECTAS_ACTIVAS
-        : ((defined('ENTORNO') && ENTORNO === 'sandbox')
-            || strtolower($_SERVER['HTTP_HOST'] ?? '') === 'sandbox.sistema.caddy.com.ar')
-            && wepoint_config()['url'] === 'https://testing.wepoint.ar');
+    if (!wepoint_configurado()) return false;
+    // El interruptor explícito conserva prioridad para poder desactivar el flujo.
+    if (defined('WEPOINT_COLECTAS_ACTIVAS')) return (bool) WEPOINT_COLECTAS_ACTIVAS;
+    $host = preg_replace('/^www\.|:\d+$/', '', strtolower($_SERVER['HTTP_HOST'] ?? ''));
+    $sandbox = (defined('ENTORNO') && ENTORNO === 'sandbox') || $host === 'sandbox.sistema.caddy.com.ar';
+    $produccion = (defined('ENTORNO') && ENTORNO === 'produccion') || $host === 'sistema.caddy.com.ar';
+    return ($sandbox && wepoint_config()['url'] === 'https://testing.wepoint.ar')
+        || ($produccion && wepoint_config()['url'] === 'https://sistema.wepoint.ar');
 }
 
 function wepoint_colectas_tablas(mysqli $mysqli): void
