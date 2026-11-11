@@ -129,8 +129,62 @@ function notifTareas(mysqli $mysqli): array
     ]];
 }
 
+// Órdenes de salida que siguen 'Cargada' cuando ya deberían estar cerradas (2026-11-11): el
+// chofer arrancó y ya no le quedan paradas abiertas, o la orden es de un día anterior. Nunca se
+// cierran solas (el cierre carga el recorrido en la cuenta corriente y pide km de regreso):
+// se avisa acá y en la app del chofer. Mientras sigan abiertas, el vehículo no puede salir con
+// otra orden.
+function notifOrdenesSinCerrar(mysqli $mysqli): array
+{
+    try {
+        $res = $mysqli->query("
+            SELECT l.NumerodeOrden, l.Recorrido, l.NombreChofer, l.Fecha, l.HoraSalidaReal,
+                   (SELECT COUNT(*) FROM HojaDeRuta h
+                      JOIN TransClientes t ON t.id = h.idTransClientes AND t.Eliminado = 0
+                     WHERE h.NumerodeOrden = l.NumerodeOrden AND h.Recorrido = l.Recorrido
+                       AND h.Eliminado = 0 AND h.Devuelto = 0
+                       AND h.Estado = 'Abierto' AND t.Entregado = 0) AS Abiertas
+            FROM Logistica l
+            WHERE l.Eliminado = 0 AND l.Estado = 'Cargada' AND IFNULL(l.idUsuarioChofer, 0) > 0
+            HAVING Fecha < CURDATE() OR (HoraSalidaReal IS NOT NULL AND Abiertas = 0)
+            ORDER BY l.Fecha, l.NumerodeOrden
+        ");
+    } catch (Throwable $e) {
+        return [];
+    }
+    $filas = $res ? $res->fetch_all(MYSQLI_ASSOC) : [];
+    if (!$filas) return [];
+
+    $hoy = date('Y-m-d');
+    $items = [];
+    $hayViejas = false;
+    foreach (array_slice($filas, 0, 8) as $o) {
+        $vieja = $o['Fecha'] < $hoy;
+        $hayViejas = $hayViejas || $vieja;
+        $sub = $vieja ? 'Del ' . date('d/m', strtotime($o['Fecha'])) . ' · ' : '';
+        $sub .= ((int) $o['Abiertas'] === 0) ? 'sin paradas pendientes' : ((int) $o['Abiertas'] . ' parada(s) abierta(s)');
+        $items[] = [
+            'titulo' => 'H' . $o['NumerodeOrden'] . ' · Rec. ' . $o['Recorrido'] . ' · ' . trim((string) $o['NombreChofer']),
+            'subtitulo' => $sub,
+            'urgente' => $vieja,
+            'link' => '/SistemaTriangular/Logistica/Ordenes',
+        ];
+    }
+
+    return [[
+        'tipo' => 'ordenes_sin_cerrar',
+        'icono' => 'ri-road-map-line',
+        'color' => $hayViejas ? 'bg-danger' : 'bg-warning',
+        'titulo' => 'Órdenes de salida sin cerrar',
+        'cantidad' => count($filas),
+        'items' => $items,
+        'link' => '/SistemaTriangular/Logistica/Ordenes',
+    ]];
+}
+
 $notificaciones = array_merge(
     notifTareas($mysqli),
+    notifOrdenesSinCerrar($mysqli),
     notifEntregasFallidasHoy($mysqli),
     notifWebhooksFallidos($mysqli)
 );
