@@ -241,8 +241,17 @@ if ($_POST['Facturar'] == 1) {
 
         $Observ = $Observ . ' | ' . $Dato['NumeroComprobante'];
 
-        $sqlCtasctesE = "UPDATE Ctasctes SET idFacturado='$idFacturado',Facturado=1, NumeroFactura='$NumeroComprobante' WHERE Haber=0 AND NumeroVenta='$Dato[NumeroComprobante]' AND idCliente='$id' AND Eliminado=0 LIMIT 1";
-        $mysqli->query($sqlCtasctesE); // ACTUALIZO LOS REMITOS X EL TIPO DE COMPROBANTE
+        // Se vincula la línea de ESTE envío (idTransClientes). Antes se buscaba por NumeroVenta con LIMIT 1 y,
+        // cuando varios envíos comparten número de remito, solo se vinculaba uno: los otros seguían "sin
+        // facturar" en la cuenta corriente y se cobraban dos veces en el saldo (proforma 1791 Dinter, 2026-11-12).
+        $idTCVinculo = intval($OrdenN[$i]);
+        $mysqli->query("UPDATE Ctasctes SET idFacturado='$idFacturado',Facturado=1, NumeroFactura='$NumeroComprobante'
+                        WHERE Haber=0 AND idTransClientes='$idTCVinculo' AND idCliente='$id' AND Eliminado=0 AND Facturado=0 LIMIT 1");
+        if ($mysqli->affected_rows <= 0) {
+          // Respaldo para líneas viejas sin idTransClientes: la primera sin facturar con ese remito.
+          $sqlCtasctesE = "UPDATE Ctasctes SET idFacturado='$idFacturado',Facturado=1, NumeroFactura='$NumeroComprobante' WHERE Haber=0 AND NumeroVenta='$Dato[NumeroComprobante]' AND idCliente='$id' AND Eliminado=0 AND Facturado=0 AND IFNULL(idTransClientes,0)=0 LIMIT 1";
+          $mysqli->query($sqlCtasctesE);
+        }
 
         // Foto fija del detalle - no depende de idFacturado en vivo, asi que
         // sigue mostrando este servicio en la factura original aunque despues
