@@ -6,27 +6,7 @@ include_once "../../../Conexion/Conexioni.php";
 date_default_timezone_set('America/Argentina/Cordoba');
 header('Content-Type: application/json; charset=utf-8');
 
-//LIBRO IVA COMPRAS
-if (isset($_POST['Iva']) && $_POST['Iva'] == 1) {
-    $sql = "SELECT * FROM IvaCompras WHERE Fecha>='$_POST[desde]' AND Fecha<='$_POST[hasta]' AND Eliminado=0 ORDER BY Fecha ASC";
-    $Resultado = $mysqli->query($sql);
-    $rows = array();
-    while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-        $rows[] = $row;
-    }
-    echo json_encode(array('data' => $rows));
-}
-
-//LIBRO IVA VENTAS
-if (isset($_POST['Iva']) && $_POST['Iva'] == 2) {
-    $sql = "SELECT * FROM IvaVentas WHERE Fecha>='$_POST[desde]' AND Fecha<='$_POST[hasta]' AND Eliminado=0 ORDER BY Fecha ASC";
-    $Resultado = $mysqli->query($sql);
-    $rows = array();
-    while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
-        $rows[] = $row;
-    }
-    echo json_encode(array('data' => $rows));
-}
+// Libros IVA: se movieron a libros_iva.php (+ libros_iva_lib.php, compartido con el PDF).
 
 //CONTROL FACTURACION
 if (isset($_POST['Sales_control'])) {
