@@ -22,6 +22,28 @@ if (isset($_POST['ValidarCondicionIva'])) {
   exit;
 }
 
+// Evita grabar dos veces el mismo comprobante (2026-11-12: 13 facturas quedaron duplicadas en la cuenta
+// corriente, 9 también en IVA Ventas, por doble clic o reintento con segundos de diferencia). Toma un
+// candado por tipo+número (si llegan dos pedidos a la vez, el segundo espera) y corta si ya existe.
+// El candado se libera solo al terminar el script.
+function frenarComprobanteDuplicado(mysqli $mysqli, string $tipo, string $numero): void
+{
+  $clave = $mysqli->real_escape_string('facturar|' . $tipo . '|' . $numero);
+  $mysqli->query("SELECT GET_LOCK('" . substr($clave, 0, 64) . "', 15)");
+  $st = $mysqli->prepare("SELECT id, RazonSocial FROM Ctasctes WHERE TipoDeComprobante = ? AND NumeroFactura = ? AND Haber = 0 AND Eliminado = 0 AND IFNULL(idFacturado, 0) = 0 LIMIT 1");
+  $st->bind_param('ss', $tipo, $numero);
+  $st->execute();
+  $ya = $st->get_result()->fetch_assoc();
+  if ($ya) {
+    echo json_encode(array(
+      'success' => 0,
+      'duplicado' => 1,
+      'msg' => "El comprobante $tipo $numero ya está registrado (" . $ya['RazonSocial'] . "). No se volvió a grabar.",
+    ), JSON_UNESCAPED_UNICODE);
+    exit;
+  }
+}
+
 if ($_POST['Facturar'] == 1) {
 
   //DATOS CLIENTE
@@ -85,10 +107,11 @@ if ($_POST['Facturar'] == 1) {
     $PtoVta = str_pad($_POST['PtoVta'], 5, '0', STR_PAD_LEFT);
 
     $NumeroComprobante = $PtoVta . "-" . $NumeroComp_Afip;
+    frenarComprobanteDuplicado($mysqli, (string) $_POST['Comprobante'], $NumeroComprobante);
 
     //   }else{
 
-    // $NumeroComprobante=$NumeroComp_Afip;  
+    // $NumeroComprobante=$NumeroComp_Afip;
 
     //   }
 
@@ -349,6 +372,7 @@ if ($_POST['Facturar'] == 2) {
     // Mismo formato que la factura por remito: PtoVta-Numero (00002-00002632). Antes acá se
     // guardaba el número pelado (00002632) y no coincidía con el resto de los comprobantes.
     $NumeroComprobante = str_pad($_POST['PtoVta'], 5, '0', STR_PAD_LEFT) . '-' . str_pad($_POST['NumeroComprobante'], 8, '0', STR_PAD_LEFT);
+    frenarComprobanteDuplicado($mysqli, (string) $_POST['Comprobante'], $NumeroComprobante);
 
     if ($_POST['condicion'] == '001') {
       $TipoDeComprobante = "FACTURAS A";
@@ -595,6 +619,7 @@ if ($_POST['Facturar'] == 3) {
     $PtoVta = str_pad($_POST['PtoVta'], 5, '0', STR_PAD_LEFT);
 
     $NumeroComprobante = $PtoVta . "-" . $NumeroComp_Afip;
+    frenarComprobanteDuplicado($mysqli, (string) $_POST['Comprobante'], $NumeroComprobante);
     // }
 
     if (($TipoDeComprobante == 'NOTAS DE CREDITO A')

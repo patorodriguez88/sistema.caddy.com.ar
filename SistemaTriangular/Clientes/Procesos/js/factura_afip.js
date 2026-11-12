@@ -14,6 +14,7 @@ $("#confirmar_ncnd_boton").click(function() {
     var fecha = document.getElementById('ncnd_fecha').value;
     var id = document.getElementById('buscarcliente').value;
     if (!condicionIvaFacturacionOk(id)) return; // antes de pedir el CAE a ARCA
+    if (!empezarFacturacion()) return; // doble clic: no pedir otro CAE (funciones.js)
     var neto = document.getElementById('ncnd_neto').value;
     var iva = document.getElementById('ncnd_iva').value;
     var total = document.getElementById('ncnd_total').value;
@@ -206,6 +207,7 @@ $("#confirmarfactura_AFIP_boton").click(function() {
     var fecha = document.getElementById('fecha_up').value;
     var id = document.getElementById('buscarcliente').value;
     if (!condicionIvaFacturacionOk(id)) return; // antes de pedir el CAE a ARCA
+    if (!empezarFacturacion()) return; // doble clic: no pedir otro CAE (funciones.js)
     var neto = document.getElementById('factura_neto_f').value;
     var iva = document.getElementById('factura_iva_f').value;
     var total = document.getElementById('factura_total_f').value;
@@ -412,6 +414,7 @@ $("#confirmarfacturaxrecorrido_AFIP_boton").click(function() {
   
     var id = document.getElementById('buscarcliente').value;
     if (!condicionIvaFacturacionOk(id)) return; // antes de pedir el CAE a ARCA
+    if (!empezarFacturacion()) return; // doble clic: no pedir otro CAE (funciones.js)
     var neto = document.getElementById('factura_neto_f').value;
     var iva = document.getElementById('factura_iva_f').value;
     var total = document.getElementById('factura_total_f').value;
