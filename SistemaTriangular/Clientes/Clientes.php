@@ -3468,7 +3468,7 @@ En la siguiente tabla figuran los clientes relacionados con el cliente principal
     <!-- Funciones -->
 
     <script src="Procesos/js/funciones.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/funciones.js'); ?>"></script>
-    <script src="Procesos/js/factura_afip.js"></script>
+    <script src="Procesos/js/factura_afip.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/factura_afip.js'); ?>"></script>
     <!-- <script src="Procesos/js/factura_afip_proforma.js"></script> -->
 
     <script src="../Menu/js/funciones.js"></script>

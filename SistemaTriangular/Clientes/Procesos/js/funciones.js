@@ -5333,8 +5333,29 @@ $("#confirmarfactura_boton_cnl").click(function () {
   table_facturacion_proforma.destroy();
 });
 
+// Candado contra doble clic al facturar (2026-11-12: 13 comprobantes grabados dos veces). Se toma al
+// apretar el botón y se suelta cuando terminan TODOS los pedidos en curso (CAE de ARCA + grabación),
+// con ajaxStop. facturar.php además rechaza un comprobante que ya exista.
+var facturandoEnCurso = false;
+$(document).ajaxStop(function () {
+  facturandoEnCurso = false;
+});
+function empezarFacturacion() {
+  if (facturandoEnCurso) {
+    toast("warning", "Ya se está generando el comprobante", "Esperá a que termine, no hace falta volver a apretar.");
+    return false;
+  }
+  facturandoEnCurso = true;
+  // Si el botón cortó por una validación sin mandar nada, no queda trabado.
+  setTimeout(function () {
+    if ($.active === 0) facturandoEnCurso = false;
+  }, 1500);
+  return true;
+}
+
 //CONFIRMAR FACTURA PROFORMA
 $("#confirmarfactura_boton").click(function () {
+  if (!empezarFacturacion()) return;
   var fecha = document.getElementById("fecha_up").value;
   var id = document.getElementById("buscarcliente").value;
   var neto = document.getElementById("factura_neto_f").value;
@@ -5475,6 +5496,7 @@ $("#confirmarfactura_boton_cnl_r").click(function () {
 
 //CONFIRMAR FACTURACION X RECORRIDO
 $("#confirmarfacturaxrecorrido_boton").click(function () {
+  if (!empezarFacturacion()) return;
   var id = document.getElementById("buscarcliente").value;
   var neto = document.getElementById("factura_neto_f").value;
   var iva = document.getElementById("factura_iva_f").value;
