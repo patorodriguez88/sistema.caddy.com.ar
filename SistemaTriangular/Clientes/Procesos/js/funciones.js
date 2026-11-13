@@ -2,19 +2,6 @@ function hoyISO() {
   const d = new Date();
   return d.toISOString().split("T")[0]; // YYYY-MM-DD (ideal para <input type="date">)
 }
-// Extrae los últimos 4 dígitos de un CP tipo "X5028" y los convierte a número.
-function getCPnum(cp) {
-  if (cp === null || cp === undefined) return null;
-  var str = String(cp).trim();
-  var m = str.match(/(\d{4})$/);
-  return m ? parseInt(m[1], 10) : null;
-}
-// Devuelve true si el CP NO está entre 5000 y 5023 (interior, fuera de Capital)
-function isOutOfCapitalRange(cp) {
-  var n = getCPnum(cp);
-  if (n === null) return false; // sin CP no alertamos
-  return !(n >= 5000 && n <= 5023);
-}
 
 function currencyFormat(num) {
   num = Number(num || 0);
@@ -3433,6 +3420,16 @@ $("#botonfacturacion").click(function () {
               (visitas
                 ? '<br><span class="badge bg-dark">' + visitas + "</span>"
                 : "") +
+              // Segunda visita al interior: se cobra con la misma tarifa (se agrega sola como venta)
+              (row.SegundaVisita === "cobrada"
+                ? '<br><span class="badge bg-danger" title="Interior con 2 visitas: se agregó el cargo de 2da visita">2da visita cobrada</span>'
+                : row.SegundaVisita === "falta"
+                  ? '<br><span class="badge bg-danger" title="Interior con 2 visitas y sin cargo de 2da visita: revisar antes de facturar">Falta 2da visita</span>'
+                  : row.SegundaVisita === "sacada"
+                    ? '<br><span class="badge bg-secondary" title="El cargo de 2da visita se sacó a mano">2da visita sacada</span>'
+                    : row.SegundaVisita === "revisar"
+                      ? '<br><span class="badge bg-warning text-dark" title="2 visitas, pero la localidad no está en la tabla Localidades: no se sabe si es interior. Si es interior, agregá la 2da visita a mano (y cargá la localidad en Localidades).">2 visitas: revisar zona</span>'
+                      : "") +
               "</td>"
             );
           },
@@ -3446,17 +3443,14 @@ $("#botonfacturacion").click(function () {
             if (type !== "display" && type !== "filter") {
               return formatted;
             }
-            // Alerta: 2 visitas pero solo 1 servicio facturable en Ventas
-            // (calculado en el backend), y el cliente esta fuera de Capital
-            // (CP 5000-5023) - suele indicar que falta cargar la segunda
-            // visita antes de facturar.
-            if (
-              Number(row.AlertaActualizar) === 1 &&
-              isOutOfCapitalRange(row.CodigoPostal)
-            ) {
-              var cpnum = getCPnum(row.CodigoPostal);
-              var title = "Revisar: 2 visitas y 1 servicio en Ventas";
-              if (cpnum !== null) title += " · CP " + cpnum + " fuera de 5000–5023";
+            // Segunda visita al interior (se cobra): el importe en rojo para que el operador lo controle.
+            if (row.SegundaVisita === "cobrada" || row.SegundaVisita === "falta") {
+              var title =
+                row.SegundaVisita === "cobrada"
+                  ? "Interior con 2 visitas: incluye la 2da visita ($ " +
+                    Number(row.SegundaVisitaImporte || 0).toLocaleString("es-AR", { minimumFractionDigits: 2 }) +
+                    ")"
+                  : "Interior con 2 visitas y sin cargo de 2da visita: revisar";
               return (
                 '<span class="text-danger fw-bold" title="' +
                 title +

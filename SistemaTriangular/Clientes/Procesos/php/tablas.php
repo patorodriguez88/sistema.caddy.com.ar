@@ -147,12 +147,17 @@ if (isset($_POST['Facturacion'])) {
   $desde = isset($_POST['desde']) ? $_POST['desde'] : '';
   $hasta = isset($_POST['hasta']) ? $_POST['hasta'] : '';
 
+  // Segunda visita al interior: se agrega sola como venta antes de mostrar los remitos (Funciones/php/segunda_visita.php)
+  require_once __DIR__ . '/../../../Funciones/php/segunda_visita.php';
+  sv_aplicar_cliente($mysqli, (string)$_POST['id'], (string)($_SESSION['Usuario'] ?? 'Sistema'));
+
   if ($desde === '' && $hasta === '') {
     // SIN filtro de fechas: visitas calculadas sobre todo Seguimiento (Eliminado=0)
     $sql = "SELECT
     t.CodigoProveedor,
     t.ClienteDestino,
     t.DomicilioDestino,
+    t.LocalidadDestino,
     t.CodigoSeguimiento,
     t.Fecha,
     t.TipoDeComprobante,
@@ -180,10 +185,13 @@ if (isset($_POST['Facturacion'])) {
     LEFT JOIN (
       SELECT
         NumPedido,
+        -- Tarifas cargadas: sin la cobranza integrada ni el cargo de 2da visita. No se filtra por CobrarEnvio:
+        -- en los envíos con cobranza viene repetido en todas las líneas y dejaba la tarifa afuera.
         SUM(CASE
-              WHEN CobrarEnvio = 0
-                   AND Eliminado = 0
+              WHEN Eliminado = 0
                    AND not_invoice = 0
+                   AND Titulo NOT LIKE 'COBRANZA%'
+                   AND Titulo NOT LIKE '2DA VISITA - %'
               THEN Cantidad
               ELSE 0
             END) AS CantServicios
@@ -235,6 +243,7 @@ if (isset($_POST['Facturacion'])) {
     t.CodigoProveedor,
     t.ClienteDestino,
     t.DomicilioDestino,
+    t.LocalidadDestino,
     t.CodigoSeguimiento,
     t.Fecha,
     t.TipoDeComprobante,
@@ -263,10 +272,13 @@ if (isset($_POST['Facturacion'])) {
     LEFT JOIN (
       SELECT
         NumPedido,
+        -- Tarifas cargadas: sin la cobranza integrada ni el cargo de 2da visita. No se filtra por CobrarEnvio:
+        -- en los envíos con cobranza viene repetido en todas las líneas y dejaba la tarifa afuera.
         SUM(CASE
-              WHEN CobrarEnvio = 0
-                   AND Eliminado = 0
+              WHEN Eliminado = 0
                    AND not_invoice = 0
+                   AND Titulo NOT LIKE 'COBRANZA%'
+                   AND Titulo NOT LIKE '2DA VISITA - %'
               THEN Cantidad
               ELSE 0
             END) AS CantServicios
@@ -285,9 +297,51 @@ if (isset($_POST['Facturacion'])) {
   $rows = array();
   while ($row = $Resultado->fetch_array(MYSQLI_ASSOC)) {
     if ($row['idCliente'] == $id) {
-      $rows[] = $row; // cada fila incluye 'CantidadVisitas' (0, 1 o 2) y 'AlertaActualizar'
+      $rows[] = $row;
     }
   }
+
+  // Visitas reales (días distintos con intento de entrega) y cargo de segunda visita, en dos consultas para todos
+  $codigos = array_column($rows, 'CodigoSeguimiento');
+  $visitas = $segunda = [];
+  if ($codigos) {
+    $lista = "'" . implode("','", array_map([$mysqli, 'real_escape_string'], $codigos)) . "'";
+    $r = $mysqli->query("SELECT CodigoSeguimiento, COUNT(DISTINCT DATE(Fecha)) AS n FROM Seguimiento
+                         WHERE CodigoSeguimiento IN ($lista) AND Eliminado = 0 AND TRIM(Estado) IN ('Entregado al Cliente','No se pudo entregar')
+                         GROUP BY CodigoSeguimiento");
+    while ($v = $r->fetch_assoc()) $visitas[$v['CodigoSeguimiento']] = (int)$v['n'];
+    $r = $mysqli->query("SELECT NumPedido, SUM(IF(Eliminado = 0, Total, 0)) AS total, SUM(Eliminado = 0) AS activas FROM Ventas
+                         WHERE NumPedido IN ($lista) AND Titulo LIKE '" . SV_TITULO . "%' GROUP BY NumPedido");
+    while ($v = $r->fetch_assoc()) $segunda[$v['NumPedido']] = $v;
+  }
+  foreach ($rows as &$row) {
+    $cs = $row['CodigoSeguimiento'];
+    $row['CantidadVisitas'] = min(2, $visitas[$cs] ?? 0);
+    $row['Zona'] = sv_zona($row['LocalidadDestino'] ?? null, $row['DomicilioDestino'] ?? null, $row['CodigoPostal'] ?? null);
+    // SegundaVisita: 'cobrada' (tiene el cargo), 'sacada' (el operador borró el cargo), 'falta' (interior con 2 visitas sin cargo)
+    $row['SegundaVisita'] = '';
+    $row['SegundaVisitaImporte'] = 0;
+    // Localidad que no está en la tabla Localidades: no se cobra solo, se marca para que el operador revise
+    if ($row['Zona'] === null && ($visitas[$cs] ?? 0) >= 2 && (string)$row['Fecha'] >= SV_DESDE && empty($segunda[$cs])) {
+      $row['SegundaVisita'] = 'revisar';
+    }
+    if ($row['Zona'] === 'interior' && ($visitas[$cs] ?? 0) >= 2 && (string)$row['Fecha'] >= SV_DESDE) {
+      $sv = $segunda[$cs] ?? null;
+      if ($sv && (int)$sv['activas'] > 0) {
+        $row['SegundaVisita'] = 'cobrada';
+        $row['SegundaVisitaImporte'] = (float)$sv['total'];
+      } elseif ($sv) {
+        $row['SegundaVisita'] = 'sacada';
+      } elseif ((float)$row['CantServicios'] < 2) {
+        $row['SegundaVisita'] = 'falta';
+      } else {
+        $row['SegundaVisita'] = 'cobrada';   // cargada a mano como otra tarifa
+      }
+    }
+    // Compatibilidad con el aviso anterior: rojo si es interior con 2 visitas
+    $row['AlertaActualizar'] = $row['SegundaVisita'] !== '' ? 1 : 0;
+  }
+  unset($row);
   echo json_encode(array('data' => $rows));
 }
 
