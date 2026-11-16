@@ -12,6 +12,39 @@ if(isset($_POST['Webhook'])){
    echo json_encode(array('data'=>$rows));
 }
 
+// Caddy avisa a los destinatarios de este cliente (Clientes.AvisarDestinatario, 1 = sí)
+if (isset($_POST['AvisarDestinatario_get'])) {
+    $id = (int)($_POST['idCliente'] ?? 0);
+    $ok = false;
+    $valor = 1;
+    try {   // sin la migración 2026_11_16 la columna no existe: se informa el valor de siempre (1)
+        $stmt = $mysqli->prepare("SELECT AvisarDestinatario FROM Clientes WHERE id = ? LIMIT 1");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->bind_result($valor);
+        $ok = (bool)$stmt->fetch();
+        $stmt->close();
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+    echo json_encode(['success' => $ok ? 1 : 0, 'valor' => $ok ? (int)$valor : 1]);
+    exit;
+}
+if (isset($_POST['AvisarDestinatario_set'])) {
+    $id = (int)($_POST['idCliente'] ?? 0);
+    $valor = ((int)($_POST['Valor'] ?? 1)) ? 1 : 0;
+    try {
+        $stmt = $mysqli->prepare("UPDATE Clientes SET AvisarDestinatario = ? WHERE id = ?");
+        $stmt->bind_param('ii', $valor, $id);
+        $ok = $id > 0 && $stmt->execute();
+        $stmt->close();
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+    echo json_encode(['success' => $ok ? 1 : 0]);
+    exit;
+}
+
 if(isset($_POST['Webhook_activo'])){
 
 $idCliente=$_POST['idCliente'];
