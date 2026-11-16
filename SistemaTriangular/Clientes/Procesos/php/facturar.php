@@ -44,6 +44,19 @@ function frenarComprobanteDuplicado(mysqli $mysqli, string $tipo, string $numero
   }
 }
 
+// Un comprobante fiscal (Factura, NC, ND) solo se graba con el CAE que dio ARCA. El 13/11/2026 se grabó una
+// "FACTURAS A 00000-00002-00002702" a IGALFER sin CAE (nunca existió en ARCA): el botón FACTURA PROFORMA mandó
+// el tipo fiscal elegido en el formulario. Solo la proforma se graba sin pasar por ARCA.
+if (in_array((int) ($_POST['Facturar'] ?? 0), [1, 2, 3, 4], true)
+  && trim((string) ($_POST['Comprobante'] ?? '')) !== 'FACTURA PROFORMA'
+  && trim((string) ($_POST['CAE'] ?? '')) === '') {
+  echo json_encode(array(
+    'success' => 0,
+    'msg' => 'No se grabó: ' . trim((string) ($_POST['Comprobante'] ?? 'el comprobante')) . ' no tiene CAE de ARCA. Para una factura usá el botón FACTURA AFIP; sin pasar por ARCA solo se puede generar una FACTURA PROFORMA.',
+  ), JSON_UNESCAPED_UNICODE);
+  exit;
+}
+
 if ($_POST['Facturar'] == 1) {
 
   //DATOS CLIENTE
