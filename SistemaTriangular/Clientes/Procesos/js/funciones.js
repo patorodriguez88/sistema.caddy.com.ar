@@ -5391,8 +5391,14 @@ $("#confirmarfactura_boton").click(function () {
     toast("error", "Error !", "No hay Remitos Seleccionados. No se puede facturar.");
     return;
   }
+  // El botón de proforma no pasa por ARCA: si en el formulario quedó elegido un tipo fiscal (Factura A/B), no se
+  // graba (el 13/11/2026 quedó registrada una Factura A sin CAE por esto). Para facturar está FACTURA AFIP.
+  if (String(comprobante || "").trim() !== "FACTURA PROFORMA") {
+    facturandoEnCurso = false;
+    alerta("warning", "Esto no es una proforma", "El comprobante elegido es <b>" + (comprobante || "ninguno") + "</b>. Para emitirlo usá el botón <b>FACTURA AFIP</b>; con este botón solo se genera una FACTURA PROFORMA.");
+    return;
+  }
   var ncomp = $("#ncomprobante_up").val();
-  console.log("ids", ncomp);
   //   $('#NumeroComprobante').val();
 
   //  var dato = {
@@ -5468,7 +5474,7 @@ $("#confirmarfactura_boton").click(function () {
           abrirModalFactura(jsonData1.idFacturado);
         }
       } else if (jsonData1.success == 0) {
-        toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
+        toast("error", "Error al Intentar Generar el Comprobante !", jsonData1.msg || "No se han realizado cambios.");
       } else if (jsonData1.success == 3) {
         toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
       }
@@ -5526,6 +5532,13 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
   // Reusamos la selección capturada al apretar "Facturar Recorridos", NO
   // volvemos a escanear el DOM acá (y NO usamos el selector genérico
   // custom-control-input, que también matchea la tabla de remitos).
+  // El botón de proforma no pasa por ARCA: si en el formulario quedó elegido un tipo fiscal (Factura A/B), no se
+  // graba (el 13/11/2026 quedó registrada una Factura A sin CAE por esto). Para facturar está FACTURA AFIP.
+  if (String(comprobante || "").trim() !== "FACTURA PROFORMA") {
+    facturandoEnCurso = false;
+    alerta("warning", "Esto no es una proforma", "El comprobante elegido es <b>" + (comprobante || "ninguno") + "</b>. Para emitirlo usá el botón <b>FACTURA AFIP</b>; con este botón solo se genera una FACTURA PROFORMA.");
+    return;
+  }
   var checked = recorridosSeleccionadosFacturar;
   if (!checked || checked.length === 0) {
     toast("error", "Error !", "No hay Recorridos Seleccionados. No se puede facturar.");
@@ -5605,7 +5618,7 @@ $("#confirmarfacturaxrecorrido_boton").click(function () {
           abrirModalFactura(jsonData1.idFacturado);
         }
       } else if (jsonData1.success == 0) {
-        toast("error", "Error al Intentar Generar el Comprobante !", "No se han realizado cambios.");
+        toast("error", "Error al Intentar Generar el Comprobante !", jsonData1.msg || "No se han realizado cambios.");
       } else if (jsonData1.success == 3) {
         toast("error", "Error en el Codigo de Afip del Cliente !", "No se han realizado cambios.");
       }
