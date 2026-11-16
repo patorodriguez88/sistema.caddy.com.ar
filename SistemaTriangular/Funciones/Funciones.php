@@ -237,11 +237,13 @@ function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recor
 
     $idClienteOrigen = 0;
     $idClienteDestino = 0;
+    $codigoProveedor = '';
+    $fechaEntrega = null;
 
-    if ($stmt = $mysqli->prepare("SELECT idClienteOrigen, idClienteDestino FROM TransClientes WHERE CodigoSeguimiento = ? LIMIT 1")) {
+    if ($stmt = $mysqli->prepare("SELECT idClienteOrigen, idClienteDestino, CodigoProveedor, FechaEntrega FROM TransClientes WHERE CodigoSeguimiento = ? LIMIT 1")) {
         $stmt->bind_param('s', $cs);
         $stmt->execute();
-        $stmt->bind_result($idClienteOrigen, $idClienteDestino);
+        $stmt->bind_result($idClienteOrigen, $idClienteDestino, $codigoProveedor, $fechaEntrega);
         $stmt->fetch();
         $stmt->close();
     }
@@ -256,10 +258,12 @@ function encolarWebhookRecorrido(mysqli $mysqli, $cs, $recorridoAnterior, $recor
     $payload = json_encode([
         'evento'              => 'recorrido_cambio',
         'codigo_seguimiento'  => $cs,
+        'idProveedor'         => (string)$codigoProveedor,   // referencia del cliente (ej. "MFU-1234")
         'recorrido_anterior'  => $recorridoAnterior,
         'recorrido_nuevo'     => $recorridoNuevo,
         'estado'              => $estadoNombre,
         'fecha'                => $Fecha . 'T' . $Hora,
+        'fecha_entrega'       => ($fechaEntrega && $fechaEntrega !== '0000-00-00') ? $fechaEntrega : null,
     ], JSON_UNESCAPED_UNICODE);
 
     foreach ($destinatarios as $rol => $idCliente) {
