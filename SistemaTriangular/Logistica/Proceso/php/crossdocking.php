@@ -440,6 +440,8 @@ function cd_escanear(mysqli $mysqli, string $codigo, int $proveedorForzado = 0):
     // para el mismo bulto sin sufijo — cada formato trae un texto distinto
     // aunque sea la misma pieza física).
     $esRepetido = cd_ya_escaneado_hoy($mysqli, $ahoraFecha, $idTC, $bultoSufijo);
+    // Había salido de Wepoint y vuelve: es un reingreso (se ve en pantalla y en el rótulo)
+    $esReingreso = !$esRepetido && wepoint_volvio($mysqli, $idTC);
 
     $marca = cd_marcar_ingreso($mysqli, $idTC, $row['CodigoProveedor'] ?: $base);
     $recorridoNum = (int)($row['Recorrido'] ?? 0);
@@ -491,6 +493,7 @@ function cd_escanear(mysqli $mysqli, string $codigo, int $proveedorForzado = 0):
         'recorridoEsperados'     => $recEsperados,
         'numeroOrden'       => (int)($row['NumerodeOrden'] ?? 0),
         'yaIngresado'       => $esRepetido,
+        'reingreso'         => $esReingreso,
         'wepointFAnterior'  => $marca['wepointFAnterior'],
         'hora'              => $marca['hora'],
     ];
