@@ -2378,7 +2378,12 @@
                                                             <input type="checkbox" class="custom-control-input" id="avisar_destinatario_switch" name="avisar_destinatario_switch" checked>
                                                             <label class="custom-control-label" for="avisar_destinatario_switch">Caddy avisa a los destinatarios de este cliente</label>
                                                         </div>
-                                                        <small class="text-muted d-block mt-1" id="avisar_destinatario_ayuda">Apagado: Caddy no les manda mails a los destinatarios de los envíos de este cliente (ni al crear el envío ni en los cambios de estado); el cliente les avisa por su cuenta, por ejemplo con el webhook.</small>
+                                                        <div class="custom-control custom-switch mt-3">
+                                                            <input type="checkbox" class="custom-control-input" id="eventos_estado_switch" name="eventos_estado_switch">
+                                                            <label class="custom-control-label" for="eventos_estado_switch">Webhook: avisar todos los cambios de estado de sus envíos</label>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1">Prendido: cada estado que ve el destinatario (retirado, en tránsito, entregado, no se pudo entregar, devuelto…) se le manda al webhook de este cliente en JSON, con su referencia (idProveedor) y la fecha de entrega.</small>
+                                                        <small class="text-muted d-block mt-2" id="avisar_destinatario_ayuda">Apagado: Caddy no les manda mails a los destinatarios de los envíos de este cliente (ni al crear el envío ni en los cambios de estado); el cliente les avisa por su cuenta, por ejemplo con el webhook.</small>
                                                     </div>
                                                 </div>
                                                 <div class="row">

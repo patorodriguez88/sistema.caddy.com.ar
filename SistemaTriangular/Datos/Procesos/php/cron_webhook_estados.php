@@ -1,12 +1,15 @@
 <?php
 // Cron (cada 2 minutos): encola en Webhook_notifications los cambios de estado de los envíos para los clientes
-// que tienen webhook activo (Clientes → Webhook). api.caddy.com.ar/cron_webhooks.php los manda después.
+// que pidieron el webhook de estados (Clientes → Webhook → "Avisar todos los cambios de estado", Webhook.EventosEstado).
+// api.caddy.com.ar/cron_webhooks.php los manda después.
 //
 // Por qué un barrido y no un aviso en cada lugar: los estados se graban en Seguimiento desde más de 20 lugares
 // (sistema, app de reparto, CrossDocking, Wepoint, Mercado Libre…). Acá se mira Seguimiento una sola vez y no
-// se escapa ninguno. Qué estados se avisan lo decide Estados.Webhook (1 = se avisa), igual que en cambiarRecorrido().
+// se escapa ninguno. Se avisan los estados que ve el destinatario (Estados.Mostrar = 1), menos "Aviso WhatsApp".
+// Es opcional por cliente para no cambiarles nada a las integraciones que ya existen (los avisos de cambio de
+// recorrido de cambiarRecorrido(), que dependen de Estados.Webhook, siguen igual).
 //
-// - Solo envíos cuyo cliente de ORIGEN tiene webhook activo: al resto no se le encola nada.
+// - Solo envíos cuyo cliente de ORIGEN tiene webhook activo con EventosEstado = 1: al resto no se le encola nada.
 // - Cada movimiento de Seguimiento se marca Webhook=1 al encolarse, para no repetirlo.
 // - Si ese envío ya tiene encolado el mismo estado (por ejemplo, desde cambiarRecorrido()), no se duplica.
 // - Mira solo los últimos movimientos (por id) de los últimos días: al prenderlo no dispara la historia.
@@ -35,9 +38,9 @@ function webhook_estados_encolar(mysqli $mysqli): array
     $sql = "SELECT s.id, s.CodigoSeguimiento, s.Fecha, s.Hora, e.Estado, e.Slug,
                    tc.idClienteOrigen, tc.CodigoProveedor, tc.FechaEntrega, w.Endpoint
             FROM Seguimiento s
-            JOIN Estados e ON e.id = s.Estado_id AND e.Webhook = 1
+            JOIN Estados e ON e.id = s.Estado_id AND e.Mostrar = 1 AND e.Slug <> 'send_whatsapp'
             JOIN TransClientes tc ON tc.CodigoSeguimiento = s.CodigoSeguimiento AND tc.Eliminado = 0
-            JOIN Webhook w ON w.idCliente = tc.idClienteOrigen AND w.Activo = 1 AND w.Endpoint <> ''
+            JOIN Webhook w ON w.idCliente = tc.idClienteOrigen AND w.Activo = 1 AND w.EventosEstado = 1 AND w.Endpoint <> ''
             WHERE s.id > ? AND s.Eliminado = 0 AND (s.Webhook IS NULL OR s.Webhook = 0)
               AND s.Fecha >= CURDATE() - INTERVAL " . WEBHOOK_ESTADOS_DIAS . " DAY
             ORDER BY s.id

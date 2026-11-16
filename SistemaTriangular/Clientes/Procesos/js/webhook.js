@@ -148,3 +148,27 @@ $(document).on('change', 'input[name="avisar_destinatario_switch"]', function() 
     }
   });
 });
+
+// Webhook de estados (Webhook.EventosEstado): Datos/Procesos/php/cron_webhook_estados.php
+$('#buscarcliente').change(function(){
+  var id = document.getElementById('buscarcliente').value;
+  $('#eventos_estado_switch').prop('checked', false);
+  $.post('Procesos/php/webhook.php', {'EventosEstado_get': 1, 'idCliente': id}, function(response) {
+    var jsonData = JSON.parse(response);
+    $('#eventos_estado_switch').prop('disabled', jsonData.success != 1);
+    if (jsonData.success == 1) $('#eventos_estado_switch').prop('checked', jsonData.valor == 1);
+  });
+});
+$(document).on('change', 'input[name="eventos_estado_switch"]', function() {
+  var id = document.getElementById('buscarcliente').value;
+  var valor = this.checked ? 1 : 0;
+  $.post('Procesos/php/webhook.php', {'EventosEstado_set': 1, 'idCliente': id, 'Valor': valor}, function(response) {
+    var jsonData = JSON.parse(response);
+    if (jsonData.success == 1) {
+      toast("success", "Guardado", valor ? "Se avisan todos los cambios de estado al webhook." : "Ya no se avisan los cambios de estado.");
+    } else {
+      toast("error", "Error !", "Primero cargá el EndPoint y el Token del webhook.");
+      $('#eventos_estado_switch').prop('checked', !valor);
+    }
+  });
+});
