@@ -45,6 +45,47 @@ if (isset($_POST['AvisarDestinatario_set'])) {
     exit;
 }
 
+// Webhook de estados del cliente (Webhook.EventosEstado, 1 = se avisan todos los cambios de estado)
+if (isset($_POST['EventosEstado_get'])) {
+    $id = (int)($_POST['idCliente'] ?? 0);
+    $ok = false;
+    $valor = 0;
+    try {   // sin fila de Webhook (o sin la migración 2026_11_16) no hay nada que mostrar
+        $stmt = $mysqli->prepare("SELECT EventosEstado FROM Webhook WHERE idCliente = ? LIMIT 1");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $stmt->bind_result($valor);
+        $ok = (bool)$stmt->fetch();
+        $stmt->close();
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+    echo json_encode(['success' => $ok ? 1 : 0, 'valor' => $ok ? (int)$valor : 0]);
+    exit;
+}
+if (isset($_POST['EventosEstado_set'])) {
+    $id = (int)($_POST['idCliente'] ?? 0);
+    $valor = ((int)($_POST['Valor'] ?? 0)) ? 1 : 0;
+    $ok = false;
+    try {
+        $stmt = $mysqli->prepare("SELECT 1 FROM Webhook WHERE idCliente = ? LIMIT 1");
+        $stmt->bind_param('i', $id);
+        $stmt->execute();
+        $existe = (bool)$stmt->fetch();
+        $stmt->close();
+        if ($existe) {
+            $stmt = $mysqli->prepare("UPDATE Webhook SET EventosEstado = ? WHERE idCliente = ?");
+            $stmt->bind_param('ii', $valor, $id);
+            $ok = $stmt->execute();
+            $stmt->close();
+        }
+    } catch (Throwable $e) {
+        $ok = false;
+    }
+    echo json_encode(['success' => $ok ? 1 : 0]);
+    exit;
+}
+
 if(isset($_POST['Webhook_activo'])){
 
 $idCliente=$_POST['idCliente'];
