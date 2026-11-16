@@ -159,6 +159,7 @@
             "^FO215,123^A0N,18,18^FDFecha: " + fechaTexto + "^FS" +
             "^FO215,148^A0N,30,30^FDRec: " + (data.recorrido || "-") + "^FS" +
             "^FO215,185^A0N,26,26^FDPos: " + (data.posicion || "-") + "^FS" +
+            (data.reingreso ? "^FO360,152^A0N,24,24^FDREINGRESO^FS" : "") +
             // FIX (2026-09-14): mismo ajuste que el rótulo de seguimiento.js -
             // todo el bloque corrido 15 dots a la derecha, el QR arrancaba
             // pegado al margen izquierdo físico del rótulo.
@@ -374,7 +375,7 @@
                 '<div class="cd-bulto-numero"></div>' +
             '</div>' +
             '<div class="cd-info">' +
-                '<div class="cd-estado">' + (esDup ? "⚠ Ya estaba ingresado" : "✔ Ingreso OK") + " · " + matchLabel(data.match) + '</div>' +
+                '<div class="cd-estado">' + (esDup ? "⚠ Ya estaba ingresado" : (data.reingreso ? "↩ Reingreso: había salido y volvió al depósito" : "✔ Ingreso OK")) + " · " + matchLabel(data.match) + '</div>' +
                 '<div class="cd-codigo"></div>' +
                 '<div class="cd-detalle">' +
                     '<div><b>Origen</b><span class="v-origen"></span></div>' +
@@ -878,7 +879,7 @@
                     agregarAlFeed(
                         esDup ? "dup" : "ok",
                         resp.codigoEtiqueta,
-                        horaCorta + " · Rec " + (resp.recorrido || "-") + " · " + (resp.clienteDestino || matchLabel(resp.match))
+                        horaCorta + (resp.reingreso ? " · REINGRESO" : "") + " · Rec " + (resp.recorrido || "-") + " · " + (resp.clienteDestino || matchLabel(resp.match))
                     );
                     mandarColaWepoint();
 

@@ -743,7 +743,10 @@ function wepoint_mandar_ingresos(mysqli $mysqli, string $fecha, array $filas): a
     $okIds = array_flip($ok);
     require_once __DIR__ . '/wepoint_egresos.php';
     foreach (array_unique(array_map(fn($f) => (int)$f['id_tc'], array_filter($filas, fn($f) => isset($okIds[$f['id']])))) as $idTc) {
-        wepoint_seguimiento($mysqli, $idTc, WEPOINT_ESTADO_INGRESO, 'Ingresó al depósito de Wepoint');
+        // Si había salido y volvió es un reingreso: otra línea, con su fecha (la de "Ingresó" va una sola vez)
+        wepoint_seguimiento($mysqli, $idTc, WEPOINT_ESTADO_INGRESO, wepoint_volvio($mysqli, $idTc)
+            ? 'Reingresó al depósito de Wepoint el ' . date('d/m/Y H:i')
+            : 'Ingresó al depósito de Wepoint');
         wepoint_egreso_sumar_llegado($mysqli, $idTc); // su recorrido ya pidió el egreso: se le pide sumarlo
     }
 
@@ -812,6 +815,31 @@ function wepoint_mandar_salidas(mysqli $mysqli, string $recorrido, array $filas)
 /** Estados de Seguimiento propios del depósito de Wepoint (migración 2026_11_04_estados_wepoint.sql). */
 const WEPOINT_ESTADO_INGRESO = 'wepoint_in';  // "En centro de distribución" (lo ve el destinatario)
 const WEPOINT_ESTADO_SALIDA = 'wepoint_out';  // "Salió del depósito" (interno)
+
+/**
+ * ¿El envío había salido del depósito de Wepoint y vuelve? Su último movimiento de Wepoint en
+ * Seguimiento es una salida. Un paquete que vuelve es un reingreso: Wepoint solo asienta que entró
+ * (otra recepción en su misma orden, con estadía nueva); qué se hace con él lo decide Caddy.
+ */
+function wepoint_volvio(mysqli $mysqli, int $idTc): bool
+{
+    $tc = $mysqli->query("SELECT CodigoSeguimiento FROM TransClientes WHERE id = $idTc")->fetch_assoc();
+    if (!$tc) {
+        return false;
+    }
+    // Por código: Seguimiento tiene índice por CodigoSeguimiento, no por idTransClientes
+    $st = $mysqli->prepare("SELECT status FROM Seguimiento WHERE CodigoSeguimiento = ? AND idTransClientes = ? AND Eliminado = 0
+        AND status IN (?, ?) ORDER BY id DESC LIMIT 1");
+    $codigo = (string)$tc['CodigoSeguimiento'];
+    $entrada = WEPOINT_ESTADO_INGRESO;
+    $salida = WEPOINT_ESTADO_SALIDA;
+    $st->bind_param('siss', $codigo, $idTc, $entrada, $salida);
+    $st->execute();
+    $ultimo = $st->get_result()->fetch_assoc();
+    $st->close();
+
+    return ($ultimo['status'] ?? null) === WEPOINT_ESTADO_SALIDA;
+}
 
 /**
  * Deja asentado en Seguimiento un movimiento del envío en el depósito de Wepoint con su estado
