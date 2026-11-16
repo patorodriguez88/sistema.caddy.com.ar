@@ -125,3 +125,26 @@ $(document).on('change', 'input[name="webhook_switch"]', function(e) {
     
   });
   
+// Caddy avisa a los destinatarios de este cliente (Clientes.AvisarDestinatario). Lo usan la app de reparto
+// (Mail/notices.php) y la API al crear el envío (EnviarMail).
+$('#buscarcliente').change(function(){
+  var id = document.getElementById('buscarcliente').value;
+  $('#avisar_destinatario_switch').prop('checked', true);
+  $.post('Procesos/php/webhook.php', {'AvisarDestinatario_get': 1, 'idCliente': id}, function(response) {
+    var jsonData = JSON.parse(response);
+    if (jsonData.success == 1) $('#avisar_destinatario_switch').prop('checked', jsonData.valor == 1);
+  });
+});
+$(document).on('change', 'input[name="avisar_destinatario_switch"]', function() {
+  var id = document.getElementById('buscarcliente').value;
+  var valor = this.checked ? 1 : 0;
+  $.post('Procesos/php/webhook.php', {'AvisarDestinatario_set': 1, 'idCliente': id, 'Valor': valor}, function(response) {
+    var jsonData = JSON.parse(response);
+    if (jsonData.success == 1) {
+      toast("success", "Guardado", valor ? "Caddy avisa a los destinatarios de este cliente." : "Caddy no les escribe a los destinatarios de este cliente.");
+    } else {
+      toast("error", "Error !", "No se pudo guardar.");
+      $('#avisar_destinatario_switch').prop('checked', !valor);
+    }
+  });
+});

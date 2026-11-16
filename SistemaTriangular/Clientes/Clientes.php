@@ -2353,6 +2353,15 @@
 
                                             <!-- Webhook -->
                                             <div class="tab-pane" id="webhook">
+                                                <div class="row mb-3">
+                                                    <div class="col-12">
+                                                        <div class="custom-control custom-switch">
+                                                            <input type="checkbox" class="custom-control-input" id="avisar_destinatario_switch" name="avisar_destinatario_switch" checked>
+                                                            <label class="custom-control-label" for="avisar_destinatario_switch">Caddy avisa a los destinatarios de este cliente</label>
+                                                        </div>
+                                                        <small class="text-muted d-block mt-1" id="avisar_destinatario_ayuda">Apagado: Caddy no les manda mails a los destinatarios de los envíos de este cliente (ni al crear el envío ni en los cambios de estado); el cliente les avisa por su cuenta, por ejemplo con el webhook.</small>
+                                                    </div>
+                                                </div>
                                                 <div class="row">
                                                     <div class="col-lg-3 mt-0">
                                                         <div class="mt-2">
