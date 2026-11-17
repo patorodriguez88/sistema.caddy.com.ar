@@ -349,8 +349,11 @@ function tkPanelObj() {
 }
 function tkAutoAlto(el) {
   el.style.height = "auto";
-  el.style.height = el.scrollHeight + "px";
+  // + el borde (box-sizing: border-box), si no aparece la barra de scroll
+  el.style.height = el.scrollHeight + (el.offsetHeight - el.clientHeight) + "px";
 }
+// La descripción crece con el texto (como en Asana): se lee entera sin scroll interno
+$("#tk_f_desc").on("input", function () { tkAutoAlto(this); });
 $("#tk_f_titulo").on("input", function () { tkAutoAlto(this); }).on("keydown", function (e) {
   if (e.key === "Enter") e.preventDefault();
 });
@@ -384,7 +387,7 @@ function tkNueva() {
   $("#tk_coment_box, #tk_adj_box").prop("hidden", true);
   $("#tk_guardar").html('<i class="mdi mdi-plus me-1"></i>Crear tarea');
   tkPanelObj().show();
-  setTimeout(function () { $("#tk_f_titulo").trigger("focus"); tkAutoAlto($("#tk_f_titulo")[0]); }, 250);
+  setTimeout(function () { $("#tk_f_titulo").trigger("focus"); tkAutoAlto($("#tk_f_titulo")[0]); tkAutoAlto($("#tk_f_desc")[0]); }, 250);
 }
 $("#tk_btn_nueva").on("click", tkNueva);
 
@@ -426,7 +429,7 @@ function tkAbrir(id) {
     $("#tk_adj_zona").prop("hidden", t.eliminada);
     tkPintarAdjuntos(r.adjuntos);
     tkPanelObj().show();
-    setTimeout(function () { tkAutoAlto($("#tk_f_titulo")[0]); }, 60);
+    setTimeout(function () { tkAutoAlto($("#tk_f_titulo")[0]); tkAutoAlto($("#tk_f_desc")[0]); }, 60);
     // Al abrirla deja de ser "nueva": se actualiza la marca en la lista y la campanita
     var enLista = TK.tareas.filter(function (x) { return x.id == t.id; })[0];
     if (enLista && enLista.nueva) { enLista.nueva = false; tkPintarLista(); }
