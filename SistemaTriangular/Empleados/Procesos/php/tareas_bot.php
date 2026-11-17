@@ -98,7 +98,7 @@ switch ($_POST['accion'] ?? '') {
         // Mismos avisos que guardar_tarea en tareas_api.php
         $avisados = [];
         if ($responsable !== $creador) {
-            tk_mail($db, $responsable, 'Nueva tarea para vos: ' . $titulo, 'Tenés una tarea nueva',
+            tk_mail($db, $responsable, 'Nueva tarea para vos: ' . $titulo . ' (#' . (int) $t['id'] . ')', 'Tenés una tarea nueva',
                     tk_nombre($db, $creador) . ' te asignó esta tarea', tk_bloque_tarea($db, $t,
                     $descripcion !== '' ? '<div style="background:#f6f7fb;border-radius:8px;padding:12px 14px;font-size:14px;color:#333">' . tk_html_texto($db, $descripcion) . '</div>' : ''));
             $avisados[] = $responsable;
