@@ -91,11 +91,14 @@ if (isset($_POST['BuscarRecorridos'])) {
 if (isset($_POST['id_servicio'])) {
   $id = $_POST['id_servicio'];
 
-  $sqlservicios = $mysqli->query("SELECT id,PrecioVenta FROM Productos WHERE id='$id'");
+  $sqlservicios = $mysqli->query("SELECT id,Codigo,Titulo,PrecioVenta FROM Productos WHERE id='$id'");
   $datoservicios = $sqlservicios->fetch_array(MYSQLI_ASSOC);
   $PrecioVenta = $datoservicios['PrecioVenta'];
   $Codigo = $datoservicios['id'];
-  echo json_encode(array('success' => 1, 'PrecioVenta' => $PrecioVenta, 'Codigo' => $Codigo));
+  // ¿Lleva la curva por bulto? (mismo criterio que AgregarVenta.php al grabar)
+  require_once __DIR__ . '/../../../Funciones/php/bultos.php';
+  $porBulto = renglonEsDeBultos($mysqli, (string) $datoservicios['Codigo'], (string) $datoservicios['Titulo']);
+  echo json_encode(array('success' => 1, 'PrecioVenta' => $PrecioVenta, 'Codigo' => $Codigo, 'PorBulto' => $porBulto ? 1 : 0));
 }
 
 if (isset($_POST['id_origen'])) {
