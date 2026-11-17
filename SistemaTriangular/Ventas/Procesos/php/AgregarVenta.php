@@ -180,10 +180,10 @@ if (isset($_POST['valordeclarado'])) {
 if (isset($_POST['subir'])) {
 
   // Venta Simple: Precio es la tarifa unitaria; el total lleva la misma curva por bulto que la API
-  // (2º bulto bonificado, del 3º en adelante 50%). Pallet/viaje, valor declarado, cobranza, etc.:
-  // importe x cantidad. Tarea 61.
-  $porBulto = renglonEsDeBultos($mysqli, (string) $CodigoP, (string) $titulo);
-  $Total = round((float) $_POST['importe'] * ($porBulto ? factorBultos((int) $Cantidad) : (float) $Cantidad), 2);
+  // (2º bulto bonificado, del 3º en adelante 50%) en las tarifas de envío. El resto (pallet, hora,
+  // flete, valor declarado...) importe x cantidad. Tarea 61.
+  $conCurva = ventaSimpleConCurva($mysqli, (string) $CodigoP, (string) $titulo) && (float) $Cantidad == (int) $Cantidad;
+  $Total = round((float) $_POST['importe'] * ($conCurva ? factorBultos((int) $Cantidad) : (float) $Cantidad), 2);
   $iva1 = '0';
   $iva2 = '0';
   $iva3 = $Total - ($Total / 1.21);

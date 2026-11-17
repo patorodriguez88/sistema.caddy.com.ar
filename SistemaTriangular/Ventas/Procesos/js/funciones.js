@@ -237,8 +237,8 @@ function getParameterByName(name) {
 // Los servicios por pallet/viaje (o valor declarado, cobranza...) van importe x cantidad.
 var ventaPorBulto = true;
 function totalVenta(precio, cantidad) {
-  var c = parseInt(cantidad, 10) || 0;
-  var f = !ventaPorBulto ? c : c <= 0 ? 0 : c <= 2 ? 1 : 1 + 0.5 * (c - 2);
+  var c = parseFloat(cantidad) || 0;
+  var f = !ventaPorBulto || c !== Math.floor(c) ? c : c <= 0 ? 0 : c <= 2 ? 1 : 1 + 0.5 * (c - 2);
   return Math.round((parseFloat(precio) || 0) * f * 100) / 100;
 }
 function calculo(a) {

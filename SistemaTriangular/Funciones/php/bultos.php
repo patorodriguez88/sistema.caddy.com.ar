@@ -38,6 +38,16 @@ function renglonEsDeBultos(mysqli $mysqli, string $codigo, string $titulo): bool
     return !ventaNoEsPorBulto($mysqli, $codigo);
 }
 
+/**
+ * ¿Venta Simple aplica la curva a este renglón? Solo las tarifas de envío ("Tarifa 2 | A"...), que son
+ * las que cotiza la API, y por bulto. Otros servicios cargados a mano se cobran por hora, viaje o
+ * unidad (Hora Sprinter 2,5, FLETE INTERNO, CAJA FRESH): importe x cantidad.
+ */
+function ventaSimpleConCurva(mysqli $mysqli, string $codigo, string $titulo): bool
+{
+    return preg_match('/^\s*TARIFA\b/i', $titulo) === 1 && renglonEsDeBultos($mysqli, $codigo, $titulo);
+}
+
 /** Curva de descuento por bulto, en veces la tarifa: 1 = 100%, 2 = 100% (2º bonificado), 3 = 150%, 4 = 200%... (api: clases/pricing.class.php) */
 function factorBultos(int $bultos): float
 {

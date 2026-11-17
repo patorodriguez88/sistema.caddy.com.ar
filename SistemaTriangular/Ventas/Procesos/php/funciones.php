@@ -97,7 +97,7 @@ if (isset($_POST['id_servicio'])) {
   $Codigo = $datoservicios['id'];
   // ¿Lleva la curva por bulto? (mismo criterio que AgregarVenta.php al grabar)
   require_once __DIR__ . '/../../../Funciones/php/bultos.php';
-  $porBulto = renglonEsDeBultos($mysqli, (string) $datoservicios['Codigo'], (string) $datoservicios['Titulo']);
+  $porBulto = ventaSimpleConCurva($mysqli, (string) $datoservicios['Codigo'], (string) $datoservicios['Titulo']);
   echo json_encode(array('success' => 1, 'PrecioVenta' => $PrecioVenta, 'Codigo' => $Codigo, 'PorBulto' => $porBulto ? 1 : 0));
 }
 
