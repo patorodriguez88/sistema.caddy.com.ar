@@ -59,8 +59,9 @@ function notifEntregasFallidasHoy(mysqli $mysqli): array
     ]];
 }
 
-// Tareas (Rec. Humanos > Tareas): mis pendientes de hoy (vencen hoy o atrasadas), más menciones sin ver y
-// tareas asignadas que todavía no abrí.
+// Tareas (Rec. Humanos > Tareas): mis pendientes de hoy (vencen hoy o atrasadas), más menciones sin ver,
+// tareas asignadas que todavía no abrí y comentarios nuevos en tareas que sigo (como la bandeja de Asana:
+// sigo una tarea si soy responsable, creador, me mencionaron o comenté).
 // Va primero porque es lo único personal de la lista. Si las tablas no existen todavía, no aparece.
 function notifTareas(mysqli $mysqli): array
 {
@@ -68,22 +69,28 @@ function notifTareas(mysqli $mysqli): array
     if (!$yo) return [];
     try {
         $st = $mysqli->prepare("
-            SELECT t.id, t.Titulo, t.FechaVencimiento, t.idCreador,
-                   (v.UltimaVista IS NULL OR v.UltimaVista < t.Actualizada) AS SinVer,
-                   (SELECT m.idAutor FROM ProyectosTareas_menciones m
-                     WHERE m.idTarea = t.id AND m.idUsuario = ? AND m.Vista = 0 ORDER BY m.id DESC LIMIT 1) AS MencionDe
-            FROM ProyectosTareas t
-            LEFT JOIN ProyectosTareas_vistas v ON v.idTarea = t.id AND v.idUsuario = ?
-            WHERE t.Eliminado = 0
-              AND (
-                    (t.idResponsable = ? AND t.Completada = 0
-                      AND (v.UltimaVista IS NULL OR v.UltimaVista < t.Actualizada OR t.FechaVencimiento <= CURDATE()))
-                 OR EXISTS (SELECT 1 FROM ProyectosTareas_menciones m WHERE m.idTarea = t.id AND m.idUsuario = ? AND m.Vista = 0)
-              )
-            ORDER BY t.FechaVencimiento IS NULL, t.FechaVencimiento, MencionDe IS NULL
+            SELECT x.* FROM (
+                SELECT t.id, t.Titulo, t.FechaVencimiento, t.idCreador,
+                       (t.idResponsable = ? AND t.Completada = 0
+                         AND (v.UltimaVista IS NULL OR v.UltimaVista < t.Actualizada OR t.FechaVencimiento <= CURDATE())) AS MiPendiente,
+                       (SELECT m.idAutor FROM ProyectosTareas_menciones m
+                         WHERE m.idTarea = t.id AND m.idUsuario = ? AND m.Vista = 0 ORDER BY m.id DESC LIMIT 1) AS MencionDe,
+                       (SELECT cn.idUsuario FROM ProyectosTareas_comentarios cn
+                         WHERE cn.idTarea = t.id AND cn.Eliminado = 0 AND cn.idUsuario <> ?
+                           AND (v.UltimaVista IS NULL OR cn.Fecha > v.UltimaVista)
+                         ORDER BY cn.id DESC LIMIT 1) AS ComentoDe
+                FROM ProyectosTareas t
+                LEFT JOIN ProyectosTareas_vistas v ON v.idTarea = t.id AND v.idUsuario = ?
+                WHERE t.Eliminado = 0
+                  AND (t.idResponsable = ? OR t.idCreador = ?
+                       OR EXISTS (SELECT 1 FROM ProyectosTareas_menciones sm WHERE sm.idTarea = t.id AND sm.idUsuario = ?)
+                       OR EXISTS (SELECT 1 FROM ProyectosTareas_comentarios sc WHERE sc.idTarea = t.id AND sc.idUsuario = ? AND sc.Eliminado = 0))
+            ) x
+            WHERE x.MiPendiente = 1 OR x.MencionDe IS NOT NULL OR x.ComentoDe IS NOT NULL
+            ORDER BY x.FechaVencimiento IS NULL, x.FechaVencimiento, x.MencionDe IS NULL, x.ComentoDe IS NULL
             LIMIT 30
         ");
-        $st->bind_param('iiii', $yo, $yo, $yo, $yo);
+        $st->bind_param('iiiiiiii', $yo, $yo, $yo, $yo, $yo, $yo, $yo, $yo);
         $st->execute();
         $filas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
     } catch (Throwable $e) {
@@ -100,17 +107,21 @@ function notifTareas(mysqli $mysqli): array
     $hoy = date('Y-m-d');
     $deHoy = 0;
     foreach ($filas as $t) {
-        if ($t['FechaVencimiento'] && $t['FechaVencimiento'] <= $hoy) $deHoy++;
+        if ((int) $t['MiPendiente'] === 1 && $t['FechaVencimiento'] && $t['FechaVencimiento'] <= $hoy) $deHoy++;
     }
     foreach (array_slice($filas, 0, 8) as $t) {
-        $atrasada = $t['FechaVencimiento'] && $t['FechaVencimiento'] < $hoy;
+        // Vencimientos solo de las mías; de las que sigo me importa el comentario o la mención
+        $mia = (int) $t['MiPendiente'] === 1;
+        $atrasada = $mia && $t['FechaVencimiento'] && $t['FechaVencimiento'] < $hoy;
         $hayAtrasadas = $hayAtrasadas || $atrasada;
         if ($atrasada) {
             $sub = 'Atrasada · vencía el ' . date('d/m', strtotime($t['FechaVencimiento']));
-        } elseif ($t['FechaVencimiento'] === $hoy) {
+        } elseif ($mia && $t['FechaVencimiento'] === $hoy) {
             $sub = 'Vence hoy';
         } elseif ($t['MencionDe']) {
             $sub = 'Te mencionó ' . ($nombres[(int) $t['MencionDe']] ?? 'alguien');
+        } elseif ($t['ComentoDe']) {
+            $sub = 'Comentó ' . ($nombres[(int) $t['ComentoDe']] ?? 'alguien');
         } else {
             $sub = 'Nueva · de ' . ($nombres[(int) $t['idCreador']] ?? 'alguien');
         }
