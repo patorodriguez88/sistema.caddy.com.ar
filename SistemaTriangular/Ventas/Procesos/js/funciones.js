@@ -233,9 +233,17 @@ function getParameterByName(name) {
     : decodeURIComponent(results[1].replace(/\+/g, " "));
 }
 
+// Curva por bulto, igual que la API y AgregarVenta.php: 2º bulto bonificado, del 3º en adelante 50%.
+// Los servicios por pallet/viaje (o valor declarado, cobranza...) van importe x cantidad.
+var ventaPorBulto = true;
+function totalVenta(precio, cantidad) {
+  var c = parseInt(cantidad, 10) || 0;
+  var f = !ventaPorBulto ? c : c <= 0 ? 0 : c <= 2 ? 1 : 1 + 0.5 * (c - 2);
+  return Math.round((parseFloat(precio) || 0) * f * 100) / 100;
+}
 function calculo(a) {
   var cantidad = document.getElementById("cantidad").value;
-  document.getElementById("total").value = cantidad * a;
+  document.getElementById("total").value = totalVenta(a, cantidad);
 }
 
 function eliminar(a) {
@@ -754,8 +762,7 @@ function formadepago(selec) {
 }
 
 function calcularcantidad(total) {
-  var nuevototal = document.getElementById("precioventa").value * total;
-  document.getElementById("total").value = nuevototal;
+  document.getElementById("total").value = totalVenta(document.getElementById("precioventa").value, total);
 }
 
 function cargar(id) {
@@ -769,9 +776,9 @@ function cargar(id) {
       if (jsonData.success == "1") {
         document.getElementById("precioventa").value = jsonData.PrecioVenta;
         document.getElementById("codigo").value = jsonData.Codigo;
+        ventaPorBulto = jsonData.PorBulto === undefined || Number(jsonData.PorBulto) === 1;
         var cantidad = document.getElementById("cantidad").value;
-        document.getElementById("total").value =
-          jsonData.PrecioVenta * cantidad;
+        document.getElementById("total").value = totalVenta(jsonData.PrecioVenta, cantidad);
         if (jsonData.Codigo != "") {
           $("#subir").prop("disabled", false);
         }

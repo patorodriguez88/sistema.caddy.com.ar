@@ -698,7 +698,7 @@
     <!-- DataTables -->
     <?php include '../Menu/php/script_datatables.php'; ?>
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Procesos/js/funciones.js?v=20261104a"></script>
+    <script src="Procesos/js/funciones.js?v=20261117a"></script>
     <script src="Procesos/js/validar_venta.js?v=<?php echo @filemtime(__DIR__ . '/Procesos/js/validar_venta.js') ?: time(); ?>"></script>
     <script src="Procesos/js/confirmar_venta.js?v=20261104a"></script>
     <script src="Procesos/js/redespacho.js"></script>
