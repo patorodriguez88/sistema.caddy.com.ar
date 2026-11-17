@@ -106,7 +106,7 @@ function tk_bloque_tarea(mysqli $db, array $t, string $extraHtml = ''): string
 {
     $vence = $t['FechaVencimiento'] ? date('d/m/Y', strtotime($t['FechaVencimiento'])) : 'Sin fecha';
     return '<p style="margin:0 0 6px"><b>' . htmlspecialchars($t['Titulo'], ENT_QUOTES, 'UTF-8') . '</b></p>'
-        . '<p style="margin:0 0 14px;color:#666;font-size:14px">Proyecto: ' . htmlspecialchars($t['Proyecto'] ?? '', ENT_QUOTES, 'UTF-8')
+        . '<p style="margin:0 0 14px;color:#666;font-size:14px">Tarea #' . (int) $t['id'] . ' · Proyecto: ' . htmlspecialchars($t['Proyecto'] ?? '', ENT_QUOTES, 'UTF-8')
         . ' · Responsable: ' . htmlspecialchars(tk_nombre($db, (int) $t['idResponsable']), ENT_QUOTES, 'UTF-8') . ' · Vence: ' . $vence . '</p>'
         . $extraHtml
         . '<p style="margin:18px 0 0"><a href="' . tk_link_tarea((int) $t['id']) . '" style="display:inline-block;background:#E24F30;color:#fff;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold">Abrir la tarea</a></p>';
@@ -132,7 +132,7 @@ function tk_menciones(mysqli $db, array $tarea, string $texto, ?int $idComentari
         $donde = $idComentario === null ? 'en la descripción de una tarea' : 'en un comentario';
         $ok = tk_mail(
             $db, $id,
-            tk_nombre($db, $autor) . ' te mencionó: ' . $tarea['Titulo'],
+            tk_nombre($db, $autor) . ' te mencionó: ' . $tarea['Titulo'] . ' (#' . (int) $tarea['id'] . ')',
             'Te mencionaron en una tarea',
             tk_nombre($db, $autor) . ' te mencionó ' . $donde,
             tk_bloque_tarea($db, $tarea, '<div style="background:#f6f7fb;border-radius:8px;padding:12px 14px;font-size:14px;color:#333">' . tk_html_texto($db, $texto) . '</div>')
