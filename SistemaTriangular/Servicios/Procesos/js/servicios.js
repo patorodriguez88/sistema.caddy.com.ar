@@ -122,6 +122,17 @@ var datatable = $("#servicios").DataTable({
       },
     },
     {
+      // Productos.BonificaCantidad: curva por cantidad (2º bulto bonificado, 3º en adelante 50%) en
+      // Venta Simple y en la API. Apagado: cada unidad se cobra completa.
+      data: "BonificaCantidad",
+      render: function (data, type, row) {
+        if (data === undefined || data === null) return "";
+        return Number(data) !== 0
+          ? `<a href="#" class="btn-bonifica" data-id="${row.id}" data-valor="0" title="Click para que no bonifique por cantidad"><span class="badge bg-success text-white">Sí</span></a>`
+          : `<a href="#" class="btn-bonifica" data-id="${row.id}" data-valor="1" title="Click para que bonifique por cantidad"><span class="badge bg-light text-muted border">No</span></a>`;
+      },
+    },
+    {
       data: "id",
       render: function (data, type, row) {
         if (row.Inactivo == 1) {
@@ -473,6 +484,23 @@ $("#staticBackdrop").on("hidden.bs.modal", function () {
   $("#btn_loading_inc").css("display", "none");
   $("#btn_acept_inc").css("display", "block");
   $("#btn_close_int").css("display", "block");
+});
+
+$("#servicios").on("click", ".btn-bonifica", function (e) {
+  e.preventDefault();
+  const id = $(this).data("id");
+  const valor = String($(this).data("valor"));
+  const texto =
+    valor === "0"
+      ? "Deja de bonificar por cantidad: cada bulto o unidad se cobra completo, en Venta Simple y en la API."
+      : "Pasa a bonificar por cantidad: 2º bulto bonificado y del 3º en adelante 50%, en Venta Simple y en la API.";
+  Swal.fire({ icon: "question", title: "¿Cambiar la bonificación?", text: texto, showCancelButton: true, confirmButtonText: "Sí, cambiar", cancelButtonText: "Cancelar" }).then((r) => {
+    if (!r.isConfirmed) return;
+    $.post("Procesos/php/servicios.php", { CambiarBonificaCantidad: 1, id: id, valor: valor }, null, "json").done(function (j) {
+      if (Number(j.success) === 1) $("#servicios").DataTable().ajax.reload(null, false);
+      else Swal.fire("Error", "No se pudo guardar.", "error");
+    });
+  });
 });
 
 $("#servicios").on("click", ".btn-cobro-bulto", function (e) {

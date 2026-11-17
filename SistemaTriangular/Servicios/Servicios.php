@@ -251,6 +251,7 @@
                                                 <th>Precio Neto</th>
                                                 <th>Precio Final</th>
                                                 <th title="Por bulto: la cantidad son los bultos. Por pallet / viaje: la cantidad es lo que se cobra y los bultos se piden aparte.">Se cobra por</th>
+                                                <th title="Sí: 2º bulto bonificado y del 3º en adelante 50%, en Venta Simple y en la API. No: cada unidad se cobra completa.">Bonifica por cantidad</th>
                                                 <th>Estado</th>
                                                 <th>Accion</th>
                                             </tr>
@@ -326,7 +327,7 @@
     <!-- Dashboard App js -->
     <!-- <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script> -->
     <!-- funciones -->
-    <script src="Procesos/js/servicios.js?v=20261104a"></script>
+    <script src="Procesos/js/servicios.js?v=20261117a"></script>
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
 

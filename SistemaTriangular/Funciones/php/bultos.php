@@ -39,13 +39,33 @@ function renglonEsDeBultos(mysqli $mysqli, string $codigo, string $titulo): bool
 }
 
 /**
- * ¿Venta Simple aplica la curva a este renglón? Solo las tarifas de envío ("Tarifa 2 | A"...), que son
- * las que cotiza la API, y por bulto. Otros servicios cargados a mano se cobran por hora, viaje o
- * unidad (Hora Sprinter 2,5, FLETE INTERNO, CAJA FRESH): importe x cantidad.
+ * ¿El servicio bonifica por cantidad? Productos.BonificaCantidad (switch en Servicios, migración
+ * 2026_11_17_productos_bonifica_cantidad.sql). Apagado: cada unidad se cobra completa, en ventas y en
+ * la API. Sin la columna o sin el producto: sí, como siempre.
  */
+function servicioBonificaCantidad(mysqli $mysqli, string $codigo): bool
+{
+    static $tiene = null, $cache = [];
+    if ($tiene === null) {
+        $r = $mysqli->query("SHOW COLUMNS FROM Productos LIKE 'BonificaCantidad'");
+        $tiene = $r && $r->num_rows > 0;
+    }
+    if (!$tiene || trim($codigo) === '') return true;
+    if (!array_key_exists($codigo, $cache)) {
+        $st = $mysqli->prepare("SELECT BonificaCantidad FROM Productos WHERE Codigo = ? LIMIT 1");
+        $st->bind_param('s', $codigo);
+        $st->execute();
+        $f = $st->get_result()->fetch_row();
+        $st->close();
+        $cache[$codigo] = !$f || (int) $f[0] !== 0;
+    }
+    return $cache[$codigo];
+}
+
+/** ¿Venta Simple aplica la curva a este renglón? Servicio por bulto y con la bonificación prendida. */
 function ventaSimpleConCurva(mysqli $mysqli, string $codigo, string $titulo): bool
 {
-    return preg_match('/^\s*TARIFA\b/i', $titulo) === 1 && renglonEsDeBultos($mysqli, $codigo, $titulo);
+    return renglonEsDeBultos($mysqli, $codigo, $titulo) && servicioBonificaCantidad($mysqli, $codigo);
 }
 
 /** Curva de descuento por bulto, en veces la tarifa: 1 = 100%, 2 = 100% (2º bonificado), 3 = 150%, 4 = 200%... (api: clases/pricing.class.php) */
@@ -101,14 +121,17 @@ function bultosCalcular(mysqli $mysqli, int $idTrans, int $nuevo): array
     $unitario = $antes > 1
         ? abs($total - $precio * $antes) < 0.02
         : $t['Origen'] === 'VENTA_MANUAL';
-    $base = ($antes > 1 && !$unitario) ? $total / factorBultos($antes) : $precio;
+    // Sin bonificación (Productos.BonificaCantidad = 0) cada bulto se cobra completo
+    $bonifica = servicioBonificaCantidad($mysqli, (string) $r['Codigo']);
+    $factor = fn(int $n): float => $bonifica ? factorBultos($n) : (float) $n;
+    $base = ($antes > 1 && !$unitario) ? $total / $factor($antes) : $precio;
     if ($antes === 1) $base = $total;
 
     $res['renglon'] = $r;
     $res['base'] = $base;
     $res['unitario'] = $unitario;
     $res['importeAntes'] = $total;
-    $res['importeNuevo'] = round($base * factorBultos($nuevo), 2);
+    $res['importeNuevo'] = round($base * $factor($nuevo), 2);
     return $res;
 }
 
