@@ -130,6 +130,18 @@ if (isset($_POST['CambiarCobroPorBulto'])) {
     exit;
 }
 
+// Bonificación por cantidad (Productos.BonificaCantidad, ver Funciones/php/bultos.php): con 1 el
+// servicio lleva la curva 2º bulto bonificado / 3º en adelante 50%, en Venta Simple y en la API.
+if (isset($_POST['CambiarBonificaCantidad'])) {
+    $id = (int) ($_POST['id'] ?? 0);
+    $valor = ($_POST['valor'] ?? '1') === '0' ? 0 : 1;
+    $st = $mysqli->prepare("UPDATE Productos SET BonificaCantidad = ? WHERE id = ? LIMIT 1");
+    $st->bind_param('ii', $valor, $id);
+    echo json_encode(array('success' => $st->execute() ? 1 : 0));
+    $st->close();
+    exit;
+}
+
 //BUSCO EL PROXIMO NUMERO DE RECORRIDO
 
 if (isset($_POST['Prod_num'])) {
