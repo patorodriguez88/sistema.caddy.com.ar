@@ -203,6 +203,8 @@ function tkPintarLista() {
   tkPintarKpis();
   var q = $("#tk_buscar").val().trim().toLowerCase();
   var filas = TK.tareas.filter(function (t) {
+    // También por número: "79" o "#79"
+    if (/^#?\d+$/.test(q)) return String(t.id) === q.replace("#", "") || t.titulo.toLowerCase().indexOf(q) >= 0;
     return !q || (t.titulo + " " + t.proyecto.nombre).toLowerCase().indexOf(q) >= 0;
   });
   var tipo = TK.vista.tipo;
@@ -236,7 +238,14 @@ function tkPintarLista() {
     fila = function (t) {
       var sub = [];
       if (t.repetir) sub.push('<span class="tk-repite" title="Se repite"><i class="mdi mdi-repeat"></i> ' + tkEsc(tkRepetirTexto(t.repetir)) + "</span>");
-      if (t.comentarios) sub.push('<span><i class="mdi mdi-comment-outline"></i> ' + t.comentarios + "</span>");
+      sub.unshift('<span class="tk-num" title="Número de tarea">#' + t.id + "</span>");
+      if (t.comentarios) {
+        sub.push(
+          '<span' + (t.comentariosNuevos ? ' class="tk-com-nuevos" title="Comentarios que no viste"' : "") + '><i class="mdi mdi-comment' +
+            (t.comentariosNuevos ? "" : "-outline") + '"></i> ' + t.comentarios +
+            (t.comentariosNuevos ? " · " + t.comentariosNuevos + (t.comentariosNuevos === 1 ? " nuevo" : " nuevos") : "") + "</span>",
+        );
+      }
       return '<td class="tk-col-check"><button type="button" class="tk-check' + (t.completada ? " on" : "") + '" data-id="' + t.id + '" title="' +
         (t.completada ? "Marcar pendiente" : "Marcar completada") + '"><i class="mdi mdi-check"></i></button></td>' +
         '<td><div class="tk-tarea-titulo">' + (t.nueva ? '<span class="tk-new" title="Nueva o con cambios que no viste"></span>' : "") + tkEsc(t.titulo) + "</div>" +
@@ -406,7 +415,10 @@ function tkAbrir(id) {
     $("#tk_completar, #tk_eliminar").prop("hidden", t.eliminada);
     $("#tk_copiar_link").prop("hidden", false);
     $("#tk_completar").toggleClass("on", t.completada).find("span").text(t.completada ? "Finalizada" : "Marcar como finalizada");
-    $("#tk_panel_titulo").html('<span class="tk-chip-proy"><span class="tk-dot" style="--tk-c:' + tkEsc(t.proyecto.color) + '"></span><span>' + tkEsc(t.proyecto.nombre) + "</span></span>");
+    $("#tk_panel_titulo").html(
+      '<span class="tk-chip-proy"><span class="tk-dot" style="--tk-c:' + tkEsc(t.proyecto.color) + '"></span><span>' + tkEsc(t.proyecto.nombre) + "</span></span>" +
+        '<span class="tk-num" title="Número de tarea">#' + t.id + "</span>",
+    );
     $("#tk_f_titulo").val(t.titulo);
     $("#tk_f_desc").val(t.descripcion);
     $("#tk_f_vence").val(t.vence || "");
@@ -424,7 +436,7 @@ function tkAbrir(id) {
     $("#tk_guardar").html('<i class="mdi mdi-content-save-outline me-1"></i>Guardar cambios').prop("hidden", t.eliminada);
     $("#tk_coment_box").prop("hidden", false);
     $(".tk-coment-nuevo").prop("hidden", t.eliminada);
-    tkPintarComentarios(r.comentarios);
+    tkPintarComentarios(r.comentarios, r.sigo ? r.vistaAnterior || "" : null);
     $("#tk_adj_box").prop("hidden", t.eliminada && !r.adjuntos.length);
     $("#tk_adj_zona").prop("hidden", t.eliminada);
     tkPintarAdjuntos(r.adjuntos);
@@ -436,11 +448,17 @@ function tkAbrir(id) {
     if (typeof cargarNotificaciones === "function") cargarNotificaciones();
   }).fail(tkError);
 }
-function tkPintarComentarios(lista) {
+// desde: última vista antes de abrirla ("" = nunca la abrí, null = no la sigo → nada es nuevo).
+// Los comentarios de otros posteriores se marcan como en Asana/Slack: línea "Nuevos" y resaltado.
+function tkPintarComentarios(lista, desde) {
+  var hayLinea = false;
   $("#tk_comentarios").html(
     lista.length
       ? lista.map(function (c) {
-          return '<div class="tk-coment">' + tkAvatar(c.usuario) + '<div class="tk-coment-body"><div class="tk-coment-head"><b>' +
+          var nuevo = desde !== null && desde !== undefined && c.usuario != TK.yo && (desde === "" || c.fecha > desde);
+          var linea = nuevo && !hayLinea ? '<div class="tk-coment-sep"><span>Nuevos</span></div>' : "";
+          if (nuevo) hayLinea = true;
+          return linea + '<div class="tk-coment' + (nuevo ? " nuevo" : "") + '">' + tkAvatar(c.usuario) + '<div class="tk-coment-body"><div class="tk-coment-head"><b>' +
             tkEsc(tkUsuario(c.usuario).nombre) + "</b><span>" + tkFechaHora(c.fecha) + '</span></div><div class="tk-coment-texto">' +
             tkTextoHtml(c.texto) + "</div></div></div>";
         }).join("")

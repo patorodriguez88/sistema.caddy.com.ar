@@ -146,7 +146,9 @@ function tk_fila(array $t, int $yo): array
         'atrasada'     => !$t['Completada'] && $t['FechaVencimiento'] && $t['FechaVencimiento'] < $hoy,
         'completada'   => (int) $t['Completada'] === 1,
         'comentarios'  => (int) ($t['Comentarios'] ?? 0),
-        'nueva'        => !$t['Completada'] && (int) $t['idResponsable'] === $yo && (empty($t['UltimaVista']) || $t['UltimaVista'] < $t['Actualizada']),
+        'comentariosNuevos' => (int) ($t['ComentariosNuevos'] ?? 0),
+        'nueva'        => (!$t['Completada'] && (int) $t['idResponsable'] === $yo && (empty($t['UltimaVista']) || $t['UltimaVista'] < $t['Actualizada']))
+                          || (int) ($t['ComentariosNuevos'] ?? 0) > 0,
         'eliminadaEl'  => $t['EliminadoFecha'],
         'eliminadaPor' => $t['EliminadoPor'] !== null ? (int) $t['EliminadoPor'] : null,
         'diasRestantes' => $t['EliminadoFecha'] ? max(0, TK_DIAS_ELIMINADOS - (int) floor((time() - strtotime($t['EliminadoFecha'])) / 86400)) : null,
@@ -202,7 +204,8 @@ try {
             $vista = $_POST['vista'] ?? 'bandeja';
             $completadas = !empty($_POST['completadas']) ? 1 : 0;
             $base = "SELECT t.*, p.Nombre AS Proyecto, p.Color AS ProyectoColor, v.UltimaVista,
-                            (SELECT COUNT(*) FROM ProyectosTareas_comentarios c WHERE c.idTarea = t.id AND c.Eliminado = 0) AS Comentarios
+                            (SELECT COUNT(*) FROM ProyectosTareas_comentarios c WHERE c.idTarea = t.id AND c.Eliminado = 0) AS Comentarios,
+                            " . tk_sql_comentarios_nuevos($yo) . " AS ComentariosNuevos
                      FROM ProyectosTareas t
                      LEFT JOIN Proyectos p ON p.id = t.idProyecto
                      LEFT JOIN ProyectosTareas_vistas v ON v.idTarea = t.id AND v.idUsuario = ?";
@@ -230,6 +233,13 @@ try {
         case 'tarea':
             $t = tk_tarea($db, (int) ($_POST['id'] ?? 0), true, $yo);
             if (!$t) tk_responder(['success' => 0, 'error' => 'La tarea no existe o no tenés acceso.'], 404);
+            // Antes de marcarla vista: desde cuándo son "nuevos" los comentarios (solo si la sigo)
+            $st = $db->prepare("SELECT v.UltimaVista, " . tk_sql_sigo($yo) . " AS Sigo FROM ProyectosTareas t
+                                LEFT JOIN ProyectosTareas_vistas v ON v.idTarea = t.id AND v.idUsuario = ? WHERE t.id = ?");
+            $idT = (int) $t['id'];
+            $st->bind_param('ii', $yo, $idT);
+            $st->execute();
+            $previa = $st->get_result()->fetch_assoc() ?: [];
             tk_marcar_vista($db, (int) $t['id'], $yo);
             $st = $db->prepare("SELECT id, idUsuario, Comentario, Fecha FROM ProyectosTareas_comentarios
                                 WHERE idTarea = ? AND Eliminado = 0 ORDER BY Fecha, id");
@@ -246,7 +256,7 @@ try {
                 'completadaEl'  => $t['CompletadaFecha'],
                 'completadaPor' => $t['CompletadaPor'] !== null ? (int) $t['CompletadaPor'] : null,
                 'eliminada'     => (int) $t['Eliminado'] === 1,
-            ], 'comentarios' => $comentarios]);
+            ], 'comentarios' => $comentarios, 'sigo' => !empty($previa['Sigo']), 'vistaAnterior' => $previa['UltimaVista'] ?? null]);
 
         case 'guardar_tarea':
             $id          = (int) ($_POST['id'] ?? 0);

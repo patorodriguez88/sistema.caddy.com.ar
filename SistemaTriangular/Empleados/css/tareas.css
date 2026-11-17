@@ -133,6 +133,14 @@
 .tk-coment-pie { display: flex; align-items: center; justify-content: space-between; }
 .tk-coment-enviar { width: 34px; height: 34px; border-radius: 8px; border: 1px solid var(--bs-border-color, #dcdce2); background: none; color: var(--bs-secondary-color, #6c757d); font-size: 1.1rem; }
 .tk-coment-enviar:hover { background: #727cf5; border-color: #727cf5; color: #fff; }
+/* Número de tarea (#79): discreto, en la lista y en el encabezado del panel */
+.tk-num { color: var(--bs-secondary-color, #6c757d); font-size: .74rem; font-weight: 500; font-variant-numeric: tabular-nums; margin-left: .5rem; }
+.tk-tarea-sub .tk-num { margin-left: 0; }
+.tk-com-nuevos { color: #727cf5; font-weight: 600; }
+/* Comentarios que no viste (como Asana/Slack): línea "Nuevos" y fondo suave */
+.tk-coment-sep { display: flex; align-items: center; gap: .5rem; margin: .2rem 0 .7rem; color: #727cf5; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+.tk-coment-sep::before, .tk-coment-sep::after { content: ""; flex: 1; height: 1px; background: color-mix(in srgb, #727cf5 40%, transparent); }
+.tk-coment.nuevo { background: rgba(114, 124, 245, .08); border-radius: 10px; padding: .45rem .55rem; margin-left: -.55rem; margin-right: -.55rem; }
 .tk-mencion { color: #727cf5; font-weight: 600; background: rgba(114, 124, 245, .1); border-radius: 4px; padding: 0 3px; }
 .tk-eliminada {
   display: flex; align-items: center; gap: .7rem; padding: .7rem .8rem; margin-bottom: 1rem; border-radius: 10px;

@@ -242,6 +242,22 @@ function tk_marcar_vista(mysqli $db, int $idTarea, int $usuario): void
     $st->bind_param('ii', $idTarea, $usuario);
     $st->execute();
 }
+// Quién "sigue" una tarea, como los colaboradores de Asana: responsable, creador, mencionados y
+// quien haya comentado. A ellos se les marcan los comentarios nuevos (de otros, después de su última
+// vista) en la lista, en el panel y en la campanita.
+function tk_sql_sigo(int $yo, string $t = 't'): string
+{
+    return "($t.idResponsable = $yo OR $t.idCreador = $yo
+             OR EXISTS (SELECT 1 FROM ProyectosTareas_menciones sm WHERE sm.idTarea = $t.id AND sm.idUsuario = $yo)
+             OR EXISTS (SELECT 1 FROM ProyectosTareas_comentarios sc WHERE sc.idTarea = $t.id AND sc.idUsuario = $yo AND sc.Eliminado = 0))";
+}
+// Cantidad de comentarios de otros que no vi (necesita el alias v de ProyectosTareas_vistas).
+function tk_sql_comentarios_nuevos(int $yo, string $t = 't'): string
+{
+    return "(CASE WHEN " . tk_sql_sigo($yo, $t) . " THEN (SELECT COUNT(*) FROM ProyectosTareas_comentarios cn
+             WHERE cn.idTarea = $t.id AND cn.Eliminado = 0 AND cn.idUsuario <> $yo
+               AND (v.UltimaVista IS NULL OR cn.Fecha > v.UltimaVista)) ELSE 0 END)";
+}
 function tk_tocar(mysqli $db, int $idTarea, int $usuario): void
 {
     $db->query("UPDATE ProyectosTareas SET Actualizada = NOW() WHERE id = " . $idTarea);
