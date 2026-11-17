@@ -95,11 +95,11 @@ function wepoint_egreso_tablas(mysqli $mysqli): void
     $hecho = true;
 }
 
-/** El envío está en el depósito de Wepoint: entró por la cola y no salió (ni está saliendo). */
+/** El envío está en el depósito de Wepoint: entró por la cola y no salió (ni está saliendo) después. */
 function wepoint_en_deposito(mysqli $mysqli, int $idTc): bool
 {
     return (bool)$mysqli->query("SELECT 1 FROM wepoint_cola i WHERE i.id_tc = $idTc AND i.tipo = 'ingreso' AND i.estado = 'ok'
-        AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = $idTc AND s.tipo = 'salida') LIMIT 1")->fetch_row();
+        AND " . wepoint_sql_sin_salida_posterior('i') . " LIMIT 1")->fetch_row();
 }
 
 /** Orden de egreso abierta de un recorrido entero (no las de un envío suelto). */
@@ -144,7 +144,7 @@ function wepoint_envios_del_recorrido_en_deposito(mysqli $mysqli, int $recorrido
     $filas = $mysqli->query("SELECT DISTINCT TC.id, TC.CodigoSeguimiento FROM TransClientes TC
         JOIN wepoint_cola i ON i.id_tc = TC.id AND i.tipo = 'ingreso' AND i.estado = 'ok'
         WHERE TC.Recorrido = $recorrido AND TC.Eliminado = 0 AND TC.Entregado = 0 AND TC.Devuelto = 0
-          AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = TC.id AND s.tipo = 'salida')")->fetch_all(MYSQLI_ASSOC);
+          AND " . wepoint_sql_sin_salida_posterior('i') . "")->fetch_all(MYSQLI_ASSOC);
 
     return array_column($filas, 'CodigoSeguimiento', 'id');
 }
@@ -156,7 +156,7 @@ function wepoint_en_deposito_por_recorrido(mysqli $mysqli): array
     $filas = $mysqli->query("SELECT TC.Recorrido, COUNT(DISTINCT TC.id) AS n FROM wepoint_cola i
         JOIN TransClientes TC ON TC.id = i.id_tc AND TC.Eliminado = 0 AND TC.Entregado = 0 AND TC.Devuelto = 0
         WHERE i.tipo = 'ingreso' AND i.estado = 'ok' AND i.fecha >= CURDATE() - INTERVAL 60 DAY
-          AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = i.id_tc AND s.tipo = 'salida')
+          AND " . wepoint_sql_sin_salida_posterior('i') . "
         GROUP BY TC.Recorrido")->fetch_all(MYSQLI_ASSOC);
 
     return array_map('intval', array_column($filas, 'n', 'Recorrido'));
@@ -681,7 +681,7 @@ function wepoint_info_envios(mysqli $mysqli, array $ids): array
     $info = [];
 
     foreach ($mysqli->query("SELECT DISTINCT i.id_tc FROM wepoint_cola i WHERE i.id_tc IN ($lista) AND i.tipo = 'ingreso' AND i.estado = 'ok'
-        AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.id_tc = i.id_tc AND s.tipo = 'salida')")->fetch_all(MYSQLI_ASSOC) as $f) {
+        AND " . wepoint_sql_sin_salida_posterior('i'))->fetch_all(MYSQLI_ASSOC) as $f) {
         $info[(int)$f['id_tc']]['en_deposito'] = true;
     }
     foreach ($mysqli->query("SELECT it.id_tc, e.id, e.nro_oeb, e.estado, e.tipo, e.motivo_egreso FROM wepoint_egreso_items it JOIN wepoint_egresos e ON e.id = it.id_egreso

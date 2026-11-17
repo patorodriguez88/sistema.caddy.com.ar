@@ -168,7 +168,9 @@ function wepoint_conciliar_al_reactivar(mysqli $mysqli): int
     $n = 0;
     foreach ($envios as $idTc => $e) {
         $tc = $mysqli->query("SELECT CodigoSeguimiento, Cantidad FROM TransClientes WHERE id = $idTc AND Eliminado = 0")->fetch_assoc();
-        $hay = $mysqli->query("SELECT 1 FROM wepoint_cola WHERE id_tc = $idTc AND tipo = 'salida' LIMIT 1")->fetch_row();
+        // Ya tiene la salida de esta estadía (posterior a su último ingreso); una de antes no cuenta
+        $hay = $mysqli->query("SELECT 1 FROM wepoint_cola s WHERE s.id_tc = $idTc AND s.tipo = 'salida'
+            AND s.id > IFNULL((SELECT MAX(i.id) FROM wepoint_cola i WHERE i.id_tc = $idTc AND i.tipo = 'ingreso'), 0) LIMIT 1")->fetch_row();
         if (!$tc || $hay || $e['piezas'] < max(1, (int)$tc['Cantidad'])) {
             continue;
         }
@@ -531,6 +533,19 @@ function wepoint_trazabilidad_de(mysqli $mysqli, array $ids): array
     }
 
     return $porEnvio;
+}
+
+/**
+ * Condición SQL "este ingreso no tiene una salida posterior" ($i = alias de la fila de ingreso en
+ * wepoint_cola). Un paquete que salió, no se entregó y volvió a entrar tiene ingreso, salida e ingreso:
+ * sigue en el depósito. Antes se miraba si tenía ALGUNA salida y los que volvían quedaban como
+ * afuera: no entraban en las órdenes de egreso y Wepoint no los armaba (tarea 78, OEB-2026-0085,
+ * rec. 1511: 4 de IGALFER reingresados el 13/11). Se compara por id (la fecha sola no alcanza si
+ * entra y sale el mismo día).
+ */
+function wepoint_sql_sin_salida_posterior(string $i = 'i'): string
+{
+    return "NOT EXISTS (SELECT 1 FROM wepoint_cola s_post WHERE s_post.id_tc = $i.id_tc AND s_post.tipo = 'salida' AND s_post.id > $i.id)";
 }
 
 function wepoint_cola_tabla(mysqli $mysqli): void
@@ -937,7 +952,7 @@ function wepoint_conciliar_salidas(mysqli $mysqli, int $dias = 60): int
             FROM wepoint_cola i
             JOIN TransClientes TC ON TC.id = i.id_tc AND TC.Eliminado = 0
             WHERE i.tipo = 'ingreso' AND i.estado = 'ok' AND i.fecha >= CURDATE() - INTERVAL $dias DAY
-              AND NOT EXISTS (SELECT 1 FROM wepoint_cola s WHERE s.tipo = 'salida' AND s.id_tc = i.id_tc)
+              AND " . wepoint_sql_sin_salida_posterior('i') . "
             GROUP BY i.id_tc, i.codigo, TC.Recorrido, TC.CodigoSeguimiento
         ) e
         WHERE EXISTS (SELECT 1 FROM Seguimiento sg
