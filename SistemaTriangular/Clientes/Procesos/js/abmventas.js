@@ -118,12 +118,7 @@ var id= $('#id_modificar').val();
 //  - cada apertura agregaba OTRO click al boton: la venta se cargaba varias veces.
 // La lista se carga una vez (Funciones/js/ventas_curva.js) y el select2 se arma dentro del modal.
 function cargarListaServicios(cb){
-  ventasCargarServicios('Procesos/php/abmventas.php', function(){
-    var $sel = $('#servicio');
-    if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
-    $sel.select2({ dropdownParent: $('#bs-ventas-modal-lg'), width: '100%' });
-    cb();
-  });
+  ventasCargarServicios('Procesos/php/abmventas.php', cb);
 }
 
 function avisoVentas(tipo, msg){
