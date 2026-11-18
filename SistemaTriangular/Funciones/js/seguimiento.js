@@ -364,6 +364,9 @@ function loadTrackingPanel(id) {
       if ($.fn.DataTable.isDataTable("#seguimiento_tabla")) {
         $("#seguimiento_tabla").DataTable().destroy();
       }
+      // FIX (18/11, NIOVE3FGT): Clientes (Remitos a facturar) traía una fila de relleno con 3 celdas
+      // para 4 columnas; DataTables no arrancaba y los movimientos quedaban vacíos. La fila no hace falta.
+      $("#seguimiento_tabla tbody").empty();
 
       var datatable_seguimiento = $("#seguimiento_tabla").DataTable({
         paging: false,

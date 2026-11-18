@@ -453,6 +453,7 @@ header("location:/SistemaTriangular/inicio.php");
                                                     <td></td>
                                                     <td></td>
                                                     <td></td>
+                                                                    <td></td>
                                                 </tr>
                                                 </tbody>
                                             </table>
