@@ -441,7 +441,8 @@ header('location:/SistemaTriangular/inicio.php');
         <!-- third party js ends -->
         <!-- end demo js-->
         <!-- funciones -->
-        <script src="Procesos/js/redespachos.js"></script>
+        <script src="../Funciones/js/ventas_curva.js?v=<?php echo filemtime(__DIR__ . '/../Funciones/js/ventas_curva.js'); ?>"></script>
+        <script src="Procesos/js/redespachos.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/redespachos.js'); ?>"></script>
         <script src="../Funciones/js/seguimiento.js"></script>
         <script src="../Menu/js/funciones.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>

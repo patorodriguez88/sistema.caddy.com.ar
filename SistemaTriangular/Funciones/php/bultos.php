@@ -74,6 +74,53 @@ function factorBultos(int $bultos): float
     return $bultos <= 2 ? 1.0 : 1.0 + 0.5 * ($bultos - 2);
 }
 
+// Modales de ventas (Clientes, Pendientes, Redespachos), 18/11/2026: mismo criterio que Venta Simple.
+/** ¿El renglón lleva la curva con esta cantidad? Servicio por bulto, que bonifica, y cantidad entera. */
+function ventaLlevaCurva(mysqli $mysqli, string $codigo, string $titulo, float $cantidad): bool
+{
+    return $cantidad > 0 && $cantidad == (int) $cantidad && ventaSimpleConCurva($mysqli, $codigo, $titulo);
+}
+
+/** Total del renglón: precio x curva si la lleva, si no precio x cantidad. */
+function ventaTotalCalculado(mysqli $mysqli, string $codigo, string $titulo, float $precio, float $cantidad): float
+{
+    $veces = ventaLlevaCurva($mysqli, $codigo, $titulo, $cantidad) ? factorBultos((int) $cantidad) : $cantidad;
+    return round($precio * $veces, 2);
+}
+
+/**
+ * Renglón de Ventas para el modal: agrega ConCurva (1/0) y deja en Precio el precio unitario. Las ventas
+ * que vienen de la preventa (API, plataforma) guardan el total en Precio (ej. 6 bultos de 9.254,03 =
+ * Precio 27.762,09): se muestra total / curva.
+ */
+function ventaParaModal(mysqli $mysqli, array $row): array
+{
+    $cant = (float) ($row['Cantidad'] ?? 0);
+    $row['ConCurva'] = ventaLlevaCurva($mysqli, (string) ($row['Codigo'] ?? ''), (string) ($row['Titulo'] ?? ''), $cant) ? 1 : 0;
+    if ($row['ConCurva'] && $cant > 2) {
+        $factor = factorBultos((int) $cant);
+        $precio = (float) $row['Precio'];
+        $total = (float) $row['Total'];
+        if (abs($precio * $factor - $total) > 0.05 && abs($precio - $total) <= 0.05) {
+            $row['Precio'] = round($total / $factor, 2);
+        }
+    }
+    return $row;
+}
+
+/** Importe neto e IVA según la alícuota del producto (Productos.Iva: 1.21 o 21.00): [neto, iva1 (2,5%), iva2 (10,5%), iva3 (21%)]. */
+function ventaNetoIva(float $total, $ivaProducto): array
+{
+    $f = (float) $ivaProducto;
+    if ($f > 2) $f = 1 + $f / 100;
+    $neto = $f > 0 ? round($total / $f, 2) : $total;
+    $iva = round($total - $neto, 2);
+    if (abs($f - 1.025) < 0.0001) return [$neto, $iva, 0.0, 0.0];
+    if (abs($f - 1.105) < 0.0001) return [$neto, 0.0, $iva, 0.0];
+    if (abs($f - 1.21) < 0.0001) return [$neto, 0.0, 0.0, $iva];
+    return [$neto, 0.0, 0.0, 0.0];
+}
+
 /**
  * Qué pasaría al corregir los bultos de un envío, sin tocar nada.
  * Por bulto con un único renglón que copia los bultos: ese renglón pasa a la cantidad nueva y el importe
