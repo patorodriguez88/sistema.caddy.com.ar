@@ -116,17 +116,14 @@ var id= $('#id_modificar').val();
 //    quedo comentado): sin servicio no se completaban Titulo/Total y no se podia cargar;
 //  - select2 dentro del modal necesita dropdownParent para poder desplegar y buscar;
 //  - cada apertura agregaba OTRO click al boton: la venta se cargaba varias veces.
-var serviciosCargados = false;
+// La lista se carga una vez (Funciones/js/ventas_curva.js) y el select2 se arma dentro del modal.
 function cargarListaServicios(cb){
-  if (serviciosCargados) { cb(); return; }
-  $.post('Procesos/php/abmventas.php', {ListarServicios: 1}, null, 'json').done(function(res){
-    var $grupo = $('#servicio optgroup');
-    (res && res.data || []).forEach(function(p){
-      $grupo.append($('<option>').val(p.id).text(p.Titulo + ' | $ ' + p.PrecioVenta));
-    });
-    serviciosCargados = true;
+  ventasCargarServicios('Procesos/php/abmventas.php', function(){
+    var $sel = $('#servicio');
+    if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
+    $sel.select2({ dropdownParent: $('#bs-ventas-modal-lg'), width: '100%' });
     cb();
-  }).fail(function(){ cb(); });
+  });
 }
 
 function avisoVentas(tipo, msg){
@@ -142,12 +139,7 @@ function agregarVentas(id){
  $('#modificarventas_ok').hide();
  if (!$('#ventas_fecha').val()) { $('#ventas_fecha').val(new Date().toISOString().slice(0,10)); }
 
- cargarListaServicios(function(){
-   var $sel = $('#servicio');
-   if ($sel.hasClass('select2-hidden-accessible')) { $sel.select2('destroy'); }
-   $sel.select2({ dropdownParent: $('#bs-ventas-modal-lg'), width: '100%' });
-   $sel.val($sel.find('option:first').val()).trigger('change.select2');
- });
+ cargarListaServicios(function(){ ventasElegirServicio(0); });
 
   $('#agregarventas_ok').off('click.agregar').on('click.agregar', function(){
    var idproducto = $('#servicio').val();
@@ -479,6 +471,7 @@ function modificarVentas(IDPEDIDO){
          $('#ventas_cantidad').val(jsonData.data[0].Cantidad);
          $('#ventas_total').val(jsonData.data[0].Total);
          ventasCurvaReset(jsonData.data[0].ConCurva);
+         cargarListaServicios(function(){ ventasElegirServicio(jsonData.data[0].idProducto); });
          $('#bs-ventas-modal-lg').modal('show');
          $('#header-ventas-modal').html('Modificar Venta # '+IDPEDIDO);
          $('#id_ventas').val(IDPEDIDO);
@@ -612,6 +605,7 @@ $('#form_bs-ventas-modal-lg')[0].reset();
 // Bonificación por cantidad: Funciones/js/ventas_curva.js (ventasRecalcular, ventasCurvaReset)
 //FUNCION CARGAR
 function cargar(id){
+  if (ventasEligiendoServicio) return; // el modal eligió el servicio de la venta: no pisar sus datos
 //   alert(id);
   var dato={"id_servicio":id};    
   $.ajax({

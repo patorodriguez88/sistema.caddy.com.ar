@@ -34,3 +34,43 @@ function ventasCurvaReset(conCurva) {
 
 // Solo si cambia el valor (antes recalculaba con solo pasar por el campo)
 $(document).on("change", "#ventas_cantidad, #ventas_precio", ventasRecalcular);
+
+// ── Servicio del modal (18/11) ─────────────────────────────────────────────────────────────────────
+// Al modificar una venta, el selector "Servicio" queda con el servicio del renglón (idProducto, que
+// devuelve el backend) en vez de "Seleccione una Opcion". Mientras se elige por código, cargar() no
+// pisa título, precio ni código (ventasEligiendoServicio).
+var ventasEligiendoServicio = false;
+
+// Llena la lista si está vacía (Clientes y Pendientes no la traen armada desde el PHP).
+function ventasCargarServicios(url, cb) {
+  var $grupo = $("#servicio optgroup");
+  if ($grupo.find("option").length || !$grupo.length) {
+    cb && cb();
+    return;
+  }
+  $.post(url, { ListarServicios: 1 }, null, "json")
+    .done(function (res) {
+      if (!$grupo.find("option").length) {
+        (res && res.data ? res.data : []).forEach(function (p) {
+          $grupo.append($("<option>").val(p.id).text(p.Titulo + " | $ " + p.PrecioVenta));
+        });
+      }
+    })
+    .always(function () {
+      cb && cb();
+    });
+}
+
+// Deja elegido el servicio (0 o vacío = "Seleccione una Opcion") sin disparar cargar().
+function ventasElegirServicio(idProducto) {
+  var $sel = $("#servicio");
+  var valor = idProducto && $sel.find('option[value="' + idProducto + '"]').length
+    ? String(idProducto)
+    : $sel.find("option:first").val();
+  ventasEligiendoServicio = true;
+  try {
+    $sel.val(valor).trigger("change");
+  } finally {
+    ventasEligiendoServicio = false;
+  }
+}

@@ -95,6 +95,7 @@ function ventaTotalCalculado(mysqli $mysqli, string $codigo, string $titulo, flo
  */
 function ventaParaModal(mysqli $mysqli, array $row): array
 {
+    $row['idProducto'] = ventaIdProducto($mysqli, (string) ($row['Codigo'] ?? ''), (string) ($row['Titulo'] ?? ''));
     $cant = (float) ($row['Cantidad'] ?? 0);
     $row['ConCurva'] = ventaLlevaCurva($mysqli, (string) ($row['Codigo'] ?? ''), (string) ($row['Titulo'] ?? ''), $cant) ? 1 : 0;
     if ($row['ConCurva'] && $cant > 2) {
@@ -106,6 +107,35 @@ function ventaParaModal(mysqli $mysqli, array $row): array
         }
     }
     return $row;
+}
+
+/**
+ * Servicio (Productos.id) del renglón, para dejarlo elegido en el modal. Por Codigo; si el título no
+ * coincide (las ventas de la API vienen con el código genérico 0000000049 "SOLICITUD WEB" y el título
+ * real, ej. "TARIFA FLEX"), por el título cuando hay un solo servicio con ese nombre. 0 si no se sabe.
+ */
+function ventaIdProducto(mysqli $mysqli, string $codigo, string $titulo): int
+{
+    $porCodigo = null;
+    if (trim($codigo) !== '') {
+        $st = $mysqli->prepare("SELECT id, Titulo FROM Productos WHERE Codigo = ? LIMIT 1");
+        $st->bind_param('s', $codigo);
+        $st->execute();
+        $porCodigo = $st->get_result()->fetch_assoc();
+        $st->close();
+        if ($porCodigo && strcasecmp(trim($porCodigo['Titulo']), trim($titulo)) === 0) return (int) $porCodigo['id'];
+    }
+    // "2DA VISITA - Tarifa 3 | B" es la misma tarifa (Funciones/php/segunda_visita.php)
+    $titulo = trim(preg_replace('/^\s*2DA VISITA\s*-\s*/i', '', $titulo));
+    if ($titulo !== '') {
+        $st = $mysqli->prepare("SELECT id FROM Productos WHERE Titulo = ? LIMIT 2");
+        $st->bind_param('s', $titulo);
+        $st->execute();
+        $ids = $st->get_result()->fetch_all();
+        $st->close();
+        if (count($ids) === 1) return (int) $ids[0][0];
+    }
+    return $porCodigo ? (int) $porCodigo['id'] : 0;
 }
 
 /** Importe neto e IVA según la alícuota del producto (Productos.Iva: 1.21 o 21.00): [neto, iva1 (2,5%), iva2 (10,5%), iva3 (21%)]. */
