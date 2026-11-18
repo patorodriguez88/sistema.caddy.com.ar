@@ -4,6 +4,20 @@
 // como HTML antes del JSON, rompiendo el JSON.parse() del lado del cliente.
 include_once "../../../Conexion/Conexioni.php";
 require_once __DIR__ . '/../../../Funciones/php/eliminar_envio.php';
+require_once __DIR__ . '/../../../Funciones/php/bultos.php';
+
+// Bonificación por cantidad en el modal de ventas (18/11, tarea 61): igual que Venta Simple. Si el servicio
+// se cobra por bulto y bonifica (Productos.BonificaCantidad) y la cantidad es entera, el total es precio x
+// curva (1 = 1, 2 = 1, 3 = 1,5, 4 = 2...); si no, precio x cantidad.
+function abmConCurva(mysqli $mysqli, string $codigo, string $titulo, float $cantidad): bool
+{
+  return $cantidad == (int)$cantidad && ventaSimpleConCurva($mysqli, $codigo, $titulo);
+}
+function abmTotalVenta(mysqli $mysqli, string $codigo, string $titulo, float $precio, float $cantidad): float
+{
+  $veces = abmConCurva($mysqli, $codigo, $titulo, $cantidad) ? factorBultos((int)$cantidad) : $cantidad;
+  return round($precio * $veces, 2);
+}
 date_default_timezone_set('America/Buenos_Aires');
 
 if(isset($_POST['Actualiza']) && $_POST['Actualiza']==1){
@@ -69,7 +83,17 @@ if(isset($_POST['BuscarDatosVentas']) && $_POST['BuscarDatosVentas']==1){
     $rows=array();
 
     while($row=$Resultado->fetch_array(MYSQLI_ASSOC)){
-    
+        // ConCurva: el modal recalcula el total con la curva. Las ventas que vienen de la preventa (API,
+        // plataforma) guardan el total en Precio: se muestra el precio unitario (total / curva).
+        $cant = (float)$row['Cantidad'];
+        $row['ConCurva'] = abmConCurva($mysqli, (string)$row['Codigo'], (string)$row['Titulo'], $cant) ? 1 : 0;
+        if ($row['ConCurva'] && $cant > 2) {
+            $factor = factorBultos((int)$cant);
+            $precio = (float)$row['Precio']; $total = (float)$row['Total'];
+            if (abs($precio * $factor - $total) > 0.05 && abs($precio - $total) <= 0.05) {
+                $row['Precio'] = round($total / $factor, 2);
+            }
+        }
         $rows[]=$row;  
     }
    
@@ -102,7 +126,7 @@ if(isset($_POST['AgregarDatosVentas']) && $_POST['AgregarDatosVentas']==1){
   }
   $titulo = trim((string)($_POST['tituloventa'] ?? '')) !== '' ? (string)$_POST['tituloventa'] : (string)$prod['Titulo'];
 
-  $Total = round($cantidad * $precio, 2);
+  $Total = abmTotalVenta($mysqli, (string)$prod['Codigo'], $titulo, $precio, $cantidad);
   $ivaFactor = (float)$prod['Iva'];
   if ($ivaFactor > 2) { $ivaFactor = 1 + $ivaFactor / 100; } // hay productos con "21.00" en vez de 1.21
   $ImporteNeto = $ivaFactor > 0 ? round($Total / $ivaFactor, 2) : $Total;
@@ -185,6 +209,13 @@ $info="M: ".$_SESSION['Usuario'].' | '.date('Y-m-d (h:m:s)');
         }
       
 
+  // Con curva el total se calcula acá (precio x curva), no se toma el del formulario. Sin curva queda el del
+  // formulario: la colecta, por ejemplo, lleva la cantidad de paquetes con un solo cargo.
+  if ((float)str_replace(',', '.', (string)($_POST['precio'] ?? '')) > 0
+      && abmConCurva($mysqli, (string)($_POST['codigo'] ?? ''), (string)($_POST['titulo'] ?? ''), (float)($_POST['cantidad'] ?? 0))) {
+    $_POST['total'] = (string)abmTotalVenta($mysqli, (string)($_POST['codigo'] ?? ''), (string)($_POST['titulo'] ?? ''),
+                                            (float)str_replace(',', '.', (string)$_POST['precio']), (float)($_POST['cantidad'] ?? 0));
+  }
   // Consulta preparada: un apostrofo en comentario/titulo rompia el UPDATE (2026-09-29)
   $stMod = $mysqli->prepare("UPDATE Ventas SET Comentario=?,Codigo=?,Titulo=?,Total=?,infoABM=?,Cantidad=?,Precio=?,FechaPedido=? WHERE idPedido=? LIMIT 1");
   $valsMod = array((string)($_POST['comentario'] ?? ''), (string)($_POST['codigo'] ?? ''), (string)($_POST['titulo'] ?? ''), (string)($_POST['total'] ?? ''),
@@ -354,7 +385,8 @@ if(isset($_POST['id_servicio']) && $_POST['id_servicio']<>''){
   if(!$datoservicios){
     echo json_encode(array('success'=>0));
   }else{
-    echo json_encode(array('success'=> 1,'id'=>(int)$datoservicios['id'],'PrecioVenta'=> $datoservicios['PrecioVenta'],'Codigo'=>$datoservicios['Codigo'],'Titulo'=>$datoservicios['Titulo']));
+    echo json_encode(array('success'=> 1,'id'=>(int)$datoservicios['id'],'PrecioVenta'=> $datoservicios['PrecioVenta'],'Codigo'=>$datoservicios['Codigo'],'Titulo'=>$datoservicios['Titulo'],
+      'ConCurva'=>ventaSimpleConCurva($mysqli, (string)$datoservicios['Codigo'], (string)$datoservicios['Titulo']) ? 1 : 0));
   }
 }
 

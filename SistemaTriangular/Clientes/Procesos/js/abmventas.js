@@ -134,6 +134,8 @@ function avisoVentas(tipo, msg){
 }
 
 function agregarVentas(id){
+ ventasConCurva = false;
+ $('#ventas_curva_aviso').text('');
 
  $('#bs-ventas-modal-lg').modal('show');
  $('#header-ventas-modal').html('Agregar Venta a Codigo # '+id);
@@ -477,6 +479,8 @@ function modificarVentas(IDPEDIDO){
          $('#ventas_precio').val(jsonData.data[0].Precio);
          $('#ventas_cantidad').val(jsonData.data[0].Cantidad);
          $('#ventas_total').val(jsonData.data[0].Total);
+         ventasConCurva = jsonData.data[0].ConCurva == 1;
+         $('#ventas_curva_aviso').text('');
          $('#bs-ventas-modal-lg').modal('show');
          $('#header-ventas-modal').html('Modificar Venta # '+IDPEDIDO);
          $('#id_ventas').val(IDPEDIDO);
@@ -607,16 +611,24 @@ $('#form_bs-ventas-modal-lg')[0].reset();
 
 
 //FUNCION CANTIDAD
-$('#ventas_cantidad').blur(function(){
- var precio = Number(document.getElementById('ventas_precio').value); 
- var cantidad = document.getElementById('ventas_cantidad').value; 
-  document.getElementById('ventas_total').value=precio*cantidad; 
-})
-$('#ventas_precio').blur(function(){
- var precio = Number(document.getElementById('ventas_precio').value); 
- var cantidad = document.getElementById('ventas_cantidad').value; 
-  document.getElementById('ventas_total').value=precio*cantidad; 
-})
+// Bonificación por cantidad (18/11, tarea 61): igual que Venta Simple. Si el servicio se cobra por bulto y
+// bonifica (switch en Servicios), el total es precio x curva: 1 = 1, 2 = 1, 3 = 1,5, 4 = 2... El servidor
+// lo vuelve a calcular al guardar.
+var ventasConCurva = false;
+function ventasFactorBultos(n) { return n <= 2 ? 1 : 1 + 0.5 * (n - 2); }
+function ventasRecalcular() {
+  var precio = Number(String(document.getElementById('ventas_precio').value).replace(',', '.')) || 0;
+  var cantidad = Number(document.getElementById('ventas_cantidad').value) || 0;
+  var curva = ventasConCurva && cantidad > 0 && Number.isInteger(cantidad);
+  document.getElementById('ventas_total').value = (precio * (curva ? ventasFactorBultos(cantidad) : cantidad)).toFixed(2);
+  var $aviso = $('#ventas_curva_aviso');
+  if (!$aviso.length) {
+    $aviso = $('<small id="ventas_curva_aviso" class="d-block text-white-50"></small>').insertAfter('#ventas_total');
+  }
+  $aviso.text(curva && cantidad > 1 ? 'Bonificación por cantidad: ' + cantidad + ' bultos = ' + ventasFactorBultos(cantidad) + ' tarifas' : '');
+}
+// Solo si cambia el valor (antes recalculaba con solo pasar por el campo)
+$('#ventas_cantidad, #ventas_precio').on('change', ventasRecalcular);
 //FUNCION CARGAR
 function cargar(id){
 //   alert(id);
@@ -633,8 +645,8 @@ function cargar(id){
            document.getElementById('ventas_titulo').value=jsonData.Titulo; 
            document.getElementById('ventas_precio').value=jsonData.PrecioVenta;
            document.getElementById('ventas_codigo').value=jsonData.Codigo;
-           var cantidad=document.getElementById('ventas_cantidad').value;
-           document.getElementById('ventas_total').value=jsonData.PrecioVenta*cantidad; 
+           ventasConCurva = jsonData.ConCurva == 1;
+           ventasRecalcular();
            }
         }  
   });
