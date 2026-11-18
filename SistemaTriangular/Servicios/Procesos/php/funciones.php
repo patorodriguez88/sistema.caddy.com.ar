@@ -5,6 +5,15 @@ require_once __DIR__ . '/../../../Funciones/php/bultos.php';
 require_once('../../../Google/geolocalizar.php');
 date_default_timezone_set('America/Argentina/Buenos_Aires');
 
+// Lista de servicios del modal de ventas (Funciones/js/ventas_curva.js). En Pendientes estaba vacía: el
+// SELECT que la llenaba quedó comentado en Pendientes.php.
+if (isset($_POST['ListarServicios'])) {
+  $res = $mysqli->query("SELECT id,Titulo,PrecioVenta FROM Productos ORDER BY Titulo");
+  echo json_encode(array('success' => 1, 'data' => $res ? $res->fetch_all(MYSQLI_ASSOC) : array()));
+  exit;
+}
+
+
 // Corregir los bultos del envío desde la ficha de seguimiento (Funciones/php/bultos.php).
 if (isset($_POST['BultosPrevisualizar']) || isset($_POST['ModificarBultos']) || isset($_POST['BultosUltimoCambio'])) {
   require_once __DIR__ . '/../../../Funciones/php/bultos.php';

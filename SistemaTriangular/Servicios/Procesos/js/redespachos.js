@@ -214,8 +214,7 @@ $('#ventas_cantidad').val(1);
 $('#ventas_precio').val('0');
 $('#ventas_total').val(0);
 
-//  $('#servicio').find('option').not(':first').reload();
-$('#servicio').val($("#servicio option:first").val());
+ventasElegirServicio(0);
 
 $('#header-ventas-modal').html('Agregar Venta a Codigo # '+id);
 $('#agregarventas_ok').show();
@@ -249,6 +248,7 @@ $.ajax({
 }
 
 function cargar(id){
+if (ventasEligiendoServicio) return; // el modal eligió el servicio de la venta: no pisar sus datos
 var dato={"id_servicio":id};    
 $.ajax({
     data: dato,
@@ -336,6 +336,7 @@ function modificarVentas(id){
        $('#ventas_precio').val(jsonData.data[0].Precio);
        $('#ventas_total').val(jsonData.data[0].Total);
        ventasCurvaReset(jsonData.data[0].ConCurva);
+       ventasElegirServicio(jsonData.data[0].idProducto);
        $('#bs-ventas-modal-lg').modal('show');
        $('#standard-modal').modal('hide');
        $('#header-ventas-modal').html('Modificar Venta # '+id);
