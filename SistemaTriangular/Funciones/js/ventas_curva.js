@@ -17,11 +17,11 @@ function ventasRecalcular() {
   $("#ventas_total").val((precio * (curva ? ventasFactorBultos(cantidad) : cantidad)).toFixed(2));
   var $aviso = $("#ventas_curva_aviso");
   if (!$aviso.length) {
-    $aviso = $('<small id="ventas_curva_aviso" class="d-block text-white-50"></small>').insertAfter("#ventas_total");
+    $aviso = $('<small id="ventas_curva_aviso" class="form-text text-muted d-block"></small>').insertAfter("#ventas_total");
   }
   $aviso.text(
     curva && cantidad > 1
-      ? "Bonificación por cantidad: " + cantidad + " bultos = " + ventasFactorBultos(cantidad) + " tarifas"
+      ? "Con bonificación: " + cantidad + " bultos = " + String(ventasFactorBultos(cantidad)).replace(".", ",") + " tarifas"
       : "",
   );
 }
@@ -41,10 +41,20 @@ $(document).on("change", "#ventas_cantidad, #ventas_precio", ventasRecalcular);
 // pisa título, precio ni código (ventasEligiendoServicio).
 var ventasEligiendoServicio = false;
 
-// Llena la lista si está vacía (Clientes y Pendientes no la traen armada desde el PHP).
+// select2 dentro del modal (si no, el buscador del desplegable no toma el foco)
+function ventasPrepararSelect() {
+  var $sel = $("#servicio");
+  if (!$.fn.select2 || $sel.data("vmSelect2")) return;
+  if ($sel.hasClass("select2-hidden-accessible")) $sel.select2("destroy");
+  $sel.select2({ dropdownParent: $("#bs-ventas-modal-lg"), width: "100%" });
+  $sel.data("vmSelect2", 1);
+}
+
+// Llena la lista la primera vez (el modal compartido, Funciones/php/modal_ventas.php, la trae vacía).
 function ventasCargarServicios(url, cb) {
   var $grupo = $("#servicio optgroup");
   if ($grupo.find("option").length || !$grupo.length) {
+    ventasPrepararSelect();
     cb && cb();
     return;
   }
@@ -57,6 +67,7 @@ function ventasCargarServicios(url, cb) {
       }
     })
     .always(function () {
+      ventasPrepararSelect();
       cb && cb();
     });
 }
