@@ -476,7 +476,8 @@
     <?php include '../Menu/php/script_datatables.php'; ?>
 
     <!-- Funciones -->
-    <script src="Procesos/js/pendientes.js?v=202609090900"></script>
+    <script src="../Funciones/js/ventas_curva.js?v=<?php echo filemtime(__DIR__ . '/../Funciones/js/ventas_curva.js'); ?>"></script>
+    <script src="Procesos/js/pendientes.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/pendientes.js'); ?>"></script>
     <script src="../Funciones/js/seguimiento.js?v=<?php echo filemtime(__DIR__ . '/../Funciones/js/seguimiento.js'); ?>"></script>
     <script src="../Menu/js/funciones.js"></script>
 

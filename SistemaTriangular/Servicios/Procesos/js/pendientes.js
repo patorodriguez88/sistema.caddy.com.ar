@@ -478,6 +478,7 @@ $("#standard-modal").on("show.bs.modal", function (e) {
 });
 
 function agregarVentas(id) {
+  ventasCurvaReset(false);
   $("#bs-ventas-modal-lg").modal("show");
   $("#ventas_codigo").val("");
   $("#ventas_titulo").val("");
@@ -538,31 +539,14 @@ function cargar(id) {
         document.getElementById("ventas_titulo").value = jsonData.Titulo;
         document.getElementById("ventas_precio").value = jsonData.PrecioVenta;
         document.getElementById("ventas_codigo").value = jsonData.Codigo;
-        var cantidad = document.getElementById("ventas_cantidad").value;
-        document.getElementById("ventas_total").value =
-          jsonData.PrecioVenta * cantidad;
+        ventasCurvaReset(jsonData.ConCurva);
+        ventasRecalcular();
       }
     },
   });
 }
 
-//MODIFICAR TOTAL DESDE CANTIDAD
-$("#ventas_cantidad").blur(function () {
-  var precio = parseFloat(document.getElementById("ventas_precio").value);
-  var cantidad = Number(document.getElementById("ventas_cantidad").value);
-  var resultado = precio * cantidad;
-  document.getElementById("ventas_total").value = resultado;
-  //  document.getElementById('ventas_total').value=precio*cantidad;
-});
-
-//MODIFICAR TOTAL DESDE PRECIO
-$("#ventas_precio").blur(function () {
-  var precio = parseFloat(document.getElementById("ventas_precio").value);
-  var cantidad = Number(document.getElementById("ventas_cantidad").value);
-  var resultado = precio * cantidad;
-  document.getElementById("ventas_total").value = resultado;
-  //   console.log('resultado',precio*cantidad);
-});
+// Total con la bonificación por cantidad: Funciones/js/ventas_curva.js
 
 function eliminarVentas(id) {
   $("#warning-modal").modal("show");
@@ -624,6 +608,7 @@ function modificarVentas(id) {
       $("#ventas_cantidad").val(jsonData.data[0].Cantidad);
       $("#ventas_precio").val(jsonData.data[0].Precio);
       $("#ventas_total").val(jsonData.data[0].Total);
+      ventasCurvaReset(jsonData.data[0].ConCurva);
       $("#bs-ventas-modal-lg").modal("show");
       $("#standard-modal").modal("hide");
       $("#header-ventas-modal").html("Modificar Venta # " + id);
