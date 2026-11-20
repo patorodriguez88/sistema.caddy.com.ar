@@ -1,7 +1,31 @@
 openapi: 3.0.3
 info:
   title: API Caddy
-  description: Documentación de la API de Caddy para autenticación y servicios.
+  description: |
+    Documentación de la API de Caddy para autenticación y servicios.
+
+    ## Requisitos de todos los pedidos
+
+    - **User-Agent obligatorio.** Cada pedido tiene que mandar el header `User-Agent` con un nombre que
+      identifique la integración, por ejemplo `User-Agent: MiEmpresa-Integracion/1.0`. El firewall del
+      servidor rechaza con **HTTP 406 Not Acceptable** (una página HTML, no JSON) los pedidos **sin
+      User-Agent** o con el que trae **curl por defecto** (`curl/x.y.z`). Las librerías habituales
+      (Guzzle, python-requests, axios, etc.) ya mandan uno propio y funcionan sin cambios.
+    - **JSON.** Los cuerpos van en JSON con `Content-Type: application/json`.
+    - **Token.** Salvo `/auth`, los endpoints piden el token que devuelve `/auth`, preferentemente en
+      el header `Authorization: Bearer <token>` (también se acepta como indica cada endpoint).
+
+    Ejemplo con curl:
+
+    ```bash
+    curl -X POST https://api.caddy.com.ar/api/auth \
+      -H "User-Agent: MiEmpresa-Integracion/1.0" \
+      -H "Content-Type: application/json" \
+      -d '{"usuario":"tu_usuario","password":"tu_clave"}'
+    ```
+
+    Si recibís un **406** con el texto "blocked by Mod Security", revisá el User-Agent: no es un
+    bloqueo de tu IP ni de tu usuario.
   version: "1.0.0"
 
 servers:
@@ -48,6 +72,8 @@ paths:
                     example: 628bdb405bf8ed31b1af72f999d10e75
         "401":
           description: Usuario o contraseña inválidos
+        "406":
+          description: Pedido rechazado por el firewall del servidor (ModSecurity) porque no trae User-Agent o trae el de curl por defecto. Responde una página HTML, no JSON. Ver "Requisitos de todos los pedidos".
 
   /servicios:
     get:
