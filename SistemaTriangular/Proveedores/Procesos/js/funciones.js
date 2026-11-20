@@ -133,9 +133,8 @@ $("#btn_eliminar_pago_ok").click(function () {
         table.ajax.reload();
         $("#danger-header-modal").modal("hide");
       } else {
-        console.log("NumeroAsiento", jsonData.NumeroAsiento);
-
-        // toast("warning", "Error !", "No se han realizado cambios.");
+        // Antes no mostraba nada y parecía que el botón no andaba (Asana, Agustina 20/11)
+        toast("warning", "No se eliminó el pago", jsonData.message || "No se han realizado cambios.");
       }
     },
   });

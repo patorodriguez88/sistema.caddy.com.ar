@@ -656,11 +656,49 @@ if (isset($_POST['Borrar_Pago_ok'])) {
     ");
 
     if (!$sql || $sql->num_rows == 0) {
-        echo json_encode(array(
-            'success' => 0,
-            'error' => 3,
-            'message' => 'No se encontró el movimiento de Tesorería asociado al pago.'
-        ));
+        // FIX (20/11/2026, Asana de Agustina, Bagur Fernando 26805): las aplicaciones de un anticipo a una
+        // factura pueden no tener movimientos propios en Tesorería (quedan en el anticipo). Si NUNCA tuvo
+        // movimientos se puede borrar: se elimina la fila y se descuenta lo pagado de la factura en
+        // IvaCompras. Si los tuvo y figuran borrados, no se toca: hay que revisarlo con administración.
+        $st = $mysqli->prepare("SELECT COUNT(*) FROM Tesoreria WHERE idTransProvee = ?");
+        $st->bind_param('i', $idTransProveedores);
+        $st->execute();
+        $tuvo = (int) $st->get_result()->fetch_row()[0];
+        $st->close();
+        $st = $mysqli->prepare("SELECT RazonSocial, TipoDeComprobante, NumeroComprobante, IFNULL(Haber,0) AS Haber
+                                  FROM TransProveedores WHERE id = ? AND Eliminado = 0 AND IFNULL(Haber,0) > 0 LIMIT 1");
+        $st->bind_param('i', $idTransProveedores);
+        $st->execute();
+        $pago = $st->get_result()->fetch_assoc();
+        $st->close();
+
+        if ($tuvo > 0 || !$pago) {
+            echo json_encode(array(
+                'success' => 0,
+                'error' => 3,
+                'message' => $tuvo > 0
+                    ? 'Los movimientos de Tesorería de este pago figuran borrados. No se eliminó: revisalo con administración.'
+                    : 'No se encontró el pago.'
+            ));
+            exit;
+        }
+
+        $mysqli->begin_transaction();
+        $st = $mysqli->prepare("UPDATE TransProveedores SET Eliminado = 1, InfoABM = CONCAT(IFNULL(InfoABM,''), ?) WHERE id = ? LIMIT 1");
+        $infoSinTes = $Info . ' (aplicación sin movimientos de Tesorería)';
+        $st->bind_param('si', $infoSinTes, $idTransProveedores);
+        $st->execute();
+        $st->close();
+        if (trim((string) $pago['NumeroComprobante']) !== '') {
+            $st = $mysqli->prepare("UPDATE IvaCompras SET Pagado = GREATEST(IFNULL(Pagado,0) - ?, 0), InfoABM = CONCAT(IFNULL(InfoABM,''), ?)
+                                     WHERE TipoDeComprobante = ? AND NumeroComprobante = ? AND RazonSocial = ? LIMIT 1");
+            $haberPago = (float) $pago['Haber'];
+            $st->bind_param('dssss', $haberPago, $InfoM, $pago['TipoDeComprobante'], $pago['NumeroComprobante'], $pago['RazonSocial']);
+            $st->execute();
+            $st->close();
+        }
+        $mysqli->commit();
+        echo json_encode(array('success' => 1, 'message' => 'Pago eliminado (no tenía movimientos de Tesorería).'));
         exit;
     }
 

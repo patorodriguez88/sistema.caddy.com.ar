@@ -580,7 +580,8 @@ document.addEventListener("DOMContentLoaded", function () {
         // Guardamos el numero recien confirmado para poder imprimirlo -
         // el reset de mas abajo pisa #nasiento con el proximo numero
         // propuesto, asi que hay que leerlo antes de que eso pase.
-        ultimoAsientoGuardado = $("#nasiento").val();
+        // El número real lo asigna el servidor al guardar un asiento nuevo (puede no ser el propuesto).
+        ultimoAsientoGuardado = data.NumeroAsiento || $("#nasiento").val();
         $("#btnImprimirAsiento").show();
 
         desactivarValidacion = true; // 🛑 Pausar validación temporalmente

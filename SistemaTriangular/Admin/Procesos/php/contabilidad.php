@@ -102,21 +102,36 @@ function guardarAsiento($conexion) {
             exit();
         }
 
-        // 1. Traer IDs existentes del asiento actual
-        $asientoActual = [];
-        $sqlExistentes = "SELECT id FROM Tesoreria WHERE NumeroAsiento = '$nasiento' AND Eliminado != 1";
-        $resultado = $conexion->query($sqlExistentes);
-        while ($fila = $resultado->fetch_assoc()) {
-            $asientoActual[] = $fila['id'];
-        }
+        // FIX (20/11/2026, Asana de Agustina "no puedo eliminar un pago" → Bagur Fernando): el número de un
+        // asiento NUEVO venía del formulario, calculado al ABRIR la pantalla (máximo + 1). Si mientras estaba
+        // abierta otro módulo grababa con ese número (anticipo o pago a proveedor, cobranza de cliente), al
+        // guardar se tomaba como EDICIÓN de ese asiento y sus movimientos se marcaban Eliminado. Pasó 18 veces
+        // entre ago y nov 2026 (anticipos de Bagur, Icazatti, Kurlat, Mari Martín, cobranzas...).
+        //  - Asiento nuevo (ninguna fila trae id): el número lo asigna el servidor al guardar, con un lock para
+        //    que dos guardados simultáneos no tomen el mismo, y no se borra nada.
+        //  - Edición: solo se pueden quitar filas cargadas a mano; las que vienen de otros módulos
+        //    (idTransProvee, idCtasctes, idAnticiposProveedores) no se tocan desde acá.
+        $idsRecibidos = array_values(array_filter(array_map('trim', (array) ($_POST['id'] ?? [])), fn($v) => $v !== ''));
+        $esNuevo = count($idsRecibidos) === 0;
+        $lock = false;
 
-        $idsRecibidos = $_POST['id'] ?? [];
-
-        // 2. Marcar como Eliminado los que fueron borrados
-        foreach ($asientoActual as $idExistente) {
-            if (!in_array($idExistente, $idsRecibidos)) {
+        if ($esNuevo) {
+            $r = $conexion->query("SELECT GET_LOCK('tesoreria_numero_asiento', 10) AS l");
+            $lock = $r && (int) ($r->fetch_assoc()['l'] ?? 0) === 1;
+            $r = $conexion->query("SELECT MAX(NumeroAsiento) AS m FROM Tesoreria");
+            $nasiento = (int) ($r ? ($r->fetch_assoc()['m'] ?? 0) : 0) + 1;
+        } else {
+            $nasiento = (int) $nasiento;
+            // 1. Filas del asiento que no vinieron en el formulario: se quitan solo si son manuales
+            $sqlExistentes = "SELECT id, IFNULL(idTransProvee,0) AS a, IFNULL(idCtasctes,0) AS b, IFNULL(idAnticiposProveedores,0) AS c
+                                FROM Tesoreria WHERE NumeroAsiento = '$nasiento' AND Eliminado != 1";
+            $resultado = $conexion->query($sqlExistentes);
+            while ($fila = $resultado->fetch_assoc()) {
+                if (in_array((string) $fila['id'], $idsRecibidos, true)) continue;
+                if ((int) $fila['a'] || (int) $fila['b'] || (int) $fila['c']) continue; // de otro módulo: no se toca
+                // 2. Marcar como Eliminado los que fueron borrados
                 $infoABM = "Eliminado por $usuario el " . date('d-m-Y H:i');
-                $conexion->query("UPDATE Tesoreria SET Eliminado = 1, InfoABM = '$infoABM' WHERE id = $idExistente");
+                $conexion->query("UPDATE Tesoreria SET Eliminado = 1, InfoABM = '$infoABM' WHERE id = " . (int) $fila['id']);
             }
         }
 
@@ -189,13 +204,15 @@ function guardarAsiento($conexion) {
             }
 
             if (!$conexion->query($sql)) {
+                if ($lock) $conexion->query("SELECT RELEASE_LOCK('tesoreria_numero_asiento')");
                 echo json_encode(["success" => false, "mensaje" => "Error al guardar: " . $conexion->error]);
                 exit();
             }
         }
+        if ($lock) $conexion->query("SELECT RELEASE_LOCK('tesoreria_numero_asiento')");
 
-
-        echo json_encode(["success" => true, "mensaje" => "Asiento contable guardado correctamente."]);
+        echo json_encode(["success" => true, "NumeroAsiento" => $nasiento,
+            "mensaje" => "Asiento contable N° $nasiento guardado correctamente."]);
 
     } catch (Exception $e) {
         echo json_encode(["success" => false, "mensaje" => "Excepción: " . $e->getMessage()]);
