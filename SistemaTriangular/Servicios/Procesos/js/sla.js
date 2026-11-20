@@ -136,57 +136,6 @@ $.ajax({
 });
 });
 
-$('#entregado').change(function(e) {
-  if(this.checked) {
-      $('#entregado').val(1);
-      }else{
-      $('#entregado').val(0);
-      } 
-});
 
-
-
-$('#standard-modal').on('show.bs.modal', function (e) {
-var id= $('#id_modificar').val();  
-var datatable = $('#ventas_tabla').DataTable({
-bFilter: false, 
-bInfo: false,
-paging:false,
-search:false,  
-ajax: {
-       url:"Procesos/php/funciones.php",
-       data:{'BuscarDatosVentas':1,'id':id},
-       processing: true,
-       type:'post'
-      },
-      // FIX (reportado, 2026-09-17: "cobranza integrada sigue sin verse
-      // rojo"): faltaba acá el mismo rowCallback ya agregado en
-      // pendientes.js/redespachos.js/abmventas.js - el backend
-      // (Servicios/Procesos/php/funciones.php) ya traía not_invoice.
-      rowCallback: function (row, data, index) {
-        if (data.not_invoice == 1) {
-          $(row).css('color', 'red');
-        }
-      },
-      columns: [
-        {data:"idPedido"},
-        {data:"FechaPedido"},
-        {data:"Codigo"},
-        {data:"Titulo"},
-        {data:"Total"},
-        {data:"idPedido",
-         render: function (data, type, row) {
-          return '<td class="table-action">'+
-          '<a id="'+row.idPedido+'" onclick="modificarVentas(this.id);" class="action-icon"> <i class="mdi mdi-pencil text-warning"></i></a>'+
-          '<a id="'+row.idPedido+'" onclick="eliminarVentas(this.id);" class="action-icon"> <i class="mdi mdi-trash-can text-danger"></i></a>'+
-          '<a id="'+row.NumPedido+'" onclick="agregarVentas(this.id);" class="action-icon"> <i class="mdi mdi-plus-circle text-success"></i></a>'+  
-          '</td>';
-          }
-        }
-        ]
-      });
-});
-
-
-
-
+// (20/11/2026) Se sacaron el modal del envío y el de ventas: eran copias de Pendientes que en SLA no
+// se podían abrir (no había función modificar() ni botón que las llamara).
