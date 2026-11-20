@@ -236,7 +236,7 @@
 
                                                     <div class="col-md-2">
                                                         <label><b>Núm.</b></label>
-                                                        <input type="text" id="numero_control" class="form-control" placeholder="0000" maxlength="4">
+                                                        <input type="text" id="numero_control" class="form-control" placeholder="00000" maxlength="5" inputmode="numeric" title="Punto de venta (5 dígitos, como figura en la factura)">
                                                     </div>
                                                     <div class="col-md-3">
                                                         <label><b>Número de Factura</b></label>

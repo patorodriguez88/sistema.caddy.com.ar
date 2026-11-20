@@ -1686,7 +1686,9 @@ $("#confirmar_factura").click(function () {
   $(".checkbox_factura:checked").each(function () {
     ordenes.push($(this).data("orden"));
   });
-  const numeroControl = $("#numero_control").val().padStart(4, "0");
+  // Punto de venta: 5 dígitos como en la factura (ej. 00001). Antes el campo cortaba a 4 (Asana, Agustina 20/11).
+  const pv = String($("#numero_control").val() || "").replace(/\D/g, "");
+  const numeroControl = pv ? pv.padStart(5, "0") : "";
   const numeroFactura = $("#numero_factura").val().padStart(12, "0");
   const tipoComprobante = $("#tipo_comprobante").val();
   const importe = parseFloat($("#importe_factura").val());
