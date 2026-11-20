@@ -1323,7 +1323,7 @@
              deploy hasta que alguien haga un hard-refresh a mano, sin
              ningún aviso de que está desactualizado. Subir el número cada
              vez que se toque alguno de estos archivos. -->
-        <script src="Procesos/js/funciones.js?v=20260923a"></script>
+        <script src="Procesos/js/funciones.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/funciones.js'); ?>"></script>
         <script src="../Menu/js/funciones.js?v=20260923a"></script>
         <script src="Procesos/js/proveedores.js?v=20260923a"></script>
         <script src="Procesos/js/proveedores_pagos.js?v=20260923a"></script>

@@ -648,7 +648,7 @@
     <script src="../hyper/dist/assets/js/pages/demo.dashboard.js"></script>
 
     <!-- Funciones -->
-    <script src="Procesos/js/contabilidad.js"></script>
+    <script src="Procesos/js/contabilidad.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/contabilidad.js'); ?>"></script>
     <script src="../Menu/js/funciones.js"></script>
     <script src="../Funciones/js/alertas.js"></script>
     <!-- <script src="js/mapa_inicio.js"></script> -->
