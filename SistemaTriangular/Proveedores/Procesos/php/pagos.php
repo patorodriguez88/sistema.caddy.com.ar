@@ -3,6 +3,7 @@ error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
 include_once "../../../Conexion/Conexioni.php";
+include_once "estado_aplicacion.php";
 $Usuario = $_SESSION['Usuario'];
 $Sucursal = $_SESSION['Sucursal'];
 
@@ -215,106 +216,8 @@ VALUES
 
 //CARGAR PAGO 
 
-if (isset($_POST['CargarPago'])) {
-    $Fecha = isset($_POST['fecha']) ? $_POST['fecha'] : date('Y-m-d');
-    $RazonSocial = isset($_POST['RazonSocial']) ? $_POST['RazonSocial'] : '';
-    $Cuit = isset($_POST['Cuit']) ? $_POST['Cuit'] : '';
-    $idProveedor = isset($_POST['idproveedor']) ? $_POST['idproveedor'] : 0;
-    $FP = isset($_POST['formadepago']) ? $_POST['formadepago'] : 0;
-    $Importe = isset($_POST['importe']) ? (float)$_POST['importe'] : 0;
-
-    $Banco = '';
-    $NumeroCheque = '';
-    $FechaCheque = null;
-
-    $FechaTrans = isset($_POST['fecha_transferencia']) ? $_POST['fecha_transferencia'] : null;
-    $NumeroTrans = isset($_POST['num_transferencia']) ? $_POST['num_transferencia'] : '';
-    $BancoTrans = isset($_POST['banco_transferencia']) ? $_POST['banco_transferencia'] : '';
-
-    $idAnticiposProveedores = 0;
-
-    //BUSCO EL DATO DEL COMPROBANTE MAS VIEJO
-
-    $dato = join(',', $_POST['id']);
-    $sql = $mysqli->query("SELECT * FROM TransProveedores WHERE Eliminado=0 AND id IN ($dato) ORDER BY Fecha ASC");
-    $saldo = $Importe;
-
-    while ($row = $sql->fetch_array(MYSQLI_ASSOC)) {
-
-        if ($saldo > 0) {
-
-            $TipoDeComprobante = $row['TipoDeComprobante'];
-            $NumeroComprobante = $row['NumeroComprobante'];
-            $Concepto = 'PAGO A PROVEEDORES';
-            $Importe_Comprobante = $row['Debe'];
-
-            if ($Importe <= $Importe_Comprobante) {
-
-                $Saldo = 0;
-            } else {
-
-                $Importe = $Importe_Comprobante;
-                $Saldo = $Importe - $Importe_Comprobante;
-            }
-
-            $sql = "INSERT INTO TransProveedores(Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,Haber,Concepto,FormaDePago,idProveedor,usuario)VALUES
-    ('{$Fecha}','{$RazonSocial}','{$Cuit}','{$TipoDeComprobante}','{$NumeroComprobante}','{$Importe}','{$Concepto}','{$FormaDePago}','{$idProveedor}','{$Usuario}')";
-            $mysqli->query($sql);
-
-
-            // BUSCA EL ULTIMO REGISTRO DE TRANSPROVEEDORES INGRESADO
-            $sqlbuscaid = $mysqli->query("SELECT MAX(id)as id FROM TransProveedores WHERE Concepto='PAGO A PROVEEDORES'");
-            $datosqlbuscaid = $sqlbuscaid->fetch_array(MYSQLI_ASSOC);
-            $idTransProveedores = $datosqlbuscaid['id'];
-
-            $BuscaCuenta = $mysqli->query("SELECT NombreCuenta,Cuenta FROM PlanDeCuentas WHERE Cuenta='$FormaDePago'");
-            $Cuenta = $BuscaCuenta->fetch_array(MYSQLI_ASSOC);
-            $Cuenta1 = $Cuenta['NombreCuenta'];
-
-            $Observaciones = "PAGO A ACREEDORES";
-            $CuentaProveedores = 'ACREEDORES';
-            $NumeroCuentaProveedores = '211400';
-
-            $FechaTrans = $_POST['fecha_transferencia'];
-            $NumeroTrans = $_POST['num_transferencia'];
-            $BancoTrans = $_POST['banco_transferencia'];
-
-            $Sucursal = $_SESSION['Sucursal'];
-            $Usuario = $_SESSION['Usuario'];
-
-            //BUSCO EL NUMERO DE ASIENTO
-            $sql_asiento = $mysqli->query("SELECT NumeroAsiento FROM Tesoreria WHERE Eliminado=0 AND idTransProvee = '" . $row['id'] . "' GROUP BY NumeroAsiento ");
-            $row_asiento = $sql_asiento->fetch_array(MYSQLI_ASSOC);
-            $NAsiento = $row_asiento['NumeroAsiento'];
-
-            // CARGO LOS DATOS EN LA TABLA CHEQUE Y PONGO UTILIZADO EN 1 SI EL PAGO FUE CON CHEQUE PROPIO	
-            if ($FP == 5) {
-
-                $sql3 = "UPDATE Cheques SET Utilizado='1',Asiento='$NAsiento',Importe='$Importe',FechaCobro='$FechaCheque',
-                 Proveedor='$RazonSocial',Sucursal='$Sucursal',Usuario='$Usuario' WHERE NumeroCheque='$NumeroCheque' AND Banco='$Banco'";
-                $mysqli->query($sql3);
-            }
-
-            $sql1 = "INSERT INTO `Tesoreria`(
-            Fecha,NombreCuenta,Cuenta,Debe,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES 
-            ('{$Fecha}','{$CuentaProveedores}','{$NumeroCuentaProveedores}','{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque}',
-            '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
-            $mysqli->query($sql1);
-
-            $sql2 = "INSERT INTO `Tesoreria`(
-            Fecha,
-            NombreCuenta,
-            Cuenta,
-            Haber,Observaciones,Banco,FechaCheque,NumeroCheque,Sucursal,Usuario,NumeroAsiento,FechaTrans,NumeroTrans,idTransProvee,FormaDePago) VALUES 
-            ('{$Fecha}','{$Cuenta1}','{$FormaDePago}','{$Importe}','{$Observaciones}','{$Banco}','{$FechaCheque}',
-            '{$NumeroCheque}','{$Sucursal}','{$Usuario}','{$NAsiento}','{$FechaTrans}','{$NumeroTrans}','{$idTransProveedores}','{$FormaDePago}')";
-            $mysqli->query($sql2);
-        } //aca finalizo el if
-
-    } //aca finalizo el while
-
-    echo json_encode(array('success' => 1));
-}
+// (21/11/2026) Se borró 'CargarPago': ninguna pantalla lo llamaba (los pagos se cargan como anticipo
+// y se aplican con Pago desde anticipos o Asociar pagos).
 
 //PAGOS DESDE ANTICIPOS
 
@@ -462,9 +365,16 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
 
     //UPDATE IVA COMPRAS
 
-    $SQL_IVA_COMPRAS = "UPDATE `IvaCompras` SET `Pagado`=`Pagado`+'$SaldoAnticipos' WHERE `TipoDeComprobante`='$TipoDeComprobante' AND `NumeroComprobante`='$NumeroComprobante' AND `RazonSocial`='$RazonSocial' LIMIT 1";
+    // Tipo/número de la FACTURA: si hubo resto, $TipoDeComprobante/$NumeroComprobante quedaron pisados
+    // con los del anticipo nuevo ('ANTICIPO A ACREEDORES', '') y este UPDATE no encontraba nada.
+    $TipoFactura = $rowTransProveedores['TipoDeComprobante'];
+    $NumeroFactura = $rowTransProveedores['NumeroComprobante'];
+    $SQL_IVA_COMPRAS = "UPDATE `IvaCompras` SET `Pagado`=`Pagado`+'$SaldoAnticipos' WHERE `TipoDeComprobante`='$TipoFactura' AND `NumeroComprobante`='$NumeroFactura' AND `RazonSocial`='$RazonSocial' LIMIT 1";
     $mysqli->query($SQL_IVA_COMPRAS);
 
+    // Los anticipos usados quedaron con el tipo y número de la factura: se registra la imputación
+    // para que la Cuenta Corriente y "Asociar pagos" la vean cancelada (21/11/2026).
+    imputarPorNumeroProveedor($mysqli, (int) $idProveedor, (string) $TipoFactura, (string) $NumeroFactura, (string) $Usuario);
 
     echo json_encode(array('success' => 1, 'Asiento' => $NAsiento, 'Importe' => $Importe, 'Disponible' => $Disponible));
 }
