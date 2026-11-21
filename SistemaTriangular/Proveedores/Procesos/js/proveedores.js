@@ -131,6 +131,14 @@ $("#cargar_factura_btn_ok").click(function () {
   } else if (Nc == "") {
     $("#numerocomprobante_t").addClass("border border-danger");
     return;
+  } else if (esComprobanteC(Tc)) {
+    // Comprobantes C (monotributo): no discriminan IVA, todo el importe va en Exento.
+    // Antes se exigía Importe Neto y se cargaba 0,01 para poder guardar (Asana, Agustina).
+    if (!(parseFloat(exento) > 0)) {
+      $("#exento_t").addClass("border border-danger");
+      swal.fire({ title: "Falta el importe", text: "En los comprobantes C el importe va en Exento.", icon: "warning" });
+      return;
+    }
   } else if (importeneto == 0 || importeneto == "") {
     $("#importeneto_t").addClass("border border-danger");
     return;
@@ -575,4 +583,23 @@ $("#modal_cargar_factura").on("show.bs.modal", function (e) {
       }
     },
   });
+});
+
+
+// Comprobantes C (FACTURAS C, NOTAS DE CREDITO C, NOTAS DE DEBITO C, RECIBOS C): sin IVA discriminado.
+// El importe se carga en Exento; Neto e IVA quedan en 0 y bloqueados (21/11/2026).
+function esComprobanteC(tipo) {
+  return /\sC$/.test(String(tipo || "").trim());
+}
+
+$(document).on("change", "#tipodecomprobante_t", function () {
+  const esC = esComprobanteC($(this).val());
+  const $campos = $("#importeneto_t, #iva1_t, #iva2_t, #iva3_t, #iva4_t");
+  if (esC) {
+    $campos.val(0).prop("readonly", true).removeClass("border border-danger");
+    if (typeof sumar === "function") sumar();
+  } else {
+    $campos.prop("readonly", false);
+  }
+  $("#exento_t").removeClass("border border-danger");
 });

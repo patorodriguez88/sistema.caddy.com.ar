@@ -1663,6 +1663,7 @@ $(document).on("change", ".checkbox_factura", function () {
   if (seleccionados > 0) {
     $("#formulario_factura").removeClass("d-none");
     $("#importe_factura").val(total.toFixed(2));
+    prellenarImportesFactura();
   } else {
     $("#formulario_factura").addClass("d-none");
     $("#importe_factura").val("");
@@ -1679,6 +1680,7 @@ $("#desempeno_modal").on("show.bs.modal", function () {
 // Llamamos a cargar tipos al mostrar el modal
 $("#desempeno_modal").on("shown.bs.modal", function () {
   cargarTiposComprobante();
+  cargarProveedoresExterno();
 });
 
 $("#confirmar_factura").click(function () {
@@ -1708,6 +1710,13 @@ $("#confirmar_factura").click(function () {
     return;
   }
 
+  const idProveedor = $("#proveedor_factura").val() || "";
+  const imp = importesFactura();
+  if (idProveedor && !(imp.total > 0)) {
+    Swal.fire("Falta el importe", "Completá los importes de la factura.", "error");
+    return;
+  }
+
   // Enviar los datos por AJAX
   $.ajax({
     url: "Procesos/php/funciones.php",
@@ -1720,15 +1729,116 @@ $("#confirmar_factura").click(function () {
       TipoComprobante: tipoComprobante,
       Importe: importe,
       FechaControl: fecha,
+      idProveedor: idProveedor,
+      idUsuario: $("#id_desempeno").val(),
+      Neto: imp.neto,
+      Iva: imp.iva,
+      Exento: imp.exento,
+      Total: imp.total,
     },
+    dataType: "json",
     success: function (resp) {
-      Swal.fire("Éxito", "Factura registrada correctamente", "success");
-      // Limpiar y cerrar si querés
+      if (!resp || resp.success != 1) {
+        Swal.fire("No se registró la factura", (resp && resp.msg) || "Error al registrar", "error");
+        return;
+      }
+      let texto = "Factura registrada en la liquidación.";
+      const p = resp.proveedores;
+      if (p && p.registrada) {
+        texto += " También quedó cargada en Proveedores (asiento N° " + p.asiento + ").";
+      } else if (p && p.aviso) {
+        texto += " " + p.aviso;
+      } else if (!p) {
+        texto += " No se cargó en Proveedores (no elegiste proveedor).";
+      }
+      if (p && p.registrada && p.aviso) texto += " " + p.aviso;
+      Swal.fire("Listo", texto, "success");
       $("#bloque_factura").addClass("d-none");
       $(".checkbox_factura").prop("checked", false);
+      $("#formulario_factura").addClass("d-none");
     },
     error: function () {
       Swal.fire("Error", "No se pudo registrar la factura", "error");
     },
   });
 });
+
+
+/* ============================================================
+   FACTURA DEL EXTERNO -> PROVEEDORES (21/11/2026, Asana Agustina)
+   Al confirmar, la factura se registra también en Proveedores (cta. cte., IVA Compras
+   y asiento). El proveedor que factura se sugiere (vínculo guardado o DNI en el CUIT)
+   y se puede cambiar: no siempre es el mismo repartidor.
+============================================================ */
+function esTipoC() {
+  const txt = $("#tipo_comprobante option:selected").text() || "";
+  return /\sC$/.test(txt.trim());
+}
+
+function importesFactura() {
+  const n = (id) => Math.round((parseFloat($(id).val()) || 0) * 100) / 100;
+  const neto = esTipoC() ? 0 : n("#fact_neto");
+  const iva = esTipoC() ? 0 : n("#fact_iva");
+  const exento = n("#fact_exento");
+  return { neto, iva, exento, total: Math.round((neto + iva + exento) * 100) / 100 };
+}
+
+function refrescarTotalFactura() {
+  $("#fact_total").val(importesFactura().total.toFixed(2));
+}
+
+function ajustarCamposPorTipo() {
+  const c = esTipoC();
+  $(".fact-discrimina").toggle(!c);
+  $(".fact-solo-c").toggle(c);
+  refrescarTotalFactura();
+}
+
+function prellenarImportesFactura() {
+  const total = parseFloat($("#importe_factura").val()) || 0;
+  if (esTipoC()) {
+    $("#fact_neto, #fact_iva").val("");
+    $("#fact_exento").val(total.toFixed(2));
+  } else {
+    $("#fact_neto").val(total.toFixed(2));
+    $("#fact_iva").val((total * 0.21).toFixed(2));
+    $("#fact_exento").val("");
+  }
+  ajustarCamposPorTipo();
+}
+
+$(document).on("change", "#tipo_comprobante", prellenarImportesFactura);
+$(document).on("input", "#fact_exento, #fact_iva", refrescarTotalFactura);
+$(document).on("input", "#fact_neto", function () {
+  $("#fact_iva").val(((parseFloat($(this).val()) || 0) * 0.21).toFixed(2));
+  refrescarTotalFactura();
+});
+
+function cargarProveedoresExterno() {
+  const $sel = $("#proveedor_factura");
+  $sel.html('<option value="">Cargando...</option>');
+  $("#proveedor_factura_ayuda").text("");
+  $.post(
+    "Procesos/php/funciones.php",
+    { ProveedoresExterno: 1, idUsuario: $("#id_desempeno").val() },
+    function (r) {
+      let html = '<option value="">— No cargar en Proveedores —</option>';
+      (r.proveedores || []).forEach(function (p) {
+        const cuit = p.Cuit ? " (" + p.Cuit + ")" : "";
+        html += `<option value="${p.id}">${$("<div>").text(p.RazonSocial + cuit).html()}</option>`;
+      });
+      $sel.html(html);
+      if (r.sugerido) {
+        $sel.val(String(r.sugerido.id));
+        $("#proveedor_factura_ayuda").text(
+          r.sugerido.origen === "vinculado"
+            ? "Es el proveedor que usaste la última vez para este repartidor."
+            : "Sugerido porque su CUIT tiene el DNI del repartidor. Cambialo si factura otra persona."
+        );
+      } else {
+        $("#proveedor_factura_ayuda").text("No encontré el proveedor de este repartidor: elegilo de la lista.");
+      }
+    },
+    "json"
+  );
+}
