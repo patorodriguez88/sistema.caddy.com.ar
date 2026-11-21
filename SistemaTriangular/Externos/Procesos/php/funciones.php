@@ -1880,6 +1880,18 @@ if (isset($_POST['AnalizarServicioRendicion'])) {
     ]);
     exit;
 }
+// Proveedor que le factura a un externo: sugerido + lista para elegir (21/11/2026).
+if (isset($_POST['ProveedoresExterno'])) {
+    require_once __DIR__ . '/factura_proveedor.php';
+    header('Content-Type: application/json; charset=UTF-8');
+    $sug = proveedorSugeridoExterno($mysqli, (int) ($_POST['idUsuario'] ?? 0));
+    $lista = [];
+    $q = $mysqli->query("SELECT id, RazonSocial, Cuit FROM Proveedores WHERE TRIM(IFNULL(RazonSocial,'')) <> '' ORDER BY RazonSocial");
+    while ($q && $r = $q->fetch_assoc()) $lista[] = $r;
+    echo json_encode(['success' => 1, 'sugerido' => $sug, 'proveedores' => $lista]);
+    exit;
+}
+
 if (isset($_POST['TiposComprobante'])) {
     $q = $mysqli->query("SELECT Codigo,Descripcion FROM `AfipTipoDeComprobante`;");
     $tipos = [];
@@ -1919,6 +1931,9 @@ if (isset($_POST['ConfirmarFactura'])) {
 
     $ok = true;
     $errores = [];
+    $registro = null;
+    $idProveedorFactura = (int) ($_POST['idProveedor'] ?? 0);
+    if ($idProveedorFactura > 0) require_once __DIR__ . '/factura_proveedor.php';
 
     $mysqli->begin_transaction();
 
@@ -1955,6 +1970,24 @@ if (isset($_POST['ConfirmarFactura'])) {
         $stmtER->close();
         $stmtLG->close();
 
+        // La factura se registra también en Proveedores (cuenta corriente, IVA Compras y asiento),
+        // así no hay que volver a cargarla en Proveedores > Ingresar Comprobante (21/11/2026).
+        if ($ok && $idProveedorFactura > 0) {
+            $registro = registrarFacturaProveedorExterno($mysqli, [
+                'idProveedor' => $idProveedorFactura,
+                'idUsuario'   => (int) ($_POST['idUsuario'] ?? 0),
+                'tipo'        => $tipoComprobante,
+                'pv'          => $numeroControl,
+                'numero'      => $numeroFactura,
+                'fecha'       => $fecha,
+                'neto'        => (float) ($_POST['Neto'] ?? 0),
+                'iva'         => (float) ($_POST['Iva'] ?? 0),
+                'exento'      => (float) ($_POST['Exento'] ?? 0),
+                'total'       => (float) ($_POST['Total'] ?? 0),
+                'ordenes'     => $ordenes,
+            ]);
+        }
+
         if ($ok) {
             $mysqli->commit();
         } else {
@@ -1966,9 +1999,17 @@ if (isset($_POST['ConfirmarFactura'])) {
         $errores[] = $e->getMessage();
     }
 
+    $asanaGid = ($ok && $registro) ? tareaAsanaFacturaExterno($mysqli, $registro, $fecha) : null;
+
     echo json_encode([
         "success" => $ok ? 1 : 0,
-        "msg"     => $ok ? "Factura registrada correctamente" : "Errores al registrar",
-        "errors"  => $errores
+        "msg"     => $ok ? "Factura registrada correctamente" : ($errores ? implode(' ', $errores) : "Errores al registrar"),
+        "errors"  => $errores,
+        "proveedores" => $registro ? [
+            "registrada" => (bool) $registro['registrada'],
+            "aviso"      => $registro['aviso'] ?? '',
+            "asiento"    => $registro['asiento'] ?? null,
+            "asana"      => $asanaGid,
+        ] : null,
     ]);
 }

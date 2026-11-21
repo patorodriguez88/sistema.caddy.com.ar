@@ -243,12 +243,40 @@
                                                         <input type="text" id="numero_factura" class="form-control" placeholder="000000000000" maxlength="12">
                                                     </div>
                                                 </div>
+                                                <!-- 21/11/2026: la factura se registra también en Proveedores (cta. cte., IVA Compras y asiento) -->
                                                 <div class="row mt-3">
-                                                    <div class="col-md-6">
-                                                        <label><b>Importe total</b></label>
+                                                    <div class="col-md-8">
+                                                        <label><b>Proveedor que factura</b></label>
+                                                        <select id="proveedor_factura" class="form-control">
+                                                            <option value="">Cargando...</option>
+                                                        </select>
+                                                        <small id="proveedor_factura_ayuda" class="text-muted"></small>
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label>Total liquidado</label>
                                                         <input type="text" id="importe_factura" class="form-control" readonly>
                                                     </div>
-                                                    <div class="col-md-6 d-flex align-items-end justify-content-end">
+                                                </div>
+                                                <div class="row mt-3" id="factura_importes">
+                                                    <div class="col-md-3 fact-discrimina">
+                                                        <label><b>Importe Neto</b></label>
+                                                        <input type="number" step="0.01" min="0" id="fact_neto" class="form-control">
+                                                    </div>
+                                                    <div class="col-md-3 fact-discrimina">
+                                                        <label><b>IVA 21%</b></label>
+                                                        <input type="number" step="0.01" min="0" id="fact_iva" class="form-control">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label><b>Exento</b> <small class="text-muted fact-solo-c">(comprobante C: todo el importe)</small></label>
+                                                        <input type="number" step="0.01" min="0" id="fact_exento" class="form-control">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label><b>Total factura</b></label>
+                                                        <input type="text" id="fact_total" class="form-control fw-bold" readonly>
+                                                    </div>
+                                                </div>
+                                                <div class="row mt-2">
+                                                    <div class="col-12 d-flex justify-content-end">
                                                         <button id="confirmar_factura" class="btn btn-success mt-2"><i class="mdi mdi-check"></i> Confirmar Factura</button>
                                                     </div>
                                                 </div>
