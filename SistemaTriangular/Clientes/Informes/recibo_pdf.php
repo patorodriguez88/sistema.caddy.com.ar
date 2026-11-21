@@ -62,6 +62,52 @@ class ReciboPagoPDF extends HdrPdfBase
     }
 }
 
+// Detalle de cómo ingresó el pago (21/11/2026, tarea Asana de Agustina "Agregar detalle de forma de
+// pago en recibos"): sale de los movimientos de Tesorería del recibo (Tesoreria.idCtasctes), lado
+// Debe, sin la cuenta del cliente (DEUDORES POR VENTAS). Un recibo puede tener varios medios.
+function reciboMediosDePago(mysqli $mysqli, int $idCtasctes): array
+{
+    $st = $mysqli->prepare("
+        SELECT Fecha, NombreCuenta, Debe, Banco, NumeroCheque, FechaCheque, FechaTrans, NumeroTrans, FormaDePago
+          FROM Tesoreria
+         WHERE idCtasctes = ? AND Eliminado = 0 AND Debe > 0 AND Cuenta <> '000112200'
+         ORDER BY id
+    ");
+    $st->bind_param('i', $idCtasctes);
+    $st->execute();
+    $res = $st->get_result();
+    $medios = [];
+    $fecha = static function ($f): string {
+        $f = (string)$f;
+        return ($f !== '' && $f > '1900-01-01') ? date('d/m/Y', strtotime($f)) : '';
+    };
+    while ($r = $res->fetch_assoc()) {
+        $forma = trim((string)$r['FormaDePago']);
+        $cuenta = trim((string)$r['NombreCuenta']);
+        $nroCheque = trim((string)$r['NumeroCheque']);
+        $nroTrans = trim((string)$r['NumeroTrans']);
+        $esCheque = $nroCheque !== '' && $nroCheque !== '0';
+        $esTransf = !$esCheque && $nroTrans !== '' && $nroTrans !== '0';
+        $detalle = [];
+        if ($esCheque) {
+            $detalle[] = 'Cheque N° ' . $nroCheque;
+            if (trim((string)$r['Banco']) !== '') $detalle[] = 'Banco: ' . trim((string)$r['Banco']);
+            if ($fecha($r['FechaCheque']) !== '') $detalle[] = 'Fecha de cobro: ' . $fecha($r['FechaCheque']);
+        } elseif ($esTransf) {
+            $detalle[] = 'Transferencia N° ' . $nroTrans;
+        }
+        $medios[] = [
+            'forma'   => $esTransf ? 'Transferencia' : ($forma !== '' ? $forma : $cuenta),
+            'cuenta'  => $cuenta,
+            'fecha'   => $fecha($r['FechaTrans']) !== '' ? $fecha($r['FechaTrans']) : $fecha($r['Fecha']),
+            'detalle' => implode(' - ', $detalle),
+            'importe' => (float)$r['Debe'],
+        ];
+    }
+    $st->close();
+    return $medios;
+}
+
 function generarReciboPDF($idCtasctes, $rutaSalida)
 {
     global $mysqli;
@@ -135,6 +181,42 @@ function generarReciboPDF($idCtasctes, $rutaSalida)
 
     $pdf->SetFont('Arial', 'B', 9);
     $pdf->Row(['TOTAL', number_format((float)$row['Haber'], 2, ',', '.')], $paleta['grayBg']);
+
+    // ── Forma de pago ────────────────────────────────────────
+    $medios = reciboMediosDePago($mysqli, $idCtasctes);
+    if ($medios) {
+        $pdf->Ln(5);
+        $pdf->resetX();
+        $pdf->SetFont('Arial', 'B', 10);
+        $pdf->Cell(0, 6, pdf_text('Forma de pago'), 0, 1);
+
+        $anchos = $pdf->anchosEscalados([34, 38, 20, 58, 30]);
+        $alineas = ['L', 'L', 'C', 'L', 'R'];
+        $pdf->SetWidths($anchos);
+        $pdf->SetAligns($alineas);
+        $pdf->SetFont('Arial', 'B', 8);
+        $pdf->SetFillColor(...$paleta['primaryC']);
+        $pdf->SetTextColor(...$paleta['whiteC']);
+        foreach (['Medio', 'Cuenta de ingreso', 'Fecha', 'Detalle', 'Importe'] as $i => $label) {
+            $pdf->Cell($anchos[$i], 7, pdf_text($label), 0, 0, $alineas[$i] === 'R' ? 'R' : ($alineas[$i] === 'C' ? 'C' : 'L'), true);
+        }
+        $pdf->Ln();
+        $pdf->SetTextColor(...$paleta['darkText']);
+        $pdf->SetFont('Arial', '', 8);
+        foreach ($medios as $m) {
+            $pdf->Row([
+                $m['forma'],
+                $m['cuenta'],
+                $m['fecha'],
+                $m['detalle'],
+                number_format($m['importe'], 2, ',', '.'),
+            ], $paleta['whiteC']);
+        }
+        // El texto automático "Forma de Pago: X" ya está en la tabla: no se repite en Observaciones.
+        if (preg_match('/^\s*Forma de Pago:[^\n]*$/i', (string)$row['Comentario'])) {
+            $row['Comentario'] = '';
+        }
+    }
 
     if (!empty($row['Comentario'])) {
         $pdf->Ln(4);
