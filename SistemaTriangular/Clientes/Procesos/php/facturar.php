@@ -304,17 +304,9 @@ if ($_POST['Facturar'] == 1) {
           VALUES ('$idFacturado','$id','remito','$idTC','$DetFecha','$DetTipoComprobante','$DetNumeroComprobante','$DetClienteDestino','$DetCodigoSeguimiento','$DetCodigoProveedor','$DetDebe')");
       }
 
-      //CREAR TAREA ASANA
-      include_once "../../../Empleados/Procesos/php/asana_api.php";
-      $TotalAsana = number_format($Total, 2, ',', '.');
-      $due_on = date('Y-m-d', strtotime($Vencpago));
-      $name = "COBRANZA CLIENTE" . $RazonSocial;
-      $notes = "Realizar el control de la cobranza del comprobante " . $Comprobante . ' ' . $NumeroComprobante . ' por un importe de ' . $TotalAsana . ' con fecha de vencimiento el ' . $Vencpago;
-      $assignee = '734348738194841';
-      $Projects = '1202454550277567';
-      $Workspaces = '734348733635084';
-
-      Create_task($Projects, $name, $notes, $due_on, $assignee, $Workspaces);
+      // (21/11/2026) Antes se creaba acá una tarea "COBRANZA CLIENTE…" en Asana por cada factura: nadie las
+      // cerraba (220 abiertas) y la llamada, sin timeout, podía colgar la facturación después del CAE. La
+      // cobranza se controla con la cuenta corriente (saldo y vencimiento por cliente).
 
       echo json_encode(array('success' => 1, 'idFacturado' => $idFacturado));
     } else {
