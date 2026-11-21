@@ -1176,8 +1176,11 @@ function open_vehicle(v) {
       $("#vehicle_chassis").html(`Chasis ${jsonData.data[0].Chasis}`);
       $("#vehicle_obs").html(jsonData.data[0].Observaciones);
       $("#vehicle_km").html(
-        jsonData.data[0].Kilometros.toLocaleString(undefined, opciones) + " Km."
+        Number(jsonData.data[0].Kilometros || 0).toLocaleString(undefined, opciones) + " Km."
       );
+      $("#vehicle_km_input").val(jsonData.data[0].Kilometros);
+      $("#vehicle_km_form").addClass("d-none");
+      $("#vehicle_km_ver").removeClass("d-none");
       $("#vehicle_sure").html(jsonData.data[0].Seguro);
       $("#vehicle_sure_number").html(jsonData.data[0].NumeroPoliza);
       $("#vehicle_sure_phone").html(jsonData.data[0].TelefonoSeguro);
@@ -1597,6 +1600,54 @@ $("#vehicles-up-modal_sure_ok").on("click", function () {
     error: function (xhr) {
       toastr.error("Error de conexión al servidor");
       console.error(xhr.responseText);
+    },
+  });
+});
+
+
+// CORREGIR KM DEL VEHICULO (21/11/2026): si un chofer cerró la orden con los km de otro vehículo, el
+// reparto no los baja solos (GREATEST). Se editan desde la ficha.
+$(document).on("click", "#vehicle_km_editar", function () {
+  $("#vehicle_km_ver").addClass("d-none");
+  $("#vehicle_km_form").removeClass("d-none");
+  $("#vehicle_km_input").trigger("focus").trigger("select");
+});
+
+$(document).on("click", "#vehicle_km_cancelar", function () {
+  $("#vehicle_km_form").addClass("d-none");
+  $("#vehicle_km_ver").removeClass("d-none");
+});
+
+$(document).on("keydown", "#vehicle_km_input", function (e) {
+  if (e.key === "Enter") $("#vehicle_km_guardar").trigger("click");
+  if (e.key === "Escape") $("#vehicle_km_cancelar").trigger("click");
+});
+
+$(document).on("click", "#vehicle_km_guardar", function () {
+  var dominio = $("#vehicle_domain").val();
+  var km = String($("#vehicle_km_input").val() || "").trim();
+
+  if (!/^\d+$/.test(km)) {
+    toast("warning", "Kilómetros", "Ingresá un número entero.");
+    return;
+  }
+
+  $.ajax({
+    data: { Update_km: 1, Dominio: dominio, Kilometros: km },
+    type: "POST",
+    url: "Proceso/php/vehiculos.php",
+    dataType: "json",
+    success: function (r) {
+      if (r.success == 1) {
+        $("#vehicle_km").html(Number(r.Kilometros).toLocaleString(undefined, { maximumFractionDigits: 0 }) + " Km.");
+        $("#vehicle_km_cancelar").trigger("click");
+        toast("success", "Kilómetros", "Kilómetros actualizados.");
+      } else {
+        toast("error", "Kilómetros", r.message || "No se pudo guardar.");
+      }
+    },
+    error: function () {
+      toast("error", "Kilómetros", "No se pudo conectar con el servidor.");
     },
   });
 });

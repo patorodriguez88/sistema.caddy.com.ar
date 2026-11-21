@@ -60,6 +60,31 @@ if (isset($_POST['Update_estado'])) {
     exit;
 }
 
+// MODIFICA LOS KM DEL VEHICULO (21/11/2026, tarea Asana de Jerónimo "Editar Km desde Flota"). El
+// reparto actualiza Vehiculos.Kilometros con GREATEST al cerrar la orden, así que si un chofer cierra
+// con los km de otro vehículo el número queda trabado arriba y no baja solo. Desde la ficha se corrige.
+if (isset($_POST['Update_km'])) {
+
+    $dominio = trim($_POST['Dominio'] ?? '');
+    $km = $_POST['Kilometros'] ?? '';
+
+    if ($dominio === '' || !preg_match('/^\d{1,7}$/', (string) $km)) {
+        echo json_encode(['success' => 0, 'message' => 'Ingresá los kilómetros como número entero.']);
+        exit;
+    }
+    $km = (int) $km;
+
+    $stmt = $mysqli->prepare("UPDATE Vehiculos SET Kilometros = ? WHERE Dominio = ? LIMIT 1");
+    $stmt->bind_param("is", $km, $dominio);
+    $ok = $stmt->execute();
+    $stmt->close();
+
+    echo json_encode($ok
+        ? ['success' => 1, 'Kilometros' => $km]
+        : ['success' => 0, 'message' => 'No se pudo guardar: ' . $mysqli->error]);
+    exit;
+}
+
 // MODIFICA EL SEGMENTO (ValorxKilometro) DE UN VEHICULO PROPIO
 
 if (isset($_POST['Update_segmento'])) {

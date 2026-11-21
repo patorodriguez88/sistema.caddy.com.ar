@@ -735,7 +735,19 @@
                                                             <h6 class="font-14" id="vehicle_owner"></h6>
                                                             <h6 class="font-14" id="vehicle_engine_number"></h6>
                                                             <h6 class="font-14" id="vehicle_chassis"></h6>
-                                                            <h3 id="vehicle_km"></h3>
+                                                            <div id="vehicle_km_ver" class="d-flex align-items-center gap-2">
+                                                                <h3 id="vehicle_km" class="mb-0"></h3>
+                                                                <button type="button" id="vehicle_km_editar" class="btn btn-link p-0 text-muted" title="Corregir kilómetros"><i class="mdi mdi-pencil font-18"></i></button>
+                                                            </div>
+                                                            <div id="vehicle_km_form" class="d-none" style="max-width: 320px;">
+                                                                <div class="input-group">
+                                                                    <input type="number" id="vehicle_km_input" class="form-control" min="0" step="1">
+                                                                    <span class="input-group-text">Km.</span>
+                                                                    <button type="button" id="vehicle_km_guardar" class="btn btn-success"><i class="mdi mdi-check"></i></button>
+                                                                    <button type="button" id="vehicle_km_cancelar" class="btn btn-light"><i class="mdi mdi-close"></i></button>
+                                                                </div>
+                                                                <small class="text-muted">Es el km con el que abre la próxima orden.</small>
+                                                            </div>
                                                         </div>
 
 
@@ -1108,7 +1120,7 @@
     <!-- <script src="js/funcionesCpanel.js"></script> -->
     <script src="../Funciones/js/seguimiento.js"></script>
     <script src="../Menu/js/funciones.js"></script>
-    <script src="Proceso/js/vehiculos.js"></script>
+    <script src="Proceso/js/vehiculos.js?v=<?= filemtime(__DIR__ . '/Proceso/js/vehiculos.js') ?>"></script>
 
     <!-- SweetAlert2 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
