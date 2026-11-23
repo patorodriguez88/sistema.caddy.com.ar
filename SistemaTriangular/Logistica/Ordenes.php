@@ -46,6 +46,28 @@
             <div class="content">
                 <div class="container-fluid">
 
+                    <!-- Control de la orden (23/11/2026): qué le falta escanear al chofer y por qué; la oficina destraba. Ver Proceso/php/control_orden.php -->
+                    <div class="modal fade" id="modalControlOrden" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Control de la orden #<span id="coNumero"></span></h5>
+                                    <button type="button" class="btn btn-sm btn-light ms-auto me-2" id="coActualizar" title="Actualizar"><i class="mdi mdi-refresh"></i></button>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div id="coResumen" class="mb-3"></div>
+                                    <ul class="nav nav-tabs mb-2">
+                                        <li class="nav-item"><a href="#" class="nav-link active co-tab" data-filtro="pendientes">Falta escanear <span class="badge bg-danger ms-1" id="coNPend">0</span></a></li>
+                                        <li class="nav-item"><a href="#" class="nav-link co-tab" data-filtro="todos">Todo el recorrido <span class="badge bg-secondary ms-1" id="coNTodos">0</span></a></li>
+                                        <li class="nav-item"><a href="#" class="nav-link co-tab" data-filtro="bloqueos">Trabas del chofer <span class="badge bg-warning ms-1" id="coNBloq">0</span></a></li>
+                                    </ul>
+                                    <div id="coContenido"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="modal fade" id="modalCargarOrden" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog modal-lg modal-dialog-scrollable">
                             <form id="formCargarOrden" class="modal-content needs-validation" novalidate>
