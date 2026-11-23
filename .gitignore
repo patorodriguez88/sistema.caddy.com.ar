@@ -30,3 +30,9 @@ SistemaTriangular/**/temp/*.png
 # Archivos adjuntos de Tareas (los suben los usuarios; solo se versiona el .htaccess que bloquea la carpeta)
 SistemaTriangular/Empleados/Tareas/adjuntos/*
 !SistemaTriangular/Empleados/Tareas/adjuntos/.htaccess
+
+# Backups de base de datos: nunca al repo (se desplegaban y quedaban descargables sin login)
+*.sql.gz
+*.sql.zip
+*.bak
+SistemaTriangular/Funciones/myphp-backup-files/
