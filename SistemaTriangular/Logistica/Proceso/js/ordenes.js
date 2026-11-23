@@ -906,7 +906,12 @@ function init_datatable(fechas = "") {
                      <i class="mdi mdi-18px mdi-restart ms-2 text-warning"></i>
                    </a>`
                 : "";
+            // Control de la orden: qué le falta escanear al chofer y por qué (control_orden.php).
+            const btnControl = `<a href="#" onclick="abrirControlOrden('${row.NumerodeOrden}'); return false;" title="Control de la orden: qué falta escanear">
+                   <i class="mdi mdi-18px mdi-clipboard-check-outline ms-2 text-primary"></i>
+                 </a>`;
             return `
+              ${btnControl}
               <a target="_blank" href="Informes/ControldeVehiculospdf.php?NO=${row.NumerodeOrden}" title="Ver Orden">
                 <i class="mdi mdi-18px mdi-file-chart-outline ms-2"></i>
               </a>
@@ -1144,3 +1149,162 @@ $(document).on("click", "#btn_guardar_datos_mantenimiento", function () {
     },
   });
 });
+
+
+// =====================================================================================================
+// CONTROL DE LA ORDEN (23/11/2026)
+// Qué tiene el chofer en el recorrido, qué le falta escanear en Warehouse y por qué, si la carga quedó
+// confirmada y cada vez que la app lo trabó. La app no lo deja arrancar con entregas sin escanear: desde
+// acá la oficina saca del recorrido lo que no está (pasa al DEPÓSITO) o permite arrancar sin escanear.
+// =====================================================================================================
+let coOrdenActual = null;
+let coDatos = null;
+let coFiltro = "pendientes";
+let coTimer = null;
+
+function coEsc(t) {
+  return $("<div>").text(t == null ? "" : String(t)).html();
+}
+
+function abrirControlOrden(numero) {
+  coOrdenActual = String(numero);
+  coFiltro = "pendientes";
+  $(".co-tab").removeClass("active").filter('[data-filtro="pendientes"]').addClass("active");
+  $("#coNumero").text(numero);
+  $("#coResumen").html("");
+  $("#coContenido").html('<div class="text-center text-muted py-4"><i class="mdi mdi-loading mdi-spin"></i> Cargando…</div>');
+  $("#modalControlOrden").modal("show");
+  cargarControlOrden();
+  clearInterval(coTimer);
+  coTimer = setInterval(cargarControlOrden, 30000); // en vivo mientras está abierto
+}
+
+$("#modalControlOrden").on("hidden.bs.modal", function () {
+  clearInterval(coTimer);
+  coTimer = null;
+});
+$("#coActualizar").on("click", cargarControlOrden);
+$(document).on("click", ".co-tab", function (e) {
+  e.preventDefault();
+  coFiltro = $(this).data("filtro");
+  $(".co-tab").removeClass("active");
+  $(this).addClass("active");
+  renderControlOrden();
+});
+
+function cargarControlOrden() {
+  if (!coOrdenActual) return;
+  $.ajax({
+    url: "Proceso/php/control_orden.php",
+    type: "POST",
+    dataType: "json",
+    data: { Detalle: 1, NumerodeOrden: coOrdenActual },
+    success: function (r) {
+      if (!r || !r.success) {
+        $("#coContenido").html(`<div class="alert alert-danger">${coEsc((r && r.message) || "No se pudo cargar.")}</div>`);
+        return;
+      }
+      coDatos = r;
+      renderControlOrden();
+    },
+    error: function () {
+      $("#coContenido").html('<div class="alert alert-danger">No se pudo conectar con el servidor.</div>');
+    },
+  });
+}
+
+function renderControlOrden() {
+  if (!coDatos) return;
+  const o = coDatos.orden;
+  const res = coDatos.resumen;
+  const pend = coDatos.envios.filter((e) => e.estado === "pendiente" || e.estado === "omitido");
+
+  // Semáforo: puede salir / trabado / salió.
+  let semaforo;
+  if (o.omitir_escaneo) {
+    semaforo = `<span class="badge bg-danger fs-6"><i class="mdi mdi-barcode-off"></i> Control de escaneo omitido${o.omitir_por ? " por " + coEsc(o.omitir_por) : ""}</span>`;
+  } else if (res.pendientes > 0) {
+    semaforo = `<span class="badge bg-danger fs-6"><i class="mdi mdi-alert"></i> ${o.salida ? "Salió con" : "No puede arrancar:"} ${res.pendientes} sin escanear</span>`;
+  } else {
+    semaforo = `<span class="badge bg-success fs-6"><i class="mdi mdi-check"></i> Todo escaneado</span>`;
+  }
+  const fmt = (dt) => (dt ? coEsc(String(dt).substring(11, 16)) : "—");
+  $("#coResumen").html(`
+    <div class="d-flex flex-wrap align-items-center gap-3">
+      ${semaforo}
+      <span><b>Recorrido:</b> ${coEsc(o.recorrido)}</span>
+      <span><b>Chofer:</b> ${coEsc(o.chofer)}</span>
+      <span><b>Entregas:</b> ${res.escaneadas}/${res.entregas} escaneadas</span>
+      <span><b>Retiros/colectas:</b> ${res.retiros}</span>
+      <span><b>Carga confirmada:</b> ${fmt(o.carga_confirmada)}</span>
+      <span><b>Salió:</b> ${fmt(o.salida)}</span>
+    </div>
+    ${!o.omitir_escaneo && res.pendientes > 0 ? `<div class="text-muted small mt-2">Si un paquete no está, sacalo del recorrido (pasa al DEPÓSITO). Si están pero no se pueden escanear (escáner roto, sin etiqueta), usá "ESCANEO OBLIGATORIO" en la orden para permitir que arranque.</div>` : ""}
+  `);
+  $("#coNPend").text(pend.length);
+  $("#coNTodos").text(coDatos.envios.length);
+  $("#coNBloq").text(coDatos.bloqueos.length);
+
+  if (coFiltro === "bloqueos") {
+    if (!coDatos.bloqueos.length) {
+      $("#coContenido").html('<div class="text-muted py-3">La app no trabó al chofer en esta orden.</div>');
+      return;
+    }
+    const acc = { confirmar_carga: "Confirmar carga", iniciar_recorrido: "Iniciar recorrido", salio_sin_escanear: "Salió sin escanear (GPS)" };
+    const mot = { sin_escanear: "Entregas sin escanear", bolsin: "Falta el bolsín", sin_bolsin: "Sin bolsín asignado" };
+    $("#coContenido").html(`<table class="table table-sm table-striped"><thead><tr><th>Hora</th><th>Chofer</th><th>Qué intentó</th><th>Motivo</th><th>Envíos</th></tr></thead><tbody>
+      ${coDatos.bloqueos.map((b) => `<tr>
+        <td class="text-nowrap">${coEsc(b.Fecha)} ${coEsc(String(b.Hora).substring(0, 5))}</td>
+        <td>${coEsc(b.Usuario)}</td>
+        <td>${coEsc(acc[b.Accion] || b.Accion)}</td>
+        <td>${coEsc(mot[b.Motivo] || b.Motivo)}${b.Mensaje ? "<br><small class='text-muted'>" + coEsc(b.Mensaje) + "</small>" : ""}</td>
+        <td><small>${coEsc(b.Codigos)}</small></td></tr>`).join("")}
+      </tbody></table>`);
+    return;
+  }
+
+  const lista = coFiltro === "pendientes" ? pend : coDatos.envios;
+  if (!lista.length) {
+    $("#coContenido").html(`<div class="text-success py-3"><i class="mdi mdi-check-circle"></i> ${coFiltro === "pendientes" ? "No falta escanear nada." : "El recorrido no tiene envíos abiertos."}</div>`);
+    return;
+  }
+  const color = { ok: "success", pendiente: "danger", omitido: "warning" };
+  $("#coContenido").html(`<table class="table table-sm table-hover align-middle"><thead><tr>
+      <th>Código</th><th>Tipo</th><th>Cliente → Destino</th><th class="text-center">Bultos</th><th>Estado</th><th></th></tr></thead><tbody>
+    ${lista.map((e) => `<tr>
+      <td class="text-nowrap"><b>${coEsc(e.codigo)}</b>${e.pedido ? "<br><small class='text-muted'>pedido " + coEsc(e.pedido) + "</small>" : ""}</td>
+      <td>${coEsc(e.tipo)}${e.entregado ? " <span class='badge bg-light text-dark border'>entregado</span>" : ""}</td>
+      <td>${coEsc(e.cliente)} → ${coEsc(e.destino)}<br><small class="text-muted">${coEsc(e.direccion)}</small></td>
+      <td class="text-center">${coEsc(e.bultos)}</td>
+      <td><span class="text-${color[e.estado] || "secondary"}">${coEsc(e.detalle)}</span></td>
+      <td class="text-end">${e.puede_sacar ? `<button class="btn btn-sm btn-outline-danger text-nowrap" onclick="coSacarDelRecorrido('${coEsc(e.codigo)}')"><i class="mdi mdi-truck-remove-outline"></i> Sacar del recorrido</button>` : ""}</td>
+    </tr>`).join("")}
+    </tbody></table>`);
+}
+
+function coSacarDelRecorrido(cs) {
+  Swal.fire({
+    icon: "warning",
+    title: "Sacar del recorrido",
+    html: `<b>${coEsc(cs)}</b> sale del recorrido ${coEsc(coDatos.orden.recorrido)} y pasa al <b>DEPÓSITO</b> (recorrido 80).<br>Usalo cuando el paquete no está para que el chofer lo escanee.`,
+    showCancelButton: true,
+    confirmButtonText: "Sí, sacar",
+    cancelButtonText: "Cancelar",
+    reverseButtons: true,
+  }).then((r) => {
+    if (!r.isConfirmed) return;
+    $.ajax({
+      url: "Proceso/php/control_orden.php",
+      type: "POST",
+      dataType: "json",
+      data: { SacarDelRecorrido: 1, NumerodeOrden: coOrdenActual, cs: cs },
+      success: function (j) {
+        Swal.fire({ icon: j && j.success ? "success" : "error", title: (j && j.message) || "Error", timer: j && j.success ? 1800 : undefined });
+        cargarControlOrden();
+      },
+      error: function () {
+        Swal.fire({ icon: "error", title: "No se pudo conectar con el servidor." });
+      },
+    });
+  });
+}
