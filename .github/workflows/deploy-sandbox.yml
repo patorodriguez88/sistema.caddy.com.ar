@@ -30,8 +30,11 @@ jobs:
         protocol: ftp
         port: 21
         log-level: verbose
+        # Si se personaliza exclude hay que repetir las 3 reglas por defecto (.git*, .git*/**, node_modules).
+        # Sin .git*/** se subía la carpeta .git del checkout: ~30 packs huérfanos de 230 MB (7 GB) en el sandbox.
         exclude: |
             **/.git*
+            **/.git*/**
             **/.github/**
             **/node_modules/**
             **/tests/**
