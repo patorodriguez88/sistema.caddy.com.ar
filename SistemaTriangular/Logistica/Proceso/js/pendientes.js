@@ -189,6 +189,9 @@ function BuscarDireccion() {
   _googleAcDebounce(inputstart, {
     onSelect: function (place) {
       if (!place || !place.address_components) return;
+      // Se limpian antes de llenar: si el lugar elegido no trae localidad o CP, quedaban los del
+      // envío anterior y se grababan en este (tarea Caddy 88, IGALFER: Monte Cristo → "Santa Rosa").
+      limpiarCamposDireccionNc();
       place.address_components.forEach(function (c) {
         var t = c.types[0];
         if (t === "locality") document.getElementById("ciudad_nc").value = c.long_name;
@@ -201,7 +204,17 @@ function BuscarDireccion() {
   });
 }
 
+function limpiarCamposDireccionNc() {
+  ["ciudad_nc", "cp_nc", "Barrio_nc", "Numero_nc", "Calle_nc"].forEach(function (id) {
+    var el = document.getElementById(id);
+    if (el) el.value = "";
+  });
+}
+
 function modificardir(e) {
+  // Ciudad/CP/calle salen solo de la dirección elegida en Google para ESTE envío; sin esto se
+  // mandaban los del último envío modificado (tarea Caddy 88).
+  limpiarCamposDireccionNc();
   $.ajax({
     data: { BuscarDatosClienteDestino: 1, id: e },
     url: "Proceso/php/pendientes.php",

@@ -33,16 +33,23 @@ function localidadValidadaPorCp(mysqli $mysqli, string $ciudad, string $cp): str
     };
     $ciudadN = trim($norm($ciudad));
     if ($cp === '' || $ciudadN === '') return '';
+    $esCordoba = in_array($ciudadN, ['cordoba', 'capital', 'cordoba capital', 'cba', 'ciudad de cordoba', 'provincia de cordoba'], true);
     if ((int) $cp >= 5000 && (int) $cp <= 5023) {
-        return in_array($ciudadN, ['cordoba', 'capital', 'cordoba capital', 'cba', 'ciudad de cordoba'], true) ? 'Córdoba' : '';
+        return $esCordoba ? 'Córdoba' : '';
     }
     $st = $mysqli->prepare("SELECT Localidad FROM Localidades WHERE Cp = ?");
     $st->bind_param('s', $cp);
     $st->execute();
     $res = $st->get_result();
+    $porCp = [];
     while ($l = $res->fetch_assoc()) {
         if (trim($norm($l['Localidad'])) === $ciudadN) return $l['Localidad'];
+        $porCp[] = $l['Localidad'];
     }
+    // "CORDOBA" con un CP del interior = mandaron la PROVINCIA, no la ciudad (tarea Caddy 88, IGALFER:
+    // CORDOBA + 5111 terminó en Villa María porque Google buscó solo la calle). Si ese CP es de una sola
+    // localidad nuestra, es esa (5111 → Río Ceballos). Si el CP es de varias, no se adivina.
+    if ($esCordoba && count($porCp) === 1) return $porCp[0];
     return '';
 }
 

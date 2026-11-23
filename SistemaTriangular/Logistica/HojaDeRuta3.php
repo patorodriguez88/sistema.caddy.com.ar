@@ -499,7 +499,7 @@ include_once "../Conexion/Conexion.php";
         <script src="../Menu/js/funciones.js"></script>
         <script src="Mapas/js/hojaderuta.js"></script>
         <script src="Proceso/js/funciones_hdr.js"></script>
-        <script src="Proceso/js/pendientes.js"></script>
+        <script src="Proceso/js/pendientes.js?v=<?php echo filemtime(__DIR__ . '/Proceso/js/pendientes.js'); ?>"></script>
 
 
           <!-- demo app -->

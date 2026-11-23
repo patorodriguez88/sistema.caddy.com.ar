@@ -309,9 +309,16 @@ if (isset($_POST['ActualizarDireccion'])) {
     $switch = 0;
   }
 
-  $sql = $mysqli->query("UPDATE `Clientes` SET Direccion='$_POST[Direccion]',
-                      Calle='$_POST[calle]',Barrio='$_POST[barrio]',Numero='$_POST[numero]',
-                      Ciudad='$_POST[ciudad]',CodigoPostal='$_POST[cp]',Latitud='$latitud',Longitud='$longitud',
+  // Ciudad / CP / calle / barrio / número solo se pisan si vienen de la dirección elegida en Google:
+  // vacíos = el operador no eligió un lugar (o Google no trae ese dato) y se deja lo que había
+  // (tarea Caddy 88: se grababan vacíos o los del envío anterior).
+  $setsDir = '';
+  foreach (['Calle' => 'calle', 'Barrio' => 'barrio', 'Numero' => 'numero', 'Ciudad' => 'ciudad', 'CodigoPostal' => 'cp'] as $col => $campo) {
+    $valor = trim((string) ($_POST[$campo] ?? ''));
+    if ($valor !== '') $setsDir .= ",$col='" . $mysqli->real_escape_string($valor) . "'";
+  }
+  $sql = $mysqli->query("UPDATE `Clientes` SET Direccion='$_POST[Direccion]'$setsDir,
+                      Latitud='$latitud',Longitud='$longitud',
                       Observaciones='$_POST[obs]',ActivarCoordenadas='$switch' WHERE id='$_POST[id]' LIMIT 1");
 
   $sql0 = $mysqli->query("UPDATE `TransClientes` SET DomicilioDestino='$_POST[Direccion]',Observaciones='$_POST[obs]' WHERE idClienteDestino='$_POST[id]' AND CodigoSeguimiento='$_POST[cs]' LIMIT 1");
