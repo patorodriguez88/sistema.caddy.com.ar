@@ -3420,7 +3420,8 @@ $("#botonfacturacion").click(function () {
               (visitas
                 ? '<br><span class="badge bg-dark">' + visitas + "</span>"
                 : "") +
-              // Segunda visita al interior: se cobra con la misma tarifa (se agrega sola como venta)
+              // Segunda visita al interior: se cobra igual que el envío (se agrega sola como venta).
+              // Falta / sacada / revisar zona: botón "Cobrar 2da visita" (no usar la cantidad: es de bultos).
               (row.SegundaVisita === "cobrada"
                 ? '<br><span class="badge bg-danger" title="Interior con 2 visitas: se agregó el cargo de 2da visita">2da visita cobrada</span>'
                 : row.SegundaVisita === "falta"
@@ -3428,8 +3429,12 @@ $("#botonfacturacion").click(function () {
                   : row.SegundaVisita === "sacada"
                     ? '<br><span class="badge bg-secondary" title="El cargo de 2da visita se sacó a mano">2da visita sacada</span>'
                     : row.SegundaVisita === "revisar"
-                      ? '<br><span class="badge bg-warning text-dark" title="2 visitas, pero la localidad no está en la tabla Localidades: no se sabe si es interior. Si es interior, agregá la 2da visita a mano (y cargá la localidad en Localidades).">2 visitas: revisar zona</span>'
+                      ? '<br><span class="badge bg-warning text-dark" title="2 visitas, pero la localidad no está en la tabla Localidades: no se sabe si es interior. Si es interior, tocá Cobrar 2da visita (y cargá la localidad en Localidades).">2 visitas: revisar zona</span>'
                       : "") +
+              (["falta", "sacada", "revisar"].indexOf(row.SegundaVisita) !== -1
+                ? '<br><button type="button" class="btn btn-xs btn-outline-danger py-0 px-1 mt-1 btn-cobrar-2da-visita" style="font-size:11px" data-cs="' +
+                  row.CodigoSeguimiento + '" title="Agrega la línea 2DA VISITA con el mismo importe que el envío">Cobrar 2da visita</button>'
+                : "") +
               "</td>"
             );
           },
@@ -6001,5 +6006,33 @@ $("#btn_guardar_ubicacion").click(function () {
     error: function () {
       toast("error", "Error", "No se pudo guardar la ubicación.");
     },
+  });
+});
+
+// Guías a Facturar: cobrar la 2da visita a mano (localidad fuera de la tabla, o la que se había sacado), 24/11/2026.
+// Agrega la línea "2DA VISITA - ..." con el mismo importe que el envío; no se hace cambiando la cantidad (es de bultos).
+$(document).on("click", ".btn-cobrar-2da-visita", function () {
+  var cs = $(this).data("cs");
+  Swal.fire({
+    icon: "question",
+    title: "Cobrar 2da visita",
+    html: "Se agrega al envío <b>" + cs + "</b> una línea de 2da visita con el <b>mismo importe que el envío</b> (todos los bultos, sin seguro ni cobranza).",
+    showCancelButton: true,
+    confirmButtonText: "Cobrar",
+    cancelButtonText: "Cancelar",
+  }).then(function (r) {
+    if (!r.isConfirmed) return;
+    $.post("../Clientes/Procesos/php/tablas.php", { CobrarSegundaVisita: 1, CodigoSeguimiento: cs }, null, "json")
+      .done(function (res) {
+        if (res && res.success == 1) {
+          Swal.fire({ icon: "success", title: "2da visita agregada", text: "$ " + Number(res.importe).toLocaleString("es-AR", { minimumFractionDigits: 2 }), timer: 1800, showConfirmButton: false });
+          $("#facturacion_tabla").DataTable().ajax.reload(null, false);
+        } else {
+          Swal.fire({ icon: "warning", title: "No se agregó", text: (res && res.error) || "No corresponde." });
+        }
+      })
+      .fail(function () {
+        Swal.fire({ icon: "error", title: "Error", text: "No se pudo agregar la 2da visita." });
+      });
   });
 });
