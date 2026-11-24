@@ -53,7 +53,7 @@
           <div class="vm-seccion mt-4">Importe</div>
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label" for="ventas_cantidad">Cantidad</label>
+              <label class="form-label" for="ventas_cantidad" id="ventas_cantidad_label">Cantidad</label>
               <input value="1" id="ventas_cantidad" type="number" min="0" step="any" class="form-control">
             </div>
             <div class="col-md-4">

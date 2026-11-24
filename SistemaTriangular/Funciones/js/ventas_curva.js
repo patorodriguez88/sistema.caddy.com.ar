@@ -24,7 +24,7 @@ function ventasRecalcular() {
   $aviso.html(
     curva && cantidad > 1
       ? "Con bonificación: " + cantidad + " bultos = " + String(ventasFactorBultos(cantidad)).replace(".", ",") + " tarifas" +
-        "<br><span class='text-danger'>La cantidad es de bultos. Una 2da visita no se carga acá: usá «Cobrar 2da visita» en Guías a Facturar.</span>"
+        "<br><span class='text-danger'>Una 2da visita no se carga subiendo los bultos: usá «Cobrar 2da visita» en Guías a Facturar.</span>"
       : "",
   );
 }
@@ -33,6 +33,9 @@ function ventasRecalcular() {
 function ventasCurvaReset(conCurva) {
   ventasConCurva = conCurva == 1 || conCurva === true;
   $("#ventas_curva_aviso").text("");
+  // Servicio que se cobra por bulto (bonifica): el campo dice "Bultos", así no se usa para una 2da visita.
+  // Los que van por unidad u hora (Hora Sprinter, Flete interno, Caja fresh) siguen diciendo "Cantidad". 24/11/2026.
+  $("#ventas_cantidad_label").text(ventasConCurva ? "Bultos" : "Cantidad");
 }
 
 // Solo si cambia el valor (antes recalculaba con solo pasar por el campo)
