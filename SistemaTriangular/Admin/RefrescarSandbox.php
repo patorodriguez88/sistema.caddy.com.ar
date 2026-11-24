@@ -58,7 +58,7 @@ $esSandbox = defined('ENTORNO') && ENTORNO === 'sandbox';
                                             Las tablas con fecha (ventas, seguimiento, logística, etc.) se filtran
                                             por el período elegido, para no traer años de historial innecesario.
                                             Las tablas de catálogo (usuarios, clientes, vehículos, productos, etc.)
-                                            siempre se copian completas.
+                                            y las cuentas corrientes (clientes y proveedores) siempre se copian completas.
                                         </p>
 
                                         <div class="mb-3" style="max-width: 320px;">
