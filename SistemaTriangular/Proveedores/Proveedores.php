@@ -84,8 +84,7 @@
                                 <div class="modal-body">
 
                                     <!-- File Upload -->
-                                    <form action="Procesos/php/upload.php" method="post" class="dropzone" id="myAwesomeDropzone" data-plugin="dropzone" data-previews-container="#file-previews"
-                                        data-upload-preview-template="#uploadPreviewTemplate" enctype="multipart/form-data">
+                                    <form action="Procesos/php/upload.php" method="post" class="dropzone" id="myAwesomeDropzone" enctype="multipart/form-data">
                                         <div class="fallback">
                                             <input name="file" type="file" multiple />
                                         </div>
@@ -93,9 +92,9 @@
 
                                         <div class="dz-message needsclick">
                                             <i class="h1 text-muted dripicons-cloud-upload"></i>
-                                            <h3>Presione aquí para subir una foto del comprobante.</h3>
+                                            <h3>Presione aquí o arrastre la foto o el PDF del comprobante.</h3>
                                             <span class="text-muted font-13">(Intente que la
-                                                <strong>imagen</strong> este nitida y visible.)</span>
+                                                <strong>imagen</strong> esté nítida y visible. JPG, PNG o PDF.)</span>
                                         </div>
                                     </form>
 
@@ -128,7 +127,7 @@
                                 <div class="col-12">
                                     <div class="text-end mt-xl-0 mt-2">
                                         <button type="button" class="btn btn-light mb-2 me-2" data-bs-dismiss="modal"> Cancelar</button>
-                                        <button id="standard-modal_btn_ok" type="button" class="btn btn-success mb-2 me-2" data-bs-dismiss="modal">Aceptar</button>
+                                        <button id="standard-modal_btn_ok" type="button" class="btn btn-success mb-2 me-2">Aceptar</button>
                                     </div>
                                 </div>
 
@@ -708,6 +707,11 @@
 
                                             <div class="row">
                                                 <div class="col-lg-8 mb-3">
+                                                    <!-- Foto o PDF del comprobante, opcional (24/11/2026): se sube al grabar -->
+                                                    <div class="form-group">
+                                                        <label for="archivo_comprobante_t">Foto o PDF del comprobante <small class="text-muted">(opcional)</small></label>
+                                                        <input type="file" id="archivo_comprobante_t" class="form-control" accept="image/*,application/pdf">
+                                                    </div>
                                                 </div>
 
                                                 <div class="col-lg-4">
@@ -1347,6 +1351,10 @@
              deploy hasta que alguien haga un hard-refresh a mano, sin
              ningún aviso de que está desactualizado. Subir el número cada
              vez que se toque alguno de estos archivos. -->
+        <!-- Subida de la foto del comprobante (24/11/2026: no se cargaba y el área no hacía nada) -->
+        <link href="../hyper/dist/assets/vendor/dropzone/dropzone.css" rel="stylesheet" type="text/css" />
+        <script src="../hyper/dist/assets/vendor/dropzone/dropzone-min.js"></script>
+        <script>if (window.Dropzone) Dropzone.autoDiscover = false;</script>
         <script src="Procesos/js/funciones.js?v=<?php echo filemtime(__DIR__ . '/Procesos/js/funciones.js'); ?>"></script>
         <script src="../Menu/js/funciones.js?v=20260923a"></script>
         <script src="Procesos/js/proveedores.js?v=<?= filemtime(__DIR__ . "/Procesos/js/proveedores.js") ?>"></script>

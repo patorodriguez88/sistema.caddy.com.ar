@@ -754,9 +754,10 @@ $(document).ready(function () {
                       //file exists
                       return (
                         "<td>" +
-                        "<a target='_blank' href='../FacturasCompra/" +
+                        // Puede ser foto o PDF: ver_comprobante.php busca la extensión (antes siempre .pdf)
+                        "<a target='_blank' href='Procesos/php/ver_comprobante.php?id=" +
                         row.id +
-                        ".pdf'><i class='mdi mdi-18px mdi-file-search-outline'></i></a>" +
+                        "'><i class='mdi mdi-18px mdi-file-search-outline'></i></a>" +
                         "</td>"
                       );
                     } else {
@@ -1264,10 +1265,53 @@ $(document).ready(function () {
   });
 });
 
+// Foto del comprobante desde la fila (ícono de subir). Fix 24/11/2026: Dropzone no estaba cargado en la pantalla,
+// el área no hacía nada y "Aceptar" solo cerraba (desde febrero no se subió ninguna). Se activa acá a mano.
+var dzComprobante = null;
+var dzSubidos = 0;
+function dropzoneComprobante() {
+  if (dzComprobante || !window.Dropzone) return dzComprobante;
+  var plantilla = $("#uploadPreviewTemplate").html();
+  dzComprobante = new Dropzone("#myAwesomeDropzone", {
+    url: "Procesos/php/upload.php",
+    paramName: "file",
+    maxFiles: 1,
+    maxFilesize: 20,
+    acceptedFiles: "image/*,application/pdf",
+    previewsContainer: "#file-previews",
+    previewTemplate: plantilla,
+    dictInvalidFileType: "Solo fotos (JPG, PNG) o PDF.",
+    dictFileTooBig: "El archivo es muy grande (máx. {{maxFilesize}} MB).",
+    dictMaxFilesExceeded: "De a un archivo por comprobante.",
+    init: function () {
+      this.on("sending", function (file, xhr, formData) {
+        formData.set("id_comprobante_subir", document.getElementsByName("id_comprobante_subir")[0].value);
+      });
+      this.on("success", function () {
+        dzSubidos++;
+        toast("success", "Listo", "Se subió el comprobante.");
+      });
+      this.on("error", function (file, msg) {
+        var texto = (msg && msg.error) || (typeof msg === "string" ? msg : "No se pudo subir el archivo.");
+        $(file.previewElement).find("[data-dz-size]").html("<span class='text-danger'>" + texto + "</span>");
+        Swal.fire({ icon: "error", title: "No se subió", text: texto });
+      });
+    },
+  });
+  return dzComprobante;
+}
+
 function subir_factura(id) {
-  $("#standard-modal").modal("show");
+  var dz = dropzoneComprobante();
+  if (!dz) {
+    Swal.fire({ icon: "error", title: "No se puede subir", text: "No cargó el componente de subida. Recargá la página (Ctrl+F5)." });
+    return;
+  }
+  dz.removeAllFiles(true);
+  dzSubidos = 0;
   document.getElementsByName("id_comprobante_subir")[0].value = id;
   $("#id_comprobante_subir_html").html(id);
+  $("#standard-modal").modal("show");
 }
 
 function abrir_factura() {
@@ -1311,7 +1355,17 @@ function verificarArchivoEnServidor(nombreArchivo) {
 // Llamar a la función con el nombre del archivo que deseas verificar
 // verificarArchivoEnServidor('ruta/del/archivo.txt');
 
+// Aceptar: si todavía está subiendo, espera; si no eligió nada, avisa; si subió, cierra y refresca la fila.
 $("#standard-modal_btn_ok").click(function () {
-  var datatable = $("#basic").DataTable();
-  datatable.ajax.reload(null, false);
+  var dz = dzComprobante;
+  if (dz && dz.getUploadingFiles().length + dz.getQueuedFiles().length > 0) {
+    toast("info", "Subiendo…", "Esperá a que termine de subir el archivo.");
+    return;
+  }
+  if (!dzSubidos) {
+    Swal.fire({ icon: "warning", title: "No hay archivo", text: "Tocá el recuadro (o arrastrá el archivo) para elegir la foto o el PDF del comprobante." });
+    return;
+  }
+  $("#standard-modal").modal("hide");
+  $("#basic").DataTable().ajax.reload(null, false);
 });
