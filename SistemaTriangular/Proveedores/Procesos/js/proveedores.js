@@ -172,6 +172,7 @@ $("#cargar_factura_btn_ok").click(function () {
     perciva_t: perciva,
     perciibb_t: perciibb,
     descripcion_t: descripcion,
+    vencimiento_t: $("#vencimiento_t").val() || "",
   };
 
   $.ajax({
@@ -509,8 +510,38 @@ function cargarTiposDeComprobante() {
   });
 }
 
+// VENCIMIENTO SUGERIDO (24/11/2026): fecha del comprobante + "Días de pago" del proveedor; si cae
+// sábado o domingo, el lunes. Se recalcula al cambiar la fecha, salvo que el operador lo haya cambiado a
+// mano. Misma regla que vencimientoComprobanteProveedor() en proveedores.php.
+function calcularVencimiento(fechaIso, dias) {
+  if (!fechaIso || isNaN(dias)) return "";
+  const p = fechaIso.split("-").map(Number);
+  const d = new Date(p[0], p[1] - 1, p[2]);
+  d.setDate(d.getDate() + Math.max(0, dias));
+  if (d.getDay() === 6) d.setDate(d.getDate() + 2); // sábado -> lunes
+  if (d.getDay() === 0) d.setDate(d.getDate() + 1); // domingo -> lunes
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+}
+function sugerirVencimiento(forzar) {
+  const $v = $("#vencimiento_t");
+  if (!forzar && $v.data("manual")) return;
+  const dias = parseInt(window.diasPagoProveedor, 10);
+  const vto = calcularVencimiento($("#fecha_t").val(), dias);
+  if (forzar) $v.data("manual", false);
+  $v.val(vto);
+  $("#vencimiento_hint").text(isNaN(dias) ? "" : `Sugerido: ${dias} días de pago`);
+}
+$(document).on("change", "#fecha_t", function () {
+  sugerirVencimiento(false);
+});
+$(document).on("input change", "#vencimiento_t", function (e) {
+  if (e.originalEvent) $(this).data("manual", true); // lo cambió el operador
+});
+
 $("#modal_cargar_factura").on("hidden.bs.modal", function (e) {
   $("#CargarFactura").trigger("reset");
+  $("#vencimiento_t").data("manual", false);
+  $("#vencimiento_hint").text("");
 
   $("#switch1").prop("disabled", false);
   $("#switch1").prop("checked", true);
@@ -558,6 +589,8 @@ $("#modal_cargar_factura").on("show.bs.modal", function (e) {
               $("#cuit_t").val(jsonData.data[0].Cuit);
 
               $("#max_days_pay").val(PagoComprobantes);
+              window.diasPagoProveedor = parseInt(PagoComprobantes, 10);
+              sugerirVencimiento(true);
 
               if (SolicitaCombustible == 1) {
                 $("#solicita_combustible").css("display", "block");

@@ -382,7 +382,14 @@
 
                         <!-- ASOCIAR PAGO A FACTURA (a pedido, 2026-09-16) - calca #asociar-pagos-modal de Clientes/Clientes.php -->
                         <div class="modal fade" id="asociar-pagos-modal-proveedor" tabindex="-1" aria-labelledby="asociarPagosProveedorLabel" aria-hidden="true">
-                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                            <!-- Asociar pagos: colores de coincidencia (24/11/2026). Ver proveedores_asociar_pagos.js -->
+                            <style>
+                                #asociar-pagos-modal-proveedor tr.ap-sel > td { background: #dbeafe !important; }
+                                #asociar-pagos-modal-proveedor tr.ap-exacto > td { background: #c8f0d6 !important; }
+                                #asociar-pagos-modal-proveedor tr.ap-cerca > td { background: #fff1c2 !important; }
+                                #asociar-pagos-modal-proveedor .ap-ley { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin: 0 4px 0 10px; }
+                            </style>
+                            <div class="modal-dialog modal-xl modal-dialog-scrollable">
                                 <div class="modal-content">
                                     <div class="modal-header bg-info text-white">
                                         <h5 class="modal-title" id="asociarPagosProveedorLabel">Asociar Pagos a Facturas</h5>
@@ -391,7 +398,13 @@
                                     <div class="modal-body">
                                         <div class="row">
                                             <div class="col-12">
-                                                <h4 class="header-title mb-3">Facturas Pendientes</h4>
+                                                <div class="small text-muted mb-2">
+                                                    Tildá una o más facturas y se pintan los pagos que podrían corresponder (y al revés):
+                                                    <span class="ap-ley" style="background:#c8f0d6"></span>mismo importe (±$1) o mismo número
+                                                    <span class="ap-ley" style="background:#fff1c2"></span>importe parecido (±2%)
+                                                    <span class="ap-ley" style="background:#dbeafe"></span>tildado
+                                                </div>
+                                                <h4 class="header-title mb-3">Facturas Pendientes <small id="ap_hint_facturas" class="text-success ms-2"></small></h4>
                                                 <div class="table-responsive">
                                                     <table id="tabla_asociar-pagos_facturas_prov" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
                                                         <thead>
@@ -410,7 +423,7 @@
                                         </div>
                                         <div class="row mt-4">
                                             <div class="col-12">
-                                                <h4 class="header-title mb-3">Pagos / Anticipos Disponibles</h4>
+                                                <h4 class="header-title mb-3">Pagos / Anticipos Disponibles <small id="ap_hint_pagos" class="text-success ms-2"></small></h4>
                                                 <div class="table-responsive">
                                                     <table id="tabla_asociar-pagos_pagos_prov" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
                                                         <thead>
@@ -530,7 +543,7 @@
                                         <form id="CargarFactura" name='CargarFactura' class='form-group' method='POST' enctype='multipart/form-data'>
 
                                             <div class="row">
-                                                <div class="col-lg-3 mb-3">
+                                                <div class="col-lg-2 mb-3">
                                                     <div class="form-group">
                                                         <label for="fecha_t">Fecha del Comprobante:</label>
                                                         <input name="fecha_t" type="date" id="fecha_t" class="form-control" required>
@@ -538,7 +551,16 @@
                                                     </div>
                                                 </div>
 
-                                                <div class="col-lg-5 mb-3">
+                                                <!-- Vencimiento sugerido (24/11/2026): fecha + Días de pago del proveedor; sábado o domingo -> lunes. Editable. -->
+                                                <div class="col-lg-2 mb-3">
+                                                    <div class="form-group">
+                                                        <label for="vencimiento_t">Vencimiento:</label>
+                                                        <input name="vencimiento_t" type="date" id="vencimiento_t" class="form-control">
+                                                        <small class="text-muted" id="vencimiento_hint"></small>
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-lg-4 mb-3">
                                                     <div class="form-group">
                                                         <label for="razonsocial_t">Razon Social</label>
                                                         <input type="text" id="razonsocial_t" class="form-control" readonly="">
@@ -1101,9 +1123,9 @@
                                                         </div>
                                                         <div class="col-lg-2 mt-3">
                                                             <div class="form-group">
-                                                                <label for="max_days_pay">Max Dias</label>
-                                                                <input type="number" id="max_days_pay" class="form-control" value="15">
-                                                                <p class="text-muted">Max Dias P/Pago Comprobantes</p>
+                                                                <label for="max_days_pay">Días de pago</label>
+                                                                <input type="number" id="max_days_pay" class="form-control" value="15" min="0">
+                                                                <p class="text-muted">Días desde la fecha del comprobante (sugiere el vencimiento; sábado/domingo pasa al lunes)</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1327,7 +1349,7 @@
         <script src="../Menu/js/funciones.js?v=20260923a"></script>
         <script src="Procesos/js/proveedores.js?v=<?= filemtime(__DIR__ . "/Procesos/js/proveedores.js") ?>"></script>
         <script src="Procesos/js/proveedores_pagos.js?v=20260923a"></script>
-        <script src="Procesos/js/proveedores_asociar_pagos.js?v=20260923a"></script>
+        <script src="Procesos/js/proveedores_asociar_pagos.js?v=20261124a"></script>
         <!-- SweetAlert2 CSS -->
         <link href="https://cdn.jsdelivr.net/npm/sweetalert2@11/dist/sweetalert2.min.css" rel="stylesheet" />
 

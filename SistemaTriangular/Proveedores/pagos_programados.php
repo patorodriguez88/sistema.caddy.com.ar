@@ -290,7 +290,7 @@
     <script src="../Funciones/js/alertas.js"></script>
 
     <!-- JS propio -->
-    <script src="Procesos/js/pagos_programados.js"></script>
+    <script src="Procesos/js/pagos_programados.js?v=<?= filemtime(__DIR__ . "/Procesos/js/pagos_programados.js") ?>"></script>
 
 </body>
 

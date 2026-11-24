@@ -35,12 +35,13 @@ function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores, $fechaDesde
             TP.Debe - IFNULL(AP.Pagado, 0) - IFNULL(PP.Programado, 0) AS SaldoDisponible
         FROM TransProveedores TP
         LEFT JOIN (
-            SELECT 
-                idTransProveedores,
-                SUM(Haber) AS Pagado
-            FROM AnticiposProveedores
+            -- Pagado = lo aplicado a la factura (pagos, NC, anticipos), igual que la Cuenta Corriente y
+            -- Asociar pagos. Antes sumaba AnticiposProveedores, que no está vinculada a facturas: daba 0
+            -- y las facturas ya pagas seguían apareciendo (24/11/2026).
+            SELECT idMovimientoOrigen AS idTransProveedores, SUM(Importe) AS Pagado
+            FROM TransProveedores_Imputaciones
             WHERE Eliminado = 0
-            GROUP BY idTransProveedores
+            GROUP BY idMovimientoOrigen
         ) AP ON AP.idTransProveedores = TP.id
         LEFT JOIN (
             SELECT 
@@ -77,8 +78,21 @@ function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores, $fechaDesde
 
 if ($accion == 'listar_facturas_pendientes') {
 
+    // Vencimiento (24/11/2026): el grabado al cargar el comprobante (TransProveedores.FechaVencimiento);
+    // si no tiene (comprobantes viejos o migración pendiente), uno estimado con los "Días de pago" del
+    // proveedor (Pago_comprobantes) y la misma regla: sábado o domingo pasa al lunes. Se ordena por él.
+    $resCol = $mysqli->query("SHOW COLUMNS FROM TransProveedores LIKE 'FechaVencimiento'");
+    $tieneVto = $resCol && $resCol->num_rows > 0;
+    $vtoEstimado = "DATE_ADD(TP.Fecha, INTERVAL IFNULL(PR.Pago_comprobantes, 15) DAY)";
+    $vtoEstimado = "CASE DAYOFWEEK({$vtoEstimado}) WHEN 7 THEN DATE_ADD({$vtoEstimado}, INTERVAL 2 DAY)
+                    WHEN 1 THEN DATE_ADD({$vtoEstimado}, INTERVAL 1 DAY) ELSE {$vtoEstimado} END";
+    $selVto = $tieneVto
+        ? "COALESCE(TP.FechaVencimiento, {$vtoEstimado}) AS Vencimiento, (TP.FechaVencimiento IS NULL) AS VencimientoEstimado,"
+        : "{$vtoEstimado} AS Vencimiento, 1 AS VencimientoEstimado,";
+
     $sql = "
         SELECT 
+            {$selVto}
             TP.id,
             TP.Fecha,
             TP.RazonSocial,
@@ -96,12 +110,13 @@ if ($accion == 'listar_facturas_pendientes') {
             TP.Debe - IFNULL(AP.Pagado, 0) - IFNULL(PP.Programado, 0) AS SaldoPendiente
         FROM TransProveedores TP
         LEFT JOIN (
-            SELECT 
-                idTransProveedores,
-                SUM(Haber) AS Pagado
-            FROM AnticiposProveedores
+            -- Pagado = lo aplicado a la factura (pagos, NC, anticipos), igual que la Cuenta Corriente y
+            -- Asociar pagos. Antes sumaba AnticiposProveedores, que no está vinculada a facturas: daba 0
+            -- y las facturas ya pagas seguían apareciendo (24/11/2026).
+            SELECT idMovimientoOrigen AS idTransProveedores, SUM(Importe) AS Pagado
+            FROM TransProveedores_Imputaciones
             WHERE Eliminado = 0
-            GROUP BY idTransProveedores
+            GROUP BY idMovimientoOrigen
         ) AP ON AP.idTransProveedores = TP.id
         LEFT JOIN (
             SELECT 
@@ -112,11 +127,12 @@ if ($accion == 'listar_facturas_pendientes') {
               AND estado IN ('PROGRAMADO','REPROGRAMADO')
             GROUP BY idTransProveedores
         ) PP ON PP.idTransProveedores = TP.id
+        LEFT JOIN Proveedores PR ON PR.id = TP.idProveedor
         WHERE TP.Eliminado = 0
           AND TP.Debe > 0
           AND TP.Fecha >= '{$fechaDesde}'
         HAVING SaldoPendiente > 0
-        ORDER BY TP.Fecha ASC, TP.RazonSocial ASC
+        ORDER BY Vencimiento ASC, TP.RazonSocial ASC
     ";
 
     $res = $mysqli->query($sql);
@@ -132,6 +148,7 @@ if ($accion == 'listar_facturas_pendientes') {
         $row['Pagado'] = n($row['Pagado']);
         $row['Programado'] = n($row['Programado']);
         $row['SaldoPendiente'] = n($row['SaldoPendiente']);
+        $row['VencimientoEstimado'] = (int) $row['VencimientoEstimado'];
         $data[] = $row;
     }
 
@@ -425,12 +442,13 @@ if ($accion == 'cards') {
                 TP.Debe - IFNULL(AP.Pagado, 0) - IFNULL(PP.Programado, 0) AS SaldoPendiente
             FROM TransProveedores TP
             LEFT JOIN (
-                SELECT 
-                    idTransProveedores,
-                    SUM(Haber) AS Pagado
-                FROM AnticiposProveedores
+                -- Pagado = lo aplicado a la factura (pagos, NC, anticipos), igual que la Cuenta Corriente y
+                -- Asociar pagos. Antes sumaba AnticiposProveedores, que no está vinculada a facturas: daba 0
+                -- y las facturas ya pagas seguían apareciendo (24/11/2026).
+                SELECT idMovimientoOrigen AS idTransProveedores, SUM(Importe) AS Pagado
+                FROM TransProveedores_Imputaciones
                 WHERE Eliminado = 0
-                GROUP BY idTransProveedores
+                GROUP BY idMovimientoOrigen
             ) AP ON AP.idTransProveedores = TP.id
             LEFT JOIN (
                 SELECT 
