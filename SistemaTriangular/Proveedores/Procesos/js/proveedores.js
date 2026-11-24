@@ -626,11 +626,6 @@ $("#modal_cargar_factura").on("show.bs.modal", function (e) {
               } else {
                 $("#solicita_vehiculo").css("display", "none");
               }
-              if (TareasAsana == 1) {
-                $("#alert_asana").show();
-              } else {
-                $("#alert_asana").hide();
-              }
             }
           },
         });
