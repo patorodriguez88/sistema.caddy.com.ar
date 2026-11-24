@@ -438,10 +438,13 @@ if (isset($_POST['VerificarOp'])) {
     if ($_POST['Operativo'] == 'true') {
 
         //COMPRUEBO EL CODIGO        
-        $sql = $mysqli->query("SELECT id,CodigoAprobacion FROM OrdenesDeCompra WHERE CodigoAprobacion='$Codigodeaprobacion' AND Eliminado=0 AND Estado='Aprobada' AND CompraRelacionada=0");
-        $Orden = $sql->fetch_array(MYSQLI_ASSOC);
+        $st = $mysqli->prepare("SELECT id,CodigoAprobacion FROM OrdenesDeCompra WHERE CodigoAprobacion=? AND Eliminado=0 AND Estado='Aprobada' AND CompraRelacionada=0 LIMIT 1");
+        $st->bind_param('s', $Codigodeaprobacion);
+        $st->execute();
+        $Orden = $st->get_result()->fetch_assoc();
+        $st->close();
 
-        if ($Orden['CodigoAprobacion'] == '') {
+        if (!$Orden || (string)$Orden['CodigoAprobacion'] === '') {
 
             echo json_encode(array('success' => 0));
         } else {
