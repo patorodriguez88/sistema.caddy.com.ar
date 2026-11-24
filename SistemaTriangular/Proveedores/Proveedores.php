@@ -543,7 +543,7 @@
                                         <form id="CargarFactura" name='CargarFactura' class='form-group' method='POST' enctype='multipart/form-data'>
 
                                             <div class="row">
-                                                <div class="col-lg-2 mb-3">
+                                                <div class="col-lg-3 mb-3">
                                                     <div class="form-group">
                                                         <label for="fecha_t">Fecha del Comprobante:</label>
                                                         <input name="fecha_t" type="date" id="fecha_t" class="form-control" required>
@@ -552,7 +552,7 @@
                                                 </div>
 
                                                 <!-- Vencimiento sugerido (24/11/2026): fecha + Días de pago del proveedor; sábado o domingo -> lunes. Editable. -->
-                                                <div class="col-lg-2 mb-3">
+                                                <div class="col-lg-3 mb-3">
                                                     <div class="form-group">
                                                         <label for="vencimiento_t">Vencimiento:</label>
                                                         <input name="vencimiento_t" type="date" id="vencimiento_t" class="form-control">
@@ -566,7 +566,7 @@
                                                         <input type="text" id="razonsocial_t" class="form-control" readonly="">
                                                     </div>
                                                 </div>
-                                                <div class="col-lg-4 mb-3">
+                                                <div class="col-lg-2 mb-3">
                                                     <div class="form-group">
                                                         <label for="cuit_t">Cuit</label>
                                                         <input type="text" id="cuit_t" name="cuit_t" class="form-control" readonly>
