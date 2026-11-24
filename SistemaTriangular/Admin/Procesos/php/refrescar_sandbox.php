@@ -38,7 +38,11 @@ $TABLAS_SIEMPRE_COMPLETAS = array(
     'Vehiculos', 'Clientes', 'Empleados', 'Productos', 'Recorridos',
     'PlanDeCuentas', 'FormaDePago', 'AfipTipoDeComprobante', 'AfipTipoDeResponsables',
     'Variables', 'DatosEmpresa', 'Proveedores', 'Rubros', 'Localidades',
-    'ClientesyServicios', 'ValorxKilometro'
+    'ClientesyServicios', 'ValorxKilometro',
+    // Cuentas corrientes (24/11/2026): el saldo sale de toda la historia; con el filtro de período la cuenta de un
+    // proveedor quedaba vacía o con el saldo mal. Son chicas (TransProveedores 8 MB, Ctasctes 34 MB).
+    'TransProveedores', 'TransProveedores_Imputaciones', 'IvaCompras', 'AnticiposProveedores',
+    'pagos_programados_proveedores', 'Ctasctes', 'Ctasctes_Imputaciones', 'IvaVentas'
 );
 
 // Backups y copias viejas de produccion: no se crean ni se copian en sandbox
