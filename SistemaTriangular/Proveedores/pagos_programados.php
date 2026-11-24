@@ -84,9 +84,6 @@
         }
 
         /* Rediseño 24/11/2026 */
-        /* sábado y domingo: gris (no se paga, no acepta facturas) */
-        .fc .dia-finde { background: #eef0f2 !important; }
-        .fc .dia-finde .fc-daygrid-day-number { opacity: .4; }
         /* viernes: día de pago habitual */
         .fc .dia-viernes { background: #e6f7ec !important; }
         .fc .fc-daygrid-day { cursor: pointer; }
@@ -241,7 +238,6 @@
                                         <span class="cuadro" style="background:#39afd1"></span>fecha elegida
                                         <span class="cuadro" style="background:#fa5c7c"></span>vencida sin pagar
                                         <span class="cuadro" style="background:#e6f7ec;border:1px solid #cde"></span>viernes (día de pago)
-                                        <span class="cuadro" style="background:#eef0f2;border:1px solid #ddd"></span>sábado y domingo (no se paga)
                                         · Clic en un día para ver todo lo que se paga y el total.
                                     </div>
                                     <div id="calendario_pagos"></div>

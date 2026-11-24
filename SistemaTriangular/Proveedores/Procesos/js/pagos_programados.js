@@ -44,6 +44,7 @@ function inicializarCalendarioPagos() {
     locale: "es",
     initialView: "dayGridMonth",
     firstDay: 1,
+    weekends: false, // de lunes a viernes: sábado y domingo no se paga (24/11/2026)
     height: "auto",
     editable: true,
     droppable: true,
@@ -74,11 +75,9 @@ function inicializarCalendarioPagos() {
       },
     },
 
-    // Sábado y domingo en gris; viernes (día de pago habitual) en verde pastel.
+    // Viernes (día de pago habitual) en verde pastel.
     dayCellClassNames: function (arg) {
-      const dow = arg.date.getDay();
-      if (dow === 0 || dow === 6) return ["dia-finde"];
-      if (dow === 5) return ["dia-viernes"];
+      if (arg.date.getDay() === 5) return ["dia-viernes"];
       return [];
     },
 
