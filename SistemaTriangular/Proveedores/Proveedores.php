@@ -1123,9 +1123,11 @@
                                                         </div>
                                                         <div class="col-lg-2 mt-3">
                                                             <div class="form-group">
-                                                                <label for="max_days_pay">Días de pago</label>
+                                                                <label for="max_days_pay">Días de pago
+                                                                    <i class="mdi mdi-information-outline text-muted ms-1" style="cursor:help" data-bs-toggle="tooltip" data-bs-placement="top"
+                                                                        title="Días desde la fecha del comprobante. Con esto se sugiere el vencimiento al cargar la factura; si cae sábado o domingo pasa al lunes."></i>
+                                                                </label>
                                                                 <input type="number" id="max_days_pay" class="form-control" value="15" min="0">
-                                                                <p class="text-muted">Días desde la fecha del comprobante (sugiere el vencimiento; sábado/domingo pasa al lunes)</p>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -1356,6 +1358,12 @@
         <!-- SweetAlert2 JS -->
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="../Funciones/js/alertas.js"></script>
+    <script>
+        // Tooltips de ayuda (ícono de info en "Días de pago"); Bootstrap 5 no los inicializa solo.
+        document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+            if (window.bootstrap && bootstrap.Tooltip) bootstrap.Tooltip.getOrCreateInstance(el);
+        });
+    </script>
 </body>
 
 </html>
