@@ -181,6 +181,10 @@ function renderFacturasPendientes(data) {
                 <div>
                     <b>Fecha:</b> ${formatoFecha(row.Fecha)}
                 </div>
+                ${row.Vencimiento ? `<div class="${String(row.Vencimiento) < hoyIso() ? "text-danger fw-bold" : ""}">
+                    <b>Vence:</b> ${formatoFecha(row.Vencimiento)}
+                    ${Number(row.VencimientoEstimado) === 1 ? '<span class="text-muted fw-normal">(estimado)</span>' : ""}
+                </div>` : ""}
                 <div>
                     <b>Total:</b> ${formatoMoneda(debe)}
                     <span class="text-success ms-1">
@@ -588,4 +592,10 @@ function escapeHtml(texto) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
+}
+
+// Hoy en AAAA-MM-DD (hora local), para marcar en rojo lo vencido.
+function hoyIso() {
+  const d = new Date();
+  return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
 }

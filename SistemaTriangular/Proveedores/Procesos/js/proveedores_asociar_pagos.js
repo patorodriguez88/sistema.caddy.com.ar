@@ -28,40 +28,112 @@ function limpiarEstadoAsociacionProv() {
   $("#footer_saldo_prov").html("$ 0.00");
 }
 
-function recalcularAsociacionProv() {
-  checkedFacturasProv = [];
-  checkedFacturasidProv = [];
-  checkedPagosProv = [];
-  checkedPagosidProv = [];
+// Tablas del modal (DataTables). Se leen SIEMPRE con la API para tomar lo tildado en TODAS las
+// páginas: antes se usaba $("#tabla ... :checked"), que solo ve la página visible, y lo tildado en
+// otra página dejaba de sumar (24/11/2026).
+const AP_TABLA_FACT = "#tabla_asociar-pagos_facturas_prov";
+const AP_TABLA_PAGO = "#tabla_asociar-pagos_pagos_prov";
 
-  let totalFacturas = 0;
-  let totalPagos = 0;
+// Lo tildado se guarda por id (no se lee del DOM): así no se pierde al reordenar ni al cambiar de página.
+const apSelFact = new Set();
+const apSelPago = new Set();
 
-  $("#tabla_asociar-pagos_facturas_prov .chk-factura-prov:checked").each(function () {
-    const importe = Number($(this).attr("data-importe") || 0);
-    const id = $(this).attr("data-id");
-    checkedFacturasProv.push(importe);
-    checkedFacturasidProv.push(id);
-    totalFacturas += importe;
-  });
-
-  $("#tabla_asociar-pagos_pagos_prov .chk-pago-prov:checked").each(function () {
-    const importe = Number($(this).attr("data-importe") || 0);
-    const id = $(this).attr("data-id");
-    checkedPagosProv.push(importe);
-    checkedPagosidProv.push(id);
-    totalPagos += importe;
-  });
-
-  const saldo = totalFacturas - totalPagos;
-
-  $("#footer_total_facturas_prov").html(formatoMonedaProveedor(totalFacturas));
-  $("#footer_total_pagos_prov").html(formatoMonedaProveedor(totalPagos));
-  $("#footer_saldo_prov").html(formatoMonedaProveedor(saldo));
+function apTabla(sel) {
+  return $.fn.DataTable.isDataTable(sel) ? $(sel).DataTable() : null;
 }
 
-$(document).on("change", ".chk-factura-prov, .chk-pago-prov", function () {
-  recalcularAsociacionProv();
+// Número de comprobante comparable: solo dígitos, sin ceros adelante (y la última parte, sin el punto
+// de venta), para reconocer el pago que el sistema viejo grababa con el mismo número de la factura.
+function apNumeros(numero) {
+  const txt = String(numero || "");
+  const total = txt.replace(/\D/g, "").replace(/^0+/, "");
+  const ultimo = (txt.split("-").pop() || "").replace(/\D/g, "").replace(/^0+/, "");
+  return [total, ultimo].filter((x) => x.length >= 4);
+}
+
+function apTildados(t, sel, campoImporte) {
+  const out = { total: 0, ids: [], importes: [], numeros: new Set() };
+  if (!t) return out;
+  t.rows().every(function () {
+    const d = this.data();
+    if (!sel.has(String(d.id))) return;
+    const imp = Number(d[campoImporte] || 0);
+    out.total += imp;
+    out.ids.push(String(d.id));
+    out.importes.push(imp);
+    apNumeros(d.NumeroComprobante).forEach((n) => out.numeros.add(n));
+  });
+  return out;
+}
+
+// Pinta en la tabla "t" los renglones que podrían corresponder a lo tildado en la otra:
+// verde = mismo importe que lo que falta cubrir (±$1) o mismo número de comprobante; amarillo =
+// importe parecido (±2%). No filtra nada (una diferencia de centavos no deja afuera a nadie).
+// Devuelve cuántos pintó. Si "reordenar", deja las coincidencias arriba.
+function apPintar(t, sel, campoImporte, objetivo, numerosOtro, reordenar) {
+  if (!t) return 0;
+  let n = 0;
+  t.rows().every(function () {
+    const node = $(this.node());
+    const d = this.data();
+    const tildado = sel.has(String(d.id));
+    const saldo = Number(d[campoImporte] || 0);
+    let nivel = 0;
+    if (!tildado && (objetivo > 0.009 || numerosOtro.size)) {
+      const dif = Math.abs(saldo - objetivo);
+      const mismoNumero = apNumeros(d.NumeroComprobante).some((x) => numerosOtro.has(x));
+      if (mismoNumero || (objetivo > 0.009 && dif <= 1)) nivel = 2;
+      else if (objetivo > 0.009 && dif <= Math.max(1, objetivo * 0.02)) nivel = 1;
+    }
+    d._match = nivel;
+    if (nivel) n++;
+    node.toggleClass("ap-sel", !!tildado).toggleClass("ap-exacto", nivel === 2).toggleClass("ap-cerca", nivel === 1);
+  });
+  if (reordenar) {
+    // solo se invalida la columna oculta de coincidencia (la del tilde no se vuelve a dibujar)
+    t.rows().every(function () { t.cell(this.index(), 5).invalidate("data"); });
+    t.order(n ? [[5, "desc"], [0, "asc"]] : [[0, "asc"]]).draw();
+  }
+  return n;
+}
+
+function recalcularAsociacionProv(origen) {
+  const tf = apTabla(AP_TABLA_FACT);
+  const tp = apTabla(AP_TABLA_PAGO);
+  const f = apTildados(tf, apSelFact, "SaldoPendiente");
+  const p = apTildados(tp, apSelPago, "SaldoDisponible");
+
+  checkedFacturasProv = f.importes;
+  checkedFacturasidProv = f.ids;
+  checkedPagosProv = p.importes;
+  checkedPagosidProv = p.ids;
+
+  $("#footer_total_facturas_prov").html(formatoMonedaProveedor(f.total));
+  $("#footer_total_pagos_prov").html(formatoMonedaProveedor(p.total));
+  $("#footer_saldo_prov").html(formatoMonedaProveedor(f.total - p.total));
+
+  // Pagos que cubrirían lo que falta de las facturas tildadas, y facturas que cubrirían lo que sobra de
+  // los pagos tildados. Solo se reordena la tabla de enfrente (la que no se está tildando).
+  const nPagos = f.ids.length
+    ? apPintar(tp, apSelPago, "SaldoDisponible", f.total - p.total, f.numeros, origen === "factura")
+    : apPintar(tp, apSelPago, "SaldoDisponible", 0, new Set(), origen === "factura");
+  const nFact = p.ids.length
+    ? apPintar(tf, apSelFact, "SaldoPendiente", p.total - f.total, p.numeros, origen === "pago")
+    : apPintar(tf, apSelFact, "SaldoPendiente", 0, new Set(), origen === "pago");
+
+  $("#ap_hint_pagos").text(nPagos ? `${nPagos} posible${nPagos > 1 ? "s" : ""} coincidencia${nPagos > 1 ? "s" : ""} (arriba)` : "");
+  $("#ap_hint_facturas").text(nFact ? `${nFact} posible${nFact > 1 ? "s" : ""} coincidencia${nFact > 1 ? "s" : ""} (arriba)` : "");
+}
+
+$(document).on("change", ".chk-factura-prov", function () {
+  const id = String($(this).attr("data-id"));
+  this.checked ? apSelFact.add(id) : apSelFact.delete(id);
+  recalcularAsociacionProv("factura");
+});
+$(document).on("change", ".chk-pago-prov", function () {
+  const id = String($(this).attr("data-id"));
+  this.checked ? apSelPago.add(id) : apSelPago.delete(id);
+  recalcularAsociacionProv("pago");
 });
 
 function comprobanteYNumero(row) {
@@ -71,6 +143,29 @@ function comprobanteYNumero(row) {
 function fechaDMYProv(iso) {
   return iso ? iso.split("-").reverse().join(".") : "";
 }
+
+// Fecha: se muestra dd.mm.aaaa pero se ORDENA por la fecha ISO (antes ordenaba el texto dd.mm.aaaa,
+// o sea por día del mes, y las fechas quedaban mezcladas).
+function apColFecha() {
+  return { data: "Fecha", render: (data, type) => (type === "display" || type === "filter" ? fechaDMYProv(data) : data) };
+}
+function apColMatch() {
+  return { data: "_match", visible: false, searchable: false, defaultContent: 0 };
+}
+function apAsegurarColumnaOculta(sel) {
+  const tr = $(sel + " thead tr");
+  if (tr.find("th").length === 5) tr.append("<th>coincide</th>");
+}
+const AP_DT_OPCIONES = {
+  destroy: true,
+  pageLength: 10,
+  lengthMenu: [[10, 25, 50, -1], [10, 25, 50, "Todos"]],
+  paging: true,
+  searching: true, // buscar por número, importe o descripción
+  info: true,
+  order: [[0, "asc"]],
+  language: { search: "Buscar:", lengthMenu: "_MENU_ por página", info: "_START_–_END_ de _TOTAL_", infoEmpty: "", zeroRecords: "Sin resultados", emptyTable: "No hay comprobantes", paginate: { previous: "‹", next: "›" } },
+};
 
 $("#asociar_pago_proveedor_button").click(function () {
   const idProveedor = $("#codigo").val();
@@ -82,23 +177,19 @@ $("#asociar_pago_proveedor_button").click(function () {
 
   $("#asociar-pagos-modal-proveedor").modal("show");
   limpiarEstadoAsociacionProv();
+  apSelFact.clear();
+  apSelPago.clear();
+  $("#ap_hint_pagos, #ap_hint_facturas").text("");
 
-  if ($.fn.DataTable.isDataTable("#tabla_asociar-pagos_facturas_prov")) {
-    $("#tabla_asociar-pagos_facturas_prov").DataTable().destroy();
-    $("#tabla_asociar-pagos_facturas_prov tbody").empty();
-  }
-  if ($.fn.DataTable.isDataTable("#tabla_asociar-pagos_pagos_prov")) {
-    $("#tabla_asociar-pagos_pagos_prov").DataTable().destroy();
-    $("#tabla_asociar-pagos_pagos_prov tbody").empty();
-  }
+  [AP_TABLA_FACT, AP_TABLA_PAGO].forEach(function (sel) {
+    if ($.fn.DataTable.isDataTable(sel)) {
+      $(sel).DataTable().destroy();
+      $(sel + " tbody").empty();
+    }
+    apAsegurarColumnaOculta(sel);
+  });
 
-  $("#tabla_asociar-pagos_facturas_prov").DataTable({
-    destroy: true,
-    pageLength: 5,
-    lengthMenu: [[5, 10, 20, -1], [5, 10, 20, "Todos"]],
-    paging: true,
-    searching: false,
-    info: false,
+  $(AP_TABLA_FACT).DataTable(Object.assign({}, AP_DT_OPCIONES, {
     ajax: {
       url: "Procesos/php/pagos.php",
       data: { Asociar_pago_comprobantes: 1, id: idProveedor },
@@ -106,29 +197,24 @@ $("#asociar_pago_proveedor_button").click(function () {
       dataSrc: "data",
     },
     columns: [
-      { data: "Fecha", render: (data, type, row) => fechaDMYProv(row.Fecha) },
-      { data: null, render: (data, type, row) => comprobanteYNumero(row) },
+      apColFecha(),
+      { data: "NumeroComprobante", render: (data, type, row) => comprobanteYNumero(row) },
       { data: "Descripcion", render: (data) => data || "" },
-      { data: "SaldoPendiente", render: (data) => formatoMonedaProveedor(data) },
+      { data: "SaldoPendiente", render: (data, type) => (type === "display" ? formatoMonedaProveedor(data) : Number(data)) },
       {
         data: null,
         orderable: false,
         searchable: false,
         render: (data, type, row) =>
           '<div class="form-check mb-0">' +
-          '<input data-id="' + row.id + '" data-importe="' + row.SaldoPendiente + '" type="checkbox" class="form-check-input chk-factura-prov">' +
+          '<input data-id="' + row.id + '" data-importe="' + row.SaldoPendiente + '" type="checkbox" class="form-check-input chk-factura-prov"' + (apSelFact.has(String(row.id)) ? " checked" : "") + '>' +
           '<label class="form-check-label">&nbsp;</label></div>',
       },
+      apColMatch(),
     ],
-  });
+  }));
 
-  $("#tabla_asociar-pagos_pagos_prov").DataTable({
-    destroy: true,
-    pageLength: 5,
-    lengthMenu: [[5, 10, 20, -1], [5, 10, 20, "Todos"]],
-    paging: true,
-    searching: false,
-    info: false,
+  $(AP_TABLA_PAGO).DataTable(Object.assign({}, AP_DT_OPCIONES, {
     ajax: {
       url: "Procesos/php/pagos.php",
       data: { Asociar_pago_pagos: 1, id: idProveedor },
@@ -136,21 +222,22 @@ $("#asociar_pago_proveedor_button").click(function () {
       dataSrc: "data",
     },
     columns: [
-      { data: "Fecha", render: (data, type, row) => fechaDMYProv(row.Fecha) },
-      { data: null, render: (data, type, row) => comprobanteYNumero(row) },
+      apColFecha(),
+      { data: "NumeroComprobante", render: (data, type, row) => comprobanteYNumero(row) },
       { data: "Descripcion", render: (data) => data || "" },
-      { data: "SaldoDisponible", render: (data) => formatoMonedaProveedor(data) },
+      { data: "SaldoDisponible", render: (data, type) => (type === "display" ? formatoMonedaProveedor(data) : Number(data)) },
       {
         data: null,
         orderable: false,
         searchable: false,
         render: (data, type, row) =>
           '<div class="form-check mb-0">' +
-          '<input data-id="' + row.id + '" data-importe="' + row.SaldoDisponible + '" type="checkbox" class="form-check-input chk-pago-prov">' +
+          '<input data-id="' + row.id + '" data-importe="' + row.SaldoDisponible + '" type="checkbox" class="form-check-input chk-pago-prov"' + (apSelPago.has(String(row.id)) ? " checked" : "") + '>' +
           '<label class="form-check-label">&nbsp;</label></div>',
       },
+      apColMatch(),
     ],
-  });
+  }));
 });
 
 $("#asociar-pagos-modal-prov-ok").click(function () {

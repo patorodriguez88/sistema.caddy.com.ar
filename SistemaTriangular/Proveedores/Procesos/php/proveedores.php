@@ -99,6 +99,34 @@ $Usuario = $_SESSION['Usuario'];
 // resolverCuentaContable() vive en cuenta_contable.php (también la usa Externos al registrar la factura).
 require_once __DIR__ . "/cuenta_contable.php";
 
+/** ¿La tabla tiene esa columna? (para escribir campos nuevos solo si la migración ya se corrió) */
+function proveedoresTieneColumna(mysqli $mysqli, string $tabla, string $col): bool
+{
+    static $cache = [];
+    $k = $tabla . '.' . $col;
+    if (!isset($cache[$k])) {
+        $res = $mysqli->query("SHOW COLUMNS FROM `" . str_replace('`', '', $tabla) . "` LIKE '" . $mysqli->real_escape_string($col) . "'");
+        $cache[$k] = $res && $res->num_rows > 0;
+    }
+    return $cache[$k];
+}
+
+/**
+ * Vencimiento de un comprobante de proveedor: la fecha que eligió el operador si es válida; si no,
+ * fecha del comprobante + días de pago del proveedor, y si cae sábado o domingo, el lunes siguiente.
+ * Misma regla que sugerirVencimiento() en proveedores.js.
+ */
+function vencimientoComprobanteProveedor(string $fecha, int $diasPago, string $elegida = ''): string
+{
+    $d = DateTime::createFromFormat('Y-m-d', $elegida);
+    if ($d && $d->format('Y-m-d') === $elegida) return $elegida;
+    $base = DateTime::createFromFormat('Y-m-d', substr($fecha, 0, 10)) ?: new DateTime();
+    $base->modify('+' . max(0, $diasPago) . ' days');
+    $dow = (int) $base->format('N'); // 6 = sábado, 7 = domingo
+    if ($dow >= 6) $base->modify('+' . (8 - $dow) . ' days');
+    return $base->format('Y-m-d');
+}
+
 function cargarfactura()
 {
     global $mysqli;
@@ -243,6 +271,19 @@ function cargarfactura()
     $IdTransProvCompraD = $IdTransProvCompra;
     $IdTransProvCompraH = $IdTransProvCompra;
 
+    // Vencimiento del comprobante (24/11/2026): lo sugiere el modal con los "Días de pago" del proveedor
+    // (Pago_comprobantes) y si cae sábado o domingo pasa al lunes; el operador lo puede cambiar. Si no
+    // viene, se calcula igual acá. Se usa en Programación de pagos (y como vencimiento de la tarea de
+    // Asana). Sin la columna (migración 2026_11_24 pendiente) no se graba y no corta nada.
+    $Vencimiento = vencimientoComprobanteProveedor((string) $Fecha, (int) $PagoComprobantes, (string) ($_POST['vencimiento_t'] ?? ''));
+    if (proveedoresTieneColumna($mysqli, 'TransProveedores', 'FechaVencimiento')) {
+        $stmtVto = $mysqli->prepare("UPDATE TransProveedores SET FechaVencimiento = ? WHERE id = ? LIMIT 1");
+        if ($stmtVto) {
+            $stmtVto->bind_param('si', $Vencimiento, $IdTransProvCompra);
+            $stmtVto->execute();
+        }
+    }
+
     //INSERT EN IVA COMPRAS
     $sql = "INSERT INTO IvaCompras(
         Fecha,RazonSocial,Cuit,TipoDeComprobante,NumeroComprobante,ImporteNeto,Iva1,Iva2,Iva3,Iva4,Exento,Total,
@@ -373,14 +414,8 @@ function cargarfactura()
         include_once "../../../Empleados/Procesos/php/asana_api.php";
 
         $name = 'PAGAR ' . $TipoDeComprobante . ' A ' . $RazonSocial;
-        $fechaActual = new DateTime($Fecha);
-
-        // Sumar 30 días a la fecha actual
-
-        $fechaActual->modify('+' . $PagoComprobantes . ' days');
-
-        // Obtener la fecha resultante formateada como una cadena
-        $due_on = $fechaActual->format('Y-m-d');
+        // Vence el día del vencimiento del comprobante (Días de pago del proveedor, sin sábados ni domingos)
+        $due_on = $Vencimiento;
 
         $notes = 'Se emitio un nuevo comprobante ' . $TipoDeComprobante . ' ' . $NumeroComprobante . ' del proveedor ' .
             $RazonSocial . ' con fecha ' . $Fecha . ' con compromiso de pago para el ' . $due_on . ' en concepto de: ' . $Descripcion;
