@@ -431,7 +431,7 @@ function cargarfactura()
 
     $_SESSION['Rubro'] = '';
 
-    echo json_encode(array('success' => 1, 'asana' => $asana_gid, 'PagoComprobante' => $PagoComprobantes, 'due_on' => $due_on, 'aviso' => $avisoCuenta ?? ''));
+    echo json_encode(array('success' => 1, 'id' => $IdTransProvCompra, 'asana' => $asana_gid, 'PagoComprobante' => $PagoComprobantes, 'due_on' => $due_on, 'aviso' => $avisoCuenta ?? ''));
 }
 
 

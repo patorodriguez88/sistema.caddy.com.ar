@@ -191,6 +191,27 @@ $("#cargar_factura_btn_ok").click(function () {
             : "Se cargo el comprobante correctamente."
         );
 
+        // Foto o PDF adjunto (opcional, 24/11/2026): se sube con el id del comprobante recién grabado.
+        var archivo = $("#archivo_comprobante_t")[0] && $("#archivo_comprobante_t")[0].files[0];
+        $("#archivo_comprobante_t").val("");
+        if (archivo && jsonData.id) {
+          var fd = new FormData();
+          fd.append("file", archivo);
+          fd.append("id_comprobante_subir", jsonData.id);
+          $.ajax({ url: "Procesos/php/upload.php", type: "post", data: fd, processData: false, contentType: false, dataType: "json" })
+            .done(function () {
+              $("#basic").DataTable().ajax.reload(null, false);
+            })
+            .fail(function (xhr) {
+              var r = xhr.responseJSON || {};
+              Swal.fire({
+                icon: "warning",
+                title: "El comprobante se cargó, la imagen no",
+                text: (r.error || "No se pudo subir el archivo.") + " Subila desde el ícono de la fila.",
+              });
+            });
+        }
+
         var table = $("#basic").DataTable();
         table.ajax.reload();
       } else if (
