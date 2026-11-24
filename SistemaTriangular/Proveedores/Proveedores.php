@@ -746,9 +746,6 @@
                                                 </div>
                                             </div>
                                             <div class="row">
-                                                <div id="alert_asana" class="alert alert-info" role="alert" display="display:none">
-                                                    <i class="dripicons-information mr-2"></i> Esto creará una tarea en <strong>Asana</strong> !
-                                                </div>
 
                                                 <!-- <div class="col-lg-12 text-end mt-2"> -->
                                                 <div class="modal-footer mt-2">
@@ -1180,7 +1177,8 @@
                                                                 <label class="custom-control-label" for="solicitacombustible" data-on-label="1" data-off-label="0">Solicita Combustible</label>
                                                             </div>
                                                         </div>
-                                                        <div class="col-lg-2 mt-3">
+                                                        <!-- Tareas Asana: ya no se crean (24/11/2026). Queda oculto porque el guardado de la ficha lee estos campos. -->
+                                                        <div class="col-lg-2 mt-3 d-none">
                                                             <div class="custom-control custom-switch">
                                                                 <input type="checkbox" class="custom-control-input" id="tareas_asana" name="tareas_asana">
                                                                 <label class="custom-control-label" for="tareas_asana" data-on-label="1" data-off-label="0">Tareas Asana</label>

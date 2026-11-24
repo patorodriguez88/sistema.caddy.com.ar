@@ -407,26 +407,10 @@ function cargarfactura()
     // ('{$Fecha}','{$Concepto_OC}','{$NombreCuenta}','{$Descripcion}','{$Total}','{$Fecha}','Cargada','0','{$Dominio}',
     // '{$Usuario}','{$Codigodeaprobacion}','{$id_ivacompras}','{$IdTransProvCompraH}')");        
 
+    // Tareas de Asana "PAGAR ... A <proveedor>" (switch Tareas Asana del proveedor): sacadas el 24/11/2026 a pedido
+    // de Patricio. El vencimiento ya aparece solo en el calendario de Programación de pagos.
     $asana_gid = null;
-    $due_on = null;
-    if (!empty($TareasAsana) && (string) $TareasAsana === '1') {
-
-        include_once "../../../Empleados/Procesos/php/asana_api.php";
-
-        $name = 'PAGAR ' . $TipoDeComprobante . ' A ' . $RazonSocial;
-        // Vence el día del vencimiento del comprobante (Días de pago del proveedor, sin sábados ni domingos)
-        $due_on = $Vencimiento;
-
-        $notes = 'Se emitio un nuevo comprobante ' . $TipoDeComprobante . ' ' . $NumeroComprobante . ' del proveedor ' .
-            $RazonSocial . ' con fecha ' . $Fecha . ' con compromiso de pago para el ' . $due_on . ' en concepto de: ' . $Descripcion;
-        $assignee = $TareasAsana_gid;
-
-        $Projects = '1202454550277567';
-        $Workspaces = '734348733635084';
-
-        $asana_gid = Create_task($Projects, $name, $notes, $due_on, $assignee, $Workspaces);
-        $mysqli->query("UPDATE IvaCompras SET asana_gid='$asana_gid' WHERE id='$id_ivacompras' LIMIT 1");
-    }
+    $due_on = $Vencimiento ?? null;
 
 
     $_SESSION['Rubro'] = '';
