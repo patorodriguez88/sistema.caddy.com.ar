@@ -723,33 +723,27 @@
                                             </div>
 
                                             <div class="row">
-                                                <div id="notificacion_alert" class="col-lg-8" style="display:none">
-                                                    <div class="col-lg-12 mb-3">
-                                                        <div class="form-group">
-                                                            <div class="alert alert-danger" role="alert">
-                                                                <strong>Atención - </strong><a id="notificacion"></a>
-                                                            </div>
-                                                        </div>
+                                                <!-- Código de aprobación (24/11/2026): se verifica acá mismo, con el botón al lado del campo y el
+                                                     resultado abajo. Antes abría un modal de color encima que se cerraba solo con temporizadores. -->
+                                                <div id="notificacion_alert" class="col-lg-6 mb-3" style="display:none">
+                                                    <div class="alert alert-warning py-2 mb-0 d-flex align-items-center" role="alert" id="notificacion_box">
+                                                        <i class="mdi mdi-shield-key-outline me-2 font-18" id="notificacion_icono"></i>
+                                                        <span id="notificacion"></span>
                                                     </div>
                                                 </div>
-                                                <div id='codigodeaprobacion' class="col-lg-4 mb-3" style='display:none'>
-                                                    <div class="form-group">
-                                                        <div class="input-group input-group-merge">
-                                                            <input class="form-control" name='codigodeaprobacion' id="codigodeaprobacion_t" type='password' placeholder="Ingrese el Código de Aprobación" onkeyup="javascript:this.value=this.value.toUpperCase();" required>
-                                                            <div class="input-group-append" data-password="false">
-                                                                <div class="input-group-text">
-                                                                    <span class="password-eye"></span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
+                                                <div id='codigodeaprobacion' class="col-lg-6 mb-3" style='display:none'>
+                                                    <div class="input-group">
+                                                        <input class="form-control" name='codigodeaprobacion' id="codigodeaprobacion_t" type='password' autocomplete="off" placeholder="Código de aprobación" onkeyup="javascript:this.value=this.value.toUpperCase();" required>
+                                                        <button type="button" class="btn btn-outline-secondary" id="codigo_ver" title="Mostrar / ocultar"><i class="mdi mdi-eye-outline"></i></button>
+                                                        <button type="button" class="btn btn-warning" id="cargar_factura_btn_verificar">Verificar</button>
                                                     </div>
+                                                    <small id="codigo_estado" class="d-block mt-1"></small>
                                                 </div>
                                             </div>
                                             <div class="row">
 
                                                 <!-- <div class="col-lg-12 text-end mt-2"> -->
                                                 <div class="modal-footer mt-2">
-                                                    <button type="button" class="btn btn-warning" id="cargar_factura_btn_verificar" style="display:none">Verificar</button>
                                                     <button type="button" class="btn btn-success" id="cargar_factura_btn_ok" value="Aceptar" disabled>Aceptar</button>
                                                 </div>
                                                 <!-- </div> -->

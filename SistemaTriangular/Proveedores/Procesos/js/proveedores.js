@@ -1,86 +1,78 @@
+// Código de aprobación (24/11/2026): se verifica en el mismo formulario. El botón muestra "Verificando…" y el
+// resultado queda abajo del campo (verde: aprobado, rojo: incorrecto). Antes abría un modal de color encima del de
+// carga que se cerraba solo con temporizadores, y cambiaba el color de todas las alertas rojas de la página.
+function codigoEstado(tipo, texto) {
+  var clases = { ok: "text-success", error: "text-danger", info: "text-muted" };
+  $("#codigo_estado").attr("class", "d-block mt-1 " + (clases[tipo] || "")).html(texto || "");
+}
+
+function avisoCodigo(tipo, texto) {
+  var box = $("#notificacion_box");
+  box.removeClass("alert-warning alert-success alert-danger").addClass(tipo === "ok" ? "alert-success" : "alert-warning");
+  $("#notificacion_icono").attr("class", "mdi me-2 font-18 " + (tipo === "ok" ? "mdi-check-decagram" : "mdi-shield-key-outline"));
+  $("#notificacion").html(texto);
+}
+
+$("#codigo_ver").click(function () {
+  var inp = $("#codigodeaprobacion_t");
+  var ver = inp.attr("type") === "password";
+  inp.attr("type", ver ? "text" : "password");
+  $(this).find("i").attr("class", ver ? "mdi mdi-eye-off-outline" : "mdi mdi-eye-outline");
+});
+
+// Enter en el campo = Verificar
+$("#codigodeaprobacion_t").on("keydown", function (e) {
+  if (e.key === "Enter") {
+    e.preventDefault();
+    $("#cargar_factura_btn_verificar").click();
+  }
+}).on("input", function () {
+  $(this).removeClass("is-invalid");
+  codigoEstado("info", "");
+});
+
 $("#cargar_factura_btn_verificar").click(function () {
-  let id = $("#codigodeaprobacion_t").val();
-  let op = $("#switch1").is(":checked");
+  var btn = $(this);
+  var id = $("#codigodeaprobacion_t").val().trim();
+  var op = $("#switch1").is(":checked");
+  if (!id) {
+    $("#codigodeaprobacion_t").addClass("is-invalid").focus();
+    codigoEstado("error", "Ingresá el código.");
+    return;
+  }
+  btn.prop("disabled", true).html('<span class="spinner-border spinner-border-sm me-1"></span>Verificando…');
+  codigoEstado("info", "");
 
   $.ajax({
     data: { VerificarOp: 1, id: id, Operativo: op },
     url: "Procesos/php/proveedores.php",
     type: "post",
-    beforeSend: function () {
-      let text = "Verificando Código...";
-
-      $("#loading-text").html(text);
-
-      $("#loading").modal("show");
-      $("#loading-bg").removeClass("bg-danger");
-      $("#loading-bg").removeClass("bg-success");
-      $("#loading-bg").addClass("bg-primary");
-
-      setTimeout(function () {
-        $("#loading").modal("hide");
-      }, 5000);
-    },
-    success: function (response) {
-      var jsonData = JSON.parse(response);
+  })
+    .done(function (response) {
+      var jsonData = {};
+      try { jsonData = JSON.parse(response); } catch (e) {}
       if (jsonData.success == "1") {
-        if (jsonData.idOrden != 0) {
-          var text =
-            "Código Aprobado en la Orden de Compra Número " + jsonData.idOrden;
-        } else {
-          var text = "Código Aprobado ";
-        }
-        $(".spinner-border ml-auto").hide();
-        $("#loading-bg").removeClass("bg-primary");
-        $("#loading-bg").removeClass("bg-danger");
-        $("#loading-bg").addClass("bg-success");
-        $("#loading-icon").removeClass("mdi mdi-24px mdi-cancel");
-        $("#loading-icon").addClass("mdi mdi-24px mdi-check");
-        $("#loading-icon").show();
-        $(".spinner-border").css("display", "none");
-
-        $("#loading-text").html(text);
-
-        $("#loading").modal("show");
-
-        setTimeout(function () {
-          $("#loading").modal("hide");
-        }, 3000);
-
-        $("#cargar_factura_btn_ok").prop("disabled", false);
-        $("#codigodeaprobacion").css("display", "none");
-        $("#switch1").prop("disabled", true);
-
-        $("#cargar_factura_btn_verificar").css("display", "none");
-        $("#notificacion").html("Transaccion Verificada");
-
-        //tuneo el mensaje
-        $(".alert.alert-danger")
-          .removeClass("alert alert-danger")
-          .addClass("alert alert-success");
-        $("#notificacion_alert").removeClass("col-lg-8").addClass("col-lg-12");
+        var texto = jsonData.idOrden && jsonData.idOrden != 0
+          ? "Código aprobado · Orden de compra N° " + jsonData.idOrden
+          : "Código aprobado";
+        // Aprobado: el campo se va y queda el aviso en verde; ya se puede grabar.
+        $("#codigodeaprobacion").hide();
+        avisoCodigo("ok", "<b>" + texto + "</b>");
         $("#notificacion_alert").show();
+        $("#cargar_factura_btn_ok").prop("disabled", false);
+        $("#switch1").prop("disabled", true);
         $("#ctaasignada_t").val(1);
       } else {
-        let text = "Código Incorrecto ";
-
-        $("#loading-bg").removeClass("bg-primary");
-        $("#loading-bg").addClass("bg-danger");
-
-        $("#loading-icon").removeClass("mdi mdi-24px mdi-check");
-        $("#loading-icon").addClass("mdi mdi-24px mdi-cancel");
-
-        $("#loading-text").html(text);
-        $("#loading-icon").show();
-        $(".spinner-border").css("display", "none");
-
-        $("#loading").modal("show");
-
-        setTimeout(function () {
-          $("#loading").modal("hide");
-        }, 3000);
+        $("#codigodeaprobacion_t").addClass("is-invalid").select();
+        codigoEstado("error", "<i class='mdi mdi-close-circle-outline'></i> Código incorrecto. Revisalo y volvé a intentar.");
       }
-    },
-  });
+    })
+    .fail(function () {
+      codigoEstado("error", "No se pudo verificar (error de conexión). Probá de nuevo.");
+    })
+    .always(function () {
+      btn.prop("disabled", false).html("Verificar");
+    });
 });
 
 //CARGAR FACTURA 1.0
@@ -281,10 +273,11 @@ $("#switch1").on("change", function () {
       .addClass("modal-header modal-colored-header bg-danger");
     // $('#imp_neto_1').show();
     // $('#imp_neto_0').hide();
-    $("#notificacion").html("Requiere Código de Aprobación");
+    avisoCodigo("pendiente", "Comprobante <b>no operativo</b>: requiere código de aprobación.");
     $("#notificacion_alert").show();
+    $("#codigodeaprobacion_t").val("").removeClass("is-invalid");
+    codigoEstado("info", "");
     $("#codigodeaprobacion").show();
-    $("#cargar_factura_btn_verificar").show();
   }
 });
 
@@ -352,7 +345,7 @@ function comprobar() {
           //EFECTIVO 000111100
 
           $("#notificacion_alert").show();
-          $("#notificacion").html("Requiere Código de Aprobación");
+          avisoCodigo("pendiente", "Por el importe, este comprobante requiere código de aprobación.");
           $("#codigodeaprobacion").show();
         }
       }
@@ -439,25 +432,16 @@ function solicitarcodigo() {
         console.log("Autorizar", jsonData.Autorizado);
 
         if (jsonData.Autorizado == 0) {
+          avisoCodigo("pendiente", "La cuenta contable de este proveedor requiere <b>código de aprobación</b>.");
           $("#notificacion_alert").show();
-          $("#notificacion").html(
-            "La Cuenta Contable Requiere Código de Autorización"
-          );
+          $("#codigodeaprobacion_t").val("").removeClass("is-invalid");
+          codigoEstado("info", "");
           $("#codigodeaprobacion").show();
-          $("#cargar_factura_btn_verificar").show();
-          //tuneo el mensaje
-          $(".alert.alert-success")
-            .removeClass("alert alert-success")
-            .addClass("alert alert-danger");
-          $("#notificacion_alert")
-            .removeClass("col-lg-12")
-            .addClass("col-lg-8");
-          $("#notificacion_alert").show();
+          $("#cargar_factura_btn_ok").prop("disabled", true);
           $("#ctaasignada_t").val(0);
         } else {
           $("#notificacion_alert").hide();
           $("#codigodeaprobacion").hide();
-          $("#cargar_factura_btn_verificar").hide();
           $("#cargar_factura_btn_ok").prop("disabled", false);
         }
       }
