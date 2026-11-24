@@ -19,9 +19,12 @@ function ventasRecalcular() {
   if (!$aviso.length) {
     $aviso = $('<small id="ventas_curva_aviso" class="form-text text-muted d-block"></small>').insertAfter("#ventas_total");
   }
-  $aviso.text(
+  // La cantidad es de bultos: para una 2da visita no se sube la cantidad (2 bultos = 1 tarifa, no cobraría
+  // nada más); se cobra con el botón "Cobrar 2da visita" de Guías a Facturar (24/11/2026).
+  $aviso.html(
     curva && cantidad > 1
-      ? "Con bonificación: " + cantidad + " bultos = " + String(ventasFactorBultos(cantidad)).replace(".", ",") + " tarifas"
+      ? "Con bonificación: " + cantidad + " bultos = " + String(ventasFactorBultos(cantidad)).replace(".", ",") + " tarifas" +
+        "<br><span class='text-danger'>La cantidad es de bultos. Una 2da visita no se carga acá: usá «Cobrar 2da visita» en Guías a Facturar.</span>"
       : "",
   );
 }

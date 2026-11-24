@@ -41,6 +41,18 @@ function sv_es_cp_capital(int $cp): bool
     return $cp >= 5000 && $cp <= 5023;
 }
 
+/** Zona según la tabla Localidades (null si no está). "Jesús María Córdoba": se prueba también sin la provincia del final. */
+function sv_zona_tabla(string $loc): ?string
+{
+    $tabla = $GLOBALS['SV_LOC'] ?? [];
+    $loc = sv_normalizar($loc);
+    $sin = trim(preg_replace('/[\s,]*(provincia de\s+)?cordoba$/', '', $loc));
+    foreach ([$loc, $sin] as $nombre) {
+        if ($nombre !== '' && isset($tabla[$nombre])) return sv_es_cp_capital($tabla[$nombre]) ? 'capital' : 'interior';
+    }
+    return null;
+}
+
 /**
  * Zona del destino: 'capital', 'interior' o null si no se puede saber con seguridad (no se cobra solo: se marca
  * para que el operador revise). Interior solo si la localidad está en la tabla Localidades con un CP fuera de
@@ -55,6 +67,12 @@ function sv_zona(?string $localidad, ?string $domicilio = null, ?string $cp = nu
 
     $loc = sv_normalizar((string)$localidad);
     if (preg_match('/\d/', $loc)) $loc = '';          // una dirección cargada como localidad ("JUAN B. JUSTO 4000")
+    // Localidad que no está en la tabla (un departamento como "Calamuchita" o "Colón"): se prueba con la de la
+    // dirección ("..., Santa Rosa de Calamuchita, Provincia de Córdoba"). Fix 24/11/2026.
+    if ($loc !== '' && $dom !== '' && sv_zona_tabla($loc) === null && preg_match('/,\s*([^,]+),\s*provincia de/', $dom, $m)) {
+        $deDir = sv_zona_tabla(trim($m[1]));
+        if ($deDir !== null) return $deDir;
+    }
     if ($loc === '' && $dom !== '') {
         if (preg_match('/,\s*([^,]+),\s*provincia de/', $dom, $m)) {
             $loc = trim($m[1]);
@@ -64,12 +82,9 @@ function sv_zona(?string $localidad, ?string $domicilio = null, ?string $cp = nu
     }
     if ($loc !== '') {
         if (in_array($loc, $capital, true) || strpos($loc, 'ciudad de cordoba') === 0 || preg_match('/^alta cordoba\b/', $loc)) return 'capital';
-        $tabla = $GLOBALS['SV_LOC'] ?? [];
-        // "Jesús María Córdoba", "San Francisco provincia de Córdoba": se prueba también sin la provincia del final
+        $z = sv_zona_tabla($loc);
+        if ($z !== null) return $z;
         $sin = trim(preg_replace('/[\s,]*(provincia de\s+)?cordoba$/', '', $loc));
-        foreach ([$loc, $sin] as $nombre) {
-            if ($nombre !== '' && isset($tabla[$nombre])) return sv_es_cp_capital($tabla[$nombre]) ? 'capital' : 'interior';
-        }
         if ($sin !== '' && in_array($sin, $capital, true)) return 'capital';
         return null;   // localidad que no está en la tabla (barrio, pueblo sin cargar): revisar
     }
@@ -108,20 +123,31 @@ function sv_estado(mysqli $mysqli, string $cs, ?string $localidad, ?string $domi
     $lineas = $st->get_result()->fetch_all(MYSQLI_ASSOC);
     $st->close();
 
+    // Cargos del envío = lo que se cobró por el viaje (la tarifa con sus bultos y su bonificación, fletes), sin
+    // seguro (VALOR DECLARADO) ni cobranza integrada. La 2da visita cobra lo mismo (Patricio, 24/11/2026: "la segunda
+    // visita se cobra igual que la primera"). Antes tomaba total / cantidad de la tarifa: con 2 bultos daba la mitad.
     $tarifa = null;
     $linea = null;
-    $tarifas = 0.0;
+    $cargos = [];
+    $filasPorTitulo = [];
     foreach ($lineas as $l) {
         $esSegunda = stripos((string)$l['Titulo'], SV_TITULO) === 0;
         if ($esSegunda) {
             if ($linea === null || (int)$l['Eliminado'] === 0) $linea = $l;
             continue;
         }
-        if ((int)$l['Eliminado'] !== 0 || (int)$l['not_invoice'] !== 0 || stripos((string)$l['Titulo'], 'COBRANZA') === 0) continue;
+        $tit = trim((string)$l['Titulo']);
+        if ((int)$l['Eliminado'] !== 0 || (int)$l['not_invoice'] !== 0 || (float)$l['Total'] <= 0
+            || stripos($tit, 'COBRANZA') === 0 || stripos($tit, 'VALOR DECLARADO') === 0) continue;
         if ($tarifa === null) $tarifa = $l;
-        $tarifas += (float)$l['Cantidad'];
+        $cargos[] = $l;
+        $filasPorTitulo[$tit] = ($filasPorTitulo[$tit] ?? 0) + 1;
     }
-    return ['zona' => $zona, 'visitas' => $visitas, 'ultima' => $ultima, 'tarifa' => $tarifa, 'linea' => $linea, 'tarifas' => $tarifas];
+    // La misma tarifa en dos renglones = 2da visita cargada a mano como otra línea (no se vuelve a cobrar).
+    // La cantidad NO cuenta: es de bultos (2 bultos = 1 tarifa), no de visitas.
+    $manual = $filasPorTitulo && max($filasPorTitulo) >= 2;
+    return ['zona' => $zona, 'visitas' => $visitas, 'ultima' => $ultima, 'tarifa' => $tarifa, 'linea' => $linea,
+            'cargos' => $cargos, 'manual' => $manual];
 }
 
 /** Suma el cargo al importe del remito y a su cuenta corriente (solo lo agregado: no se recalcula el resto). */
@@ -144,25 +170,37 @@ function sv_sumar_debe(mysqli $mysqli, string $cs, int $idTrans, float $importe)
  * Corresponde: remito sin facturar, destino en el interior, 2 o más visitas, una sola tarifa cargada y sin una
  * línea de segunda visita previa (ni siquiera borrada: si el operador la sacó, se respeta).
  */
-function sv_aplicar(mysqli $mysqli, array $t, string $usuario): float
+function sv_aplicar(mysqli $mysqli, array $t, string $usuario, bool $aMano = false): float
 {
     $cs = (string)$t['CodigoSeguimiento'];
     if ((int)($t['Facturado'] ?? 1) !== 0) return 0.0;
     if ((string)($t['Fecha'] ?? '') < SV_DESDE) return 0.0;
     $e = sv_estado($mysqli, $cs, $t['LocalidadDestino'] ?? null, $t['DomicilioDestino'] ?? null, $t['CodigoPostal'] ?? null);
-    if ($e['zona'] !== 'interior' || $e['visitas'] < 2 || !$e['tarifa'] || $e['linea'] || $e['tarifas'] >= $e['visitas']) return 0.0;
+    if ($e['visitas'] < 2 || !$e['tarifa']) return 0.0;
+    if ($aMano) {
+        // Botón "Cobrar 2da visita" de Guías a Facturar: el operador decide la zona (localidad que no está en la
+        // tabla) o la vuelve a poner si la había sacado. Solo no se duplica una línea activa.
+        if ($e['linea'] && (int)$e['linea']['Eliminado'] === 0) return 0.0;
+    } elseif ($e['zona'] !== 'interior' || $e['linea'] || $e['manual']) {
+        return 0.0;
+    }
 
     $tar = $e['tarifa'];
-    $cant = max(1.0, (float)$tar['Cantidad']);
-    $precio = round((float)$tar['Total'] / $cant, 2);
+    $suma = function (string $campo) use ($e) {
+        return round(array_sum(array_map(fn($l) => (float)$l[$campo], $e['cargos'])), 2);
+    };
+    $precio = $suma('Total');
     if ($precio <= 0) return 0.0;
-    $neto = round((float)$tar['ImporteNeto'] / $cant, 2);
-    $iva1 = round((float)$tar['Iva1'] / $cant, 2);
-    $iva2 = round((float)$tar['Iva2'] / $cant, 2);
-    $iva3 = round((float)$tar['Iva3'] / $cant, 2);
-    $exento = round((float)$tar['Exento'] / $cant, 2);
+    $neto = $suma('ImporteNeto');
+    $iva1 = $suma('Iva1');
+    $iva2 = $suma('Iva2');
+    $iva3 = $suma('Iva3');
+    $exento = $suma('Exento');
     $titulo = mb_substr(SV_TITULO . $tar['Titulo'], 0, 100);
-    $comentario = 'Segunda visita al interior (' . $e['visitas'] . ' visitas). Agregada automáticamente.';
+    $comentario = 'Segunda visita al interior (' . $e['visitas'] . ' visitas): mismo importe que el envío'
+        . (count($e['cargos']) > 1 || (float)$tar['Cantidad'] > 1 ? ' (' . implode(' + ', array_map(fn($l) => (float)$l['Cantidad'] . ' x ' . $l['Titulo'], $e['cargos'])) . ')' : '')
+        . '. ' . ($aMano ? 'Agregada a mano por ' . $usuario . '.' : 'Agregada automáticamente.');
+    $comentario = mb_substr($comentario, 0, 250);
     $fecha = date('Y-m-d');
 
     $mysqli->begin_transaction();

@@ -141,6 +141,26 @@ if (isset($_POST['Saldos'])) {
   echo json_encode(array('data' => $rows));
 }
 
+// Botón "Cobrar 2da visita" de Guías a Facturar (24/11/2026): para la localidad que no está en la tabla
+// ("revisar zona"), la que falta o la que se sacó. Mismo importe que el envío (Funciones/php/segunda_visita.php).
+if (isset($_POST['CobrarSegundaVisita'])) {
+  require_once __DIR__ . '/../../../Funciones/php/segunda_visita.php';
+  sv_cargar_localidades($mysqli);
+  $cs = (string)($_POST['CodigoSeguimiento'] ?? '');
+  $st = $mysqli->prepare("SELECT t.id, t.CodigoSeguimiento, t.Fecha, t.Facturado, t.LocalidadDestino, t.DomicilioDestino, c.CodigoPostal
+                          FROM TransClientes t LEFT JOIN Clientes c ON c.id = t.idClienteDestino
+                          WHERE t.CodigoSeguimiento = ? AND t.TipoDeComprobante = 'Remito' AND t.Eliminado = 0 AND t.Facturado = 0 LIMIT 1");
+  $st->bind_param('s', $cs);
+  $st->execute();
+  $t = $st->get_result()->fetch_assoc();
+  $st->close();
+  $importe = ($cs !== '' && $t) ? sv_aplicar($mysqli, $t, (string)($_SESSION['Usuario'] ?? 'Sistema'), true) : 0.0;
+  echo json_encode($importe > 0
+    ? ['success' => 1, 'importe' => $importe]
+    : ['success' => 0, 'error' => $t ? 'No corresponde: necesita 2 visitas en días distintos, un servicio cobrado y que no tenga ya la 2da visita.' : 'El remito no está o ya se facturó.']);
+  exit;
+}
+
 if (isset($_POST['Facturacion'])) {
 
   $id    = $mysqli->real_escape_string($_POST['id']);
@@ -332,10 +352,11 @@ if (isset($_POST['Facturacion'])) {
         $row['SegundaVisitaImporte'] = (float)$sv['total'];
       } elseif ($sv) {
         $row['SegundaVisita'] = 'sacada';
-      } elseif ((float)$row['CantServicios'] < 2) {
-        $row['SegundaVisita'] = 'falta';
       } else {
-        $row['SegundaVisita'] = 'cobrada';   // cargada a mano como otra tarifa
+        // La cantidad es de bultos (2 bultos = 1 tarifa), no de visitas: solo cuenta como cobrada si la misma
+        // tarifa está en dos renglones (cargada a mano como otra línea). Fix 24/11/2026.
+        $e = sv_estado($mysqli, $cs, $row['LocalidadDestino'] ?? null, $row['DomicilioDestino'] ?? null, $row['CodigoPostal'] ?? null);
+        $row['SegundaVisita'] = $e['manual'] ? 'cobrada' : 'falta';
       }
     }
     // Compatibilidad con el aviso anterior: rojo si es interior con 2 visitas
