@@ -23,531 +23,218 @@ function n($valor)
     return is_numeric($valor) ? (float)$valor : 0;
 }
 
+// =====================================================================================================
+// PROGRAMACIÓN DE PAGOS (rediseño 24/11/2026, pedido de Patricio)
+// Cada factura impaga (desde $fechaDesde) tiene UNA fecha en el calendario:
+//   - la que eligió el operador (pagos_programados_proveedores activa: PROGRAMADO / REPROGRAMADO), o
+//   - si no la movió, su vencimiento: TransProveedores.FechaVencimiento, o uno estimado con los "Días de
+//     pago" del proveedor (Pago_comprobantes); sábado o domingo pasa al lunes.
+// Las de meses anteriores al actual van a la lista de la izquierda para reubicarlas; el resto está en
+// el calendario. El importe es siempre el SALDO actual (Debe - lo aplicado en
+// TransProveedores_Imputaciones, igual que la Cuenta Corriente): cuando se asocia el pago, desaparece.
+// =====================================================================================================
 
-function obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores, $fechaDesde)
+/** Todas las facturas impagas con su fecha de calendario. */
+function facturasPendientesCalendario(mysqli $mysqli, string $fechaDesde): array
 {
-    $sql = "
-        SELECT 
-            TP.id,
-            TP.Debe,
-            IFNULL(AP.Pagado, 0) AS Pagado,
-            IFNULL(PP.Programado, 0) AS Programado,
-            TP.Debe - IFNULL(AP.Pagado, 0) - IFNULL(PP.Programado, 0) AS SaldoDisponible
-        FROM TransProveedores TP
-        LEFT JOIN (
-            -- Pagado = lo aplicado a la factura (pagos, NC, anticipos), igual que la Cuenta Corriente y
-            -- Asociar pagos. Antes sumaba AnticiposProveedores, que no está vinculada a facturas: daba 0
-            -- y las facturas ya pagas seguían apareciendo (24/11/2026).
-            SELECT idMovimientoOrigen AS idTransProveedores, SUM(Importe) AS Pagado
-            FROM TransProveedores_Imputaciones
-            WHERE Eliminado = 0
-            GROUP BY idMovimientoOrigen
-        ) AP ON AP.idTransProveedores = TP.id
-        LEFT JOIN (
-            SELECT 
-                idTransProveedores,
-                SUM(importe_programado) AS Programado
-            FROM pagos_programados_proveedores
-            WHERE eliminado = 0
-              AND estado IN ('PROGRAMADO','REPROGRAMADO')
-            GROUP BY idTransProveedores
-        ) PP ON PP.idTransProveedores = TP.id
-        WHERE TP.id = ?
-          AND TP.Eliminado = 0
-          AND TP.Fecha >= ?
-        LIMIT 1
-    ";
-
-    $stmt = $mysqli->prepare($sql);
-
-    if (!$stmt) {
-        return false;
-    }
-
-    $stmt->bind_param("is", $idTransProveedores, $fechaDesde);
-    $stmt->execute();
-
-    $res = $stmt->get_result();
-
-    if (!$res || $res->num_rows == 0) {
-        return false;
-    }
-
-    return $res->fetch_assoc();
-}
-
-if ($accion == 'listar_facturas_pendientes') {
-
-    // Vencimiento (24/11/2026): el grabado al cargar el comprobante (TransProveedores.FechaVencimiento);
-    // si no tiene (comprobantes viejos o migración pendiente), uno estimado con los "Días de pago" del
-    // proveedor (Pago_comprobantes) y la misma regla: sábado o domingo pasa al lunes. Se ordena por él.
     $resCol = $mysqli->query("SHOW COLUMNS FROM TransProveedores LIKE 'FechaVencimiento'");
     $tieneVto = $resCol && $resCol->num_rows > 0;
-    $vtoEstimado = "DATE_ADD(TP.Fecha, INTERVAL IFNULL(PR.Pago_comprobantes, 15) DAY)";
-    $vtoEstimado = "CASE DAYOFWEEK({$vtoEstimado}) WHEN 7 THEN DATE_ADD({$vtoEstimado}, INTERVAL 2 DAY)
-                    WHEN 1 THEN DATE_ADD({$vtoEstimado}, INTERVAL 1 DAY) ELSE {$vtoEstimado} END";
-    $selVto = $tieneVto
-        ? "COALESCE(TP.FechaVencimiento, {$vtoEstimado}) AS Vencimiento, (TP.FechaVencimiento IS NULL) AS VencimientoEstimado,"
-        : "{$vtoEstimado} AS Vencimiento, 1 AS VencimientoEstimado,";
+    $est = "DATE_ADD(TP.Fecha, INTERVAL IFNULL(PR.Pago_comprobantes, 15) DAY)";
+    $est = "CASE DAYOFWEEK({$est}) WHEN 7 THEN DATE_ADD({$est}, INTERVAL 2 DAY)
+            WHEN 1 THEN DATE_ADD({$est}, INTERVAL 1 DAY) ELSE {$est} END";
+    $vto = $tieneVto ? "COALESCE(TP.FechaVencimiento, {$est})" : $est;
+    $vtoEst = $tieneVto ? "(TP.FechaVencimiento IS NULL)" : "1";
 
     $sql = "
-        SELECT 
-            {$selVto}
-            TP.id,
-            TP.Fecha,
-            TP.RazonSocial,
-            TP.Cuit,
-            TP.TipoDeComprobante,
-            TP.NumeroComprobante,
-            TP.CompraMercaderia,
-            TP.Debe,
-            TP.Concepto,
-            TP.FormaDePago,
-            TP.Descripcion,
-            TP.idProveedor,
+        SELECT
+            TP.id, TP.Fecha, TP.RazonSocial, TP.Cuit, TP.TipoDeComprobante, TP.NumeroComprobante,
+            TP.Debe, TP.Concepto, TP.Descripcion, TP.idProveedor,
             IFNULL(AP.Pagado, 0) AS Pagado,
-            IFNULL(PP.Programado, 0) AS Programado,
-            TP.Debe - IFNULL(AP.Pagado, 0) - IFNULL(PP.Programado, 0) AS SaldoPendiente
+            TP.Debe - IFNULL(AP.Pagado, 0) AS Saldo,
+            {$vto} AS Vencimiento,
+            {$vtoEst} AS VencimientoEstimado,
+            PP.id AS idProgramacion,
+            PP.fecha_promesa AS FechaProgramada,
+            PP.observacion AS Observacion
         FROM TransProveedores TP
         LEFT JOIN (
-            -- Pagado = lo aplicado a la factura (pagos, NC, anticipos), igual que la Cuenta Corriente y
-            -- Asociar pagos. Antes sumaba AnticiposProveedores, que no está vinculada a facturas: daba 0
-            -- y las facturas ya pagas seguían apareciendo (24/11/2026).
             SELECT idMovimientoOrigen AS idTransProveedores, SUM(Importe) AS Pagado
             FROM TransProveedores_Imputaciones
             WHERE Eliminado = 0
             GROUP BY idMovimientoOrigen
         ) AP ON AP.idTransProveedores = TP.id
         LEFT JOIN (
-            SELECT 
-                idTransProveedores,
-                SUM(importe_programado) AS Programado
-            FROM pagos_programados_proveedores
-            WHERE eliminado = 0
-              AND estado IN ('PROGRAMADO','REPROGRAMADO')
-            GROUP BY idTransProveedores
+            -- la programación activa más reciente de cada factura
+            SELECT P1.* FROM pagos_programados_proveedores P1
+            INNER JOIN (
+                SELECT idTransProveedores, MAX(id) AS id FROM pagos_programados_proveedores
+                WHERE eliminado = 0 AND estado IN ('PROGRAMADO','REPROGRAMADO')
+                GROUP BY idTransProveedores
+            ) P2 ON P2.id = P1.id
         ) PP ON PP.idTransProveedores = TP.id
         LEFT JOIN Proveedores PR ON PR.id = TP.idProveedor
         WHERE TP.Eliminado = 0
           AND TP.Debe > 0
           AND TP.Fecha >= '{$fechaDesde}'
-        HAVING SaldoPendiente > 0
-        ORDER BY Vencimiento ASC, TP.RazonSocial ASC
+        HAVING Saldo > 0.009
+        ORDER BY TP.RazonSocial ASC
     ";
-
     $res = $mysqli->query($sql);
+    if (!$res) responder(false, $mysqli->error);
 
-    if (!$res) {
-        responder(false, $mysqli->error);
+    $out = array();
+    while ($r = $res->fetch_assoc()) {
+        $r['Debe'] = n($r['Debe']);
+        $r['Pagado'] = n($r['Pagado']);
+        $r['Saldo'] = n($r['Saldo']);
+        $r['SaldoPendiente'] = $r['Saldo']; // compatibilidad con el JS de las tarjetas
+        $r['VencimientoEstimado'] = (int) $r['VencimientoEstimado'];
+        $r['Programada'] = $r['FechaProgramada'] ? 1 : 0;
+        $r['FechaCalendario'] = substr((string) ($r['FechaProgramada'] ?: $r['Vencimiento']), 0, 10);
+        $out[] = $r;
     }
+    return $out;
+}
 
-    $data = array();
+function esFinDeSemana(string $fecha): bool
+{
+    $d = DateTime::createFromFormat('Y-m-d', $fecha);
+    return $d && (int) $d->format('N') >= 6;
+}
 
-    while ($row = $res->fetch_assoc()) {
-        $row['Debe'] = n($row['Debe']);
-        $row['Pagado'] = n($row['Pagado']);
-        $row['Programado'] = n($row['Programado']);
-        $row['SaldoPendiente'] = n($row['SaldoPendiente']);
-        $row['VencimientoEstimado'] = (int) $row['VencimientoEstimado'];
-        $data[] = $row;
-    }
+$inicioMes = date('Y-m-01');
+$hoy = date('Y-m-d');
 
+// Lista de la izquierda: impagas que quedaron en meses anteriores, para volver a ubicarlas.
+if ($accion == 'listar_facturas_pendientes') {
+    $data = array_values(array_filter(
+        facturasPendientesCalendario($mysqli, $fechaDesde),
+        fn($f) => $f['FechaCalendario'] < $inicioMes
+    ));
+    usort($data, fn($a, $b) => strcmp($a['FechaCalendario'], $b['FechaCalendario']));
     responder(true, '', $data);
 }
 
+// Calendario: impagas desde el mes actual (programadas por el operador o en su vencimiento).
 if ($accion == 'listar_eventos') {
-
-    $sql = "
-        SELECT 
-            PP.id,
-            PP.idTransProveedores,
-            PP.fecha_promesa,
-            PP.importe_programado,
-            PP.observacion,
-            PP.estado,
-            TP.RazonSocial,
-            TP.Cuit,
-            TP.TipoDeComprobante,
-            TP.NumeroComprobante,
-            TP.Descripcion,
-            TP.Concepto
-        FROM pagos_programados_proveedores PP
-        INNER JOIN TransProveedores TP 
-            ON TP.id = PP.idTransProveedores
-        WHERE PP.eliminado = 0
-          AND TP.Eliminado = 0
-        ORDER BY PP.fecha_promesa ASC
-    ";
-
-    $res = $mysqli->query($sql);
-
-    if (!$res) {
-        responder(false, $mysqli->error);
-    }
-
     $eventos = array();
-    $hoy = date('Y-m-d');
-
-    while ($row = $res->fetch_assoc()) {
-
-        $color = '#39afd1';
-
-        if ($row['estado'] == 'PAGADO') {
-            $color = '#0acf97';
-        } elseif ($row['estado'] == 'CANCELADO') {
-            $color = '#6c757d';
-        } elseif ($row['fecha_promesa'] < $hoy && ($row['estado'] == 'PROGRAMADO' || $row['estado'] == 'REPROGRAMADO')) {
-            $color = '#fa5c7c';
-        } elseif ($row['fecha_promesa'] == $hoy) {
-            $color = '#ffbc00';
-        }
-
-        $importe = n($row['importe_programado']);
-
+    foreach (facturasPendientesCalendario($mysqli, $fechaDesde) as $f) {
+        if ($f['FechaCalendario'] < $inicioMes) continue;
+        $vencida = $f['FechaCalendario'] < $hoy;
+        $color = $vencida ? '#fa5c7c' : ($f['FechaCalendario'] == $hoy ? '#ffbc00' : '#39afd1');
+        $sugerida = !$f['Programada'];
         $eventos[] = array(
-            'id' => $row['id'],
-            'title' => $row['RazonSocial'] . ' - $ ' . number_format($importe, 2, ',', '.'),
-            'start' => $row['fecha_promesa'],
+            'id' => 'f' . $f['id'],
+            'title' => $f['RazonSocial'] . ' - $ ' . number_format($f['Saldo'], 2, ',', '.'),
+            'start' => $f['FechaCalendario'],
             'allDay' => true,
-            'backgroundColor' => $color,
+            // programada por el operador: relleno; sugerida por vencimiento: solo contorno
+            'backgroundColor' => $sugerida ? '#ffffff' : $color,
             'borderColor' => $color,
+            'textColor' => $sugerida ? $color : '#ffffff',
+            'classNames' => array($sugerida ? 'pago-sugerido' : 'pago-programado'),
             'extendedProps' => array(
-                'idTransProveedores' => $row['idTransProveedores'],
-                'RazonSocial' => $row['RazonSocial'],
-                'Cuit' => $row['Cuit'],
-                'TipoDeComprobante' => $row['TipoDeComprobante'],
-                'NumeroComprobante' => $row['NumeroComprobante'],
-                'Descripcion' => $row['Descripcion'],
-                'Concepto' => $row['Concepto'],
-                'importe_programado' => $importe,
-                'observacion' => $row['observacion'],
-                'estado' => $row['estado']
-            )
+                'idTransProveedores' => (int) $f['id'],
+                'idProgramacion' => $f['idProgramacion'] ? (int) $f['idProgramacion'] : null,
+                'RazonSocial' => $f['RazonSocial'],
+                'Cuit' => $f['Cuit'],
+                'TipoDeComprobante' => $f['TipoDeComprobante'],
+                'NumeroComprobante' => $f['NumeroComprobante'],
+                'Descripcion' => $f['Descripcion'],
+                'Concepto' => $f['Concepto'],
+                'Fecha' => $f['Fecha'],
+                'Debe' => $f['Debe'],
+                'Pagado' => $f['Pagado'],
+                'importe_programado' => $f['Saldo'],
+                'Vencimiento' => $f['Vencimiento'],
+                'VencimientoEstimado' => $f['VencimientoEstimado'],
+                'observacion' => $f['Observacion'],
+                'estado' => $sugerida ? 'SUGERIDO' : 'PROGRAMADO',
+                'vencida' => $vencida ? 1 : 0,
+            ),
         );
     }
-
     echo json_encode($eventos);
     exit;
 }
 
-if ($accion == 'programar_pago') {
+// Ubicar una factura en un día (arrastrándola desde la lista o dentro del calendario). Si ya tenía
+// programación activa se le cambia la fecha; si no, se crea por el saldo actual. Sábado y domingo no.
+if ($accion == 'ubicar_factura') {
+    $idTransProveedores = (int) ($_POST['idTransProveedores'] ?? 0);
+    $fecha = substr((string) ($_POST['fecha'] ?? ''), 0, 10);
+    if ($idTransProveedores <= 0) responder(false, 'Factura inválida.');
+    if (!DateTime::createFromFormat('Y-m-d', $fecha)) responder(false, 'Fecha inválida.');
+    if (esFinDeSemana($fecha)) responder(false, 'Sábados y domingos no se paga: elegí un día hábil.');
 
-    $idTransProveedores = isset($_POST['idTransProveedores']) ? (int)$_POST['idTransProveedores'] : 0;
-    $fechaPromesa = isset($_POST['fecha_promesa']) ? $_POST['fecha_promesa'] : '';
-    $importeProgramado = isset($_POST['importe_programado']) ? (float)$_POST['importe_programado'] : 0;
-    $observacion = isset($_POST['observacion']) ? trim($_POST['observacion']) : '';
-
-    if ($idTransProveedores <= 0) {
-        responder(false, 'Factura inválida.');
+    $f = null;
+    foreach (facturasPendientesCalendario($mysqli, $fechaDesde) as $x) {
+        if ((int) $x['id'] === $idTransProveedores) { $f = $x; break; }
     }
+    if (!$f) responder(false, 'La factura no tiene saldo pendiente.');
 
-    if ($fechaPromesa == '') {
-        responder(false, 'Debe indicar una fecha de promesa.');
+    $ahora = date('Y-m-d H:i:s');
+    if ($f['idProgramacion']) {
+        $stmt = $mysqli->prepare("UPDATE pagos_programados_proveedores
+                                  SET fecha_promesa = ?, importe_programado = ?, estado = 'REPROGRAMADO', updated_at = ?
+                                  WHERE id = ? AND eliminado = 0 LIMIT 1");
+        $idp = (int) $f['idProgramacion'];
+        $stmt->bind_param("sdsi", $fecha, $f['Saldo'], $ahora, $idp);
+    } else {
+        $stmt = $mysqli->prepare("INSERT INTO pagos_programados_proveedores
+                                  (idTransProveedores, fecha_promesa, importe_programado, observacion, estado, usuario, created_at, eliminado)
+                                  VALUES (?, ?, ?, '', 'PROGRAMADO', ?, ?, 0)");
+        $stmt->bind_param("isdss", $idTransProveedores, $fecha, $f['Saldo'], $usuario, $ahora);
     }
-
-    if ($importeProgramado <= 0) {
-        responder(false, 'El importe programado debe ser mayor a cero.');
-    }
-
-    $saldo = obtenerSaldoDisponibleFactura($mysqli, $idTransProveedores, $fechaDesde);
-
-    if (!$saldo) {
-        responder(false, 'No se encontró la factura.');
-    }
-
-    $saldoDisponible = n($saldo['SaldoDisponible']);
-
-    if ($importeProgramado > $saldoDisponible) {
-        responder(false, 'El importe programado supera el saldo disponible de la factura.');
-    }
-
-    $estado = 'PROGRAMADO';
-
-    $sql = "
-        INSERT INTO pagos_programados_proveedores
-        (
-            idTransProveedores,
-            fecha_promesa,
-            importe_programado,
-            observacion,
-            estado,
-            usuario,
-            created_at,
-            eliminado
-        )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 0)
-    ";
-
-    $fechaAhora = date('Y-m-d H:i:s');
-
-    $stmt = $mysqli->prepare($sql);
-
-    if (!$stmt) {
-        responder(false, $mysqli->error);
-    }
-
-    $stmt->bind_param(
-        "isdssss",
-        $idTransProveedores,
-        $fechaPromesa,
-        $importeProgramado,
-        $observacion,
-        $estado,
-        $usuario,
-        $fechaAhora
-    );
-
-    if (!$stmt->execute()) {
-        responder(false, $stmt->error);
-    }
-
-    responder(true, 'Pago programado correctamente.');
+    if (!$stmt->execute()) responder(false, $stmt->error);
+    responder(true, 'Pago ubicado el ' . date('d/m/Y', strtotime($fecha)) . '.');
 }
 
-if ($accion == 'reprogramar_pago') {
-
-    $idProgramacion = isset($_POST['idProgramacion']) ? (int)$_POST['idProgramacion'] : 0;
-    $fechaPromesa = isset($_POST['fecha_promesa']) ? $_POST['fecha_promesa'] : '';
-
-    if ($idProgramacion <= 0) {
-        responder(false, 'Programación inválida.');
-    }
-
-    if ($fechaPromesa == '') {
-        responder(false, 'Debe indicar una fecha.');
-    }
-
-    $estado = 'REPROGRAMADO';
-    $fechaAhora = date('Y-m-d H:i:s');
-
-    $sql = "
-        UPDATE pagos_programados_proveedores
-        SET 
-            fecha_promesa = ?,
-            estado = ?,
-            updated_at = ?
-        WHERE id = ?
-          AND eliminado = 0
-        LIMIT 1
-    ";
-
-    $stmt = $mysqli->prepare($sql);
-
-    if (!$stmt) {
-        responder(false, $mysqli->error);
-    }
-
-    $stmt->bind_param("sssi", $fechaPromesa, $estado, $fechaAhora, $idProgramacion);
-
-    if (!$stmt->execute()) {
-        responder(false, $stmt->error);
-    }
-
-    responder(true, 'Pago reprogramado correctamente.');
-}
-
+// Quitar la programación: la factura vuelve a su vencimiento.
 if ($accion == 'eliminar_programacion') {
-
-    $idProgramacion = isset($_POST['idProgramacion']) ? (int)$_POST['idProgramacion'] : 0;
-
-    if ($idProgramacion <= 0) {
-        responder(false, 'Programación inválida.');
-    }
-
-    $fechaAhora = date('Y-m-d H:i:s');
-
-    $sql = "
-        UPDATE pagos_programados_proveedores
-        SET 
-            eliminado = 1,
-            estado = 'CANCELADO',
-            updated_at = ?
-        WHERE id = ?
-        LIMIT 1
-    ";
-
-    $stmt = $mysqli->prepare($sql);
-
-    if (!$stmt) {
-        responder(false, $mysqli->error);
-    }
-
-    $stmt->bind_param("si", $fechaAhora, $idProgramacion);
-
-    if (!$stmt->execute()) {
-        responder(false, $stmt->error);
-    }
-
-    responder(true, 'Programación eliminada correctamente.');
+    $idProgramacion = (int) ($_POST['idProgramacion'] ?? 0);
+    if ($idProgramacion <= 0) responder(false, 'Programación inválida.');
+    $ahora = date('Y-m-d H:i:s');
+    $stmt = $mysqli->prepare("UPDATE pagos_programados_proveedores SET eliminado = 1, estado = 'CANCELADO', updated_at = ? WHERE id = ? LIMIT 1");
+    $stmt->bind_param("si", $ahora, $idProgramacion);
+    if (!$stmt->execute()) responder(false, $stmt->error);
+    responder(true, 'Se quitó la fecha elegida: la factura vuelve a su vencimiento.');
 }
 
-if ($accion == 'marcar_pagado') {
-
-    $idProgramacion = isset($_POST['idProgramacion']) ? (int)$_POST['idProgramacion'] : 0;
-
-    if ($idProgramacion <= 0) {
-        responder(false, 'Programación inválida.');
-    }
-
-    $fechaAhora = date('Y-m-d H:i:s');
-
-    $sql = "
-        UPDATE pagos_programados_proveedores
-        SET 
-            estado = 'PAGADO',
-            updated_at = ?
-        WHERE id = ?
-          AND eliminado = 0
-        LIMIT 1
-    ";
-
-    $stmt = $mysqli->prepare($sql);
-
-    if (!$stmt) {
-        responder(false, $mysqli->error);
-    }
-
-    $stmt->bind_param("si", $fechaAhora, $idProgramacion);
-
-    if (!$stmt->execute()) {
-        responder(false, $stmt->error);
-    }
-
-    responder(true, 'Programación marcada como pagada.');
-}
-
+// Tarjetas de arriba.
 if ($accion == 'cards') {
-
-    $hoy = date('Y-m-d');
-    $inicioMes = date('Y-m-01');
-    $finMes = date('Y-m-t');
-
     $inicioSemana = date('Y-m-d', strtotime('monday this week'));
     $finSemana = date('Y-m-d', strtotime('sunday this week'));
-
+    $finMes = date('Y-m-t');
     $data = array(
-        'total_sin_programar' => 0,
-        'cantidad_sin_programar' => 0,
-        'total_programado_mes' => 0,
-        'total_semana' => 0,
-        'total_vencido' => 0
+        'total_sin_programar' => 0, 'cantidad_sin_programar' => 0, // para reubicar (meses anteriores)
+        'total_programado_mes' => 0, 'total_semana' => 0, 'total_vencido' => 0,
     );
-
-    $sqlSinProgramar = "SELECT 
-            COUNT(*) AS cantidad,
-            SUM(SaldoPendiente) AS total
-        FROM (
-            SELECT 
-                TP.id,
-                TP.Debe - IFNULL(AP.Pagado, 0) - IFNULL(PP.Programado, 0) AS SaldoPendiente
-            FROM TransProveedores TP
-            LEFT JOIN (
-                -- Pagado = lo aplicado a la factura (pagos, NC, anticipos), igual que la Cuenta Corriente y
-                -- Asociar pagos. Antes sumaba AnticiposProveedores, que no está vinculada a facturas: daba 0
-                -- y las facturas ya pagas seguían apareciendo (24/11/2026).
-                SELECT idMovimientoOrigen AS idTransProveedores, SUM(Importe) AS Pagado
-                FROM TransProveedores_Imputaciones
-                WHERE Eliminado = 0
-                GROUP BY idMovimientoOrigen
-            ) AP ON AP.idTransProveedores = TP.id
-            LEFT JOIN (
-                SELECT 
-                    idTransProveedores,
-                    SUM(importe_programado) AS Programado
-                FROM pagos_programados_proveedores
-                WHERE eliminado = 0
-                  AND estado IN ('PROGRAMADO','REPROGRAMADO')
-                GROUP BY idTransProveedores
-            ) PP ON PP.idTransProveedores = TP.id
-            WHERE TP.Eliminado = 0
-              AND TP.Debe > 0
-              AND TP.Fecha >= '{$fechaDesde}'
-        ) X
-        WHERE X.SaldoPendiente > 0
-    ";
-
-    $res = $mysqli->query($sqlSinProgramar);
-    if ($res) {
-        $row = $res->fetch_assoc();
-        $data['cantidad_sin_programar'] = (int)$row['cantidad'];
-        $data['total_sin_programar'] = n($row['total']);
+    foreach (facturasPendientesCalendario($mysqli, $fechaDesde) as $f) {
+        $d = $f['FechaCalendario'];
+        if ($d < $inicioMes) { $data['cantidad_sin_programar']++; $data['total_sin_programar'] += $f['Saldo']; }
+        if ($d >= $inicioMes && $d <= $finMes) $data['total_programado_mes'] += $f['Saldo'];
+        if ($d >= $inicioSemana && $d <= $finSemana) $data['total_semana'] += $f['Saldo'];
+        if ($d < $hoy) $data['total_vencido'] += $f['Saldo'];
     }
-
-    $stmt = $mysqli->prepare("
-        SELECT IFNULL(SUM(importe_programado), 0) AS total
-        FROM pagos_programados_proveedores
-        WHERE eliminado = 0
-          AND estado IN ('PROGRAMADO','REPROGRAMADO')
-          AND fecha_promesa BETWEEN ? AND ?
-    ");
-    $stmt->bind_param("ss", $inicioMes, $finMes);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $data['total_programado_mes'] = n($res->fetch_assoc()['total']);
-
-    $stmt = $mysqli->prepare("
-        SELECT IFNULL(SUM(importe_programado), 0) AS total
-        FROM pagos_programados_proveedores
-        WHERE eliminado = 0
-          AND estado IN ('PROGRAMADO','REPROGRAMADO')
-          AND fecha_promesa BETWEEN ? AND ?
-    ");
-    $stmt->bind_param("ss", $inicioSemana, $finSemana);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $data['total_semana'] = n($res->fetch_assoc()['total']);
-
-    $stmt = $mysqli->prepare("
-        SELECT IFNULL(SUM(importe_programado), 0) AS total
-        FROM pagos_programados_proveedores
-        WHERE eliminado = 0
-          AND estado IN ('PROGRAMADO','REPROGRAMADO')
-          AND fecha_promesa < ?
-    ");
-    $stmt->bind_param("s", $hoy);
-    $stmt->execute();
-    $res = $stmt->get_result();
-    $data['total_vencido'] = n($res->fetch_assoc()['total']);
-
     responder(true, '', $data);
 }
 
+// Tabla "Resumen por fecha" (lo que está en el calendario).
 if ($accion == 'resumen_fechas') {
-
-    $hoy = date('Y-m-d');
-
-    $sql = "
-        SELECT 
-            fecha_promesa,
-            COUNT(*) AS cantidad,
-            SUM(importe_programado) AS total,
-            CASE 
-                WHEN fecha_promesa < '$hoy' THEN 'VENCIDO'
-                WHEN fecha_promesa = '$hoy' THEN 'HOY'
-                ELSE 'PROGRAMADO'
-            END AS estado
-        FROM pagos_programados_proveedores
-        WHERE eliminado = 0
-          AND estado IN ('PROGRAMADO','REPROGRAMADO')
-        GROUP BY fecha_promesa
-        ORDER BY fecha_promesa ASC
-    ";
-
-    $res = $mysqli->query($sql);
-
-    if (!$res) {
-        responder(false, $mysqli->error);
+    $grupos = array();
+    foreach (facturasPendientesCalendario($mysqli, $fechaDesde) as $f) {
+        $d = $f['FechaCalendario'];
+        if ($d < $inicioMes) continue;
+        if (!isset($grupos[$d])) {
+            $grupos[$d] = array('fecha_promesa' => $d, 'cantidad' => 0, 'total' => 0,
+                'estado' => $d < $hoy ? 'VENCIDO' : ($d == $hoy ? 'HOY' : 'PROGRAMADO'));
+        }
+        $grupos[$d]['cantidad']++;
+        $grupos[$d]['total'] += $f['Saldo'];
     }
-
-    $data = array();
-
-    while ($row = $res->fetch_assoc()) {
-        $row['cantidad'] = (int)$row['cantidad'];
-        $row['total'] = n($row['total']);
-        $data[] = $row;
-    }
-
-    responder(true, '', $data);
+    ksort($grupos);
+    responder(true, '', array_values($grupos));
 }
 
 responder(false, 'Acción no reconocida.');

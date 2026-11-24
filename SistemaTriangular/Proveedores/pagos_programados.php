@@ -82,6 +82,25 @@
             font-size: 12px;
             opacity: .7;
         }
+
+        /* Rediseño 24/11/2026 */
+        /* sábado y domingo: gris (no se paga, no acepta facturas) */
+        .fc .dia-finde { background: #eef0f2 !important; }
+        .fc .dia-finde .fc-daygrid-day-number { opacity: .4; }
+        /* viernes: día de pago habitual */
+        .fc .dia-viernes { background: #e6f7ec !important; }
+        .fc .fc-daygrid-day { cursor: pointer; }
+        /* sugerida por vencimiento: solo contorno; elegida por el operador: relleno */
+        .fc-daygrid-event.pago-sugerido { border: 1px dashed currentColor !important; }
+        /* lista: lo que se arrastra es un chip chico, no la tarjeta entera */
+        .factura-chip { display: none; }
+        .factura-draggable.arrastrando { border-left-width: 0; width: max-content !important; max-width: 260px; }
+        .factura-draggable.arrastrando .factura-contenido { display: none; }
+        .factura-draggable.arrastrando .factura-chip {
+            display: block; padding: 3px 10px; font-size: 12px; font-weight: 600; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis; background: #39afd1; color: #fff; border-radius: 6px;
+        }
+        .leyenda-cal span.cuadro { display: inline-block; width: 12px; height: 12px; border-radius: 3px; vertical-align: middle; margin: 0 4px 0 12px; }
     </style>
 </head>
 
@@ -117,10 +136,10 @@
                                     <div class="float-end">
                                         <i class="mdi mdi-file-document-alert widget-icon bg-warning rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="text-muted fw-normal mt-0">Sin Programar</h5>
+                                    <h5 class="text-muted fw-normal mt-0">Para reubicar</h5>
                                     <h3 class="mt-3 mb-3" id="total_sin_programar">$ 0,00</h3>
                                     <p class="mb-0 text-muted">
-                                        <span id="cantidad_sin_programar">0</span> comprobantes pendientes
+                                        <span id="cantidad_sin_programar">0</span> impagas de meses anteriores
                                     </p>
                                 </div>
                             </div>
@@ -132,9 +151,9 @@
                                     <div class="float-end">
                                         <i class="mdi mdi-calendar-clock widget-icon bg-info rounded-circle text-white"></i>
                                     </div>
-                                    <h5 class="text-muted fw-normal mt-0">Programado Mes</h5>
+                                    <h5 class="text-muted fw-normal mt-0">A pagar este mes</h5>
                                     <h3 class="mt-3 mb-3" id="total_programado_mes">$ 0,00</h3>
-                                    <p class="mb-0 text-muted">Según calendario visible</p>
+                                    <p class="mb-0 text-muted">Lo que está en el calendario del mes</p>
                                 </div>
                             </div>
                         </div>
@@ -160,7 +179,7 @@
                                     </div>
                                     <h5 class="text-white fw-normal mt-0">Vencido</h5>
                                     <h3 class="mt-3 mb-3" id="total_vencido">$ 0,00</h3>
-                                    <p class="mb-0 text-white">Programado no pagado</p>
+                                    <p class="mb-0 text-white">Fecha pasada y sin pagar</p>
                                 </div>
                             </div>
                         </div>
@@ -174,11 +193,12 @@
                                 <div class="card-body">
                                     <h4 class="header-title mb-2">
                                         <i class="mdi mdi-file-document-multiple-outline me-1"></i>
-                                        Facturas Pendientes
+                                        Para reubicar
                                     </h4>
 
                                     <p class="text-muted font-13">
-                                        Arrastrá una factura al calendario para programar la promesa de pago.
+                                        Facturas impagas que quedaron en meses anteriores. Arrastralas a un día del calendario.
+                                        Las demás ya están en el calendario en su vencimiento: movelas si se pagan otro día.
                                     </p>
 
                                     <div class="mb-2">
@@ -216,6 +236,14 @@
                                         </button>
                                     </div>
 
+                                    <div class="leyenda-cal small text-muted mb-2">
+                                        <span class="cuadro" style="border:1px dashed #39afd1;background:#fff"></span>por vencimiento
+                                        <span class="cuadro" style="background:#39afd1"></span>fecha elegida
+                                        <span class="cuadro" style="background:#fa5c7c"></span>vencida sin pagar
+                                        <span class="cuadro" style="background:#e6f7ec;border:1px solid #cde"></span>viernes (día de pago)
+                                        <span class="cuadro" style="background:#eef0f2;border:1px solid #ddd"></span>sábado y domingo (no se paga)
+                                        · Clic en un día para ver todo lo que se paga y el total.
+                                    </div>
                                     <div id="calendario_pagos"></div>
                                 </div>
                             </div>
@@ -238,7 +266,7 @@
                                                 <tr>
                                                     <th>Fecha</th>
                                                     <th>Cantidad</th>
-                                                    <th>Total Programado</th>
+                                                    <th>Total a pagar</th>
                                                     <th>Estado</th>
                                                 </tr>
                                             </thead>
@@ -263,6 +291,22 @@
             </div>
 
             <div id="menuhyper_footer"></div>
+
+            <!-- Panel del día (clic en un día del calendario) -->
+            <div class="offcanvas offcanvas-end" tabindex="-1" id="panel_dia" aria-labelledby="panel_dia_titulo" style="width: 420px;">
+                <div class="offcanvas-header border-bottom">
+                    <div>
+                        <h5 class="offcanvas-title mb-0" id="panel_dia_titulo"></h5>
+                        <small class="text-muted" id="panel_dia_cantidad"></small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+                </div>
+                <div class="offcanvas-body" id="panel_dia_lista"></div>
+                <div class="border-top p-3 d-flex justify-content-between align-items-center">
+                    <span class="text-muted">Total del día</span>
+                    <h4 class="mb-0" id="panel_dia_total">$ 0,00</h4>
+                </div>
+            </div>
         </div>
     </div>
 
