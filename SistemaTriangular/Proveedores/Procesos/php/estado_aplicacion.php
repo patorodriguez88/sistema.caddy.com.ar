@@ -5,6 +5,19 @@
 // (pagos.php) siempre muestren exactamente lo mismo. Mismo criterio que
 // Clientes/Procesos/php/estado_aplicacion.php (se duplica en vez de un
 // include cruzado de módulos, para no acoplar Proveedores a Clientes).
+//
+// Créditos (25/11/2026, tarea Asana de Agustina "Corregir estado y asociación de notas de crédito"):
+// una nota de crédito se graba con Debe NEGATIVO y Haber 0. Antes caía en la rama "pago" con
+// Haber=0 → saldo 0 → "Pagada" sin estar asociada a nada, y no aparecía en Asociar Pago. Ahora
+// todo lo que baja la deuda (Haber > 0 o Debe < 0) es un crédito por su importe absoluto.
+const SQL_CREDITO_PROVEEDOR = "(GREATEST(T.Haber, 0) + GREATEST(-T.Debe, 0))";
+const SQL_ES_CREDITO_PROVEEDOR = "(T.Haber > 0 OR T.Debe < 0)";
+
+function importeCreditoProveedor(float $debe, float $haber): float
+{
+    return max($haber, 0) + max(-$debe, 0);
+}
+
 function estadoAplicacionProveedorDesdeSaldo(float $debe, float $haber, float $aplicadoDebe, float $aplicadoHaber): string
 {
     if ($debe > 0) {
@@ -12,7 +25,7 @@ function estadoAplicacionProveedorDesdeSaldo(float $debe, float $haber, float $a
         $saldo = $debe - $aplicado;
     } else {
         $aplicado = $aplicadoHaber;
-        $saldo = $haber - $aplicado;
+        $saldo = importeCreditoProveedor($debe, $haber) - $aplicado;
     }
 
     if ($saldo <= 0.01) {

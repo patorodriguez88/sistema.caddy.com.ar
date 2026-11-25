@@ -777,6 +777,17 @@ $(document).ready(function () {
                 data: null,
                 render: function (data, type, row) {
                   if (row.Debe != 0) {
+                    // Nota de crédito (Debe < 0) con saldo: no se "paga", se asocia a la factura.
+                    if (row.Debe < 0 && row.Saldo > 0.009) {
+                      return (
+                        '<i class="ml-2 mdi mdi-link-variant text-info mdi-24px" style="cursor:pointer" title="Asociar a una factura" onclick="asociar_credito_proveedor(' +
+                        row.id +
+                        ')"></i>' +
+                        '<i class="ml-2 mdi-18px mdi mdi-trash-can text-danger" style="cursor:pointer" onclick="borrar(' +
+                        row.id +
+                        ')"></i>'
+                      );
+                    }
                     if (row.Saldo == 0) {
                       return (
                         '<i class="ml-2 mdi mdi-cash-check text-success mdi-24px" id="' +

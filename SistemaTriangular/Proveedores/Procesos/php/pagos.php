@@ -388,7 +388,8 @@ if (isset($_POST['PagoDesdeAnticipos'])) {
 // no hay Facturado/idFacturado (una factura de proveedor queda firme al
 // cargarla, no hay paso de "facturar" aparte), así que sólo se filtra por
 // Eliminado=0. El "pago" es cualquier fila con Haber>0 (Ingresar Anticipo,
-// hoy el único alta de Haber que existe en la pantalla).
+// hoy el único alta de Haber que existe en la pantalla) y, desde el 25/11/2026,
+// también las notas de crédito, que se graban con Debe<0 (ver estado_aplicacion.php).
 // ==================================================================
 
 include_once "estado_aplicacion.php";
@@ -467,9 +468,9 @@ if (isset($_POST['Asociar_pago_pagos'])) {
             T.TipoDeComprobante,
             T.NumeroComprobante,
             T.Descripcion,
-            T.Haber,
+            " . SQL_CREDITO_PROVEEDOR . " AS Haber,
             (
-                T.Haber - COALESCE((
+                " . SQL_CREDITO_PROVEEDOR . " - COALESCE((
                     SELECT SUM(A.Importe)
                     FROM TransProveedores_Imputaciones A
                     WHERE A.idMovimientoDestino = T.id
@@ -478,7 +479,7 @@ if (isset($_POST['Asociar_pago_pagos'])) {
             ) AS SaldoDisponible
         FROM TransProveedores T
         WHERE T.idProveedor = ?
-          AND T.Haber > 0
+          AND " . SQL_ES_CREDITO_PROVEEDOR . "
           AND T.Eliminado = 0
         HAVING SaldoDisponible > 0.009
         ORDER BY T.Fecha ASC, T.id ASC
@@ -554,13 +555,13 @@ if (isset($_POST['Asociar_pagos'])) {
         foreach ($pagosId as $idPago) {
             $sqlPago = "
                 SELECT
-                    T.id, T.idProveedor, T.Haber,
+                    T.id, T.idProveedor, T.Haber, T.Debe,
                     COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoDestino = T.id AND A.Eliminado = 0), 0) AS Aplicado,
                     (
-                        T.Haber - COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoDestino = T.id AND A.Eliminado = 0), 0)
+                        " . SQL_CREDITO_PROVEEDOR . " - COALESCE((SELECT SUM(A.Importe) FROM TransProveedores_Imputaciones A WHERE A.idMovimientoDestino = T.id AND A.Eliminado = 0), 0)
                     ) AS SaldoDisponible
                 FROM TransProveedores T
-                WHERE T.id = ? AND T.Haber > 0 AND T.Eliminado = 0
+                WHERE T.id = ? AND " . SQL_ES_CREDITO_PROVEEDOR . " AND T.Eliminado = 0
                 HAVING SaldoDisponible > 0.009
                 LIMIT 1
             ";
@@ -616,17 +617,19 @@ if (isset($_POST['Asociar_pagos'])) {
                 INSERT INTO TransProveedores_Imputaciones (
                     idProveedor, idMovimientoOrigen, idMovimientoDestino,
                     TipoOrigen, TipoDestino, Importe, Fecha, Usuario, Eliminado
-                ) VALUES (?, ?, ?, 'FACTURA', 'PAGO', ?, ?, ?, 0)
+                ) VALUES (?, ?, ?, 'FACTURA', ?, ?, ?, ?, 0)
             ");
             if (!$stmtInsert) throw new Exception("Error preparando insert de aplicación: " . $mysqli->error);
 
             $idProveedor = (int) $facturas[$facturaIndex]['idProveedor'];
             $idOrigen  = (int) $facturas[$facturaIndex]['id'];
             $idDestino = (int) $pagos[$pagoIndex]['id'];
+            // Nota de crédito (Debe < 0) se registra como 'NC'; pagos/anticipos siguen como 'PAGO'.
+            $tipoDestino = ((float) $pagos[$pagoIndex]['Debe'] < 0) ? 'NC' : 'PAGO';
 
             $stmtInsert->bind_param(
-                "iiidss",
-                $idProveedor, $idOrigen, $idDestino, $importeAplicar, $fechaAplicacion, $usuario
+                "iiisdss",
+                $idProveedor, $idOrigen, $idDestino, $tipoDestino, $importeAplicar, $fechaAplicacion, $usuario
             );
             if (!$stmtInsert->execute()) throw new Exception("Error insertando aplicación: " . $stmtInsert->error);
             $stmtInsert->close();
@@ -684,7 +687,7 @@ if (isset($_POST['VerAplicacionesProveedor'])) {
     }
 
     $esFactura = ((float) $mov['Debe'] > 0);
-    $importeOriginal = $esFactura ? (float) $mov['Debe'] : (float) $mov['Haber'];
+    $importeOriginal = $esFactura ? (float) $mov['Debe'] : importeCreditoProveedor((float) $mov['Debe'], (float) $mov['Haber']);
 
     if ($esFactura) {
         $sqlAplicaciones = "

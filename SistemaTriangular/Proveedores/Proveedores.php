@@ -422,7 +422,7 @@
                                         </div>
                                         <div class="row mt-4">
                                             <div class="col-12">
-                                                <h4 class="header-title mb-3">Pagos / Anticipos Disponibles <small id="ap_hint_pagos" class="text-success ms-2"></small></h4>
+                                                <h4 class="header-title mb-3">Pagos / Anticipos / Notas de Crédito Disponibles <small id="ap_hint_pagos" class="text-success ms-2"></small></h4>
                                                 <div class="table-responsive">
                                                     <table id="tabla_asociar-pagos_pagos_prov" class="table table-sm table-bordered table-hover align-middle nowrap w-100" style="font-size:10px;">
                                                         <thead>
