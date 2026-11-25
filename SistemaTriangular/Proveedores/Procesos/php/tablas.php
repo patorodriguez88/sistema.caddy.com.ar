@@ -143,7 +143,8 @@ if (isset($_POST['CtaCte'])) {
             $saldo = $debe - $aplicado;
         } else {
             $aplicado = $aplicadoHaber;
-            $saldo = $haber - $aplicado;
+            // Pago (Haber > 0) o nota de crédito (Debe < 0): crédito por su importe absoluto.
+            $saldo = importeCreditoProveedor($debe, $haber) - $aplicado;
         }
 
         // Se mantiene el nombre "Saldo" (lo sigue leyendo el front tal cual)

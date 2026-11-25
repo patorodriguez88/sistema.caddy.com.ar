@@ -240,6 +240,17 @@ $("#asociar_pago_proveedor_button").click(function () {
   }));
 });
 
+// Desde la Cuenta Corriente: botón "Asociar" de una nota de crédito pendiente. Abre el modal con
+// esa NC ya tildada y, cuando cargan las dos grillas, pinta las facturas que coinciden.
+function asociar_credito_proveedor(id) {
+  let pendientes = 2;
+  $(AP_TABLA_FACT + ", " + AP_TABLA_PAGO).one("init.dt", function () {
+    if (--pendientes === 0) recalcularAsociacionProv("pago");
+  });
+  $("#asociar_pago_proveedor_button").trigger("click");
+  apSelPago.add(String(id));
+}
+
 $("#asociar-pagos-modal-prov-ok").click(function () {
   if (checkedFacturasidProv.length === 0) {
     toast("error", "Error", "Seleccioná al menos una factura.");
