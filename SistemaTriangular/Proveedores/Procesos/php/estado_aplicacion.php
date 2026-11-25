@@ -18,11 +18,20 @@ function importeCreditoProveedor(float $debe, float $haber): float
     return max($haber, 0) + max(-$debe, 0);
 }
 
+// Débito = lo que sube la deuda: facturas (Debe > 0) y también las filas con Haber NEGATIVO. Esas
+// las dejaba el circuito viejo de "pagar" una NC con un anticipo: el anticipo tomaba el tipo y
+// número de la NC con Haber = -importe (consume la NC) y el resto quedaba como anticipo nuevo para
+// pagar facturas. Se imputan contra su NC (TipoOrigen 'OTRO', TipoDestino 'NC').
+function importeDebitoProveedor(float $debe, float $haber): float
+{
+    return max($debe, 0) + max(-$haber, 0);
+}
+
 function estadoAplicacionProveedorDesdeSaldo(float $debe, float $haber, float $aplicadoDebe, float $aplicadoHaber): string
 {
-    if ($debe > 0) {
+    if (importeDebitoProveedor($debe, $haber) > 0) {
         $aplicado = $aplicadoDebe;
-        $saldo = $debe - $aplicado;
+        $saldo = importeDebitoProveedor($debe, $haber) - $aplicado;
     } else {
         $aplicado = $aplicadoHaber;
         $saldo = importeCreditoProveedor($debe, $haber) - $aplicado;

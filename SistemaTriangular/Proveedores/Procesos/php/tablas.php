@@ -138,9 +138,9 @@ if (isset($_POST['CtaCte'])) {
         $aplicadoDebe = floatval($row['AplicadoDebe']);
         $aplicadoHaber = floatval($row['AplicadoHaber']);
 
-        if ($debe > 0) {
+        if (importeDebitoProveedor($debe, $haber) > 0) {
             $aplicado = $aplicadoDebe;
-            $saldo = $debe - $aplicado;
+            $saldo = importeDebitoProveedor($debe, $haber) - $aplicado;
         } else {
             $aplicado = $aplicadoHaber;
             // Pago (Haber > 0) o nota de crédito (Debe < 0): crédito por su importe absoluto.

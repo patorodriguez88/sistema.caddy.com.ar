@@ -686,8 +686,9 @@ if (isset($_POST['VerAplicacionesProveedor'])) {
         exit;
     }
 
-    $esFactura = ((float) $mov['Debe'] > 0);
-    $importeOriginal = $esFactura ? (float) $mov['Debe'] : importeCreditoProveedor((float) $mov['Debe'], (float) $mov['Haber']);
+    $importeDebito = importeDebitoProveedor((float) $mov['Debe'], (float) $mov['Haber']);
+    $esFactura = ($importeDebito > 0);
+    $importeOriginal = $esFactura ? $importeDebito : importeCreditoProveedor((float) $mov['Debe'], (float) $mov['Haber']);
 
     if ($esFactura) {
         $sqlAplicaciones = "
